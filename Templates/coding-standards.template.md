@@ -188,28 +188,6 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ---
 
-## Documentation Standards
+## Related
 
-### File Naming
-
-All docs use `kebab-case`:
-
-```
-✓ coding-standards.md
-✓ api-patterns.md
-
-✗ Coding Standards.md
-✗ coding_standards.md
-```
-
-### Linking
-
-Use relative paths with `.md` extension:
-
-```markdown
-✓ [Standards](./coding-standards.md)
-✓ [Term](./glossary.md#term-name)
-
-✗ [[coding-standards]]
-✗ [Standards](/absolute/path.md)
-```
+- [Documentation System](./docs-system.md) — Doc structure, naming, linking conventions

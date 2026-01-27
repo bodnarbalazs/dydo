@@ -1,10 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>DynaDocs</RootNamespace>
+        <AssemblyName>dydo</AssemblyName>
+        <Version>1.0.0</Version>
+        <Description>DynaDocs - Dynamic Documentation validation and management tool</Description>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+        <PackageReference Include="Markdig" Version="0.34.0" />
+        <PackageReference Include="YamlDotNet" Version="15.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="DynaDocs.Tests\**" />
+        <Content Remove="DynaDocs.Tests\**" />
+        <EmbeddedResource Remove="DynaDocs.Tests\**" />
+        <None Remove="DynaDocs.Tests\**" />
+    </ItemGroup>
 
 </Project>

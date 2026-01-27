@@ -1,23 +1,80 @@
-# LC Documentation Index
+---
+area: general
+type: hub
+---
 
-This is the entry point for AI agents and humans exploring the LC documentation.
+# Documentation Index
 
-## How to Navigate
+The authoritative entry point for understanding and working with this codebase.
 
-1. Start with [Platform Overview](./understand/platform.md) if you're new
-2. Browse by purpose below
-3. Use the [Glossary](./glossary.md) for term definitions
+---
+
+## For AI Agents
+
+**Gather relevant context before starting work.**
+
+### Traversal
+
+1. **Start here** — Identify which section(s) below relate to your task
+2. **Read linked docs** — Follow links until you have sufficient context
+3. **Check the glossary** — For unfamiliar terms, see [Glossary](./glossary.md)
+4. **Then explore code** — Docs give you the *why*; code gives you the *how*
+
+**Stop reading** when you have enough context to proceed confidently, or when content becomes irrelevant to your task.
+
+### When to Stop and Clarify
+
+**Do not silently resolve ambiguity.** Stop and ask the user when:
+
+- Two docs contradict each other
+- A doc contradicts the user's explicit instructions
+- Requirements are unclear or incomplete
+- Multiple valid approaches exist and the choice matters
+- The task scope differs from what was requested
+
+User instructions take precedence over docs. But if docs contradict for good reason, surface the conflict rather than assuming.
+
+---
 
 ## Documentation Sections
 
-### Understand - What Things Are
-[Understanding the Platform](./understand/_index.md) - Core concepts, domain knowledge, architecture
+### [Understand](./understand/_index.md) — Domain & Architecture
 
-### Guides - How to Do Things
-[Development Guides](./guides/_index.md) - Task-oriented guides for backend, frontend, microservices
+Why things exist and how they fit together.
 
-### Reference - Specs and Lookups
-[Reference Documentation](./reference/_index.md) - API specs, configuration, tool documentation
+- Platform overview and purpose
+- Core domain concepts
+- System architecture and data flow
 
-### Project - How We Work
-[Project Meta](./project/_index.md) - Decisions, pitfalls, changelog, docs system
+### [Guides](./guides/_index.md) — Implementation Patterns
+
+How to build things correctly.
+
+- [Backend patterns](./guides/backend/_index.md) — C#, .NET, APIs
+- [Frontend patterns](./guides/frontend/_index.md) — React, TypeScript, styling
+- [Microservices patterns](./guides/microservices/_index.md) — Python, FastAPI
+
+### [Reference](./reference/_index.md) — Specifications
+
+Technical details for quick lookup.
+
+- API endpoint specifications
+- Configuration options
+- Internal tools documentation
+
+### [Project](./project/_index.md) — Meta
+
+How we work on this project.
+
+- [Coding Standards](./project/coding-standards.md) — **Read before writing any code**
+- Architecture decisions (ADRs)
+- Known pitfalls
+- Session changelog
+
+---
+
+## Quick Links
+
+- [Coding Standards](./project/coding-standards.md)
+- [Glossary](./glossary.md)
+- [Architecture Overview](./understand/architecture.md)

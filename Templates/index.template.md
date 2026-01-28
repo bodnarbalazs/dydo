@@ -13,6 +13,28 @@ The authoritative entry point for understanding and working with this codebase.
 
 **Gather relevant context before starting work.**
 
+### Workflow Mode
+
+Your prompt may include a flag. Here's what each means:
+
+| Flag | Mode | You Are | Read Next |
+|------|------|---------|-----------|
+| `--feature X` | Full workflow | Agent X | `.workspace/X/workflow.md` |
+| `--task X` | Standard workflow | Agent X | `.workspace/X/workflow.md` |
+| `--quick X` | Light workflow | Agent X | `.workspace/X/workflow.md` |
+| `--inbox X` | Process inbox | Agent X | `.workspace/X/workflow.md` |
+| `--review X` | Review mode | Agent X | `.workspace/X/workflow.md` |
+| (none) | Ask human | - | Continue below |
+
+**X is your agent letter:** A=Adele, B=Brian, C=Charlie, D=Dexter, E=Emma, F=Frank, G=Grace, H=Henry, I=Iris, J=Jack, K=Kate, L=Leo, M=Mia, N=Noah, O=Olivia, P=Paul, Q=Quinn, R=Rose, S=Sam, T=Tara, U=Uma, V=Victor, W=Wendy, X=Xavier, Y=Yara, Z=Zack.
+
+**If you have a flag:** Read your workflow file at `.workspace/{YourName}/workflow.md`, then claim your identity:
+```bash
+dydo agent claim {YourName}
+```
+
+**If no flag:** Ask the human which workflow to follow, or proceed with ad-hoc assistance.
+
 ### Traversal
 
 1. **Start here** — Identify which section(s) below relate to your task
@@ -33,6 +55,12 @@ The authoritative entry point for understanding and working with this codebase.
 - The task scope differs from what was requested
 
 User instructions take precedence over docs. But if docs contradict for good reason, surface the conflict rather than assuming.
+
+### Before Writing Code
+
+1. Read [Coding Standards](./project/coding-standards.md)
+2. Read [Workflow](./project/workflow.md) if following a workflow mode
+3. Check [Active Tasks](./project/tasks/) for ongoing work
 
 ---
 
@@ -67,6 +95,7 @@ Technical details for quick lookup.
 How we work on this project.
 
 - [Coding Standards](./project/coding-standards.md) — **Read before writing any code**
+- [Workflow](./project/workflow.md) — Multi-agent orchestration system
 - Architecture decisions (ADRs)
 - Known pitfalls
 - Session changelog
@@ -76,5 +105,7 @@ How we work on this project.
 ## Quick Links
 
 - [Coding Standards](./project/coding-standards.md)
+- [Workflow](./project/workflow.md)
 - [Glossary](./glossary.md)
 - [Architecture Overview](./understand/architecture.md)
+- [Active Tasks](./project/tasks/)

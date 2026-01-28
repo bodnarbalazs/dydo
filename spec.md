@@ -519,7 +519,14 @@ tools/
     │   ├── CheckCommand.cs     # dydo check
     │   ├── FixCommand.cs       # dydo fix
     │   ├── IndexCommand.cs     # dydo index
-    │   └── GraphCommand.cs     # dydo graph
+    │   ├── GraphCommand.cs     # dydo graph
+    │   ├── AgentCommand.cs     # dydo agent (claim/release/status/list/role)
+    │   ├── DispatchCommand.cs  # dydo dispatch
+    │   ├── InboxCommand.cs     # dydo inbox (list/show/clear)
+    │   ├── GuardCommand.cs     # dydo guard (hook enforcement)
+    │   ├── ReviewCommand.cs    # dydo review complete
+    │   ├── TaskCommand.cs      # dydo task (create/ready-for-review/approve/reject)
+    │   └── CleanCommand.cs     # dydo clean
     │
     ├── Rules/
     │   ├── IRule.cs            # Interface for rules
@@ -535,7 +542,11 @@ tools/
     │   ├── DocFile.cs          # Represents a parsed doc
     │   ├── Frontmatter.cs      # Parsed frontmatter
     │   ├── Violation.cs        # A rule violation
-    │   └── LinkInfo.cs         # Parsed link information
+    │   ├── LinkInfo.cs         # Parsed link information
+    │   ├── AgentState.cs       # Agent status, role, task, PID
+    │   ├── AgentSession.cs     # Session info (PIDs, timestamps)
+    │   ├── InboxItem.cs        # Dispatch message in inbox
+    │   └── TaskFile.cs         # Task metadata and status
     │
     ├── Services/
     │   ├── DocScanner.cs       # Finds and parses all docs
@@ -543,7 +554,10 @@ tools/
     │   ├── MarkdownParser.cs   # Parses markdown, extracts links/frontmatter
     │   ├── AnchorExtractor.cs  # Extracts #anchors from markdown headings
     │   ├── IndexGenerator.cs   # Generates Index.md
-    │   └── DocGraph.cs         # Graph operations (incoming links, degree traversal)
+    │   ├── DocGraph.cs         # Graph operations (incoming links, degree traversal)
+    │   ├── AgentRegistry.cs    # Agent states, claim/release, PID tracking
+    │   ├── WorkspaceManager.cs # Agent workspace operations
+    │   └── ProcessUtils.cs     # PID walking, process tree utilities
     │
     └── Utils/
         └── PathUtils.cs        # Path normalization, kebab-case conversion
@@ -808,6 +822,311 @@ This is the entry point. The index.md links to hubs, hubs link to details.
 
 ---
 
+## Agent Workflow System
+
+A multi-agent orchestration system that provides persistent state, role-based permissions, and cross-agent coordination.
+
+### Agent Pool
+
+26 predefined agents (A-Z), each with their own workspace:
+
+| Agent | Letter | Agent | Letter |
+|-------|--------|-------|--------|
+| Adele | A | Noah | N |
+| Brian | B | Olivia | O |
+| Charlie | C | Paul | P |
+| Dexter | D | Quinn | Q |
+| Emma | E | Rose | R |
+| Frank | F | Sam | S |
+| Grace | G | Tara | T |
+| Henry | H | Uma | U |
+| Iris | I | Victor | V |
+| Jack | J | Wendy | W |
+| Kate | K | Xavier | X |
+| Leo | L | Yara | Y |
+| Mia | M | Zack | Z |
+
+### Workspace Structure
+
+```
+.workspace/
+├── agent-states.md          # Central registry of all agents
+├── Adele/
+│   ├── workflow.md          # Agent-specific workflow instructions
+│   ├── state.md             # Current role, permissions, progress
+│   ├── .session             # Session info (PID, timestamps)
+│   └── inbox/               # Messages from other agents
+├── Brian/
+│   └── ...
+├── Charlie/
+│   └── ...
+└── ... (all 26 agents)
+```
+
+### Agent Identification via PID
+
+Each terminal has a unique process ID. When an agent claims, we register the terminal's PID.
+
+**Process tree:**
+```
+Terminal (PowerShell) ─── PID: 1000
+    └── Claude Code ───── PID: 1001
+          └── Hook (dydo) ─ PID: 1002
+```
+
+**Claim flow:**
+1. User starts: `claude --feature C`
+2. Claude reads index.md, learns: "C means I'm Charlie"
+3. Claude runs: `dydo agent claim Charlie`
+4. dydo walks process tree, records terminal PID
+5. Writes `.workspace/Charlie/.session`:
+   ```json
+   {
+     "agent": "Charlie",
+     "terminal_pid": 1000,
+     "claude_pid": 1001,
+     "claimed": "2025-01-28T10:30:00Z"
+   }
+   ```
+6. Updates `agent-states.md`
+
+**Guard flow (hook calls):**
+1. Hook fires: `dydo guard --action edit --path src/Auth.cs`
+2. dydo gets parent PID (Claude Code process)
+3. Scans `.session` files for matching PID
+4. Finds agent, checks permissions from `state.md`
+5. Returns allow/deny
+
+### Agent Roles
+
+| Role | Can Edit | Cannot Edit |
+|------|----------|-------------|
+| `code-writer` | `src/**`, `tests/**` | `docs/**`, `project/**` |
+| `reviewer` | (nothing) | (everything) |
+| `docs-writer` | `docs/**` | `src/**`, `tests/**`, `project/**` |
+| `interviewer` | `.workspace/{self}/**` | Everything else |
+| `planner` | `.workspace/{self}/**`, `project/tasks/**` | `src/**`, `docs/**` |
+
+### Agent States Registry (agent-states.md)
+
+```markdown
+---
+last-updated: 2025-01-28T10:45:00Z
+---
+
+# Agent States
+
+| Agent | Status | Role | Task | Since |
+|-------|--------|------|------|-------|
+| Adele | working | code-writer | jwt-auth | 10:30 |
+| Brian | free | - | - | - |
+| Charlie | working | reviewer | jwt-auth-review | 10:45 |
+| Dexter | free | - | - | - |
+| ...
+
+## Pending Inbox
+
+| Agent | Items | Oldest |
+|-------|-------|--------|
+| Emma | 2 | 09:15 |
+```
+
+### Workflow Modes
+
+Triggered by flags passed to Claude:
+
+| Flag | Workflow | Steps |
+|------|----------|-------|
+| `--feature X` | Full | Interview → Plan → Implement → Review → Docs |
+| `--task X` | Standard | Plan → Implement → Review |
+| `--quick X` | Light | Just implement |
+| `--inbox X` | Process inbox | Handle pending dispatches |
+| `--review X` | Review mode | Code review only |
+
+The letter X determines the agent (A=Adele, B=Brian, etc.).
+
+### Task Lifecycle
+
+```
+pending → active → review-pending → human-reviewed → closed
+                        ↓
+                   review-failed → active
+```
+
+**Task file when ready for review:**
+```markdown
+---
+status: review-pending
+review-summary: |
+  Implemented JWT authentication with refresh token rotation.
+  - JwtService handles token generation/validation
+  - 23 tests added, all passing
+files-changed:
+  - src/Auth/JwtService.cs (new)
+  - src/Auth/AuthMiddleware.cs (new)
+  - tests/Auth/JwtServiceTests.cs (new)
+---
+```
+
+### Cross-Agent Dispatch
+
+Agent A needs review. Agent A runs:
+
+```bash
+dydo dispatch \
+  --role reviewer \
+  --task jwt-auth \
+  --brief "Review JWT implementation" \
+  --files "src/Auth/**" \
+  --context-file ".workspace/Adele/review-context.md"
+```
+
+**dydo dispatch:**
+1. Finds first free agent alphabetically (Charlie)
+2. Updates `agent-states.md`: Charlie → working
+3. Writes to `.workspace/Charlie/inbox/`:
+   ```markdown
+   ---
+   from: Adele
+   role: reviewer
+   task: jwt-auth
+   received: 2025-01-28T10:45:00Z
+   ---
+
+   # Review Request
+
+   ## Brief
+   Review JWT implementation for security and correctness.
+
+   ## Files to Review
+   - src/Auth/JwtService.cs
+   - src/Auth/AuthMiddleware.cs
+   ```
+4. Launches new terminal: `start powershell -Command "claude --inbox C"`
+5. Returns: "Dispatched to Charlie"
+
+**Review completion:**
+```bash
+# Pass
+dydo review complete jwt-auth --status pass --notes "LGTM"
+
+# Fail (same agent can fix - context continuity)
+dydo review complete jwt-auth --status fail --notes "Security issue on line 42"
+```
+
+### Agent Commands
+
+```bash
+# Lifecycle
+dydo agent claim <letter>            # Claim agent for this terminal
+dydo agent release                   # Release current agent
+dydo agent status [letter]           # Show agent status
+dydo agent list                      # List all agents
+dydo agent list --free               # List free agents
+dydo agent role <role> [--task X]    # Set role and permissions
+
+# Dispatch
+dydo dispatch --role <role> --task <name> --brief "..." [--files "..."]
+
+# Inbox
+dydo inbox list                      # Agents with pending items
+dydo inbox show                      # Show current agent's inbox
+dydo inbox clear                     # Clear processed items
+
+# Guard (called by hooks)
+dydo guard --action <tool> --path <file>
+
+# Review
+dydo review complete <task> --status pass|fail [--notes "..."]
+
+# Task lifecycle
+dydo task ready-for-review <name> --summary "..."
+dydo task approve <name>             # Human only
+dydo task reject <name> --notes "..."  # Human only
+dydo tasks --needs-review            # List tasks awaiting human review
+
+# Cleanup
+dydo clean <letter>                  # Clean agent workspace
+dydo clean --all                     # Clean all (denied if any working)
+dydo clean --task <name>             # Clean workspaces for task
+```
+
+### Hook Configuration
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard --action edit --path \"$FILE_PATH\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo workflow check --on-stop"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Example: Full Feature Workflow
+
+```
+Human: claude --feature A "Implement JWT authentication"
+
+Terminal A (Adele):
+  1. Reads index.md → learns workflow
+  2. dydo agent claim Adele
+  3. dydo agent role interviewer
+  4. Interviews human, clarifies requirements
+  5. Writes .workspace/Adele/brief.md
+  6. dydo agent role planner
+  7. Creates plan from brief
+  8. dydo task create jwt-auth
+  9. dydo agent role code-writer
+  10. Implements feature
+  11. Updates task progress
+  12. dydo task ready-for-review jwt-auth --summary "..."
+  13. dydo dispatch --role reviewer --task jwt-auth --brief "..."
+      → Launches Terminal B (Brian)
+
+Terminal B (Brian):
+  1. claude --inbox B
+  2. dydo agent claim Brian
+  3. Reads inbox, sees review request
+  4. Reviews code (read-only)
+  5. dydo review complete jwt-auth --status pass
+  6. Creates changelog entry
+  7. dydo dispatch --role docs-writer --task jwt-auth-docs --brief "..."
+      → Launches Terminal C (Charlie)
+  8. dydo agent release
+
+Terminal C (Charlie):
+  1. claude --inbox C
+  2. dydo agent claim Charlie
+  3. Reads inbox, sees docs request
+  4. Writes documentation
+  5. dydo task complete jwt-auth-docs
+  6. dydo agent release
+
+Human reviews, approves via: dydo task approve jwt-auth
+Feature complete. Changelog linked. Docs written.
+```
+
+---
+
 ## Future Enhancements (Not for v1)
 
 1. **Watch mode**: `dydo watch` - Continuously validate on file changes
@@ -827,6 +1146,7 @@ Build a C# console tool called DynaDocs (`dydo`) that:
 2. **Auto-fixes** what it can (renames, link conversion, skeleton hubs)
 3. **Generates** index.md from doc structure (hubs only, not all files)
 4. **Queries** the doc graph (backlinks, degree traversal) for context gathering
+5. **Orchestrates** multi-agent workflows with role-based permissions and PID tracking
 
 The goal is to keep the `docs/LC/` directory in a state that's easily traversable by both humans (in Obsidian) and AI agents (Claude Code), enabling dynamic context loading based on current task.
 

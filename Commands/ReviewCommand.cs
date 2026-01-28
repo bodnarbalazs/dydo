@@ -1,0 +1,151 @@
+namespace DynaDocs.Commands;
+
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.Text.RegularExpressions;
+using DynaDocs.Services;
+using DynaDocs.Utils;
+
+public static class ReviewCommand
+{
+    private const string TasksFolder = "project/tasks";
+
+    public static Command Create()
+    {
+        var command = new Command("review", "Manage code reviews");
+
+        command.AddCommand(CreateCompleteCommand());
+
+        return command;
+    }
+
+    private static Command CreateCompleteCommand()
+    {
+        var taskArgument = new Argument<string>("task", "Task name being reviewed");
+
+        var statusOption = new Option<string>("--status", "Review result: pass or fail")
+        {
+            IsRequired = true
+        };
+        statusOption.AddValidator(result =>
+        {
+            var value = result.GetValueOrDefault<string>();
+            if (value != "pass" && value != "fail")
+            {
+                result.ErrorMessage = "Status must be 'pass' or 'fail'";
+            }
+        });
+
+        var notesOption = new Option<string?>("--notes", "Review notes");
+
+        var command = new Command("complete", "Complete a code review")
+        {
+            taskArgument,
+            statusOption,
+            notesOption
+        };
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            var task = ctx.ParseResult.GetValueForArgument(taskArgument);
+            var status = ctx.ParseResult.GetValueForOption(statusOption)!;
+            var notes = ctx.ParseResult.GetValueForOption(notesOption);
+            ctx.ExitCode = ExecuteComplete(task, status, notes);
+        });
+
+        return command;
+    }
+
+    private static string GetTasksPath()
+    {
+        var docsPath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        if (docsPath == null)
+            return Path.Combine(Environment.CurrentDirectory, TasksFolder);
+
+        return Path.Combine(Path.GetDirectoryName(docsPath)!, TasksFolder);
+    }
+
+    private static int ExecuteComplete(string taskName, string status, string? notes)
+    {
+        var registry = new AgentRegistry();
+        var agent = registry.GetCurrentAgent();
+
+        var tasksPath = GetTasksPath();
+        var taskPath = Path.Combine(tasksPath, $"{taskName}.md");
+
+        if (!File.Exists(taskPath))
+        {
+            ConsoleOutput.WriteError($"Task not found: {taskName}");
+            return ExitCodes.ToolError;
+        }
+
+        var content = File.ReadAllText(taskPath);
+
+        // Check current status
+        var statusMatch = Regex.Match(content, @"status: ([\w-]+)");
+        var currentStatus = statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
+
+        if (currentStatus != "review-pending" && currentStatus != "active")
+        {
+            ConsoleOutput.WriteError($"Task is not in review state (current: {currentStatus})");
+            return ExitCodes.ToolError;
+        }
+
+        var reviewerName = agent?.Name ?? "Unknown";
+        var reviewTime = DateTime.UtcNow;
+
+        if (status == "pass")
+        {
+            // Update status to human-reviewed (needs human approval)
+            content = Regex.Replace(content, @"status: [\w-]+", "status: human-reviewed");
+
+            var reviewSection = $"""
+
+
+                ## Code Review
+
+                - Reviewed by: {reviewerName}
+                - Date: {reviewTime:yyyy-MM-dd HH:mm}
+                - Result: PASSED
+                {(string.IsNullOrEmpty(notes) ? "" : $"- Notes: {notes}")}
+
+                Awaiting human approval.
+                """;
+
+            content += reviewSection;
+            File.WriteAllText(taskPath, content);
+
+            Console.WriteLine($"Review PASSED for {taskName}");
+            Console.WriteLine("Task now awaits human approval");
+            Console.WriteLine("Human can run: dydo task approve " + taskName);
+        }
+        else
+        {
+            // Update status back to active for rework
+            content = Regex.Replace(content, @"status: [\w-]+", "status: review-failed");
+
+            var reviewSection = $"""
+
+
+                ## Code Review ({reviewTime:yyyy-MM-dd HH:mm})
+
+                - Reviewed by: {reviewerName}
+                - Result: FAILED
+                - Issues: {notes ?? "(No details provided)"}
+
+                Requires rework.
+                """;
+
+            content += reviewSection;
+            File.WriteAllText(taskPath, content);
+
+            Console.WriteLine($"Review FAILED for {taskName}");
+            Console.WriteLine("Task returned for rework");
+
+            if (!string.IsNullOrEmpty(notes))
+                Console.WriteLine($"Issues: {notes}");
+        }
+
+        return ExitCodes.Success;
+    }
+}

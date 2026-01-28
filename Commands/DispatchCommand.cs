@@ -1,0 +1,204 @@
+namespace DynaDocs.Commands;
+
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using DynaDocs.Models;
+using DynaDocs.Services;
+using DynaDocs.Utils;
+
+public static class DispatchCommand
+{
+    public static Command Create()
+    {
+        var roleOption = new Option<string>("--role", "Role for the target agent")
+        {
+            IsRequired = true
+        };
+
+        var taskOption = new Option<string>("--task", "Task name")
+        {
+            IsRequired = true
+        };
+
+        var briefOption = new Option<string>("--brief", "Brief description of the work")
+        {
+            IsRequired = true
+        };
+
+        var filesOption = new Option<string?>("--files", "File pattern to include (e.g., 'src/Auth/**')");
+
+        var contextOption = new Option<string?>("--context-file", "Path to context file");
+
+        var noLaunchOption = new Option<bool>("--no-launch", "Don't launch new terminal, just write to inbox");
+
+        var command = new Command("dispatch", "Dispatch work to another agent")
+        {
+            roleOption,
+            taskOption,
+            briefOption,
+            filesOption,
+            contextOption,
+            noLaunchOption
+        };
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            var role = ctx.ParseResult.GetValueForOption(roleOption)!;
+            var task = ctx.ParseResult.GetValueForOption(taskOption)!;
+            var brief = ctx.ParseResult.GetValueForOption(briefOption)!;
+            var files = ctx.ParseResult.GetValueForOption(filesOption);
+            var contextFile = ctx.ParseResult.GetValueForOption(contextOption);
+            var noLaunch = ctx.ParseResult.GetValueForOption(noLaunchOption);
+
+            ctx.ExitCode = Execute(role, task, brief, files, contextFile, noLaunch);
+        });
+
+        return command;
+    }
+
+    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch)
+    {
+        var registry = new AgentRegistry();
+
+        // Get sender info
+        var sender = registry.GetCurrentAgent();
+        var senderName = sender?.Name ?? "Unknown";
+
+        // Find first free agent
+        var freeAgents = registry.GetFreeAgents();
+        if (freeAgents.Count == 0)
+        {
+            ConsoleOutput.WriteError("No free agents available");
+            return ExitCodes.ToolError;
+        }
+
+        // Pick first alphabetically
+        var targetAgent = freeAgents.OrderBy(a => a.Name).First();
+
+        // Create inbox item
+        var inboxItem = new InboxItem
+        {
+            Id = Guid.NewGuid().ToString("N")[..8],
+            From = senderName,
+            Role = role,
+            Task = task,
+            Received = DateTime.UtcNow,
+            Brief = brief,
+            Files = string.IsNullOrEmpty(files) ? [] : [files],
+            ContextFile = contextFile
+        };
+
+        // Write to target agent's inbox
+        var inboxPath = Path.Combine(registry.GetAgentWorkspace(targetAgent.Name), "inbox");
+        Directory.CreateDirectory(inboxPath);
+
+        var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{task}.md");
+        WriteInboxItem(itemPath, inboxItem);
+
+        Console.WriteLine($"Dispatched to {targetAgent.Name}");
+        Console.WriteLine($"Role: {role}");
+        Console.WriteLine($"Task: {task}");
+        Console.WriteLine($"Inbox item: {itemPath}");
+
+        // Launch new terminal if requested
+        if (!noLaunch)
+        {
+            var letter = targetAgent.Name[0];
+            LaunchNewTerminal(letter);
+            Console.WriteLine($"Launched terminal with --inbox {letter}");
+        }
+
+        return ExitCodes.Success;
+    }
+
+    private static void WriteInboxItem(string path, InboxItem item)
+    {
+        var filesSection = item.Files.Count > 0
+            ? $"\n## Files\n\n{string.Join("\n", item.Files.Select(f => $"- {f}"))}"
+            : "";
+
+        var contextSection = !string.IsNullOrEmpty(item.ContextFile)
+            ? $"\n## Context\n\nSee: [{item.ContextFile}]({item.ContextFile})"
+            : "";
+
+        var content = $"""
+            ---
+            id: {item.Id}
+            from: {item.From}
+            role: {item.Role}
+            task: {item.Task}
+            received: {item.Received:o}
+            ---
+
+            # {item.Role.ToUpperInvariant()} Request: {item.Task}
+
+            ## From
+
+            {item.From}
+
+            ## Brief
+
+            {item.Brief}
+            {filesSection}
+            {contextSection}
+            """;
+
+        File.WriteAllText(path, content);
+    }
+
+    private static void LaunchNewTerminal(char agentLetter)
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Windows: Use PowerShell
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = $"-Command \"claude --inbox {agentLetter}\"",
+                    UseShellExecute = true
+                });
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // macOS: Use Terminal.app via osascript
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "osascript",
+                    Arguments = $"-e 'tell app \"Terminal\" to do script \"claude --inbox {agentLetter}\"'",
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                // Linux: Try common terminals
+                var terminals = new[] { "gnome-terminal", "xterm", "konsole" };
+                foreach (var term in terminals)
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = term,
+                            Arguments = $"-e \"claude --inbox {agentLetter}\"",
+                            UseShellExecute = true
+                        });
+                        break;
+                    }
+                    catch
+                    {
+                        // Try next terminal
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
+            Console.WriteLine($"Please manually run: claude --inbox {agentLetter}");
+        }
+    }
+}

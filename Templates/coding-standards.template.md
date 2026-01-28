@@ -128,7 +128,38 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-## 5. Security
+## 5. Workflow Discipline
+
+**You are not done when the code works.**
+
+If following a workflow mode (`--feature`, `--task`, etc.):
+
+1. **Task exists** — Create or claim a task before starting
+2. **Progress tracked** — Update task as you work
+3. **Ready for review** — Mark task `review-pending` with summary
+4. **Review passed** — Different agent reviews (you don't review your own code)
+5. **Changelog created** — Document what changed and why
+6. **Docs dispatched** — If docs needed, dispatch to docs-writer (you don't write docs for your own code)
+7. **Human approved** — Task needs human review before closing
+
+**Do not:**
+- Skip the review step
+- Write docs for code you wrote
+- Mark tasks complete without human approval
+- Edit files outside your role's permissions
+
+**Run before finishing:**
+```bash
+dydo workflow check
+```
+
+This verifies compliance. Fix any issues before releasing.
+
+See [Workflow](./workflow.md) for full details.
+
+---
+
+## 6. Security
 
 Security is not an afterthought. These practices are non-negotiable.
 
@@ -240,4 +271,5 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ## Related
 
+- [Workflow](./workflow.md) — Multi-agent orchestration system
 - [Documentation System](./docs-system.md) — Doc structure, naming, linking conventions

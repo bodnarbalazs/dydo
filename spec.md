@@ -53,10 +53,17 @@ DynaDocs uses a unified `dydo/` folder that contains both documentation ("Dy") a
 ```
 project/
 ├── dydo.json                    # Config at root (committed)
+├── CLAUDE.md                    # Entry point → dydo/index.md (committed)
 │
 └── dydo/                        # Main DynaDocs folder
     ├── index.md                 # Entry point (committed)
     ├── glossary.md              # Term definitions (committed)
+    │
+    │── workflows/               # Agent workflow files (committed)
+    │   ├── _index.md            # Workflow hub
+    │   ├── adele.md             # Agent-specific workflow
+    │   ├── brian.md
+    │   └── ...
     │
     │── understand/              # ┐
     │── guides/                  # │ The "Dy" - Documentation
@@ -68,13 +75,10 @@ project/
     │   └── changelog/           # ┘
     │
     └── agents/                  # The "Do" - Orchestration (GITIGNORED)
-        ├── agent-states.md      # Central registry
         ├── Adele/
         │   ├── state.md         # Role, task, permissions
         │   ├── .session         # PID tracking
-        │   ├── workflow.md      # Agent instructions
-        │   ├── inbox/           # Messages from other agents
-        │   └── scratch/         # Working notes
+        │   └── inbox/           # Messages from other agents
         ├── Brian/
         └── ... (all agents)
 ```
@@ -84,6 +88,8 @@ project/
 | Path | Committed | Why |
 |------|-----------|-----|
 | `dydo.json` | Yes | Team configuration |
+| `CLAUDE.md` | Yes | Entry point for AI agents |
+| `dydo/workflows/` | Yes | Agent workflow instructions (documentation) |
 | `dydo/` (except agents/) | Yes | Documentation is shared truth |
 | `dydo/project/tasks/` | Yes | Cross-human task handoff |
 | `dydo/agents/` | **No** | Local per-machine state |
@@ -97,6 +103,7 @@ dydo/agents/
 
 | Folder | Question it answers | Content type |
 |--------|---------------------|--------------|
+| `workflows/` | "Who am I and what do I do?" | Agent workflow instructions |
 | `understand/` | "What IS this?" | Domain concepts, business logic, architecture |
 | `guides/` | "How do I DO this?" | Step-by-step task instructions |
 | `reference/` | "What are the specs?" | API docs, config options, tool docs |
@@ -209,6 +216,15 @@ dydo agent status [name]             # Show agent status
 dydo agent list                      # List all agents
 dydo agent list --free               # List free agents
 dydo agent role <role> [--task X]    # Set role and permissions
+```
+
+### Agent Management Commands
+
+```bash
+dydo agent new <name> <human>        # Create new agent, assign to human
+dydo agent rename <old> <new>        # Rename an agent
+dydo agent remove <name> [--force]   # Remove agent from pool
+dydo agent reassign <name> <human>   # Reassign agent to different human
 ```
 
 ### Workflow Commands
@@ -411,20 +427,20 @@ Number of agents [26]: 5
 
 Creating...
   ✓ dydo.json
-  ✓ dydo/ folder structure
-  ✓ dydo/index.md
-  ✓ dydo/understand/_index.md
-  ✓ dydo/guides/_index.md
-  ✓ dydo/reference/_index.md
-  ✓ dydo/project/_index.md
+  ✓ CLAUDE.md (entry point)
+  ✓ dydo/ structure with workflows
   ✓ Added dydo/agents/ to .gitignore
-  ✓ Claude Code hooks configured (.claude/settings.local.json)
+  ✓ Claude Code hooks configured
 
 Agents assigned to balazs: Adele, Brian, Charlie, Dexter, Emma
 
-Start with:
-  export DYDO_HUMAN=balazs
-  claude --feature A "Your task description"
+Documentation funnel created:
+  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads
+
+Next steps:
+  1. Set environment variable: export DYDO_HUMAN=balazs
+  2. Customize dydo/understand/architecture.md for your project
+  3. Customize dydo/guides/coding-standards.md
 ```
 
 ### Join Flow (Teammate)
@@ -528,27 +544,32 @@ Alice's agents see it via `dydo task list --mine`.
 
 ## Documentation Philosophy
 
-### Hierarchical Navigation (Top-Down)
+### JITI - Just In Time Information
+
+DynaDocs uses **JITI** (Just In Time Information) - progressive disclosure of information through a documentation funnel:
 
 ```
-index.md (entry point)
+CLAUDE.md (project root)
     │
-    ├── understand/_index.md (hub)
-    │       ├── platform.md (detail)
-    │       └── content/_index.md (sub-hub)
-    │               ├── teases.md (detail)
-    │               └── assets.md (detail)
-    │
-    ├── guides/_index.md (hub)
-    │       └── backend/_index.md (sub-hub)
-    │               └── database.md (detail)
-    │
-    └── project/_index.md (hub)
-            └── decisions/_index.md (sub-hub)
-                    └── 001-clean-architecture.md (detail)
+    └── dydo/index.md (entry point)
+            │
+            ├── workflows/*.md (agent-specific entry)
+            │       └── Must-reads (architecture, coding-standards, how-to-use-docs)
+            │
+            ├── understand/_index.md (hub)
+            │       ├── architecture.md (detail)
+            │       └── {concept}.md (details)
+            │
+            ├── guides/_index.md (hub)
+            │       ├── coding-standards.md (detail)
+            │       └── {task}.md (details)
+            │
+            └── project/_index.md (hub)
+                    └── decisions/_index.md (sub-hub)
+                            └── 001-clean-architecture.md (detail)
 ```
 
-**Key principle:** Index.md only links to top-level hubs. Hubs link to their children.
+**Key principle:** AI agents follow the funnel: `CLAUDE.md` → `index.md` → their workflow file → must-reads. Information is disclosed progressively, not all at once.
 
 ### Graph Connectivity (Lateral)
 
@@ -658,57 +679,73 @@ DynaDocs/
 ├── Program.cs
 │
 ├── Commands/
+│   ├── AgentCommand.cs         # claim, release, status, list, role, new, rename, remove, reassign
 │   ├── CheckCommand.cs
-│   ├── FixCommand.cs
-│   ├── IndexCommand.cs
-│   ├── GraphCommand.cs
-│   ├── InitCommand.cs
-│   ├── WhoamiCommand.cs        # NEW
-│   ├── AgentCommand.cs
+│   ├── CleanCommand.cs
 │   ├── DispatchCommand.cs
-│   ├── InboxCommand.cs
+│   ├── FixCommand.cs
+│   ├── GraphCommand.cs
 │   ├── GuardCommand.cs
+│   ├── IndexCommand.cs
+│   ├── InboxCommand.cs
+│   ├── InitCommand.cs
 │   ├── ReviewCommand.cs
 │   ├── TaskCommand.cs
-│   ├── CleanCommand.cs
+│   ├── WhoamiCommand.cs
 │   └── WorkspaceCommand.cs
 │
 ├── Models/
-│   ├── DydoConfig.cs           # NEW
-│   ├── HookInput.cs            # NEW
-│   ├── DocFile.cs
-│   ├── Frontmatter.cs
-│   ├── Violation.cs
-│   ├── LinkInfo.cs
-│   ├── AgentState.cs
+│   ├── AgentsConfig.cs
 │   ├── AgentSession.cs
+│   ├── AgentState.cs
+│   ├── AgentStatus.cs
+│   ├── DocFile.cs
+│   ├── DydoConfig.cs
+│   ├── Frontmatter.cs
+│   ├── HookInput.cs
 │   ├── InboxItem.cs
-│   └── TaskFile.cs
+│   ├── LinkInfo.cs
+│   ├── PresetAgentNames.cs
+│   ├── StructureConfig.cs
+│   ├── TaskFile.cs
+│   └── Violation.cs
 │
 ├── Services/
-│   ├── ConfigService.cs        # NEW
+│   ├── AgentRegistry.cs
+│   ├── ConfigService.cs
+│   ├── DocGraph.cs
 │   ├── DocScanner.cs
+│   ├── FolderScaffolder.cs
+│   ├── IndexGenerator.cs
 │   ├── LinkResolver.cs
 │   ├── MarkdownParser.cs
-│   ├── IndexGenerator.cs
-│   ├── DocGraph.cs
-│   ├── AgentRegistry.cs
-│   └── ProcessUtils.cs
+│   ├── ProcessUtils.cs
+│   └── TemplateGenerator.cs
 │
 ├── Rules/
+│   ├── BrokenLinksRule.cs
+│   ├── FrontmatterRule.cs
+│   ├── HubFilesRule.cs
 │   ├── IRule.cs
 │   ├── NamingRule.cs
+│   ├── OrphanDocsRule.cs
 │   ├── RelativeLinksRule.cs
-│   ├── FrontmatterRule.cs
-│   ├── SummaryRule.cs
-│   ├── BrokenLinksRule.cs
-│   ├── HubFilesRule.cs
-│   └── OrphanDocsRule.cs
+│   └── SummaryRule.cs
+│
+├── Templates/                   # Template files for generation
+│   ├── agent-workflow.template.md
+│   ├── coding-standards.template.md
+│   ├── files-off-limits.template.md
+│   ├── glossary.template.md
+│   ├── how-to-use-docs.template.md
+│   ├── index.template.md
+│   ├── workflow.template.md
+│   └── ...
 │
 └── Utils/
-    ├── PathUtils.cs
     ├── ConsoleOutput.cs
-    └── ExitCodes.cs
+    ├── ExitCodes.cs
+    └── PathUtils.cs
 ```
 
 ### Dependencies (NuGet)
@@ -869,10 +906,11 @@ DynaDocs (`dydo`) is a C# console tool that:
 ### Key Principles
 
 1. **Dy + Do**: Documentation and orchestration in one unified `dydo/` folder
-2. **Platform-agnostic**: Hook system works with Claude, future AI tools
-3. **Multi-user**: Each human gets assigned agents, no conflicts
-4. **Objective outputs**: Command output suitable for both humans and AI
-5. **Local state, shared docs**: Agent workspaces gitignored, docs committed
-6. **Hierarchical navigation**: Index → Hubs → Details
-7. **Graph connectivity**: Related docs link bidirectionally
-8. **Kebab-case everywhere**: Consistent, parseable filenames
+2. **JITI**: Just In Time Information - progressive disclosure via documentation funnel
+3. **Platform-agnostic**: Hook system works with Claude, future AI tools
+4. **Multi-user**: Each human gets assigned agents, no conflicts
+5. **Objective outputs**: Command output suitable for both humans and AI
+6. **Local state, shared docs**: Agent workspaces gitignored, workflow files committed
+7. **Hierarchical navigation**: CLAUDE.md → Index → Workflows → Must-reads → Details
+8. **Graph connectivity**: Related docs link bidirectionally
+9. **Kebab-case everywhere**: Consistent, parseable filenames

@@ -5,189 +5,74 @@ type: entry
 
 # DynaDocs
 
-Welcome to a **DynaDocs** project — a system combining living documentation with AI agent workflow management.
+This project uses **DynaDocs** for documentation and AI agent workflow.
 
 ---
 
-## For AI Agents — Start Here
+## AI Agents — Your Entry Point
 
-If you are an AI agent (Claude, GPT, etc.) starting a work session, follow these steps:
+You need a **named identity** to work on this project. Each identity has its own workflow file with instructions.
 
-### Step 1: Verify Environment
+### Option A: You Know Your Identity
 
-Check that `DYDO_HUMAN` is set (identifies which human is operating the terminal):
+If you were told to be a specific agent (e.g., "You are Adele"), go directly to your workflow file:
 
-```bash
-echo $DYDO_HUMAN    # Bash/Zsh
-echo $env:DYDO_HUMAN  # PowerShell
-```
+**→ [workflows/](workflows/_index.md)** — Pick your workflow file and follow it
 
-If not set, ask the human to set it:
-```bash
-export DYDO_HUMAN=humanname    # Bash/Zsh
-$env:DYDO_HUMAN = "humanname"  # PowerShell
-```
+### Option B: Auto-Assign
 
-### Step 2: Choose Your Identity
+If no identity was specified, claim one automatically:
 
-Each agent session operates under a **named identity**. Pick one and read its workflow file:
-
-| Agent | Workflow File |
-|-------|---------------|
-| Adele | [workflows/adele.md](workflows/adele.md) |
-| Brian | [workflows/brian.md](workflows/brian.md) |
-| Charlie | [workflows/charlie.md](workflows/charlie.md) |
-| ... | See `dydo/workflows/` for all agents |
-
-Or claim automatically and the system will assign you:
 ```bash
 dydo agent claim auto
-dydo whoami  # Shows which agent was assigned
 ```
 
-Then read your workflow file at `dydo/workflows/{yourname}.md`.
+Then check which identity you received:
 
-### Step 3: Follow Your Workflow
+```bash
+dydo whoami
+```
 
-Your workflow file contains:
-- **Immediate action**: Command to claim your identity
-- **Must-read documents**: Architecture, coding standards, how-to guide
-- **Role permissions**: What files you can edit based on your role
-- **Task workflow**: How to start, execute, and complete work
+**If `dydo whoami` shows an error or "No agent identity":**
+- The `DYDO_HUMAN` environment variable may not be set
+- Ask the human to run: `export DYDO_HUMAN=theirname`
+- Then try claiming again
 
-After reading your workflow file, you will:
-1. Claim your identity: `dydo agent claim <name>`
-2. Read the must-read documents (in order)
-3. Set your role: `dydo agent role <role> --task <taskname>`
-4. Begin your task
+Once you have an identity, read your workflow file at `workflows/{yourname}.md`.
 
 ---
 
-## For Humans
-
-DynaDocs provides:
-
-- **Living Documentation** — Validated, cross-linked docs in `understand/`, `guides/`, `reference/`, `project/`
-- **Agent Workflow** — Multi-agent orchestration with role-based file permissions
-- **Task Management** — Tracked tasks with handoff support between agents
-
-### Quick Setup
+## Humans — Quick Reference
 
 ```bash
-# Initialize a new project
-dydo init claude                    # With Claude Code hooks
-dydo init none                      # Without hooks
+# Setup
+dydo init claude                    # Initialize with Claude Code hooks
+dydo init claude --join             # Join existing project
+export DYDO_HUMAN=yourname          # Set your identity (add to shell profile)
 
-# Join an existing project
-dydo init claude --join
-
-# Set your identity (add to shell profile)
-export DYDO_HUMAN=yourname
-```
-
-### Key Commands
-
-```bash
-# Agent workflow
-dydo agent claim auto               # Claim first available agent
-dydo agent claim Adele              # Claim specific agent
-dydo whoami                         # Show current identity
-dydo agent role code-writer         # Set role
-dydo agent release                  # Release when done
-
-# Task management
-dydo dispatch --role reviewer --task mytask --brief "..."
-dydo inbox show                     # View inbox
+# Agent management
+dydo agent list                     # See all agents
+dydo agent new <name> <human>       # Create new agent
+dydo agent reassign <name> <human>  # Reassign agent
 
 # Documentation
-dydo check                          # Validate documentation
+dydo check                          # Validate docs
 dydo fix                            # Auto-fix issues
 ```
+
+See [guides/how-to-use-docs.md](guides/how-to-use-docs.md) for full reference.
 
 ---
 
 ## Project Structure
 
 ```
-project/
-├── dydo.json                       # Configuration (agents, assignments)
-├── CLAUDE.md                       # Entry point → here
-│
-└── dydo/
-    ├── index.md                    ← You are here
-    ├── workflows/                  # Agent workflow files
-    │   ├── adele.md
-    │   ├── brian.md
-    │   └── ...
-    │
-    ├── understand/                 # Core concepts & architecture
-    │   └── architecture.md
-    │
-    ├── guides/                     # How-to guides
-    │   ├── coding-standards.md
-    │   └── how-to-use-docs.md
-    │
-    ├── reference/                  # API & configuration specs
-    │
-    ├── project/                    # Meta: decisions, tasks, changelog
-    │   ├── tasks/                  # Cross-human task dispatch
-    │   ├── decisions/              # Architecture decision records
-    │   └── changelog/              # Change history
-    │
-    └── agents/                     # Agent workspaces (GITIGNORED)
-        └── AgentName/
-            ├── state.md            # Current role, task, permissions
-            ├── .session            # Session info (PID, claimed time)
-            └── inbox/              # Messages from other agents
+dydo/
+├── index.md              ← You are here
+├── workflows/            # Agent workflow files (start here)
+├── understand/           # Architecture, concepts
+├── guides/               # How-to guides
+├── reference/            # API specs, configs
+├── project/              # Decisions, tasks, changelog
+└── agents/               # Agent workspaces (gitignored)
 ```
-
----
-
-## Configuration (dydo.json)
-
-The `dydo.json` file at project root defines:
-
-```json
-{
-  "version": 1,
-  "structure": {
-    "root": "dydo"
-  },
-  "agents": {
-    "pool": ["Adele", "Brian", "Charlie", ...],
-    "assignments": {
-      "humanname": ["Adele", "Brian", "Charlie"]
-    }
-  },
-  "integrations": {
-    "claude": true
-  }
-}
-```
-
-- **pool**: Available agent names
-- **assignments**: Which human can claim which agents
-- **integrations**: Hook configurations (claude = Claude Code hooks)
-
----
-
-## Role-Based Permissions
-
-When an agent sets a role, they gain specific file permissions:
-
-| Role | Can Edit | Cannot Edit |
-|------|----------|-------------|
-| `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
-| `reviewer` | (read-only) | (all files) |
-| `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**` |
-| `interviewer` | `dydo/agents/{self}/**` | Everything else |
-| `planner` | `dydo/agents/{self}/**`, `dydo/project/tasks/**` | `src/**` |
-
-The guard system enforces these permissions. If blocked, change your role or dispatch to another agent.
-
----
-
-## Next Steps
-
-- **AI Agents**: Pick a workflow file from `dydo/workflows/` and follow it
-- **Humans**: Run `dydo init` to set up, then see [guides/how-to-use-docs.md](guides/how-to-use-docs.md)

@@ -132,30 +132,27 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **You are not done when the code works.**
 
-If following a workflow mode (`--feature`, `--task`, etc.):
+The full workflow:
 
-1. **Task exists** — Create or claim a task before starting
-2. **Progress tracked** — Update task as you work
-3. **Ready for review** — Mark task `review-pending` with summary
-4. **Review passed** — Different agent reviews (you don't review your own code)
-5. **Changelog created** — Document what changed and why
-6. **Docs dispatched** — If docs needed, dispatch to docs-writer (you don't write docs for your own code)
-7. **Human approved** — Task needs human review before closing
+1. **Claim identity** — `dydo agent claim <name>` before starting
+2. **Set role** — `dydo agent role code-writer --task <name>`
+3. **Do the work** — The guard enforces your role's permissions
+4. **Request review** — `dydo dispatch --role reviewer --task <name> --brief "..."`
+5. **Address feedback** — Same agent fixes issues (context continuity)
+6. **Human approval** — Task needs human review before closing
+7. **Release** — `dydo agent release` when done
 
 **Do not:**
-- Skip the review step
-- Write docs for code you wrote
+- Skip the review step (different agent reviews your code)
+- Write docs for code you wrote (dispatch to docs-writer)
 - Mark tasks complete without human approval
 - Edit files outside your role's permissions
 
-**Run before finishing:**
+**Verify before finishing:**
 ```bash
-dydo check
+dydo whoami          # Confirm you're still claimed
+dydo agent status    # Confirm role and permissions
 ```
-
-This validates documentation and agent state. Fix any issues before releasing.
-
-See [Workflow](./workflow.md) for full details.
 
 ---
 
@@ -261,15 +258,13 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ---
 
-## Stack-Specific Standards
-
-- [Backend Standards](./backend/_index.md) — C#, .NET, API patterns
-- [Frontend Standards](./frontend/_index.md) — React, TypeScript, styling
-- [Microservices Standards](./microservices/_index.md) — Python, FastAPI, uv
-
----
-
 ## Related
 
-- [Workflow](./workflow.md) — Multi-agent orchestration system
-- [Documentation System](./docs-system.md) — Doc structure, naming, linking conventions
+- [How to Use Docs](./how-to-use-docs.md) — DynaDocs commands and workflow
+- [Architecture](../understand/architecture.md) — Project structure
+
+<!--
+Add stack-specific standards as your project grows:
+- guides/backend/_index.md — Backend patterns
+- guides/frontend/_index.md — Frontend patterns
+-->

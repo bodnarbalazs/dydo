@@ -127,20 +127,16 @@ public static class TemplateGenerator
     /// </summary>
     public static string GenerateIndexMd(List<string> agentNames)
     {
-        var workflowLinks = string.Join("\n", agentNames.Select(name =>
-            $"- [{name}](workflows/{name.ToLowerInvariant()}.md)"));
-
-        // Read the index template and customize it
         try
         {
-            var template = ReadTemplate("index.template.md");
-
-            // The template has a different structure - generate our JITI-focused version
-            return GenerateJitiIndexMd(agentNames, workflowLinks);
+            // Use the template directly - it's designed for JITI flow
+            return ReadTemplate("index.template.md");
         }
         catch (FileNotFoundException)
         {
             // Fall back to generated content if template not found
+            var workflowLinks = string.Join("\n", agentNames.Select(name =>
+                $"- [{name}](workflows/{name.ToLowerInvariant()}.md)"));
             return GenerateJitiIndexMd(agentNames, workflowLinks);
         }
     }
@@ -529,13 +525,13 @@ public static class TemplateGenerator
 
     /// <summary>
     /// How to use docs - comprehensive guide to dydo commands and workflow.
-    /// Reads from docs-system.template.md if available.
+    /// Reads from how-to-use-docs.template.md if available.
     /// </summary>
     public static string GenerateHowToUseDocsMd()
     {
         try
         {
-            return ReadTemplate("docs-system.template.md");
+            return ReadTemplate("how-to-use-docs.template.md");
         }
         catch (FileNotFoundException)
         {
@@ -646,6 +642,66 @@ public static class TemplateGenerator
             ## Contents
 
             *Add links to documents in this section.*
+            """;
+    }
+
+    /// <summary>
+    /// Generate the files-off-limits.md template.
+    /// This file defines paths that are globally blocked for all agents.
+    /// </summary>
+    public static string GenerateFilesOffLimitsMd()
+    {
+        try
+        {
+            return ReadTemplate("files-off-limits.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return GenerateFallbackFilesOffLimitsMd();
+        }
+    }
+
+    private static string GenerateFallbackFilesOffLimitsMd()
+    {
+        return """
+            ---
+            type: config
+            ---
+
+            # Files Off-Limits
+
+            Paths listed here are **blocked for ALL agents** regardless of role.
+            These restrictions apply to all operations: read, write, and delete.
+
+            ## Default Patterns
+
+            ```
+            # Environment files
+            .env
+            .env.*
+            secrets.json
+            **/secrets.json
+
+            # Credentials and keys
+            **/credentials.*
+            **/*.pem
+            **/*.key
+            **/*.pfx
+            **/id_rsa
+            **/id_ed25519
+
+            # Cloud configs
+            **/.aws/**
+            **/.azure/**
+
+            # Package manager tokens
+            **/.npmrc
+            **/.pypirc
+            ```
+
+            ---
+
+            Add project-specific sensitive files below.
             """;
     }
 }

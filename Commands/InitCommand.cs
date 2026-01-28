@@ -131,6 +131,15 @@ public static class InitCommand
             var agentsPath = Path.Combine(dydoRoot, "agents");
             Directory.CreateDirectory(agentsPath);
 
+            // Create files-off-limits.md (security config)
+            var offLimitsPath = Path.Combine(dydoRoot, "files-off-limits.md");
+            if (!File.Exists(offLimitsPath))
+            {
+                var offLimitsContent = TemplateGenerator.GenerateFilesOffLimitsMd();
+                File.WriteAllText(offLimitsPath, offLimitsContent);
+                Console.WriteLine("  ✓ files-off-limits.md (security config)");
+            }
+
             // Update .gitignore
             UpdateGitignore(projectRoot, config.Structure.Root);
             Console.WriteLine($"  ✓ Added {config.Structure.Root}/agents/ to .gitignore");
@@ -311,13 +320,14 @@ public static class InitCommand
         }
 
         // Create hooks configuration
+        // Guard against Edit, Write, Read, and Bash tools for comprehensive security
         var hooks = new Dictionary<string, object>
         {
             ["PreToolUse"] = new[]
             {
                 new Dictionary<string, object>
                 {
-                    ["matcher"] = "Edit|Write",
+                    ["matcher"] = "Edit|Write|Read|Bash",
                     ["hooks"] = new[]
                     {
                         new Dictionary<string, object>

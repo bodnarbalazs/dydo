@@ -3,42 +3,141 @@ agent: {{AGENT_NAME}}
 type: workflow
 ---
 
-# Workflow — {{AGENT_NAME}}
+# {{AGENT_NAME}} — Workflow
 
-You are **{{AGENT_NAME}}**. This file is your starting point for every work session.
+You are **{{AGENT_NAME}}**. Follow these steps in order.
 
 ---
 
-## Immediate Action
+## Step 1: Claim Your Identity
 
-Run this command now to claim your identity:
+Run this command:
 
 ```bash
 dydo agent claim {{AGENT_NAME}}
 ```
 
-This registers you as {{AGENT_NAME}} for this terminal session. You must claim before editing files.
+---
 
-> **Note:** The command is case-insensitive. `dydo agent claim {{AGENT_NAME_LOWER}}` also works.
+## Step 2: Verify — CHECKPOINT
 
-> **Prerequisite:** The `DYDO_HUMAN` environment variable must be set to identify which human is operating. If claim fails with "DYDO_HUMAN not set", ask the human to run: `export DYDO_HUMAN=theirname`
+**Do not proceed until this works.** Run:
+
+```bash
+dydo whoami
+```
+
+You should see output showing you are {{AGENT_NAME}}. If you see an error:
+
+| Error | Solution |
+|-------|----------|
+| "DYDO_HUMAN not set" | Ask the human to run: `export DYDO_HUMAN=theirname` |
+| "Agent is assigned to X, not Y" | You're claiming an agent assigned to a different human |
+| "Agent is already claimed" | Another session has this agent. Try `dydo agent claim auto` |
+
+**Once `dydo whoami` shows {{AGENT_NAME}}, proceed to Step 3.**
 
 ---
 
-## Must-Read Documents
+## Step 3: Read the Must-Reads
 
-Read these in order. Each builds on the previous:
+Read these documents **in order**. Each builds on the previous:
 
-| # | Document | What You'll Learn |
-|---|----------|-------------------|
-| 1 | [../understand/architecture.md](../understand/architecture.md) | Project structure, key components, how things connect |
-| 2 | [../guides/coding-standards.md](../guides/coding-standards.md) | Code style, naming conventions, patterns to follow |
-| 3 | [../guides/how-to-use-docs.md](../guides/how-to-use-docs.md) | DynaDocs commands, hooks, task workflow |
+| # | Document | Purpose |
+|---|----------|---------|
+| 1 | [../understand/architecture.md](../understand/architecture.md) | How the codebase is structured |
+| 2 | [../guides/coding-standards.md](../guides/coding-standards.md) | Code style and patterns to follow |
+| 3 | [../guides/how-to-use-docs.md](../guides/how-to-use-docs.md) | DynaDocs commands and task workflow |
 
-After reading these, you'll understand:
-- The codebase architecture
-- How to write code that fits the project style
-- How to use dydo commands and complete tasks
+After reading:
+- You understand the project architecture
+- You know the coding conventions
+- You know how to use dydo commands
+
+---
+
+## Step 4: Check Your Inbox
+
+Before starting new work, check if work was dispatched to you:
+
+```bash
+dydo inbox show
+```
+
+If there's a dispatched task, that's your priority. Read the brief and proceed.
+
+If your inbox is empty, proceed with whatever task you were given.
+
+---
+
+## Step 5: Set Your Role
+
+Your role determines what files you can edit. Set it before making changes:
+
+```bash
+dydo agent role <role> --task <task-name>
+```
+
+**Available roles:**
+
+| Role | Can Edit | Use When |
+|------|----------|----------|
+| `code-writer` | `src/**`, `tests/**` | Writing or modifying code |
+| `reviewer` | (read-only) | Reviewing code, no edits |
+| `docs-writer` | `dydo/**` (except agents/) | Writing documentation |
+| `interviewer` | `dydo/agents/{{AGENT_NAME}}/**` | Gathering requirements from human |
+| `planner` | Own workspace + `dydo/project/tasks/**` | Planning work, creating tasks |
+
+**Example:**
+```bash
+dydo agent role code-writer --task implement-auth
+```
+
+---
+
+## Step 6: Verify Role — CHECKPOINT
+
+Before editing any files, confirm your permissions:
+
+```bash
+dydo agent status
+```
+
+This shows your current role and allowed paths. If you try to edit outside your allowed paths, the guard will block you.
+
+**Now you can begin work.**
+
+---
+
+## During Work
+
+The guard hook automatically validates edits. If blocked:
+
+1. **Wrong role?** Change it: `dydo agent role <correct-role>`
+2. **Need different permissions?** Dispatch to another agent with the right role
+3. **Unsure?** Run `dydo agent status` to see your current permissions
+
+---
+
+## Completing Work
+
+When finished:
+
+1. **If code needs review:**
+   ```bash
+   dydo task ready-for-review <task-name> --summary "What you did"
+   dydo dispatch --role reviewer --task <task-name> --brief "Ready for review"
+   ```
+
+2. **If dispatching to another role:**
+   ```bash
+   dydo dispatch --role <role> --task <task-name> --brief "What needs doing"
+   ```
+
+3. **When completely done:**
+   ```bash
+   dydo agent release
+   ```
 
 ---
 
@@ -48,69 +147,12 @@ Your personal workspace is at `dydo/agents/{{AGENT_NAME}}/`:
 
 ```
 dydo/agents/{{AGENT_NAME}}/
-├── state.md         # Your current state (managed by dydo)
-├── .session         # Session info (managed by dydo)
-├── inbox/           # Messages from other agents
-└── scratch/         # Your scratch space (optional)
+├── state.md     # Current role, task, permissions (managed by dydo)
+├── .session     # Session tracking (managed by dydo)
+└── inbox/       # Messages from other agents
 ```
 
-You can create `plan.md` or `notes.md` in your workspace for planning.
-
----
-
-## Setting Your Role
-
-After claiming, set your role based on what you're doing:
-
-```bash
-dydo agent role <role> --task <task-name>
-```
-
-**Available roles:**
-
-| Role | Can Edit | Cannot Edit |
-|------|----------|-------------|
-| `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
-| `reviewer` | (read-only) | (all files) |
-| `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**` |
-| `interviewer` | `dydo/agents/{{AGENT_NAME}}/**` | Everything else |
-| `planner` | `dydo/agents/{{AGENT_NAME}}/**`, `dydo/project/tasks/**` | `src/**` |
-
-The guard system enforces these permissions. If blocked, either:
-- Change to an appropriate role
-- Dispatch to another agent with the right role
-
----
-
-## Task Workflow
-
-### Starting a Task
-
-1. Check your inbox: `dydo inbox show`
-2. If there's a dispatched task, review it
-3. Set your role: `dydo agent role code-writer --task my-task`
-
-### During Work
-
-- The guard hook automatically checks file edits
-- If blocked, you'll see the reason and can adjust
-
-### Completing Work
-
-1. Mark task ready for review:
-   ```bash
-   dydo task ready-for-review my-task --summary "What you did"
-   ```
-
-2. Or dispatch to another agent:
-   ```bash
-   dydo dispatch --role reviewer --task my-task --brief "Ready for review"
-   ```
-
-3. Release your identity:
-   ```bash
-   dydo agent release
-   ```
+You can create notes in your workspace if needed.
 
 ---
 
@@ -118,41 +160,33 @@ The guard system enforces these permissions. If blocked, either:
 
 ```bash
 # Identity
-dydo agent claim {{AGENT_NAME}}    # Claim this identity
-dydo whoami                        # Verify current identity
+dydo whoami                        # Show current identity
+dydo agent status                  # Show role and permissions
 dydo agent release                 # Release when done
 
-# Role & Task
-dydo agent role <role>             # Set role
-dydo agent status                  # Check current status
+# Role
+dydo agent role <role> --task <t>  # Set role
 
-# Inbox
-dydo inbox show                    # View your inbox
-dydo inbox clear --all             # Clear processed items
-
-# Dispatch
+# Inbox & Dispatch
+dydo inbox show                    # Check incoming work
 dydo dispatch --role <r> --task <t> --brief "..."
+
+# Task
+dydo task ready-for-review <t> --summary "..."
 ```
 
 ---
 
 ## Respecting Other Agents
 
-You share this project with other agents. Check the registry:
 ```bash
-dydo agent list
+dydo agent list                    # See who's working on what
 ```
 
-**Do not:**
-- Edit files in other agents' workspaces
-- Claim tasks another agent is working on
-- Interfere with ongoing reviews
-
-**Do:**
-- Use `dydo dispatch` for handoffs
-- Check agent states before starting new work
-- Release when done: `dydo agent release`
+- Do not edit other agents' workspaces
+- Do not claim tasks another agent is working on
+- Use dispatch for handoffs, don't interfere directly
 
 ---
 
-*You are {{AGENT_NAME}}. Claim your identity, read the must-reads, then begin your task.*
+**Summary:** Claim → Verify with `whoami` → Read must-reads → Check inbox → Set role → Verify with `status` → Work → Release

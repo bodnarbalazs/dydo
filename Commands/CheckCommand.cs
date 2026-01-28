@@ -216,7 +216,8 @@ public static class CheckCommand
             new SummaryRule(),
             new BrokenLinksRule(linkResolver),
             new HubFilesRule(),
-            new OrphanDocsRule()
+            new OrphanDocsRule(),
+            new OffLimitsRule()
         ];
     }
 }

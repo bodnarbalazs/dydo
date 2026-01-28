@@ -156,6 +156,13 @@ public class FolderScaffolder : IFolderScaffolder
         {
             File.WriteAllText(howToPath, TemplateGenerator.GenerateHowToUseDocsMd());
         }
+
+        // files-off-limits.md (security config)
+        var offLimitsPath = Path.Combine(basePath, "files-off-limits.md");
+        if (!File.Exists(offLimitsPath))
+        {
+            File.WriteAllText(offLimitsPath, TemplateGenerator.GenerateFilesOffLimitsMd());
+        }
     }
 
     private static string GenerateHubContent(FolderSpec folder)

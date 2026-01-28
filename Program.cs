@@ -8,6 +8,7 @@ rootCommand.AddCommand(CheckCommand.Create());
 rootCommand.AddCommand(FixCommand.Create());
 rootCommand.AddCommand(IndexCommand.Create());
 rootCommand.AddCommand(InitCommand.Create());
+rootCommand.AddCommand(GraphCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetHandler(() =>
@@ -23,12 +24,17 @@ helpCommand.SetHandler(() =>
     Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation validation tool");
     Console.WriteLine();
     Console.WriteLine("Commands:");
-    Console.WriteLine("  check [path]  Validate docs, report violations");
-    Console.WriteLine("  fix [path]    Auto-fix issues where possible");
-    Console.WriteLine("  index [path]  Regenerate Index.md from structure");
-    Console.WriteLine("  init <path>   Scaffold folder structure");
-    Console.WriteLine("  version       Display version information");
-    Console.WriteLine("  help          Display this help");
+    Console.WriteLine("  check [path]    Validate docs, report violations");
+    Console.WriteLine("  fix [path]      Auto-fix issues where possible");
+    Console.WriteLine("  index [path]    Regenerate Index.md from structure");
+    Console.WriteLine("  init <path>     Scaffold folder structure");
+    Console.WriteLine("  graph <file>    Show graph connections for a file");
+    Console.WriteLine("  version         Display version information");
+    Console.WriteLine("  help            Display this help");
+    Console.WriteLine();
+    Console.WriteLine("Graph options:");
+    Console.WriteLine("  --incoming      Show docs that link TO this file");
+    Console.WriteLine("  --degree <n>    Show docs within n hops (default: 1)");
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --version     Display version");

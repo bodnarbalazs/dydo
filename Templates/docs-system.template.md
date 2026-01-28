@@ -49,6 +49,9 @@ docs/{project}/
     ├── decisions/           # ADRs
     ├── pitfalls/            # Known gotchas
     └── changelog/           # Session notes
+        └── {YYYY}/
+            └── {YYYY-MM-DD}/
+                └── topic.md
 ```
 
 ### Folder Purposes
@@ -72,7 +75,7 @@ docs/{project}/
 | `reference` | Specs, APIs, configs | `reference/` | Named by subject |
 | `decision` | ADR — why we decided something | `project/decisions/` | `NNN-topic.md` |
 | `pitfall` | Common mistake to avoid | `project/pitfalls/` | Named by problem |
-| `changelog` | Session notes, what changed | `project/changelog/` | `YYYY-MM-topic.md` |
+| `changelog` | Session notes, what changed | `project/changelog/{YYYY}/{YYYY-MM-DD}/` | `topic.md` |
 
 ---
 
@@ -228,6 +231,56 @@ The `dydo` tool validates these rules:
 | No orphan docs | No |
 
 Run `dydo check` to validate, `dydo fix` to auto-fix what's possible.
+
+---
+
+## Graph Queries
+
+The documentation forms a knowledge graph. Use `dydo graph` to explore connections:
+
+```bash
+# Find docs that link TO a file (backlinks)
+dydo graph tokens.md --incoming
+
+# Find docs within N link-hops of a file
+dydo graph tokens.md --degree 2
+
+# Combine both
+dydo graph tokens.md --incoming --degree 2
+```
+
+**Use cases:**
+
+- **Impact analysis** — Before modifying a doc, check `--incoming` to see what depends on it
+- **Context gathering** — Use `--degree 2` to find indirectly related docs
+- **Debugging** — Trace connections when something references outdated information
+
+---
+
+## Changelog Structure
+
+Changelogs live in date-based folders:
+
+```
+changelog/
+├── 2025/
+│   ├── 2025-01-15/
+│   │   ├── auth-refactor.md
+│   │   └── token-migration.md
+│   └── 2025-01-20/
+│       └── api-versioning.md
+└── 2026/
+    └── ...
+```
+
+Each changelog documents:
+
+1. **Summary** — What was done and why
+2. **Decisions** — Links to any ADRs created
+3. **Pitfalls** — Links to any pitfalls encountered/documented
+4. **Files Changed** — Every file touched, with brief descriptions
+
+The "Files Changed" section enables future debugging by tracing changes back to their source.
 
 ---
 

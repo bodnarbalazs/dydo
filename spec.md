@@ -48,6 +48,9 @@ dydo check <path>       # Check specific file or directory
 dydo fix                # Auto-fix issues that can be fixed automatically
 dydo fix <path>         # Fix specific file or directory
 dydo index              # Regenerate Index.md from doc structure (hubs only)
+dydo graph <file>       # Show graph connections for a file
+dydo graph <file> --incoming        # Show docs that link TO this file (backlinks)
+dydo graph <file> --degree <n>      # Show docs within n link-hops (default: 1)
 ```
 
 ### Exit Codes
@@ -232,7 +235,9 @@ docs/LC/
     │   └── ef-migration-conflicts.md
     └── changelog/                  # Session notes (dated)
         ├── _index.md
-        └── 2025-01-react-compiler.md
+        └── 2025/                   # Year folder
+            └── 2025-01-15/         # Date folder (YYYY-MM-DD)
+                └── react-compiler.md
 ```
 
 ### Folder Purposes
@@ -401,7 +406,7 @@ type: guide
 | `reference` | Specs, APIs, configs | `reference/` | Named by subject |
 | `decision` | ADR - why we decided something | `project/decisions/` | `NNN-topic.md` |
 | `pitfall` | Common mistake to avoid | `project/pitfalls/` | Named by problem |
-| `changelog` | Session notes, what changed | `project/changelog/` | `YYYY-MM-topic.md` |
+| `changelog` | Session notes, what changed | `project/changelog/{YYYY}/{YYYY-MM-DD}/` | `topic.md` |
 
 ---
 
@@ -513,7 +518,8 @@ tools/
     ├── Commands/
     │   ├── CheckCommand.cs     # dydo check
     │   ├── FixCommand.cs       # dydo fix
-    │   └── IndexCommand.cs     # dydo index
+    │   ├── IndexCommand.cs     # dydo index
+    │   └── GraphCommand.cs     # dydo graph
     │
     ├── Rules/
     │   ├── IRule.cs            # Interface for rules
@@ -536,7 +542,8 @@ tools/
     │   ├── LinkResolver.cs     # Resolves relative paths
     │   ├── MarkdownParser.cs   # Parses markdown, extracts links/frontmatter
     │   ├── AnchorExtractor.cs  # Extracts #anchors from markdown headings
-    │   └── IndexGenerator.cs   # Generates Index.md
+    │   ├── IndexGenerator.cs   # Generates Index.md
+    │   └── DocGraph.cs         # Graph operations (incoming links, degree traversal)
     │
     └── Utils/
         └── PathUtils.cs        # Path normalization, kebab-case conversion
@@ -605,6 +612,54 @@ var sourceDir = Path.GetDirectoryName(sourceFile);  // docs/LC/backend
 var resolved = Path.GetFullPath(Path.Combine(sourceDir, relativePath));
 // Normalize to forward slashes for consistency
 resolved = resolved.Replace('\\', '/');
+```
+
+### Graph Building and Traversal
+
+Build the graph from parsed docs, then traverse for queries:
+```csharp
+public class DocGraph
+{
+    // Built during doc scanning
+    private Dictionary<string, List<string>> _outgoing = new();  // doc -> docs it links to
+    private Dictionary<string, List<string>> _incoming = new();  // doc -> docs that link to it
+
+    public void AddLink(string from, string to)
+    {
+        if (!_outgoing.ContainsKey(from)) _outgoing[from] = new();
+        _outgoing[from].Add(to);
+
+        if (!_incoming.ContainsKey(to)) _incoming[to] = new();
+        _incoming[to].Add(from);
+    }
+
+    // Get docs that link TO this file (backlinks)
+    public List<string> GetIncoming(string doc) => _incoming.GetValueOrDefault(doc, new());
+
+    // BFS traversal for degree-based expansion
+    public List<(string Doc, int Degree)> GetWithinDegree(string startDoc, int maxDegree)
+    {
+        var result = new List<(string, int)>();
+        var visited = new HashSet<string> { startDoc };
+        var queue = new Queue<(string Doc, int Degree)>();
+
+        queue.Enqueue((startDoc, 0));
+
+        while (queue.Count > 0)
+        {
+            var (doc, degree) = queue.Dequeue();
+            if (degree > 0) result.Add((doc, degree));
+            if (degree >= maxDegree) continue;
+
+            foreach (var linked in _outgoing.GetValueOrDefault(doc, new()))
+            {
+                if (visited.Add(linked))
+                    queue.Enqueue((linked, degree + 1));
+            }
+        }
+        return result;
+    }
+}
 ```
 
 ### Kebab-Case Conversion
@@ -702,6 +757,43 @@ Scanned 4 top-level hubs:
 Generated docs/LC/index.md
 ```
 
+### `dydo graph` output
+
+```
+$ dydo graph tokens.md --incoming
+
+Incoming links to tokens.md (4 docs link here):
+  understand/commerce/subscriptions.md:23
+  understand/commerce/refunds.md:15
+  guides/backend/payment-processing.md:42
+  glossary.md:156
+
+$ dydo graph tokens.md --degree 2
+
+tokens.md
+├── [degree 1] subscriptions.md
+│   ├── [degree 2] subscription-tiers.md
+│   └── [degree 2] billing-cycles.md
+├── [degree 1] refunds.md
+│   └── [degree 2] customer-support.md
+├── [degree 1] glossary.md
+└── [degree 1] _index.md (commerce)
+
+Found 8 docs within 2 hops of tokens.md
+
+$ dydo graph tokens.md --incoming --degree 2
+
+Incoming (4 docs):
+  subscriptions.md:23
+  refunds.md:15
+  payment-processing.md:42
+  glossary.md:156
+
+Outgoing within 2 hops (8 docs):
+  [degree 1] subscriptions.md, refunds.md, glossary.md, _index.md
+  [degree 2] subscription-tiers.md, billing-cycles.md, customer-support.md, pricing.md
+```
+
 ---
 
 ## Integration with CLAUDE.md
@@ -720,7 +812,7 @@ This is the entry point. The index.md links to hubs, hubs link to details.
 
 1. **Watch mode**: `dydo watch` - Continuously validate on file changes
 2. **Pre-commit hook**: Validate docs before commit
-3. **Link graph visualization**: Generate a visual map of doc connections
+3. **Graph visualization**: Generate a visual map of doc connections (Mermaid/DOT export)
 4. **Staleness detection**: Warn if docs haven't been updated in N months
 5. **Coverage report**: What areas have good docs vs sparse docs
 6. **Auto-clustering**: Suggest when folders should be split based on item count
@@ -734,6 +826,7 @@ Build a C# console tool called DynaDocs (`dydo`) that:
 1. **Validates** docs against naming, linking, structure, and organization rules
 2. **Auto-fixes** what it can (renames, link conversion, skeleton hubs)
 3. **Generates** index.md from doc structure (hubs only, not all files)
+4. **Queries** the doc graph (backlinks, degree traversal) for context gathering
 
 The goal is to keep the `docs/LC/` directory in a state that's easily traversable by both humans (in Obsidian) and AI agents (Claude Code), enabling dynamic context loading based on current task.
 

@@ -7,6 +7,8 @@ type: hub
 
 Welcome to the project documentation.
 
+This is the "human" entry point.
+
 ---
 
 ## Getting Started
@@ -16,30 +18,42 @@ If you're new here:
 1. **[Platform Overview](./understand/platform.md)** — What this project is and who it's for
 2. **[Architecture](./understand/architecture.md)** — How the system is structured
 3. **[Coding Standards](./project/coding-standards.md)** — Read before writing code
+4. **[Glossary](./glossary.md)** — Terms unique to the project
 
-## Quick Reference
+## Documentation Sections
 
-- **[Glossary](./glossary.md)** — Domain terminology
-- **[API Reference](./reference/_index.md)** — Endpoints and specs
+### [Understand](./understand/_index.md) — Domain & Architecture
 
-## By Role
+Why things exist and how they fit together.
 
-**Backend Developer?** Start with [Backend Guides](./guides/backend/_index.md)
+- Platform overview and purpose
+- Core domain concepts
+- System architecture and data flow
 
-**Frontend Developer?** Start with [Frontend Guides](./guides/frontend/_index.md)
+### [Guides](./guides/_index.md) — Implementation Patterns
 
-**New to the domain?** Start with [Understanding the Platform](./understand/_index.md)
+How to build things correctly.
 
----
+- [Backend patterns](./guides/backend/_index.md) — C#, .NET, APIs
+- [Frontend patterns](./guides/frontend/_index.md) — React, TypeScript, styling
+- [Microservices patterns](./guides/microservices/_index.md) — Python, FastAPI
 
-## Documentation Map
+### [Reference](./reference/_index.md) — Specifications
 
-| Section | What's There |
-|---------|--------------|
-| [Understand](./understand/_index.md) | Domain concepts, architecture |
-| [Guides](./guides/_index.md) | How-to instructions by stack |
-| [Reference](./reference/_index.md) | API specs, configs, tools |
-| [Project](./project/_index.md) | Standards, decisions, pitfalls |
+Technical details for quick lookup.
+
+- API endpoint specifications
+- Configuration options
+- Internal tools documentation
+
+### [Project](./project/_index.md) — Meta
+
+How we work on this project.
+
+- [Coding Standards](./project/coding-standards.md) — **Read before writing any code**
+- Architecture decisions (ADRs)
+- Known pitfalls
+- Session changelog
 
 ---
 

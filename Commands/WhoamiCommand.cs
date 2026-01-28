@@ -1,0 +1,99 @@
+namespace DynaDocs.Commands;
+
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using DynaDocs.Services;
+using DynaDocs.Utils;
+
+/// <summary>
+/// Shows the current agent identity and human information.
+/// Uses objective language suitable for both humans and AI readers.
+/// </summary>
+public static class WhoamiCommand
+{
+    public static Command Create()
+    {
+        var command = new Command("whoami", "Show current agent identity");
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            ctx.ExitCode = Execute();
+        });
+
+        return command;
+    }
+
+    private static int Execute()
+    {
+        var registry = new AgentRegistry();
+        var configService = new ConfigService();
+
+        var human = registry.GetCurrentHuman();
+        var agent = registry.GetCurrentAgent();
+
+        if (agent != null)
+        {
+            // Agent is claimed
+            Console.WriteLine($"Agent identity for this process: {agent.Name}");
+            Console.WriteLine($"  Assigned human: {agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "(unassigned)"}");
+
+            if (!string.IsNullOrEmpty(agent.Role))
+                Console.WriteLine($"  Role: {agent.Role}");
+            else
+                Console.WriteLine("  Role: (none set)");
+
+            if (!string.IsNullOrEmpty(agent.Task))
+                Console.WriteLine($"  Task: {agent.Task}");
+
+            Console.WriteLine($"  Status: {agent.Status.ToString().ToLowerInvariant()}");
+            Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(agent.Name)}");
+
+            if (agent.AllowedPaths.Count > 0)
+                Console.WriteLine($"  Allowed paths: {string.Join(", ", agent.AllowedPaths)}");
+
+            if (agent.DeniedPaths.Count > 0 && agent.DeniedPaths[0] != "**")
+                Console.WriteLine($"  Denied paths: {string.Join(", ", agent.DeniedPaths)}");
+        }
+        else
+        {
+            // No agent claimed
+            Console.WriteLine("No agent identity assigned to this process.");
+
+            if (!string.IsNullOrEmpty(human))
+            {
+                Console.WriteLine($"  Human (from DYDO_HUMAN): {human}");
+
+                var claimableAgents = registry.GetAgentsForHuman(human);
+                if (claimableAgents.Count > 0)
+                {
+                    var freeAgents = registry.GetFreeAgentsForHuman(human);
+                    Console.WriteLine($"  Claimable agents for {human}: {string.Join(", ", claimableAgents)}");
+
+                    if (freeAgents.Count > 0)
+                        Console.WriteLine($"  Free agents: {string.Join(", ", freeAgents.Select(a => a.Name))}");
+                    else
+                        Console.WriteLine("  Free agents: (none - all busy)");
+                }
+                else
+                {
+                    Console.WriteLine($"  No agents assigned to {human} in dydo.json");
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("To claim an agent, run:");
+                Console.WriteLine("  dydo agent claim auto       # Claims first available");
+                Console.WriteLine("  dydo agent claim Adele      # Claims specific agent");
+            }
+            else
+            {
+                Console.WriteLine("  DYDO_HUMAN environment variable not set.");
+                Console.WriteLine();
+                Console.WriteLine("To use dydo, set the DYDO_HUMAN variable:");
+                Console.WriteLine("  export DYDO_HUMAN=your_name    # Bash/Zsh");
+                Console.WriteLine("  $env:DYDO_HUMAN = \"your_name\"  # PowerShell");
+            }
+        }
+
+        return ExitCodes.Success;
+    }
+}

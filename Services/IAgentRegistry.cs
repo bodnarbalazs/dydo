@@ -5,12 +5,12 @@ using DynaDocs.Models;
 public interface IAgentRegistry
 {
     /// <summary>
-    /// All 26 agent names (A-Z).
+    /// All agent names from the configured pool.
     /// </summary>
     IReadOnlyList<string> AgentNames { get; }
 
     /// <summary>
-    /// Gets the workspace root path (.workspace folder).
+    /// Gets the workspace root path (dydo/agents folder).
     /// </summary>
     string WorkspacePath { get; }
 
@@ -21,8 +21,14 @@ public interface IAgentRegistry
 
     /// <summary>
     /// Claims an agent for the current terminal.
+    /// Validates against human assignment if config exists.
     /// </summary>
     bool ClaimAgent(string agentName, out string error);
+
+    /// <summary>
+    /// Claims the first free agent assigned to the current human.
+    /// </summary>
+    bool ClaimAuto(out string claimedAgent, out string error);
 
     /// <summary>
     /// Releases the currently claimed agent.
@@ -50,6 +56,11 @@ public interface IAgentRegistry
     List<AgentState> GetFreeAgents();
 
     /// <summary>
+    /// Gets free agents assigned to a specific human.
+    /// </summary>
+    List<AgentState> GetFreeAgentsForHuman(string human);
+
+    /// <summary>
     /// Gets the current agent based on calling process PID.
     /// </summary>
     AgentState? GetCurrentAgent();
@@ -73,4 +84,24 @@ public interface IAgentRegistry
     /// Gets agent name from letter (A -> Adele).
     /// </summary>
     string? GetAgentNameFromLetter(char letter);
+
+    /// <summary>
+    /// Gets the current human from DYDO_HUMAN env var.
+    /// </summary>
+    string? GetCurrentHuman();
+
+    /// <summary>
+    /// Gets the human assigned to an agent.
+    /// </summary>
+    string? GetHumanForAgent(string agentName);
+
+    /// <summary>
+    /// Gets agents assigned to a human.
+    /// </summary>
+    List<string> GetAgentsForHuman(string human);
+
+    /// <summary>
+    /// Gets the loaded configuration.
+    /// </summary>
+    DydoConfig? Config { get; }
 }

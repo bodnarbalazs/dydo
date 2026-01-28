@@ -99,7 +99,7 @@ public static class InboxCommand
         var agent = registry.GetCurrentAgent();
         if (agent == null)
         {
-            ConsoleOutput.WriteError("No agent claimed for this terminal");
+            ConsoleOutput.WriteError("No agent identity assigned to this process.");
             return ExitCodes.ToolError;
         }
 
@@ -107,18 +107,18 @@ public static class InboxCommand
 
         if (items.Count == 0)
         {
-            Console.WriteLine($"Inbox for {agent.Name}: empty");
+            Console.WriteLine($"Agent {agent.Name} inbox: empty");
             return ExitCodes.Success;
         }
 
-        Console.WriteLine($"Inbox for {agent.Name}: {items.Count} item(s)");
+        Console.WriteLine($"Agent {agent.Name} inbox: {items.Count} item(s)");
         Console.WriteLine();
 
         foreach (var item in items.OrderBy(i => i.Received))
         {
             Console.WriteLine($"[{item.Id}] {item.Role.ToUpperInvariant()}: {item.Task}");
             Console.WriteLine($"  From: {item.From}");
-            Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm}");
+            Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
             Console.WriteLine($"  Brief: {item.Brief}");
 
             if (item.Files.Count > 0)
@@ -137,7 +137,7 @@ public static class InboxCommand
         var agent = registry.GetCurrentAgent();
         if (agent == null)
         {
-            ConsoleOutput.WriteError("No agent claimed for this terminal");
+            ConsoleOutput.WriteError("No agent identity assigned to this process.");
             return ExitCodes.ToolError;
         }
 

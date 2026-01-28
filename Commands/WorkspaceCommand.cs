@@ -21,7 +21,7 @@ public static class WorkspaceCommand
     {
         var pathOption = new Option<string?>("--path", "Base path (defaults to current directory)");
 
-        var command = new Command("init", "Initialize agent workspaces for all 26 agents")
+        var command = new Command("init", "Initialize agent workspaces")
         {
             pathOption
         };
@@ -101,10 +101,12 @@ public static class WorkspaceCommand
         }
 
         Console.WriteLine();
-        Console.WriteLine("Agents are ready. Start a workflow with:");
-        Console.WriteLine("  claude --feature A    (full workflow as Adele)");
-        Console.WriteLine("  claude --task B       (standard workflow as Brian)");
-        Console.WriteLine("  claude --quick C      (quick task as Charlie)");
+        Console.WriteLine("Agent workspaces initialized.");
+        Console.WriteLine();
+        Console.WriteLine("Next steps:");
+        Console.WriteLine("  1. Set environment variable: export DYDO_HUMAN=your_name");
+        Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
+        Console.WriteLine("  3. Set a role: dydo agent role code-writer");
 
         return ExitCodes.Success;
     }
@@ -112,11 +114,12 @@ public static class WorkspaceCommand
     private static int ExecuteCheck()
     {
         var registry = new AgentRegistry();
+        var configService = new ConfigService();
         var agent = registry.GetCurrentAgent();
 
         if (agent == null)
         {
-            Console.WriteLine("No agent claimed - skipping workflow check");
+            Console.WriteLine("No agent identity assigned to this process. Skipping workflow check.");
             return ExitCodes.Success;
         }
 
@@ -126,7 +129,7 @@ public static class WorkspaceCommand
         if (!string.IsNullOrEmpty(agent.Task))
         {
             // Check if task is properly handed off or completed
-            var tasksPath = Path.Combine(Environment.CurrentDirectory, "project", "tasks");
+            var tasksPath = configService.GetTasksPath();
             var taskPath = Path.Combine(tasksPath, $"{agent.Task}.md");
 
             if (File.Exists(taskPath))
@@ -139,31 +142,31 @@ public static class WorkspaceCommand
             }
         }
 
-        // Check for uncommitted inbox items
+        // Check for unprocessed inbox items
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
         if (Directory.Exists(inboxPath))
         {
             var inboxItems = Directory.GetFiles(inboxPath, "*.md").Length;
             if (inboxItems > 0)
             {
-                issues.Add($"You have {inboxItems} unprocessed inbox item(s).");
+                issues.Add($"Agent {agent.Name} has {inboxItems} unprocessed inbox item(s).");
             }
         }
 
         if (issues.Count > 0)
         {
-            Console.WriteLine($"Workflow check for {agent.Name}:");
+            Console.WriteLine($"Workflow check for agent {agent.Name}:");
             Console.WriteLine();
             foreach (var issue in issues)
             {
                 Console.WriteLine($"  ! {issue}");
             }
             Console.WriteLine();
-            Console.WriteLine("Consider addressing these before ending session.");
+            Console.WriteLine("Consider addressing these items before ending the session.");
             return ExitCodes.ValidationErrors;
         }
 
-        Console.WriteLine($"Workflow check passed for {agent.Name}");
+        Console.WriteLine($"Workflow check passed for agent {agent.Name}.");
         return ExitCodes.Success;
     }
 
@@ -205,13 +208,15 @@ public static class WorkspaceCommand
         var content = $"""
             # Workflow — {agentName}
 
-            You are **{agentName}**. This is your workspace.
+            This is agent **{agentName}**'s workspace.
 
             ---
 
-            ## Your Identity
+            ## Agent Identity
 
-            Your name is **{agentName}**. Use this name in all dydo commands:
+            Agent name: **{agentName}**
+
+            Commands for this agent:
 
             ```bash
             dydo agent claim {agentName}
@@ -219,62 +224,62 @@ public static class WorkspaceCommand
             dydo agent release
             ```
 
-            Your workspace is `.workspace/{agentName}/`.
+            Workspace location: `dydo/agents/{agentName}/`
 
             ---
 
-            ## First Steps
+            ## Getting Started
 
-            1. **Claim your identity:**
+            1. **Claim agent identity:**
                ```bash
                dydo agent claim {agentName}
+               # Or use auto-claim:
+               dydo agent claim auto
                ```
 
-            2. **Set your role based on your task:**
+            2. **Set role based on task:**
                ```bash
                dydo agent role <role> --task <task-name>
                ```
 
-            3. **Check your inbox** (if started with `--inbox`):
+            3. **Check inbox** (if dispatched work):
                ```bash
                dydo inbox show
                ```
 
             ---
 
-            ## Your Workspace
+            ## Workspace Structure
 
             ```
-            .workspace/{agentName}/
+            dydo/agents/{agentName}/
             ├── workflow.md      # This file
-            ├── state.md         # Your current state (managed by dydo)
+            ├── state.md         # Current state (managed by dydo)
             ├── .session         # Session info (managed by dydo)
             ├── inbox/           # Messages from other agents
-            ├── plan.md          # Your current plan (optional)
+            ├── plan.md          # Planning notes (optional)
             └── notes.md         # Scratch space (optional)
             ```
-
-            Use `plan.md` and `notes.md` freely for your work.
 
             ---
 
             ## Role Permissions
 
-            Your current role determines what you can edit:
+            The current role determines file access:
 
             | Role | Can Edit | Cannot Edit |
             |------|----------|-------------|
-            | `code-writer` | `src/**`, `tests/**` | `docs/**`, `project/**` |
-            | `reviewer` | (nothing) | (everything) |
-            | `docs-writer` | `docs/**` | `src/**`, `tests/**` |
-            | `interviewer` | `.workspace/{agentName}/**` | Everything else |
-            | `planner` | `.workspace/{agentName}/**`, `project/tasks/**` | `src/**`, `docs/**` |
+            | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
+            | `reviewer` | (read-only) | (all files) |
+            | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**`, `tests/**` |
+            | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
+            | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | `src/**` |
 
-            The guard enforces this. If blocked, change your role or dispatch to another agent.
+            The guard command enforces these permissions. If blocked, change role or dispatch to another agent.
 
             ---
 
-            ## When You're Done
+            ## Completing Work
 
             1. Mark task ready for review (if applicable):
                ```bash
@@ -286,14 +291,14 @@ public static class WorkspaceCommand
                dydo dispatch --role reviewer --task my-task --brief "..."
                ```
 
-            3. Release your claim:
+            3. Release agent identity:
                ```bash
                dydo agent release
                ```
 
             ---
 
-            *Remember: You are {agentName}. Work in your workspace. Respect others.*
+            *Agent {agentName} workspace. Managed by dydo.*
             """;
 
         File.WriteAllText(path, content);

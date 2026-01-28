@@ -65,7 +65,7 @@ public class AgentRegistryTests : IDisposable
     public void GetAgentWorkspace_ReturnsCorrectPath()
     {
         var workspace = _registry.GetAgentWorkspace("Adele");
-        Assert.Equal(Path.Combine(_testDir, ".workspace", "Adele"), workspace);
+        Assert.Equal(Path.Combine(_testDir, "dydo", "agents", "Adele"), workspace);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class AgentRegistryTests : IDisposable
         var result = _registry.SetRole("code-writer", null, out var error);
 
         Assert.False(result);
-        Assert.Contains("No agent claimed", error);
+        Assert.Contains("No agent identity assigned", error);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class AgentRegistryTests : IDisposable
         var result = _registry.ReleaseAgent(out var error);
 
         Assert.False(result);
-        Assert.Contains("No agent claimed", error);
+        Assert.Contains("No agent identity assigned", error);
     }
 
     [Fact]
@@ -145,6 +145,6 @@ public class AgentRegistryTests : IDisposable
         var result = _registry.IsPathAllowed("src/file.cs", "edit", out var error);
 
         Assert.False(result);
-        Assert.Contains("No agent claimed", error);
+        Assert.Contains("No agent identity assigned", error);
     }
 }

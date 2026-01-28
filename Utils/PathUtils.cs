@@ -1,6 +1,7 @@
 namespace DynaDocs.Utils;
 
 using System.Text.RegularExpressions;
+using DynaDocs.Services;
 
 public static partial class PathUtils
 {
@@ -16,6 +17,30 @@ public static partial class PathUtils
         if (string.IsNullOrEmpty(nameWithoutExt)) return false;
 
         return KebabCaseRegex().IsMatch(nameWithoutExt);
+    }
+
+    /// <summary>
+    /// Find the dydo root directory by looking for dydo.json.
+    /// Returns the dydo/ folder path if found, null otherwise.
+    /// </summary>
+    public static string? FindDydoRoot(string? startPath = null)
+    {
+        var configService = new ConfigService();
+        var projectRoot = configService.GetProjectRoot(startPath);
+
+        if (projectRoot == null)
+            return null;
+
+        return configService.GetDydoRoot(startPath);
+    }
+
+    /// <summary>
+    /// Find the project root directory (where dydo.json lives).
+    /// </summary>
+    public static string? FindProjectRoot(string? startPath = null)
+    {
+        var configService = new ConfigService();
+        return configService.GetProjectRoot(startPath);
     }
 
     public static string ToKebabCase(string input)
@@ -43,6 +68,22 @@ public static partial class PathUtils
 
     public static string? FindDocsFolder(string startPath)
     {
+        // First try the new structure: look for dydo.json and use its root
+        var configService = new ConfigService();
+        var projectRoot = configService.GetProjectRoot(startPath);
+
+        if (projectRoot != null)
+        {
+            var dydoRoot = configService.GetDydoRoot(startPath);
+            if (Directory.Exists(dydoRoot))
+            {
+                var indexPath = Path.Combine(dydoRoot, "index.md");
+                if (File.Exists(indexPath))
+                    return dydoRoot;
+            }
+        }
+
+        // Fall back to legacy structure: docs/ folder
         var docsPath = Path.Combine(startPath, "docs");
         if (Directory.Exists(docsPath))
         {
@@ -57,6 +98,7 @@ public static partial class PathUtils
                 if (indexPath != null) return subDir;
             }
         }
+
         return null;
     }
 

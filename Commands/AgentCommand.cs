@@ -112,6 +112,25 @@ public static class AgentCommand
     {
         var registry = new AgentRegistry();
 
+        // Handle "auto" - claim first available agent for the current human
+        if (nameOrLetter.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!registry.ClaimAuto(out var claimedAgent, out var autoError))
+            {
+                ConsoleOutput.WriteError(autoError);
+                return ExitCodes.ToolError;
+            }
+
+            Console.WriteLine($"Agent identity assigned to this process: {claimedAgent}");
+            Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(claimedAgent)}");
+
+            var human = registry.GetCurrentHuman();
+            if (!string.IsNullOrEmpty(human))
+                Console.WriteLine($"  Assigned human: {human}");
+
+            return ExitCodes.Success;
+        }
+
         // Resolve letter to name if needed
         var name = nameOrLetter;
         if (nameOrLetter.Length == 1 && char.IsLetter(nameOrLetter[0]))
@@ -131,11 +150,12 @@ public static class AgentCommand
             return ExitCodes.ToolError;
         }
 
-        Console.WriteLine($"Claimed agent {name}");
-        Console.WriteLine($"Workspace: {registry.GetAgentWorkspace(name)}");
+        Console.WriteLine($"Agent identity assigned to this process: {name}");
+        Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(name)}");
 
-        var (terminalPid, claudePid) = ProcessUtils.GetProcessAncestors();
-        Console.WriteLine($"Terminal PID: {terminalPid}, Claude PID: {claudePid}");
+        var currentHuman = registry.GetCurrentHuman();
+        if (!string.IsNullOrEmpty(currentHuman))
+            Console.WriteLine($"  Assigned human: {currentHuman}");
 
         return ExitCodes.Success;
     }
@@ -147,7 +167,7 @@ public static class AgentCommand
         var current = registry.GetCurrentAgent();
         if (current == null)
         {
-            ConsoleOutput.WriteError("No agent claimed for this terminal");
+            ConsoleOutput.WriteError("No agent identity assigned to this process.");
             return ExitCodes.ToolError;
         }
 
@@ -157,7 +177,8 @@ public static class AgentCommand
             return ExitCodes.ToolError;
         }
 
-        Console.WriteLine($"Released agent {current.Name}");
+        Console.WriteLine($"Agent identity released: {current.Name}");
+        Console.WriteLine("  Status: free");
         return ExitCodes.Success;
     }
 
@@ -171,7 +192,7 @@ public static class AgentCommand
             state = registry.GetCurrentAgent();
             if (state == null)
             {
-                ConsoleOutput.WriteError("No agent claimed for this terminal");
+                ConsoleOutput.WriteError("No agent identity assigned to this process.");
                 return ExitCodes.ToolError;
             }
         }
@@ -186,26 +207,30 @@ public static class AgentCommand
         }
 
         Console.WriteLine($"Agent: {state.Name}");
-        Console.WriteLine($"Status: {state.Status}");
-        Console.WriteLine($"Role: {state.Role ?? "(none)"}");
-        Console.WriteLine($"Task: {state.Task ?? "(none)"}");
+        Console.WriteLine($"  Status: {state.Status.ToString().ToLowerInvariant()}");
+        Console.WriteLine($"  Assigned human: {state.AssignedHuman ?? registry.GetHumanForAgent(state.Name) ?? "(unassigned)"}");
+        Console.WriteLine($"  Role: {state.Role ?? "(none)"}");
+
+        if (!string.IsNullOrEmpty(state.Task))
+            Console.WriteLine($"  Task: {state.Task}");
 
         if (state.Since.HasValue)
-            Console.WriteLine($"Since: {state.Since.Value:yyyy-MM-dd HH:mm:ss}");
+            Console.WriteLine($"  Since: {state.Since.Value:yyyy-MM-dd HH:mm:ss} UTC");
 
         if (state.AllowedPaths.Count > 0)
-            Console.WriteLine($"Allowed: {string.Join(", ", state.AllowedPaths)}");
+            Console.WriteLine($"  Allowed paths: {string.Join(", ", state.AllowedPaths)}");
 
-        if (state.DeniedPaths.Count > 0)
-            Console.WriteLine($"Denied: {string.Join(", ", state.DeniedPaths)}");
+        if (state.DeniedPaths.Count > 0 && state.DeniedPaths[0] != "**")
+            Console.WriteLine($"  Denied paths: {string.Join(", ", state.DeniedPaths)}");
 
         var session = registry.GetSession(state.Name);
         if (session != null)
         {
             Console.WriteLine();
-            Console.WriteLine($"Terminal PID: {session.TerminalPid}");
-            Console.WriteLine($"Claude PID: {session.ClaudePid}");
-            Console.WriteLine($"Claimed: {session.Claimed:yyyy-MM-dd HH:mm:ss}");
+            Console.WriteLine("Session:");
+            Console.WriteLine($"  Terminal PID: {session.TerminalPid}");
+            Console.WriteLine($"  Claude PID: {session.ClaudePid}");
+            Console.WriteLine($"  Claimed: {session.Claimed:yyyy-MM-dd HH:mm:ss} UTC");
         }
 
         return ExitCodes.Success;
@@ -214,36 +239,38 @@ public static class AgentCommand
     private static int ExecuteList(bool freeOnly)
     {
         var registry = new AgentRegistry();
+        var human = registry.GetCurrentHuman();
 
         var agents = freeOnly ? registry.GetFreeAgents() : registry.GetAllAgentStates();
 
         if (agents.Count == 0)
         {
-            Console.WriteLine(freeOnly ? "No free agents" : "No agents found");
+            Console.WriteLine(freeOnly ? "No free agents in pool." : "No agents found in pool.");
             return ExitCodes.Success;
         }
 
-        Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Role",-15} {"Task",-20}");
-        Console.WriteLine(new string('-', 60));
+        Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Role",-15}");
+        Console.WriteLine(new string('-', 52));
 
         foreach (var agent in agents)
         {
             var status = agent.Status.ToString().ToLowerInvariant();
+            var assignedHuman = agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "-";
             var role = agent.Role ?? "-";
-            var task = agent.Task ?? "-";
 
-            if (task.Length > 18)
-                task = task[..18] + "..";
-
-            Console.WriteLine($"{agent.Name,-10} {status,-10} {role,-15} {task,-20}");
+            Console.WriteLine($"{agent.Name,-10} {status,-10} {assignedHuman,-12} {role,-15}");
         }
 
-        if (!freeOnly)
+        var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
+        var workingCount = agents.Count(a => a.Status == AgentStatus.Working);
+        Console.WriteLine();
+        Console.WriteLine($"Total: {agents.Count} agents ({freeCount} free, {workingCount} working)");
+
+        if (!string.IsNullOrEmpty(human))
         {
-            var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
-            var workingCount = agents.Count(a => a.Status == AgentStatus.Working);
-            Console.WriteLine();
-            Console.WriteLine($"{freeCount} free, {workingCount} working");
+            var humanAgents = registry.GetAgentsForHuman(human);
+            var humanFree = registry.GetFreeAgentsForHuman(human);
+            Console.WriteLine($"Agents assigned to human '{human}': {humanAgents.Count} ({humanFree.Count} free)");
         }
 
         return ExitCodes.Success;
@@ -256,7 +283,7 @@ public static class AgentCommand
         var current = registry.GetCurrentAgent();
         if (current == null)
         {
-            ConsoleOutput.WriteError("No agent claimed for this terminal. Run 'dydo agent claim <name>' first.");
+            ConsoleOutput.WriteError("No agent identity assigned to this process. Run 'dydo agent claim auto' first.");
             return ExitCodes.ToolError;
         }
 
@@ -266,17 +293,21 @@ public static class AgentCommand
             return ExitCodes.ToolError;
         }
 
-        Console.WriteLine($"Agent {current.Name} role set to: {role}");
+        Console.WriteLine($"Agent {current.Name} role updated.");
+        Console.WriteLine($"  Role: {role}");
+
         if (!string.IsNullOrEmpty(task))
-            Console.WriteLine($"Task: {task}");
+            Console.WriteLine($"  Task: {task}");
 
         // Show permissions
         var state = registry.GetAgentState(current.Name);
         if (state != null)
         {
-            Console.WriteLine($"Allowed paths: {string.Join(", ", state.AllowedPaths)}");
+            Console.WriteLine($"  Allowed paths: {string.Join(", ", state.AllowedPaths)}");
             if (state.DeniedPaths.Count > 0 && state.DeniedPaths[0] != "**")
-                Console.WriteLine($"Denied paths: {string.Join(", ", state.DeniedPaths)}");
+                Console.WriteLine($"  Denied paths: {string.Join(", ", state.DeniedPaths)}");
+            else if (state.AllowedPaths.Count == 0)
+                Console.WriteLine("  Note: This role has no write permissions.");
         }
 
         return ExitCodes.Success;

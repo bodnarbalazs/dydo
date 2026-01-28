@@ -6,39 +6,45 @@ using DynaDocs.Models;
 
 public class AgentRegistry : IAgentRegistry
 {
-    private static readonly Dictionary<char, string> AgentMap = new()
-    {
-        ['A'] = "Adele", ['B'] = "Brian", ['C'] = "Charlie", ['D'] = "Dexter",
-        ['E'] = "Emma", ['F'] = "Frank", ['G'] = "Grace", ['H'] = "Henry",
-        ['I'] = "Iris", ['J'] = "Jack", ['K'] = "Kate", ['L'] = "Leo",
-        ['M'] = "Mia", ['N'] = "Noah", ['O'] = "Olivia", ['P'] = "Paul",
-        ['Q'] = "Quinn", ['R'] = "Rose", ['S'] = "Sam", ['T'] = "Tara",
-        ['U'] = "Uma", ['V'] = "Victor", ['W'] = "Wendy", ['X'] = "Xavier",
-        ['Y'] = "Yara", ['Z'] = "Zack"
-    };
-
     private static readonly Dictionary<string, (List<string> Allowed, List<string> Denied)> RolePermissions = new()
     {
-        ["code-writer"] = (["src/**", "tests/**"], ["docs/**", "project/**"]),
+        ["code-writer"] = (["src/**", "tests/**"], ["dydo/**", "project/**"]),
         ["reviewer"] = ([], ["**"]),
-        ["docs-writer"] = (["docs/**"], ["src/**", "tests/**", "project/**"]),
-        ["interviewer"] = ([".workspace/{self}/**"], ["**"]),
-        ["planner"] = ([".workspace/{self}/**", "project/tasks/**"], ["src/**", "docs/**"])
+        ["docs-writer"] = (["dydo/**"], ["dydo/agents/**", "src/**", "tests/**"]),
+        ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
+        ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], ["src/**"])
     };
 
     private readonly string _basePath;
+    private readonly IConfigService _configService;
+    private readonly DydoConfig? _config;
 
-    public AgentRegistry(string? basePath = null)
+    public AgentRegistry(string? basePath = null, IConfigService? configService = null)
     {
         _basePath = basePath ?? Environment.CurrentDirectory;
+        _configService = configService ?? new ConfigService();
+        _config = _configService.LoadConfig(_basePath);
     }
 
-    public IReadOnlyList<string> AgentNames => AgentMap.Values.ToList();
+    public DydoConfig? Config => _config;
 
-    public string WorkspacePath => Path.Combine(_basePath, ".workspace");
+    public IReadOnlyList<string> AgentNames =>
+        _config?.Agents.Pool ?? PresetAgentNames.Set1.ToList();
+
+    public string WorkspacePath =>
+        _configService.GetAgentsPath(_basePath);
 
     public string GetAgentWorkspace(string agentName) =>
         Path.Combine(WorkspacePath, agentName);
+
+    public string? GetCurrentHuman() =>
+        _configService.GetHumanFromEnv();
+
+    public string? GetHumanForAgent(string agentName) =>
+        _config?.Agents.GetHumanForAgent(agentName);
+
+    public List<string> GetAgentsForHuman(string human) =>
+        _config?.Agents.GetAgentsForHuman(human) ?? new List<string>();
 
     public bool ClaimAgent(string agentName, out string error)
     {
@@ -50,13 +56,29 @@ public class AgentRegistry : IAgentRegistry
             return false;
         }
 
+        // Validate human assignment
+        var human = GetCurrentHuman();
+        var (canClaim, claimError) = _configService.ValidateAgentClaim(agentName, human, _config);
+        if (!canClaim)
+        {
+            error = claimError!;
+            return false;
+        }
+
         var state = GetAgentState(agentName);
         if (state?.Status != AgentStatus.Free)
         {
             var session = GetSession(agentName);
             if (session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
             {
-                error = $"Agent {agentName} is already claimed by terminal PID {session.TerminalPid}";
+                error = $"Agent {agentName} is already claimed (terminal PID {session.TerminalPid}).";
+                if (_config != null && human != null)
+                {
+                    var claimable = GetFreeAgentsForHuman(human);
+                    if (claimable.Count > 0)
+                        error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
+                }
+                error += "\nUse 'dydo agent claim auto' to claim the first available.";
                 return false;
             }
             // Stale claim - terminal died, allow reclaim
@@ -97,8 +119,51 @@ public class AgentRegistry : IAgentRegistry
         {
             s.Status = AgentStatus.Working;
             s.Since = DateTime.UtcNow;
+            s.AssignedHuman = human;
         });
 
+        return true;
+    }
+
+    public bool ClaimAuto(out string claimedAgent, out string error)
+    {
+        claimedAgent = string.Empty;
+        error = string.Empty;
+
+        var human = GetCurrentHuman();
+        if (string.IsNullOrEmpty(human))
+        {
+            error = "DYDO_HUMAN environment variable not set.\nSet it to identify which human is operating this terminal:\n  export DYDO_HUMAN=your_name";
+            return false;
+        }
+
+        // Get free agents for this human
+        var freeAgents = GetFreeAgentsForHuman(human);
+        if (freeAgents.Count == 0)
+        {
+            var assignedAgents = GetAgentsForHuman(human);
+            if (assignedAgents.Count == 0)
+            {
+                error = $"No agents assigned to human '{human}' in dydo.json.";
+            }
+            else
+            {
+                var agentStatuses = assignedAgents.Select(a =>
+                {
+                    var s = GetAgentState(a);
+                    return $"{a} ({s?.Status.ToString().ToLowerInvariant() ?? "unknown"})";
+                });
+                error = $"No free agents available for human '{human}'.\nAgents assigned to {human}: {string.Join(", ", agentStatuses)}";
+            }
+            return false;
+        }
+
+        // Claim first free agent
+        var agentToClaim = freeAgents.First().Name;
+        if (!ClaimAgent(agentToClaim, out error))
+            return false;
+
+        claimedAgent = agentToClaim;
         return true;
     }
 
@@ -109,7 +174,7 @@ public class AgentRegistry : IAgentRegistry
         var agent = GetCurrentAgent();
         if (agent == null)
         {
-            error = "No agent claimed for this terminal";
+            error = "No agent identity assigned to this process.";
             return false;
         }
 
@@ -139,7 +204,7 @@ public class AgentRegistry : IAgentRegistry
         var agent = GetCurrentAgent();
         if (agent == null)
         {
-            error = "No agent claimed for this terminal";
+            error = "No agent identity assigned to this process. Run 'dydo agent claim auto' first.";
             return false;
         }
 
@@ -177,7 +242,8 @@ public class AgentRegistry : IAgentRegistry
             return new AgentState
             {
                 Name = agentName,
-                Status = AgentStatus.Free
+                Status = AgentStatus.Free,
+                AssignedHuman = GetHumanForAgent(agentName)
             };
         }
 
@@ -192,6 +258,15 @@ public class AgentRegistry : IAgentRegistry
     public List<AgentState> GetFreeAgents()
     {
         return GetAllAgentStates().Where(a => a.Status == AgentStatus.Free).ToList();
+    }
+
+    public List<AgentState> GetFreeAgentsForHuman(string human)
+    {
+        var assignedAgents = GetAgentsForHuman(human);
+        return GetAllAgentStates()
+            .Where(a => a.Status == AgentStatus.Free &&
+                       assignedAgents.Contains(a.Name, StringComparer.OrdinalIgnoreCase))
+            .ToList();
     }
 
     public AgentState? GetCurrentAgent()
@@ -240,13 +315,13 @@ public class AgentRegistry : IAgentRegistry
         var agent = GetCurrentAgent();
         if (agent == null)
         {
-            error = "No agent claimed for this terminal";
+            error = "No agent identity assigned to this process. Run 'dydo agent claim auto' first.";
             return false;
         }
 
         if (string.IsNullOrEmpty(agent.Role))
         {
-            error = $"Agent {agent.Name} has no role set";
+            error = $"Agent {agent.Name} has no role set. Run 'dydo agent role <role>' first.";
             return false;
         }
 
@@ -262,7 +337,7 @@ public class AgentRegistry : IAgentRegistry
                 var isAllowed = agent.AllowedPaths.Any(ap => MatchesGlob(relativePath, ap));
                 if (!isAllowed)
                 {
-                    error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}";
+                    error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role)}";
                     return false;
                 }
             }
@@ -271,7 +346,7 @@ public class AgentRegistry : IAgentRegistry
         // If no allowed paths, nothing is allowed
         if (agent.AllowedPaths.Count == 0)
         {
-            error = $"Agent {agent.Name} ({agent.Role}) has no write permissions";
+            error = $"Agent {agent.Name} ({agent.Role}) has no write permissions.";
             return false;
         }
 
@@ -279,27 +354,38 @@ public class AgentRegistry : IAgentRegistry
         var allowed = agent.AllowedPaths.Any(pattern => MatchesGlob(relativePath, pattern));
         if (!allowed)
         {
-            error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}";
+            error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role)}";
             return false;
         }
 
         return true;
     }
 
+    private static string GetRoleRestrictionMessage(string role)
+    {
+        return role switch
+        {
+            "reviewer" => "Reviewer role has no write permissions.",
+            "code-writer" => "Code-writer role can only edit src/** and tests/**.",
+            "docs-writer" => "Docs-writer role can only edit dydo/** (except agents/).",
+            "interviewer" => "Interviewer role can only edit own workspace.",
+            "planner" => "Planner role can only edit own workspace and tasks.",
+            _ => ""
+        };
+    }
+
     public bool IsValidAgentName(string name) =>
         AgentNames.Contains(name, StringComparer.OrdinalIgnoreCase);
 
-    public string? GetAgentNameFromLetter(char letter)
-    {
-        letter = char.ToUpperInvariant(letter);
-        return AgentMap.TryGetValue(letter, out var name) ? name : null;
-    }
+    public string? GetAgentNameFromLetter(char letter) =>
+        PresetAgentNames.GetNameFromLetter(letter);
 
     private string GetRelativePath(string path)
     {
         if (Path.IsPathRooted(path))
         {
-            var relative = Path.GetRelativePath(_basePath, path);
+            var projectRoot = _configService.GetProjectRoot(_basePath) ?? _basePath;
+            var relative = Path.GetRelativePath(projectRoot, path);
             return relative.Replace('\\', '/');
         }
         return path.Replace('\\', '/');
@@ -334,6 +420,7 @@ public class AgentRegistry : IAgentRegistry
             role: {state.Role ?? "null"}
             task: {state.Task ?? "null"}
             status: {state.Status.ToString().ToLowerInvariant()}
+            assigned: {state.AssignedHuman ?? GetHumanForAgent(agentName) ?? "unassigned"}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             allowed-paths: [{string.Join(", ", state.AllowedPaths.Select(p => $"\"{p}\""))}]
             denied-paths: [{string.Join(", ", state.DeniedPaths.Select(p => $"\"{p}\""))}]
@@ -405,6 +492,9 @@ public class AgentRegistry : IAgentRegistry
                             "reviewing" => AgentStatus.Reviewing,
                             _ => AgentStatus.Free
                         };
+                        break;
+                    case "assigned":
+                        state.AssignedHuman = value == "unassigned" || value == "null" ? null : value;
                         break;
                     case "started":
                         if (value != "null" && DateTime.TryParse(value, out var dt))

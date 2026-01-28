@@ -61,16 +61,27 @@ public static class DispatchCommand
     private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch)
     {
         var registry = new AgentRegistry();
+        var currentHuman = registry.GetCurrentHuman();
 
         // Get sender info
         var sender = registry.GetCurrentAgent();
         var senderName = sender?.Name ?? "Unknown";
 
-        // Find first free agent
-        var freeAgents = registry.GetFreeAgents();
+        // Find first free agent assigned to the current human
+        var freeAgents = string.IsNullOrEmpty(currentHuman)
+            ? registry.GetFreeAgents()
+            : registry.GetFreeAgentsForHuman(currentHuman);
+
         if (freeAgents.Count == 0)
         {
-            ConsoleOutput.WriteError("No free agents available");
+            if (!string.IsNullOrEmpty(currentHuman))
+            {
+                ConsoleOutput.WriteError($"No free agents available for human '{currentHuman}'.");
+            }
+            else
+            {
+                ConsoleOutput.WriteError("No free agents available.");
+            }
             return ExitCodes.ToolError;
         }
 
@@ -97,17 +108,17 @@ public static class DispatchCommand
         var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{task}.md");
         WriteInboxItem(itemPath, inboxItem);
 
-        Console.WriteLine($"Dispatched to {targetAgent.Name}");
-        Console.WriteLine($"Role: {role}");
-        Console.WriteLine($"Task: {task}");
-        Console.WriteLine($"Inbox item: {itemPath}");
+        Console.WriteLine($"Work dispatched to agent {targetAgent.Name}.");
+        Console.WriteLine($"  Role: {role}");
+        Console.WriteLine($"  Task: {task}");
+        Console.WriteLine($"  Inbox: {itemPath}");
 
         // Launch new terminal if requested
         if (!noLaunch)
         {
             var letter = targetAgent.Name[0];
             LaunchNewTerminal(letter);
-            Console.WriteLine($"Launched terminal with --inbox {letter}");
+            Console.WriteLine($"  Terminal launched with --inbox {letter}");
         }
 
         return ExitCodes.Success;

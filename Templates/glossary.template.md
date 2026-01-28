@@ -5,7 +5,7 @@ type: reference
 
 # Glossary
 
-Definitions of domain-specific terms used throughout this documentation.
+Definitions of domain-specific terms used throughout this project.
 
 ---
 

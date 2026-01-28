@@ -17,7 +17,7 @@ This project uses a multi-agent orchestration system. Each agent:
 - Has role-based permissions
 - Coordinates with other agents via dispatch
 
-**Key principle:** Different agents handle different phases. The agent that writes code does not write its own docs. Fresh eyes catch what authors miss.
+**Key principle:** Different agents handle different phases. The agent that writes code does not do it's own code review. Fresh eyes catch what authors miss.
 
 ---
 

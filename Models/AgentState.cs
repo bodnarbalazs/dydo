@@ -9,6 +9,7 @@ public class AgentState
     public DateTime? Since { get; set; }
     public List<string> AllowedPaths { get; set; } = [];
     public List<string> DeniedPaths { get; set; } = [];
+    public string? AssignedHuman { get; set; }
 }
 
 public enum AgentStatus

@@ -17,6 +17,7 @@ rootCommand.AddCommand(TaskCommand.Create());
 rootCommand.AddCommand(ReviewCommand.Create());
 rootCommand.AddCommand(CleanCommand.Create());
 rootCommand.AddCommand(WorkspaceCommand.Create());
+rootCommand.AddCommand(WhoamiCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetHandler(() =>
@@ -31,15 +32,20 @@ helpCommand.SetHandler(() =>
 {
     Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation validation and workflow tool");
     Console.WriteLine();
+    Console.WriteLine("Setup Commands:");
+    Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");
+    Console.WriteLine("  init <int> --join      Join existing project as new team member");
+    Console.WriteLine("  whoami                 Show current agent identity");
+    Console.WriteLine();
     Console.WriteLine("Documentation Commands:");
-    Console.WriteLine("  check [path]    Validate docs, report violations");
-    Console.WriteLine("  fix [path]      Auto-fix issues where possible");
-    Console.WriteLine("  index [path]    Regenerate Index.md from structure");
-    Console.WriteLine("  init <path>     Scaffold folder structure");
-    Console.WriteLine("  graph <file>    Show graph connections for a file");
+    Console.WriteLine("  check [path]           Validate docs, report violations");
+    Console.WriteLine("  fix [path]             Auto-fix issues where possible");
+    Console.WriteLine("  index [path]           Regenerate index.md from structure");
+    Console.WriteLine("  graph <file>           Show graph connections for a file");
     Console.WriteLine();
     Console.WriteLine("Agent Workflow Commands:");
-    Console.WriteLine("  agent claim <name>     Claim an agent for this terminal");
+    Console.WriteLine("  agent claim auto       Claim first available agent");
+    Console.WriteLine("  agent claim <name>     Claim a specific agent");
     Console.WriteLine("  agent release          Release current agent");
     Console.WriteLine("  agent status [name]    Show agent status");
     Console.WriteLine("  agent list [--free]    List all agents");
@@ -52,7 +58,7 @@ helpCommand.SetHandler(() =>
     Console.WriteLine();
     Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
     Console.WriteLine("  clean <agent>          Clean agent workspace");
-    Console.WriteLine("  workspace init         Initialize all 26 agent workspaces");
+    Console.WriteLine("  workspace init         Initialize agent workspaces");
     Console.WriteLine("  workspace check        Verify workflow before session end");
     Console.WriteLine();
     Console.WriteLine("Task Commands:");
@@ -65,13 +71,16 @@ helpCommand.SetHandler(() =>
     Console.WriteLine("  review complete <task> Complete a code review");
     Console.WriteLine();
     Console.WriteLine("Utility:");
-    Console.WriteLine("  version         Display version information");
-    Console.WriteLine("  help            Display this help");
+    Console.WriteLine("  version                Display version information");
+    Console.WriteLine("  help                   Display this help");
+    Console.WriteLine();
+    Console.WriteLine("Environment Variables:");
+    Console.WriteLine("  DYDO_HUMAN             Human identifier for agent assignment");
     Console.WriteLine();
     Console.WriteLine("Exit codes:");
-    Console.WriteLine("  0 - Success");
+    Console.WriteLine("  0 - Success / Action allowed");
     Console.WriteLine("  1 - Validation errors found");
-    Console.WriteLine("  2 - Tool error");
+    Console.WriteLine("  2 - Tool error / Action blocked");
 });
 rootCommand.AddCommand(helpCommand);
 

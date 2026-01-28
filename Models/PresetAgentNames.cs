@@ -18,7 +18,7 @@ public static class PresetAgentNames
     };
 
     /// <summary>
-    /// Overflow set of 26 more agent names
+    /// Second set of 26 agent names
     /// </summary>
     public static readonly IReadOnlyList<string> Set2 = new[]
     {
@@ -30,22 +30,44 @@ public static class PresetAgentNames
     };
 
     /// <summary>
+    /// Third set of 26 agent names
+    /// </summary>
+    public static readonly IReadOnlyList<string> Set3 = new[]
+    {
+        "Amber", "Blake", "Cora", "Dante", "Elena", "Felix",
+        "Greta", "Hugo", "Ingrid", "Jasper", "Kira", "Liam",
+        "Maya", "Nico", "Opal", "Pierce", "Quincy", "Raven",
+        "Sienna", "Tobias", "Ursula", "Vince", "Willow", "Xander",
+        "Yasmin", "Zeke"
+    };
+
+    /// <summary>
+    /// Fourth set of 26 agent names
+    /// </summary>
+    public static readonly IReadOnlyList<string> Set4 = new[]
+    {
+        "Aurora", "Bruno", "Celeste", "Dominic", "Esther", "Floyd",
+        "Gloria", "Hector", "Ivy", "Jerome", "Kendra", "Lance",
+        "Miriam", "Nelson", "Ophelia", "Preston", "Quorra", "Rocco",
+        "Selena", "Trevor", "Unity", "Vaughn", "Whitney", "Ximena",
+        "York", "Zelda"
+    };
+
+    /// <summary>
     /// Get agent names up to the specified count
     /// </summary>
     public static List<string> GetNames(int count)
     {
+        var allSets = new[] { Set1, Set2, Set3, Set4 };
         var names = new List<string>();
 
-        // Add from Set1 first
-        for (int i = 0; i < Math.Min(count, Set1.Count); i++)
-            names.Add(Set1[i]);
-
-        // Add from Set2 if needed
-        if (count > Set1.Count)
+        foreach (var set in allSets)
         {
-            var remaining = count - Set1.Count;
-            for (int i = 0; i < Math.Min(remaining, Set2.Count); i++)
-                names.Add(Set2[i]);
+            if (names.Count >= count) break;
+
+            var remaining = count - names.Count;
+            for (int i = 0; i < Math.Min(remaining, set.Count); i++)
+                names.Add(set[i]);
         }
 
         return names;

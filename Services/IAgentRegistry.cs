@@ -104,4 +104,24 @@ public interface IAgentRegistry
     /// Gets the loaded configuration.
     /// </summary>
     DydoConfig? Config { get; }
+
+    /// <summary>
+    /// Creates a new agent: adds to pool, assigns to human, creates workspace and workflow file.
+    /// </summary>
+    bool CreateAgent(string name, string human, out string error);
+
+    /// <summary>
+    /// Renames an agent: updates pool, assignments, workspace folder, and workflow file.
+    /// </summary>
+    bool RenameAgent(string oldName, string newName, out string error);
+
+    /// <summary>
+    /// Removes an agent: deletes from pool and assignments, removes workspace and workflow file.
+    /// </summary>
+    bool RemoveAgent(string name, out string error);
+
+    /// <summary>
+    /// Reassigns an agent to a different human.
+    /// </summary>
+    bool ReassignAgent(string name, string newHuman, out string error);
 }

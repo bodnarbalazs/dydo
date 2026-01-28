@@ -17,6 +17,10 @@ public static class AgentCommand
         command.AddCommand(CreateStatusCommand());
         command.AddCommand(CreateListCommand());
         command.AddCommand(CreateRoleCommand());
+        command.AddCommand(CreateNewCommand());
+        command.AddCommand(CreateRenameCommand());
+        command.AddCommand(CreateRemoveCommand());
+        command.AddCommand(CreateReassignCommand());
 
         return command;
     }
@@ -309,6 +313,189 @@ public static class AgentCommand
             else if (state.AllowedPaths.Count == 0)
                 Console.WriteLine("  Note: This role has no write permissions.");
         }
+
+        return ExitCodes.Success;
+    }
+
+    private static Command CreateNewCommand()
+    {
+        var nameArgument = new Argument<string>("name", "New agent name (e.g., 'William')");
+        var humanArgument = new Argument<string>("human", "Human to assign the agent to");
+
+        var command = new Command("new", "Create a new agent and assign to a human")
+        {
+            nameArgument,
+            humanArgument
+        };
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
+            var human = ctx.ParseResult.GetValueForArgument(humanArgument);
+            ctx.ExitCode = ExecuteNew(name, human);
+        });
+
+        return command;
+    }
+
+    private static Command CreateRenameCommand()
+    {
+        var oldNameArgument = new Argument<string>("old-name", "Current agent name");
+        var newNameArgument = new Argument<string>("new-name", "New agent name");
+
+        var command = new Command("rename", "Rename an agent")
+        {
+            oldNameArgument,
+            newNameArgument
+        };
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            var oldName = ctx.ParseResult.GetValueForArgument(oldNameArgument);
+            var newName = ctx.ParseResult.GetValueForArgument(newNameArgument);
+            ctx.ExitCode = ExecuteRename(oldName, newName);
+        });
+
+        return command;
+    }
+
+    private static Command CreateRemoveCommand()
+    {
+        var nameArgument = new Argument<string>("name", "Agent name to remove");
+        var forceOption = new Option<bool>("--force", "Skip confirmation");
+
+        var command = new Command("remove", "Remove an agent from the pool")
+        {
+            nameArgument,
+            forceOption
+        };
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
+            var force = ctx.ParseResult.GetValueForOption(forceOption);
+            ctx.ExitCode = ExecuteRemove(name, force);
+        });
+
+        return command;
+    }
+
+    private static Command CreateReassignCommand()
+    {
+        var nameArgument = new Argument<string>("name", "Agent name to reassign");
+        var humanArgument = new Argument<string>("human", "New human to assign the agent to");
+
+        var command = new Command("reassign", "Reassign an agent to a different human")
+        {
+            nameArgument,
+            humanArgument
+        };
+
+        command.SetHandler((InvocationContext ctx) =>
+        {
+            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
+            var human = ctx.ParseResult.GetValueForArgument(humanArgument);
+            ctx.ExitCode = ExecuteReassign(name, human);
+        });
+
+        return command;
+    }
+
+    private static int ExecuteNew(string name, string human)
+    {
+        var registry = new AgentRegistry();
+
+        if (!registry.CreateAgent(name, human, out var error))
+        {
+            ConsoleOutput.WriteError(error);
+            return ExitCodes.ToolError;
+        }
+
+        // Normalize name for display (PascalCase)
+        var displayName = char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
+
+        Console.WriteLine($"Agent created: {displayName}");
+        Console.WriteLine($"  Assigned to: {human}");
+        Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(displayName)}");
+
+        var workflowPath = Path.Combine(
+            new ConfigService().GetDydoRoot(),
+            "workflows",
+            $"{displayName.ToLowerInvariant()}.md");
+        Console.WriteLine($"  Workflow: {workflowPath}");
+
+        return ExitCodes.Success;
+    }
+
+    private static int ExecuteRename(string oldName, string newName)
+    {
+        var registry = new AgentRegistry();
+
+        if (!registry.RenameAgent(oldName, newName, out var error))
+        {
+            ConsoleOutput.WriteError(error);
+            return ExitCodes.ToolError;
+        }
+
+        var displayNewName = char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant();
+
+        Console.WriteLine($"Agent renamed: {oldName} → {displayNewName}");
+        Console.WriteLine($"  Updated: dydo.json, workspace, workflow file");
+
+        return ExitCodes.Success;
+    }
+
+    private static int ExecuteRemove(string name, bool force)
+    {
+        var registry = new AgentRegistry();
+
+        // Check if agent exists first
+        if (!registry.IsValidAgentName(name))
+        {
+            ConsoleOutput.WriteError($"Agent '{name}' does not exist in the pool.");
+            return ExitCodes.ToolError;
+        }
+
+        // Confirm unless --force
+        if (!force)
+        {
+            Console.Write($"Remove agent '{name}'? This will delete workspace and workflow file. [y/N] ");
+            var response = Console.ReadLine()?.Trim().ToLowerInvariant();
+            if (response != "y" && response != "yes")
+            {
+                Console.WriteLine("Cancelled.");
+                return ExitCodes.Success;
+            }
+        }
+
+        if (!registry.RemoveAgent(name, out var error))
+        {
+            ConsoleOutput.WriteError(error);
+            return ExitCodes.ToolError;
+        }
+
+        Console.WriteLine($"Agent removed: {name}");
+        Console.WriteLine("  Deleted: dydo.json entry, workspace folder, workflow file");
+
+        return ExitCodes.Success;
+    }
+
+    private static int ExecuteReassign(string name, string human)
+    {
+        var registry = new AgentRegistry();
+
+        // Get current human for display
+        var currentHuman = registry.GetHumanForAgent(name);
+
+        if (!registry.ReassignAgent(name, human, out var error))
+        {
+            ConsoleOutput.WriteError(error);
+            return ExitCodes.ToolError;
+        }
+
+        Console.WriteLine($"Agent reassigned: {name}");
+        Console.WriteLine($"  From: {currentHuman ?? "(unassigned)"}");
+        Console.WriteLine($"  To: {human}");
 
         return ExitCodes.Success;
     }

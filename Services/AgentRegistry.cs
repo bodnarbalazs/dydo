@@ -531,4 +531,422 @@ public class AgentRegistry : IAgentRegistry
             .Select(m => m.Groups[1].Value)
             .ToList();
     }
+
+    /// <summary>
+    /// Creates a new agent: adds to pool, assigns to human, creates workspace and workflow file.
+    /// </summary>
+    public bool CreateAgent(string name, string human, out string error)
+    {
+        error = string.Empty;
+
+        // Validate name format
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            error = "Agent name cannot be empty.";
+            return false;
+        }
+
+        if (!Regex.IsMatch(name, @"^[A-Za-z][A-Za-z0-9-]*$"))
+        {
+            error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
+            return false;
+        }
+
+        // Validate human name
+        if (string.IsNullOrWhiteSpace(human))
+        {
+            error = "Human name cannot be empty.";
+            return false;
+        }
+
+        // Normalize name to PascalCase (first letter uppercase)
+        name = char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
+
+        // Load fresh config
+        var configPath = _configService.FindConfigFile(_basePath);
+        if (configPath == null)
+        {
+            error = "No dydo.json found. Run 'dydo init' first.";
+            return false;
+        }
+
+        var config = _configService.LoadConfig(_basePath);
+        if (config == null)
+        {
+            error = "Failed to load dydo.json.";
+            return false;
+        }
+
+        // Check if agent already exists
+        if (config.Agents.Pool.Contains(name, StringComparer.OrdinalIgnoreCase))
+        {
+            error = $"Agent '{name}' already exists in the pool.";
+            return false;
+        }
+
+        // Add to pool
+        config.Agents.Pool.Add(name);
+
+        // Add to human's assignments
+        if (!config.Agents.Assignments.ContainsKey(human))
+        {
+            config.Agents.Assignments[human] = new List<string>();
+        }
+        config.Agents.Assignments[human].Add(name);
+
+        // Save config
+        _configService.SaveConfig(config, configPath);
+
+        // Create workspace folder
+        var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), name);
+        Directory.CreateDirectory(workspace);
+        Directory.CreateDirectory(Path.Combine(workspace, "inbox"));
+
+        // Create initial state file
+        var statePath = Path.Combine(workspace, "state.md");
+        var stateContent = $"""
+            ---
+            agent: {name}
+            role: null
+            task: null
+            status: free
+            assigned: {human}
+            started: null
+            allowed-paths: []
+            denied-paths: []
+            ---
+
+            # {name} — Session State
+
+            ## Current Task
+
+            (No active task)
+
+            ## Progress
+
+            - [ ] (No items)
+
+            ## Decisions Made
+
+            (None yet)
+
+            ## Blockers
+
+            (None)
+
+            ---
+
+            <!--
+            This file is managed by dydo. Manual edits may be overwritten.
+            -->
+            """;
+        File.WriteAllText(statePath, stateContent);
+
+        // Create workflow file in dydo/workflows/
+        var workflowsPath = Path.Combine(_configService.GetDydoRoot(_basePath), "workflows");
+        Directory.CreateDirectory(workflowsPath);
+
+        var workflowPath = Path.Combine(workflowsPath, $"{name.ToLowerInvariant()}.md");
+        var workflowContent = TemplateGenerator.GenerateWorkflowFile(name);
+        File.WriteAllText(workflowPath, workflowContent);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Renames an agent: updates pool, assignments, workspace folder, and workflow file.
+    /// </summary>
+    public bool RenameAgent(string oldName, string newName, out string error)
+    {
+        error = string.Empty;
+
+        // Validate new name format
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            error = "New agent name cannot be empty.";
+            return false;
+        }
+
+        if (!Regex.IsMatch(newName, @"^[A-Za-z][A-Za-z0-9-]*$"))
+        {
+            error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
+            return false;
+        }
+
+        // Normalize names
+        oldName = NormalizeName(oldName);
+        newName = char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant();
+
+        // Load fresh config
+        var configPath = _configService.FindConfigFile(_basePath);
+        if (configPath == null)
+        {
+            error = "No dydo.json found. Run 'dydo init' first.";
+            return false;
+        }
+
+        var config = _configService.LoadConfig(_basePath);
+        if (config == null)
+        {
+            error = "Failed to load dydo.json.";
+            return false;
+        }
+
+        // Find the actual name in the pool (case-insensitive match)
+        var existingName = config.Agents.Pool.FirstOrDefault(n =>
+            n.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+
+        if (existingName == null)
+        {
+            error = $"Agent '{oldName}' does not exist in the pool.";
+            return false;
+        }
+
+        // Check if new name already exists
+        if (config.Agents.Pool.Contains(newName, StringComparer.OrdinalIgnoreCase))
+        {
+            error = $"Agent '{newName}' already exists in the pool.";
+            return false;
+        }
+
+        // Check agent is not claimed
+        var state = GetAgentState(existingName);
+        var session = GetSession(existingName);
+        if (state?.Status != AgentStatus.Free && session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+        {
+            error = $"Agent '{existingName}' is currently claimed. Release it first.";
+            return false;
+        }
+
+        // Update pool
+        var poolIndex = config.Agents.Pool.FindIndex(n =>
+            n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
+        config.Agents.Pool[poolIndex] = newName;
+
+        // Update assignments
+        foreach (var assignment in config.Agents.Assignments)
+        {
+            var agentIndex = assignment.Value.FindIndex(n =>
+                n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
+            if (agentIndex >= 0)
+            {
+                assignment.Value[agentIndex] = newName;
+            }
+        }
+
+        // Save config
+        _configService.SaveConfig(config, configPath);
+
+        // Rename workspace folder
+        var oldWorkspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
+        var newWorkspace = Path.Combine(_configService.GetAgentsPath(_basePath), newName);
+        if (Directory.Exists(oldWorkspace))
+        {
+            Directory.Move(oldWorkspace, newWorkspace);
+
+            // Update state file with new name
+            var statePath = Path.Combine(newWorkspace, "state.md");
+            if (File.Exists(statePath))
+            {
+                var content = File.ReadAllText(statePath);
+                content = Regex.Replace(content, $@"^agent:\s*{Regex.Escape(existingName)}\s*$",
+                    $"agent: {newName}", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                content = Regex.Replace(content, $@"^# {Regex.Escape(existingName)} —",
+                    $"# {newName} —", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                File.WriteAllText(statePath, content);
+            }
+        }
+
+        // Rename workflow file
+        var workflowsPath = Path.Combine(_configService.GetDydoRoot(_basePath), "workflows");
+        var oldWorkflowPath = Path.Combine(workflowsPath, $"{existingName.ToLowerInvariant()}.md");
+        var newWorkflowPath = Path.Combine(workflowsPath, $"{newName.ToLowerInvariant()}.md");
+
+        if (File.Exists(oldWorkflowPath))
+        {
+            // Read, update content, write to new path
+            var content = File.ReadAllText(oldWorkflowPath);
+            content = content.Replace(existingName, newName);
+            content = content.Replace(existingName.ToLowerInvariant(), newName.ToLowerInvariant());
+            File.WriteAllText(newWorkflowPath, content);
+            File.Delete(oldWorkflowPath);
+        }
+        else
+        {
+            // Create new workflow file if it doesn't exist
+            var workflowContent = TemplateGenerator.GenerateWorkflowFile(newName);
+            File.WriteAllText(newWorkflowPath, workflowContent);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Removes an agent: deletes from pool and assignments, removes workspace and workflow file.
+    /// </summary>
+    public bool RemoveAgent(string name, out string error)
+    {
+        error = string.Empty;
+
+        // Load fresh config
+        var configPath = _configService.FindConfigFile(_basePath);
+        if (configPath == null)
+        {
+            error = "No dydo.json found. Run 'dydo init' first.";
+            return false;
+        }
+
+        var config = _configService.LoadConfig(_basePath);
+        if (config == null)
+        {
+            error = "Failed to load dydo.json.";
+            return false;
+        }
+
+        // Find the actual name in the pool
+        var existingName = config.Agents.Pool.FirstOrDefault(n =>
+            n.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        if (existingName == null)
+        {
+            error = $"Agent '{name}' does not exist in the pool.";
+            return false;
+        }
+
+        // Check agent is not claimed
+        var state = GetAgentState(existingName);
+        var session = GetSession(existingName);
+        if (state?.Status != AgentStatus.Free && session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+        {
+            error = $"Agent '{existingName}' is currently claimed. Release it first.";
+            return false;
+        }
+
+        // Remove from pool
+        config.Agents.Pool.RemoveAll(n => n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
+
+        // Remove from all assignments
+        foreach (var assignment in config.Agents.Assignments)
+        {
+            assignment.Value.RemoveAll(n => n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Save config
+        _configService.SaveConfig(config, configPath);
+
+        // Delete workspace folder
+        var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
+        if (Directory.Exists(workspace))
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+
+        // Delete workflow file
+        var workflowsPath = Path.Combine(_configService.GetDydoRoot(_basePath), "workflows");
+        var workflowPath = Path.Combine(workflowsPath, $"{existingName.ToLowerInvariant()}.md");
+        if (File.Exists(workflowPath))
+        {
+            File.Delete(workflowPath);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Reassigns an agent to a different human.
+    /// </summary>
+    public bool ReassignAgent(string name, string newHuman, out string error)
+    {
+        error = string.Empty;
+
+        // Validate human name
+        if (string.IsNullOrWhiteSpace(newHuman))
+        {
+            error = "Human name cannot be empty.";
+            return false;
+        }
+
+        // Load fresh config
+        var configPath = _configService.FindConfigFile(_basePath);
+        if (configPath == null)
+        {
+            error = "No dydo.json found. Run 'dydo init' first.";
+            return false;
+        }
+
+        var config = _configService.LoadConfig(_basePath);
+        if (config == null)
+        {
+            error = "Failed to load dydo.json.";
+            return false;
+        }
+
+        // Find the actual name in the pool
+        var existingName = config.Agents.Pool.FirstOrDefault(n =>
+            n.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        if (existingName == null)
+        {
+            error = $"Agent '{name}' does not exist in the pool.";
+            return false;
+        }
+
+        // Check agent is not claimed
+        var state = GetAgentState(existingName);
+        var session = GetSession(existingName);
+        if (state?.Status != AgentStatus.Free && session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+        {
+            error = $"Agent '{existingName}' is currently claimed. Release it first.";
+            return false;
+        }
+
+        // Find current assignment
+        var currentHuman = config.Agents.GetHumanForAgent(existingName);
+
+        // Check if already assigned to the new human
+        if (currentHuman != null && currentHuman.Equals(newHuman, StringComparison.OrdinalIgnoreCase))
+        {
+            error = $"Agent '{existingName}' is already assigned to '{newHuman}'.";
+            return false;
+        }
+
+        // Remove from current human's assignments
+        if (currentHuman != null && config.Agents.Assignments.ContainsKey(currentHuman))
+        {
+            config.Agents.Assignments[currentHuman].RemoveAll(n =>
+                n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Add to new human's assignments
+        if (!config.Agents.Assignments.ContainsKey(newHuman))
+        {
+            config.Agents.Assignments[newHuman] = new List<string>();
+        }
+        config.Agents.Assignments[newHuman].Add(existingName);
+
+        // Save config
+        _configService.SaveConfig(config, configPath);
+
+        // Update state file if it exists
+        var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
+        var statePath = Path.Combine(workspace, "state.md");
+        if (File.Exists(statePath))
+        {
+            var content = File.ReadAllText(statePath);
+            content = Regex.Replace(content, @"^assigned:\s*\S+\s*$",
+                $"assigned: {newHuman}", RegexOptions.Multiline);
+            File.WriteAllText(statePath, content);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Normalizes an agent name (finds exact match in pool).
+    /// </summary>
+    private string NormalizeName(string name)
+    {
+        var match = AgentNames.FirstOrDefault(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
+        return match ?? name;
+    }
 }

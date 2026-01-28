@@ -1,11 +1,5 @@
 namespace DynaDocs.Models;
 
-public enum ViolationSeverity
-{
-    Error,
-    Warning
-}
-
 public record Violation(
     string FilePath,
     string RuleName,

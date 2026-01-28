@@ -11,10 +11,3 @@ public class AgentState
     public List<string> DeniedPaths { get; set; } = [];
     public string? AssignedHuman { get; set; }
 }
-
-public enum AgentStatus
-{
-    Free,
-    Working,
-    Reviewing
-}

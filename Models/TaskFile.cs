@@ -10,13 +10,3 @@ public class TaskFile
     public DateTime? Updated { get; set; }
     public string? AssignedAgent { get; set; }
 }
-
-public enum TaskStatus
-{
-    Pending,
-    Active,
-    ReviewPending,
-    HumanReviewed,
-    ReviewFailed,
-    Closed
-}

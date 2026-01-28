@@ -100,6 +100,7 @@ public static class InitCommand
         try
         {
             var projectRoot = Environment.CurrentDirectory;
+            var projectName = Path.GetFileName(projectRoot);
 
             // Create dydo.json
             var config = ConfigService.CreateDefault(humanName, agentCount);
@@ -109,13 +110,22 @@ public static class InitCommand
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
-            // Create dydo/ folder structure
+            // Create CLAUDE.md at project root (entry point)
+            var claudeMdPath = Path.Combine(projectRoot, "CLAUDE.md");
+            if (!File.Exists(claudeMdPath))
+            {
+                var claudeMdContent = TemplateGenerator.GenerateClaudeMd(projectName);
+                File.WriteAllText(claudeMdPath, claudeMdContent);
+                Console.WriteLine("  ✓ CLAUDE.md (entry point)");
+            }
+
+            // Create dydo/ folder structure with agent workflow files
             var dydoRoot = Path.Combine(projectRoot, config.Structure.Root);
             Directory.CreateDirectory(dydoRoot);
 
             var scaffolder = new FolderScaffolder();
-            scaffolder.Scaffold(dydoRoot);
-            Console.WriteLine($"  ✓ {config.Structure.Root}/ structure");
+            scaffolder.Scaffold(dydoRoot, config.Agents.Pool);
+            Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
 
             // Create agents folder (gitignored)
             var agentsPath = Path.Combine(dydoRoot, "agents");
@@ -133,16 +143,19 @@ public static class InitCommand
             }
 
             Console.WriteLine();
-            var agentNames = string.Join(", ", config.Agents.Pool.Take(5));
+            var agentNamesList = string.Join(", ", config.Agents.Pool.Take(5));
             if (config.Agents.Pool.Count > 5)
-                agentNames += $" ... ({config.Agents.Pool.Count} total)";
+                agentNamesList += $" ... ({config.Agents.Pool.Count} total)";
 
-            Console.WriteLine($"Agents assigned to {humanName}: {agentNames}");
+            Console.WriteLine($"Agents assigned to {humanName}: {agentNamesList}");
+            Console.WriteLine();
+            Console.WriteLine("Documentation funnel created:");
+            Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
             Console.WriteLine();
             Console.WriteLine("Next steps:");
             Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
-            Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
-            Console.WriteLine("  3. Set a role: dydo agent role code-writer");
+            Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
+            Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
 
             return ExitCodes.Success;
         }

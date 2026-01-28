@@ -21,6 +21,8 @@ This registers you as {{AGENT_NAME}} for this terminal session. You must claim b
 
 > **Note:** The command is case-insensitive. `dydo agent claim {{AGENT_NAME_LOWER}}` also works.
 
+> **Prerequisite:** The `DYDO_HUMAN` environment variable must be set to identify which human is operating. If claim fails with "DYDO_HUMAN not set", ask the human to run: `export DYDO_HUMAN=theirname`
+
 ---
 
 ## Must-Read Documents

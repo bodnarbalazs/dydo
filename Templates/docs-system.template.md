@@ -13,6 +13,8 @@ How this documentation is structured and maintained.
 
 This documentation is designed for **dynamic traversal** by both humans and AI agents. Instead of loading everything upfront, readers start at the index and follow links to gather relevant context for their current task.
 
+This approach is called **JITI** — Just In Time Information.
+
 ### Design Principles
 
 1. **Hierarchical navigation** — Index → Hubs → Details (top-down)
@@ -25,43 +27,61 @@ This documentation is designed for **dynamic traversal** by both humans and AI a
 ## Structure
 
 ```
-docs/{project}/
-├── index.md                 # Entry point
-├── glossary.md              # Term definitions
+project/
+├── dydo.json                    # Configuration (agents, assignments)
+├── CLAUDE.md                    # Entry point → dydo/index.md
 │
-├── understand/              # What things ARE
-│   ├── _index.md            # Hub
-│   └── {concept}.md
-│
-├── guides/                  # How to DO things
-│   ├── _index.md
-│   ├── backend/
-│   ├── frontend/
-│   └── microservices/
-│
-├── reference/               # Specs and lookups
-│   ├── _index.md
-│   └── {topic}.md
-│
-└── project/                 # Meta: how we work
-    ├── _index.md
-    ├── coding-standards.md
-    ├── decisions/           # ADRs
-    ├── pitfalls/            # Known gotchas
-    └── changelog/           # Session notes
-        └── {YYYY}/
-            └── {YYYY-MM-DD}/
-                └── topic.md
+└── dydo/                        # Documentation root
+    ├── index.md                 # Main entry point
+    ├── glossary.md              # Term definitions
+    │
+    ├── workflows/               # Agent workflow files
+    │   ├── adele.md
+    │   ├── brian.md
+    │   └── ...
+    │
+    ├── understand/              # What things ARE
+    │   ├── _index.md            # Hub
+    │   ├── architecture.md
+    │   └── {concept}.md
+    │
+    ├── guides/                  # How to DO things
+    │   ├── _index.md
+    │   ├── coding-standards.md
+    │   ├── how-to-use-docs.md
+    │   └── {task}.md
+    │
+    ├── reference/               # Specs and lookups
+    │   ├── _index.md
+    │   └── {topic}.md
+    │
+    ├── project/                 # Meta: how we work
+    │   ├── _index.md
+    │   ├── tasks/               # Cross-human task dispatch
+    │   ├── decisions/           # Architecture Decision Records
+    │   ├── pitfalls/            # Known gotchas
+    │   └── changelog/           # Session notes
+    │       └── {YYYY}/
+    │           └── {YYYY-MM-DD}/
+    │               └── topic.md
+    │
+    └── agents/                  # Agent workspaces (GITIGNORED)
+        └── AgentName/
+            ├── state.md
+            ├── .session
+            └── inbox/
 ```
 
 ### Folder Purposes
 
 | Folder | Question it answers | Content type |
 |--------|---------------------|--------------|
+| `workflows/` | "Who am I and what do I do?" | Agent workflow files |
 | `understand/` | "What IS this?" | Domain concepts, architecture |
 | `guides/` | "How do I DO this?" | Task-oriented instructions |
 | `reference/` | "What are the specs?" | APIs, configs, tool docs |
-| `project/` | "Why/how do we work?" | Decisions, pitfalls, meta |
+| `project/` | "Why/how do we work?" | Decisions, pitfalls, tasks, meta |
+| `agents/` | "What's my state?" | Agent workspaces (local, gitignored) |
 
 ---
 
@@ -69,7 +89,9 @@ docs/{project}/
 
 | Type | Purpose | Location | Naming |
 |------|---------|----------|--------|
+| `entry` | Main entry point | `index.md` | Always `index.md` |
 | `hub` | Entry point for a folder | `_index.md` in any folder | Always `_index.md` |
+| `workflow` | Agent-specific instructions | `workflows/` | `{agentname}.md` |
 | `concept` | Explains what something IS | `understand/` | Named by concept |
 | `guide` | How to accomplish a task | `guides/` | Named by task |
 | `reference` | Specs, APIs, configs | `reference/` | Named by subject |
@@ -86,7 +108,7 @@ Every document starts with YAML frontmatter:
 ```markdown
 ---
 area: frontend | backend | microservices | platform | general
-type: hub | concept | guide | reference | decision | pitfall | changelog
+type: hub | concept | guide | reference | decision | pitfall | changelog | workflow
 ---
 
 # Title
@@ -107,6 +129,7 @@ Brief summary paragraph (1-3 sentences).
 
 - `status` — Required for decisions: `proposed`, `accepted`, `deprecated`, `superseded`
 - `date` — Required for decisions and changelog: `YYYY-MM-DD`
+- `agent` — Required for workflow files: agent name
 
 ---
 
@@ -262,7 +285,7 @@ dydo graph tokens.md --incoming --degree 2
 Changelogs live in date-based folders:
 
 ```
-changelog/
+project/changelog/
 ├── 2025/
 │   ├── 2025-01-15/
 │   │   ├── auth-refactor.md
@@ -287,4 +310,5 @@ The "Files Changed" section enables future debugging by tracing changes back to 
 ## Related
 
 - [Coding Standards](./coding-standards.md) — Code conventions
+- [Workflow](./workflow.md) — Multi-agent workflow system
 - [Glossary](./glossary.md) — Term definitions

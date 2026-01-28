@@ -13,46 +13,45 @@ How work flows through this project using the multi-agent system.
 
 This project uses a multi-agent orchestration system. Each agent:
 - Has a unique identity (Adele, Brian, Charlie, etc.)
-- Operates in a dedicated workspace
-- Has role-based permissions
+- Operates in a dedicated workspace at `dydo/agents/{AgentName}/`
+- Has role-based file permissions
 - Coordinates with other agents via dispatch
 
-**Key principle:** Different agents handle different phases. The agent that writes code does not do it's own code review. Fresh eyes catch what authors miss.
+**Key principle:** Different agents handle different phases. The agent that writes code does not do its own code review. Fresh eyes catch what authors miss.
 
 ---
 
-## Workflow Modes
+## Environment Setup
 
-Your prompt may include a flag that determines your workflow:
+Before starting, ensure `DYDO_HUMAN` is set to identify which human is operating:
 
-| Flag | Mode | Steps |
-|------|------|-------|
-| `--feature X` | Full | Interview → Plan → Implement → Review → Docs |
-| `--task X` | Standard | Plan → Implement → Review |
-| `--quick X` | Light | Just implement |
-| `--inbox X` | Inbox | Process pending dispatches |
-| `--review X` | Review | Code review only |
+```bash
+# Bash/Zsh
+export DYDO_HUMAN=yourname
 
-The letter `X` determines your agent identity:
-- A = Adele, B = Brian, C = Charlie, D = Dexter, E = Emma...
+# PowerShell
+$env:DYDO_HUMAN = "yourname"
+```
 
-**If no flag provided:** Ask the human which workflow to follow.
+This determines which agents you can claim (from your assignment in `dydo.json`).
 
 ---
 
 ## Your Identity
 
-When you start, read your agent-specific workflow file:
-`.workspace/{YourName}/workflow.md`
+When you start, read your agent-specific workflow file at:
+`dydo/workflows/{yourname}.md`
 
 This file contains:
 - Your name (use it in all dydo commands)
-- Your current permissions based on role
+- Must-read documents (architecture, coding standards, how-to guide)
+- Your permissions based on role
 - Instructions specific to you
 
-**First action after reading index.md:**
+**First action:**
 ```bash
-dydo agent claim {YourName}
+dydo agent claim {YourName}   # Or: dydo agent claim auto
+dydo whoami                   # Verify identity
 ```
 
 This registers you in the system and tracks your terminal session.
@@ -65,18 +64,18 @@ Your role determines what you can edit:
 
 | Role | Can Edit | Cannot Edit |
 |------|----------|-------------|
-| `code-writer` | `src/**`, `tests/**` | `docs/**`, `project/**` |
-| `reviewer` | (nothing) | (everything) |
-| `docs-writer` | `docs/**` | `src/**`, `tests/**` |
-| `interviewer` | `.workspace/{self}/**` | Everything else |
-| `planner` | `.workspace/{self}/**`, `project/tasks/**` | `src/**`, `docs/**` |
+| `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
+| `reviewer` | (read-only) | (all files) |
+| `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**` |
+| `interviewer` | `dydo/agents/{self}/**` | Everything else |
+| `planner` | `dydo/agents/{self}/**`, `dydo/project/tasks/**` | `src/**` |
 
 Set your role:
 ```bash
 dydo agent role code-writer --task jwt-auth
 ```
 
-The guard will enforce permissions. Trust it.
+The guard enforces these permissions. If blocked, change your role or dispatch to another agent.
 
 ---
 
@@ -135,10 +134,11 @@ dydo dispatch \
 ```
 
 This:
-1. Finds the first free agent alphabetically
+1. Finds the first free agent assigned to the current human
 2. Writes the request to their inbox
-3. Launches a new terminal for them
-4. Returns: "Dispatched to {AgentName}"
+3. Returns: "Dispatched to {AgentName}"
+
+**Cross-human dispatch:** If the target role's agents are assigned to a different human, creates a task file in `dydo/project/tasks/` instead (committed to git, visible to all).
 
 **Do not wait.** Continue your work or release if done.
 
@@ -146,8 +146,7 @@ This:
 
 ## Processing Your Inbox
 
-If started with `--inbox X`:
-
+Check your inbox:
 ```bash
 dydo inbox show
 ```
@@ -174,12 +173,12 @@ dydo agent list
 ```
 
 **Do not:**
-- Edit files in another agent's workspace
+- Edit files in another agent's workspace (`dydo/agents/OtherAgent/`)
 - Claim tasks another agent is working on
 - Interfere with ongoing work
 
 **Do:**
-- Check `agent-states.md` before starting
+- Check agent states before starting
 - Use dispatch for handoffs
 - Release when done: `dydo agent release`
 
@@ -187,29 +186,33 @@ dydo agent list
 
 ## The Guard
 
-Hooks call `dydo guard` to enforce permissions.
+The `dydo guard` command is called by hooks (e.g., Claude Code PreToolUse) to enforce permissions.
 
 If you try to edit a file outside your role's allowed paths:
 ```
-DENIED: code-writer cannot edit docs/
+Agent Adele (code-writer) cannot edit dydo/guides/setup.md.
+code-writer role cannot edit dydo/** paths.
 ```
 
-This is working as intended. Change your role or dispatch to another agent.
+This is working as intended. Either:
+- Change your role: `dydo agent role docs-writer`
+- Dispatch to another agent with the right role
 
 ---
 
 ## Quick Reference
 
 ```bash
-# Lifecycle
+# Identity
 dydo agent claim {Name}          # Start session
+dydo agent claim auto            # Auto-claim first free
+dydo whoami                      # Show current identity
 dydo agent role {role}           # Set permissions
 dydo agent release               # End session
 
 # Tasks
 dydo task create "description"
 dydo task ready-for-review {name} --summary "..."
-dydo tasks --needs-review        # List pending reviews
 
 # Dispatch
 dydo dispatch --role {role} --task {name} --brief "..."
@@ -223,7 +226,7 @@ dydo review complete {task} --status pass|fail
 
 # Status
 dydo agent list
-dydo agent status
+dydo agent list --free
 ```
 
 ---
@@ -232,4 +235,4 @@ dydo agent status
 
 - [Coding Standards](./coding-standards.md) — Code conventions
 - [Documentation System](./docs-system.md) — Doc structure
-- [Tasks](./../tasks/_index.md) — Active and completed tasks
+- [Tasks](../project/tasks/_index.md) — Active and completed tasks

@@ -150,10 +150,10 @@ If following a workflow mode (`--feature`, `--task`, etc.):
 
 **Run before finishing:**
 ```bash
-dydo workflow check
+dydo check
 ```
 
-This verifies compliance. Fix any issues before releasing.
+This validates documentation and agent state. Fix any issues before releasing.
 
 See [Workflow](./workflow.md) for full details.
 
@@ -263,9 +263,9 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ## Stack-Specific Standards
 
-- [Backend Standards](./guides/backend/_index.md) — C#, .NET, API patterns
-- [Frontend Standards](./guides/frontend/_index.md) — React, TypeScript, styling
-- [Microservices Standards](./guides/microservices/_index.md) — Python, FastAPI, uv
+- [Backend Standards](./backend/_index.md) — C#, .NET, API patterns
+- [Frontend Standards](./frontend/_index.md) — React, TypeScript, styling
+- [Microservices Standards](./microservices/_index.md) — Python, FastAPI, uv
 
 ---
 

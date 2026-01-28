@@ -117,6 +117,24 @@ secrets.json
 
 ---
 
+## Whitelist
+
+Paths listed here are **exceptions** to the off-limits patterns above.
+Use this for safe template files or test fixtures.
+
+```
+# Example: .env.example is a template, not real secrets
+.env.example
+
+# Test fixtures that look like secrets but aren't
+# tests/fixtures/secrets.json
+```
+
+> **Warning:** Be careful with wildcards in whitelist patterns.
+> A pattern like `tests/**/*.example` is fine, but `**/secrets.*` would defeat the purpose.
+
+---
+
 ## Notes
 
 - The `dydo check` command validates that literal paths (without wildcards) exist

@@ -3,76 +3,20 @@ area: general
 type: entry
 ---
 
-# DynaDocs
+# DynaDocs - AI Agent entry point
 
-This project uses **DynaDocs** for documentation and AI agent workflow.
+Dynamic documentation and agent orchestration system. Provides structured context retrieval for AI agents and coordinates multi-agent workflows.
 
----
-
-## AI Agents — Your Entry Point
-
-You need a **named identity** to work on this project. Each identity has its own workflow file with instructions.
-
-### Option A: You Know Your Identity
-
-If you were told to be a specific agent (e.g., "You are Adele"), go directly to your workflow file:
-
-**→ [workflows/](workflows/_index.md)** — Pick your workflow file and follow it
-
-### Option B: Auto-Assign
-
-If no identity was specified, claim one automatically:
-
-```bash
-dydo agent claim auto
-```
-
-Then check which identity you received:
-
-```bash
-dydo whoami
-```
-
-**If `dydo whoami` shows an error or "No agent identity":**
-- The `DYDO_HUMAN` environment variable may not be set
-- Ask the human to run: `export DYDO_HUMAN=theirname`
-- Then try claiming again
-
-Once you have an identity, read your workflow file at `workflows/{yourname}.md`.
+You need an assigned identity to work here.
 
 ---
 
-## Humans — Quick Reference
+## Your Identity
 
-```bash
-# Setup
-dydo init claude                    # Initialize with Claude Code hooks
-dydo init claude --join             # Join existing project
-export DYDO_HUMAN=yourname          # Set your identity (add to shell profile)
+Check your prompt for an agent name (e.g., `Adele`, `Brian`).
 
-# Agent management
-dydo agent list                     # See all agents
-dydo agent new <name> <human>       # Create new agent
-dydo agent reassign <name> <human>  # Reassign agent
+**Found one?** → Go to **[workflows/{name}.md](workflows/)**
 
-# Documentation
-dydo check                          # Validate docs
-dydo fix                            # Auto-fix issues
-```
+**None?** → Run `dydo agent claim auto`, then go to **workflows/{assigned-name}.md**
 
-See [guides/how-to-use-docs.md](guides/how-to-use-docs.md) for full reference.
-
----
-
-## Project Structure
-
-```
-dydo/
-├── index.md              ← You are here
-├── workflows/            # Agent workflow files (start here)
-├── understand/           # Architecture, concepts
-├── guides/               # How-to guides
-├── reference/            # API specs, configs
-├── project/              # Decisions, tasks, changelog
-└── agents/               # Agent workspaces (gitignored)
-```
+Your prompt may include a --flag about your mode, your workflow file explains everything.

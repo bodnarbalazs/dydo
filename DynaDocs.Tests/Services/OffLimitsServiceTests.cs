@@ -508,4 +508,298 @@ public class OffLimitsServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Whitelist Tests
+
+    [Fact]
+    public void LoadPatterns_LoadsWhitelistSection()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env.*
+            ```
+
+            ## Whitelist
+            ```
+            .env.example
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        Assert.Contains(".env.*", service.Patterns);
+        Assert.Contains(".env.example", service.WhitelistPatterns);
+    }
+
+    [Fact]
+    public void IsPathOffLimits_WhitelistOverridesOffLimits()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env.*
+            ```
+
+            ## Whitelist
+            ```
+            .env.example
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        // .env.local should be blocked (matches .env.*)
+        Assert.NotNull(service.IsPathOffLimits(".env.local"));
+
+        // .env.example should be allowed (whitelisted)
+        Assert.Null(service.IsPathOffLimits(".env.example"));
+    }
+
+    [Fact]
+    public void IsPathOffLimits_WhitelistWorksWithPaths()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            **/secrets.json
+            ```
+
+            ## Whitelist
+            ```
+            tests/fixtures/secrets.json
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        // Regular secrets.json blocked
+        Assert.NotNull(service.IsPathOffLimits("config/secrets.json"));
+
+        // Test fixture allowed
+        Assert.Null(service.IsPathOffLimits("tests/fixtures/secrets.json"));
+    }
+
+    [Fact]
+    public void CheckCommand_RespectsWhitelist()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env.*
+            ```
+
+            ## Whitelist
+            ```
+            .env.example
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var (blocked1, _, _) = service.CheckCommand("cat .env.local");
+        var (blocked2, _, _) = service.CheckCommand("cat .env.example");
+
+        Assert.True(blocked1);   // .env.local blocked
+        Assert.False(blocked2);  // .env.example allowed
+    }
+
+    [Fact]
+    public void LoadPatterns_HandlesFileWithoutWhitelistSection()
+    {
+        // Existing files without whitelist should still work
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ```
+            .env
+            secrets.json
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        Assert.Equal(2, service.Patterns.Count);
+        Assert.Empty(service.WhitelistPatterns);
+    }
+
+    [Fact]
+    public void IsPathOffLimits_WhitelistWorksWithSimpleFilenames()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env
+            ```
+
+            ## Whitelist
+            ```
+            .env.example
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        // .env should be blocked
+        Assert.NotNull(service.IsPathOffLimits(".env"));
+        Assert.NotNull(service.IsPathOffLimits("config/.env"));
+
+        // .env.example should be allowed even in subdirectories
+        Assert.Null(service.IsPathOffLimits(".env.example"));
+        Assert.Null(service.IsPathOffLimits("config/.env.example"));
+    }
+
+    [Theory]
+    [InlineData("## Whitelist")]
+    [InlineData("# Whitelist")]
+    [InlineData("## Exceptions")]
+    [InlineData("# Exceptions")]
+    public void LoadPatterns_RecognizesVariousWhitelistHeaders(string header)
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), $"""
+            ## Off-Limits
+            ```
+            .env
+            ```
+
+            {header}
+            ```
+            .env.example
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        Assert.Single(service.Patterns);
+        Assert.Single(service.WhitelistPatterns);
+        Assert.Contains(".env.example", service.WhitelistPatterns);
+    }
+
+    #endregion
+
+    #region Format Validation Tests
+
+    [Fact]
+    public void ValidateFormat_DetectsUnclosedCodeBlock()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ```
+            .env
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.Contains(issues, i => i.Message.Contains("Unclosed code block") && i.IsError);
+    }
+
+    [Fact]
+    public void ValidateFormat_DetectsNoPatterns()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            # Files Off-Limits
+
+            No patterns here, just text.
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.Contains(issues, i => i.Message.Contains("No off-limits patterns") && !i.IsError);
+    }
+
+    [Fact]
+    public void ValidateFormat_DetectsDuplicatePatterns()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ```
+            .env
+            secrets.json
+            .env
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.Contains(issues, i => i.Message.Contains("Duplicate pattern: .env"));
+    }
+
+    [Theory]
+    [InlineData("*")]
+    [InlineData("**")]
+    [InlineData("**/*")]
+    [InlineData("**/.*")]
+    [InlineData("**/*.json")]
+    public void ValidateFormat_DetectsBroadWhitelistPatterns(string pattern)
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), $"""
+            ## Off-Limits
+            ```
+            .env
+            ```
+
+            ## Whitelist
+            ```
+            {pattern}
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.Contains(issues, i => i.Message.Contains("too broad"));
+    }
+
+    [Fact]
+    public void ValidateFormat_NoIssuesForValidFile()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env
+            secrets.json
+            ```
+
+            ## Whitelist
+            ```
+            .env.example
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.Empty(issues);
+    }
+
+    [Fact]
+    public void ValidateFormat_ReturnsEmptyWhenFileNotExists()
+    {
+        File.Delete(Path.Combine(_dydoDir, "files-off-limits.md"));
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.Empty(issues);
+    }
+
+    #endregion
 }

@@ -47,6 +47,18 @@ public class OffLimitsRule : RuleBase
         // Load patterns and validate literal paths
         _offLimitsService.LoadPatterns(basePath);
 
+        // Validate format
+        var formatIssues = _offLimitsService.ValidateFormat(basePath);
+        foreach (var issue in formatIssues)
+        {
+            yield return new Violation(
+                "dydo/files-off-limits.md",
+                Name,
+                issue.Message,
+                issue.IsError ? ViolationSeverity.Error : ViolationSeverity.Warning
+            );
+        }
+
         var projectRoot = configService.GetProjectRoot(basePath) ?? basePath;
         var missingPaths = _offLimitsService.ValidateLiteralPaths(projectRoot);
 

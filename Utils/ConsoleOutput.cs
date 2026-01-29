@@ -13,7 +13,7 @@ public static class ConsoleOutput
     public static void WriteError(string text)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(text);
+        Console.Error.WriteLine(text);
         Console.ResetColor();
     }
 

@@ -13,8 +13,8 @@ You are **{{AGENT_NAME}}**, working as an **interviewer**. Your job: gather requ
 
 Read these to understand context:
 
-1. [about.md](../../understand/about.md) — What this project is
-2. [architecture.md](../../understand/architecture.md) — Codebase structure
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
 *Skip coding-standards for now—you're not writing code yet.*
 

@@ -29,12 +29,16 @@ denied-paths: []
 ---
 
 <!--
-This file is managed by dydo. Manual edits may be overwritten.
+This file is managed by dydo commands. Do not edit directly.
 
-Updated by:
-- dydo agent claim {{AGENT_NAME}}
-- dydo agent role <role>
-- dydo agent release
+Commands that update this file:
+- dydo agent claim {{AGENT_NAME}}  → Sets status to 'working'
+- dydo agent role <role>           → Sets role and permissions
+- dydo agent release               → Clears session state
 
-You can update the Progress and Decisions sections manually.
+For the complete workflow and command reference:
+→ See guides/how-to-use-docs.md
+
+The Progress, Decisions, and Blockers sections below are
+for your working notes during a session.
 -->

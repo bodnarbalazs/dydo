@@ -72,6 +72,72 @@ public class NamingRuleTests
         Assert.Equal("my-document.md", violations[0].SuggestedFix);
     }
 
+    #region Folder Name Validation
+
+    [Fact]
+    public void Validate_AcceptsKebabCaseFolderPath()
+    {
+        var doc = CreateDoc("test.md", "my-folder/sub-folder/test.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_RejectsPascalCaseFolder()
+    {
+        var doc = CreateDoc("test.md", "MyFolder/test.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("Folder name", violations[0].Message);
+        Assert.Contains("MyFolder", violations[0].Message);
+    }
+
+    [Fact]
+    public void Validate_RejectsMultipleInvalidFolders()
+    {
+        var doc = CreateDoc("test.md", "BadFolder/AnotherBad/test.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Equal(2, violations.Count);
+    }
+
+    [Fact]
+    public void Validate_AcceptsSingleLetterFolders()
+    {
+        var doc = CreateDoc("test.md", "a/b/test.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsNumbersInFolderNames()
+    {
+        var doc = CreateDoc("test.md", "api-v2/test.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_ReportsFileAndFolderViolations()
+    {
+        var doc = CreateDoc("BadFile.md", "BadFolder/BadFile.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Equal(2, violations.Count);
+    }
+
+    #endregion
+
     private static DocFile CreateDoc(string fileName, string relativePath = "")
     {
         if (string.IsNullOrEmpty(relativePath))

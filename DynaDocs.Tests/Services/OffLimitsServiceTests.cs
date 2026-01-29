@@ -802,4 +802,71 @@ public class OffLimitsServiceTests : IDisposable
     }
 
     #endregion
+
+    #region DynaDocs System File Patterns
+
+    [Theory]
+    [InlineData("dydo/agents/Adele/workflow.md")]
+    [InlineData("dydo/agents/Brian/workflow.md")]
+    [InlineData("dydo/agents/Adele/state.md")]
+    [InlineData("dydo/agents/Brian/state.md")]
+    [InlineData("dydo/agents/Adele/.session")]
+    [InlineData("dydo/agents/Adele/modes/code-writer.md")]
+    [InlineData("dydo/agents/Adele/modes/reviewer.md")]
+    [InlineData("dydo/agents/agent-states.md")]
+    [InlineData("dydo/index.md")]
+    [InlineData("dydo/files-off-limits.md")]
+    public void IsPathOffLimits_BlocksDydoSystemFiles(string path)
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ```
+            dydo/agents/*/workflow.md
+            dydo/agents/*/state.md
+            dydo/agents/*/.session
+            dydo/agents/*/modes/**
+            dydo/agents/agent-states.md
+            dydo/index.md
+            dydo/files-off-limits.md
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var result = service.IsPathOffLimits(path);
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [InlineData("dydo/agents/Adele/inbox/message-001.md")]
+    [InlineData("dydo/agents/Adele/brief-feature-x.md")]
+    [InlineData("dydo/agents/Adele/plan-feature-x.md")]
+    [InlineData("dydo/agents/Adele/notes.md")]
+    [InlineData("dydo/agents/Adele/scratch/temp.md")]
+    [InlineData("dydo/welcome.md")]
+    [InlineData("dydo/glossary.md")]
+    [InlineData("dydo/understand/architecture.md")]
+    [InlineData("dydo/guides/coding-standards.md")]
+    public void IsPathOffLimits_AllowsAgentWorkArtifacts(string path)
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ```
+            dydo/agents/*/workflow.md
+            dydo/agents/*/state.md
+            dydo/agents/*/.session
+            dydo/agents/*/modes/**
+            dydo/agents/agent-states.md
+            dydo/index.md
+            dydo/files-off-limits.md
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var result = service.IsPathOffLimits(path);
+        Assert.Null(result);
+    }
+
+    #endregion
 }

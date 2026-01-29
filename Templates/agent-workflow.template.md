@@ -106,4 +106,10 @@ dydo dispatch --role <r> --task <t> --brief "..."
 
 ---
 
-*Full command reference: [how-to-use-docs.md](../guides/how-to-use-docs.md)*
+## Project Terminology
+
+If you encounter unfamiliar project-specific terms, check [glossary.md](../../glossary.md).
+
+---
+
+*Full command reference: [how-to-use-docs.md](../../guides/how-to-use-docs.md)*

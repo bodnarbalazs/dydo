@@ -13,9 +13,9 @@ You are **{{AGENT_NAME}}**, working as a **code-writer**. Your job: implement th
 
 Read these before writing any code:
 
-1. [about.md](../../understand/about.md) — What this project is
-2. [architecture.md](../../understand/architecture.md) — Codebase structure
-3. [coding-standards.md](../../guides/coding-standards.md) — Code conventions
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
+3. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
 
 ---
 

@@ -17,11 +17,11 @@ One-line summary of what was done.
 
 ## Decisions
 
-- [ADR-NNN: Title](../../decisions/NNN-topic.md) — if any decisions were made
+- [ADR-NNN: Title](../../../decisions/NNN-topic.md) — if any decisions were made
 
 ## Pitfalls
 
-- [Pitfall Name](../../pitfalls/pitfall-name.md) — if any were encountered/created
+- [Pitfall Name](../../../pitfalls/pitfall-name.md) — if any were encountered/created
 
 ## Files Changed
 

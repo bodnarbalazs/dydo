@@ -159,13 +159,40 @@ public static class DispatchCommand
         File.WriteAllText(path, content);
     }
 
+    private record TerminalConfig(string FileName, Func<char, string> GetArguments);
+
+    private static readonly TerminalConfig[] LinuxTerminals =
+    [
+        // Modern terminals (most common on current distros)
+        new("gnome-terminal", a => $"-- bash -c \"claude --inbox {a}; exec bash\""),
+        new("konsole", a => $"-e bash -c \"claude --inbox {a}; exec bash\""),
+        new("xfce4-terminal", a => $"-e \"bash -c 'claude --inbox {a}; exec bash'\""),
+
+        // Popular third-party terminals
+        new("alacritty", a => $"-e bash -c \"claude --inbox {a}; exec bash\""),
+        new("kitty", a => $"bash -c \"claude --inbox {a}; exec bash\""),
+        new("wezterm", a => $"start -- bash -c \"claude --inbox {a}; exec bash\""),
+        new("tilix", a => $"-e \"bash -c 'claude --inbox {a}; exec bash'\""),
+
+        // Wayland-native
+        new("foot", a => $"bash -c \"claude --inbox {a}; exec bash\""),
+
+        // Fallback (usually available)
+        new("xterm", a => $"-e bash -c \"claude --inbox {a}; exec bash\""),
+    ];
+
+    private static readonly TerminalConfig[] MacTerminals =
+    [
+        // Terminal.app is always present on macOS
+        new("osascript", a => $"-e 'tell app \"Terminal\" to do script \"claude --inbox {a}\"'"),
+    ];
+
     private static void LaunchNewTerminal(char agentLetter)
     {
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // Windows: Use PowerShell
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "powershell",
@@ -175,34 +202,16 @@ public static class DispatchCommand
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // macOS: Use Terminal.app via osascript
-                Process.Start(new ProcessStartInfo
+                if (!TryLaunchTerminal(MacTerminals, agentLetter))
                 {
-                    FileName = "osascript",
-                    Arguments = $"-e 'tell app \"Terminal\" to do script \"claude --inbox {agentLetter}\"'",
-                    UseShellExecute = true
-                });
+                    throw new InvalidOperationException("No terminal found");
+                }
             }
             else
             {
-                // Linux: Try common terminals
-                var terminals = new[] { "gnome-terminal", "xterm", "konsole" };
-                foreach (var term in terminals)
+                if (!TryLaunchTerminal(LinuxTerminals, agentLetter))
                 {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = term,
-                            Arguments = $"-e \"claude --inbox {agentLetter}\"",
-                            UseShellExecute = true
-                        });
-                        break;
-                    }
-                    catch
-                    {
-                        // Try next terminal
-                    }
+                    throw new InvalidOperationException("No terminal found");
                 }
             }
         }
@@ -211,5 +220,27 @@ public static class DispatchCommand
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually run: claude --inbox {agentLetter}");
         }
+    }
+
+    private static bool TryLaunchTerminal(TerminalConfig[] terminals, char agentLetter)
+    {
+        foreach (var terminal in terminals)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = terminal.FileName,
+                    Arguments = terminal.GetArguments(agentLetter),
+                    UseShellExecute = true
+                });
+                return true;
+            }
+            catch
+            {
+                // Try next terminal
+            }
+        }
+        return false;
     }
 }

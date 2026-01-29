@@ -17,6 +17,38 @@ These patterns are checked BEFORE role-based permissions and block ALL operation
 ## Default Patterns
 
 ```
+# ============================================================
+# DynaDocs System Files
+# ============================================================
+# These files are managed by dydo commands. Do not edit directly.
+# Use the appropriate dydo command instead (listed below).
+
+# Agent workspace system files
+# Edit via: dydo init, dydo agent rename
+dydo/agents/*/workflow.md
+dydo/agents/*/modes/**
+
+# Agent session state
+# Edit via: dydo agent claim, dydo agent release, dydo agent role
+dydo/agents/*/state.md
+dydo/agents/*/.session
+
+# Agent registry (all agents overview)
+# Edit via: dydo agent commands
+dydo/agents/agent-states.md
+
+# DynaDocs entry point
+# Edit via: dydo init
+dydo/index.md
+
+# This security config file
+# Edit manually with care - protects sensitive files
+dydo/files-off-limits.md
+
+# ============================================================
+# Secrets and Credentials
+# ============================================================
+
 # Environment and secrets
 .env
 .env.*

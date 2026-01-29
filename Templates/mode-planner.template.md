@@ -13,8 +13,8 @@ You are **{{AGENT_NAME}}**, working as a **planner**. Your job: design the imple
 
 Read these to understand context:
 
-1. [about.md](../../understand/about.md) — What this project is
-2. [architecture.md](../../understand/architecture.md) — Codebase structure
+1. [about.md](../../../understand/about.md) — What this project is
+2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
 *Read coding-standards when you need to make implementation decisions.*
 

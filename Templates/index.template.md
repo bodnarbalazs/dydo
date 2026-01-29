@@ -1,6 +1,6 @@
 ---
 area: general
-type: entry
+type: hub
 ---
 
 # DynaDocs - AI Agent Entry Point

@@ -133,13 +133,152 @@ public class FrontmatterRuleTests
         Assert.Contains(violations, v => v.Message.Contains("date"));
     }
 
-    private static DocFile CreateDocWithFrontmatter(Frontmatter? frontmatter)
+    #region New Valid Areas and Types
+
+    [Fact]
+    public void Validate_AcceptsUnderstandArea()
     {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "understand",
+            Type = "concept"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsGuidesArea()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "guides",
+            Type = "guide"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsContextType()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "general",
+            Type = "context"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
+    #region Exclusions
+
+    [Fact]
+    public void Validate_SkipsAgentWorkspaceFiles()
+    {
+        var doc = CreateDocWithFrontmatter(null, "agents/Adele/workflow.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsNestedAgentWorkspaceFiles()
+    {
+        var doc = CreateDocWithFrontmatter(null, "agents/Brian/modes/code-writer.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsFilesOffLimits()
+    {
+        var doc = CreateDocWithFrontmatter(null, "files-off-limits.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsFilesOffLimitsInSubfolder()
+    {
+        var doc = CreateDocWithFrontmatter(null, "dydo/files-off-limits.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_DoesNotSkipNonAgentFiles()
+    {
+        var doc = CreateDocWithFrontmatter(null, "guides/how-to.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("Missing frontmatter", violations[0].Message);
+    }
+
+    #endregion
+
+    #region Valid Decision
+
+    [Fact]
+    public void Validate_AcceptsValidDecision()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "platform",
+            Type = "decision",
+            Status = "accepted",
+            Date = "2025-01-15"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_RejectsInvalidStatus()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "platform",
+            Type = "decision",
+            Status = "invalid-status",
+            Date = "2025-01-15"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("Invalid status", violations[0].Message);
+    }
+
+    #endregion
+
+    private static DocFile CreateDocWithFrontmatter(Frontmatter? frontmatter, string relativePath = "test.md")
+    {
+        var fileName = Path.GetFileName(relativePath);
         return new DocFile
         {
-            FilePath = "/base/test.md",
-            RelativePath = "test.md",
-            FileName = "test.md",
+            FilePath = $"/base/{relativePath}",
+            RelativePath = relativePath,
+            FileName = fileName,
             Content = "# Test",
             Frontmatter = frontmatter,
             HasFrontmatter = frontmatter != null

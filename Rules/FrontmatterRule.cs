@@ -9,6 +9,20 @@ public class FrontmatterRule : RuleBase
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
+        // Skip agent workspace files - they use a different frontmatter schema (agent/mode/role)
+        var normalized = doc.RelativePath.Replace('\\', '/');
+        if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Contains("/agents/", StringComparison.OrdinalIgnoreCase))
+        {
+            yield break;
+        }
+
+        // Skip files-off-limits.md which uses type: config
+        if (doc.FileName.Equals("files-off-limits.md", StringComparison.OrdinalIgnoreCase))
+        {
+            yield break;
+        }
+
         if (!doc.HasFrontmatter)
         {
             yield return CreateError(doc, "Missing frontmatter");

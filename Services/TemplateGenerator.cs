@@ -146,7 +146,7 @@ public static class TemplateGenerator
         return """
             ---
             area: general
-            type: entry
+            type: hub
             ---
 
             # DynaDocs
@@ -818,8 +818,8 @@ public static class TemplateGenerator
 
             ## Must-Reads
 
-            1. [about.md](../../understand/about.md) — What this project is
-            2. [architecture.md](../../understand/architecture.md) — Codebase structure
+            1. [about.md](../../../understand/about.md) — What this project is
+            2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
             ---
 

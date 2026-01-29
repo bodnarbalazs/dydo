@@ -64,6 +64,7 @@ public class FolderScaffolderTests : IDisposable
     {
         _scaffolder.Scaffold(_testDir);
 
+        Assert.True(File.Exists(Path.Combine(_testDir, "welcome.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "about.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "architecture.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "guides", "coding-standards.md")));

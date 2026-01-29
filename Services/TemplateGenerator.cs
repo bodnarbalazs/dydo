@@ -427,8 +427,21 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Architecture overview template.
+    /// Reads from architecture.template.md if available.
     /// </summary>
     public static string GenerateArchitectureMd()
+    {
+        try
+        {
+            return ReadTemplate("architecture.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return GenerateFallbackArchitectureMd();
+        }
+    }
+
+    private static string GenerateFallbackArchitectureMd()
     {
         return """
             ---
@@ -438,7 +451,7 @@ public static class TemplateGenerator
 
             # Architecture Overview
 
-            > **TODO:** This is a template. Replace with your project's actual architecture.
+            > **Fill this in.** This document helps AI agents understand your codebase structure.
 
             ---
 
@@ -447,12 +460,8 @@ public static class TemplateGenerator
             ```
             project/
             ├── src/                  # Source code
-            │   ├── components/       # UI components
-            │   ├── services/         # Business logic
-            │   ├── models/           # Data models
-            │   └── utils/            # Utilities
             ├── tests/                # Test files
-            ├── dydo/                 # Documentation & agent workspaces
+            ├── dydo/                 # Documentation
             └── ...
             ```
 
@@ -462,30 +471,7 @@ public static class TemplateGenerator
 
             ### Component A
 
-            *Describe what this component does, its responsibilities, and how it interacts with other components.*
-
-            ### Component B
-
-            *Describe the next key component.*
-
-            ---
-
-            ## Data Flow
-
-            *Describe how data flows through the system. Include diagrams if helpful.*
-
-            ```
-            User Input → Component A → Component B → Output
-            ```
-
-            ---
-
-            ## Key Decisions
-
-            *Link to decision records in `project/decisions/` for architectural choices.*
-
-            - Why we chose X over Y
-            - Why component A is structured this way
+            *What this component does and its responsibilities.*
 
             ---
 
@@ -493,17 +479,7 @@ public static class TemplateGenerator
 
             | Looking for... | Location |
             |----------------|----------|
-            | API endpoints | `src/api/` |
-            | Database models | `src/models/` |
-            | Business logic | `src/services/` |
-            | Configuration | `src/config/` |
-            | Tests | `tests/` |
-
-            ---
-
-            ## Common Patterns
-
-            *Describe patterns used throughout the codebase that new contributors should know.*
+            | *[Type of code]* | `path/` |
 
             ---
 
@@ -512,6 +488,50 @@ public static class TemplateGenerator
             After understanding the architecture:
             - Read [../guides/coding-standards.md](../guides/coding-standards.md) for code style
             - Read [../guides/how-to-use-docs.md](../guides/how-to-use-docs.md) for workflow commands
+            """;
+    }
+
+    /// <summary>
+    /// Welcome page for humans.
+    /// Reads from welcome.template.md if available.
+    /// </summary>
+    public static string GenerateWelcomeMd()
+    {
+        try
+        {
+            return ReadTemplate("welcome.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return GenerateFallbackWelcomeMd();
+        }
+    }
+
+    private static string GenerateFallbackWelcomeMd()
+    {
+        return """
+            ---
+            area: general
+            type: hub
+            ---
+
+            # Welcome
+
+            Human-friendly entry point to the project documentation.
+
+            ---
+
+            ## Getting Started
+
+            1. **[About](./understand/about.md)** — What this project is
+            2. **[Architecture](./understand/architecture.md)** — How the system is structured
+            3. **[Coding Standards](./guides/coding-standards.md)** — Read before writing code
+
+            ---
+
+            ## For AI Agents
+
+            See [index.md](./index.md) for the AI agent entry point.
             """;
     }
 

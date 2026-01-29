@@ -2,6 +2,7 @@ namespace DynaDocs.Services;
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 public static class ProcessUtils
 {
@@ -38,9 +39,13 @@ public static class ProcessUtils
         {
             return GetParentProcessIdWindows(process.Id);
         }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return GetParentProcessIdMacOS(process.Id);
+        }
         else
         {
-            return GetParentProcessIdUnix(process.Id);
+            return GetParentProcessIdLinux(process.Id);
         }
     }
 
@@ -94,6 +99,7 @@ public static class ProcessUtils
         }
     }
 
+    [SupportedOSPlatform("windows")]
     private static int GetParentProcessIdWindows(int processId)
     {
         try
@@ -117,11 +123,46 @@ public static class ProcessUtils
         return -1;
     }
 
-    private static int GetParentProcessIdUnix(int processId)
+    [SupportedOSPlatform("macos")]
+    private static int GetParentProcessIdMacOS(int processId)
     {
         try
         {
-            // On Unix, read from /proc/{pid}/stat
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/bin/ps",
+                    Arguments = $"-o ppid= -p {processId}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            if (process.ExitCode == 0 && int.TryParse(output, out var ppid))
+            {
+                return ppid;
+            }
+        }
+        catch
+        {
+            // Ignore errors
+        }
+
+        return -1;
+    }
+
+    private static int GetParentProcessIdLinux(int processId)
+    {
+        try
+        {
+            // On Linux, read from /proc/{pid}/stat
             var statPath = $"/proc/{processId}/stat";
             if (File.Exists(statPath))
             {

@@ -181,7 +181,14 @@ public class FolderScaffolder : IFolderScaffolder
     /// </summary>
     private void ScaffoldFoundationDocs(string basePath)
     {
-        // understand/about.md (NEW - project context)
+        // welcome.md (human entry point, alongside index.md)
+        var welcomePath = Path.Combine(basePath, "welcome.md");
+        if (!File.Exists(welcomePath))
+        {
+            File.WriteAllText(welcomePath, TemplateGenerator.GenerateWelcomeMd());
+        }
+
+        // understand/about.md (project context)
         var aboutPath = Path.Combine(basePath, "understand", "about.md");
         if (!File.Exists(aboutPath))
         {

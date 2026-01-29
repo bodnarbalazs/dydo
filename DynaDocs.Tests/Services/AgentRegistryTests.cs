@@ -26,14 +26,14 @@ public class AgentRegistryTests : IDisposable
     {
         Assert.Equal(26, _registry.AgentNames.Count);
         Assert.Contains("Adele", _registry.AgentNames);
-        Assert.Contains("Zack", _registry.AgentNames);
+        Assert.Contains("Zelda", _registry.AgentNames);
     }
 
     [Theory]
     [InlineData('A', "Adele")]
     [InlineData('B', "Brian")]
     [InlineData('C', "Charlie")]
-    [InlineData('Z', "Zack")]
+    [InlineData('Z', "Zelda")]
     [InlineData('a', "Adele")]
     public void GetAgentNameFromLetter_ReturnsCorrectName(char letter, string expected)
     {

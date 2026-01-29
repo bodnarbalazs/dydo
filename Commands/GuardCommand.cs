@@ -58,8 +58,12 @@ public static class GuardCommand
         string? bashCommand = null;
         string? toolName = null;
 
-        // Try to read stdin JSON first (hook mode)
-        if (Console.IsInputRedirected)
+        // If CLI arguments are provided, use them directly (skip stdin reading)
+        // This avoids blocking on stdin when run from IDEs/test runners
+        var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
+
+        // Try to read stdin JSON (hook mode) only if no CLI args provided
+        if (!hasCliArgs && Console.IsInputRedirected)
         {
             try
             {
@@ -82,7 +86,7 @@ public static class GuardCommand
             }
         }
 
-        // Fall back to CLI arguments
+        // Use CLI arguments (or defaults)
         filePath ??= cliPath;
         action ??= cliAction ?? "edit";
         bashCommand ??= cliCommand;

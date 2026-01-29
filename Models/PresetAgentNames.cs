@@ -14,7 +14,7 @@ public static class PresetAgentNames
         "Grace", "Henry", "Iris", "Jack", "Kate", "Leo",
         "Mia", "Noah", "Olivia", "Paul", "Quinn", "Rose",
         "Sam", "Tara", "Uma", "Victor", "Wendy", "Xavier",
-        "Yara", "Zack"
+        "Yara", "Zelda"
     };
 
     /// <summary>
@@ -50,7 +50,7 @@ public static class PresetAgentNames
         "Gloria", "Hector", "Ivy", "Jerome", "Kendra", "Lance",
         "Miriam", "Nelson", "Ophelia", "Preston", "Quorra", "Rocco",
         "Selena", "Trevor", "Unity", "Vaughn", "Whitney", "Ximena",
-        "York", "Zelda"
+        "York", "Zack"
     };
 
     /// <summary>

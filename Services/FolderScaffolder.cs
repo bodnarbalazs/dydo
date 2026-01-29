@@ -14,8 +14,7 @@ public class FolderScaffolder : IFolderScaffolder
         new("project", "Decisions, pitfalls, changelog, and meta documentation", "project"),
         new("project/tasks", "Task tracking and dispatch", "project"),
         new("project/decisions", "Architecture decision records", "project"),
-        new("project/changelog", "Change history", "project"),
-        new("workflows", "Agent workflow files", "workflows")
+        new("project/changelog", "Change history", "project")
     ];
 
     /// <summary>
@@ -54,8 +53,8 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(rootIndexPath, indexContent);
         }
 
-        // Create workflow files for each agent
-        ScaffoldWorkflowFiles(basePath);
+        // Create agent workspaces with workflow and mode files
+        ScaffoldAgentWorkspaces(basePath);
 
         // Create foundation documentation (must-reads)
         ScaffoldFoundationDocs(basePath);
@@ -95,39 +94,85 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(rootIndexPath, indexContent);
         }
 
-        // Create workflow files for provided agents
-        ScaffoldWorkflowFiles(basePath, agentNames);
+        // Create agent workspaces with workflow and mode files
+        ScaffoldAgentWorkspaces(basePath, agentNames);
 
         // Create foundation documentation
         ScaffoldFoundationDocs(basePath);
     }
 
     /// <summary>
-    /// Create workflow files for each agent in the pool.
+    /// Create agent workspaces with workflow.md and mode files for each agent.
     /// </summary>
-    private void ScaffoldWorkflowFiles(string basePath, List<string>? agentNames = null)
+    private void ScaffoldAgentWorkspaces(string basePath, List<string>? agentNames = null)
     {
         agentNames ??= PresetAgentNames.Set1.ToList();
 
-        var workflowsPath = Path.Combine(basePath, "workflows");
-        Directory.CreateDirectory(workflowsPath);
+        var agentsPath = Path.Combine(basePath, "agents");
+        Directory.CreateDirectory(agentsPath);
 
         foreach (var agentName in agentNames)
         {
-            var workflowPath = Path.Combine(workflowsPath, $"{agentName.ToLowerInvariant()}.md");
-            if (!File.Exists(workflowPath))
-            {
-                var content = TemplateGenerator.GenerateWorkflowFile(agentName);
-                File.WriteAllText(workflowPath, content);
-            }
+            ScaffoldAgentWorkspace(agentsPath, agentName);
+        }
+    }
+
+    /// <summary>
+    /// Create a single agent's workspace with workflow.md and mode files.
+    /// </summary>
+    public void ScaffoldAgentWorkspace(string agentsPath, string agentName)
+    {
+        var agentPath = Path.Combine(agentsPath, agentName);
+        Directory.CreateDirectory(agentPath);
+
+        // Create modes folder
+        var modesPath = Path.Combine(agentPath, "modes");
+        Directory.CreateDirectory(modesPath);
+
+        // Create inbox folder
+        var inboxPath = Path.Combine(agentPath, "inbox");
+        Directory.CreateDirectory(inboxPath);
+
+        // Create workflow.md
+        var workflowPath = Path.Combine(agentPath, "workflow.md");
+        if (!File.Exists(workflowPath))
+        {
+            var content = TemplateGenerator.GenerateWorkflowFile(agentName);
+            File.WriteAllText(workflowPath, content);
         }
 
-        // Create workflows _index.md
-        var workflowsIndexPath = Path.Combine(workflowsPath, "_index.md");
-        if (!File.Exists(workflowsIndexPath))
+        // Create mode files
+        foreach (var modeName in TemplateGenerator.GetModeNames())
         {
-            var content = GenerateWorkflowsIndex(agentNames);
-            File.WriteAllText(workflowsIndexPath, content);
+            var modePath = Path.Combine(modesPath, $"{modeName}.md");
+            if (!File.Exists(modePath))
+            {
+                var content = TemplateGenerator.GenerateModeFile(agentName, modeName);
+                File.WriteAllText(modePath, content);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Regenerate workflow and mode files for an agent (used after rename).
+    /// </summary>
+    public void RegenerateAgentFiles(string agentsPath, string agentName)
+    {
+        var agentPath = Path.Combine(agentsPath, agentName);
+        var modesPath = Path.Combine(agentPath, "modes");
+
+        // Regenerate workflow.md
+        var workflowPath = Path.Combine(agentPath, "workflow.md");
+        var workflowContent = TemplateGenerator.GenerateWorkflowFile(agentName);
+        File.WriteAllText(workflowPath, workflowContent);
+
+        // Regenerate mode files
+        Directory.CreateDirectory(modesPath);
+        foreach (var modeName in TemplateGenerator.GetModeNames())
+        {
+            var modePath = Path.Combine(modesPath, $"{modeName}.md");
+            var modeContent = TemplateGenerator.GenerateModeFile(agentName, modeName);
+            File.WriteAllText(modePath, modeContent);
         }
     }
 
@@ -136,6 +181,13 @@ public class FolderScaffolder : IFolderScaffolder
     /// </summary>
     private void ScaffoldFoundationDocs(string basePath)
     {
+        // understand/about.md (NEW - project context)
+        var aboutPath = Path.Combine(basePath, "understand", "about.md");
+        if (!File.Exists(aboutPath))
+        {
+            File.WriteAllText(aboutPath, TemplateGenerator.GenerateAboutMd());
+        }
+
         // understand/architecture.md
         var architecturePath = Path.Combine(basePath, "understand", "architecture.md");
         if (!File.Exists(architecturePath))
@@ -189,40 +241,6 @@ public class FolderScaffolder : IFolderScaffolder
             ## Contents
 
             *Add links to documents in this section.*
-            """;
-    }
-
-    private static string GenerateWorkflowsIndex(List<string> agentNames)
-    {
-        var links = string.Join("\n", agentNames.Select(name =>
-            $"- [{name}]({name.ToLowerInvariant()}.md)"));
-
-        return $"""
-            ---
-            area: workflows
-            type: hub
-            ---
-
-            # Agent Workflows
-
-            Each agent has a dedicated workflow file containing:
-            - Identity and claim command
-            - Must-read document list
-            - Role permissions and task workflow
-
-            ## Available Agents
-
-            {links}
-
-            ---
-
-            ## How to Use
-
-            1. Pick an agent from the list above
-            2. Read its workflow file
-            3. Follow the instructions to claim and begin work
-
-            See [../index.md](../index.md) for the full getting started guide.
             """;
     }
 }

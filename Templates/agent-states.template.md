@@ -12,32 +12,7 @@ Central registry of all agents and their current status.
 
 | Agent | Status | Role | Task | Since |
 |-------|--------|------|------|-------|
-| Adele | free | - | - | - |
-| Brian | free | - | - | - |
-| Charlie | free | - | - | - |
-| Dexter | free | - | - | - |
-| Emma | free | - | - | - |
-| Frank | free | - | - | - |
-| Grace | free | - | - | - |
-| Henry | free | - | - | - |
-| Iris | free | - | - | - |
-| Jack | free | - | - | - |
-| Kate | free | - | - | - |
-| Leo | free | - | - | - |
-| Mia | free | - | - | - |
-| Noah | free | - | - | - |
-| Olivia | free | - | - | - |
-| Paul | free | - | - | - |
-| Quinn | free | - | - | - |
-| Rose | free | - | - | - |
-| Sam | free | - | - | - |
-| Tara | free | - | - | - |
-| Uma | free | - | - | - |
-| Victor | free | - | - | - |
-| Wendy | free | - | - | - |
-| Xavier | free | - | - | - |
-| Yara | free | - | - | - |
-| Zack | free | - | - | - |
+{{AGENT_ROWS}}
 
 ---
 

@@ -172,34 +172,7 @@ public static class WorkspaceCommand
 
     private static void WriteAgentStatesFile(string path, AgentRegistry registry)
     {
-        var rows = string.Join("\n", registry.AgentNames.Select(name =>
-            $"| {name} | free | - | - | - |"));
-
-        var content = $"""
-            ---
-            last-updated: {DateTime.UtcNow:o}
-            ---
-
-            # Agent States
-
-            | Agent | Status | Role | Task | Since |
-            |-------|--------|------|------|-------|
-            {rows}
-
-            ## Pending Inbox
-
-            | Agent | Items | Oldest |
-            |-------|-------|--------|
-            | (none) | - | - |
-
-            ---
-
-            <!--
-            This file is updated by dydo commands.
-            Check agent status: dydo agent list
-            -->
-            """;
-
+        var content = TemplateGenerator.GenerateAgentStatesMd(registry.AgentNames);
         File.WriteAllText(path, content);
     }
 

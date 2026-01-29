@@ -17,12 +17,14 @@ public class AgentRegistry : IAgentRegistry
 
     private readonly string _basePath;
     private readonly IConfigService _configService;
+    private readonly IFolderScaffolder _folderScaffolder;
     private readonly DydoConfig? _config;
 
-    public AgentRegistry(string? basePath = null, IConfigService? configService = null)
+    public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null)
     {
         _basePath = basePath ?? Environment.CurrentDirectory;
         _configService = configService ?? new ConfigService();
+        _folderScaffolder = folderScaffolder ?? new FolderScaffolder();
         _config = _configService.LoadConfig(_basePath);
     }
 
@@ -597,12 +599,12 @@ public class AgentRegistry : IAgentRegistry
         // Save config
         _configService.SaveConfig(config, configPath);
 
-        // Create workspace folder
-        var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), name);
-        Directory.CreateDirectory(workspace);
-        Directory.CreateDirectory(Path.Combine(workspace, "inbox"));
+        // Create agent workspace with workflow and mode files
+        var agentsPath = _configService.GetAgentsPath(_basePath);
+        _folderScaffolder.ScaffoldAgentWorkspace(agentsPath, name);
 
-        // Create initial state file
+        // Create initial state file with assigned human
+        var workspace = Path.Combine(agentsPath, name);
         var statePath = Path.Combine(workspace, "state.md");
         var stateContent = $"""
             ---
@@ -642,19 +644,11 @@ public class AgentRegistry : IAgentRegistry
             """;
         File.WriteAllText(statePath, stateContent);
 
-        // Create workflow file in dydo/workflows/
-        var workflowsPath = Path.Combine(_configService.GetDydoRoot(_basePath), "workflows");
-        Directory.CreateDirectory(workflowsPath);
-
-        var workflowPath = Path.Combine(workflowsPath, $"{name.ToLowerInvariant()}.md");
-        var workflowContent = TemplateGenerator.GenerateWorkflowFile(name);
-        File.WriteAllText(workflowPath, workflowContent);
-
         return true;
     }
 
     /// <summary>
-    /// Renames an agent: updates pool, assignments, workspace folder, and workflow file.
+    /// Renames an agent: updates pool, assignments, workspace folder, and regenerates workflow/mode files.
     /// </summary>
     public bool RenameAgent(string oldName, string newName, out string error)
     {
@@ -738,8 +732,9 @@ public class AgentRegistry : IAgentRegistry
         _configService.SaveConfig(config, configPath);
 
         // Rename workspace folder
-        var oldWorkspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
-        var newWorkspace = Path.Combine(_configService.GetAgentsPath(_basePath), newName);
+        var agentsPath = _configService.GetAgentsPath(_basePath);
+        var oldWorkspace = Path.Combine(agentsPath, existingName);
+        var newWorkspace = Path.Combine(agentsPath, newName);
         if (Directory.Exists(oldWorkspace))
         {
             Directory.Move(oldWorkspace, newWorkspace);
@@ -757,32 +752,14 @@ public class AgentRegistry : IAgentRegistry
             }
         }
 
-        // Rename workflow file
-        var workflowsPath = Path.Combine(_configService.GetDydoRoot(_basePath), "workflows");
-        var oldWorkflowPath = Path.Combine(workflowsPath, $"{existingName.ToLowerInvariant()}.md");
-        var newWorkflowPath = Path.Combine(workflowsPath, $"{newName.ToLowerInvariant()}.md");
-
-        if (File.Exists(oldWorkflowPath))
-        {
-            // Read, update content, write to new path
-            var content = File.ReadAllText(oldWorkflowPath);
-            content = content.Replace(existingName, newName);
-            content = content.Replace(existingName.ToLowerInvariant(), newName.ToLowerInvariant());
-            File.WriteAllText(newWorkflowPath, content);
-            File.Delete(oldWorkflowPath);
-        }
-        else
-        {
-            // Create new workflow file if it doesn't exist
-            var workflowContent = TemplateGenerator.GenerateWorkflowFile(newName);
-            File.WriteAllText(newWorkflowPath, workflowContent);
-        }
+        // Regenerate workflow and mode files with new name
+        _folderScaffolder.RegenerateAgentFiles(agentsPath, newName);
 
         return true;
     }
 
     /// <summary>
-    /// Removes an agent: deletes from pool and assignments, removes workspace and workflow file.
+    /// Removes an agent: deletes from pool and assignments, removes entire workspace.
     /// </summary>
     public bool RemoveAgent(string name, out string error)
     {
@@ -834,19 +811,11 @@ public class AgentRegistry : IAgentRegistry
         // Save config
         _configService.SaveConfig(config, configPath);
 
-        // Delete workspace folder
+        // Delete workspace folder (includes workflow.md and modes/)
         var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
         if (Directory.Exists(workspace))
         {
             Directory.Delete(workspace, recursive: true);
-        }
-
-        // Delete workflow file
-        var workflowsPath = Path.Combine(_configService.GetDydoRoot(_basePath), "workflows");
-        var workflowPath = Path.Combine(workflowsPath, $"{existingName.ToLowerInvariant()}.md");
-        if (File.Exists(workflowPath))
-        {
-            File.Delete(workflowPath);
         }
 
         return true;

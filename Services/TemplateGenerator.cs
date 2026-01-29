@@ -136,7 +136,7 @@ public static class TemplateGenerator
         {
             // Fall back to generated content if template not found
             var workflowLinks = string.Join("\n", agentNames.Select(name =>
-                $"- [{name}](workflows/{name.ToLowerInvariant()}.md)"));
+                $"- [{name}](agents/{name}/workflow.md)"));
             return GenerateJitiIndexMd(agentNames, workflowLinks);
         }
     }
@@ -217,11 +217,9 @@ public static class TemplateGenerator
             ```
             dydo/
             ├── index.md              ← You are here
-            ├── workflows/            # Agent workflow files
-            │   ├── adele.md
-            │   ├── brian.md
-            │   └── ...
             ├── understand/           # Core concepts & architecture
+            │   ├── about.md          # Project context
+            │   └── architecture.md
             ├── guides/               # How-to guides
             ├── reference/            # API & configuration
             ├── project/              # Decisions, changelog, tasks
@@ -229,6 +227,9 @@ public static class TemplateGenerator
             │   ├── decisions/
             │   └── changelog/
             └── agents/               # Agent workspaces (gitignored)
+                └── Adele/
+                    ├── workflow.md   # Agent's workflow
+                    └── modes/        # Mode-specific guidance
             ```
 
             ---
@@ -260,6 +261,54 @@ public static class TemplateGenerator
         {
             // Fall back to generated content if template not found
             return GenerateFallbackWorkflowFile(agentName);
+        }
+    }
+
+    /// <summary>
+    /// Agent states overview file.
+    /// Reads from agent-states.template.md and replaces {{AGENT_ROWS}}.
+    /// </summary>
+    public static string GenerateAgentStatesMd(IReadOnlyList<string> agentNames)
+    {
+        var rows = string.Join("\n", agentNames.Select(name =>
+            $"| {name} | free | - | - | - |"));
+
+        try
+        {
+            var template = ReadTemplate("agent-states.template.md");
+            var placeholders = new Dictionary<string, string>
+            {
+                ["AGENT_ROWS"] = rows
+            };
+            return ReplacePlaceholders(template, placeholders);
+        }
+        catch (FileNotFoundException)
+        {
+            // Fall back to inline generation if template not found
+            return $"""
+                ---
+                last-updated: {DateTime.UtcNow:o}
+                ---
+
+                # Agent States
+
+                | Agent | Status | Role | Task | Since |
+                |-------|--------|------|------|-------|
+                {rows}
+
+                ## Pending Inbox
+
+                | Agent | Items | Oldest |
+                |-------|-------|--------|
+                | (none) | - | - |
+
+                ---
+
+                <!--
+                This file is updated by dydo commands.
+                Check agent status: dydo agent list
+                -->
+                """;
         }
     }
 
@@ -643,6 +692,151 @@ public static class TemplateGenerator
 
             *Add links to documents in this section.*
             """;
+    }
+
+    /// <summary>
+    /// Generate the about.md file for understanding the project.
+    /// Reads from about.template.md if available.
+    /// </summary>
+    public static string GenerateAboutMd()
+    {
+        try
+        {
+            return ReadTemplate("about.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return """
+                ---
+                area: understand
+                type: context
+                ---
+
+                # About This Project
+
+                > **Fill this in.** This is the first thing AI agents read.
+
+                ---
+
+                ## What We're Building
+
+                *[Describe the project in 2-3 sentences]*
+
+                ---
+
+                ## Tech Stack
+
+                | Layer | Technology |
+                |-------|------------|
+                | Language | *[e.g., C#, TypeScript]* |
+                | Framework | *[e.g., .NET 8, React]* |
+
+                ---
+
+                *See [architecture.md](./architecture.md) for technical structure.*
+                """;
+        }
+    }
+
+    /// <summary>
+    /// Generate a mode file for a specific agent.
+    /// Mode files contain role-specific guidance with the agent name baked in.
+    /// </summary>
+    public static string GenerateModeFile(string agentName, string modeName)
+    {
+        var templateName = $"mode-{modeName}.template.md";
+        try
+        {
+            var template = ReadTemplate(templateName);
+            var placeholders = new Dictionary<string, string>
+            {
+                ["AGENT_NAME"] = agentName,
+                ["AGENT_NAME_LOWER"] = agentName.ToLowerInvariant()
+            };
+            return ReplacePlaceholders(template, placeholders);
+        }
+        catch (FileNotFoundException)
+        {
+            // Fall back to a basic mode file
+            return GenerateFallbackModeFile(agentName, modeName);
+        }
+    }
+
+    private static string GenerateFallbackModeFile(string agentName, string modeName)
+    {
+        var roleDescription = modeName switch
+        {
+            "code-writer" => "implement code",
+            "reviewer" => "review code (read-only)",
+            "interviewer" => "gather requirements",
+            "planner" => "design implementation plans",
+            "docs-writer" => "write documentation",
+            _ => "complete your assigned work"
+        };
+
+        var canEdit = modeName switch
+        {
+            "code-writer" => "`src/**`, `tests/**`",
+            "reviewer" => "(nothing — read-only)",
+            "interviewer" => $"`dydo/agents/{agentName}/**`",
+            "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",
+            "docs-writer" => "`dydo/**` (except agents/)",
+            _ => "(check with dydo agent status)"
+        };
+
+        return $"""
+            ---
+            agent: {agentName}
+            mode: {modeName}
+            ---
+
+            # {agentName} — {char.ToUpper(modeName[0])}{modeName[1..].Replace("-", " ")}
+
+            You are **{agentName}**, working as a **{modeName}**. Your job: {roleDescription}.
+
+            ---
+
+            ## Must-Reads
+
+            1. [about.md](../../understand/about.md) — What this project is
+            2. [architecture.md](../../understand/architecture.md) — Codebase structure
+
+            ---
+
+            ## Set Role
+
+            ```bash
+            dydo agent role {modeName} --task <task-name>
+            ```
+
+            ---
+
+            ## Verify
+
+            ```bash
+            dydo agent status
+            ```
+
+            You can edit: {canEdit}
+
+            ---
+
+            ## Complete
+
+            When done:
+
+            ```bash
+            dydo agent release
+            ```
+            """;
+    }
+
+    /// <summary>
+    /// Get the list of available mode names.
+    /// </summary>
+    public static IReadOnlyList<string> GetModeNames()
+    {
+        return new[] { "code-writer", "reviewer", "interviewer", "planner", "docs-writer" };
     }
 
     /// <summary>

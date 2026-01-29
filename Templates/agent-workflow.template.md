@@ -5,11 +5,11 @@ type: workflow
 
 # {{AGENT_NAME}}
 
-Follow these steps in order.
+You are **{{AGENT_NAME}}**. Follow these steps.
 
 ---
 
-## 1. Claim
+## 1. Claim Your Identity
 
 ```bash
 dydo agent claim {{AGENT_NAME}}
@@ -17,102 +17,92 @@ dydo agent claim {{AGENT_NAME}}
 
 ---
 
-## 2. Must-Reads
+## 2. Your Assignment
 
-| Document | Purpose |
-|----------|---------|
-| [architecture.md](../understand/architecture.md) | Codebase structure |
-| [coding-standards.md](../guides/coding-standards.md) | Code conventions |
+Your prompt contains your task. It may include a mode flag:
 
----
+| Flag | Mode | Go To |
+|------|------|-------|
+| `--feature` | Full: interview → plan → code → review | [modes/interviewer.md](modes/interviewer.md) |
+| `--task` | Standard: plan → code → review | [modes/planner.md](modes/planner.md) |
+| `--quick` | Light: just implement | [modes/code-writer.md](modes/code-writer.md) |
+| `--review` | Code review | [modes/reviewer.md](modes/reviewer.md) |
+| `--docs` | Documentation | [modes/docs-writer.md](modes/docs-writer.md) |
+| `--inbox` | Dispatched work | Check inbox below |
 
-## 3. Checkpoint
-
-```bash
-dydo whoami
-```
-
-Confirm you see `{{AGENT_NAME}}`. If error, see **Troubleshooting** below.
+**No flag?** Default to [modes/code-writer.md](modes/code-writer.md) for implementation tasks.
 
 ---
 
-## 4. Inbox
+## 3. If `--inbox` Mode
+
+Check what's been dispatched to you:
 
 ```bash
 dydo inbox show
 ```
 
-Work waiting? That's your priority. Otherwise, continue with your assigned task.
+The inbox message tells you:
+- What task
+- What role to take
+- Brief context
+
+Set your role based on the inbox instructions, then go to the appropriate mode file.
 
 ---
 
-## 5. Role
+## 4. Follow Your Mode
 
-Your prompt may have included a workflow flag:
-
-| Flag | Workflow | Start As |
-|------|----------|----------|
-| `--feature` | Full: interview → plan → code → review | `interviewer` |
-| `--task` | Standard: plan → code → review | `planner` |
-| `--quick` | Light: just implement | `code-writer` |
-| `--review` | Code review only | `reviewer` |
-| `--inbox` | Process dispatched work | (check inbox) |
-
-Set your role:
-
-```bash
-dydo agent role <role> --task <task-name>
-```
-
-| Role | Can Edit |
-|------|----------|
-| `code-writer` | `src/**`, `tests/**` |
-| `reviewer` | (read-only) |
-| `docs-writer` | `dydo/**` (not agents/) |
-| `interviewer` | Own workspace |
-| `planner` | Own workspace + tasks/ |
+Go to the mode file linked above. It contains:
+- **Must-reads** specific to your mode
+- **Role setup** command
+- **Work guidance** for that mode
+- **Completion** instructions
 
 ---
 
-## 6. Verify
+## Checkpoint
+
+Before making any edits, verify your setup:
 
 ```bash
-dydo agent status
+dydo whoami          # Confirm: {{AGENT_NAME}}
+dydo agent status    # Confirm: role and permissions set
 ```
 
-Shows your allowed paths. Guard blocks edits outside these.
-
----
-
-## 7. Work
-
-If blocked:
-- Wrong role? `dydo agent role <correct-role>`
-- Need other permissions? Dispatch to another agent
-
----
-
-## 8. Complete
-
-Review needed:
-```bash
-dydo dispatch --role reviewer --task <name> --brief "..."
-```
-
-Done:
-```bash
-dydo agent release
-```
+If either command shows an error, fix it before proceeding.
 
 ---
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| "DYDO_HUMAN not set" | Human runs `dydo init claude` or `dydo init claude --join` |
-| "Assigned to X" | Different human owns this. Try `dydo agent claim auto` |
-| "Already claimed" | Another session has it. Try `dydo agent claim auto` |
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "DYDO_HUMAN not set" | Environment not configured | Human runs `dydo init claude` |
+| "Assigned to X, not Y" | Agent belongs to different human | Try `dydo agent claim auto` |
+| "Already claimed" | Another session has this agent | Try `dydo agent claim auto` |
+| "Cannot edit path" | Role doesn't permit this file | Check role with `dydo agent status` |
+
+---
+
+## Quick Reference
+
+```bash
+# Identity
+dydo whoami                              # Show current identity
+dydo agent status                        # Show role and permissions
+dydo agent release                       # Release when done
+
+# Role
+dydo agent role <role> --task <name>     # Set role
+
+# Inbox
+dydo inbox show                          # Check dispatched work
+dydo inbox clear                         # Clear processed items
+
+# Dispatch
+dydo dispatch --role <r> --task <t> --brief "..."
+```
 
 ---
 

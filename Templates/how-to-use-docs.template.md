@@ -91,6 +91,7 @@ dydo agent role code-writer --task implement-auth
 |------|----------|-------------|
 | `code-writer` | `src/**`, `tests/**` | Writing/modifying code |
 | `reviewer` | (nothing) | Code review (read-only) |
+| `co-thinker` | Own workspace + `dydo/project/decisions/**` | Collaborative thinking, decisions |
 | `docs-writer` | `dydo/**` (except agents/) | Writing documentation |
 | `interviewer` | Own workspace only | Requirements gathering |
 | `planner` | Own workspace + `dydo/project/tasks/**` | Planning, task creation |

@@ -389,6 +389,7 @@ public static class TemplateGenerator
             |------|----------|-------------|
             | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
             | `reviewer` | (read-only) | (all files) |
+            | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
             | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**` |
             | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
             | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | `src/**` |
@@ -788,6 +789,7 @@ public static class TemplateGenerator
         {
             "code-writer" => "implement code",
             "reviewer" => "review code (read-only)",
+            "co-thinker" => "think through problems collaboratively",
             "interviewer" => "gather requirements",
             "planner" => "design implementation plans",
             "docs-writer" => "write documentation",
@@ -798,6 +800,7 @@ public static class TemplateGenerator
         {
             "code-writer" => "`src/**`, `tests/**`",
             "reviewer" => "(nothing — read-only)",
+            "co-thinker" => $"`dydo/agents/{agentName}/**`, `dydo/project/decisions/**`",
             "interviewer" => $"`dydo/agents/{agentName}/**`",
             "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",
             "docs-writer" => "`dydo/**` (except agents/)",
@@ -856,7 +859,7 @@ public static class TemplateGenerator
     /// </summary>
     public static IReadOnlyList<string> GetModeNames()
     {
-        return new[] { "code-writer", "reviewer", "interviewer", "planner", "docs-writer" };
+        return new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer" };
     }
 
     /// <summary>
@@ -917,5 +920,79 @@ public static class TemplateGenerator
 
             Add project-specific sensitive files below.
             """;
+    }
+
+    /// <summary>
+    /// Generate the CLI commands reference document.
+    /// Reads from cli-commands.template.md if available.
+    /// </summary>
+    public static string GenerateCliCommandsMd()
+    {
+        try
+        {
+            return ReadTemplate("cli-commands.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return """
+                ---
+                area: reference
+                type: reference
+                ---
+
+                # CLI Commands Reference
+
+                Complete reference for all `dydo` commands.
+
+                Run `dydo help` for a quick overview of available commands.
+
+                ---
+
+                ## Setup Commands
+
+                | Command | Description |
+                |---------|-------------|
+                | `dydo init <integration>` | Initialize project (claude, none) |
+                | `dydo init <int> --join` | Join existing project |
+                | `dydo whoami` | Show current agent identity |
+
+                ## Documentation Commands
+
+                | Command | Description |
+                |---------|-------------|
+                | `dydo check [path]` | Validate docs |
+                | `dydo fix [path]` | Auto-fix issues |
+                | `dydo index [path]` | Regenerate index |
+                | `dydo graph <file>` | Show link graph |
+
+                ## Agent Commands
+
+                | Command | Description |
+                |---------|-------------|
+                | `dydo agent claim auto\|<name>` | Claim agent |
+                | `dydo agent release` | Release agent |
+                | `dydo agent status [name]` | Show status |
+                | `dydo agent list [--free]` | List agents |
+                | `dydo agent role <role>` | Set role |
+                | `dydo agent new <name> <human>` | Create agent |
+                | `dydo agent rename <old> <new>` | Rename agent |
+                | `dydo agent remove <name>` | Remove agent |
+                | `dydo agent reassign <name> <human>` | Reassign agent |
+
+                ## Task Commands
+
+                | Command | Description |
+                |---------|-------------|
+                | `dydo task create <name>` | Create task |
+                | `dydo task ready-for-review <name>` | Mark ready for review |
+                | `dydo task approve <name>` | Approve task |
+                | `dydo task reject <name>` | Reject task |
+                | `dydo task list` | List tasks |
+
+                ---
+
+                Run `dydo <command> --help` for detailed usage of each command.
+                """;
+        }
     }
 }

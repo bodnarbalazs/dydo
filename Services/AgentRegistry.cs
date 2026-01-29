@@ -10,6 +10,7 @@ public class AgentRegistry : IAgentRegistry
     {
         ["code-writer"] = (["src/**", "tests/**"], ["dydo/**", "project/**"]),
         ["reviewer"] = ([], ["**"]),
+        ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], ["src/**", "tests/**"]),
         ["docs-writer"] = (["dydo/**"], ["dydo/agents/**", "src/**", "tests/**"]),
         ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
         ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], ["src/**"])
@@ -369,6 +370,7 @@ public class AgentRegistry : IAgentRegistry
         {
             "reviewer" => "Reviewer role has no write permissions.",
             "code-writer" => "Code-writer role can only edit src/** and tests/**.",
+            "co-thinker" => "Co-thinker role can edit own workspace and decisions.",
             "docs-writer" => "Docs-writer role can only edit dydo/** (except agents/).",
             "interviewer" => "Interviewer role can only edit own workspace.",
             "planner" => "Planner role can only edit own workspace and tasks.",

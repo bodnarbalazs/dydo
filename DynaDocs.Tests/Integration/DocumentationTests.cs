@@ -304,6 +304,39 @@ public class DocumentationTests : IntegrationTestBase
         result.AssertStdoutContains("hops");
     }
 
+    [Fact]
+    public async Task Graph_WithZeroDegree_ReturnsQuickly()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await GraphAsync("dydo/index.md", degree: 0);
+
+        // Degree 0 still works, but may show only help/usage hint
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Graph_WithNegativeDegree_TreatedAsZero()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await GraphAsync("dydo/index.md", degree: -1);
+
+        // Negative degree is not validated, treated as 0 or handled gracefully
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Graph_WithLargeDegree_HandlesGracefully()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Very large degree shouldn't cause infinite loops
+        var result = await GraphAsync("dydo/index.md", degree: 100);
+
+        result.AssertSuccess();
+    }
+
     #endregion
 
     #region Helper Methods

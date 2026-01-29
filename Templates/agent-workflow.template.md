@@ -26,11 +26,15 @@ Your prompt contains your task. It may include a mode flag:
 | `--feature` | Full: interview → plan → code → review | [modes/interviewer.md](modes/interviewer.md) |
 | `--task` | Standard: plan → code → review | [modes/planner.md](modes/planner.md) |
 | `--quick` | Light: just implement | [modes/code-writer.md](modes/code-writer.md) |
+| `--think` | Collaborative exploration | [modes/co-thinker.md](modes/co-thinker.md) |
 | `--review` | Code review | [modes/reviewer.md](modes/reviewer.md) |
 | `--docs` | Documentation | [modes/docs-writer.md](modes/docs-writer.md) |
 | `--inbox` | Dispatched work | Check inbox below |
 
-**No flag?** Default to [modes/code-writer.md](modes/code-writer.md) for implementation tasks.
+**No flag?** 
+Try to figure out the appropriate mode based on the intent of the prompt. If it's ambiguous even then ask for clarification.
+
+**Thinking prompt?** If the human asks to "think through", "explore", "brainstorm", or "help me figure out" something, go to [modes/co-thinker.md](modes/co-thinker.md).
 
 ---
 

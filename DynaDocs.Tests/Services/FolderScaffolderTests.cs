@@ -114,7 +114,7 @@ public class FolderScaffolderTests : IDisposable
         _scaffolder.ScaffoldAgentWorkspace(agentsPath, "TestAgent");
 
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
-        var expectedModes = new[] { "code-writer", "reviewer", "interviewer", "planner", "docs-writer" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer" };
 
         foreach (var mode in expectedModes)
         {
@@ -244,6 +244,7 @@ public class FolderScaffolderTests : IDisposable
         Assert.Contains("modes/interviewer.md", content);
         Assert.Contains("modes/planner.md", content);
         Assert.Contains("modes/code-writer.md", content);
+        Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
     }

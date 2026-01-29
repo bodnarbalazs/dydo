@@ -216,6 +216,13 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(howToPath, TemplateGenerator.GenerateHowToUseDocsMd());
         }
 
+        // reference/cli-commands.md
+        var cliCommandsPath = Path.Combine(basePath, "reference", "cli-commands.md");
+        if (!File.Exists(cliCommandsPath))
+        {
+            File.WriteAllText(cliCommandsPath, TemplateGenerator.GenerateCliCommandsMd());
+        }
+
         // files-off-limits.md (security config)
         var offLimitsPath = Path.Combine(basePath, "files-off-limits.md");
         if (!File.Exists(offLimitsPath))

@@ -5,13 +5,14 @@ using DynaDocs.Services;
 public class TemplateGeneratorTests
 {
     [Fact]
-    public void GetModeNames_ReturnsFiveModes()
+    public void GetModeNames_ReturnsSixModes()
     {
         var modes = TemplateGenerator.GetModeNames();
 
-        Assert.Equal(5, modes.Count);
+        Assert.Equal(6, modes.Count);
         Assert.Contains("code-writer", modes);
         Assert.Contains("reviewer", modes);
+        Assert.Contains("co-thinker", modes);
         Assert.Contains("interviewer", modes);
         Assert.Contains("planner", modes);
         Assert.Contains("docs-writer", modes);
@@ -125,6 +126,7 @@ public class TemplateGeneratorTests
         Assert.Contains("modes/interviewer.md", content);
         Assert.Contains("modes/planner.md", content);
         Assert.Contains("modes/code-writer.md", content);
+        Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
     }
@@ -137,6 +139,7 @@ public class TemplateGeneratorTests
         Assert.Contains("--feature", content);
         Assert.Contains("--task", content);
         Assert.Contains("--quick", content);
+        Assert.Contains("--think", content);
         Assert.Contains("--review", content);
         Assert.Contains("--docs", content);
         Assert.Contains("--inbox", content);
@@ -201,6 +204,7 @@ public class TemplateGeneratorTests
     [Theory]
     [InlineData("code-writer")]
     [InlineData("reviewer")]
+    [InlineData("co-thinker")]
     [InlineData("interviewer")]
     [InlineData("planner")]
     [InlineData("docs-writer")]
@@ -216,6 +220,7 @@ public class TemplateGeneratorTests
     [Theory]
     [InlineData("code-writer", "Set Role")]
     [InlineData("reviewer", "Set Role")]
+    [InlineData("co-thinker", "Set Role")]
     [InlineData("interviewer", "Set Role")]
     [InlineData("planner", "Set Role")]
     [InlineData("docs-writer", "Set Role")]

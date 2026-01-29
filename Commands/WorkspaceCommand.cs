@@ -244,6 +244,7 @@ public static class WorkspaceCommand
             |------|----------|-------------|
             | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
             | `reviewer` | (read-only) | (all files) |
+            | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
             | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**`, `tests/**` |
             | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
             | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | `src/**` |

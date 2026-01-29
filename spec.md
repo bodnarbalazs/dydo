@@ -332,9 +332,14 @@ When `dydo init claude` runs, it creates/updates `.claude/settings.local.json`:
 |------|----------|-------------|
 | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
 | `reviewer` | (nothing - read only) | `**` |
+| `co-thinker` | `dydo/agents/{self}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
 | `docs-writer` | `dydo/**` (except agents/) | `src/**`, `tests/**` |
 | `interviewer` | `dydo/agents/{self}/**` | Everything else |
 | `planner` | `dydo/agents/{self}/**`, `dydo/project/tasks/**` | `src/**` |
+
+**Co-thinker vs Interviewer:**
+- **Interviewer**: Start of workflow, produces formal requirements brief, typically a dispatch target
+- **Co-thinker**: Any point in workflow, exploratory thinking with the human, can write decisions, typically a mode switch (context preserved)
 
 ---
 

@@ -51,11 +51,19 @@ helpCommand.SetHandler(() =>
     Console.WriteLine("  agent list [--free]    List all agents");
     Console.WriteLine("  agent role <role>      Set current agent's role");
     Console.WriteLine();
+    Console.WriteLine("Agent Management Commands:");
+    Console.WriteLine("  agent new <name> <human>       Create new agent and assign to human");
+    Console.WriteLine("  agent rename <old> <new>       Rename an agent");
+    Console.WriteLine("  agent remove <name> [--force]  Remove agent from pool");
+    Console.WriteLine("  agent reassign <name> <human>  Reassign agent to different human");
+    Console.WriteLine();
+    Console.WriteLine("Dispatch & Inbox Commands:");
     Console.WriteLine("  dispatch               Dispatch work to another agent");
     Console.WriteLine("  inbox list             List agents with inbox items");
     Console.WriteLine("  inbox show             Show current agent's inbox");
     Console.WriteLine("  inbox clear            Clear processed inbox items");
     Console.WriteLine();
+    Console.WriteLine("Workspace Commands:");
     Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
     Console.WriteLine("  clean <agent>          Clean agent workspace");
     Console.WriteLine("  workspace init         Initialize agent workspaces");
@@ -81,6 +89,8 @@ helpCommand.SetHandler(() =>
     Console.WriteLine("  0 - Success / Action allowed");
     Console.WriteLine("  1 - Validation errors found");
     Console.WriteLine("  2 - Tool error / Action blocked");
+    Console.WriteLine();
+    Console.WriteLine("For detailed command reference, see: dydo/reference/cli-commands.md");
 });
 rootCommand.AddCommand(helpCommand);
 

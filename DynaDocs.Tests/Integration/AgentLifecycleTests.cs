@@ -118,6 +118,41 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertStderrContains("Invalid agent name");
     }
 
+    [Fact]
+    public async Task Claim_ByLetter_IsCaseInsensitive()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Claim by first letter (lowercase should work same as uppercase)
+        var result = await ClaimAgentAsync("a"); // Should match "Adele"
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+    }
+
+    [Fact]
+    public async Task Claim_ByLetter_Uppercase_Works()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await ClaimAgentAsync("B"); // Should match "Brian"
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian");
+    }
+
+    [Fact]
+    public async Task Claim_ByLetter_NoMatch_Fails()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // No agent starts with 'z'
+        var result = await ClaimAgentAsync("z");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Invalid agent name");
+    }
+
     #endregion
 
     #region Release

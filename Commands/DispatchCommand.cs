@@ -2,8 +2,6 @@ namespace DynaDocs.Commands;
 
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -164,9 +162,8 @@ public static class DispatchCommand
         // Launch new terminal if requested
         if (!noLaunch)
         {
-            var letter = targetAgentName[0];
-            LaunchNewTerminal(letter);
-            Console.WriteLine($"  Terminal launched with --inbox {letter}");
+            TerminalLauncher.LaunchNewTerminal(targetAgentName);
+            Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 
         return ExitCodes.Success;
@@ -211,90 +208,5 @@ public static class DispatchCommand
             """;
 
         File.WriteAllText(path, content);
-    }
-
-    private record TerminalConfig(string FileName, Func<char, string> GetArguments);
-
-    private static readonly TerminalConfig[] LinuxTerminals =
-    [
-        // Modern terminals (most common on current distros)
-        new("gnome-terminal", a => $"-- bash -c \"claude --inbox {a}; exec bash\""),
-        new("konsole", a => $"-e bash -c \"claude --inbox {a}; exec bash\""),
-        new("xfce4-terminal", a => $"-e \"bash -c 'claude --inbox {a}; exec bash'\""),
-
-        // Popular third-party terminals
-        new("alacritty", a => $"-e bash -c \"claude --inbox {a}; exec bash\""),
-        new("kitty", a => $"bash -c \"claude --inbox {a}; exec bash\""),
-        new("wezterm", a => $"start -- bash -c \"claude --inbox {a}; exec bash\""),
-        new("tilix", a => $"-e \"bash -c 'claude --inbox {a}; exec bash'\""),
-
-        // Wayland-native
-        new("foot", a => $"bash -c \"claude --inbox {a}; exec bash\""),
-
-        // Fallback (usually available)
-        new("xterm", a => $"-e bash -c \"claude --inbox {a}; exec bash\""),
-    ];
-
-    private static readonly TerminalConfig[] MacTerminals =
-    [
-        // Terminal.app is always present on macOS
-        new("osascript", a => $"-e 'tell app \"Terminal\" to do script \"claude --inbox {a}\"'"),
-    ];
-
-    private static void LaunchNewTerminal(char agentLetter)
-    {
-        try
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "powershell",
-                    Arguments = $"-Command \"claude --inbox {agentLetter}\"",
-                    UseShellExecute = true
-                });
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                if (!TryLaunchTerminal(MacTerminals, agentLetter))
-                {
-                    throw new InvalidOperationException("No terminal found");
-                }
-            }
-            else
-            {
-                if (!TryLaunchTerminal(LinuxTerminals, agentLetter))
-                {
-                    throw new InvalidOperationException("No terminal found");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
-            Console.WriteLine($"Please manually run: claude --inbox {agentLetter}");
-        }
-    }
-
-    private static bool TryLaunchTerminal(TerminalConfig[] terminals, char agentLetter)
-    {
-        foreach (var terminal in terminals)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = terminal.FileName,
-                    Arguments = terminal.GetArguments(agentLetter),
-                    UseShellExecute = true
-                });
-                return true;
-            }
-            catch
-            {
-                // Try next terminal
-            }
-        }
-        return false;
     }
 }

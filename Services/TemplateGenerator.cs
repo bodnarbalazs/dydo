@@ -5,10 +5,32 @@ using System.Reflection;
 /// <summary>
 /// Generates documentation files by reading templates from the Templates/ folder
 /// and replacing placeholders like {{AGENT_NAME}}, {{PROJECT_NAME}}.
+/// Supports project-local template overrides in dydo/_system/templates/.
 /// </summary>
 public static class TemplateGenerator
 {
     private static string? _templatesPath;
+
+    /// <summary>
+    /// Gets the path to project-local templates if the folder exists.
+    /// Handles both cases: basePath is the dydo folder, or basePath is the project root.
+    /// </summary>
+    private static string? GetProjectTemplatesPath(string? basePath = null)
+    {
+        basePath ??= Environment.CurrentDirectory;
+
+        // If basePath is the dydo folder itself (used by FolderScaffolder)
+        var templatesInside = Path.Combine(basePath, "_system", "templates");
+        if (Directory.Exists(templatesInside))
+            return templatesInside;
+
+        // If basePath is the project root (default case)
+        var templatesFromRoot = Path.Combine(basePath, "dydo", "_system", "templates");
+        if (Directory.Exists(templatesFromRoot))
+            return templatesFromRoot;
+
+        return null;
+    }
 
     /// <summary>
     /// Gets the path to the Templates folder (embedded with the assembly).
@@ -67,9 +89,20 @@ public static class TemplateGenerator
 
     /// <summary>
     /// Reads a template file and returns its content.
+    /// Checks project-local templates first, then falls back to built-in.
     /// </summary>
-    private static string ReadTemplate(string templateName)
+    private static string ReadTemplate(string templateName, string? basePath = null)
     {
+        // Check project-local templates first
+        var projectPath = GetProjectTemplatesPath(basePath);
+        if (projectPath != null)
+        {
+            var localFile = Path.Combine(projectPath, templateName);
+            if (File.Exists(localFile))
+                return File.ReadAllText(localFile);
+        }
+
+        // Fall back to built-in templates
         var templatesPath = GetTemplatesPath();
         var filePath = Path.Combine(templatesPath, templateName);
 
@@ -79,6 +112,46 @@ public static class TemplateGenerator
         }
 
         return File.ReadAllText(filePath);
+    }
+
+    /// <summary>
+    /// Read a built-in template (ignores project-local overrides).
+    /// Used by FolderScaffolder to copy templates to _system/templates/.
+    /// </summary>
+    public static string ReadBuiltInTemplate(string templateName)
+    {
+        var templatesPath = GetTemplatesPath();
+        var filePath = Path.Combine(templatesPath, templateName);
+
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"Built-in template not found: {templateName}", filePath);
+        }
+
+        return File.ReadAllText(filePath);
+    }
+
+    /// <summary>
+    /// Get all template file names that can be copied to _system/templates/.
+    /// </summary>
+    public static IReadOnlyList<string> GetAllTemplateNames()
+    {
+        return new[]
+        {
+            "agent-workflow.template.md",
+            "mode-code-writer.template.md",
+            "mode-reviewer.template.md",
+            "mode-co-thinker.template.md",
+            "mode-interviewer.template.md",
+            "mode-planner.template.md",
+            "mode-docs-writer.template.md",
+            "mode-tester.template.md",
+            "process-index.template.md",
+            "process-feature-implementation.template.md",
+            "process-bug-fix.template.md",
+            "process-refactoring.template.md",
+            "process-code-review.template.md"
+        };
     }
 
     /// <summary>
@@ -245,11 +318,11 @@ public static class TemplateGenerator
     /// Workflow file for a specific agent.
     /// Reads from agent-workflow.template.md and replaces {{AGENT_NAME}}.
     /// </summary>
-    public static string GenerateWorkflowFile(string agentName)
+    public static string GenerateWorkflowFile(string agentName, string? basePath = null)
     {
         try
         {
-            var template = ReadTemplate("agent-workflow.template.md");
+            var template = ReadTemplate("agent-workflow.template.md", basePath);
             var placeholders = new Dictionary<string, string>
             {
                 ["AGENT_NAME"] = agentName,
@@ -763,12 +836,12 @@ public static class TemplateGenerator
     /// Generate a mode file for a specific agent.
     /// Mode files contain role-specific guidance with the agent name baked in.
     /// </summary>
-    public static string GenerateModeFile(string agentName, string modeName)
+    public static string GenerateModeFile(string agentName, string modeName, string? basePath = null)
     {
         var templateName = $"mode-{modeName}.template.md";
         try
         {
-            var template = ReadTemplate(templateName);
+            var template = ReadTemplate(templateName, basePath);
             var placeholders = new Dictionary<string, string>
             {
                 ["AGENT_NAME"] = agentName,
@@ -793,6 +866,7 @@ public static class TemplateGenerator
             "interviewer" => "gather requirements",
             "planner" => "design implementation plans",
             "docs-writer" => "write documentation",
+            "tester" => "test the application and report issues",
             _ => "complete your assigned work"
         };
 
@@ -804,6 +878,7 @@ public static class TemplateGenerator
             "interviewer" => $"`dydo/agents/{agentName}/**`",
             "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",
             "docs-writer" => "`dydo/**` (except agents/)",
+            "tester" => $"`dydo/agents/{agentName}/**`, `tests/**`, `dydo/project/pitfalls/**`",
             _ => "(check with dydo agent status)"
         };
 
@@ -859,7 +934,7 @@ public static class TemplateGenerator
     /// </summary>
     public static IReadOnlyList<string> GetModeNames()
     {
-        return new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer" };
+        return new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
     }
 
     /// <summary>
@@ -993,6 +1068,102 @@ public static class TemplateGenerator
 
                 Run `dydo <command> --help` for detailed usage of each command.
                 """;
+        }
+    }
+
+    /// <summary>
+    /// Generate the process index file.
+    /// Reads from process-index.template.md if available.
+    /// </summary>
+    public static string GenerateProcessIndexMd(string? basePath = null)
+    {
+        try
+        {
+            return ReadTemplate("process-index.template.md", basePath);
+        }
+        catch (FileNotFoundException)
+        {
+            return """
+                ---
+                area: project
+                type: hub
+                ---
+
+                # Process Workflows
+
+                Formalized process documentation for different types of work.
+
+                ## Processes
+
+                - [Feature Implementation](./feature-implementation.md)
+                - [Bug Fix](./bug-fix.md)
+                - [Refactoring](./refactoring.md)
+                - [Code Review](./code-review.md)
+                """;
+        }
+    }
+
+    /// <summary>
+    /// Generate the feature implementation process.
+    /// Reads from process-feature-implementation.template.md if available.
+    /// </summary>
+    public static string GenerateFeatureImplementationProcessMd(string? basePath = null)
+    {
+        try
+        {
+            return ReadTemplate("process-feature-implementation.template.md", basePath);
+        }
+        catch (FileNotFoundException)
+        {
+            return "# Feature Implementation Process\n\n(Template not found)";
+        }
+    }
+
+    /// <summary>
+    /// Generate the bug fix process.
+    /// Reads from process-bug-fix.template.md if available.
+    /// </summary>
+    public static string GenerateBugFixProcessMd(string? basePath = null)
+    {
+        try
+        {
+            return ReadTemplate("process-bug-fix.template.md", basePath);
+        }
+        catch (FileNotFoundException)
+        {
+            return "# Bug Fix Process\n\n(Template not found)";
+        }
+    }
+
+    /// <summary>
+    /// Generate the refactoring process.
+    /// Reads from process-refactoring.template.md if available.
+    /// </summary>
+    public static string GenerateRefactoringProcessMd(string? basePath = null)
+    {
+        try
+        {
+            return ReadTemplate("process-refactoring.template.md", basePath);
+        }
+        catch (FileNotFoundException)
+        {
+            return "# Refactoring Process\n\n(Template not found)";
+        }
+    }
+
+    /// <summary>
+    /// Generate the code review process.
+    /// Reads from process-code-review.template.md if available.
+    /// </summary>
+    public static string GenerateCodeReviewProcessMd(string? basePath = null)
+    {
+        try
+        {
+            return ReadTemplate("process-code-review.template.md", basePath);
+        }
+        catch (FileNotFoundException)
+        {
+            return "# Code Review Process\n\n(Template not found)";
         }
     }
 }

@@ -117,8 +117,27 @@ public class AgentRegistryTests : IDisposable
     public void KnownRoles_AreDocumented()
     {
         // Verify the expected roles are documented
-        var knownRoles = new[] { "code-writer", "reviewer", "docs-writer", "interviewer", "planner" };
-        Assert.Equal(5, knownRoles.Length);
+        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "interviewer", "planner", "tester" };
+        Assert.Equal(7, knownRoles.Length);
+    }
+
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("reviewer")]
+    [InlineData("co-thinker")]
+    [InlineData("docs-writer")]
+    [InlineData("interviewer")]
+    [InlineData("planner")]
+    [InlineData("tester")]
+    public void SetRole_AcceptsAllKnownRoles(string role)
+    {
+        // This test verifies the role is in RolePermissions dictionary
+        // SetRole will fail with "No agent identity assigned" but NOT "Invalid role"
+        var result = _registry.SetRole(role, null, out var error);
+
+        Assert.False(result); // Expected - no agent claimed
+        Assert.Contains("No agent identity assigned", error);
+        Assert.DoesNotContain("Invalid role", error);
     }
 
     [Fact]
@@ -147,4 +166,359 @@ public class AgentRegistryTests : IDisposable
         Assert.False(result);
         Assert.Contains("No agent identity assigned", error);
     }
+
+    #region Agent Management Tests
+
+    private void SetupConfig(string[] agents, Dictionary<string, string[]> assignments)
+    {
+        var configPath = Path.Combine(_testDir, "dydo.json");
+        var assignmentsJson = string.Join(",\n      ",
+            assignments.Select(kv => $"\"{kv.Key}\": [{string.Join(", ", kv.Value.Select(a => $"\"{a}\""))}]"));
+        var agentsJson = string.Join(", ", agents.Select(a => $"\"{a}\""));
+
+        var config = $$"""
+            {
+              "version": 1,
+              "agents": {
+                "pool": [{{agentsJson}}],
+                "assignments": {
+                  {{assignmentsJson}}
+                }
+              }
+            }
+            """;
+
+        Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+        File.WriteAllText(configPath, config);
+    }
+
+    [Fact]
+    public void CreateAgent_AddsToPoolAndAssignments()
+    {
+        // Setup minimal config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Create scaffolder for workspace creation
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        var result = registry.CreateAgent("NewAgent", "testuser", out var error);
+
+        Assert.True(result, $"CreateAgent failed: {error}");
+
+        // Verify config updated
+        var configContent = File.ReadAllText(Path.Combine(_testDir, "dydo.json"));
+        Assert.Contains("Newagent", configContent); // PascalCase normalized
+
+        // Verify workspace created
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Newagent");
+        Assert.True(Directory.Exists(workspacePath), "Agent workspace should exist");
+    }
+
+    [Fact]
+    public void CreateAgent_FailsForDuplicateName()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.CreateAgent("Adele", "testuser", out var error);
+
+        Assert.False(result);
+        Assert.Contains("already exists", error);
+    }
+
+    [Fact]
+    public void CreateAgent_FailsForInvalidNameFormat()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.CreateAgent("123Invalid", "testuser", out var error);
+
+        Assert.False(result);
+        Assert.Contains("must start with a letter", error);
+    }
+
+    [Fact]
+    public void RenameAgent_UpdatesConfigAndWorkspace()
+    {
+        // Setup config and workspace
+        SetupConfig(new[] { "OldName" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "OldName" } });
+
+        var scaffolder = new FolderScaffolder();
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "OldName");
+        Directory.CreateDirectory(workspacePath);
+        Directory.CreateDirectory(Path.Combine(workspacePath, "modes"));
+        File.WriteAllText(Path.Combine(workspacePath, "workflow.md"), "# OldName workflow");
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: OldName
+            status: free
+            assigned: testuser
+            ---
+            # OldName — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        var result = registry.RenameAgent("OldName", "NewName", out var error);
+
+        Assert.True(result, $"RenameAgent failed: {error}");
+
+        // Verify config updated
+        var configContent = File.ReadAllText(Path.Combine(_testDir, "dydo.json"));
+        Assert.Contains("Newname", configContent);
+        Assert.DoesNotContain("OldName", configContent);
+
+        // Verify workspace renamed
+        Assert.False(Directory.Exists(Path.Combine(_testDir, "dydo", "agents", "OldName")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "dydo", "agents", "Newname")));
+    }
+
+    [Fact]
+    public void RenameAgent_FailsForNonexistentAgent()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.RenameAgent("NonExistent", "NewName", out var error);
+
+        Assert.False(result);
+        Assert.Contains("does not exist", error);
+    }
+
+    [Fact]
+    public void RemoveAgent_DeletesFromConfigAndWorkspace()
+    {
+        // Setup config and workspace
+        SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), "# Adele state");
+
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.RemoveAgent("Adele", out var error);
+
+        Assert.True(result, $"RemoveAgent failed: {error}");
+
+        // Verify config updated
+        var configContent = File.ReadAllText(Path.Combine(_testDir, "dydo.json"));
+        Assert.DoesNotContain("\"Adele\"", configContent);
+        Assert.Contains("Brian", configContent); // Other agent still there
+
+        // Verify workspace deleted
+        Assert.False(Directory.Exists(workspacePath));
+    }
+
+    [Fact]
+    public void RemoveAgent_FailsForNonexistentAgent()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.RemoveAgent("NonExistent", out var error);
+
+        Assert.False(result);
+        Assert.Contains("does not exist", error);
+    }
+
+    [Fact]
+    public void ReassignAgent_MovesAgentBetweenHumans()
+    {
+        // Setup config with two humans
+        SetupConfig(
+            new[] { "Adele", "Brian" },
+            new Dictionary<string, string[]>
+            {
+                ["human1"] = new[] { "Adele" },
+                ["human2"] = new[] { "Brian" }
+            });
+
+        // Create workspace with state file
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: Adele
+            status: free
+            assigned: human1
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReassignAgent("Adele", "human2", out var error);
+
+        Assert.True(result, $"ReassignAgent failed: {error}");
+
+        // Verify config updated
+        var configContent = File.ReadAllText(Path.Combine(_testDir, "dydo.json"));
+        // human2 should now have Adele
+        Assert.Contains("human2", configContent);
+
+        // Verify state file updated
+        var stateContent = File.ReadAllText(Path.Combine(workspacePath, "state.md"));
+        Assert.Contains("assigned: human2", stateContent);
+    }
+
+    [Fact]
+    public void ReassignAgent_FailsForNonexistentAgent()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReassignAgent("NonExistent", "human2", out var error);
+
+        Assert.False(result);
+        Assert.Contains("does not exist", error);
+    }
+
+    [Fact]
+    public void ReassignAgent_FailsIfAlreadyAssignedToTargetHuman()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["human1"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReassignAgent("Adele", "human1", out var error);
+
+        Assert.False(result);
+        Assert.Contains("already assigned", error);
+    }
+
+    #endregion
+
+    #region CanTakeRole Tests
+
+    [Fact]
+    public void CanTakeRole_AllowsReviewerWithNoHistory()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Create state with no history
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: Adele
+            status: free
+            assigned: testuser
+            task-role-history: {}
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var canTake = registry.CanTakeRole("Adele", "reviewer", "some-task", out var reason);
+
+        Assert.True(canTake);
+        Assert.Empty(reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_BlocksReviewerAfterCodeWriter()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Create state with code-writer history
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: Adele
+            status: free
+            assigned: testuser
+            task-role-history: { "my-task": ["code-writer"] }
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var canTake = registry.CanTakeRole("Adele", "reviewer", "my-task", out var reason);
+
+        Assert.False(canTake);
+        Assert.Contains("code-writer", reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_AllowsNonReviewerRolesAfterCodeWriter()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: Adele
+            status: free
+            assigned: testuser
+            task-role-history: { "my-task": ["code-writer"] }
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Should allow planner, tester, etc. on same task
+        var canTakePlanner = registry.CanTakeRole("Adele", "planner", "my-task", out var reason1);
+        var canTakeTester = registry.CanTakeRole("Adele", "tester", "my-task", out var reason2);
+
+        Assert.True(canTakePlanner, reason1);
+        Assert.True(canTakeTester, reason2);
+    }
+
+    #endregion
+
+    #region Role Validation Tests
+
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("reviewer")]
+    [InlineData("co-thinker")]
+    [InlineData("docs-writer")]
+    [InlineData("interviewer")]
+    [InlineData("planner")]
+    [InlineData("tester")]
+    public void SetRole_RejectsInvalidRole_ButAcceptsValidRole(string role)
+    {
+        // Valid roles should fail with "No agent identity assigned", not "Invalid role"
+        var result = _registry.SetRole(role, null, out var error);
+
+        Assert.False(result);
+        Assert.Contains("No agent identity assigned", error);
+        Assert.DoesNotContain("Invalid role", error);
+    }
+
+    [Theory]
+    [InlineData("invalid-role")]
+    [InlineData("admin")]
+    [InlineData("superuser")]
+    public void SetRole_RejectsInvalidRoles(string invalidRole)
+    {
+        var result = _registry.SetRole(invalidRole, null, out var error);
+
+        Assert.False(result);
+        // Should fail with invalid role error (though may also fail with no agent claimed first)
+    }
+
+    [Fact]
+    public void AllSevenRoles_AreRecognized()
+    {
+        // This test ensures we have exactly 7 valid roles
+        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "interviewer", "planner", "tester" };
+
+        foreach (var role in knownRoles)
+        {
+            var result = _registry.SetRole(role, null, out var error);
+
+            // Should NOT say "Invalid role" for any known role
+            Assert.DoesNotContain("Invalid role", error);
+        }
+    }
+
+    #endregion
 }

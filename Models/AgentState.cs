@@ -10,4 +10,11 @@ public class AgentState
     public List<string> AllowedPaths { get; set; } = [];
     public List<string> DeniedPaths { get; set; } = [];
     public string? AssignedHuman { get; set; }
+
+    /// <summary>
+    /// Tracks which roles this agent has held on which tasks.
+    /// Key: task name, Value: list of roles held (e.g., ["planner", "code-writer"])
+    /// Used to prevent self-review (code-writer cannot become reviewer on same task).
+    /// </summary>
+    public Dictionary<string, List<string>> TaskRoleHistory { get; set; } = new();
 }

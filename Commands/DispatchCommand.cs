@@ -33,6 +33,10 @@ public static class DispatchCommand
 
         var noLaunchOption = new Option<bool>("--no-launch", "Don't launch new terminal, just write to inbox");
 
+        var toOption = new Option<string?>("--to", "Send dispatch to specific agent (skips auto-selection)");
+
+        var escalateOption = new Option<bool>("--escalate", "Mark dispatch as escalated after repeated failures");
+
         var command = new Command("dispatch", "Dispatch work to another agent")
         {
             roleOption,
@@ -40,7 +44,9 @@ public static class DispatchCommand
             briefOption,
             filesOption,
             contextOption,
-            noLaunchOption
+            noLaunchOption,
+            toOption,
+            escalateOption
         };
 
         command.SetHandler((InvocationContext ctx) =>
@@ -51,14 +57,16 @@ public static class DispatchCommand
             var files = ctx.ParseResult.GetValueForOption(filesOption);
             var contextFile = ctx.ParseResult.GetValueForOption(contextOption);
             var noLaunch = ctx.ParseResult.GetValueForOption(noLaunchOption);
+            var to = ctx.ParseResult.GetValueForOption(toOption);
+            var escalate = ctx.ParseResult.GetValueForOption(escalateOption);
 
-            ctx.ExitCode = Execute(role, task, brief, files, contextFile, noLaunch);
+            ctx.ExitCode = Execute(role, task, brief, files, contextFile, noLaunch, to, escalate);
         });
 
         return command;
     }
 
-    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch)
+    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate)
     {
         var registry = new AgentRegistry();
         var currentHuman = registry.GetCurrentHuman();
@@ -67,26 +75,59 @@ public static class DispatchCommand
         var sender = registry.GetCurrentAgent();
         var senderName = sender?.Name ?? "Unknown";
 
-        // Find first free agent assigned to the current human
-        var freeAgents = string.IsNullOrEmpty(currentHuman)
-            ? registry.GetFreeAgents()
-            : registry.GetFreeAgentsForHuman(currentHuman);
+        // Determine target agent
+        string targetAgentName;
 
-        if (freeAgents.Count == 0)
+        if (!string.IsNullOrEmpty(to))
         {
-            if (!string.IsNullOrEmpty(currentHuman))
+            // Explicit agent specified - validate it
+            if (!registry.IsValidAgentName(to))
             {
-                ConsoleOutput.WriteError($"No free agents available for human '{currentHuman}'.");
+                ConsoleOutput.WriteError($"Agent '{to}' does not exist.");
+                return ExitCodes.ToolError;
             }
-            else
-            {
-                ConsoleOutput.WriteError("No free agents available.");
-            }
-            return ExitCodes.ToolError;
-        }
 
-        // Pick first alphabetically
-        var targetAgent = freeAgents.OrderBy(a => a.Name).First();
+            // Must be assigned to current human (if human context exists)
+            var assignedHuman = registry.GetHumanForAgent(to);
+            if (!string.IsNullOrEmpty(currentHuman) && assignedHuman != currentHuman)
+            {
+                ConsoleOutput.WriteError($"Agent '{to}' is not assigned to you (assigned to: {assignedHuman ?? "nobody"}).");
+                return ExitCodes.ToolError;
+            }
+
+            // Must be free
+            var agentState = registry.GetAgentState(to);
+            if (agentState?.Status != AgentStatus.Free)
+            {
+                ConsoleOutput.WriteError($"Agent '{to}' is not free (status: {agentState?.Status}).");
+                return ExitCodes.ToolError;
+            }
+
+            targetAgentName = to;
+        }
+        else
+        {
+            // Auto-select: Find first free agent assigned to the current human
+            var freeAgents = string.IsNullOrEmpty(currentHuman)
+                ? registry.GetFreeAgents()
+                : registry.GetFreeAgentsForHuman(currentHuman);
+
+            if (freeAgents.Count == 0)
+            {
+                if (!string.IsNullOrEmpty(currentHuman))
+                {
+                    ConsoleOutput.WriteError($"No free agents available for human '{currentHuman}'.");
+                }
+                else
+                {
+                    ConsoleOutput.WriteError("No free agents available.");
+                }
+                return ExitCodes.ToolError;
+            }
+
+            // Pick first alphabetically
+            targetAgentName = freeAgents.OrderBy(a => a.Name).First().Name;
+        }
 
         // Create inbox item
         var inboxItem = new InboxItem
@@ -98,25 +139,32 @@ public static class DispatchCommand
             Received = DateTime.UtcNow,
             Brief = brief,
             Files = string.IsNullOrEmpty(files) ? [] : [files],
-            ContextFile = contextFile
+            ContextFile = contextFile,
+            Escalated = escalate,
+            EscalatedAt = escalate ? DateTime.UtcNow : null
         };
 
         // Write to target agent's inbox
-        var inboxPath = Path.Combine(registry.GetAgentWorkspace(targetAgent.Name), "inbox");
+        var inboxPath = Path.Combine(registry.GetAgentWorkspace(targetAgentName), "inbox");
         Directory.CreateDirectory(inboxPath);
 
         var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{task}.md");
         WriteInboxItem(itemPath, inboxItem);
 
-        Console.WriteLine($"Work dispatched to agent {targetAgent.Name}.");
+        var escalatedIndicator = escalate ? " [ESCALATED]" : "";
+        Console.WriteLine($"Work dispatched to agent {targetAgentName}.{escalatedIndicator}");
         Console.WriteLine($"  Role: {role}");
         Console.WriteLine($"  Task: {task}");
         Console.WriteLine($"  Inbox: {itemPath}");
+        if (escalate)
+        {
+            Console.WriteLine($"  Escalated: yes");
+        }
 
         // Launch new terminal if requested
         if (!noLaunch)
         {
-            var letter = targetAgent.Name[0];
+            var letter = targetAgentName[0];
             LaunchNewTerminal(letter);
             Console.WriteLine($"  Terminal launched with --inbox {letter}");
         }
@@ -134,16 +182,22 @@ public static class DispatchCommand
             ? $"\n## Context\n\nSee: [{item.ContextFile}]({item.ContextFile})"
             : "";
 
+        var escalationYaml = item.Escalated
+            ? $"\nescalated: true\nescalated_at: {item.EscalatedAt:o}"
+            : "";
+
+        var escalationHeader = item.Escalated ? "ESCALATED " : "";
+
         var content = $"""
             ---
             id: {item.Id}
             from: {item.From}
             role: {item.Role}
             task: {item.Task}
-            received: {item.Received:o}
+            received: {item.Received:o}{escalationYaml}
             ---
 
-            # {item.Role.ToUpperInvariant()} Request: {item.Task}
+            # {escalationHeader}{item.Role.ToUpperInvariant()} Request: {item.Task}
 
             ## From
 

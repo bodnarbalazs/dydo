@@ -13,7 +13,8 @@ public class AgentRegistry : IAgentRegistry
         ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], ["src/**", "tests/**"]),
         ["docs-writer"] = (["dydo/**"], ["dydo/agents/**", "src/**", "tests/**"]),
         ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
-        ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], ["src/**"])
+        ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], ["src/**"]),
+        ["tester"] = (["dydo/agents/{self}/**", "tests/**", "dydo/project/pitfalls/**"], ["src/**"])
     };
 
     private readonly string _basePath;
@@ -217,6 +218,16 @@ public class AgentRegistry : IAgentRegistry
             return false;
         }
 
+        // Check for self-review violation
+        if (role == "reviewer" && !string.IsNullOrEmpty(task))
+        {
+            if (!CanTakeRole(agent.Name, role, task, out var reason))
+            {
+                error = reason;
+                return false;
+            }
+        }
+
         var (allowed, denied) = RolePermissions[role];
 
         // Replace {self} placeholder with agent name
@@ -229,7 +240,48 @@ public class AgentRegistry : IAgentRegistry
             s.Task = task;
             s.AllowedPaths = allowed;
             s.DeniedPaths = denied;
+
+            // Track role in task history
+            if (!string.IsNullOrEmpty(task))
+            {
+                if (!s.TaskRoleHistory.ContainsKey(task))
+                {
+                    s.TaskRoleHistory[task] = new List<string>();
+                }
+                if (!s.TaskRoleHistory[task].Contains(role))
+                {
+                    s.TaskRoleHistory[task].Add(role);
+                }
+            }
         });
+
+        return true;
+    }
+
+    /// <summary>
+    /// Checks if an agent can take a specific role on a task.
+    /// Returns false if the agent was code-writer and is trying to become reviewer (no self-review).
+    /// </summary>
+    public bool CanTakeRole(string agentName, string role, string task, out string reason)
+    {
+        reason = string.Empty;
+
+        var state = GetAgentState(agentName);
+        if (state == null)
+        {
+            reason = $"Agent {agentName} not found.";
+            return false;
+        }
+
+        // Prevent self-review: code-writer cannot become reviewer on same task
+        if (role == "reviewer" && state.TaskRoleHistory.TryGetValue(task, out var previousRoles))
+        {
+            if (previousRoles.Contains("code-writer"))
+            {
+                reason = $"Agent {agentName} was code-writer on task '{task}' and cannot be reviewer on the same task. Dispatch to a different agent for review.";
+                return false;
+            }
+        }
 
         return true;
     }
@@ -374,6 +426,7 @@ public class AgentRegistry : IAgentRegistry
             "docs-writer" => "Docs-writer role can only edit dydo/** (except agents/).",
             "interviewer" => "Interviewer role can only edit own workspace.",
             "planner" => "Planner role can only edit own workspace and tasks.",
+            "tester" => "Tester role can edit own workspace, tests, and pitfalls.",
             _ => ""
         };
     }
@@ -417,6 +470,9 @@ public class AgentRegistry : IAgentRegistry
         var workspace = GetAgentWorkspace(agentName);
         Directory.CreateDirectory(workspace);
 
+        // Format task role history for YAML
+        var historyYaml = FormatTaskRoleHistory(state.TaskRoleHistory);
+
         var statePath = Path.Combine(workspace, "state.md");
         var content = $"""
             ---
@@ -428,6 +484,7 @@ public class AgentRegistry : IAgentRegistry
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             allowed-paths: [{string.Join(", ", state.AllowedPaths.Select(p => $"\"{p}\""))}]
             denied-paths: [{string.Join(", ", state.DeniedPaths.Select(p => $"\"{p}\""))}]
+            task-role-history: {historyYaml}
             ---
 
             # {agentName} — Session State
@@ -456,6 +513,17 @@ public class AgentRegistry : IAgentRegistry
             """;
 
         File.WriteAllText(statePath, content);
+    }
+
+    private static string FormatTaskRoleHistory(Dictionary<string, List<string>> history)
+    {
+        if (history.Count == 0)
+            return "{}";
+
+        // Format as compact JSON-like YAML: { "task1": ["role1", "role2"], "task2": ["role3"] }
+        var entries = history.Select(kvp =>
+            $"\"{kvp.Key}\": [{string.Join(", ", kvp.Value.Select(r => $"\"{r}\""))}]");
+        return "{ " + string.Join(", ", entries) + " }";
     }
 
     private AgentState? ParseStateFile(string agentName, string statePath)
@@ -510,6 +578,9 @@ public class AgentRegistry : IAgentRegistry
                     case "denied-paths":
                         state.DeniedPaths = ParsePathList(value);
                         break;
+                    case "task-role-history":
+                        state.TaskRoleHistory = ParseTaskRoleHistory(value);
+                        break;
                 }
             }
 
@@ -519,6 +590,29 @@ public class AgentRegistry : IAgentRegistry
         {
             return new AgentState { Name = agentName };
         }
+    }
+
+    private static Dictionary<string, List<string>> ParseTaskRoleHistory(string value)
+    {
+        var history = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrEmpty(value) || value == "{}")
+            return history;
+
+        // Parse format: { "task1": ["role1", "role2"], "task2": ["role3"] }
+        // Find all task entries: "taskName": ["role1", "role2"]
+        var taskMatches = Regex.Matches(value, @"""([^""]+)""\s*:\s*\[(.*?)\]");
+        foreach (Match match in taskMatches)
+        {
+            var taskName = match.Groups[1].Value;
+            var rolesStr = match.Groups[2].Value;
+            var roles = Regex.Matches(rolesStr, @"""([^""]+)""")
+                .Select(m => m.Groups[1].Value)
+                .ToList();
+            history[taskName] = roles;
+        }
+
+        return history;
     }
 
     private static List<string> ParsePathList(string value)

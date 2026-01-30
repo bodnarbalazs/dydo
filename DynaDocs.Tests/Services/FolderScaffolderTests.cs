@@ -32,6 +32,7 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "tasks")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "decisions")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "changelog")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "pitfalls")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "agents")));
     }
 
@@ -114,7 +115,7 @@ public class FolderScaffolderTests : IDisposable
         _scaffolder.ScaffoldAgentWorkspace(agentsPath, "TestAgent");
 
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
 
         foreach (var mode in expectedModes)
         {
@@ -247,5 +248,6 @@ public class FolderScaffolderTests : IDisposable
         Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
+        Assert.Contains("modes/tester.md", content);
     }
 }

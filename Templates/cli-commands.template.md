@@ -140,7 +140,7 @@ dydo agent role code-writer                    # Set role
 dydo agent role code-writer --task auth-login  # Set role with task
 ```
 
-**Roles:** `code-writer`, `reviewer`, `docs-writer`, `interviewer`, `planner`
+**Roles:** `code-writer`, `reviewer`, `co-thinker`, `docs-writer`, `interviewer`, `planner`, `tester`
 
 ---
 
@@ -221,6 +221,8 @@ dydo dispatch --role reviewer --task auth-login --brief "Review PR" --no-launch
 - `--brief <text>` - Brief description (required)
 - `--files <pattern>` - File pattern to include
 - `--context-file <path>` - Path to context file
+- `--to <agent-name>` - Send to specific agent (skips auto-selection)
+- `--escalate` - Mark as escalated (after repeated failures)
 - `--no-launch` - Don't launch terminal, just write to inbox
 
 ### dydo inbox list
@@ -463,6 +465,8 @@ $env:DYDO_HUMAN = "your_name"
 |------|----------|-------------|
 | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
 | `reviewer` | (read-only) | (all files) |
+| `co-thinker` | `dydo/agents/{agent}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
 | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**`, `tests/**` |
 | `interviewer` | `dydo/agents/{agent}/**` | Everything else |
 | `planner` | `dydo/agents/{agent}/**`, `dydo/project/tasks/**` | `src/**` |
+| `tester` | `dydo/agents/{agent}/**`, `tests/**`, `dydo/project/pitfalls/**` | `src/**` |

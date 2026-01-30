@@ -1,6 +1,4 @@
-# DynaDocs (dydo) - Complete Specification v2
-
-This document contains everything needed to build the DynaDocs tool from scratch.
+# DynaDocs (dydo) - Complete Specification v3
 
 ## Background & Context
 
@@ -59,11 +57,11 @@ project/
     ├── index.md                 # Entry point (committed)
     ├── glossary.md              # Term definitions (committed)
     │
-    │── workflows/               # Agent workflow files (committed)
-    │   ├── _index.md            # Workflow hub
-    │   ├── adele.md             # Agent-specific workflow
-    │   ├── brian.md
-    │   └── ...
+    │── _system/                 # System configuration (committed)
+    │   └── templates/           # Project-local template overrides
+    │       ├── agent-workflow.template.md
+    │       ├── mode-*.template.md
+    │       └── process-*.template.md
     │
     │── understand/              # ┐
     │── guides/                  # │ The "Dy" - Documentation
@@ -72,13 +70,20 @@ project/
     │   ├── tasks/               # │ ← Cross-human dispatch
     │   ├── decisions/           # │
     │   ├── pitfalls/            # │
-    │   └── changelog/           # ┘
+    │   ├── changelog/           # │
+    │   └── processes/           # ┘ ← Formalized workflow documentation
     │
     └── agents/                  # The "Do" - Orchestration (GITIGNORED)
         ├── Adele/
-        │   ├── state.md         # Role, task, permissions
+        │   ├── workflow.md      # Agent-specific workflow (generated from template)
+        │   ├── state.md         # Role, task, permissions, role history
         │   ├── .session         # PID tracking
-        │   └── inbox/           # Messages from other agents
+        │   ├── inbox/           # Messages from other agents
+        │   └── modes/           # Role-specific guidance files
+        │       ├── code-writer.md
+        │       ├── reviewer.md
+        │       ├── tester.md
+        │       └── ... (all 7 modes)
         ├── Brian/
         └── ... (all agents)
 ```
@@ -89,10 +94,10 @@ project/
 |------|-----------|-----|
 | `dydo.json` | Yes | Team configuration |
 | `CLAUDE.md` | Yes | Entry point for AI agents |
-| `dydo/workflows/` | Yes | Agent workflow instructions (documentation) |
+| `dydo/_system/templates/` | Yes | Team-customized templates |
 | `dydo/` (except agents/) | Yes | Documentation is shared truth |
 | `dydo/project/tasks/` | Yes | Cross-human task handoff |
-| `dydo/agents/` | **No** | Local per-machine state |
+| `dydo/agents/` | **No** | Local per-machine state (includes generated workflow/mode files) |
 
 **.gitignore entry:**
 ```
@@ -103,11 +108,12 @@ dydo/agents/
 
 | Folder | Question it answers | Content type |
 |--------|---------------------|--------------|
-| `workflows/` | "Who am I and what do I do?" | Agent workflow instructions |
+| `_system/templates/` | "How should generated files look?" | Customizable templates for agent files |
 | `understand/` | "What IS this?" | Domain concepts, business logic, architecture |
 | `guides/` | "How do I DO this?" | Step-by-step task instructions |
 | `reference/` | "What are the specs?" | API docs, config options, tool docs |
 | `project/` | "Why/how do we work?" | Decisions, pitfalls, changelog, tasks |
+| `project/processes/` | "What's the workflow?" | Formalized multi-agent process documentation |
 
 ---
 
@@ -336,10 +342,130 @@ When `dydo init claude` runs, it creates/updates `.claude/settings.local.json`:
 | `docs-writer` | `dydo/**` (except agents/) | `src/**`, `tests/**` |
 | `interviewer` | `dydo/agents/{self}/**` | Everything else |
 | `planner` | `dydo/agents/{self}/**`, `dydo/project/tasks/**` | `src/**` |
+| `tester` | `dydo/agents/{self}/**`, `tests/**`, `dydo/project/pitfalls/**` | `src/**` |
+
+### Role Descriptions
 
 **Co-thinker vs Interviewer:**
 - **Interviewer**: Start of workflow, produces formal requirements brief, typically a dispatch target
 - **Co-thinker**: Any point in workflow, exploratory thinking with the human, can write decisions, typically a mode switch (context preserved)
+
+**Tester:**
+- Tests the application and reports issues
+- Can write test files and create bug reports in `dydo/project/pitfalls/`
+- Cannot modify source code directly
+- Focus: finding bugs, edge cases, and usability issues
+
+### Self-Review Prevention
+
+The system enforces **no self-review** through task role history tracking:
+
+- When an agent sets a role on a task, it's recorded in the state file
+- An agent who was `code-writer` on a task **cannot** become `reviewer` on the same task
+- This ensures "fresh eyes" validation - different agents review code
+
+**Example blocked action:**
+```
+ERROR: Agent Adele cannot take role 'reviewer' on task 'jwt-auth'.
+Reason: Adele was previously 'code-writer' on this task.
+Self-review is not permitted. Dispatch to a different agent for review.
+```
+
+The role history is stored per-agent per-task and persists across sessions.
+
+### Mode Files
+
+Each agent workspace contains a `modes/` folder with role-specific guidance files:
+
+```
+dydo/agents/Adele/modes/
+├── code-writer.md
+├── reviewer.md
+├── co-thinker.md
+├── docs-writer.md
+├── interviewer.md
+├── planner.md
+└── tester.md
+```
+
+When an agent sets a role via `dydo agent role <role>`, they should read their corresponding mode file for:
+- Role-specific must-reads
+- What they can and cannot do
+- Workflow guidance for that role
+- Links to relevant process documentation
+
+Mode files are generated during `dydo init` and `dydo workspace init`, personalized with the agent's name.
+
+### Mode Flags
+
+Users can specify a mode when launching an agent session using flags in the prompt:
+
+| Flag | Mode | Workflow |
+|------|------|----------|
+| `--feature` | Full feature workflow | Interview → Plan → Code → Review |
+| `--task` | Standard task | Plan → Code → Review |
+| `--quick` | Light implementation | Code only (for simple changes) |
+| `--think` | Collaborative exploration | Co-thinker mode |
+| `--review` | Code review | Reviewer mode |
+| `--docs` | Documentation | Docs-writer mode |
+| `--test` | Testing & validation | Tester mode |
+| `--inbox` | Dispatched work | Check inbox for instructions |
+
+**No flag?** The agent should infer the appropriate mode from the prompt intent. Ambiguous requests should prompt clarification.
+
+**Examples:**
+```
+claude "Add user authentication --feature"    # Full workflow
+claude "Fix the null check bug --quick"       # Just implement
+claude "Help me think through caching --think" # Co-thinker
+```
+
+### Template Customization
+
+Templates for agent workflows and mode files are copied to `dydo/_system/templates/` during `dydo init`. Teams can customize these templates, and changes are committed to git. When new agent workspaces are created, the system uses project-local templates if they exist, otherwise falls back to built-in defaults.
+
+**How it works:**
+
+1. `dydo init` copies all templates to `_system/templates/`
+2. Teams customize the templates to fit their project
+3. When `dydo agent new` creates an agent, project-local templates are used
+4. Partial overrides work: delete files you don't want to customize
+
+**Available templates:**
+
+| Template | Purpose | Placeholders |
+|----------|---------|--------------|
+| `agent-workflow.template.md` | Agent entry point and onboarding | `{{AGENT_NAME}}`, `{{AGENT_NAME_LOWER}}` |
+| `mode-*.template.md` | Role-specific guidance (7 files) | `{{AGENT_NAME}}`, `{{AGENT_NAME_LOWER}}` |
+| `process-*.template.md` | Workflow process documentation | (none) |
+
+**Template placeholders:**
+
+- `{{AGENT_NAME}}` - Agent name (e.g., "Adele")
+- `{{AGENT_NAME_LOWER}}` - Lowercase agent name (e.g., "adele")
+
+**Example customization:**
+
+```markdown
+<!-- dydo/_system/templates/agent-workflow.template.md -->
+---
+agent: {{AGENT_NAME}}
+type: workflow
+---
+
+# Welcome, {{AGENT_NAME}}!
+
+You are working on the **Acme Corp** project.
+Remember our core values: quality over speed, test everything.
+
+## First Steps
+
+1. Claim your identity: `dydo agent claim {{AGENT_NAME}}`
+2. Read our coding standards
+...
+```
+
+**Important:** `dydo init --join` does NOT overwrite existing templates (preserves team customizations).
 
 ---
 
@@ -547,6 +673,96 @@ Alice's agents see it via `dydo task list --mine`.
 
 ---
 
+## Process Workflows
+
+DynaDocs includes formalized process documentation for common development workflows. These are stored in `dydo/project/processes/` and guide agents through multi-step tasks with appropriate role transitions.
+
+### Available Processes
+
+| Process | Phases | When to Use |
+|---------|--------|-------------|
+| Feature Implementation | Interviewer → Planner → Code-Writer → Reviewer | New features, complex changes, 3+ files |
+| Bug Fix | Co-Thinker → [Planner] → Code-Writer → Reviewer | Bug fixes (planner optional for simple bugs) |
+| Refactoring | Co-Thinker → Planner → Code-Writer → Reviewer | Restructuring code, behavior-preserving changes |
+| Code Review | (Checklist used by all processes) | Final validation before merge |
+
+### Feature Implementation Process
+
+**Phases:** Interviewer (optional) → Planner → Code-Writer → Reviewer
+
+**Triggers for using this process:**
+- User says "plan", "design", or similar
+- Complex tasks affecting 3+ files
+- New abstractions or architectural changes
+
+**Key principles:**
+- Planning is cheap, rework is expensive
+- Optional interview phase clarifies ambiguous requirements
+- No self-review (code-writer cannot become reviewer)
+- Changelog created with human review queue
+
+### Bug Fix Process
+
+**Phases:** Co-Thinker (investigation) → [Planner] → Code-Writer → Reviewer
+
+**Smart path selection:**
+- **Simple bugs** (clear root cause, single file): Skip planner, go straight to code-writer
+- **Complex bugs** (multiple files, regression risk): Include planner phase
+
+**Key principles:**
+- Investigation phase documents root cause analysis
+- Regression test required for every fix
+- Minimal change principle (no refactoring while fixing)
+- Different agent must review
+
+### Refactoring Process
+
+**Phases:** Co-Thinker → Planner → Code-Writer → Reviewer
+
+**Key principles:**
+- Define invariants upfront (what MUST NOT change)
+- Each step must be independently deployable (< 200 lines)
+- Behavior-preserving only (no feature changes)
+- Tests run after each logical change
+- Atomic commits (one per step)
+
+### Code Review Checklist
+
+Used as a sub-process by all workflows. Key areas:
+
+1. **Correctness**: Logic, edge cases, error handling, concurrency, resource cleanup
+2. **Completeness**: Plan items done, tests written, documentation updated
+3. **Standards**: Naming, style, DRY, single responsibility
+4. **Security**: No hardcoded secrets, input validation, auth checks
+5. **Maintainability**: Readable, not over-engineered, no dead code
+6. **Performance**: N+1 queries, data structures, allocations
+
+**AI Slop Detection**: Reviewers specifically flag:
+- Excessive comments on obvious code
+- Over-defensive null checks
+- Unnecessary abstractions
+- Verbose patterns that could be simpler
+
+**Feedback categories:**
+- **Blocking**: Must fix before merge
+- **Non-blocking**: Should fix, can be separate PR
+- **Nitpick**: Style preference, optional
+
+**Escalation rule:** After 2 failed reviews, escalate to human.
+
+### Process Files Structure
+
+```
+dydo/project/processes/
+├── _index.md                    # Process hub with decision table
+├── feature-implementation.md    # Full feature workflow
+├── bug-fix.md                   # Bug fix workflow
+├── refactoring.md              # Refactoring workflow
+└── code-review.md              # Review checklist (used by all)
+```
+
+---
+
 ## Documentation Philosophy
 
 ### JITI - Just In Time Information
@@ -570,8 +786,14 @@ CLAUDE.md (project root)
             │       └── {task}.md (details)
             │
             └── project/_index.md (hub)
-                    └── decisions/_index.md (sub-hub)
-                            └── 001-clean-architecture.md (detail)
+                    ├── decisions/_index.md (sub-hub)
+                    │       └── 001-clean-architecture.md (detail)
+                    │
+                    └── processes/_index.md (sub-hub)
+                            ├── feature-implementation.md
+                            ├── bug-fix.md
+                            ├── refactoring.md
+                            └── code-review.md
 ```
 
 **Key principle:** AI agents follow the funnel: `CLAUDE.md` → `index.md` → their workflow file → must-reads. Information is disclosed progressively, not all at once.
@@ -745,7 +967,13 @@ DynaDocs/
 │   ├── how-to-use-docs.template.md
 │   ├── index.template.md
 │   ├── workflow.template.md
-│   └── ...
+│   ├── mode-tester.template.md           # Tester role guidance
+│   ├── process-index.template.md         # Process hub
+│   ├── process-bug-fix.template.md       # Bug fix workflow
+│   ├── process-code-review.template.md   # Review checklist
+│   ├── process-feature-implementation.template.md
+│   ├── process-refactoring.template.md
+│   └── ... (mode templates for each role)
 │
 └── Utils/
     ├── ConsoleOutput.cs
@@ -861,6 +1089,7 @@ assigned: balazs
 started: 2025-01-28T10:30:00Z
 allowed-paths: ["src/**", "tests/**"]
 denied-paths: ["dydo/**", "project/**"]
+task-role-history: {"jwt-auth": ["planner", "code-writer"]}
 ---
 
 # Adele — Session State
@@ -882,6 +1111,8 @@ jwt-auth
 
 (None)
 ```
+
+The `task-role-history` field tracks which roles an agent has held on each task. This enables the self-review prevention system - an agent cannot become `reviewer` on a task where they were previously `code-writer`.
 
 ---
 
@@ -907,6 +1138,9 @@ DynaDocs (`dydo`) is a C# console tool that:
 4. **Queries** the doc graph for context gathering
 5. **Orchestrates** multi-agent workflows with role-based permissions
 6. **Supports multi-user** collaboration via agent assignments
+7. **Enforces process workflows** with formalized phases (feature, bug-fix, refactoring)
+8. **Prevents self-review** through task role history tracking
+9. **Supports template customization** via project-local `_system/templates/`
 
 ### Key Principles
 
@@ -915,7 +1149,10 @@ DynaDocs (`dydo`) is a C# console tool that:
 3. **Platform-agnostic**: Hook system works with Claude, future AI tools
 4. **Multi-user**: Each human gets assigned agents, no conflicts
 5. **Objective outputs**: Command output suitable for both humans and AI
-6. **Local state, shared docs**: Agent workspaces gitignored, workflow files committed
+6. **Local state, shared docs**: Agent workspaces gitignored, templates committed
 7. **Hierarchical navigation**: CLAUDE.md → Index → Workflows → Must-reads → Details
 8. **Graph connectivity**: Related docs link bidirectionally
 9. **Kebab-case everywhere**: Consistent, parseable filenames
+10. **No self-review**: Code-writer cannot become reviewer on same task (fresh eyes validation)
+11. **Process-driven workflows**: Formalized processes guide complex tasks through appropriate phases
+12. **Customizable templates**: Project-local `_system/templates/` overrides built-in defaults

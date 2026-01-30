@@ -29,6 +29,7 @@ Your prompt contains your task. It may include a mode flag:
 | `--think` | Collaborative exploration | [modes/co-thinker.md](modes/co-thinker.md) |
 | `--review` | Code review | [modes/reviewer.md](modes/reviewer.md) |
 | `--docs` | Documentation | [modes/docs-writer.md](modes/docs-writer.md) |
+| `--test` | Testing & validation | [modes/tester.md](modes/tester.md) |
 | `--inbox` | Dispatched work | Check inbox below |
 
 **No flag?** 

@@ -194,10 +194,10 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_TooManyAgents_Fails()
     {
         var command = InitCommand.Create();
-        var result = await RunAsync(command, "none", "--name", "balazs", "--agents", "100");
+        var result = await RunAsync(command, "none", "--name", "balazs", "--agents", "105");
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("between 1 and 52");
+        result.AssertStderrContains("between 1 and 104");
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await RunAsync(command, "none", "--name", "balazs", "--agents", "0");
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("between 1 and 52");
+        result.AssertStderrContains("between 1 and 104");
     }
 
     #endregion

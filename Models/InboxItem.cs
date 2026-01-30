@@ -10,4 +10,6 @@ public class InboxItem
     public required string Brief { get; init; }
     public List<string> Files { get; init; } = [];
     public string? ContextFile { get; init; }
+    public bool Escalated { get; init; }
+    public DateTime? EscalatedAt { get; init; }
 }

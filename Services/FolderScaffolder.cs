@@ -14,7 +14,11 @@ public class FolderScaffolder : IFolderScaffolder
         new("project", "Decisions, pitfalls, changelog, and meta documentation", "project"),
         new("project/tasks", "Task tracking and dispatch", "project"),
         new("project/decisions", "Architecture decision records", "project"),
-        new("project/changelog", "Change history", "project")
+        new("project/changelog", "Change history", "project"),
+        new("project/pitfalls", "Known issues and gotchas", "project"),
+        new("project/processes", "Formalized workflow documentation", "project"),
+        new("_system", "System configuration (committed)", "_system"),
+        new("_system/templates", "Project-local template overrides", "_system")
     ];
 
     /// <summary>
@@ -28,8 +32,8 @@ public class FolderScaffolder : IFolderScaffolder
             var folderPath = Path.Combine(basePath, folder.Path);
             Directory.CreateDirectory(folderPath);
 
-            // Only create _index.md for main content folders (not subfolders like project/tasks)
-            if (!folder.Path.Contains('/'))
+            // Only create _index.md for main content folders (not subfolders like project/tasks or _system)
+            if (!folder.Path.Contains('/') && !folder.Path.StartsWith("_"))
             {
                 var indexPath = Path.Combine(folderPath, "_index.md");
                 if (!File.Exists(indexPath))
@@ -43,6 +47,9 @@ public class FolderScaffolder : IFolderScaffolder
         // Create agents folder (will be gitignored)
         var agentsPath = Path.Combine(basePath, "agents");
         Directory.CreateDirectory(agentsPath);
+
+        // Copy built-in templates to _system/templates/ for customization
+        CopyBuiltInTemplates(basePath);
 
         // Create root index.md with JITI entry point
         var rootIndexPath = Path.Combine(basePath, "index.md");
@@ -58,6 +65,9 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Create foundation documentation (must-reads)
         ScaffoldFoundationDocs(basePath);
+
+        // Create process documentation
+        ScaffoldProcessDocs(basePath);
     }
 
     /// <summary>
@@ -71,7 +81,8 @@ public class FolderScaffolder : IFolderScaffolder
             var folderPath = Path.Combine(basePath, folder.Path);
             Directory.CreateDirectory(folderPath);
 
-            if (!folder.Path.Contains('/'))
+            // Only create _index.md for main content folders (not subfolders or _system)
+            if (!folder.Path.Contains('/') && !folder.Path.StartsWith("_"))
             {
                 var indexPath = Path.Combine(folderPath, "_index.md");
                 if (!File.Exists(indexPath))
@@ -86,6 +97,9 @@ public class FolderScaffolder : IFolderScaffolder
         var agentsPath = Path.Combine(basePath, "agents");
         Directory.CreateDirectory(agentsPath);
 
+        // Copy built-in templates to _system/templates/ for customization
+        CopyBuiltInTemplates(basePath);
+
         // Create root index.md
         var rootIndexPath = Path.Combine(basePath, "index.md");
         if (!File.Exists(rootIndexPath))
@@ -99,6 +113,9 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Create foundation documentation
         ScaffoldFoundationDocs(basePath);
+
+        // Create process documentation
+        ScaffoldProcessDocs(basePath);
     }
 
     /// <summary>
@@ -122,6 +139,9 @@ public class FolderScaffolder : IFolderScaffolder
     /// </summary>
     public void ScaffoldAgentWorkspace(string agentsPath, string agentName)
     {
+        // Derive dydo basePath from agentsPath (agentsPath is dydo/agents/)
+        var basePath = Path.GetDirectoryName(agentsPath);
+
         var agentPath = Path.Combine(agentsPath, agentName);
         Directory.CreateDirectory(agentPath);
 
@@ -137,7 +157,7 @@ public class FolderScaffolder : IFolderScaffolder
         var workflowPath = Path.Combine(agentPath, "workflow.md");
         if (!File.Exists(workflowPath))
         {
-            var content = TemplateGenerator.GenerateWorkflowFile(agentName);
+            var content = TemplateGenerator.GenerateWorkflowFile(agentName, basePath);
             File.WriteAllText(workflowPath, content);
         }
 
@@ -147,7 +167,7 @@ public class FolderScaffolder : IFolderScaffolder
             var modePath = Path.Combine(modesPath, $"{modeName}.md");
             if (!File.Exists(modePath))
             {
-                var content = TemplateGenerator.GenerateModeFile(agentName, modeName);
+                var content = TemplateGenerator.GenerateModeFile(agentName, modeName, basePath);
                 File.WriteAllText(modePath, content);
             }
         }
@@ -158,12 +178,15 @@ public class FolderScaffolder : IFolderScaffolder
     /// </summary>
     public void RegenerateAgentFiles(string agentsPath, string agentName)
     {
+        // Derive dydo basePath from agentsPath (agentsPath is dydo/agents/)
+        var basePath = Path.GetDirectoryName(agentsPath);
+
         var agentPath = Path.Combine(agentsPath, agentName);
         var modesPath = Path.Combine(agentPath, "modes");
 
         // Regenerate workflow.md
         var workflowPath = Path.Combine(agentPath, "workflow.md");
-        var workflowContent = TemplateGenerator.GenerateWorkflowFile(agentName);
+        var workflowContent = TemplateGenerator.GenerateWorkflowFile(agentName, basePath);
         File.WriteAllText(workflowPath, workflowContent);
 
         // Regenerate mode files
@@ -171,7 +194,7 @@ public class FolderScaffolder : IFolderScaffolder
         foreach (var modeName in TemplateGenerator.GetModeNames())
         {
             var modePath = Path.Combine(modesPath, $"{modeName}.md");
-            var modeContent = TemplateGenerator.GenerateModeFile(agentName, modeName);
+            var modeContent = TemplateGenerator.GenerateModeFile(agentName, modeName, basePath);
             File.WriteAllText(modePath, modeContent);
         }
     }
@@ -228,6 +251,69 @@ public class FolderScaffolder : IFolderScaffolder
         if (!File.Exists(offLimitsPath))
         {
             File.WriteAllText(offLimitsPath, TemplateGenerator.GenerateFilesOffLimitsMd());
+        }
+    }
+
+    /// <summary>
+    /// Create the process documentation files (workflow processes).
+    /// </summary>
+    private void ScaffoldProcessDocs(string basePath)
+    {
+        var processesPath = Path.Combine(basePath, "project", "processes");
+        Directory.CreateDirectory(processesPath);
+
+        // Process index
+        var indexPath = Path.Combine(processesPath, "_index.md");
+        if (!File.Exists(indexPath))
+        {
+            File.WriteAllText(indexPath, TemplateGenerator.GenerateProcessIndexMd(basePath));
+        }
+
+        // Feature implementation process
+        var featurePath = Path.Combine(processesPath, "feature-implementation.md");
+        if (!File.Exists(featurePath))
+        {
+            File.WriteAllText(featurePath, TemplateGenerator.GenerateFeatureImplementationProcessMd(basePath));
+        }
+
+        // Bug fix process
+        var bugFixPath = Path.Combine(processesPath, "bug-fix.md");
+        if (!File.Exists(bugFixPath))
+        {
+            File.WriteAllText(bugFixPath, TemplateGenerator.GenerateBugFixProcessMd(basePath));
+        }
+
+        // Refactoring process
+        var refactoringPath = Path.Combine(processesPath, "refactoring.md");
+        if (!File.Exists(refactoringPath))
+        {
+            File.WriteAllText(refactoringPath, TemplateGenerator.GenerateRefactoringProcessMd(basePath));
+        }
+
+        // Code review sub-process
+        var codeReviewPath = Path.Combine(processesPath, "code-review.md");
+        if (!File.Exists(codeReviewPath))
+        {
+            File.WriteAllText(codeReviewPath, TemplateGenerator.GenerateCodeReviewProcessMd(basePath));
+        }
+    }
+
+    /// <summary>
+    /// Copy all built-in templates to _system/templates/ for project-local customization.
+    /// </summary>
+    private void CopyBuiltInTemplates(string basePath)
+    {
+        var destPath = Path.Combine(basePath, "_system", "templates");
+        Directory.CreateDirectory(destPath);
+
+        foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
+        {
+            var destFile = Path.Combine(destPath, templateName);
+            if (!File.Exists(destFile))
+            {
+                var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
+                File.WriteAllText(destFile, content);
+            }
         }
     }
 

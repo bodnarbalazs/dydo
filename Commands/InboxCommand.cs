@@ -116,9 +116,12 @@ public static class InboxCommand
 
         foreach (var item in items.OrderBy(i => i.Received))
         {
-            Console.WriteLine($"[{item.Id}] {item.Role.ToUpperInvariant()}: {item.Task}");
+            var escalatedPrefix = item.Escalated ? "[ESCALATED] " : "";
+            Console.WriteLine($"{escalatedPrefix}[{item.Id}] {item.Role.ToUpperInvariant()}: {item.Task}");
             Console.WriteLine($"  From: {item.From}");
             Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
+            if (item.Escalated && item.EscalatedAt.HasValue)
+                Console.WriteLine($"  Escalated: {item.EscalatedAt:yyyy-MM-dd HH:mm} UTC");
             Console.WriteLine($"  Brief: {item.Brief}");
 
             if (item.Files.Count > 0)
@@ -215,6 +218,8 @@ public static class InboxCommand
 
             string? id = null, from = null, role = null, task = null;
             DateTime received = DateTime.UtcNow;
+            bool escalated = false;
+            DateTime? escalatedAt = null;
 
             foreach (var line in yaml.Split('\n'))
             {
@@ -233,6 +238,13 @@ public static class InboxCommand
                     case "received":
                         if (DateTime.TryParse(value, out var dt))
                             received = dt;
+                        break;
+                    case "escalated":
+                        escalated = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        break;
+                    case "escalated_at":
+                        if (DateTime.TryParse(value, out var escDt))
+                            escalatedAt = escDt;
                         break;
                 }
             }
@@ -262,7 +274,9 @@ public static class InboxCommand
                 Task = task,
                 Received = received,
                 Brief = brief,
-                Files = files
+                Files = files,
+                Escalated = escalated,
+                EscalatedAt = escalatedAt
             };
         }
         catch

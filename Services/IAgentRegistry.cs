@@ -41,6 +41,12 @@ public interface IAgentRegistry
     bool SetRole(string role, string? task, out string error);
 
     /// <summary>
+    /// Checks if an agent can take a specific role on a task.
+    /// Returns false if the agent was code-writer and is trying to become reviewer (no self-review).
+    /// </summary>
+    bool CanTakeRole(string agentName, string role, string task, out string reason);
+
+    /// <summary>
     /// Gets the agent state for a specific agent.
     /// </summary>
     AgentState? GetAgentState(string agentName);

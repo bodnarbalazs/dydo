@@ -5,17 +5,18 @@ using DynaDocs.Services;
 public class TemplateGeneratorTests
 {
     [Fact]
-    public void GetModeNames_ReturnsSixModes()
+    public void GetModeNames_ReturnsSevenModes()
     {
         var modes = TemplateGenerator.GetModeNames();
 
-        Assert.Equal(6, modes.Count);
+        Assert.Equal(7, modes.Count);
         Assert.Contains("code-writer", modes);
         Assert.Contains("reviewer", modes);
         Assert.Contains("co-thinker", modes);
         Assert.Contains("interviewer", modes);
         Assert.Contains("planner", modes);
         Assert.Contains("docs-writer", modes);
+        Assert.Contains("tester", modes);
     }
 
     [Fact]
@@ -65,6 +66,17 @@ public class TemplateGeneratorTests
         Assert.Contains("about.md", content);
         Assert.Contains("architecture.md", content);
         // Planner doesn't need coding standards yet
+        Assert.DoesNotContain("coding-standards.md", content);
+    }
+
+    [Fact]
+    public void GenerateModeFile_Tester_SkipsCodingStandards()
+    {
+        var content = TemplateGenerator.GenerateModeFile("Adele", "tester");
+
+        Assert.Contains("about.md", content);
+        Assert.Contains("architecture.md", content);
+        // Tester doesn't need coding standards - focuses on behavior, not code
         Assert.DoesNotContain("coding-standards.md", content);
     }
 
@@ -129,6 +141,7 @@ public class TemplateGeneratorTests
         Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
+        Assert.Contains("modes/tester.md", content);
     }
 
     [Fact]
@@ -142,6 +155,7 @@ public class TemplateGeneratorTests
         Assert.Contains("--think", content);
         Assert.Contains("--review", content);
         Assert.Contains("--docs", content);
+        Assert.Contains("--test", content);
         Assert.Contains("--inbox", content);
     }
 
@@ -208,6 +222,7 @@ public class TemplateGeneratorTests
     [InlineData("interviewer")]
     [InlineData("planner")]
     [InlineData("docs-writer")]
+    [InlineData("tester")]
     public void GenerateModeFile_AllModes_HaveValidFrontmatter(string mode)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
@@ -224,6 +239,7 @@ public class TemplateGeneratorTests
     [InlineData("interviewer", "Set Role")]
     [InlineData("planner", "Set Role")]
     [InlineData("docs-writer", "Set Role")]
+    [InlineData("tester", "Set Role")]
     public void GenerateModeFile_AllModes_HaveSetRoleSection(string mode, string expectedSection)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
@@ -231,4 +247,208 @@ public class TemplateGeneratorTests
         Assert.Contains(expectedSection, content);
         Assert.Contains($"dydo agent role {mode}", content);
     }
+
+    #region Process Document Generation Tests
+
+    // Process Index Tests
+    [Fact]
+    public void GenerateProcessIndexMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateProcessIndexMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: hub", content);
+    }
+
+    [Fact]
+    public void GenerateProcessIndexMd_LinksToAllProcesses()
+    {
+        var content = TemplateGenerator.GenerateProcessIndexMd();
+
+        Assert.Contains("feature-implementation", content);
+        Assert.Contains("bug-fix", content);
+        Assert.Contains("refactoring", content);
+        Assert.Contains("code-review", content);
+    }
+
+    [Fact]
+    public void GenerateProcessIndexMd_DocumentsNoSelfReview()
+    {
+        var content = TemplateGenerator.GenerateProcessIndexMd().ToLowerInvariant();
+
+        // Should mention self-review rule
+        Assert.Contains("self-review", content);
+    }
+
+    // Feature Implementation Process Tests
+    [Fact]
+    public void GenerateFeatureImplementationProcessMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateFeatureImplementationProcessMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: process", content);
+    }
+
+    [Fact]
+    public void GenerateFeatureImplementationProcessMd_DocumentsAllPhases()
+    {
+        var content = TemplateGenerator.GenerateFeatureImplementationProcessMd();
+
+        Assert.Contains("Interviewer", content);
+        Assert.Contains("Planner", content);
+        Assert.Contains("Code-Writer", content);
+        Assert.Contains("Reviewer", content);
+    }
+
+    [Fact]
+    public void GenerateFeatureImplementationProcessMd_HasPlanningTriggers()
+    {
+        var content = TemplateGenerator.GenerateFeatureImplementationProcessMd().ToLowerInvariant();
+
+        // Should mention when to use planning
+        Assert.True(
+            content.Contains("trigger") || content.Contains("when to use") || content.Contains("use this"),
+            "Should describe when to use feature implementation process");
+    }
+
+    // Bug Fix Process Tests
+    [Fact]
+    public void GenerateBugFixProcessMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateBugFixProcessMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: process", content);
+    }
+
+    [Fact]
+    public void GenerateBugFixProcessMd_DocumentsInvestigationPhase()
+    {
+        var content = TemplateGenerator.GenerateBugFixProcessMd().ToLowerInvariant();
+
+        // Should mention investigation or co-thinker phase
+        Assert.True(
+            content.Contains("investigation") || content.Contains("co-thinker"),
+            "Should document investigation/co-thinker phase");
+    }
+
+    [Fact]
+    public void GenerateBugFixProcessMd_HasComplexityDecision()
+    {
+        var content = TemplateGenerator.GenerateBugFixProcessMd().ToLowerInvariant();
+
+        // Should mention simple vs complex decision
+        Assert.True(
+            content.Contains("simple") || content.Contains("complex") || content.Contains("trivial"),
+            "Should document complexity decision criteria");
+    }
+
+    // Refactoring Process Tests
+    [Fact]
+    public void GenerateRefactoringProcessMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateRefactoringProcessMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: process", content);
+    }
+
+    [Fact]
+    public void GenerateRefactoringProcessMd_EmphasizesDiscussion()
+    {
+        var content = TemplateGenerator.GenerateRefactoringProcessMd().ToLowerInvariant();
+
+        // Should mention discussion or co-thinker first approach
+        Assert.True(
+            content.Contains("discussion") || content.Contains("co-thinker") || content.Contains("agree"),
+            "Should emphasize discussion-first approach");
+    }
+
+    [Fact]
+    public void GenerateRefactoringProcessMd_HasInvariants()
+    {
+        var content = TemplateGenerator.GenerateRefactoringProcessMd().ToLowerInvariant();
+
+        // Should mention behavior preservation or invariants
+        Assert.True(
+            content.Contains("invariant") || content.Contains("behavior") || content.Contains("preserve"),
+            "Should document behavior preservation/invariants");
+    }
+
+    // Code Review Process Tests
+    [Fact]
+    public void GenerateCodeReviewProcessMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateCodeReviewProcessMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: process", content);
+    }
+
+    [Fact]
+    public void GenerateCodeReviewProcessMd_HasReviewerMindset()
+    {
+        var content = TemplateGenerator.GenerateCodeReviewProcessMd().ToLowerInvariant();
+
+        // Should mention senior engineer or reviewer mindset
+        Assert.True(
+            content.Contains("senior") || content.Contains("mindset") || content.Contains("disdain"),
+            "Should document reviewer mindset");
+    }
+
+    [Fact]
+    public void GenerateCodeReviewProcessMd_HasAiSlopDetection()
+    {
+        var content = TemplateGenerator.GenerateCodeReviewProcessMd().ToLowerInvariant();
+
+        // Should mention AI slop
+        Assert.Contains("slop", content);
+    }
+
+    [Fact]
+    public void GenerateCodeReviewProcessMd_HasComprehensiveChecklist()
+    {
+        var content = TemplateGenerator.GenerateCodeReviewProcessMd();
+
+        // Should have key checklist categories
+        Assert.Contains("Correctness", content);
+        Assert.Contains("Security", content);
+        Assert.True(
+            content.Contains("Maintainability") || content.Contains("maintainable"),
+            "Should have maintainability section");
+        Assert.True(
+            content.Contains("Performance") || content.Contains("performance"),
+            "Should have performance section");
+    }
+
+    // General Process Generation Tests
+    [Theory]
+    [InlineData("ProcessIndex")]
+    [InlineData("FeatureImplementation")]
+    [InlineData("BugFix")]
+    [InlineData("Refactoring")]
+    [InlineData("CodeReview")]
+    public void GenerateProcessMd_AllProcesses_ReturnNonEmptyContent(string processType)
+    {
+        var content = processType switch
+        {
+            "ProcessIndex" => TemplateGenerator.GenerateProcessIndexMd(),
+            "FeatureImplementation" => TemplateGenerator.GenerateFeatureImplementationProcessMd(),
+            "BugFix" => TemplateGenerator.GenerateBugFixProcessMd(),
+            "Refactoring" => TemplateGenerator.GenerateRefactoringProcessMd(),
+            "CodeReview" => TemplateGenerator.GenerateCodeReviewProcessMd(),
+            _ => throw new ArgumentException($"Unknown process type: {processType}")
+        };
+
+        Assert.False(string.IsNullOrWhiteSpace(content));
+        Assert.True(content.Length > 100, "Process document should have substantial content");
+    }
+
+    #endregion
 }

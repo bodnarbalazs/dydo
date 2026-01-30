@@ -566,7 +566,7 @@ Creating...
 Agents assigned to balazs: Adele, Brian, Charlie, Dexter, Emma
 
 Documentation funnel created:
-  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads
+  CLAUDE.md → dydo/index.md → dydo/agents/{name}/workflow.md → must-reads
 
 Next steps:
   1. Set environment variable: export DYDO_HUMAN=balazs
@@ -774,7 +774,7 @@ CLAUDE.md (project root)
     │
     └── dydo/index.md (entry point)
             │
-            ├── workflows/*.md (agent-specific entry)
+            ├── agents/{name}/workflow.md (agent-specific entry, gitignored)
             │       └── Must-reads (architecture, coding-standards, how-to-use-docs)
             │
             ├── understand/_index.md (hub)
@@ -1150,7 +1150,7 @@ DynaDocs (`dydo`) is a C# console tool that:
 4. **Multi-user**: Each human gets assigned agents, no conflicts
 5. **Objective outputs**: Command output suitable for both humans and AI
 6. **Local state, shared docs**: Agent workspaces gitignored, templates committed
-7. **Hierarchical navigation**: CLAUDE.md → Index → Workflows → Must-reads → Details
+7. **Hierarchical navigation**: CLAUDE.md → Index → Agent workflow → Must-reads → Details
 8. **Graph connectivity**: Related docs link bidirectionally
 9. **Kebab-case everywhere**: Consistent, parseable filenames
 10. **No self-review**: Code-writer cannot become reviewer on same task (fresh eyes validation)

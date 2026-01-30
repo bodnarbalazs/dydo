@@ -400,10 +400,10 @@ public class ProcessWorkflowTests : IntegrationTestBase
     }
 
     [Fact]
-    public void Init_AgentWorkspaces_HaveAllModeFiles()
+    public async Task Init_AgentWorkspaces_HaveAllModeFiles()
     {
         // Initialize project
-        var result = InitProjectAsync().Result;
+        var result = await InitProjectAsync();
         result.AssertSuccess();
 
         // Verify first agent has all mode files

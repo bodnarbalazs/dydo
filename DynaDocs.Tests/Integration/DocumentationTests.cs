@@ -208,6 +208,168 @@ public class DocumentationTests : IntegrationTestBase
         result.AssertStdoutContains("needs-manual.md");
     }
 
+    [Fact]
+    public async Task Fix_HubFiles_ContainActualLinks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create a subfolder with docs but no hub
+        WriteFile("dydo/guides/tutorials/getting-started.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Getting Started
+
+            This guide helps you get started quickly.
+            """);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        AssertFileExists("dydo/guides/tutorials/_index.md");
+
+        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
+        Assert.Contains("[Getting Started](./getting-started.md)", hubContent);
+        Assert.Contains("This guide helps you get started quickly.", hubContent);
+        Assert.DoesNotContain("TODO", hubContent);
+    }
+
+    [Fact]
+    public async Task Fix_HubFiles_SortsLinksAlphabetically()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create multiple docs - they should be sorted alphabetically by title
+        WriteFile("dydo/guides/tutorials/zebra.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Zebra Guide
+
+            About zebras.
+            """);
+
+        WriteFile("dydo/guides/tutorials/alpha.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Alpha Guide
+
+            About alphas.
+            """);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+
+        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
+        var alphaIndex = hubContent.IndexOf("[Alpha Guide]");
+        var zebraIndex = hubContent.IndexOf("[Zebra Guide]");
+
+        Assert.True(alphaIndex < zebraIndex, "Alpha should come before Zebra (alphabetical order)");
+    }
+
+    [Fact]
+    public async Task Fix_HubFiles_FallsBackToFilenameWhenNoTitle()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create a doc without a # title heading
+        WriteFile("dydo/guides/tutorials/user-authentication.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            Some content without a title heading.
+            """);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+
+        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
+        // Should convert "user-authentication" to "User Authentication"
+        Assert.Contains("[User Authentication](./user-authentication.md)", hubContent);
+    }
+
+    [Fact]
+    public async Task Fix_HubFiles_ShowsLinkCountInOutput()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        WriteFile("dydo/guides/tutorials/doc1.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Doc One
+
+            First doc.
+            """);
+
+        WriteFile("dydo/guides/tutorials/doc2.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Doc Two
+
+            Second doc.
+            """);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("(2 links)");
+    }
+
+    [Fact]
+    public async Task Fix_HubFiles_ExcludesIndexFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create a folder that already has index.md (not _index.md)
+        WriteFile("dydo/guides/tutorials/index.md", """
+            ---
+            area: guides
+            type: hub
+            ---
+
+            # Tutorials Index
+
+            This is an index file.
+            """);
+
+        WriteFile("dydo/guides/tutorials/actual-guide.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Actual Guide
+
+            Real content.
+            """);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+
+        var hubContent = ReadFile("dydo/guides/tutorials/_index.md");
+        // Should include actual-guide but not index.md
+        Assert.Contains("[Actual Guide]", hubContent);
+        Assert.DoesNotContain("[Tutorials Index]", hubContent);
+    }
+
     #endregion
 
     #region Index

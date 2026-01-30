@@ -59,6 +59,31 @@ public static partial class PathUtils
         return path.Replace('\\', '/');
     }
 
+    /// <summary>
+    /// Normalizes a path for pattern matching/comparison.
+    /// Converts backslashes, removes leading './' and '/', but preserves case.
+    /// Use for glob pattern matching, regex comparison with IgnoreCase.
+    /// </summary>
+    public static string NormalizeForPattern(string path)
+    {
+        var normalized = path.Replace('\\', '/');
+
+        if (normalized.StartsWith("./"))
+            normalized = normalized[2..];
+
+        return normalized.TrimStart('/');
+    }
+
+    /// <summary>
+    /// Normalizes a path for use as a dictionary key.
+    /// Converts backslashes, removes leading './' and '/', lowercases.
+    /// Use for dictionary keys where deterministic hashing is required.
+    /// </summary>
+    public static string NormalizeForKey(string path)
+    {
+        return NormalizeForPattern(path).ToLowerInvariant();
+    }
+
     public static string ResolvePath(string sourcePath, string relativePath)
     {
         var sourceDir = Path.GetDirectoryName(sourcePath) ?? "";

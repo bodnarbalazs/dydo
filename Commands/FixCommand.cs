@@ -2,6 +2,7 @@ namespace DynaDocs.Commands;
 
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -123,9 +124,10 @@ public static class FixCommand
                 {
                     var indexPath = Path.Combine(folder, "_index.md");
                     var folderName = Path.GetFileName(folder);
-                    var content = GenerateSkeletonHub(folderName);
+                    var content = GenerateSkeletonHub(folderName, docsInFolder);
                     File.WriteAllText(indexPath, content);
-                    ConsoleOutput.WriteSuccess($"  ✓ Created {Path.GetRelativePath(basePath, indexPath)} (skeleton)");
+                    var linkCount = docsInFolder.Count(d => !d.IsHubFile && !d.IsIndexFile);
+                    ConsoleOutput.WriteSuccess($"  ✓ Created {Path.GetRelativePath(basePath, indexPath)} ({linkCount} links)");
                     fixedCount++;
                 }
             }
@@ -175,9 +177,11 @@ public static class FixCommand
         return PathUtils.FindDocsFolder(Environment.CurrentDirectory);
     }
 
-    private static string GenerateSkeletonHub(string folderName)
+    private static string GenerateSkeletonHub(string folderName, IEnumerable<DocFile> docsInFolder)
     {
         var title = char.ToUpper(folderName[0]) + folderName[1..].Replace("-", " ");
+        var linksContent = GenerateDocumentLinks(docsInFolder);
+
         return $"""
             ---
             area: general
@@ -190,7 +194,69 @@ public static class FixCommand
 
             ## Contents
 
-            *TODO: Add links to documents in this folder*
+            {linksContent}
             """;
+    }
+
+    /// <summary>
+    /// Generates markdown link entries for documents in a folder.
+    /// </summary>
+    private static string GenerateDocumentLinks(IEnumerable<DocFile> docsInFolder)
+    {
+        var contentDocs = docsInFolder
+            .Where(d => !d.IsHubFile && !d.IsIndexFile)
+            .OrderBy(d => d.Title ?? d.FileName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (contentDocs.Count == 0)
+            return "*No documents in this folder yet.*";
+
+        var sb = new StringBuilder();
+        foreach (var doc in contentDocs)
+        {
+            var displayText = GetDisplayText(doc);
+            var description = GetFirstSentence(doc.SummaryParagraph);
+
+            if (!string.IsNullOrEmpty(description))
+                sb.AppendLine($"- [{displayText}](./{doc.FileName}) - {description}");
+            else
+                sb.AppendLine($"- [{displayText}](./{doc.FileName})");
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string GetDisplayText(DocFile doc)
+    {
+        if (!string.IsNullOrEmpty(doc.Title))
+            return doc.Title;
+
+        // Convert "user-auth.md" -> "User Auth"
+        var name = Path.GetFileNameWithoutExtension(doc.FileName);
+        return System.Globalization.CultureInfo.CurrentCulture
+            .TextInfo.ToTitleCase(name.Replace("-", " "));
+    }
+
+    private static string GetFirstSentence(string? paragraph)
+    {
+        if (string.IsNullOrEmpty(paragraph))
+            return string.Empty;
+
+        var endMarkers = new[] { ". ", "! ", "? ", ".\n", "!\n", "?\n" };
+        var firstEnd = paragraph.Length;
+
+        foreach (var marker in endMarkers)
+        {
+            var idx = paragraph.IndexOf(marker, StringComparison.Ordinal);
+            if (idx >= 0 && idx < firstEnd)
+                firstEnd = idx;
+        }
+
+        var sentence = firstEnd < paragraph.Length
+            ? paragraph[..(firstEnd + 1)].Trim()
+            : paragraph.Trim();
+
+        // Truncate if too long
+        return sentence.Length > 100 ? sentence[..97] + "..." : sentence;
     }
 }

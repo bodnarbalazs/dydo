@@ -1,6 +1,7 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 public class FrontmatterRule : RuleBase
 {
@@ -10,7 +11,7 @@ public class FrontmatterRule : RuleBase
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
         // Skip agent workspace files - they use a different frontmatter schema (agent/mode/role)
-        var normalized = doc.RelativePath.Replace('\\', '/');
+        var normalized = PathUtils.NormalizePath(doc.RelativePath);
         if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase) ||
             normalized.Contains("/agents/", StringComparison.OrdinalIgnoreCase))
         {

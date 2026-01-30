@@ -521,4 +521,156 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region Lock File Tests
+
+    [Fact]
+    public void ClaimAgent_CleansUpLockFileAfterAttempt()
+    {
+        // Setup config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        // Attempt claim (will fail due to no terminal PID in test environment)
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        // Lock file should not exist after the attempt (cleaned up in finally)
+        var lockPath = Path.Combine(_testDir, "dydo", "agents", "Adele", ".claim.lock");
+        Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after claim attempt");
+    }
+
+    [Fact]
+    public void ClaimAgent_FailsWhenLockHeldByRunningProcess()
+    {
+        // Setup config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Create workspace and lock file with current process PID (simulates another claimer)
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+
+        var lockPath = Path.Combine(workspacePath, ".claim.lock");
+        var lockContent = $"{{\"Pid\":{Environment.ProcessId},\"Acquired\":\"{DateTime.UtcNow:o}\"}}";
+        File.WriteAllText(lockPath, lockContent);
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Attempt claim
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.False(result);
+        Assert.Contains("claim in progress", error);
+        Assert.Contains(Environment.ProcessId.ToString(), error);
+    }
+
+    [Fact]
+    public void ClaimAgent_RemovesStaleLockAndProceeds()
+    {
+        // Setup config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Create workspace and lock file with dead PID
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+
+        var lockPath = Path.Combine(workspacePath, ".claim.lock");
+        var stalePid = 999999999; // Very unlikely to be a real running process
+        var lockContent = $"{{\"Pid\":{stalePid},\"Acquired\":\"2024-01-01T00:00:00Z\"}}";
+        File.WriteAllText(lockPath, lockContent);
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Attempt claim - should proceed past lock (though may fail later due to no terminal PID)
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        // The important thing is it didn't fail with "claim in progress" error
+        Assert.DoesNotContain("claim in progress", error);
+
+        // Lock file should be cleaned up
+        Assert.False(File.Exists(lockPath), "Stale lock file should be removed");
+    }
+
+    [Fact]
+    public void ClaimAgent_HandlesCorruptLockFile()
+    {
+        // Setup config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Create workspace and corrupt lock file
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+
+        var lockPath = Path.Combine(workspacePath, ".claim.lock");
+        File.WriteAllText(lockPath, "this is not valid json");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Attempt claim - should treat corrupt lock as stale and proceed
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        // Should not fail with "claim in progress" error
+        Assert.DoesNotContain("claim in progress", error);
+    }
+
+    [Fact]
+    public void ClaimAgent_InvalidName_DoesNotCreateLockFile()
+    {
+        // Attempt claim with invalid name
+        var result = _registry.ClaimAgent("NotAnAgent", out var error);
+
+        Assert.False(result);
+        Assert.Contains("Invalid agent name", error);
+
+        // No lock file should be created for invalid agent
+        var lockPath = Path.Combine(_testDir, "dydo", "agents", "NotAnAgent", ".claim.lock");
+        Assert.False(File.Exists(lockPath), "Lock file should not be created for invalid agent name");
+    }
+
+    [Fact]
+    public async Task ClaimAgent_ConcurrentClaims_OnlyOneLockSucceeds()
+    {
+        // Setup config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        var successCount = 0;
+        var lockInProgressCount = 0;
+        var otherErrorCount = 0;
+
+        // Launch multiple concurrent claim attempts
+        var tasks = Enumerable.Range(0, 5).Select(_ => Task.Run(() =>
+        {
+            var registry = new AgentRegistry(_testDir);
+            var result = registry.ClaimAgent("Adele", out var error);
+
+            if (result)
+            {
+                Interlocked.Increment(ref successCount);
+            }
+            else if (error.Contains("claim in progress"))
+            {
+                Interlocked.Increment(ref lockInProgressCount);
+            }
+            else
+            {
+                // Other errors (like "Could not determine terminal PID") are expected in tests
+                Interlocked.Increment(ref otherErrorCount);
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // At most one should succeed (in practice, all may fail due to terminal PID check)
+        // But importantly, no crashes and lock contention is properly handled
+        Assert.True(successCount <= 1, $"At most one claim should succeed, got {successCount}");
+
+        // Lock file should be cleaned up (allow brief delay for file system on Windows)
+        var lockPath = Path.Combine(_testDir, "dydo", "agents", "Adele", ".claim.lock");
+        for (var i = 0; i < 10 && File.Exists(lockPath); i++)
+        {
+            await Task.Delay(50);
+        }
+        Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after concurrent claims");
+    }
+
+    #endregion
 }

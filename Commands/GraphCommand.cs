@@ -149,14 +149,14 @@ public static class GraphCommand
 
     private static string? ResolveTargetFile(string file, string basePath, List<Models.DocFile> docs)
     {
-        var normalizedInput = file.Replace('\\', '/').ToLowerInvariant();
+        var normalizedInput = PathUtils.NormalizeForKey(file);
 
         if (!normalizedInput.EndsWith(".md"))
             normalizedInput += ".md";
 
         foreach (var doc in docs)
         {
-            var normalizedDoc = doc.RelativePath.Replace('\\', '/').ToLowerInvariant();
+            var normalizedDoc = PathUtils.NormalizeForKey(doc.RelativePath);
 
             if (normalizedDoc == normalizedInput)
                 return doc.RelativePath;

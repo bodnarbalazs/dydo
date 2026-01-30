@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Text.RegularExpressions;
+using DynaDocs.Utils;
 
 /// <summary>
 /// Service for managing globally off-limits file patterns.
@@ -54,7 +55,7 @@ public class OffLimitsService : IOffLimitsService
 
     public string? IsPathOffLimits(string path)
     {
-        var normalizedPath = NormalizePath(path);
+        var normalizedPath = PathUtils.NormalizeForPattern(path);
 
         // Check whitelist first - if whitelisted, allow
         if (IsWhitelisted(normalizedPath))
@@ -225,7 +226,7 @@ public class OffLimitsService : IOffLimitsService
     private static Regex CompileGlobToRegex(string pattern)
     {
         // Normalize to forward slashes for matching
-        pattern = pattern.Replace('\\', '/');
+        pattern = PathUtils.NormalizePath(pattern);
 
         // Build regex pattern
         var regexPattern = "^" + Regex.Escape(pattern)
@@ -236,24 +237,6 @@ public class OffLimitsService : IOffLimitsService
             + "$";
 
         return new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    }
-
-    /// <summary>
-    /// Normalize a path for matching: forward slashes, no leading slash.
-    /// </summary>
-    private static string NormalizePath(string path)
-    {
-        // Convert to forward slashes
-        var normalized = path.Replace('\\', '/');
-
-        // Remove leading ./
-        if (normalized.StartsWith("./"))
-            normalized = normalized[2..];
-
-        // Remove leading /
-        normalized = normalized.TrimStart('/');
-
-        return normalized;
     }
 
     private static bool ContainsWildcard(string pattern)

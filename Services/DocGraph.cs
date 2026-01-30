@@ -17,14 +17,14 @@ public class DocGraph : IDocGraph
 
         foreach (var doc in docs)
         {
-            var normalizedPath = NormalizePath(doc.RelativePath);
+            var normalizedPath = PathUtils.NormalizeForKey(doc.RelativePath);
             _allDocs.Add(normalizedPath);
             _outgoing[normalizedPath] = [];
         }
 
         foreach (var doc in docs)
         {
-            var sourcePath = NormalizePath(doc.RelativePath);
+            var sourcePath = PathUtils.NormalizeForKey(doc.RelativePath);
 
             foreach (var link in doc.Links)
             {
@@ -33,7 +33,7 @@ public class DocGraph : IDocGraph
                 var resolvedPath = ResolveLink(doc, link, basePath);
                 if (resolvedPath == null) continue;
 
-                var targetPath = NormalizePath(resolvedPath);
+                var targetPath = PathUtils.NormalizeForKey(resolvedPath);
                 if (!_allDocs.Contains(targetPath)) continue;
 
                 _outgoing[sourcePath].Add((targetPath, link.LineNumber));
@@ -48,13 +48,13 @@ public class DocGraph : IDocGraph
 
     public List<(string Doc, int LineNumber)> GetIncoming(string docPath)
     {
-        var normalized = NormalizePath(docPath);
+        var normalized = PathUtils.NormalizeForKey(docPath);
         return _incoming.GetValueOrDefault(normalized, []);
     }
 
     public List<(string Doc, int Degree)> GetWithinDegree(string docPath, int maxDegree)
     {
-        var normalized = NormalizePath(docPath);
+        var normalized = PathUtils.NormalizeForKey(docPath);
         if (!_allDocs.Contains(normalized))
             return [];
 
@@ -87,7 +87,7 @@ public class DocGraph : IDocGraph
 
     public bool HasDoc(string docPath)
     {
-        var normalized = NormalizePath(docPath);
+        var normalized = PathUtils.NormalizeForKey(docPath);
         return _allDocs.Contains(normalized);
     }
 
@@ -122,7 +122,7 @@ public class DocGraph : IDocGraph
         }
 
         // Normalize the path (handle .. segments)
-        var parts = resolved.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var parts = PathUtils.NormalizePath(resolved).Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
         var normalized = new List<string>();
 
         foreach (var part in parts)
@@ -139,10 +139,5 @@ public class DocGraph : IDocGraph
         }
 
         return string.Join("/", normalized);
-    }
-
-    private static string NormalizePath(string path)
-    {
-        return path.Replace('\\', '/').TrimStart('/').ToLowerInvariant();
     }
 }

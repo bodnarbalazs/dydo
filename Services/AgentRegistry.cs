@@ -3,6 +3,7 @@ namespace DynaDocs.Services;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 public class AgentRegistry : IAgentRegistry
 {
@@ -60,73 +61,84 @@ public class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Validate human assignment
-        var human = GetCurrentHuman();
-        var (canClaim, claimError) = _configService.ValidateAgentClaim(agentName, human, _config);
-        if (!canClaim)
-        {
-            error = claimError!;
+        // Acquire lock before any state checks to prevent race conditions
+        if (!TryAcquireLock(agentName, out error))
             return false;
-        }
 
-        var state = GetAgentState(agentName);
-        if (state?.Status != AgentStatus.Free)
+        try
         {
-            var session = GetSession(agentName);
-            if (session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+            // Validate human assignment
+            var human = GetCurrentHuman();
+            var (canClaim, claimError) = _configService.ValidateAgentClaim(agentName, human, _config);
+            if (!canClaim)
             {
-                error = $"Agent {agentName} is already claimed (terminal PID {session.TerminalPid}).";
-                if (_config != null && human != null)
-                {
-                    var claimable = GetFreeAgentsForHuman(human);
-                    if (claimable.Count > 0)
-                        error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
-                }
-                error += "\nUse 'dydo agent claim auto' to claim the first available.";
+                error = claimError!;
                 return false;
             }
-            // Stale claim - terminal died, allow reclaim
+
+            var state = GetAgentState(agentName);
+            if (state?.Status != AgentStatus.Free)
+            {
+                var session = GetSession(agentName);
+                if (session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+                {
+                    error = $"Agent {agentName} is already claimed (terminal PID {session.TerminalPid}).";
+                    if (_config != null && human != null)
+                    {
+                        var claimable = GetFreeAgentsForHuman(human);
+                        if (claimable.Count > 0)
+                            error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
+                    }
+                    error += "\nUse 'dydo agent claim auto' to claim the first available.";
+                    return false;
+                }
+                // Stale claim - terminal died, allow reclaim
+            }
+
+            var (terminalPid, claudePid) = ProcessUtils.GetProcessAncestors();
+            if (terminalPid <= 0)
+            {
+                error = "Could not determine terminal PID";
+                return false;
+            }
+
+            // Check if this terminal already has an agent
+            var existingAgent = GetCurrentAgent();
+            if (existingAgent != null && existingAgent.Name != agentName)
+            {
+                error = $"This terminal already has agent {existingAgent.Name} claimed. Release first.";
+                return false;
+            }
+
+            // Write session file
+            var workspace = GetAgentWorkspace(agentName);
+            Directory.CreateDirectory(workspace);
+
+            var session2 = new AgentSession
+            {
+                Agent = agentName,
+                TerminalPid = terminalPid,
+                ClaudePid = claudePid,
+                Claimed = DateTime.UtcNow
+            };
+
+            var sessionPath = Path.Combine(workspace, ".session");
+            File.WriteAllText(sessionPath, JsonSerializer.Serialize(session2, new JsonSerializerOptions { WriteIndented = true }));
+
+            // Update state
+            UpdateAgentState(agentName, s =>
+            {
+                s.Status = AgentStatus.Working;
+                s.Since = DateTime.UtcNow;
+                s.AssignedHuman = human;
+            });
+
+            return true;
         }
-
-        var (terminalPid, claudePid) = ProcessUtils.GetProcessAncestors();
-        if (terminalPid <= 0)
+        finally
         {
-            error = "Could not determine terminal PID";
-            return false;
+            ReleaseLock(agentName);
         }
-
-        // Check if this terminal already has an agent
-        var existingAgent = GetCurrentAgent();
-        if (existingAgent != null && existingAgent.Name != agentName)
-        {
-            error = $"This terminal already has agent {existingAgent.Name} claimed. Release first.";
-            return false;
-        }
-
-        // Write session file
-        var workspace = GetAgentWorkspace(agentName);
-        Directory.CreateDirectory(workspace);
-
-        var session2 = new AgentSession
-        {
-            Agent = agentName,
-            TerminalPid = terminalPid,
-            ClaudePid = claudePid,
-            Claimed = DateTime.UtcNow
-        };
-
-        var sessionPath = Path.Combine(workspace, ".session");
-        File.WriteAllText(sessionPath, JsonSerializer.Serialize(session2, new JsonSerializerOptions { WriteIndented = true }));
-
-        // Update state
-        UpdateAgentState(agentName, s =>
-        {
-            s.Status = AgentStatus.Working;
-            s.Since = DateTime.UtcNow;
-            s.AssignedHuman = human;
-        });
-
-        return true;
     }
 
     public bool ClaimAuto(out string claimedAgent, out string error)
@@ -182,23 +194,34 @@ public class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        var workspace = GetAgentWorkspace(agent.Name);
-        var sessionPath = Path.Combine(workspace, ".session");
+        // Acquire lock to prevent race with concurrent claim attempts
+        if (!TryAcquireLock(agent.Name, out error))
+            return false;
 
-        if (File.Exists(sessionPath))
-            File.Delete(sessionPath);
-
-        UpdateAgentState(agent.Name, s =>
+        try
         {
-            s.Status = AgentStatus.Free;
-            s.Role = null;
-            s.Task = null;
-            s.Since = null;
-            s.AllowedPaths = [];
-            s.DeniedPaths = [];
-        });
+            var workspace = GetAgentWorkspace(agent.Name);
+            var sessionPath = Path.Combine(workspace, ".session");
 
-        return true;
+            if (File.Exists(sessionPath))
+                File.Delete(sessionPath);
+
+            UpdateAgentState(agent.Name, s =>
+            {
+                s.Status = AgentStatus.Free;
+                s.Role = null;
+                s.Task = null;
+                s.Since = null;
+                s.AllowedPaths = [];
+                s.DeniedPaths = [];
+            });
+
+            return true;
+        }
+        finally
+        {
+            ReleaseLock(agent.Name);
+        }
     }
 
     public bool SetRole(string role, string? task, out string error)
@@ -443,9 +466,9 @@ public class AgentRegistry : IAgentRegistry
         {
             var projectRoot = _configService.GetProjectRoot(_basePath) ?? _basePath;
             var relative = Path.GetRelativePath(projectRoot, path);
-            return relative.Replace('\\', '/');
+            return PathUtils.NormalizePath(relative);
         }
-        return path.Replace('\\', '/');
+        return PathUtils.NormalizePath(path);
     }
 
     private static bool MatchesGlob(string path, string pattern)
@@ -1014,4 +1037,116 @@ public class AgentRegistry : IAgentRegistry
         var match = AgentNames.FirstOrDefault(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
         return match ?? name;
     }
+
+    #region Lock File Support
+
+    private record ClaimLock(int Pid, DateTime Acquired);
+
+    private string GetLockFilePath(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), ".claim.lock");
+
+    /// <summary>
+    /// Attempts to acquire an exclusive lock for claiming/releasing an agent.
+    /// Handles stale locks from crashed processes.
+    /// </summary>
+    private bool TryAcquireLock(string agentName, out string error, int retryCount = 0)
+    {
+        error = string.Empty;
+        var lockPath = GetLockFilePath(agentName);
+        var workspace = GetAgentWorkspace(agentName);
+
+        // Ensure workspace directory exists
+        Directory.CreateDirectory(workspace);
+
+        try
+        {
+            // Try to create lock file exclusively
+            using var stream = new FileStream(
+                lockPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None);
+
+            // Write our PID and timestamp
+            var lockInfo = new ClaimLock(Environment.ProcessId, DateTime.UtcNow);
+            var json = JsonSerializer.Serialize(lockInfo);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            stream.Write(bytes, 0, bytes.Length);
+
+            return true;
+        }
+        catch (IOException) when (File.Exists(lockPath))
+        {
+            // Lock file exists - check if it's stale
+            if (retryCount > 0)
+            {
+                error = $"Could not acquire claim lock for agent {agentName}. Try again.";
+                return false;
+            }
+
+            try
+            {
+                var existingJson = File.ReadAllText(lockPath);
+                var existingLock = JsonSerializer.Deserialize<ClaimLock>(existingJson);
+
+                if (existingLock != null && ProcessUtils.IsProcessRunning(existingLock.Pid))
+                {
+                    error = $"Agent {agentName} claim in progress by another process (PID {existingLock.Pid}).";
+                    return false;
+                }
+
+                // Stale lock - delete and retry once
+                File.Delete(lockPath);
+                return TryAcquireLock(agentName, out error, retryCount + 1);
+            }
+            catch (JsonException)
+            {
+                // Corrupt lock file - treat as stale
+                try { File.Delete(lockPath); } catch { /* ignore */ }
+                return TryAcquireLock(agentName, out error, retryCount + 1);
+            }
+            catch (IOException)
+            {
+                // Another process grabbed it while we were checking
+                error = $"Could not acquire claim lock for agent {agentName}. Try again.";
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to acquire lock for agent {agentName}: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Releases the lock file for an agent.
+    /// </summary>
+    private void ReleaseLock(string agentName)
+    {
+        var lockPath = GetLockFilePath(agentName);
+
+        // Retry deletion - another process might briefly have the file open for reading
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            try
+            {
+                if (File.Exists(lockPath))
+                    File.Delete(lockPath);
+                return; // Success or file doesn't exist
+            }
+            catch (IOException) when (attempt < 4)
+            {
+                // File might be locked by another process reading it, wait briefly
+                Thread.Sleep(20);
+            }
+            catch
+            {
+                // Other errors - give up, lock will be detected as stale later
+                return;
+            }
+        }
+    }
+
+    #endregion
 }

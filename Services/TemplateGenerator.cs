@@ -325,8 +325,7 @@ public static class TemplateGenerator
             var template = ReadTemplate("agent-workflow.template.md", basePath);
             var placeholders = new Dictionary<string, string>
             {
-                ["AGENT_NAME"] = agentName,
-                ["AGENT_NAME_LOWER"] = agentName.ToLowerInvariant()
+                ["AGENT_NAME"] = agentName
             };
             return ReplacePlaceholders(template, placeholders);
         }
@@ -844,8 +843,7 @@ public static class TemplateGenerator
             var template = ReadTemplate(templateName, basePath);
             var placeholders = new Dictionary<string, string>
             {
-                ["AGENT_NAME"] = agentName,
-                ["AGENT_NAME_LOWER"] = agentName.ToLowerInvariant()
+                ["AGENT_NAME"] = agentName
             };
             return ReplacePlaceholders(template, placeholders);
         }

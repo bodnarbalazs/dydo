@@ -3,7 +3,10 @@
     "allow": [
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(dotnet run:*)",
+      "Bash(set \"PATH=%PATH%;C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\Installer\")",
+      "Bash(dotnet publish:*)"
     ]
   }
 }

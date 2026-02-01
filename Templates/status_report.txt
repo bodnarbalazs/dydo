@@ -1,8 +1,8 @@
-﻿DynaDocs Status Report
+DynaDocs Status Report
 
   Overall: Production-Ready
 
-  705 tests passing | 14/14 commands implemented | All spec features complete
+  748 tests passing | 14/14 commands implemented | All spec features complete
 
   ---
   What's Done
@@ -24,21 +24,33 @@
   │ Template customization │ ✅ _system/templates/ with overrides                               │
   ├────────────────────────┼────────────────────────────────────────────────────────────────────┤
   │ Process workflows      │ ✅ Templates for feature/bug-fix/refactoring/review                │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────┤
+  │ Auto-link hub files    │ ✅ dydo fix creates hubs with auto-detected sibling links          │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────┤
+  │ Concurrent claims      │ ✅ File locking (.claim.lock) with stale lock detection            │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────┤
+  │ Path normalization     │ ✅ Centralized in PathUtils.cs (3 methods, used consistently)      │
   └────────────────────────┴────────────────────────────────────────────────────────────────────┘
   ---
-  Actionable Improvements
+  Remaining Improvements
 
-  Priority 1 (Quick wins):
-  1. Auto-link hub files - When dydo fix creates skeleton hubs, auto-detect and link .md files in folder (~20 min)
-  2. Concurrent claim protection - Add file locking to prevent race conditions when two terminals claim same agent (~1 hour)
-  3. Better Bash pattern matching - Catch piped commands like cat $SECRET | grep x (~1 hour)
+  Questionable Value (evaluate before implementing):
+  1. --strict-workflow flag for dydo check
+     - Workflow validation exists in WorkspaceCommand and AgentRegistry
+     - Self-review prevention already enforced
+     - Question: What would this flag actually validate that isn't already checked?
 
-  Priority 2 (Nice to have):
-  4. Process workflow validation in dydo check --strict-workflow
-  5. Centralize path normalization logic (currently scattered)
-  6. Better error messages for malformed state files
+  2. Better Bash pattern matching for piped variables
+     - Current: Detects pipes, warns on variable expansion
+     - Missing: Specific pattern like "cat $SECRET | grep x"
+     - Question: Is this a real attack vector? Variables are resolved by shell before dydo sees them
 
-  Priority 3 (Future/spec mentions):
+  3. Better error messages for malformed state files
+     - Current: Silent fallback to defaults
+     - Missing: Helpful error messages when YAML/JSON parsing fails
+     - Question: How often do state files get corrupted in practice?
+
+  Future/Spec Mentions (v2):
   - Watch mode (dydo watch)
   - Pre-commit hook integration
   - Staleness detection for old docs
@@ -51,52 +63,39 @@
   - State file format - YAML in markdown is hand-parsed; could be cleaner as JSON
 
   ---
-  Test Coverage Gaps
+  Test Coverage
 
-  - Concurrent operations (no tests for simultaneous agent claims)
-  - Large-scale scenarios (100+ agents, deep doc hierarchies)
-  - Error recovery paths (mostly happy-path tested)
+  ✅ Concurrent operations - file locking tested with 5 concurrent claim attempts
+  ⚠️ Large-scale scenarios (100+ agents, deep doc hierarchies) - not tested
+  ⚠️ Malformed state file recovery - not tested (related to item 3 above)
+
+  ---
+  Template Discrepancies (Low Priority)
+
+  1. AGENT_NAME_LOWER - Dead Code
+     - Created at TemplateGenerator.cs:329 and :848
+     - Never used in any template - no template contains {{AGENT_NAME_LOWER}}
+     - Action: Remove dead code or add to templates if useful
+
+  2. Template area values may be incorrect:
+     ┌──────────────────────────────┬────────────┬─────────────┬────────────────┐
+     │           Template           │  Current   │  Placed In  │   Should Be    │
+     ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
+     │ coding-standards.template.md │ general    │ guides/     │ guides?        │
+     ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
+     │ changelog.template.md        │ general    │ project/    │ project?       │
+     ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
+     │ decision.template.md         │ general    │ project/    │ project?       │
+     ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
+     │ pitfall.template.md          │ general    │ project/    │ project?       │
+     ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
+     │ glossary.template.md         │ general    │ reference/  │ reference?     │
+     └──────────────────────────────┴────────────┴─────────────┴────────────────┘
+     Note: "general" may be intentional as these are cross-cutting templates
 
   ---
   Bottom Line
 
-  The project is feature-complete per spec. The improvements above are polish, not blockers. The architecture is solid, tests are comprehensive, and the implementation matches the specification well.
-
-  What would you like to tackle next?
-  
-  
-  
-  -------------------------
-  Confirmed Discrepancies
-  
-    1. AGENT_NAME_LOWER - Dead Code (Low priority)
-  
-    - Created at TemplateGenerator.cs:329 and :848
-    - Never used in any template - no template contains {{AGENT_NAME_LOWER}}
-  
-    2. coding-standards.template.md - Wrong Area (Medium priority)
-    ┌──────────────────────────────┬────────────┬─────────────┬────────────────┐
-    │           Template           │  Current   │  Placed In  │   Should Be    │
-    ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
-    │ about.template.md            │ understand │ understand/ │ ✓              │
-    ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
-    │ architecture.template.md     │ understand │ understand/ │ ✓              │
-    ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
-    │ coding-standards.template.md │ general    │ guides/     │ guides ← Wrong │
-    ├──────────────────────────────┼────────────┼─────────────┼────────────────┤
-    │ how-to-use-docs.template.md  │ guides     │ guides/     │ ✓              │
-    └──────────────────────────────┴────────────┴─────────────┴────────────────┘
-    3. Other area: general templates (Need review)
-  
-    These have area: general - is that correct?
-    - index.template.md - root level, general seems OK
-    - welcome.template.md - root level, general seems OK
-    - changelog.template.md - goes in project/changelog/, should be project?
-    - decision.template.md - goes in project/decisions/, should be project?
-    - pitfall.template.md - goes in project/pitfalls/, should be project?
-    - glossary.template.md - goes in reference/, should be reference?
-  
-    Want me to:
-    1. Fix the coding-standards.template.md area
-    2. Remove the dead AGENT_NAME_LOWER code
-    3. Audit and fix the other template areas
+  The project is feature-complete per spec. The 3 remaining improvement items are
+  of questionable value and should be evaluated before implementation. The template
+  discrepancies are cosmetic and low priority.

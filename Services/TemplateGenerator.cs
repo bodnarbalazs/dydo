@@ -3,13 +3,13 @@ namespace DynaDocs.Services;
 using System.Reflection;
 
 /// <summary>
-/// Generates documentation files by reading templates from the Templates/ folder
+/// Generates documentation files by reading templates from embedded resources
 /// and replacing placeholders like {{AGENT_NAME}}, {{PROJECT_NAME}}.
 /// Supports project-local template overrides in dydo/_system/templates/.
 /// </summary>
 public static class TemplateGenerator
 {
-    private static string? _templatesPath;
+    private static readonly Assembly _assembly = Assembly.GetExecutingAssembly();
 
     /// <summary>
     /// Gets the path to project-local templates if the folder exists.
@@ -33,63 +33,22 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Gets the path to the Templates folder (embedded with the assembly).
+    /// Reads a template from embedded resources.
     /// </summary>
-    private static string GetTemplatesPath()
+    private static string? ReadEmbeddedTemplate(string templateName)
     {
-        if (_templatesPath != null)
-            return _templatesPath;
+        var resourceName = $"DynaDocs.Templates.{templateName}";
+        using var stream = _assembly.GetManifestResourceStream(resourceName);
+        if (stream == null)
+            return null;
 
-        // Try to find Templates folder relative to the assembly
-        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        if (assemblyDir != null)
-        {
-            // In development: look for Templates in project root
-            var devPath = FindTemplatesFolder(assemblyDir);
-            if (devPath != null)
-            {
-                _templatesPath = devPath;
-                return _templatesPath;
-            }
-        }
-
-        // Fallback: look from current directory up
-        var fallbackPath = FindTemplatesFolder(Environment.CurrentDirectory);
-        if (fallbackPath != null)
-        {
-            _templatesPath = fallbackPath;
-            return _templatesPath;
-        }
-
-        throw new InvalidOperationException("Could not find Templates folder");
-    }
-
-    private static string? FindTemplatesFolder(string startDir)
-    {
-        var current = startDir;
-        while (current != null)
-        {
-            var templatesPath = Path.Combine(current, "Templates");
-            if (Directory.Exists(templatesPath) && File.Exists(Path.Combine(templatesPath, "agent-workflow.template.md")))
-            {
-                return templatesPath;
-            }
-
-            // Also check if we're in a bin folder and need to go up
-            var parentTemplates = Path.Combine(current, "..", "Templates");
-            if (Directory.Exists(parentTemplates) && File.Exists(Path.Combine(parentTemplates, "agent-workflow.template.md")))
-            {
-                return Path.GetFullPath(parentTemplates);
-            }
-
-            current = Path.GetDirectoryName(current);
-        }
-        return null;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     /// <summary>
     /// Reads a template file and returns its content.
-    /// Checks project-local templates first, then falls back to built-in.
+    /// Checks project-local templates first, then falls back to embedded resources.
     /// </summary>
     private static string ReadTemplate(string templateName, string? basePath = null)
     {
@@ -102,16 +61,12 @@ public static class TemplateGenerator
                 return File.ReadAllText(localFile);
         }
 
-        // Fall back to built-in templates
-        var templatesPath = GetTemplatesPath();
-        var filePath = Path.Combine(templatesPath, templateName);
+        // Fall back to embedded resources
+        var content = ReadEmbeddedTemplate(templateName);
+        if (content != null)
+            return content;
 
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"Template not found: {templateName}", filePath);
-        }
-
-        return File.ReadAllText(filePath);
+        throw new FileNotFoundException($"Template not found: {templateName}");
     }
 
     /// <summary>
@@ -120,15 +75,11 @@ public static class TemplateGenerator
     /// </summary>
     public static string ReadBuiltInTemplate(string templateName)
     {
-        var templatesPath = GetTemplatesPath();
-        var filePath = Path.Combine(templatesPath, templateName);
+        var content = ReadEmbeddedTemplate(templateName);
+        if (content != null)
+            return content;
 
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"Built-in template not found: {templateName}", filePath);
-        }
-
-        return File.ReadAllText(filePath);
+        throw new FileNotFoundException($"Built-in template not found: {templateName}");
     }
 
     /// <summary>

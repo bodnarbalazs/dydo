@@ -435,14 +435,13 @@ Templates for agent workflows and mode files are copied to `dydo/_system/templat
 
 | Template | Purpose | Placeholders |
 |----------|---------|--------------|
-| `agent-workflow.template.md` | Agent entry point and onboarding | `{{AGENT_NAME}}`, `{{AGENT_NAME_LOWER}}` |
-| `mode-*.template.md` | Role-specific guidance (7 files) | `{{AGENT_NAME}}`, `{{AGENT_NAME_LOWER}}` |
+| `agent-workflow.template.md` | Agent entry point and onboarding | `{{AGENT_NAME}}` |
+| `mode-*.template.md` | Role-specific guidance (7 files) | `{{AGENT_NAME}}` |
 | `process-*.template.md` | Workflow process documentation | (none) |
 
 **Template placeholders:**
 
 - `{{AGENT_NAME}}` - Agent name (e.g., "Adele")
-- `{{AGENT_NAME_LOWER}}` - Lowercase agent name (e.g., "adele")
 
 **Example customization:**
 
@@ -667,7 +666,7 @@ Brief: Review JWT impl
 - src/Auth/AuthMiddleware.cs
 ```
 
-Alice's agents see it via `dydo task list --mine`.
+Alice's agents see it via `dydo task list`.
 
 **Same-human dispatch** uses local inbox (fast, no git commit needed).
 
@@ -888,7 +887,7 @@ All internal links must point to existing files/anchors.
 
 Every folder with docs must have `_index.md`.
 
-**Auto-fix:** Yes - create skeleton
+**Auto-fix:** Yes - creates hub file with auto-generated links to sibling documents (sorted alphabetically, with titles and descriptions extracted from each file)
 
 ### Rule 7: No Orphan Docs
 
@@ -1035,12 +1034,12 @@ Terminal A (Adele - owned by balazs):
      → Does NOT launch terminal (different human)
 
 Later, alice checks pending tasks:
-  $ dydo task list --mine
+  $ dydo task list
   jwt-auth    review-pending    reviewer    balazs→alice
 
 Terminal F (Frank - owned by alice):
   1. dydo agent claim auto         # Claims Frank
-  2. dydo task list --mine         # Sees jwt-auth
+  2. dydo task list                # Sees jwt-auth
   3. dydo agent role reviewer --task jwt-auth
   4. Reviews code
   5. dydo review complete jwt-auth --status pass

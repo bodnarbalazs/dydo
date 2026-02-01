@@ -93,7 +93,7 @@ public static class AgentCommand
 
     private static Command CreateRoleCommand()
     {
-        var roleArgument = new Argument<string>("role", "Role to set (code-writer, reviewer, co-thinker, docs-writer, interviewer, planner)");
+        var roleArgument = new Argument<string>("role", "Role to set (code-writer, reviewer, co-thinker, docs-writer, interviewer, planner, tester)");
         var taskOption = new Option<string?>("--task", "Task name to associate with this role");
 
         var command = new Command("role", "Set the current agent's role")

@@ -1,0 +1,48 @@
+{
+  "name": "dydo",
+  "version": "1.0.0",
+  "description": "DynaDocs CLI - Documentation validation and AI agent orchestration tool",
+  "keywords": [
+    "documentation",
+    "validation",
+    "ai-agents",
+    "cli",
+    "dynadocs",
+    "claude"
+  ],
+  "homepage": "https://github.com/bodnarbalazs/dydo#readme",
+  "bugs": {
+    "url": "https://github.com/bodnarbalazs/dydo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bodnarbalazs/dydo.git"
+  },
+  "license": "MIT",
+  "author": "Balazs Bodnar",
+  "bin": {
+    "dydo": "bin/dydo"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "install.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}

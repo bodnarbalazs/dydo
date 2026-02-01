@@ -319,27 +319,51 @@ public static class InitCommand
             settings = new Dictionary<string, object>();
         }
 
-        // Create hooks configuration
-        // Guard against Edit, Write, Read, and Bash tools for comprehensive security
-        var hooks = new Dictionary<string, object>
+        // Get or create hooks object (merge with existing)
+        Dictionary<string, object> hooks;
+        if (settings.TryGetValue("hooks", out var existingHooks) && existingHooks is JsonElement hooksElement)
         {
-            ["PreToolUse"] = new[]
+            hooks = JsonSerializer.Deserialize<Dictionary<string, object>>(hooksElement.GetRawText(), HooksJsonOptions)
+                ?? new Dictionary<string, object>();
+        }
+        else
+        {
+            hooks = new Dictionary<string, object>();
+        }
+
+        // Get or create PreToolUse array (merge with existing)
+        List<Dictionary<string, object>> preToolUse;
+        if (hooks.TryGetValue("PreToolUse", out var existingPreToolUse) && existingPreToolUse is JsonElement preElement)
+        {
+            preToolUse = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(preElement.GetRawText(), HooksJsonOptions)
+                ?? new List<Dictionary<string, object>>();
+        }
+        else
+        {
+            preToolUse = new List<Dictionary<string, object>>();
+        }
+
+        // Remove any existing dydo guard entry (to avoid duplicates on re-init)
+        preToolUse.RemoveAll(entry =>
+            entry.TryGetValue("hooks", out var h) &&
+            h is JsonElement arr &&
+            arr.GetRawText().Contains("dydo guard"));
+
+        // Add dydo guard entry
+        preToolUse.Add(new Dictionary<string, object>
+        {
+            ["matcher"] = "Edit|Write|Read|Bash",
+            ["hooks"] = new[]
             {
                 new Dictionary<string, object>
                 {
-                    ["matcher"] = "Edit|Write|Read|Bash",
-                    ["hooks"] = new[]
-                    {
-                        new Dictionary<string, object>
-                        {
-                            ["type"] = "command",
-                            ["command"] = "dydo guard"
-                        }
-                    }
+                    ["type"] = "command",
+                    ["command"] = "dydo guard"
                 }
             }
-        };
+        });
 
+        hooks["PreToolUse"] = preToolUse;
         settings["hooks"] = hooks;
 
         var json = JsonSerializer.Serialize(settings, HooksJsonOptions);

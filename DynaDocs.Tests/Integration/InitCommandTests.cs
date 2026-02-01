@@ -107,6 +107,82 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("Edit|Write|Read|Bash", content);
     }
 
+    [Fact]
+    public async Task Init_Claude_PreservesExistingHooks()
+    {
+        // Arrange: Create existing settings with a custom hook
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.local.json", """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  {
+                    "matcher": "CustomTool",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo custom"
+                      }
+                    ]
+                  }
+                ],
+                "PostToolUse": [
+                  {
+                    "matcher": "AnyTool",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo post"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "otherSetting": true
+            }
+            """);
+
+        // Act
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        // Assert
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+
+        // Should preserve existing PreToolUse entry
+        Assert.Contains("CustomTool", content);
+        Assert.Contains("echo custom", content);
+
+        // Should add dydo guard entry
+        Assert.Contains("dydo guard", content);
+        Assert.Contains("Edit|Write|Read|Bash", content);
+
+        // Should preserve PostToolUse
+        Assert.Contains("PostToolUse", content);
+        Assert.Contains("echo post", content);
+
+        // Should preserve other settings
+        Assert.Contains("otherSetting", content);
+    }
+
+    [Fact]
+    public async Task Init_Claude_DoesNotDuplicateDydoHook()
+    {
+        // First init
+        await InitProjectAsync("claude", "balazs", 3);
+
+        // Manually re-run hook configuration (simulating re-init scenario)
+        // Since init fails if already initialized, we test via join
+        var result = await JoinProjectAsync("claude", "alice", 2);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+
+        // Count occurrences of "dydo guard" - should only appear once
+        var count = content.Split("dydo guard").Length - 1;
+        Assert.Equal(1, count);
+    }
+
     #endregion
 
     #region Init Join

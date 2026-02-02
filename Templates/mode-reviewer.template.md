@@ -96,3 +96,18 @@ dydo dispatch --role code-writer --task <task-name> --brief "Escalating after 2 
 > Different agents handle different phases. The agent that writes code does not review their own code. Fresh eyes catch what authors miss.
 
 You are those fresh eyes. Be thorough. Be specific. Be helpful.
+
+---
+
+## Parallel Reviews
+
+Multiple reviewers can work simultaneously:
+- Each claims their own identity
+- Focus on non-overlapping areas
+- Skip issues already noted by others
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Return here.

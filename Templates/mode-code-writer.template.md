@@ -41,6 +41,17 @@ If this doesn't match, you claimed wrong or role isn't set.
 
 ---
 
+## Read the Plan First
+
+If you're in `--task` or `--feature` mode, a plan exists. Find it:
+
+1. Check inbox: `dydo inbox show`
+2. Look for: `dydo/agents/*/plan-{task}.md`
+
+Read it before coding. For `--quick` mode, you make the decisions.
+
+---
+
 ## Work
 
 1. **Understand** — Read relevant code before changing it
@@ -60,10 +71,15 @@ If this doesn't match, you claimed wrong or role isn't set.
 When implementation is done and tests pass:
 
 ```bash
-dydo dispatch --role reviewer --task <task-name> --brief "Implemented X. Tests pass. Ready for review."
+dydo dispatch --role reviewer --task <task-name> --brief "..."
 ```
 
-Then release your identity:
+The brief should include:
+- What you implemented (1-2 sentences)
+- Plan deviations and why (if any)
+- Key decisions made
+
+Then release:
 
 ```bash
 dydo agent release
@@ -81,3 +97,9 @@ If the reviewer dispatches fixes back to you:
 4. Dispatch back for re-review
 
 After 2 failed reviews, the task may be escalated to a fresh agent.
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Check your workspace for the plan. Return here.

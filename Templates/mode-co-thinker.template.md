@@ -52,7 +52,13 @@ Your goal: think through a problem together with the human and capture any concl
 - **Propose alternatives** — "What about approaching it from this angle?"
 - **Summarize progress** — "So far we've established X, Y, Z. What's still unclear?"
 
-### When Conclusions Emerge
+### When to Document Decisions
+
+Only create formal decision docs for:
+- Non-obvious choices that required research
+- Decisions future agents might revisit
+
+If someone would read it and think "obviously" — skip it.
 
 If you reach a decision worth documenting:
 
@@ -132,3 +138,9 @@ dydo agent release
 > Two minds are better than one. Good decisions come from exploring options together, surfacing tradeoffs, and capturing the reasoning for future reference.
 
 Stay curious. Challenge assumptions. Document conclusions.
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Check your workspace for notes. Return here.

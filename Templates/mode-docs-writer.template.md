@@ -97,3 +97,9 @@ dydo agent release
 > Code without documentation is a liability. Documentation without code is fiction. Keep them in sync.
 
 Write for the reader who comes after you. Be clear. Be accurate. Be concise.
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Return here.

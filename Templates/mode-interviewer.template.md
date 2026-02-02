@@ -118,3 +118,9 @@ Then read [modes/planner.md](./planner.md) and continue.
 > Garbage in, garbage out. A poorly defined task leads to wasted work. The time you spend clarifying requirements saves multiples in implementation.
 
 Be thorough. Be specific. Don't let ambiguity through.
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Check your workspace for the brief. Return here.

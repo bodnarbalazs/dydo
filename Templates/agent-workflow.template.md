@@ -32,10 +32,22 @@ Your prompt contains your task. It may include a mode flag:
 | `--test` | Testing & validation | [modes/tester.md](modes/tester.md) |
 | `--inbox` | Dispatched work | Check inbox below |
 
-**No flag?** 
-Try to figure out the appropriate mode based on the intent of the prompt. If it's ambiguous even then ask for clarification.
+**No flag?**
+Infer the mode from intent. If ambiguous, ask.
 
-**Thinking prompt?** If the human asks to "think through", "explore", "brainstorm", or "help me figure out" something, go to [modes/co-thinker.md](modes/co-thinker.md).
+**Thinking prompt?** "think through", "explore", "brainstorm" → [modes/co-thinker.md](modes/co-thinker.md)
+
+---
+
+## Before You Start
+
+State your interpretation:
+
+> "I understand you want [X]. Proceeding as [mode] on [task]. Correct me if I'm wrong."
+
+If the request is unrelated to your current task, point it out:
+
+> "This seems separate from [current-task]. Should I continue here or start fresh?"
 
 ---
 

@@ -128,3 +128,9 @@ dydo agent release
 > Fresh eyes catch what authors miss. Test like a user, think like an adversary.
 
 Be thorough. Be specific. Be reproducible.
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Check pitfalls/ for issues you've filed. Return here.

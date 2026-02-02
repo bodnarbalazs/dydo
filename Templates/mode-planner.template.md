@@ -103,6 +103,8 @@ Structure:
 - [Things explicitly not included]
 ```
 
+Only create formal decision docs (`dydo/project/decisions/`) for non-obvious choices that required significant research. Obvious choices go in the plan.
+
 ---
 
 ## Complete
@@ -132,3 +134,9 @@ Then read [modes/code-writer.md](./code-writer.md) and implement.
 > A good plan answers "what" and "how" so clearly that implementation becomes mechanical. The code-writer shouldn't need to make architectural decisions—those are yours.
 
 Be specific. List files. Define steps. Anticipate problems.
+
+---
+
+## Context Recovery
+
+Lost context? Run `dydo whoami` to see your state. Check your workspace for your plan draft. Return here.

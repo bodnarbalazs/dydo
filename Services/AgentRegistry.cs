@@ -1,11 +1,13 @@
 namespace DynaDocs.Services;
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Utils;
 
-public class AgentRegistry : IAgentRegistry
+public partial class AgentRegistry : IAgentRegistry
 {
     private static readonly Dictionary<string, (List<string> Allowed, List<string> Denied)> RolePermissions = new()
     {
@@ -126,7 +128,7 @@ public class AgentRegistry : IAgentRegistry
             };
 
             var sessionPath = Path.Combine(workspace, ".session");
-            File.WriteAllText(sessionPath, JsonSerializer.Serialize(session2, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(sessionPath, JsonSerializer.Serialize(session2, DydoDefaultJsonContext.Default.AgentSession));
 
             // Update state
             UpdateAgentState(agentName, s =>
@@ -411,7 +413,7 @@ public class AgentRegistry : IAgentRegistry
         try
         {
             var json = File.ReadAllText(sessionPath);
-            return JsonSerializer.Deserialize<AgentSession>(json);
+            return JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AgentSession);
         }
         catch
         {
@@ -1075,6 +1077,9 @@ public class AgentRegistry : IAgentRegistry
 
     private record ClaimLock(int Pid, DateTime Acquired);
 
+    [JsonSerializable(typeof(ClaimLock))]
+    private partial class ClaimLockJsonContext : JsonSerializerContext { }
+
     private string GetLockFilePath(string agentName) =>
         Path.Combine(GetAgentWorkspace(agentName), ".claim.lock");
 
@@ -1102,7 +1107,7 @@ public class AgentRegistry : IAgentRegistry
 
             // Write our PID and timestamp
             var lockInfo = new ClaimLock(Environment.ProcessId, DateTime.UtcNow);
-            var json = JsonSerializer.Serialize(lockInfo);
+            var json = JsonSerializer.Serialize(lockInfo, ClaimLockJsonContext.Default.ClaimLock);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             stream.Write(bytes, 0, bytes.Length);
 
@@ -1120,7 +1125,7 @@ public class AgentRegistry : IAgentRegistry
             try
             {
                 var existingJson = File.ReadAllText(lockPath);
-                var existingLock = JsonSerializer.Deserialize<ClaimLock>(existingJson);
+                var existingLock = JsonSerializer.Deserialize(existingJson, ClaimLockJsonContext.Default.ClaimLock);
 
                 if (existingLock != null && ProcessUtils.IsProcessRunning(existingLock.Pid))
                 {

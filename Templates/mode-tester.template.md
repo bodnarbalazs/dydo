@@ -38,6 +38,14 @@ You cannot edit: source code (`src/**`)
 
 ---
 
+## Mindset
+
+> Fresh eyes catch what authors miss. Test like a user, think like an adversary.
+
+Be thorough. Be specific. Be reproducible.
+
+---
+
 ## Work
 
 Your goal: find bugs, edge cases, and usability issues.
@@ -122,11 +130,4 @@ dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
----
-
-## The Tester's Principle
-
-> Fresh eyes catch what authors miss. Test like a user, think like an adversary.
-
-Be thorough. Be specific. Be reproducible.
 

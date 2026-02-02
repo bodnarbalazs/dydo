@@ -45,7 +45,8 @@ If this doesn't match, you claimed wrong or role isn't set.
 
 > Whatever you do, do it right. We don't do quick fixes that become technical debt.
 
-Take the time to understand before changing. Write code you'd be proud to show. The reviewer will scrutinize every line — make sure it holds up.
+Take the time to understand before changing. Write code you'd be proud to show.
+The reviewer will scrutinize every line — make sure it holds up to both the general and stack-specific coding-standards.
 
 ---
 

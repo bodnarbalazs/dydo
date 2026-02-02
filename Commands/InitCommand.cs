@@ -3,6 +3,7 @@ namespace DynaDocs.Commands;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -13,10 +14,9 @@ using DynaDocs.Utils;
 /// </summary>
 public static class InitCommand
 {
-    private static readonly JsonSerializerOptions HooksJsonOptions = new()
+    private static readonly JsonSerializerOptions WriteOptions = new()
     {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        WriteIndented = true
     };
 
     public static Command Create()
@@ -300,73 +300,57 @@ public static class InitCommand
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
 
         // Load existing settings or create new
-        Dictionary<string, object> settings;
+        JsonNode? settings = null;
         if (File.Exists(settingsPath))
         {
             try
             {
                 var existingJson = File.ReadAllText(settingsPath);
-                settings = JsonSerializer.Deserialize<Dictionary<string, object>>(existingJson, HooksJsonOptions)
-                    ?? new Dictionary<string, object>();
+                settings = JsonNode.Parse(existingJson);
             }
             catch
             {
-                settings = new Dictionary<string, object>();
+                // Invalid JSON - start fresh
             }
         }
-        else
-        {
-            settings = new Dictionary<string, object>();
-        }
+        settings ??= new JsonObject();
 
-        // Get or create hooks object (merge with existing)
-        Dictionary<string, object> hooks;
-        if (settings.TryGetValue("hooks", out var existingHooks) && existingHooks is JsonElement hooksElement)
-        {
-            hooks = JsonSerializer.Deserialize<Dictionary<string, object>>(hooksElement.GetRawText(), HooksJsonOptions)
-                ?? new Dictionary<string, object>();
-        }
-        else
-        {
-            hooks = new Dictionary<string, object>();
-        }
-
-        // Get or create PreToolUse array (merge with existing)
-        List<Dictionary<string, object>> preToolUse;
-        if (hooks.TryGetValue("PreToolUse", out var existingPreToolUse) && existingPreToolUse is JsonElement preElement)
-        {
-            preToolUse = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(preElement.GetRawText(), HooksJsonOptions)
-                ?? new List<Dictionary<string, object>>();
-        }
-        else
-        {
-            preToolUse = new List<Dictionary<string, object>>();
-        }
-
-        // Remove any existing dydo guard entry (to avoid duplicates on re-init)
-        preToolUse.RemoveAll(entry =>
-            entry.TryGetValue("hooks", out var h) &&
-            h is JsonElement arr &&
-            arr.GetRawText().Contains("dydo guard"));
-
-        // Add dydo guard entry
-        preToolUse.Add(new Dictionary<string, object>
-        {
-            ["matcher"] = "Edit|Write|Read|Bash",
-            ["hooks"] = new[]
-            {
-                new Dictionary<string, object>
-                {
-                    ["type"] = "command",
-                    ["command"] = "dydo guard"
-                }
-            }
-        });
-
-        hooks["PreToolUse"] = preToolUse;
+        // Get or create hooks object
+        var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
         settings["hooks"] = hooks;
 
-        var json = JsonSerializer.Serialize(settings, HooksJsonOptions);
+        // Get or create PreToolUse array
+        var preToolUse = hooks["PreToolUse"]?.AsArray() ?? new JsonArray();
+        hooks["PreToolUse"] = preToolUse;
+
+        // Remove any existing dydo guard entry (to avoid duplicates on re-init)
+        for (int i = preToolUse.Count - 1; i >= 0; i--)
+        {
+            var entry = preToolUse[i];
+            var entryHooks = entry?["hooks"];
+            if (entryHooks != null && entryHooks.ToJsonString().Contains("dydo guard"))
+            {
+                preToolUse.RemoveAt(i);
+            }
+        }
+
+        // Add dydo guard entry
+        var hookCommand = new JsonObject
+        {
+            ["type"] = "command",
+            ["command"] = "dydo guard"
+        };
+        var hooksArray = new JsonArray();
+        hooksArray.Add((JsonNode)hookCommand);
+
+        var guardEntry = new JsonObject
+        {
+            ["matcher"] = "Edit|Write|Read|Bash",
+            ["hooks"] = hooksArray
+        };
+        preToolUse.Add((JsonNode)guardEntry);
+
+        var json = settings.ToJsonString(WriteOptions);
         File.WriteAllText(settingsPath, json);
     }
 

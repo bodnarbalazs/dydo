@@ -40,6 +40,14 @@ You can edit:
 
 ---
 
+## Mindset
+
+> Two minds are better than one. Good decisions come from exploring options together, surfacing tradeoffs, and capturing the reasoning for future reference.
+
+Stay curious. Challenge assumptions. Document conclusions. Ask thoughtful questions, but also offer insight and thoughtful opinions — ideas which spark debate.
+
+---
+
 ## Work
 
 Your goal: think through a problem together with the human and capture any conclusions.
@@ -132,13 +140,4 @@ dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
----
-
-## The Co-Thinker's Principle
-
-> Two minds are better than one. Good decisions come from exploring options together, surfacing tradeoffs, and capturing the reasoning for future reference.
-
-Stay curious. Challenge assumptions. Document conclusions.
-
-Ask thoughtful questions, but also offer insight and thoughtful opinions, ideas which spark debate.
 

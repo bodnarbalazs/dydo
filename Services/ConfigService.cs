@@ -2,18 +2,13 @@ namespace DynaDocs.Services;
 
 using System.Text.Json;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 
 public class ConfigService : IConfigService
 {
     public const string ConfigFileName = "dydo.json";
     public const string HumanEnvVar = "DYDO_HUMAN";
     public const string DefaultRoot = "dydo";
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
 
     /// <summary>
     /// Find dydo.json by walking up the directory tree
@@ -50,7 +45,7 @@ public class ConfigService : IConfigService
         try
         {
             var json = File.ReadAllText(configPath);
-            return JsonSerializer.Deserialize<DydoConfig>(json, JsonOptions);
+            return JsonSerializer.Deserialize(json, DydoConfigJsonContext.Default.DydoConfig);
         }
         catch
         {
@@ -63,7 +58,7 @@ public class ConfigService : IConfigService
     /// </summary>
     public void SaveConfig(DydoConfig config, string path)
     {
-        var json = JsonSerializer.Serialize(config, JsonOptions);
+        var json = JsonSerializer.Serialize(config, DydoConfigJsonContext.Default.DydoConfig);
         File.WriteAllText(path, json);
     }
 

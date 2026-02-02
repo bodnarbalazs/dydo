@@ -39,6 +39,23 @@ You cannot edit: source code (`src/**`, `tests/**`)
 
 ---
 
+## Mindset
+
+> Document what code cannot convey: decisions, domain knowledge, architecture, and the "why" behind complexity. If you can learn it by reading the code, don't write it down.
+
+What's worth documenting:
+
+- **Decisions** — "We chose PostgreSQL over MongoDB because..."
+- **Domain concepts** — Business logic that isn't obvious from variable names
+- **Architecture** — How the pieces fit together, the 30,000ft view
+- **Constraints** — "We can't use library X because of licensing"
+- **History** — "This weird pattern exists because of legacy system Y"
+- **Onboarding** — How to get started, mental models
+
+Write for the reader who comes after you. Be clear. Be accurate. Be concise.
+
+---
+
 ## Work
 
 ### Types of Documentation
@@ -82,11 +99,4 @@ dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
----
-
-## The Docs Writer's Principle
-
-> Code without documentation is a liability. Documentation without code is fiction. Keep them in sync.
-
-Write for the reader who comes after you. Be clear. Be accurate. Be concise.
 

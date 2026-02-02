@@ -4,25 +4,17 @@ using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
 public partial class MarkdownParser : IMarkdownParser
 {
     private readonly MarkdownPipeline _pipeline;
-    private readonly IDeserializer _yamlDeserializer;
 
     public MarkdownParser()
     {
         _pipeline = new MarkdownPipelineBuilder()
             .UseAutoIdentifiers()
-            .Build();
-
-        _yamlDeserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .IgnoreUnmatchedProperties()
             .Build();
     }
 
@@ -104,16 +96,27 @@ public partial class MarkdownParser : IMarkdownParser
         var endIndex = content.IndexOf("---", 3);
         if (endIndex == -1) return null;
 
-        var yaml = content.Substring(3, endIndex - 3).Trim();
+        var yaml = content.Substring(3, endIndex - 3);
+        var frontmatter = new Frontmatter();
 
-        try
+        foreach (var line in yaml.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            return _yamlDeserializer.Deserialize<Frontmatter>(yaml);
+            var colonIndex = line.IndexOf(':');
+            if (colonIndex == -1) continue;
+
+            var key = line[..colonIndex].Trim().ToLowerInvariant();
+            var value = line[(colonIndex + 1)..].Trim();
+
+            switch (key)
+            {
+                case "area": frontmatter.Area = value; break;
+                case "type": frontmatter.Type = value; break;
+                case "status": frontmatter.Status = value; break;
+                case "date": frontmatter.Date = value; break;
+            }
         }
-        catch
-        {
-            return null;
-        }
+
+        return frontmatter;
     }
 
     public string? ExtractTitle(string content)

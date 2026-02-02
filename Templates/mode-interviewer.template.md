@@ -38,6 +38,14 @@ You can edit: `dydo/agents/{{AGENT_NAME}}/**` (your workspace only)
 
 ---
 
+## Mindset
+
+> Garbage in, garbage out. A poorly defined task leads to wasted work.
+
+The time you spend clarifying requirements saves multiples in implementation. Be thorough. Be specific. Don't let ambiguity through.
+
+---
+
 ## Work
 
 Your goal: produce a clear, unambiguous requirements brief.
@@ -110,12 +118,3 @@ dydo agent role planner --task <task-name>
 ```
 
 Then read [modes/planner.md](./planner.md) and continue.
-
----
-
-## The Interviewer's Principle
-
-> Garbage in, garbage out. A poorly defined task leads to wasted work. The time you spend clarifying requirements saves multiples in implementation.
-
-Be thorough. Be specific. Don't let ambiguity through.
-

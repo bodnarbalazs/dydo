@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text.Json;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -70,7 +71,7 @@ public static class GuardCommand
                 var json = Console.In.ReadToEnd();
                 if (!string.IsNullOrWhiteSpace(json))
                 {
-                    var hookInput = JsonSerializer.Deserialize<HookInput>(json);
+                    var hookInput = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.HookInput);
                     if (hookInput != null)
                     {
                         filePath = hookInput.GetFilePath();

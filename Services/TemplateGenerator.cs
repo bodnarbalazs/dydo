@@ -1071,4 +1071,100 @@ public static class TemplateGenerator
         }
     }
 
+    /// <summary>
+    /// Generate the about-dynadocs.md reference document.
+    /// Reads from about-dynadocs.template.md if available.
+    /// </summary>
+    public static string GenerateAboutDynadocsMd()
+    {
+        try
+        {
+            return ReadTemplate("about-dynadocs.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return """
+                ---
+                area: reference
+                type: reference
+                ---
+
+                # DynaDocs (dydo)
+
+                A platform-agnostic AI orchestration and context-management framework.
+
+                100% local, 100% under your control.
+
+                ## The Problem
+
+                AI code editors need persistence. Without it, each session starts fresh and the agent has to gather context about the project before it can even begin working on your actual task.
+
+                ## The Solution
+
+                DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management.
+
+                ![DynaDocs Architecture](./../_assets/dydo-diagram.svg)
+
+                ## Workflow Flags
+
+                | Flag | Workflow |
+                |------|----------|
+                | `--feature` | Interview → Plan → Code → Review |
+                | `--task` | Plan → Code → Review |
+                | `--quick` | Code only (simple changes) |
+                | `--think` | Co-thinker mode |
+                | `--review` | Reviewer mode |
+                | `--docs` | Docs-writer mode |
+                | `--test` | Tester mode |
+
+                ## Agent Roles
+
+                | Role | Can Edit | Purpose |
+                |------|----------|---------|
+                | `code-writer` | `src/**`, `tests/**` | Implement features |
+                | `reviewer` | agent workspace | Review code |
+                | `planner` | `tasks/**`, agent workspace | Design implementation |
+                | `tester` | `tests/**`, `pitfalls/**`, agent workspace | Write tests, report bugs |
+                | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
+                | `co-thinker` | `decisions/**`, agent workspace | Explore ideas |
+                | `interviewer` | agent workspace | Gather requirements |
+
+                ## More Information
+
+                - **Project Repository**: [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
+                - **Command Reference**: [dydo-commands.md](./dydo-commands.md)
+
+                ## License
+
+                MIT
+                """;
+        }
+    }
+
+    /// <summary>
+    /// Get all asset file names that should be copied to _assets/.
+    /// </summary>
+    public static IReadOnlyList<string> GetAssetNames()
+    {
+        return new[]
+        {
+            "dydo-diagram.svg"
+        };
+    }
+
+    /// <summary>
+    /// Read a binary asset from embedded resources.
+    /// </summary>
+    public static byte[]? ReadEmbeddedAsset(string assetName)
+    {
+        var resourceName = $"DynaDocs.Templates.Assets.{assetName}";
+        using var stream = _assembly.GetManifestResourceStream(resourceName);
+        if (stream == null)
+            return null;
+
+        using var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+        return memoryStream.ToArray();
+    }
+
 }

@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: dydo-win-x64.zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: dydo-linux-x64.tar.gz
+          - os: ubuntu-latest
+            rid: linux-arm64
+            artifact: dydo-linux-arm64.tar.gz
+          - os: macos-13
+            rid: osx-x64
+            artifact: dydo-osx-x64.tar.gz
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: dydo-osx-arm64.tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish AOT
+        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained -o publish
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        run: Compress-Archive -Path publish/* -DestinationPath ${{ matrix.artifact }}
+        shell: pwsh
+
+      - name: Package (Unix)
+        if: matrix.os != 'windows-latest'
+        run: tar -czvf ${{ matrix.artifact }} -C publish .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*
+          generate_release_notes: true

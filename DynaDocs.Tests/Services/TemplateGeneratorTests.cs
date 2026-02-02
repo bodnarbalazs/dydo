@@ -335,4 +335,130 @@ public class TemplateGeneratorTests
         Assert.Contains(expectedSection, content);
         Assert.Contains($"dydo agent role {mode}", content);
     }
+
+    #region Asset Tests
+
+    [Fact]
+    public void GetAssetNames_ReturnsDydoDiagram()
+    {
+        var assets = TemplateGenerator.GetAssetNames();
+
+        Assert.Contains("dydo-diagram.svg", assets);
+    }
+
+    [Fact]
+    public void GetAssetNames_ReturnsAtLeastOneAsset()
+    {
+        var assets = TemplateGenerator.GetAssetNames();
+
+        Assert.NotEmpty(assets);
+    }
+
+    [Fact]
+    public void ReadEmbeddedAsset_ReturnsDydoDiagram()
+    {
+        var content = TemplateGenerator.ReadEmbeddedAsset("dydo-diagram.svg");
+
+        Assert.NotNull(content);
+        Assert.True(content.Length > 0, "Diagram asset should have content");
+    }
+
+    [Fact]
+    public void ReadEmbeddedAsset_DiagramIsSvgFormat()
+    {
+        var content = TemplateGenerator.ReadEmbeddedAsset("dydo-diagram.svg");
+        var text = System.Text.Encoding.UTF8.GetString(content!);
+
+        Assert.Contains("<svg", text);
+    }
+
+    [Fact]
+    public void ReadEmbeddedAsset_ReturnsNullForNonexistent()
+    {
+        var content = TemplateGenerator.ReadEmbeddedAsset("nonexistent.svg");
+
+        Assert.Null(content);
+    }
+
+    [Fact]
+    public void AllAssetNames_CanBeReadAsEmbedded()
+    {
+        var assetNames = TemplateGenerator.GetAssetNames();
+
+        foreach (var assetName in assetNames)
+        {
+            var content = TemplateGenerator.ReadEmbeddedAsset(assetName);
+            Assert.NotNull(content);
+            Assert.True(content.Length > 0, $"Asset {assetName} should have content");
+        }
+    }
+
+    [Fact]
+    public void Assembly_ContainsEmbeddedAssetResources()
+    {
+        var assembly = typeof(TemplateGenerator).Assembly;
+        var resourceNames = assembly.GetManifestResourceNames();
+
+        Assert.Contains(resourceNames, r => r.Contains("Assets") && r.Contains("dydo-diagram"));
+    }
+
+    #endregion
+
+    #region About DynaDocs Tests
+
+    [Fact]
+    public void GenerateAboutDynadocsMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: reference", content);
+    }
+
+    [Fact]
+    public void GenerateAboutDynadocsMd_ContainsTitle()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.Contains("# DynaDocs (dydo)", content);
+    }
+
+    [Fact]
+    public void GenerateAboutDynadocsMd_ReferencesDiagram()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.Contains("dydo-diagram.svg", content);
+        Assert.Contains("_assets", content);
+    }
+
+    [Fact]
+    public void GenerateAboutDynadocsMd_ContainsWorkflowFlags()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.Contains("--feature", content);
+        Assert.Contains("--task", content);
+        Assert.Contains("--quick", content);
+    }
+
+    [Fact]
+    public void GenerateAboutDynadocsMd_ContainsAgentRoles()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.Contains("code-writer", content);
+        Assert.Contains("reviewer", content);
+    }
+
+    [Fact]
+    public void GenerateAboutDynadocsMd_LinksToGitHub()
+    {
+        var content = TemplateGenerator.GenerateAboutDynadocsMd();
+
+        Assert.Contains("github.com/bodnarbalazs/dydo", content);
+    }
+
+    #endregion
 }

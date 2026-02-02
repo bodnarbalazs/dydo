@@ -17,7 +17,8 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
         new("_system", "System configuration (committed)", "_system"),
-        new("_system/templates", "Project-local template overrides", "_system")
+        new("_system/templates", "Project-local template overrides", "_system"),
+        new("_assets", "Documentation assets (images, diagrams)", "_assets")
     ];
 
     /// <summary>
@@ -49,6 +50,9 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Copy built-in templates to _system/templates/ for customization
         CopyBuiltInTemplates(basePath);
+
+        // Copy built-in assets to _assets/
+        CopyBuiltInAssets(basePath);
 
         // Create root index.md with JITI entry point
         var rootIndexPath = Path.Combine(basePath, "index.md");
@@ -95,6 +99,9 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Copy built-in templates to _system/templates/ for customization
         CopyBuiltInTemplates(basePath);
+
+        // Copy built-in assets to _assets/
+        CopyBuiltInAssets(basePath);
 
         // Create root index.md
         var rootIndexPath = Path.Combine(basePath, "index.md");
@@ -246,6 +253,13 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(writingDocsPath, TemplateGenerator.GenerateWritingDocsMd());
         }
 
+        // reference/about-dynadocs.md
+        var aboutDynadocsPath = Path.Combine(basePath, "reference", "about-dynadocs.md");
+        if (!File.Exists(aboutDynadocsPath))
+        {
+            File.WriteAllText(aboutDynadocsPath, TemplateGenerator.GenerateAboutDynadocsMd());
+        }
+
         // files-off-limits.md (security config)
         var offLimitsPath = Path.Combine(basePath, "files-off-limits.md");
         if (!File.Exists(offLimitsPath))
@@ -269,6 +283,28 @@ public class FolderScaffolder : IFolderScaffolder
             {
                 var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
                 File.WriteAllText(destFile, content);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Copy all built-in assets to _assets/ folder.
+    /// </summary>
+    private void CopyBuiltInAssets(string basePath)
+    {
+        var destPath = Path.Combine(basePath, "_assets");
+        Directory.CreateDirectory(destPath);
+
+        foreach (var assetName in TemplateGenerator.GetAssetNames())
+        {
+            var destFile = Path.Combine(destPath, assetName);
+            if (!File.Exists(destFile))
+            {
+                var content = TemplateGenerator.ReadEmbeddedAsset(assetName);
+                if (content != null)
+                {
+                    File.WriteAllBytes(destFile, content);
+                }
             }
         }
     }

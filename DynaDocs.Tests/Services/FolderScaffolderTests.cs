@@ -251,4 +251,66 @@ public class FolderScaffolderTests : IDisposable
         Assert.Contains("modes/docs-writer.md", content);
         Assert.Contains("modes/tester.md", content);
     }
+
+    [Fact]
+    public void Scaffold_CreatesAssetsFolder()
+    {
+        _scaffolder.Scaffold(_testDir);
+
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "_assets")));
+    }
+
+    [Fact]
+    public void Scaffold_CopiesDydoDiagramToAssets()
+    {
+        _scaffolder.Scaffold(_testDir);
+
+        var diagramPath = Path.Combine(_testDir, "_assets", "dydo-diagram.svg");
+        Assert.True(File.Exists(diagramPath), "dydo-diagram.svg should be copied to _assets/");
+
+        // Verify it has content (not empty)
+        var content = File.ReadAllBytes(diagramPath);
+        Assert.True(content.Length > 0, "Diagram file should not be empty");
+    }
+
+    [Fact]
+    public void Scaffold_CreatesAboutDynadocsMd()
+    {
+        _scaffolder.Scaffold(_testDir);
+
+        var aboutDynadocsPath = Path.Combine(_testDir, "reference", "about-dynadocs.md");
+        Assert.True(File.Exists(aboutDynadocsPath), "about-dynadocs.md should be created in reference/");
+
+        var content = File.ReadAllText(aboutDynadocsPath);
+        Assert.Contains("DynaDocs (dydo)", content);
+        Assert.Contains("dydo-diagram.svg", content);
+    }
+
+    [Fact]
+    public void Scaffold_AboutDynadocs_LinksToAssetsFolder()
+    {
+        _scaffolder.Scaffold(_testDir);
+
+        var aboutDynadocsPath = Path.Combine(_testDir, "reference", "about-dynadocs.md");
+        var content = File.ReadAllText(aboutDynadocsPath);
+
+        // Should reference the diagram in _assets relative to reference/
+        Assert.Contains("_assets/dydo-diagram.svg", content);
+    }
+
+    [Fact]
+    public void Scaffold_DoesNotOverwriteExistingAssets()
+    {
+        // Create _assets folder and custom diagram first
+        var assetsPath = Path.Combine(_testDir, "_assets");
+        Directory.CreateDirectory(assetsPath);
+        var customContent = "custom-svg-content";
+        File.WriteAllText(Path.Combine(assetsPath, "dydo-diagram.svg"), customContent);
+
+        _scaffolder.Scaffold(_testDir);
+
+        // Should not overwrite existing asset
+        var content = File.ReadAllText(Path.Combine(assetsPath, "dydo-diagram.svg"));
+        Assert.Equal(customContent, content);
+    }
 }

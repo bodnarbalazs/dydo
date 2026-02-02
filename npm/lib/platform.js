@@ -12,6 +12,11 @@ const PLATFORM_MAPPING = {
     binaryName: 'dydo',
     archiveExt: '.tar.gz'
   },
+  'linux-arm64': {
+    rid: 'linux-arm64',
+    binaryName: 'dydo',
+    archiveExt: '.tar.gz'
+  },
   'darwin-x64': {
     rid: 'osx-x64',
     binaryName: 'dydo',
@@ -36,7 +41,7 @@ function getPlatformInfo() {
       platform,
       arch,
       error: `Unsupported platform: ${platform}-${arch}. ` +
-             `Supported: win-x64, linux-x64, osx-x64, osx-arm64`
+             `Supported: win-x64, linux-x64, linux-arm64, osx-x64, osx-arm64`
     };
   }
 

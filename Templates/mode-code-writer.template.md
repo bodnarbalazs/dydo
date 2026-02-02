@@ -84,6 +84,7 @@ The brief should include:
 Then release:
 
 ```bash
+dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
@@ -100,8 +101,3 @@ If the reviewer dispatches fixes back to you:
 
 After 2 failed reviews, the task may be escalated to a fresh agent.
 
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Check your workspace for the plan. Return here.

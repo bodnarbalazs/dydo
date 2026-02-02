@@ -360,4 +360,149 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     #endregion
+
+    #region Claim Regenerates Files
+
+    [Fact]
+    public async Task Claim_RegeneratesModeFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Modify the workflow.md file to verify it gets regenerated
+        var workflowPath = Path.Combine(TestDir, "dydo/agents/Adele/workflow.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(workflowPath)!);
+        File.WriteAllText(workflowPath, "# Modified content that should be overwritten");
+
+        // Claim the agent
+        var result = await ClaimAgentAsync("Adele");
+        result.AssertSuccess();
+
+        // Verify the workflow file was regenerated (should contain template content)
+        var content = File.ReadAllText(workflowPath);
+        Assert.Contains("Adele", content);
+        Assert.DoesNotContain("Modified content that should be overwritten", content);
+    }
+
+    #endregion
+
+    #region Release Inbox Checks
+
+    [Fact]
+    public async Task Release_BlocksOnUnprocessedInbox()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Create an unprocessed inbox item
+        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxPath);
+        File.WriteAllText(Path.Combine(inboxPath, "test-item.md"), """
+            ---
+            id: test123
+            from: Brian
+            role: reviewer
+            task: test-task
+            received: 2024-01-01T00:00:00Z
+            ---
+            # Test
+            """);
+
+        // Try to release - should fail
+        var result = await ReleaseAgentAsync();
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Cannot release");
+        result.AssertStderrContains("unprocessed inbox");
+    }
+
+    [Fact]
+    public async Task Release_AllowsAfterInboxCleared()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Create an inbox item
+        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxPath);
+        File.WriteAllText(Path.Combine(inboxPath, "test-item.md"), """
+            ---
+            id: test123
+            from: Brian
+            role: reviewer
+            task: test-task
+            received: 2024-01-01T00:00:00Z
+            ---
+            # Test
+            """);
+
+        // Clear the inbox
+        var clearResult = await InboxClearAsync(all: true);
+        clearResult.AssertSuccess();
+
+        // Now release should work
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Release_PrunesArchiveToTen()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Create archive folder with 15 items
+        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/inbox/archive");
+        Directory.CreateDirectory(archivePath);
+
+        for (var i = 0; i < 15; i++)
+        {
+            var filePath = Path.Combine(archivePath, $"item-{i:D2}.md");
+            File.WriteAllText(filePath, $"# Item {i}");
+            // Stagger the write times so we can verify oldest are removed
+            File.SetLastWriteTimeUtc(filePath, DateTime.UtcNow.AddMinutes(-i));
+        }
+
+        // Release the agent
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+
+        // Verify only 10 items remain (the 10 newest)
+        var remainingFiles = Directory.GetFiles(archivePath, "*.md");
+        Assert.Equal(10, remainingFiles.Length);
+
+        // Verify the 5 oldest were removed (items 10-14 had oldest timestamps)
+        Assert.False(File.Exists(Path.Combine(archivePath, "item-10.md")));
+        Assert.False(File.Exists(Path.Combine(archivePath, "item-14.md")));
+
+        // Verify the 10 newest remain
+        Assert.True(File.Exists(Path.Combine(archivePath, "item-00.md")));
+        Assert.True(File.Exists(Path.Combine(archivePath, "item-09.md")));
+    }
+
+    [Fact]
+    public async Task Release_IgnoresArchiveWhenCheckingInbox()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Create archive folder with items (these should not block release)
+        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/inbox/archive");
+        Directory.CreateDirectory(archivePath);
+        File.WriteAllText(Path.Combine(archivePath, "archived-item.md"), "# Archived");
+
+        // Release should succeed (archived items don't count as unprocessed)
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+    }
+
+    private async Task<CommandResult> InboxClearAsync(bool all = false, string? id = null)
+    {
+        var command = InboxCommand.Create();
+        var args = new List<string> { "clear" };
+        if (all) args.Add("--all");
+        if (id != null) { args.Add("--id"); args.Add(id); }
+        return await RunAsync(command, args.ToArray());
+    }
+
+    #endregion
 }

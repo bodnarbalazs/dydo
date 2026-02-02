@@ -147,18 +147,24 @@ public static class InboxCommand
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
         if (!Directory.Exists(inboxPath))
         {
-            Console.WriteLine("Inbox already empty");
+            Console.WriteLine("Inbox already empty.");
             return ExitCodes.Success;
         }
+
+        var archivePath = Path.Combine(inboxPath, "archive");
+        Directory.CreateDirectory(archivePath);
 
         if (all)
         {
             var files = Directory.GetFiles(inboxPath, "*.md");
             foreach (var file in files)
             {
-                File.Delete(file);
+                var destPath = Path.Combine(archivePath, Path.GetFileName(file));
+                if (File.Exists(destPath))
+                    File.Delete(destPath);  // Overwrite if exists
+                File.Move(file, destPath);
             }
-            Console.WriteLine($"Cleared {files.Length} item(s)");
+            Console.WriteLine($"Archived {files.Length} item(s) to inbox/archive/");
         }
         else if (!string.IsNullOrEmpty(id))
         {
@@ -171,9 +177,12 @@ public static class InboxCommand
 
             foreach (var file in files)
             {
-                File.Delete(file);
+                var destPath = Path.Combine(archivePath, Path.GetFileName(file));
+                if (File.Exists(destPath))
+                    File.Delete(destPath);
+                File.Move(file, destPath);
             }
-            Console.WriteLine($"Cleared item {id}");
+            Console.WriteLine($"Archived item {id} to inbox/archive/");
         }
         else
         {

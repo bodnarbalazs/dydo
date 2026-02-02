@@ -239,6 +239,13 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(dydoCommandsPath, TemplateGenerator.GenerateDydoCommandsMd());
         }
 
+        // reference/writing-docs.md
+        var writingDocsPath = Path.Combine(basePath, "reference", "writing-docs.md");
+        if (!File.Exists(writingDocsPath))
+        {
+            File.WriteAllText(writingDocsPath, TemplateGenerator.GenerateWritingDocsMd());
+        }
+
         // files-off-limits.md (security config)
         var offLimitsPath = Path.Combine(basePath, "files-off-limits.md");
         if (!File.Exists(offLimitsPath))

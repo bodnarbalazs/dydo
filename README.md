@@ -2,6 +2,8 @@
 
 A platform-agnostic AI orchestration and context-management framework.
 
+100% local, 100% under your control.
+
 ## The Problem
 
 AI code editors need persistence. Without it, each session starts fresh and the agent has to gather context about the project before it can even begin working on your actual task.
@@ -14,7 +16,8 @@ Claude Code and Cursor don't have memory built in. Tools like Windsurf and Antig
 
 DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management.
 
-You point your AI assistant to `index.md` (via CLAUDE.md or equivalent), and from there it goes through an onboarding process where it learns about the framework and how to use it. Based on the prompt, it self-assigns to the appropriate workflow and mode.
+You point your AI assistant to `index.md` (via CLAUDE.md or equivalent), and from there it goes through an onboarding process where it learns about the framework and how to use it.
+Based on the prompt, it self-assigns to the appropriate workflow and mode and coordinates with other independent local agents.
 
 ![DynaDocs Architecture](dydo_diagram.svg)
 
@@ -26,7 +29,7 @@ You point your AI assistant to `index.md` (via CLAUDE.md or equivalent), and fro
 # npm (recommended)
 npm install -g dydo
 
-# .NET developers
+# if you have .NET installed
 dotnet tool install -g DynaDocs
 ```
 
@@ -80,6 +83,10 @@ dydo fix      # Auto-fix what's possible
 
 **Note:** It's recommended to use [Obsidian](https://obsidian.md) so it's easier to navigate the docs.
 But if you move files Obsidian will not use relative links, so be sure to run `dydo fix`.
+
+### 5. Customize the templates
+
+Edit templates in `dydo/_system/templates/` to customize agent workflows and mode guidance. Changes take effect when agents are claimed (`dydo agent claim`).
 
 ---
 

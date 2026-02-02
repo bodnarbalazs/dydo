@@ -119,8 +119,3 @@ Then read [modes/planner.md](./planner.md) and continue.
 
 Be thorough. Be specific. Don't let ambiguity through.
 
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Check your workspace for the brief. Return here.

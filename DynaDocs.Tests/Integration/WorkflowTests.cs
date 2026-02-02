@@ -173,7 +173,7 @@ public class WorkflowTests : IntegrationTestBase
     #region Inbox Clear
 
     [Fact]
-    public async Task Inbox_Clear_All_RemovesAll()
+    public async Task Inbox_Clear_All_ArchivesAll()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -185,16 +185,22 @@ public class WorkflowTests : IntegrationTestBase
         var result = await InboxClearAsync(all: true);
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Cleared");
+        result.AssertStdoutContains("Archived");
 
-        // Verify inbox is empty
+        // Verify inbox is empty (items moved to archive)
         var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
         var files = Directory.GetFiles(inboxPath, "*.md");
         Assert.Empty(files);
+
+        // Verify items are in archive
+        var archivePath = Path.Combine(inboxPath, "archive");
+        Assert.True(Directory.Exists(archivePath), "Archive folder should exist");
+        var archivedFiles = Directory.GetFiles(archivePath, "*.md");
+        Assert.Equal(2, archivedFiles.Length);
     }
 
     [Fact]
-    public async Task Inbox_Clear_ById_RemovesSpecific()
+    public async Task Inbox_Clear_ById_ArchivesSpecific()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -220,7 +226,11 @@ public class WorkflowTests : IntegrationTestBase
         var result = await InboxClearAsync(id: "abc12345");
 
         result.AssertSuccess();
-        Assert.False(File.Exists(itemPath));
+        Assert.False(File.Exists(itemPath), "Original file should be moved");
+
+        // Verify item was archived
+        var archivePath = Path.Combine(inboxPath, "archive", "abc12345-test-task.md");
+        Assert.True(File.Exists(archivePath), "Item should be archived");
     }
 
     [Fact]
@@ -261,7 +271,7 @@ public class WorkflowTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Inbox_Clear_PartialId_MatchesPrefix()
+    public async Task Inbox_Clear_PartialId_ArchivesMatch()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -288,7 +298,11 @@ public class WorkflowTests : IntegrationTestBase
         var result = await InboxClearAsync(id: "abc1");
 
         result.AssertSuccess();
-        Assert.False(File.Exists(itemPath));
+        Assert.False(File.Exists(itemPath), "Original file should be moved");
+
+        // Verify item was archived
+        var archivePath = Path.Combine(inboxPath, "archive", "abc12345-test-task.md");
+        Assert.True(File.Exists(archivePath), "Item should be archived");
     }
 
     #endregion

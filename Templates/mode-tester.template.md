@@ -118,6 +118,7 @@ dydo dispatch --role reviewer --task <task-name> --brief "Manual testing passed.
 Then release:
 
 ```bash
+dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
@@ -129,8 +130,3 @@ dydo agent release
 
 Be thorough. Be specific. Be reproducible.
 
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Check pitfalls/ for issues you've filed. Return here.

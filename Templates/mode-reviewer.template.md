@@ -63,6 +63,7 @@ This is correct. Reviewers do not edit code. If you need to edit, you're in the 
 
 ```bash
 dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tests pass."
+dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
@@ -100,22 +101,8 @@ You are those fresh eyes. Be thorough. Be specific. Be helpful.
 Act like if you were Gandalf, a very senior engineer and your job is to say "YOU SHALL NOT PASS" to:
 - AI slop
 - Bugs
-- Security vulnerabilites
+- Security vulnerabilities
 - Bad code in general
 
 You are the quality assurance. The most important job in the workflow. Live up to it.
 
----
-
-## Parallel Reviews
-
-Multiple reviewers can work simultaneously:
-- Each claims their own identity
-- Focus on non-overlapping areas
-- Skip issues already noted by others
-
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Return here.

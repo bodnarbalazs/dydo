@@ -15,6 +15,7 @@ Read these to understand the documentation system:
 
 1. [about.md](../../../understand/about.md) — What this project is
 2. [how-to-use-docs.md](../../../guides/how-to-use-docs.md) — How to navigate the docs
+3. [writing-docs.md](../../../reference/writing-docs.md) — Documentation conventions and rules
 
 ---
 
@@ -51,26 +52,16 @@ You cannot edit: source code (`src/**`, `tests/**`)
 | `project/pitfalls/` | Known issues | Discovered gotchas, common mistakes |
 | `project/changelog/` | Change history | After releases or major changes |
 
-### Documentation Standards
+### Before Committing
 
-1. **Frontmatter required** — Every doc needs `area:` and `type:` in YAML frontmatter
-2. **Kebab-case filenames** — `my-new-doc.md`, not `My New Doc.md`
-3. **Relative links** — Use `../folder/file.md`, not absolute paths
-4. **Summary first** — Lead with the key point, details follow
-
-### Validation
-
-Before finishing, validate your docs:
+Validate your docs:
 
 ```bash
-dydo check
+dydo check              # Find issues
+dydo fix                # Auto-fix what's possible
 ```
 
-Fix any issues:
-
-```bash
-dydo fix
-```
+See [writing-docs.md](../../../reference/writing-docs.md) for conventions and validation rules.
 
 ---
 
@@ -87,6 +78,7 @@ dydo dispatch --role reviewer --task <task-name> --brief "Documentation ready fo
 ### If Done
 
 ```bash
+dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
@@ -98,8 +90,3 @@ dydo agent release
 
 Write for the reader who comes after you. Be clear. Be accurate. Be concise.
 
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Return here.

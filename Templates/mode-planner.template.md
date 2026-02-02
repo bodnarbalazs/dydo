@@ -137,8 +137,3 @@ Decision principle for choosing: Did I explore many irrelevant files/avenues? Wh
 
 Be specific. List files. Define steps. Anticipate problems.
 
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Check your workspace for your plan draft. Return here.

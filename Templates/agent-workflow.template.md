@@ -68,6 +68,20 @@ Set your role based on the inbox instructions, then go to the appropriate mode f
 
 ---
 
+## Inbox Workflow
+
+When you receive dispatched work:
+
+1. Check inbox: `dydo inbox show`
+2. Process each item (read brief, do the work)
+3. Archive processed items: `dydo inbox clear --all`
+4. Release when done: `dydo agent release`
+
+**Important:** You cannot release while inbox has unprocessed items.
+Archived items are kept in `inbox/archive/` (last 10 preserved for reference).
+
+---
+
 ## 4. Follow Your Mode
 
 Go to the mode file linked above. It contains:
@@ -100,6 +114,8 @@ If either command shows an error, fix it before proceeding.
 | "Already claimed" | Another session has this agent | Try `dydo agent claim auto` |
 | "Cannot edit path" | Role doesn't permit this file | Check role with `dydo agent status` |
 
+**Note:** if you ran `dydo agent claim auto` for any of these reasons be sure to mention it to the user.
+
 ---
 
 ## Quick Reference
@@ -123,10 +139,6 @@ dydo dispatch --role <r> --task <t> --brief "..."
 
 ---
 
-## Project Terminology
+## Context Recovery
 
-If you encounter unfamiliar project-specific terms, check [glossary.md](../../glossary.md).
-
----
-
-*Full command reference: [how-to-use-docs.md](../../guides/how-to-use-docs.md)*
+Lost context? Run `dydo whoami` to see your state. Check your workspace for notes and drafts. Return to your mode file.

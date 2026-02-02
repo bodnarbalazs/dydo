@@ -114,6 +114,9 @@ public class AgentRegistry : IAgentRegistry
             var workspace = GetAgentWorkspace(agentName);
             Directory.CreateDirectory(workspace);
 
+            // Regenerate mode files from templates (fresh start for each claim)
+            _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName);
+
             var session2 = new AgentSession
             {
                 Agent = agentName,
@@ -201,6 +204,36 @@ public class AgentRegistry : IAgentRegistry
         try
         {
             var workspace = GetAgentWorkspace(agent.Name);
+
+            // Check for unprocessed inbox items
+            var inboxPath = Path.Combine(workspace, "inbox");
+            if (Directory.Exists(inboxPath))
+            {
+                var unprocessedItems = Directory.GetFiles(inboxPath, "*.md").Length;
+                if (unprocessedItems > 0)
+                {
+                    error = $"Cannot release: {unprocessedItems} unprocessed inbox item(s).\n" +
+                            "Process all inbox items, then run 'dydo inbox clear' before releasing.";
+                    return false;
+                }
+
+                // Prune archive to last 10 items
+                var archivePath = Path.Combine(inboxPath, "archive");
+                if (Directory.Exists(archivePath))
+                {
+                    var archivedFiles = Directory.GetFiles(archivePath, "*.md")
+                        .Select(f => new FileInfo(f))
+                        .OrderByDescending(f => f.LastWriteTimeUtc)
+                        .Skip(10)
+                        .ToList();
+
+                    foreach (var file in archivedFiles)
+                    {
+                        file.Delete();
+                    }
+                }
+            }
+
             var sessionPath = Path.Combine(workspace, ".session");
 
             if (File.Exists(sessionPath))

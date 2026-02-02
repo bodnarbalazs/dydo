@@ -128,6 +128,7 @@ Then read [modes/code-writer.md](./code-writer.md) and continue.
 ### Done Thinking → Release
 
 ```bash
+dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
@@ -141,8 +142,3 @@ Stay curious. Challenge assumptions. Document conclusions.
 
 Ask thoughtful questions, but also offer insight and thoughtful opinions, ideas which spark debate.
 
----
-
-## Context Recovery
-
-Lost context? Run `dydo whoami` to see your state. Check your workspace for notes. Return here.

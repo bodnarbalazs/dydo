@@ -998,4 +998,66 @@ public static class TemplateGenerator
         }
     }
 
+    /// <summary>
+    /// Generate the writing docs reference document.
+    /// Reads from writing-docs.template.md if available.
+    /// </summary>
+    public static string GenerateWritingDocsMd()
+    {
+        try
+        {
+            return ReadTemplate("writing-docs.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return """
+                ---
+                area: reference
+                type: reference
+                ---
+
+                # Writing Documentation
+
+                Reference for documentation conventions, structure, and validation rules.
+
+                ---
+
+                ## Frontmatter
+
+                Every document requires YAML frontmatter:
+
+                ```yaml
+                ---
+                area: guides
+                type: guide
+                ---
+                ```
+
+                ### Required Fields
+
+                | Field | Values |
+                |-------|--------|
+                | `area` | `understand`, `guides`, `reference`, `general`, `frontend`, `backend`, `microservices`, `platform` |
+                | `type` | `context`, `concept`, `guide`, `reference`, `hub`, `decision`, `pitfall`, `changelog` |
+
+                ---
+
+                ## Naming Conventions
+
+                - **Files:** `kebab-case.md`
+                - **Folders:** `kebab-case/`
+                - **Hub files:** `_index.md` in each folder
+
+                ---
+
+                ## Validation
+
+                ```bash
+                dydo check              # Find issues
+                dydo fix                # Auto-fix what's possible
+                ```
+                """;
+        }
+    }
+
 }

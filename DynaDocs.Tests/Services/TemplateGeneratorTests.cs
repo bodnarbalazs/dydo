@@ -291,6 +291,18 @@ public class TemplateGeneratorTests
         Assert.Contains("Off-Limits", content);
     }
 
+    [Fact]
+    public void GenerateWritingDocsMd_HasCorrectStructure()
+    {
+        var content = TemplateGenerator.GenerateWritingDocsMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("Writing Documentation", content);
+        Assert.Contains("Frontmatter", content);
+        Assert.Contains("Naming Conventions", content);
+    }
+
     [Theory]
     [InlineData("code-writer")]
     [InlineData("reviewer")]

@@ -19,7 +19,7 @@ Check your prompt for an agent name (e.g., `Adele`, `Brian`).
 
 **None?** → Run `dydo agent claim auto`, then go to **agents/{assigned-name}/workflow.md**
 
-Your prompt may include a --flag about your mode. Your workflow file explains everything.
+Your prompt may include a --flag. Your workflow file explains everything.
 
 ---
 

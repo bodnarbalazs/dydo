@@ -6,6 +6,8 @@ type: concept
 # Architecture Overview
 
 > **Fill this in.** This document helps AI agents understand your codebase structure.
+> Keep things brief, provide a birds eye view, an overview of the key technologies used, and how they interact.
+> Link to details which not all agents need to know, example: Knowledge of a UI library which is used in one component is not useful for an agent working on a backend task unrelated to that frontend component. 
 
 ---
 

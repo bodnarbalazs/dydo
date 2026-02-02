@@ -50,6 +50,8 @@ If you're in `--task` or `--feature` mode, a plan exists. Find it:
 
 Read it before coding. For `--quick` mode, you make the decisions.
 
+If something is still unclear, do a brief search then ask. Never guess.
+
 ---
 
 ## Work

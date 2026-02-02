@@ -127,6 +127,8 @@ dydo agent role code-writer --task <task-name>
 
 Then read [modes/code-writer.md](./code-writer.md) and implement.
 
+Decision principle for choosing: Did I explore many irrelevant files/avenues? What is my context's signal to noise ratio like? If it's better to start fresh go with option A, if the context is high quality go with option B.
+
 ---
 
 ## The Planner's Principle

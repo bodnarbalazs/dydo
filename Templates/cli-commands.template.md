@@ -22,7 +22,7 @@ dydo init claude --name "Your Name" --agents 3  # Non-interactive setup
 ```
 
 **Arguments:**
-- `integration` - Integration type: `claude` (with hooks) or `none` (standalone)
+- `integration` - Integration type: `claude` (with hooks wired up) or `none` (for other systems, more setup needed)
 
 **Options:**
 - `--join` - Join existing project instead of creating new
@@ -260,7 +260,8 @@ dydo inbox clear --id abc123  # Clear specific item
 
 ### dydo guard
 
-Check if current agent can perform an action. Used by Claude Code hooks.
+Check if current agent can perform an action. Used by the hooks. 
+For Claude Code they're wired up automatically for other tools it has to be set up manually.
 
 ```bash
 # Via stdin (hook mode)

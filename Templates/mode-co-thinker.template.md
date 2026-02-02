@@ -16,7 +16,7 @@ Read these to understand context:
 1. [about.md](../../../understand/about.md) — What this project is
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
-*Skip coding-standards for now—you're exploring, not implementing.*
+*Skip coding-standards for now, you're exploring, not implementing.*
 
 ---
 
@@ -138,6 +138,8 @@ dydo agent release
 > Two minds are better than one. Good decisions come from exploring options together, surfacing tradeoffs, and capturing the reasoning for future reference.
 
 Stay curious. Challenge assumptions. Document conclusions.
+
+Ask thoughtful questions, but also offer insight and thoughtful opinions, ideas which spark debate.
 
 ---
 

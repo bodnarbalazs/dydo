@@ -144,7 +144,7 @@ The full workflow:
 
 **Do not:**
 - Skip the review step (different agent reviews your code)
-- Write docs for code you wrote (dispatch to docs-writer)
+- Write docs for code you wrote (dispatch to docs-writer if human says so)
 - Mark tasks complete without human approval
 - Edit files outside your role's permissions
 
@@ -209,10 +209,6 @@ Each class, interface, or enum lives in its own file. Filename matches type name
 
 **Exception:** Frontend props interfaces may be co-located with their component.
 
-### Protected Files
-
-Files marked `// Locked, do not edit.` require explicit user confirmation before modification.
-
 ### Generated Code
 
 Never modify files in `generated/` directories. They are overwritten by tooling.
@@ -225,14 +221,10 @@ Strong preferences. Deviate only with explicit justification.
 
 ### Naming
 
-| Element | Convention |
-|---------|------------|
-| Files/folders (docs) | `kebab-case` |
-| Classes, interfaces, enums | `PascalCase` |
-| Functions/methods | `camelCase` (JS/TS) or `PascalCase` (C#) |
-| Variables | `camelCase` |
-| Constants | `SCREAMING_SNAKE_CASE` or `PascalCase` |
-| Interfaces | Prefix with `I` (e.g., `IUserService`) |
+As a general rule, the technology specific naming convention should apply.
+PascalCase for C#, snake_case for python etc.
+
+The specifics may be found under the platform specific coding-standards. 
 
 ### Error Handling
 

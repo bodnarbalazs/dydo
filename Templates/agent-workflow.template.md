@@ -35,19 +35,19 @@ Your prompt contains your task. It may include a mode flag:
 **No flag?**
 Infer the mode from intent. If ambiguous, ask.
 
-**Thinking prompt?** "think through", "explore", "brainstorm" → [modes/co-thinker.md](modes/co-thinker.md)
-
 ---
 
 ## Before You Start
 
-State your interpretation:
+If you had to infer the mode, state your interpretation:
 
 > "I understand you want [X]. Proceeding as [mode] on [task]. Correct me if I'm wrong."
 
 If the request is unrelated to your current task, point it out:
 
 > "This seems separate from [current-task]. Should I continue here or start fresh?"
+
+You should maintain good context hygiene. If the previous task is largely disjunct, it's better to start fresh.
 
 ---
 

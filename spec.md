@@ -206,6 +206,8 @@ dydo index              # Regenerate Index.md from doc structure
 dydo graph <file>       # Show graph connections for a file
 dydo graph <file> --incoming        # Show backlinks
 dydo graph <file> --degree <n>      # Show docs within n hops
+dydo graph stats                    # Show top 100 docs by incoming links
+dydo graph stats --top <n>          # Show top n docs by incoming links
 ```
 
 ### Agent Lifecycle Commands
@@ -565,8 +567,9 @@ Documentation funnel created:
 
 Next steps:
   1. Set environment variable: export DYDO_HUMAN=balazs
-  2. Customize dydo/understand/architecture.md for your project
-  3. Customize dydo/guides/coding-standards.md
+  2. Customize dydo/understand/about.md for your project
+  3. Customize dydo/understand/architecture.md for technical structure
+  4. Customize dydo/guides/coding-standards.md for code conventions
 ```
 
 ### Join Flow (Teammate)
@@ -680,19 +683,26 @@ CLAUDE.md (project root)
     └── dydo/index.md (entry point)
             │
             ├── agents/{name}/workflow.md (agent-specific entry, gitignored)
-            │       └── Must-reads (architecture, coding-standards, how-to-use-docs)
+            │       └── Must-reads (about, architecture, coding-standards)
             │
             ├── understand/_index.md (hub)
-            │       ├── architecture.md (detail)
-            │       └── {concept}.md (details)
+            │       ├── about.md (project overview - first thing agents read)
+            │       ├── architecture.md (technical structure)
+            │       └── {concept}.md (domain concepts)
             │
             ├── guides/_index.md (hub)
-            │       ├── coding-standards.md (detail)
-            │       └── {task}.md (details)
+            │       ├── coding-standards.md (code conventions)
+            │       ├── how-to-use-docs.md (docs navigation guide)
+            │       └── {task}.md (how-to guides)
+            │
+            ├── reference/_index.md (hub)
+            │       ├── writing-docs.md (documentation conventions)
+            │       └── {spec}.md (API specs, config docs)
             │
             └── project/_index.md (hub)
-                    └── decisions/_index.md (sub-hub)
-                            └── 001-clean-architecture.md (detail)
+                    ├── decisions/ (ADRs)
+                    ├── pitfalls/ (gotchas)
+                    └── changelog/ (what changed)
 ```
 
 **Key principle:** AI agents follow the funnel: `CLAUDE.md` → `index.md` → their workflow file → must-reads. Information is disclosed progressively, not all at once.
@@ -764,8 +774,8 @@ Every doc must have YAML frontmatter:
 
 ```markdown
 ---
-area: frontend | backend | microservices | platform | general
-type: hub | concept | guide | reference | decision | pitfall | changelog
+area: understand | guides | reference | general | frontend | backend | microservices | platform
+type: context | concept | guide | reference | hub | decision | pitfall | changelog
 ---
 ```
 
@@ -859,15 +869,28 @@ DynaDocs/
 │   └── SummaryRule.cs
 │
 ├── Templates/                   # Template files for generation
-│   ├── agent-workflow.template.md
-│   ├── coding-standards.template.md
-│   ├── files-off-limits.template.md
-│   ├── glossary.template.md
-│   ├── how-to-use-docs.template.md
-│   ├── index.template.md
-│   ├── workflow.template.md
-│   ├── mode-tester.template.md           # Tester role guidance
-│   └── ... (mode templates for each role)
+│   ├── about.template.md                 # Project overview (understand/)
+│   ├── agent-states.template.md          # Agent state file format
+│   ├── agent-workflow.template.md        # Agent entry point
+│   ├── architecture.template.md          # Architecture doc (understand/)
+│   ├── changelog.template.md             # Changelog entry format
+│   ├── coding-standards.template.md      # Coding standards (guides/)
+│   ├── decision.template.md              # ADR format
+│   ├── dydo-commands.template.md         # CLI reference (reference/)
+│   ├── files-off-limits.template.md      # Protected files doc
+│   ├── glossary.template.md              # Glossary format
+│   ├── how-to-use-docs.template.md       # Docs navigation (guides/)
+│   ├── index.template.md                 # Root index
+│   ├── pitfall.template.md               # Pitfall format
+│   ├── welcome.template.md               # Welcome page
+│   ├── writing-docs.template.md          # Documentation conventions (reference/)
+│   ├── mode-code-writer.template.md      # Code-writer role guidance
+│   ├── mode-co-thinker.template.md       # Co-thinker role guidance
+│   ├── mode-docs-writer.template.md      # Docs-writer role guidance
+│   ├── mode-interviewer.template.md      # Interviewer role guidance
+│   ├── mode-planner.template.md          # Planner role guidance
+│   ├── mode-reviewer.template.md         # Reviewer role guidance
+│   └── mode-tester.template.md           # Tester role guidance
 │
 └── Utils/
     ├── ConsoleOutput.cs

@@ -91,6 +91,30 @@ dydo graph path/to/file.md --degree 2   # Show 2-hop connections
 - `--incoming` - Show docs that link TO this file
 - `--degree <n>` - Show docs within n link-hops (default: 1)
 
+### dydo graph stats
+
+Show document link statistics ranked by incoming links. Useful for identifying the most referenced documents in your documentation.
+
+```bash
+dydo graph stats            # Show top 100 documents by incoming links
+dydo graph stats --top 20   # Show top 20 documents
+```
+
+**Options:**
+- `--top <n>` - Number of documents to show (default: 100)
+
+**Output:**
+```
+Document Link Statistics (Top 100)
+──────────────────────────────────
+  #   In  Document
+  1   23  glossary.md
+  2   18  understand/architecture.md
+  3   15  reference/api.md
+
+Total: 47 documents, 156 internal links
+```
+
 ---
 
 ## Agent Workflow Commands

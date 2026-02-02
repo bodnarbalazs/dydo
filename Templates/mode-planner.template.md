@@ -38,6 +38,14 @@ You can edit: `dydo/agents/{{AGENT_NAME}}/**`, `dydo/project/tasks/**`
 
 ---
 
+## Mindset
+
+> A good plan answers "what" and "how" so clearly that implementation becomes mechanical.
+
+The code-writer shouldn't need to make architectural decisions — those are yours. Be specific. List files. Define steps. Anticipate problems.
+
+---
+
 ## Work
 
 Your goal: produce a clear implementation plan that a code-writer can execute.
@@ -128,12 +136,3 @@ dydo agent role code-writer --task <task-name>
 Then read [modes/code-writer.md](./code-writer.md) and implement.
 
 Decision principle for choosing: Did I explore many irrelevant files/avenues? What is my context's signal to noise ratio like? If it's better to start fresh go with option A, if the context is high quality go with option B.
-
----
-
-## The Planner's Principle
-
-> A good plan answers "what" and "how" so clearly that implementation becomes mechanical. The code-writer shouldn't need to make architectural decisions—those are yours.
-
-Be specific. List files. Define steps. Anticipate problems.
-

@@ -9,11 +9,15 @@ Rules and conventions for writing code in this project.
 
 ---
 
-## Core Doctrine
+## Core Doctrines
 
 > **Perfection is attained, not when no more can be added, but when no more can be removed.**
 
 Every line of code, every abstraction, every file must justify its existence.
+
+> **Whatever you do, do it right.**
+
+We don't do "quick fixes" which generate technical debt. We go the extra mile, it will pay off with interest.
 
 ---
 

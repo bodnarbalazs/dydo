@@ -15,9 +15,11 @@ You are **{{AGENT_NAME}}**. Follow these steps.
 dydo agent claim {{AGENT_NAME}}
 ```
 
+**Note:** If you ran `dydo agent claim auto` for any reason, mention it to the user.
+
 ---
 
-## 2. Your Assignment
+## 2. Understand Your Assignment
 
 Your prompt contains your task. It may include a workflow flag which determines your starting mode:
 
@@ -30,69 +32,46 @@ Your prompt contains your task. It may include a workflow flag which determines 
 | `--review` | Code review | [modes/reviewer.md](modes/reviewer.md) |
 | `--docs` | Documentation | [modes/docs-writer.md](modes/docs-writer.md) |
 | `--test` | Testing & validation | [modes/tester.md](modes/tester.md) |
-| `--inbox` | Dispatched work | Check inbox below |
+| `--inbox` | Dispatched work | See step 4 |
 
-**No flag?**
-Infer the mode from intent. If ambiguous, ask.
+**No flag?** Infer the mode from intent. If ambiguous, ask.
 
 ---
 
-## Before You Start
+## 3. Confirm Your Interpretation
 
-If you had to infer the mode, state your interpretation:
+If you inferred the mode, state your interpretation:
 
 > "I understand you want [X]. Proceeding as [mode] on [task]. Correct me if I'm wrong."
 
-If the request is unrelated to your current task, point it out:
+If the request seems unrelated to your current task:
 
 > "This seems separate from [current-task]. Should I continue here or start fresh?"
 
-You should maintain good context hygiene. If the previous task is largely disjunct, it's better to start fresh.
+Maintain good context hygiene. If the previous task is largely disjunct, it's better to start fresh.
 
 ---
 
-## 3. If `--inbox` Mode
+## 4. Handle Inbox
 
-Check what's been dispatched to you:
+**No `--inbox` flag?** Skip to step 5.
+
+If you have dispatched work:
 
 ```bash
 dydo inbox show
 ```
 
-The inbox message tells you:
-- What task
-- What role to take
-- Brief context
+For each inbox item:
+1. Read the brief to understand the task
+2. Set your role: `dydo agent role <role> --task <task-name>`
+3. Go to the appropriate mode file
 
-Set your role based on the inbox instructions, then go to the appropriate mode file.
-
----
-
-## Inbox Workflow
-
-When you receive dispatched work:
-
-1. Check inbox: `dydo inbox show`
-2. Process each item (read brief, do the work)
-3. Archive processed items: `dydo inbox clear --all`
-4. Release when done: `dydo agent release`
-
-**Important:** You cannot release while inbox has unprocessed items.
-Archived items are kept in `inbox/archive/` (last 10 preserved for reference).
+**Important:** You cannot release while inbox has unprocessed items. Archived items are kept in `inbox/archive/` (last 10 preserved).
 
 ---
 
-## 4. Follow Your Mode
-
-Go to the mode file linked above. It contains:
-- **Must-reads** specific to your mode
-- **Role setup** command
-- **Work guidance** for that mode
-- **Completion** instructions
-
----
-
-## Checkpoint
+## 5. Checkpoint
 
 Before making any edits, verify your setup:
 
@@ -105,6 +84,28 @@ If either command shows an error, fix it before proceeding.
 
 ---
 
+## 6. Follow Your Mode
+
+Go to your mode file. It contains:
+- **Must-reads** specific to your role
+- **Role setup** command
+- **Work guidance** for that role
+- **Completion** instructions
+
+---
+
+## 7. Complete
+
+Follow your mode's completion instructions. Generally:
+
+1. **Dispatch** to the next role if handing off work
+2. **Clear inbox** if you processed dispatched items: `dydo inbox clear --all`
+3. **Release** your identity: `dydo agent release`
+
+**Note:** After dispatching, you may receive a response (e.g., reviewer feedback). Check your inbox if re-engaged.
+
+---
+
 ## Troubleshooting
 
 | Error | Cause | Fix |
@@ -113,8 +114,6 @@ If either command shows an error, fix it before proceeding.
 | "Assigned to X, not Y" | Agent belongs to different human | Try `dydo agent claim auto` |
 | "Already claimed" | Another session has this agent | Try `dydo agent claim auto` |
 | "Cannot edit path" | Role doesn't permit this file | Check role with `dydo agent status` |
-
-**Note:** if you ran `dydo agent claim auto` for any of these reasons be sure to mention it to the user.
 
 ---
 
@@ -131,7 +130,7 @@ dydo agent role <role> --task <name>     # Set role
 
 # Inbox
 dydo inbox show                          # Check dispatched work
-dydo inbox clear                         # Clear processed items
+dydo inbox clear --all                   # Archive processed items
 
 # Dispatch
 dydo dispatch --role <r> --task <t> --brief "..."

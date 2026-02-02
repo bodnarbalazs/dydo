@@ -499,6 +499,100 @@ public class DocumentationTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
+    [Fact]
+    public async Task Graph_Stats_ShowsTopDocsByIncomingLinks()
+    {
+        // Create docs with known link structure
+        Directory.CreateDirectory(Path.Combine(TestDir, "dydo"));
+
+        // Create minimal config for FindDocsFolder to work
+        WriteFile("dydo.json", """
+            {
+              "version": 1,
+              "docRoot": "dydo",
+              "humans": { "test": { "agents": [] } }
+            }
+            """);
+
+        WriteFile("dydo/index.md", """
+            ---
+            area: general
+            type: hub
+            ---
+
+            # Index
+
+            Documentation index.
+
+            - [Guide A](./guide-a.md)
+            - [Guide B](./guide-b.md)
+            - [Glossary](./glossary.md)
+            """);
+
+        WriteFile("dydo/guide-a.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Guide A
+
+            See [Glossary](./glossary.md) for terms.
+            """);
+
+        WriteFile("dydo/guide-b.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Guide B
+
+            See [Glossary](./glossary.md) for terms.
+            Also see [Guide A](./guide-a.md).
+            """);
+
+        WriteFile("dydo/glossary.md", """
+            ---
+            area: general
+            type: reference
+            ---
+
+            # Glossary
+
+            Terms defined here.
+            """);
+
+        var result = await GraphStatsAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Document Link Statistics");
+        result.AssertStdoutContains("glossary.md"); // Most linked (3 incoming)
+        result.AssertStdoutContains("Total:");
+    }
+
+    [Fact]
+    public async Task Graph_Stats_RespectsTopOption()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await GraphStatsAsync(top: 3);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Top 3");
+    }
+
+    [Fact]
+    public async Task Graph_Stats_NoDocsFolder_Fails()
+    {
+        // Don't create any docs folder
+
+        var result = await GraphStatsAsync();
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Could not find docs folder");
+    }
+
     #endregion
 
     #region Helper Methods
@@ -523,6 +617,14 @@ public class DocumentationTests : IntegrationTestBase
         var args = new List<string> { file };
         if (incoming) args.Add("--incoming");
         if (degree != 1) { args.Add("--degree"); args.Add(degree.ToString()); }
+        return await RunAsync(command, args.ToArray());
+    }
+
+    private async Task<CommandResult> GraphStatsAsync(int top = 100)
+    {
+        var command = GraphCommand.Create();
+        var args = new List<string> { "stats" };
+        if (top != 100) { args.Add("--top"); args.Add(top.ToString()); }
         return await RunAsync(command, args.ToArray());
     }
 

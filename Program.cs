@@ -42,6 +42,7 @@ helpCommand.SetHandler(() =>
     Console.WriteLine("  fix [path]             Auto-fix issues where possible");
     Console.WriteLine("  index [path]           Regenerate index.md from structure");
     Console.WriteLine("  graph <file>           Show graph connections for a file");
+    Console.WriteLine("  graph stats [--top N]  Show top docs by incoming links");
     Console.WriteLine();
     Console.WriteLine("Agent Workflow Commands:");
     Console.WriteLine("  agent claim auto       Claim first available agent");

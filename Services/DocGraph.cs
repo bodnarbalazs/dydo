@@ -91,6 +91,15 @@ public class DocGraph : IDocGraph
         return _allDocs.Contains(normalized);
     }
 
+    public List<(string Doc, int IncomingCount)> GetStats()
+    {
+        return _allDocs
+            .Select(doc => (doc, _incoming.GetValueOrDefault(doc, []).Count))
+            .OrderByDescending(x => x.Item2)
+            .ThenBy(x => x.Item1)
+            .ToList();
+    }
+
     private static string? ResolveLink(DocFile sourceDoc, LinkInfo link, string basePath)
     {
         var target = link.Target;

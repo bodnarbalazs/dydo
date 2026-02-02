@@ -8,4 +8,5 @@ public interface IDocGraph
     List<(string Doc, int LineNumber)> GetIncoming(string docPath);
     List<(string Doc, int Degree)> GetWithinDegree(string docPath, int maxDegree);
     bool HasDoc(string docPath);
+    List<(string Doc, int IncomingCount)> GetStats();
 }

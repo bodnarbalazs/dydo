@@ -28,6 +28,8 @@ public static class GraphCommand
             ctx.ExitCode = Execute(file, incoming, degree);
         });
 
+        command.AddCommand(CreateStatsCommand());
+
         return command;
     }
 
@@ -169,5 +171,67 @@ public static class GraphCommand
         }
 
         return null;
+    }
+
+    private static Command CreateStatsCommand()
+    {
+        var topOption = new Option<int>("--top", () => 100, "Number of documents to show (default: 100)");
+
+        var statsCommand = new Command("stats", "Show document link statistics ranked by incoming links")
+        {
+            topOption
+        };
+
+        statsCommand.SetHandler((InvocationContext ctx) =>
+        {
+            var top = ctx.ParseResult.GetValueForOption(topOption);
+            ctx.ExitCode = ExecuteStats(top);
+        });
+
+        return statsCommand;
+    }
+
+    private static int ExecuteStats(int top)
+    {
+        try
+        {
+            var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+            if (basePath == null)
+            {
+                ConsoleOutput.WriteError("Could not find docs folder. Ensure a 'docs' folder with index.md exists.");
+                return ExitCodes.ToolError;
+            }
+
+            var parser = new MarkdownParser();
+            var scanner = new DocScanner(parser);
+            var docs = scanner.ScanDirectory(basePath);
+
+            var graph = new DocGraph();
+            graph.Build(docs, basePath);
+
+            var stats = graph.GetStats();
+            var totalLinks = stats.Sum(s => s.IncomingCount);
+
+            Console.WriteLine($"Document Link Statistics (Top {Math.Min(top, stats.Count)})");
+            Console.WriteLine(new string('─', 50));
+            Console.WriteLine($"{"#",3}  {"In",4}  Document");
+
+            var rank = 1;
+            foreach (var (doc, incomingCount) in stats.Take(top))
+            {
+                Console.WriteLine($"{rank,3}  {incomingCount,4}  {doc}");
+                rank++;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"Total: {stats.Count} documents, {totalLinks} internal links");
+
+            return ExitCodes.Success;
+        }
+        catch (Exception ex)
+        {
+            ConsoleOutput.WriteError($"Error: {ex.Message}");
+            return ExitCodes.ToolError;
+        }
     }
 }

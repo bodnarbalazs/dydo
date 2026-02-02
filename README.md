@@ -165,6 +165,7 @@ project/
 | `dydo fix [path]` | Auto-fix issues |
 | `dydo index [path]` | Regenerate index.md from structure |
 | `dydo graph <file>` | Show graph connections for a file |
+| `dydo graph stats [--top N]` | Show top docs by incoming links |
 
 ### Agent Lifecycle
 

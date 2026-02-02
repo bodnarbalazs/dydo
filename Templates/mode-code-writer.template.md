@@ -41,6 +41,14 @@ If this doesn't match, you claimed wrong or role isn't set.
 
 ---
 
+## Mindset
+
+> Whatever you do, do it right. We don't do quick fixes that become technical debt.
+
+Take the time to understand before changing. Write code you'd be proud to show. The reviewer will scrutinize every line — make sure it holds up.
+
+---
+
 ## Read the Plan First
 
 If you're in `--task` or `--feature` mode, a plan exists. Find it:

@@ -667,9 +667,20 @@ public static class TemplateGenerator
 
             ## Navigation
 
-            Docs link to each other via **Related** sections at the bottom. Follow links only when you need more detail - don't read everything upfront.
+            ### Index Files
 
-            **If you're lost:** Check the area's index file (e.g., `understand/_index.md`) to see what's available.
+            Every folder has an `_index.md` — the table of contents for that area:
+
+            | Index | Contents |
+            |-------|----------|
+            | `understand/_index.md` | Context and architecture docs |
+            | `guides/_index.md` | How-to guides |
+            | `reference/_index.md` | Reference docs |
+            | `project/_index.md` | Decisions, changelog, pitfalls |
+
+            ### Related Links
+
+            Docs link to each other via **Related** sections at the bottom. Follow links only when you need more detail.
 
             ---
 

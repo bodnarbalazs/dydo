@@ -5,7 +5,7 @@ type: hub
 
 # Welcome
 
-Human-friendly entry point to the project documentation.
+This is the human entry point to the project documentation.
 
 > **Fill this in.** Customize the sections below for your project.
 

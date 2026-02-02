@@ -93,7 +93,7 @@ public class HelpCommandTests
         Console.WriteLine("  1 - Validation errors found");
         Console.WriteLine("  2 - Tool error / Action blocked");
         Console.WriteLine();
-        Console.WriteLine("For detailed command reference, see: dydo/reference/cli-commands.md");
+        Console.WriteLine("For detailed command reference, see: dydo/reference/dydo-commands.md");
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public class HelpCommandTests
     {
         var output = CaptureHelpOutput();
 
-        Assert.Contains("cli-commands.md", output);
+        Assert.Contains("dydo-commands.md", output);
     }
 
     [Fact]

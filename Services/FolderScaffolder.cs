@@ -239,11 +239,11 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(howToPath, TemplateGenerator.GenerateHowToUseDocsMd());
         }
 
-        // reference/cli-commands.md
-        var cliCommandsPath = Path.Combine(basePath, "reference", "cli-commands.md");
-        if (!File.Exists(cliCommandsPath))
+        // reference/dydo-commands.md
+        var dydoCommandsPath = Path.Combine(basePath, "reference", "dydo-commands.md");
+        if (!File.Exists(dydoCommandsPath))
         {
-            File.WriteAllText(cliCommandsPath, TemplateGenerator.GenerateCliCommandsMd());
+            File.WriteAllText(dydoCommandsPath, TemplateGenerator.GenerateDydoCommandsMd());
         }
 
         // files-off-limits.md (security config)

@@ -947,14 +947,14 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// Generate the CLI commands reference document.
-    /// Reads from cli-commands.template.md if available.
+    /// Generate the dydo commands reference document.
+    /// Reads from dydo-commands.template.md if available.
     /// </summary>
-    public static string GenerateCliCommandsMd()
+    public static string GenerateDydoCommandsMd()
     {
         try
         {
-            return ReadTemplate("cli-commands.template.md");
+            return ReadTemplate("dydo-commands.template.md");
         }
         catch (FileNotFoundException)
         {

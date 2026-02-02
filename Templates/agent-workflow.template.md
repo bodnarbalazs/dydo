@@ -19,7 +19,7 @@ dydo agent claim {{AGENT_NAME}}
 
 ## 2. Your Assignment
 
-Your prompt contains your task. It may include a mode flag:
+Your prompt contains your task. It may include a workflow flag which determines your starting mode:
 
 | Flag | Mode | Go To |
 |------|------|-------|

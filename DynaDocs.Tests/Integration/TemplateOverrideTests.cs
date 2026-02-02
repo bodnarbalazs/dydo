@@ -23,11 +23,6 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/mode-planner.template.md");
         AssertFileExists("dydo/_system/templates/mode-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-tester.template.md");
-        AssertFileExists("dydo/_system/templates/process-index.template.md");
-        AssertFileExists("dydo/_system/templates/process-feature-implementation.template.md");
-        AssertFileExists("dydo/_system/templates/process-bug-fix.template.md");
-        AssertFileExists("dydo/_system/templates/process-refactoring.template.md");
-        AssertFileExists("dydo/_system/templates/process-code-review.template.md");
     }
 
     [Fact]
@@ -134,24 +129,6 @@ public class TemplateOverrideTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task ProcessDocs_UseProjectLocalTemplate()
-    {
-        // This test is more complex because process docs are created on init
-        // We need to test the TemplateGenerator method directly
-
-        await InitProjectAsync();
-
-        // Verify process docs were created using templates
-        var featureContent = ReadFile("dydo/project/processes/feature-implementation.md");
-        Assert.Contains("Planner", featureContent);
-
-        // The process templates don't use placeholders, so we just verify they exist
-        // and contain expected content from the template
-        var reviewContent = ReadFile("dydo/project/processes/code-review.md");
-        Assert.Contains("senior engineer", reviewContent);
-    }
-
-    [Fact]
     public void GetAllTemplateNames_ReturnsExpectedTemplates()
     {
         var templateNames = TemplateGenerator.GetAllTemplateNames();
@@ -159,11 +136,9 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("agent-workflow.template.md", templateNames);
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
-        Assert.Contains("process-index.template.md", templateNames);
-        Assert.Contains("process-feature-implementation.template.md", templateNames);
 
-        // Should have all expected templates
-        Assert.Equal(13, templateNames.Count);
+        // Should have all expected templates (8 total: 1 workflow + 7 modes)
+        Assert.Equal(8, templateNames.Count);
     }
 
     [Fact]

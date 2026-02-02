@@ -10,7 +10,7 @@ public class AgentRegistry : IAgentRegistry
     private static readonly Dictionary<string, (List<string> Allowed, List<string> Denied)> RolePermissions = new()
     {
         ["code-writer"] = (["src/**", "tests/**"], ["dydo/**", "project/**"]),
-        ["reviewer"] = ([], ["**"]),
+        ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
         ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], ["src/**", "tests/**"]),
         ["docs-writer"] = (["dydo/**"], ["dydo/agents/**", "src/**", "tests/**"]),
         ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),

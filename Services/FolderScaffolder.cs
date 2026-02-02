@@ -16,7 +16,6 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/decisions", "Architecture decision records", "project"),
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
-        new("project/processes", "Formalized workflow documentation", "project"),
         new("_system", "System configuration (committed)", "_system"),
         new("_system/templates", "Project-local template overrides", "_system")
     ];
@@ -65,9 +64,6 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Create foundation documentation (must-reads)
         ScaffoldFoundationDocs(basePath);
-
-        // Create process documentation
-        ScaffoldProcessDocs(basePath);
     }
 
     /// <summary>
@@ -113,9 +109,6 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Create foundation documentation
         ScaffoldFoundationDocs(basePath);
-
-        // Create process documentation
-        ScaffoldProcessDocs(basePath);
     }
 
     /// <summary>
@@ -251,50 +244,6 @@ public class FolderScaffolder : IFolderScaffolder
         if (!File.Exists(offLimitsPath))
         {
             File.WriteAllText(offLimitsPath, TemplateGenerator.GenerateFilesOffLimitsMd());
-        }
-    }
-
-    /// <summary>
-    /// Create the process documentation files (workflow processes).
-    /// </summary>
-    private void ScaffoldProcessDocs(string basePath)
-    {
-        var processesPath = Path.Combine(basePath, "project", "processes");
-        Directory.CreateDirectory(processesPath);
-
-        // Process index
-        var indexPath = Path.Combine(processesPath, "_index.md");
-        if (!File.Exists(indexPath))
-        {
-            File.WriteAllText(indexPath, TemplateGenerator.GenerateProcessIndexMd(basePath));
-        }
-
-        // Feature implementation process
-        var featurePath = Path.Combine(processesPath, "feature-implementation.md");
-        if (!File.Exists(featurePath))
-        {
-            File.WriteAllText(featurePath, TemplateGenerator.GenerateFeatureImplementationProcessMd(basePath));
-        }
-
-        // Bug fix process
-        var bugFixPath = Path.Combine(processesPath, "bug-fix.md");
-        if (!File.Exists(bugFixPath))
-        {
-            File.WriteAllText(bugFixPath, TemplateGenerator.GenerateBugFixProcessMd(basePath));
-        }
-
-        // Refactoring process
-        var refactoringPath = Path.Combine(processesPath, "refactoring.md");
-        if (!File.Exists(refactoringPath))
-        {
-            File.WriteAllText(refactoringPath, TemplateGenerator.GenerateRefactoringProcessMd(basePath));
-        }
-
-        // Code review sub-process
-        var codeReviewPath = Path.Combine(processesPath, "code-review.md");
-        if (!File.Exists(codeReviewPath))
-        {
-            File.WriteAllText(codeReviewPath, TemplateGenerator.GenerateCodeReviewProcessMd(basePath));
         }
     }
 

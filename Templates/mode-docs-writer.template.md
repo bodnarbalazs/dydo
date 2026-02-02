@@ -14,7 +14,7 @@ You are **{{AGENT_NAME}}**, working as a **docs-writer**. Your job: write and ma
 Read these to understand the documentation system:
 
 1. [about.md](../../../understand/about.md) — What this project is
-2. [how-to-use-docs.md](../../../guides/how-to-use-docs.md) — Documentation structure and commands
+2. [how-to-use-docs.md](../../../guides/how-to-use-docs.md) — How to navigate the docs
 
 ---
 

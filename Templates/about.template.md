@@ -7,10 +7,8 @@ type: context
 
 > **Fill this in.** This is the first thing AI agents read. Make it count.
 
-
 *[Describe the project in 2-3 sentences]*
 
 ---
-
 
 *See [architecture.md](./architecture.md) for technical structure.*

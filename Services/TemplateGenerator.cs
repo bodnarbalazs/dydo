@@ -96,12 +96,7 @@ public static class TemplateGenerator
             "mode-interviewer.template.md",
             "mode-planner.template.md",
             "mode-docs-writer.template.md",
-            "mode-tester.template.md",
-            "process-index.template.md",
-            "process-feature-implementation.template.md",
-            "process-bug-fix.template.md",
-            "process-refactoring.template.md",
-            "process-code-review.template.md"
+            "mode-tester.template.md"
         };
     }
 
@@ -617,7 +612,7 @@ public static class TemplateGenerator
     }
 
     /// <summary>
-    /// How to use docs - comprehensive guide to dydo commands and workflow.
+    /// How to use docs - guide to navigating the documentation.
     /// Reads from how-to-use-docs.template.md if available.
     /// </summary>
     public static string GenerateHowToUseDocsMd()
@@ -640,76 +635,72 @@ public static class TemplateGenerator
             type: guide
             ---
 
-            # How to Use DynaDocs
+            # How to Use These Docs
 
-            This guide covers the dydo command-line tool and the agent workflow system.
-
-            ---
-
-            ## Quick Start
-
-            ```bash
-            # First time setup
-            export DYDO_HUMAN=your_name     # Set your identity
-            dydo agent claim auto           # Claim an available agent
-            dydo agent role code-writer     # Set your role
-
-            # Check status
-            dydo whoami                     # Show current agent identity
-            ```
+            This documentation is designed for AI agents. It follows JITI (Just-In-Time Information) - you don't need to read everything upfront. Navigate to what you need, when you need it.
 
             ---
 
-            ## Environment Setup
+            ## Documentation Structure
 
-            ### DYDO_HUMAN Variable
-
-            The `DYDO_HUMAN` environment variable identifies which human is operating the terminal.
-            This determines which agents you can claim.
-
-            ```bash
-            # Bash/Zsh
-            export DYDO_HUMAN=your_name
-
-            # PowerShell
-            $env:DYDO_HUMAN = "your_name"
-            ```
+            | Folder | Contains | When to Read |
+            |--------|----------|--------------|
+            | `understand/` | Project overview, architecture, domain context | Starting a new task |
+            | `guides/` | How-to guides, coding standards | When doing specific work |
+            | `reference/` | Command reference, API specs, config | When you need exact details |
+            | `project/` | Decisions, changelog, tasks, pitfalls | When you need history/context |
 
             ---
 
-            ## Agent Commands
+            ## Document Types
 
-            ### Claiming an Agent
+            The frontmatter at the top of each doc tells you what kind it is:
 
-            ```bash
-            dydo agent claim auto      # Claim first available
-            dydo agent claim Adele     # Claim specific agent
-            ```
-
-            ### Setting Role
-
-            ```bash
-            dydo agent role code-writer --task implement-auth
-            ```
-
-            ### Releasing
-
-            ```bash
-            dydo agent release
-            ```
+            | Type | Purpose |
+            |------|---------|
+            | `context` | Background information, overviews |
+            | `guide` | Step-by-step instructions |
+            | `reference` | Look-up information |
+            | `hub` | Index pages linking to other docs |
 
             ---
 
-            ## Command Reference
+            ## Navigation
 
-            | Command | Description |
-            |---------|-------------|
-            | `dydo whoami` | Show current agent identity |
-            | `dydo agent claim <name\|auto>` | Claim an agent |
-            | `dydo agent release` | Release current agent |
-            | `dydo agent role <role>` | Set role |
-            | `dydo check` | Validate docs |
-            | `dydo help` | Show help |
+            Docs link to each other via **Related** sections at the bottom. Follow links only when you need more detail - don't read everything upfront.
+
+            **If you're lost:** Check the area's index file (e.g., `understand/_index.md`) to see what's available.
+
+            ---
+
+            ## Exploring Connections
+
+            Use `dydo graph` to see how documents connect:
+
+            ```bash
+            dydo graph dydo/understand/architecture.md
+            ```
+
+            This shows what links to and from a document - useful for finding related context.
+
+            ---
+
+            ## Key Reference Documents
+
+            | Document | Purpose |
+            |----------|---------|
+            | `glossary.md` | Domain-specific terms |
+            | `project/decisions/` | Why architectural choices were made |
+            | `project/changelog/` | What changed and when |
+            | `project/pitfalls/` | Known gotchas to avoid |
+
+            ---
+
+            ## Related
+
+            - [Architecture](../understand/architecture.md) — Project structure
+            - [Coding Standards](./coding-standards.md) — Code conventions
+            - [dydo Commands Reference](../reference/dydo-commands.md) — Full command documentation
             """;
     }
 
@@ -758,22 +749,9 @@ public static class TemplateGenerator
 
                 # About This Project
 
-                > **Fill this in.** This is the first thing AI agents read.
-
-                ---
-
-                ## What We're Building
+                > **Fill this in.** This is the first thing AI agents read. Make it count.
 
                 *[Describe the project in 2-3 sentences]*
-
-                ---
-
-                ## Tech Stack
-
-                | Layer | Technology |
-                |-------|------------|
-                | Language | *[e.g., C#, TypeScript]* |
-                | Framework | *[e.g., .NET 8, React]* |
 
                 ---
 
@@ -1020,99 +998,4 @@ public static class TemplateGenerator
         }
     }
 
-    /// <summary>
-    /// Generate the process index file.
-    /// Reads from process-index.template.md if available.
-    /// </summary>
-    public static string GenerateProcessIndexMd(string? basePath = null)
-    {
-        try
-        {
-            return ReadTemplate("process-index.template.md", basePath);
-        }
-        catch (FileNotFoundException)
-        {
-            return """
-                ---
-                area: project
-                type: hub
-                ---
-
-                # Process Workflows
-
-                Formalized process documentation for different types of work.
-
-                ## Processes
-
-                - [Feature Implementation](./feature-implementation.md)
-                - [Bug Fix](./bug-fix.md)
-                - [Refactoring](./refactoring.md)
-                - [Code Review](./code-review.md)
-                """;
-        }
-    }
-
-    /// <summary>
-    /// Generate the feature implementation process.
-    /// Reads from process-feature-implementation.template.md if available.
-    /// </summary>
-    public static string GenerateFeatureImplementationProcessMd(string? basePath = null)
-    {
-        try
-        {
-            return ReadTemplate("process-feature-implementation.template.md", basePath);
-        }
-        catch (FileNotFoundException)
-        {
-            return "# Feature Implementation Process\n\n(Template not found)";
-        }
-    }
-
-    /// <summary>
-    /// Generate the bug fix process.
-    /// Reads from process-bug-fix.template.md if available.
-    /// </summary>
-    public static string GenerateBugFixProcessMd(string? basePath = null)
-    {
-        try
-        {
-            return ReadTemplate("process-bug-fix.template.md", basePath);
-        }
-        catch (FileNotFoundException)
-        {
-            return "# Bug Fix Process\n\n(Template not found)";
-        }
-    }
-
-    /// <summary>
-    /// Generate the refactoring process.
-    /// Reads from process-refactoring.template.md if available.
-    /// </summary>
-    public static string GenerateRefactoringProcessMd(string? basePath = null)
-    {
-        try
-        {
-            return ReadTemplate("process-refactoring.template.md", basePath);
-        }
-        catch (FileNotFoundException)
-        {
-            return "# Refactoring Process\n\n(Template not found)";
-        }
-    }
-
-    /// <summary>
-    /// Generate the code review process.
-    /// Reads from process-code-review.template.md if available.
-    /// </summary>
-    public static string GenerateCodeReviewProcessMd(string? basePath = null)
-    {
-        try
-        {
-            return ReadTemplate("process-code-review.template.md", basePath);
-        }
-        catch (FileNotFoundException)
-        {
-            return "# Code Review Process\n\n(Template not found)";
-        }
-    }
 }

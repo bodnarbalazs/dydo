@@ -34,12 +34,13 @@ dotnet tool install -g DynaDocs
 
 ### 1. Set up dydo in your project
 
-If you use Claude Code:
+Run from your project's root directory:
+
 ```bash
+# If you use Claude Code
 dydo init claude
-```
-If you use something else:
-```bash
+
+# If you use something else
 dydo init none
 ```
 
@@ -69,10 +70,16 @@ Exit code `0` = allowed, `2` = blocked (reason in stderr).
 
 ### 4. Validate your documentation
 
+Dydo might expect a certain format to the documentation, especially around the foundation files (index.md, about.md),
+links also need to be relative to better aid AI navigation, so it's a good idea to run these periodically.
+
 ```bash
 dydo check    # Find issues
 dydo fix      # Auto-fix what's possible
 ```
+
+**Note:** It's recommended to use [Obsidian](https://obsidian.md) so it's easier to navigate the docs.
+But if you move files Obsidian will not use relative links, so be sure to run `dydo fix`.
 
 ---
 
@@ -107,9 +114,9 @@ dydo fix      # Auto-fix what's possible
 | Role | Can Edit | Purpose |
 |------|----------|---------|
 | `code-writer` | `src/**`, `tests/**` | Implement features |
-| `reviewer` | *(read-only)* | Review code |
+| `reviewer` | agent workspace | Review code |
 | `planner` | `tasks/**`, agent workspace | Design implementation |
-| `tester` | `tests/**`, `pitfalls/**` | Write tests, report bugs |
+| `tester` | `tests/**`, `pitfalls/**`, agent workspace | Write tests, report bugs |
 | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
 | `co-thinker` | `decisions/**`, agent workspace | Explore ideas |
 | `interviewer` | agent workspace | Gather requirements |
@@ -120,35 +127,81 @@ dydo fix      # Auto-fix what's possible
 
 ```
 project/
-├── dydo.json              # Configuration
-├── CLAUDE.md              # AI entry point
+├── dydo.json                 # Configuration
+├── CLAUDE.md - or equivalent # AI entry point
 └── dydo/
-    ├── index.md           # Documentation root
-    ├── _system/templates/ # Customizable templates
-    ├── understand/        # Domain concepts, architecture
-    ├── guides/            # How-to guides
-    ├── reference/         # API docs, specs
-    ├── project/           # Decisions, pitfalls, changelog
-    │   └── tasks/         # Cross-agent task handoff
-    └── agents/            # Agent workspaces (gitignored)
+    ├── index.md              # Documentation root
+    ├── _system/templates/    # Customizable templates
+    ├── understand/           # Domain concepts, architecture
+    ├── guides/               # How-to guides
+    ├── reference/            # API docs, specs
+    ├── project/              # Decisions, pitfalls, changelog
+    │   └── tasks/            # Cross-agent task handoff
+    └── agents/               # Agent workspaces (gitignored)
 ```
 ---
 
 ## Commands
+**Note:** The agents wil call many of the commands by themselves.
 
+### Setup
 | Command | Description |
 |---------|-------------|
 | `dydo init <integration>` | Initialize project (`claude`, `none`) |
+| `dydo init <integration> --join` | Join existing project as new team member |
+| `dydo whoami` | Show current agent identity |
+
+### Documentation
+| Command | Description |
+|---------|-------------|
 | `dydo check [path]` | Validate documentation |
 | `dydo fix [path]` | Auto-fix issues |
+| `dydo index [path]` | Regenerate index.md from structure |
+| `dydo graph <file>` | Show graph connections for a file |
+
+### Agent Lifecycle
+
+| Command | Description |
+|---------|-------------|
 | `dydo agent claim <name\|auto>` | Claim an agent identity |
+| `dydo agent release` | Release current agent |
+| `dydo agent status [name]` | Show agent status |
+| `dydo agent list [--free]` | List all agents |
 | `dydo agent role <role> [--task X]` | Set role and permissions |
-| `dydo agent list` | List all agents and their status |
-| `dydo dispatch --role <role> --task <name>` | Hand off work to another agent |
+
+### Agent Management
+| Command | Description |
+|---------|-------------|
+| `dydo agent new <name> <human>` | Create new agent |
+| `dydo agent rename <old> <new>` | Rename an agent |
+| `dydo agent remove <name>` | Remove agent from pool |
+| `dydo agent reassign <name> <human>` | Reassign to different human |
+
+### Workflow
+| Command | Description |
+|---------|-------------|
+| `dydo dispatch --role <role> --task <name>` | Hand off work |
+| `dydo inbox list` | List agents with inbox items |
+| `dydo inbox show` | Show current agent's inbox |
+| `dydo inbox clear` | Clear processed items |
+
+### Tasks
+| Command | Description |
+|---------|-------------|
+| `dydo task create <name>` | Create a new task |
+| `dydo task ready-for-review <name>` | Mark task ready for review |
+| `dydo task approve <name>` | Approve task (human only) |
+| `dydo task reject <name>` | Reject task (human only) |
+| `dydo task list` | List tasks |
+| `dydo review complete <task>` | Complete a code review |
+
+### Workspace
+| Command | Description |
+|---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-
-
-
+| `dydo clean <agent>` | Clean agent workspace |
+| `dydo workspace init` | Initialize agent workspaces |
+| `dydo workspace check` | Verify workflow before session end |
 
 ---
 

@@ -61,8 +61,7 @@ Input → Processing → Output
 
 ---
 
-## Next Steps
+## Related
 
-After understanding the architecture:
-- Read [../guides/coding-standards.md](../guides/coding-standards.md) for code style
-- Read [../guides/how-to-use-docs.md](../guides/how-to-use-docs.md) for workflow commands
+- [Coding Standards](../guides/coding-standards.md) — Code conventions
+- [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating the documentation

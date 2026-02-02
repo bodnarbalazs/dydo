@@ -60,8 +60,7 @@ project/
     │── _system/                 # System configuration (committed)
     │   └── templates/           # Project-local template overrides
     │       ├── agent-workflow.template.md
-    │       ├── mode-*.template.md
-    │       └── process-*.template.md
+    │       └── mode-*.template.md
     │
     │── understand/              # ┐
     │── guides/                  # │ The "Dy" - Documentation
@@ -70,8 +69,7 @@ project/
     │   ├── tasks/               # │ ← Cross-human dispatch
     │   ├── decisions/           # │
     │   ├── pitfalls/            # │
-    │   ├── changelog/           # │
-    │   └── processes/           # ┘ ← Formalized workflow documentation
+    │   └── changelog/           # ┘
     │
     └── agents/                  # The "Do" - Orchestration (GITIGNORED)
         ├── Adele/
@@ -113,7 +111,6 @@ dydo/agents/
 | `guides/` | "How do I DO this?" | Step-by-step task instructions |
 | `reference/` | "What are the specs?" | API docs, config options, tool docs |
 | `project/` | "Why/how do we work?" | Decisions, pitfalls, changelog, tasks |
-| `project/processes/` | "What's the workflow?" | Formalized multi-agent process documentation |
 
 ---
 
@@ -437,7 +434,6 @@ Templates for agent workflows and mode files are copied to `dydo/_system/templat
 |----------|---------|--------------|
 | `agent-workflow.template.md` | Agent entry point and onboarding | `{{AGENT_NAME}}` |
 | `mode-*.template.md` | Role-specific guidance (7 files) | `{{AGENT_NAME}}` |
-| `process-*.template.md` | Workflow process documentation | (none) |
 
 **Template placeholders:**
 
@@ -672,96 +668,6 @@ Alice's agents see it via `dydo task list`.
 
 ---
 
-## Process Workflows
-
-DynaDocs includes formalized process documentation for common development workflows. These are stored in `dydo/project/processes/` and guide agents through multi-step tasks with appropriate role transitions.
-
-### Available Processes
-
-| Process | Phases | When to Use |
-|---------|--------|-------------|
-| Feature Implementation | Interviewer → Planner → Code-Writer → Reviewer | New features, complex changes, 3+ files |
-| Bug Fix | Co-Thinker → [Planner] → Code-Writer → Reviewer | Bug fixes (planner optional for simple bugs) |
-| Refactoring | Co-Thinker → Planner → Code-Writer → Reviewer | Restructuring code, behavior-preserving changes |
-| Code Review | (Checklist used by all processes) | Final validation before merge |
-
-### Feature Implementation Process
-
-**Phases:** Interviewer (optional) → Planner → Code-Writer → Reviewer
-
-**Triggers for using this process:**
-- User says "plan", "design", or similar
-- Complex tasks affecting 3+ files
-- New abstractions or architectural changes
-
-**Key principles:**
-- Planning is cheap, rework is expensive
-- Optional interview phase clarifies ambiguous requirements
-- No self-review (code-writer cannot become reviewer)
-- Changelog created with human review queue
-
-### Bug Fix Process
-
-**Phases:** Co-Thinker (investigation) → [Planner] → Code-Writer → Reviewer
-
-**Smart path selection:**
-- **Simple bugs** (clear root cause, single file): Skip planner, go straight to code-writer
-- **Complex bugs** (multiple files, regression risk): Include planner phase
-
-**Key principles:**
-- Investigation phase documents root cause analysis
-- Regression test required for every fix
-- Minimal change principle (no refactoring while fixing)
-- Different agent must review
-
-### Refactoring Process
-
-**Phases:** Co-Thinker → Planner → Code-Writer → Reviewer
-
-**Key principles:**
-- Define invariants upfront (what MUST NOT change)
-- Each step must be independently deployable (< 200 lines)
-- Behavior-preserving only (no feature changes)
-- Tests run after each logical change
-- Atomic commits (one per step)
-
-### Code Review Checklist
-
-Used as a sub-process by all workflows. Key areas:
-
-1. **Correctness**: Logic, edge cases, error handling, concurrency, resource cleanup
-2. **Completeness**: Plan items done, tests written, documentation updated
-3. **Standards**: Naming, style, DRY, single responsibility
-4. **Security**: No hardcoded secrets, input validation, auth checks
-5. **Maintainability**: Readable, not over-engineered, no dead code
-6. **Performance**: N+1 queries, data structures, allocations
-
-**AI Slop Detection**: Reviewers specifically flag:
-- Excessive comments on obvious code
-- Over-defensive null checks
-- Unnecessary abstractions
-- Verbose patterns that could be simpler
-
-**Feedback categories:**
-- **Blocking**: Must fix before merge
-- **Non-blocking**: Should fix, can be separate PR
-- **Nitpick**: Style preference, optional
-
-**Escalation rule:** After 2 failed reviews, escalate to human.
-
-### Process Files Structure
-
-```
-dydo/project/processes/
-├── _index.md                    # Process hub with decision table
-├── feature-implementation.md    # Full feature workflow
-├── bug-fix.md                   # Bug fix workflow
-├── refactoring.md              # Refactoring workflow
-└── code-review.md              # Review checklist (used by all)
-```
-
----
-
 ## Documentation Philosophy
 
 ### JITI - Just In Time Information
@@ -785,14 +691,8 @@ CLAUDE.md (project root)
             │       └── {task}.md (details)
             │
             └── project/_index.md (hub)
-                    ├── decisions/_index.md (sub-hub)
-                    │       └── 001-clean-architecture.md (detail)
-                    │
-                    └── processes/_index.md (sub-hub)
-                            ├── feature-implementation.md
-                            ├── bug-fix.md
-                            ├── refactoring.md
-                            └── code-review.md
+                    └── decisions/_index.md (sub-hub)
+                            └── 001-clean-architecture.md (detail)
 ```
 
 **Key principle:** AI agents follow the funnel: `CLAUDE.md` → `index.md` → their workflow file → must-reads. Information is disclosed progressively, not all at once.
@@ -967,11 +867,6 @@ DynaDocs/
 │   ├── index.template.md
 │   ├── workflow.template.md
 │   ├── mode-tester.template.md           # Tester role guidance
-│   ├── process-index.template.md         # Process hub
-│   ├── process-bug-fix.template.md       # Bug fix workflow
-│   ├── process-code-review.template.md   # Review checklist
-│   ├── process-feature-implementation.template.md
-│   ├── process-refactoring.template.md
 │   └── ... (mode templates for each role)
 │
 └── Utils/
@@ -1137,9 +1032,8 @@ DynaDocs (`dydo`) is a C# console tool that:
 4. **Queries** the doc graph for context gathering
 5. **Orchestrates** multi-agent workflows with role-based permissions
 6. **Supports multi-user** collaboration via agent assignments
-7. **Enforces process workflows** with formalized phases (feature, bug-fix, refactoring)
-8. **Prevents self-review** through task role history tracking
-9. **Supports template customization** via project-local `_system/templates/`
+7. **Prevents self-review** through task role history tracking
+8. **Supports template customization** via project-local `_system/templates/`
 
 ### Key Principles
 
@@ -1153,5 +1047,4 @@ DynaDocs (`dydo`) is a C# console tool that:
 8. **Graph connectivity**: Related docs link bidirectionally
 9. **Kebab-case everywhere**: Consistent, parseable filenames
 10. **No self-review**: Code-writer cannot become reviewer on same task (fresh eyes validation)
-11. **Process-driven workflows**: Formalized processes guide complex tasks through appropriate phases
-12. **Customizable templates**: Project-local `_system/templates/` overrides built-in defaults
+11. **Customizable templates**: Project-local `_system/templates/` overrides built-in defaults

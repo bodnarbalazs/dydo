@@ -4,60 +4,13 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 
 /// <summary>
-/// Integration tests for process workflow features:
+/// Integration tests for workflow features:
 /// - Self-review prevention (code-writer cannot become reviewer on same task)
 /// - Task role history tracking
-/// - Process folder scaffolding
 /// </summary>
 [Collection("Integration")]
 public class ProcessWorkflowTests : IntegrationTestBase
 {
-    [Fact]
-    public async Task Init_CreatesProcessesFolder()
-    {
-        // Initialize project
-        var result = await InitProjectAsync();
-        result.AssertSuccess();
-
-        // Verify processes folder exists
-        AssertDirectoryExists("dydo/project/processes");
-        AssertFileExists("dydo/project/processes/_index.md");
-        AssertFileExists("dydo/project/processes/feature-implementation.md");
-        AssertFileExists("dydo/project/processes/bug-fix.md");
-        AssertFileExists("dydo/project/processes/refactoring.md");
-        AssertFileExists("dydo/project/processes/code-review.md");
-    }
-
-    [Fact]
-    public async Task Init_ProcessIndexContainsAllProcessLinks()
-    {
-        await InitProjectAsync();
-
-        var indexContent = ReadFile("dydo/project/processes/_index.md");
-
-        Assert.Contains("feature-implementation", indexContent);
-        Assert.Contains("bug-fix", indexContent);
-        Assert.Contains("refactoring", indexContent);
-        Assert.Contains("code-review", indexContent);
-    }
-
-    [Fact]
-    public async Task ProcessDocs_ContainExpectedContent()
-    {
-        await InitProjectAsync();
-
-        // Feature implementation should mention planning triggers
-        var featureContent = ReadFile("dydo/project/processes/feature-implementation.md");
-        Assert.Contains("Planner", featureContent);
-        Assert.Contains("Code-Writer", featureContent);
-        Assert.Contains("Reviewer", featureContent);
-
-        // Code review should mention the reviewer mindset
-        var reviewContent = ReadFile("dydo/project/processes/code-review.md");
-        Assert.Contains("senior engineer", reviewContent);
-        Assert.Contains("AI slop", reviewContent);
-    }
-
     [Fact]
     public void TaskRoleHistory_TracksRolesOnTasks()
     {

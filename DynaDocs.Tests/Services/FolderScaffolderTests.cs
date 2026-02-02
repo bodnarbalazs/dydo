@@ -210,9 +210,9 @@ public class FolderScaffolderTests : IDisposable
         var aboutPath = Path.Combine(_testDir, "understand", "about.md");
         var content = File.ReadAllText(aboutPath);
 
-        Assert.Contains("What We're Building", content);
-        Assert.Contains("Tech Stack", content);
-        Assert.Contains("Key Concepts", content);
+        Assert.Contains("About This Project", content);
+        Assert.Contains("Describe the project in 2-3 sentences", content);
+        Assert.Contains("architecture.md", content);
     }
 
     [Fact]

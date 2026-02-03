@@ -478,7 +478,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         return role switch
         {
-            "reviewer" => "Reviewer role has no write permissions.",
+            "reviewer" => "Reviewer role can only edit own workspace.",
             "code-writer" => "Code-writer role can only edit src/** and tests/**.",
             "co-thinker" => "Co-thinker role can edit own workspace and decisions.",
             "docs-writer" => "Docs-writer role can only edit dydo/** (except agents/).",
@@ -716,7 +716,9 @@ public partial class AgentRegistry : IAgentRegistry
         }
 
         // Normalize name to PascalCase (first letter uppercase)
-        name = char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
+        name = name.Length > 1
+            ? char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant()
+            : name.ToUpperInvariant();
 
         // Load fresh config
         var configPath = _configService.FindConfigFile(_basePath);
@@ -823,7 +825,9 @@ public partial class AgentRegistry : IAgentRegistry
 
         // Normalize names
         oldName = NormalizeName(oldName);
-        newName = char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant();
+        newName = newName.Length > 1
+            ? char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant()
+            : newName.ToUpperInvariant();
 
         // Load fresh config
         var configPath = _configService.FindConfigFile(_basePath);

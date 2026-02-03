@@ -740,7 +740,6 @@ public class OffLimitsServiceTests : IDisposable
     [InlineData("*")]
     [InlineData("**")]
     [InlineData("**/*")]
-    [InlineData("**/.*")]
     [InlineData("**/*.json")]
     public void ValidateFormat_DetectsBroadWhitelistPatterns(string pattern)
     {
@@ -786,6 +785,30 @@ public class OffLimitsServiceTests : IDisposable
         var issues = service.ValidateFormat(_testDir).ToList();
 
         Assert.Empty(issues);
+    }
+
+    [Fact]
+    public void ValidateFormat_DotfilePatternIsNotTooBroad()
+    {
+        // **/.*  matches dotfiles specifically, which is reasonably scoped
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env
+            ```
+
+            ## Whitelist
+            ```
+            **/.*
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var issues = service.ValidateFormat(_testDir).ToList();
+
+        Assert.DoesNotContain(issues, i => i.Message.Contains("too broad") && i.Message.Contains("**/.*"));
     }
 
     [Fact]

@@ -5,6 +5,11 @@ using DynaDocs.Services;
 
 public static partial class PathUtils
 {
+    /// <summary>
+    /// Files exempt from kebab-case naming validation.
+    /// - CLAUDE.md: Standard AI assistant entry point file (conventionally uppercase)
+    /// - .gitkeep: Git placeholder file for empty directories (standard naming)
+    /// </summary>
     private static readonly HashSet<string> ExemptFiles = ["CLAUDE.md", ".gitkeep"];
 
     public static bool IsKebabCase(string name)

@@ -83,6 +83,52 @@ public class RelativeLinksRuleTests
         Assert.Empty(violations);
     }
 
+    [Theory]
+    [InlineData("./diagram.svg")]
+    [InlineData("./image.png")]
+    [InlineData("./photo.jpg")]
+    [InlineData("./photo.jpeg")]
+    [InlineData("./animation.gif")]
+    [InlineData("./modern.webp")]
+    [InlineData("./favicon.ico")]
+    [InlineData("./document.pdf")]
+    [InlineData("./archive.zip")]
+    public void Validate_AcceptsAssetLinks(string target)
+    {
+        var doc = CreateDocWithLinks(
+            new LinkInfo($"[Asset]({target})", "Asset", target, null, LinkType.Markdown, 1)
+        );
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsImageMarkdownSyntax()
+    {
+        var doc = CreateDocWithLinks(
+            new LinkInfo("![Diagram](./assets/diagram.svg)", "Diagram", "./assets/diagram.svg", null, LinkType.Markdown, 1)
+        );
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_StillRejectsMissingExtensionForNonAssets()
+    {
+        var doc = CreateDocWithLinks(
+            new LinkInfo("[Doc](./guide)", "Doc", "./guide", null, LinkType.Markdown, 1)
+        );
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("missing .md extension", violations[0].Message);
+    }
+
     private static DocFile CreateDocWithLinks(params LinkInfo[] links)
     {
         return new DocFile

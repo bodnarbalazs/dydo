@@ -371,7 +371,8 @@ public class OffLimitsService : IOffLimitsService
         }
 
         // Check for overly broad whitelist patterns
-        var broadPatterns = new[] { "*", "**", "**/*", "**/.*" };
+        // Note: **/.*  is NOT included because it specifically matches dotfiles (reasonably scoped)
+        var broadPatterns = new[] { "*", "**", "**/*" };
         foreach (var pattern in _whitelistPatterns)
         {
             if (broadPatterns.Contains(pattern) || IsBroadWhitelistPattern(pattern))
@@ -387,6 +388,7 @@ public class OffLimitsService : IOffLimitsService
     /// <summary>
     /// Check if a whitelist pattern is too broad.
     /// Patterns like "**/secrets*" or "**/*.json" are too broad for whitelist.
+    /// Note: **/.*  is specifically allowed as it matches dotfiles (reasonably scoped).
     /// </summary>
     private static bool IsBroadWhitelistPattern(string pattern)
     {
@@ -394,6 +396,11 @@ public class OffLimitsService : IOffLimitsService
             return false;
 
         var afterPrefix = pattern[3..];
+
+        // **/.*  matches only dotfiles (files starting with .) - this is specific enough
+        if (afterPrefix == ".*")
+            return false;
+
         // If everything after **/ is wildcards + extension, it's too broad
         return afterPrefix.StartsWith('*') || afterPrefix.StartsWith('.');
     }

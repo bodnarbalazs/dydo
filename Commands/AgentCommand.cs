@@ -437,7 +437,9 @@ public static class AgentCommand
         }
 
         // Normalize name for display (PascalCase)
-        var displayName = char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant();
+        var displayName = name.Length > 1
+            ? char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant()
+            : name.ToUpperInvariant();
 
         Console.WriteLine($"Agent created: {displayName}");
         Console.WriteLine($"  Assigned to: {human}");
@@ -462,7 +464,9 @@ public static class AgentCommand
             return ExitCodes.ToolError;
         }
 
-        var displayNewName = char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant();
+        var displayNewName = newName.Length > 1
+            ? char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant()
+            : newName.ToUpperInvariant();
 
         Console.WriteLine($"Agent renamed: {oldName} → {displayNewName}");
         Console.WriteLine($"  Updated: dydo.json, workspace, workflow file");

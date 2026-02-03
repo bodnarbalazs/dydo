@@ -15,9 +15,9 @@ You need an assigned identity to work here.
 
 Check your prompt for an agent name (e.g., `Adele`, `Brian`).
 
-**Found one?** → Go to **[agents/{name}/workflow.md](agents/)**
+**Found one?** → Open `agents/<your-name>/workflow.md`
 
-**None?** → Run `dydo agent claim auto`, then go to **agents/{assigned-name}/workflow.md**
+**None?** → Run `dydo agent claim auto`, then open `agents/<assigned-name>/workflow.md`
 
 Your prompt may include a --flag. Your workflow file explains everything.
 

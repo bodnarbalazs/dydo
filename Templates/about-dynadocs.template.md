@@ -1,30 +1,36 @@
----
-area: reference
-type: reference
----
-
 # DynaDocs (dydo)
 
-A platform-agnostic AI orchestration and context-management framework.
+Context management and agent orchestration for AI coding assistants.
 
 100% local, 100% under your control.
 
 ## The Problem
 
-AI code editors need persistence. Without it, each session starts fresh and the agent has to gather context about the project before it can even begin working on your actual task.
+AI code editors forget everything between sessions. Every time you start, the agent wakes up with amnesia — no memory of your architecture, your conventions, or the context from yesterday.
 
-So we have to explain the same context each time.
+So you explain the same things. Again. And again.
 
 Claude Code and Cursor don't have memory built in. Tools like Windsurf and Antigravity have some form of it, but you don't control it.
 
 ## The Solution
 
-DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management.
+DynaDocs is a documentation-based approach. Your docs **ARE** the memory.
 
-You point your AI assistant to `index.md` (via CLAUDE.md or equivalent), and from there it goes through an onboarding process where it learns about the framework and how to use it.
-Based on the prompt, it self-assigns to the appropriate workflow and mode and coordinates with other independent local agents.
+Think of it like Groundhog Day: the AI wakes up fresh each session, but you've left it a note explaining everything it needs to know. It reads the note, onboards itself, and gets to work.
 
-![DynaDocs Architecture](./../_assets/dydo-diagram.svg)
+You maintain your project's intent, architecture, and conventions in structured documentation. Each session, the AI follows an onboarding funnel — reading just what it needs for the current task. A CLI tool enforces roles and permissions, so the AI stays in its lane.
+
+![DynaDocs Architecture](dydo_diagram.svg)
+
+### What you get
+
+- **Documentation as memory** — Your docs are the source of truth; AI re-reads them each session
+- **Self-onboarding** — AI follows the funnel, no manual context-setting
+- **Role-based permissions** — Reviewer can't edit code, code-writer can't touch docs
+- **No self-review** — The agent that wrote the code cannot review it
+- **Multi-agent workflows** — Run parallel agents on different tasks
+- **Team support** — Each team member gets their own pool of agents
+- **Platform-agnostic** — Works across AI tools (Claude, Cursor, etc.) and operating systems
 
 ---
 
@@ -37,6 +43,8 @@ npm install -g dydo
 # if you have .NET installed
 dotnet tool install -g DynaDocs
 ```
+
+**Note:** The setup will prompt you to set the `DYDO_HUMAN` environment variable. Agents use this to know which human they belong to.
 
 ## Quick Start
 
@@ -59,6 +67,7 @@ This creates the `dydo/` folder structure, templates, and configures Claude Code
 Add this to your `CLAUDE.md` (or equivalent for other AI tools):
 
 ```markdown
+This project uses an agent orchestration framework (dydo).
 Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
 ```
 
@@ -78,20 +87,18 @@ Exit code `0` = allowed, `2` = blocked (reason in stderr).
 
 ### 4. Validate your documentation
 
-Dydo might expect a certain format to the documentation, especially around the foundation files (index.md, about.md),
-links also need to be relative to better aid AI navigation, so it's a good idea to run these periodically.
+Dydo expects a certain format — relative links, frontmatter, consistent structure. Run these periodically:
 
 ```bash
 dydo check    # Find issues
 dydo fix      # Auto-fix what's possible
 ```
 
-**Note:** It's recommended to use [Obsidian](https://obsidian.md) so it's easier to navigate the docs.
-But if you move files Obsidian will not use relative links, so be sure to run `dydo fix`.
+**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward.
 
 ### 5. Customize the templates
 
-Edit templates in `dydo/_system/templates/` to customize agent workflows and mode guidance. Changes take effect when agents are claimed (`dydo agent claim`).
+Edit templates in `dydo/_system/templates/` to fit your project. Changes take effect when agents are claimed.
 
 ---
 
@@ -101,14 +108,15 @@ Edit templates in `dydo/_system/templates/` to customize agent workflows and mod
 
 1. The agent reads `CLAUDE.md`, gets redirected to `dydo/index.md`
 2. From `index.md`, it navigates to its workspace: `dydo/agents/Adele/workflow.md`
-3. It claims its identity: `dydo claim Adele`
+3. It claims its identity: `dydo agent claim Adele`
 4. The `--feature` flag tells it to follow: **interview → plan → code → review**
 5. It sets its role: `dydo agent role interviewer --task auth`
 6. On every file operation, the `dydo guard` hook enforces permissions based on the current role
 
-**No self-review:** An agent that wrote code cannot review it. The system tracks role history per task and enforces fresh-eyes validation.
+**What's happening:** The AI onboards itself by following the documentation funnel — you don't have to re-explain what's already documented. Permissions aren't suggestions; the hook blocks unauthorized edits. When the code-writer finishes, it dispatches to a *different* agent for review. Fresh eyes, enforced.
 
 ---
+
 ## Workflow Flags
 
 | Flag | Workflow |
@@ -120,7 +128,9 @@ Edit templates in `dydo/_system/templates/` to customize agent workflows and mod
 | `--review` | Reviewer mode |
 | `--docs` | Docs-writer mode |
 | `--test` | Tester mode |
+
 ---
+
 ## Agent Roles
 
 | Role | Can Edit | Purpose |
@@ -140,7 +150,7 @@ Edit templates in `dydo/_system/templates/` to customize agent workflows and mod
 ```
 project/
 ├── dydo.json                 # Configuration
-├── CLAUDE.md - or equivalent # AI entry point
+├── CLAUDE.md                 # AI entry point (or equivalent)
 └── dydo/
     ├── index.md              # Documentation root
     ├── _system/templates/    # Customizable templates
@@ -151,10 +161,34 @@ project/
     │   └── tasks/            # Cross-agent task handoff
     └── agents/               # Agent workspaces (gitignored)
 ```
+
 ---
 
-## Commands
-**Note:** The agents will call many of the commands by themselves.
+## For Teams
+
+Each team member gets their own pool of agents — no conflicts. Join an existing project with:
+
+```bash
+dydo init claude --join
+```
+
+---
+
+## Get Started
+
+```bash
+npm install -g dydo
+cd your-project
+dydo init claude
+```
+
+Then tell your AI to read `dydo/index.md`. That's it.
+
+---
+
+## Command Reference
+
+**Note:** Agents call most of these commands themselves.
 
 ### Setup
 | Command | Description |
@@ -217,10 +251,6 @@ project/
 | `dydo workspace check` | Verify workflow before session end |
 
 ---
-
-## More Information
-
-- **Project Repository**: [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
 
 ## License
 

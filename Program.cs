@@ -92,7 +92,7 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  1 - Validation errors found");
     Console.WriteLine("  2 - Tool error / Action blocked");
     Console.WriteLine();
-    Console.WriteLine("For detailed command reference, see: dydo/reference/dydo-commands.md");
+    Console.WriteLine("For detailed command reference, see: ./dydo/reference/dydo-commands.md");
     return 0;
 });
 rootCommand.Subcommands.Add(helpCommand);

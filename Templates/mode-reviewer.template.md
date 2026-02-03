@@ -33,9 +33,9 @@ dydo agent role reviewer --task <task-name>
 dydo agent status
 ```
 
-You can edit: **(nothing — read-only)**
+You can edit: `dydo/agents/{{AGENT_NAME}}/**` (your workspace only)
 
-This is correct. Reviewers do not edit code. If you need to edit, you're in the wrong role.
+You cannot edit source code. If you need to edit code, you're in the wrong role.
 
 ---
 

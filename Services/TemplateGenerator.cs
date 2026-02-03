@@ -406,7 +406,7 @@ public static class TemplateGenerator
             | Role | Can Edit | Cannot Edit |
             |------|----------|-------------|
             | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
-            | `reviewer` | (read-only) | (all files) |
+            | `reviewer` | `dydo/agents/{agentName}/**` | Everything else |
             | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
             | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**` |
             | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
@@ -799,7 +799,7 @@ public static class TemplateGenerator
         var roleDescription = modeName switch
         {
             "code-writer" => "implement code",
-            "reviewer" => "review code (read-only)",
+            "reviewer" => "review code and provide feedback",
             "co-thinker" => "think through problems collaboratively",
             "interviewer" => "gather requirements",
             "planner" => "design implementation plans",
@@ -811,7 +811,7 @@ public static class TemplateGenerator
         var canEdit = modeName switch
         {
             "code-writer" => "`src/**`, `tests/**`",
-            "reviewer" => "(nothing — read-only)",
+            "reviewer" => $"`dydo/agents/{agentName}/**` (workspace only)",
             "co-thinker" => $"`dydo/agents/{agentName}/**`, `dydo/project/decisions/**`",
             "interviewer" => $"`dydo/agents/{agentName}/**`",
             "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",

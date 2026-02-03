@@ -92,11 +92,11 @@ public static class PresetAgentNames
     /// </summary>
     public static char? GetLetterFromName(string name)
     {
-        var index = Set1.ToList().FindIndex(n =>
-            n.Equals(name, StringComparison.OrdinalIgnoreCase));
-
-        if (index >= 0)
-            return (char)('A' + index);
+        for (var i = 0; i < Set1.Count; i++)
+        {
+            if (Set1[i].Equals(name, StringComparison.OrdinalIgnoreCase))
+                return (char)('A' + i);
+        }
 
         return null;
     }

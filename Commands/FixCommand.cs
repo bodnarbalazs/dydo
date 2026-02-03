@@ -180,7 +180,9 @@ public static class FixCommand
 
     private static string GenerateSkeletonHub(string folderName, IEnumerable<DocFile> docsInFolder)
     {
-        var title = char.ToUpper(folderName[0]) + folderName[1..].Replace("-", " ");
+        var title = folderName.Length > 1
+            ? char.ToUpper(folderName[0]) + folderName[1..].Replace("-", " ")
+            : folderName.ToUpperInvariant();
         var linksContent = GenerateDocumentLinks(docsInFolder);
 
         return $"""

@@ -435,12 +435,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         {
             if (tokens.Any(t => t == "-i" || t.StartsWith("-i") || t == "--in-place"))
             {
-                var files = tokens.Skip(1)
-                    .Where(t => !t.StartsWith("-") && !t.StartsWith("'") && !t.StartsWith("\"") && !t.Contains('/'))
-                    .Where(t => !IsRegexPattern(t))
-                    .ToList();
-
-                // Also check for files at the end (after the pattern)
+                // Check for files at the end (after the pattern)
                 var lastToken = tokens.LastOrDefault();
                 if (lastToken != null && !lastToken.StartsWith("-") && LooksLikePath(lastToken))
                 {
@@ -661,12 +656,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static bool IsShellOperator(string token)
     {
         return token is "|" or ">" or ">>" or "<" or "<<" or "&&" or "||" or ";" or "&" or "2>" or "2>>" or "&>" or "|&";
-    }
-
-    private static bool IsRegexPattern(string token)
-    {
-        // Simple heuristic: if it contains regex metacharacters and is quoted, it's likely a pattern
-        return token.StartsWith("s/") || token.StartsWith("/") || token.Contains(".*") || token.Contains("\\(");
     }
 
     private static bool LooksLikePath(string value)

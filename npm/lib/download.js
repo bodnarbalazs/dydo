@@ -1,7 +1,7 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 async function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
@@ -46,16 +46,16 @@ async function extractArchive(archivePath, destDir, platformInfo) {
   if (platformInfo.archiveExt === '.zip') {
     // Windows: use PowerShell to extract
     if (process.platform === 'win32') {
-      execSync(
-        `powershell -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force"`,
-        { stdio: 'pipe' }
-      );
+      execFileSync('powershell', [
+        '-Command',
+        `Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force`
+      ], { stdio: 'pipe' });
     } else {
-      execSync(`unzip -o "${archivePath}" -d "${destDir}"`, { stdio: 'pipe' });
+      execFileSync('unzip', ['-o', archivePath, '-d', destDir], { stdio: 'pipe' });
     }
   } else {
     // tar.gz: use tar command
-    execSync(`tar -xzf "${archivePath}" -C "${destDir}"`, { stdio: 'pipe' });
+    execFileSync('tar', ['-xzf', archivePath, '-C', destDir], { stdio: 'pipe' });
   }
 }
 

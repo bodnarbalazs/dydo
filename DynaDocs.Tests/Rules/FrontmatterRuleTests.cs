@@ -177,6 +177,20 @@ public class FrontmatterRuleTests
         Assert.Empty(violations);
     }
 
+    [Fact]
+    public void Validate_AcceptsReferenceArea()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "reference",
+            Type = "reference"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
     #endregion
 
     #region Exclusions

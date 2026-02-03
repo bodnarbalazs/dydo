@@ -336,7 +336,7 @@ When `dydo init claude` runs, it creates/updates `.claude/settings.local.json`:
 | Role | Can Edit | Cannot Edit |
 |------|----------|-------------|
 | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
-| `reviewer` | (nothing - read only) | `**` |
+| `reviewer` | `dydo/agents/{self}/**` | `**` (except own workspace) |
 | `co-thinker` | `dydo/agents/{self}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
 | `docs-writer` | `dydo/**` (except agents/) | `src/**`, `tests/**` |
 | `interviewer` | `dydo/agents/{self}/**` | Everything else |

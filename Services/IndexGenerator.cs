@@ -9,9 +9,9 @@ public class IndexGenerator : IIndexGenerator
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("# LC Documentation Index");
+        sb.AppendLine("# DynaDocs Index");
         sb.AppendLine();
-        sb.AppendLine("This is the entry point for AI agents and humans exploring the LC documentation.");
+        sb.AppendLine("This is the entry point for AI agents and humans exploring the DynaDocs documentation.");
         sb.AppendLine();
         sb.AppendLine("## How to Navigate");
         sb.AppendLine();

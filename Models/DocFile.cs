@@ -12,6 +12,6 @@ public class DocFile
     public List<LinkInfo> Links { get; set; } = [];
     public List<string> Anchors { get; set; } = [];
     public bool HasFrontmatter { get; set; }
-    public bool IsHubFile => FileName == "_index.md";
+    public bool IsHubFile => FileName.Equals("_index.md", StringComparison.OrdinalIgnoreCase);
     public bool IsIndexFile => FileName.Equals("index.md", StringComparison.OrdinalIgnoreCase);
 }

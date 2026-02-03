@@ -117,12 +117,13 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateModeFile_Reviewer_HasReadOnlyGuidance()
+    public void GenerateModeFile_Reviewer_HasWorkspaceOnlyGuidance()
     {
         var content = TemplateGenerator.GenerateModeFile("Adele", "reviewer");
 
         Assert.Contains("Adele", content);
-        Assert.Contains("read-only", content.ToLowerInvariant());
+        Assert.Contains("workspace only", content.ToLowerInvariant());
+        Assert.Contains("cannot edit source code", content.ToLowerInvariant());
     }
 
     [Fact]

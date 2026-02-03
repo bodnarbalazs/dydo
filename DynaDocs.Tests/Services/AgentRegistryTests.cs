@@ -388,6 +388,66 @@ public class AgentRegistryTests : IDisposable
         Assert.Contains("already assigned", error);
     }
 
+    [Fact]
+    public void CreateAgent_HandlesSingleCharacterName()
+    {
+        // Setup minimal config
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Single-character name should not crash
+        var result = registry.CreateAgent("X", "testuser", out var error);
+
+        Assert.True(result, $"CreateAgent failed for single-char name: {error}");
+
+        // Verify config updated with uppercase single char
+        var configContent = File.ReadAllText(Path.Combine(_testDir, "dydo.json"));
+        Assert.Contains("\"X\"", configContent);
+
+        // Verify workspace created
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "X");
+        Assert.True(Directory.Exists(workspacePath), "Agent workspace should exist for single-char name");
+    }
+
+    [Fact]
+    public void RenameAgent_HandlesSingleCharacterNewName()
+    {
+        // Setup config and workspace
+        SetupConfig(new[] { "OldName" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "OldName" } });
+
+        var scaffolder = new FolderScaffolder();
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "OldName");
+        Directory.CreateDirectory(workspacePath);
+        Directory.CreateDirectory(Path.Combine(workspacePath, "modes"));
+        File.WriteAllText(Path.Combine(workspacePath, "workflow.md"), "# OldName workflow");
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: OldName
+            status: free
+            assigned: testuser
+            ---
+            # OldName — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Rename to single-character name should not crash
+        var result = registry.RenameAgent("OldName", "Z", out var error);
+
+        Assert.True(result, $"RenameAgent to single-char failed: {error}");
+
+        // Verify config updated
+        var configContent = File.ReadAllText(Path.Combine(_testDir, "dydo.json"));
+        Assert.Contains("\"Z\"", configContent);
+        Assert.DoesNotContain("OldName", configContent);
+
+        // Verify workspace renamed
+        Assert.False(Directory.Exists(Path.Combine(_testDir, "dydo", "agents", "OldName")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "dydo", "agents", "Z")));
+    }
+
     #endregion
 
     #region CanTakeRole Tests

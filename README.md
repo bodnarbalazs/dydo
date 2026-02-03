@@ -46,7 +46,7 @@ dotnet tool install -g DynaDocs
 
 **Note:** The setup will prompt you to set the `DYDO_HUMAN` environment variable. Agents use this to know which human they belong to.
 
-## Quick Start
+## Quick Start (2 min)
 
 ### 1. Set up dydo in your project
 
@@ -99,6 +99,8 @@ dydo fix      # Auto-fix what's possible
 ### 5. Customize the templates
 
 Edit templates in `dydo/_system/templates/` to fit your project. Changes take effect when agents are claimed.
+
+You're ready to go. For best results, keep docs up to date and accurate to match your intent. Not everything needs documenting—just what you wouldn't know from reading the code.
 
 ---
 

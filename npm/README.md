@@ -1,66 +1,26 @@
 # dydo
 
-DynaDocs CLI - A platform-agnostic AI orchestration and context-management framework.
+Context management and agent orchestration for AI coding assistants.
 
 100% local, 100% under your control.
 
-## Installation
+## The Problem
 
-```bash
-npm install -g dydo
-```
+AI code editors forget everything between sessions. Every time you start, the agent wakes up with amnesia — no memory of your architecture, your conventions, or the context from yesterday.
 
-## Quick Start
+So you explain the same things. Again. And again.
 
-```bash
-# Initialize in your project (creates dydo/ folder structure)
-dydo init claude
+## The Solution
 
-# Validate documentation
-dydo check
+DynaDocs is a documentation-based approach. Your docs **ARE** the memory.
 
-# Auto-fix issues
-dydo fix
-```
+Think of it like Groundhog Day: the AI wakes up fresh each session, but you've left it a note explaining everything it needs to know. It reads the note, onboards itself, and gets to work.
 
-## Workflow Flags
+A CLI enforces roles and permissions — the reviewer can't edit code, the code-writer can't touch docs, and no agent reviews its own work.
 
-Use these flags in your prompts to set the agent workflow:
-
-| Flag | Workflow |
-|------|----------|
-| `--feature` | Interview → Plan → Code → Review |
-| `--task` | Plan → Code → Review |
-| `--quick` | Code only (simple changes) |
-| `--think` | Co-thinker mode |
-| `--review` | Reviewer mode |
-| `--docs` | Docs-writer mode |
-| `--test` | Tester mode |
-
-## Key Commands
-
-| Command | Description |
-|---------|-------------|
-| `dydo init <integration>` | Initialize project (`claude`, `none`) |
-| `dydo check` | Validate documentation |
-| `dydo fix` | Auto-fix issues |
-| `dydo agent claim auto` | Claim an agent identity |
-| `dydo agent role <role>` | Set role and permissions |
-| `dydo whoami` | Show current agent identity |
-
-## Documentation & Details
-
-For full documentation, architecture diagrams, and detailed command reference:
-
+For installation and details go to the project's github page
+---
 **[github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)**
-
-## Alternative Installation
-
-If you have .NET installed:
-
-```bash
-dotnet tool install -g DynaDocs
-```
 
 ## License
 

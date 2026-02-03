@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -9,17 +8,19 @@ public static class IndexCommand
 {
     public static Command Create()
     {
-        var pathArgument = new Argument<string?>("path", () => null, "Path to docs folder");
-
-        var command = new Command("index", "Regenerate Index.md from doc structure")
+        var pathArgument = new Argument<string?>("path")
         {
-            pathArgument
+            DefaultValueFactory = _ => null,
+            Description = "Path to docs folder"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("index", "Regenerate Index.md from doc structure");
+        command.Arguments.Add(pathArgument);
+
+        command.SetAction(parseResult =>
         {
-            var path = ctx.ParseResult.GetValueForArgument(pathArgument);
-            ctx.ExitCode = Execute(path);
+            var path = parseResult.GetValue(pathArgument);
+            return Execute(path);
         });
 
         return command;

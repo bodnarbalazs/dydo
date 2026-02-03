@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -11,17 +10,19 @@ public static class FixCommand
 {
     public static Command Create()
     {
-        var pathArgument = new Argument<string?>("path", () => null, "Path to docs folder or file to fix");
-
-        var command = new Command("fix", "Auto-fix documentation issues where possible")
+        var pathArgument = new Argument<string?>("path")
         {
-            pathArgument
+            DefaultValueFactory = _ => null,
+            Description = "Path to docs folder or file to fix"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("fix", "Auto-fix documentation issues where possible");
+        command.Arguments.Add(pathArgument);
+
+        command.SetAction(parseResult =>
         {
-            var path = ctx.ParseResult.GetValueForArgument(pathArgument);
-            ctx.ExitCode = Execute(path);
+            var path = parseResult.GetValue(pathArgument);
+            return Execute(path);
         });
 
         return command;

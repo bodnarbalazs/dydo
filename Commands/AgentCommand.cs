@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -12,32 +11,33 @@ public static class AgentCommand
     {
         var command = new Command("agent", "Manage agent identity and roles");
 
-        command.AddCommand(CreateClaimCommand());
-        command.AddCommand(CreateReleaseCommand());
-        command.AddCommand(CreateStatusCommand());
-        command.AddCommand(CreateListCommand());
-        command.AddCommand(CreateRoleCommand());
-        command.AddCommand(CreateNewCommand());
-        command.AddCommand(CreateRenameCommand());
-        command.AddCommand(CreateRemoveCommand());
-        command.AddCommand(CreateReassignCommand());
+        command.Subcommands.Add(CreateClaimCommand());
+        command.Subcommands.Add(CreateReleaseCommand());
+        command.Subcommands.Add(CreateStatusCommand());
+        command.Subcommands.Add(CreateListCommand());
+        command.Subcommands.Add(CreateRoleCommand());
+        command.Subcommands.Add(CreateNewCommand());
+        command.Subcommands.Add(CreateRenameCommand());
+        command.Subcommands.Add(CreateRemoveCommand());
+        command.Subcommands.Add(CreateReassignCommand());
 
         return command;
     }
 
     private static Command CreateClaimCommand()
     {
-        var nameArgument = new Argument<string>("name", "Agent name or letter (e.g., 'Adele' or 'A')");
-
-        var command = new Command("claim", "Claim an agent for this terminal")
+        var nameArgument = new Argument<string>("name")
         {
-            nameArgument
+            Description = "Agent name or letter (e.g., 'Adele' or 'A')"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("claim", "Claim an agent for this terminal");
+        command.Arguments.Add(nameArgument);
+
+        command.SetAction(parseResult =>
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            ctx.ExitCode = ExecuteClaim(name);
+            var name = parseResult.GetValue(nameArgument)!;
+            return ExecuteClaim(name);
         });
 
         return command;
@@ -47,27 +47,26 @@ public static class AgentCommand
     {
         var command = new Command("release", "Release the current agent");
 
-        command.SetHandler((InvocationContext ctx) =>
-        {
-            ctx.ExitCode = ExecuteRelease();
-        });
+        command.SetAction(_ => ExecuteRelease());
 
         return command;
     }
 
     private static Command CreateStatusCommand()
     {
-        var nameArgument = new Argument<string?>("name", () => null, "Agent name (optional, defaults to current)");
-
-        var command = new Command("status", "Show agent status")
+        var nameArgument = new Argument<string?>("name")
         {
-            nameArgument
+            DefaultValueFactory = _ => null,
+            Description = "Agent name (optional, defaults to current)"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("status", "Show agent status");
+        command.Arguments.Add(nameArgument);
+
+        command.SetAction(parseResult =>
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            ctx.ExitCode = ExecuteStatus(name);
+            var name = parseResult.GetValue(nameArgument);
+            return ExecuteStatus(name);
         });
 
         return command;
@@ -75,17 +74,18 @@ public static class AgentCommand
 
     private static Command CreateListCommand()
     {
-        var freeOption = new Option<bool>("--free", "Show only free agents");
-
-        var command = new Command("list", "List all agents")
+        var freeOption = new Option<bool>("--free")
         {
-            freeOption
+            Description = "Show only free agents"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("list", "List all agents");
+        command.Options.Add(freeOption);
+
+        command.SetAction(parseResult =>
         {
-            var freeOnly = ctx.ParseResult.GetValueForOption(freeOption);
-            ctx.ExitCode = ExecuteList(freeOnly);
+            var freeOnly = parseResult.GetValue(freeOption);
+            return ExecuteList(freeOnly);
         });
 
         return command;
@@ -93,20 +93,25 @@ public static class AgentCommand
 
     private static Command CreateRoleCommand()
     {
-        var roleArgument = new Argument<string>("role", "Role to set (code-writer, reviewer, co-thinker, docs-writer, interviewer, planner, tester)");
-        var taskOption = new Option<string?>("--task", "Task name to associate with this role");
-
-        var command = new Command("role", "Set the current agent's role")
+        var roleArgument = new Argument<string>("role")
         {
-            roleArgument,
-            taskOption
+            Description = "Role to set (code-writer, reviewer, co-thinker, docs-writer, interviewer, planner, tester)"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var taskOption = new Option<string?>("--task")
         {
-            var role = ctx.ParseResult.GetValueForArgument(roleArgument);
-            var task = ctx.ParseResult.GetValueForOption(taskOption);
-            ctx.ExitCode = ExecuteRole(role, task);
+            Description = "Task name to associate with this role"
+        };
+
+        var command = new Command("role", "Set the current agent's role");
+        command.Arguments.Add(roleArgument);
+        command.Options.Add(taskOption);
+
+        command.SetAction(parseResult =>
+        {
+            var role = parseResult.GetValue(roleArgument)!;
+            var task = parseResult.GetValue(taskOption);
+            return ExecuteRole(role, task);
         });
 
         return command;
@@ -319,20 +324,25 @@ public static class AgentCommand
 
     private static Command CreateNewCommand()
     {
-        var nameArgument = new Argument<string>("name", "New agent name (e.g., 'William')");
-        var humanArgument = new Argument<string>("human", "Human to assign the agent to");
-
-        var command = new Command("new", "Create a new agent and assign to a human")
+        var nameArgument = new Argument<string>("name")
         {
-            nameArgument,
-            humanArgument
+            Description = "New agent name (e.g., 'William')"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var humanArgument = new Argument<string>("human")
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var human = ctx.ParseResult.GetValueForArgument(humanArgument);
-            ctx.ExitCode = ExecuteNew(name, human);
+            Description = "Human to assign the agent to"
+        };
+
+        var command = new Command("new", "Create a new agent and assign to a human");
+        command.Arguments.Add(nameArgument);
+        command.Arguments.Add(humanArgument);
+
+        command.SetAction(parseResult =>
+        {
+            var name = parseResult.GetValue(nameArgument)!;
+            var human = parseResult.GetValue(humanArgument)!;
+            return ExecuteNew(name, human);
         });
 
         return command;
@@ -340,20 +350,25 @@ public static class AgentCommand
 
     private static Command CreateRenameCommand()
     {
-        var oldNameArgument = new Argument<string>("old-name", "Current agent name");
-        var newNameArgument = new Argument<string>("new-name", "New agent name");
-
-        var command = new Command("rename", "Rename an agent")
+        var oldNameArgument = new Argument<string>("old-name")
         {
-            oldNameArgument,
-            newNameArgument
+            Description = "Current agent name"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var newNameArgument = new Argument<string>("new-name")
         {
-            var oldName = ctx.ParseResult.GetValueForArgument(oldNameArgument);
-            var newName = ctx.ParseResult.GetValueForArgument(newNameArgument);
-            ctx.ExitCode = ExecuteRename(oldName, newName);
+            Description = "New agent name"
+        };
+
+        var command = new Command("rename", "Rename an agent");
+        command.Arguments.Add(oldNameArgument);
+        command.Arguments.Add(newNameArgument);
+
+        command.SetAction(parseResult =>
+        {
+            var oldName = parseResult.GetValue(oldNameArgument)!;
+            var newName = parseResult.GetValue(newNameArgument)!;
+            return ExecuteRename(oldName, newName);
         });
 
         return command;
@@ -361,20 +376,25 @@ public static class AgentCommand
 
     private static Command CreateRemoveCommand()
     {
-        var nameArgument = new Argument<string>("name", "Agent name to remove");
-        var forceOption = new Option<bool>("--force", "Skip confirmation");
-
-        var command = new Command("remove", "Remove an agent from the pool")
+        var nameArgument = new Argument<string>("name")
         {
-            nameArgument,
-            forceOption
+            Description = "Agent name to remove"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var forceOption = new Option<bool>("--force")
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var force = ctx.ParseResult.GetValueForOption(forceOption);
-            ctx.ExitCode = ExecuteRemove(name, force);
+            Description = "Skip confirmation"
+        };
+
+        var command = new Command("remove", "Remove an agent from the pool");
+        command.Arguments.Add(nameArgument);
+        command.Options.Add(forceOption);
+
+        command.SetAction(parseResult =>
+        {
+            var name = parseResult.GetValue(nameArgument)!;
+            var force = parseResult.GetValue(forceOption);
+            return ExecuteRemove(name, force);
         });
 
         return command;
@@ -382,20 +402,25 @@ public static class AgentCommand
 
     private static Command CreateReassignCommand()
     {
-        var nameArgument = new Argument<string>("name", "Agent name to reassign");
-        var humanArgument = new Argument<string>("human", "New human to assign the agent to");
-
-        var command = new Command("reassign", "Reassign an agent to a different human")
+        var nameArgument = new Argument<string>("name")
         {
-            nameArgument,
-            humanArgument
+            Description = "Agent name to reassign"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var humanArgument = new Argument<string>("human")
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var human = ctx.ParseResult.GetValueForArgument(humanArgument);
-            ctx.ExitCode = ExecuteReassign(name, human);
+            Description = "New human to assign the agent to"
+        };
+
+        var command = new Command("reassign", "Reassign an agent to a different human");
+        command.Arguments.Add(nameArgument);
+        command.Arguments.Add(humanArgument);
+
+        command.SetAction(parseResult =>
+        {
+            var name = parseResult.GetValue(nameArgument)!;
+            var human = parseResult.GetValue(humanArgument)!;
+            return ExecuteReassign(name, human);
         });
 
         return command;

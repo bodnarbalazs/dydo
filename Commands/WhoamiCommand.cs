@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -15,10 +14,7 @@ public static class WhoamiCommand
     {
         var command = new Command("whoami", "Show current agent identity");
 
-        command.SetHandler((InvocationContext ctx) =>
-        {
-            ctx.ExitCode = Execute();
-        });
+        command.SetAction(_ => Execute());
 
         return command;
     }

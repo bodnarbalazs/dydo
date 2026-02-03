@@ -1,8 +1,9 @@
 # DynaDocs (dydo)
 
-A platform-agnostic AI orchestration and context-management framework.
+Give your AI coding assistant persistent memory and role-based guardrails.
 
 100% local, 100% under your control.
+
 
 ## The Problem
 
@@ -33,6 +34,7 @@ npm install -g dydo
 dotnet tool install -g DynaDocs
 ```
 
+**Make sure:** that the DYDO_HUMAN environment variable is set, during the setup it might try to do it for you or will remind you to do this. Agents use this to check if they belong to you or someone else on your team.
 ## Quick Start
 
 ### 1. Set up dydo in your project
@@ -54,6 +56,7 @@ This creates the `dydo/` folder structure, templates, and configures Claude Code
 Add this to your `CLAUDE.md` (or equivalent for other AI tools):
 
 ```markdown
+This project uses an agent orchestration framework (dydo).
 Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
 ```
 
@@ -96,7 +99,7 @@ Edit templates in `dydo/_system/templates/` to customize agent workflows and mod
 
 1. The agent reads `CLAUDE.md`, gets redirected to `dydo/index.md`
 2. From `index.md`, it navigates to its workspace: `dydo/agents/Adele/workflow.md`
-3. It claims its identity: `dydo claim Adele`
+3. It claims its identity: `dydo agent claim Adele`
 4. The `--feature` flag tells it to follow: **interview → plan → code → review**
 5. It sets its role: `dydo agent role interviewer --task auth`
 6. On every file operation, the `dydo guard` hook enforces permissions based on the current role
@@ -115,13 +118,14 @@ Edit templates in `dydo/_system/templates/` to customize agent workflows and mod
 | `--review` | Reviewer mode |
 | `--docs` | Docs-writer mode |
 | `--test` | Tester mode |
+
 ---
 ## Agent Roles
 
 | Role | Can Edit | Purpose |
 |------|----------|---------|
 | `code-writer` | `src/**`, `tests/**` | Implement features |
-| `reviewer` | agent workspace | Review code |
+| `reviewer` | (read-only) | Review code |
 | `planner` | `tasks/**`, agent workspace | Design implementation |
 | `tester` | `tests/**`, `pitfalls/**`, agent workspace | Write tests, report bugs |
 | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
@@ -146,10 +150,11 @@ project/
     │   └── tasks/            # Cross-agent task handoff
     └── agents/               # Agent workspaces (gitignored)
 ```
+
 ---
 
 ## Commands
-**Note:** The agents wil call many of the commands by themselves.
+**Note:** Agents call most of these commands themselves.
 
 ### Setup
 | Command | Description |

@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -9,26 +8,36 @@ public static class GraphCommand
 {
     public static Command Create()
     {
-        var fileArgument = new Argument<string>("file", "The doc file to analyze");
-        var incomingOption = new Option<bool>("--incoming", "Show docs that link TO this file (backlinks)");
-        var degreeOption = new Option<int>("--degree", () => 1, "Show docs within n link-hops (default: 1)");
-
-        var command = new Command("graph", "Show graph connections for a documentation file")
+        var fileArgument = new Argument<string>("file")
         {
-            fileArgument,
-            incomingOption,
-            degreeOption
+            Description = "The doc file to analyze"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var incomingOption = new Option<bool>("--incoming")
         {
-            var file = ctx.ParseResult.GetValueForArgument(fileArgument);
-            var incoming = ctx.ParseResult.GetValueForOption(incomingOption);
-            var degree = ctx.ParseResult.GetValueForOption(degreeOption);
-            ctx.ExitCode = Execute(file, incoming, degree);
+            Description = "Show docs that link TO this file (backlinks)"
+        };
+
+        var degreeOption = new Option<int>("--degree")
+        {
+            DefaultValueFactory = _ => 1,
+            Description = "Show docs within n link-hops (default: 1)"
+        };
+
+        var command = new Command("graph", "Show graph connections for a documentation file");
+        command.Arguments.Add(fileArgument);
+        command.Options.Add(incomingOption);
+        command.Options.Add(degreeOption);
+
+        command.SetAction(parseResult =>
+        {
+            var file = parseResult.GetValue(fileArgument)!;
+            var incoming = parseResult.GetValue(incomingOption);
+            var degree = parseResult.GetValue(degreeOption);
+            return Execute(file, incoming, degree);
         });
 
-        command.AddCommand(CreateStatsCommand());
+        command.Subcommands.Add(CreateStatsCommand());
 
         return command;
     }
@@ -175,17 +184,19 @@ public static class GraphCommand
 
     private static Command CreateStatsCommand()
     {
-        var topOption = new Option<int>("--top", () => 100, "Number of documents to show (default: 100)");
-
-        var statsCommand = new Command("stats", "Show document link statistics ranked by incoming links")
+        var topOption = new Option<int>("--top")
         {
-            topOption
+            DefaultValueFactory = _ => 100,
+            Description = "Number of documents to show (default: 100)"
         };
 
-        statsCommand.SetHandler((InvocationContext ctx) =>
+        var statsCommand = new Command("stats", "Show document link statistics ranked by incoming links");
+        statsCommand.Options.Add(topOption);
+
+        statsCommand.SetAction(parseResult =>
         {
-            var top = ctx.ParseResult.GetValueForOption(topOption);
-            ctx.ExitCode = ExecuteStats(top);
+            var top = parseResult.GetValue(topOption);
+            return ExecuteStats(top);
         });
 
         return statsCommand;

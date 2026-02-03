@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -10,55 +9,71 @@ public static class DispatchCommand
 {
     public static Command Create()
     {
-        var roleOption = new Option<string>("--role", "Role for the target agent")
+        var roleOption = new Option<string>("--role")
         {
-            IsRequired = true
+            Description = "Role for the target agent",
+            Required = true
         };
 
-        var taskOption = new Option<string>("--task", "Task name")
+        var taskOption = new Option<string>("--task")
         {
-            IsRequired = true
+            Description = "Task name",
+            Required = true
         };
 
-        var briefOption = new Option<string>("--brief", "Brief description of the work")
+        var briefOption = new Option<string>("--brief")
         {
-            IsRequired = true
+            Description = "Brief description of the work",
+            Required = true
         };
 
-        var filesOption = new Option<string?>("--files", "File pattern to include (e.g., 'src/Auth/**')");
-
-        var contextOption = new Option<string?>("--context-file", "Path to context file");
-
-        var noLaunchOption = new Option<bool>("--no-launch", "Don't launch new terminal, just write to inbox");
-
-        var toOption = new Option<string?>("--to", "Send dispatch to specific agent (skips auto-selection)");
-
-        var escalateOption = new Option<bool>("--escalate", "Mark dispatch as escalated after repeated failures");
-
-        var command = new Command("dispatch", "Dispatch work to another agent")
+        var filesOption = new Option<string?>("--files")
         {
-            roleOption,
-            taskOption,
-            briefOption,
-            filesOption,
-            contextOption,
-            noLaunchOption,
-            toOption,
-            escalateOption
+            Description = "File pattern to include (e.g., 'src/Auth/**')"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var contextOption = new Option<string?>("--context-file")
         {
-            var role = ctx.ParseResult.GetValueForOption(roleOption)!;
-            var task = ctx.ParseResult.GetValueForOption(taskOption)!;
-            var brief = ctx.ParseResult.GetValueForOption(briefOption)!;
-            var files = ctx.ParseResult.GetValueForOption(filesOption);
-            var contextFile = ctx.ParseResult.GetValueForOption(contextOption);
-            var noLaunch = ctx.ParseResult.GetValueForOption(noLaunchOption);
-            var to = ctx.ParseResult.GetValueForOption(toOption);
-            var escalate = ctx.ParseResult.GetValueForOption(escalateOption);
+            Description = "Path to context file"
+        };
 
-            ctx.ExitCode = Execute(role, task, brief, files, contextFile, noLaunch, to, escalate);
+        var noLaunchOption = new Option<bool>("--no-launch")
+        {
+            Description = "Don't launch new terminal, just write to inbox"
+        };
+
+        var toOption = new Option<string?>("--to")
+        {
+            Description = "Send dispatch to specific agent (skips auto-selection)"
+        };
+
+        var escalateOption = new Option<bool>("--escalate")
+        {
+            Description = "Mark dispatch as escalated after repeated failures"
+        };
+
+        var command = new Command("dispatch", "Dispatch work to another agent");
+        command.Options.Add(roleOption);
+        command.Options.Add(taskOption);
+        command.Options.Add(briefOption);
+        command.Options.Add(filesOption);
+        command.Options.Add(contextOption);
+        command.Options.Add(noLaunchOption);
+        command.Options.Add(toOption);
+        command.Options.Add(escalateOption);
+
+        command.SetAction(parseResult =>
+        {
+            var role = parseResult.GetValue(roleOption)!;
+            var task = parseResult.GetValue(taskOption)!;
+            var brief = parseResult.GetValue(briefOption)!;
+            var files = parseResult.GetValue(filesOption);
+            var contextFile = parseResult.GetValue(contextOption);
+            var noLaunch = parseResult.GetValue(noLaunchOption);
+            var to = parseResult.GetValue(toOption);
+            var escalate = parseResult.GetValue(escalateOption);
+
+            return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate);
         });
 
         return command;

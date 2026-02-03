@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Models;
@@ -21,31 +20,41 @@ public static class InitCommand
 
     public static Command Create()
     {
-        var integrationArgument = new Argument<string>("integration", "Integration to configure (claude, none)")
+        var integrationArgument = new Argument<string>("integration")
         {
-            Arity = ArgumentArity.ExactlyOne
+            Arity = ArgumentArity.ExactlyOne,
+            Description = "Integration to configure (claude, none)"
         };
 
-        var joinOption = new Option<bool>("--join", "Join an existing DynaDocs project as a new team member");
-        var nameOption = new Option<string?>("--name", "Human name (skips prompt)");
-        var agentCountOption = new Option<int?>("--agents", "Number of agents to create/assign (skips prompt)");
-
-        var command = new Command("init", "Initialize DynaDocs with specified integration")
+        var joinOption = new Option<bool>("--join")
         {
-            integrationArgument,
-            joinOption,
-            nameOption,
-            agentCountOption
+            Description = "Join an existing DynaDocs project as a new team member"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var nameOption = new Option<string?>("--name")
         {
-            var integration = ctx.ParseResult.GetValueForArgument(integrationArgument);
-            var join = ctx.ParseResult.GetValueForOption(joinOption);
-            var name = ctx.ParseResult.GetValueForOption(nameOption);
-            var agentCount = ctx.ParseResult.GetValueForOption(agentCountOption);
+            Description = "Human name (skips prompt)"
+        };
 
-            ctx.ExitCode = join
+        var agentCountOption = new Option<int?>("--agents")
+        {
+            Description = "Number of agents to create/assign (skips prompt)"
+        };
+
+        var command = new Command("init", "Initialize DynaDocs with specified integration");
+        command.Arguments.Add(integrationArgument);
+        command.Options.Add(joinOption);
+        command.Options.Add(nameOption);
+        command.Options.Add(agentCountOption);
+
+        command.SetAction(parseResult =>
+        {
+            var integration = parseResult.GetValue(integrationArgument)!;
+            var join = parseResult.GetValue(joinOption);
+            var name = parseResult.GetValue(nameOption);
+            var agentCount = parseResult.GetValue(agentCountOption);
+
+            return join
                 ? ExecuteJoin(integration, name, agentCount)
                 : ExecuteInit(integration, name, agentCount);
         });

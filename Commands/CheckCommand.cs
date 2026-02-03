@@ -1,8 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Rules;
 using DynaDocs.Services;
@@ -12,17 +10,19 @@ public static class CheckCommand
 {
     public static Command Create()
     {
-        var pathArgument = new Argument<string?>("path", () => null, "Path to docs folder or file to check");
-
-        var command = new Command("check", "Validate documentation and report violations")
+        var pathArgument = new Argument<string?>("path")
         {
-            pathArgument
+            DefaultValueFactory = _ => null,
+            Description = "Path to docs folder or file to check"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("check", "Validate documentation and report violations");
+        command.Arguments.Add(pathArgument);
+
+        command.SetAction(parseResult =>
         {
-            var path = ctx.ParseResult.GetValueForArgument(pathArgument);
-            ctx.ExitCode = Execute(path);
+            var path = parseResult.GetValue(pathArgument);
+            return Execute(path);
         });
 
         return command;

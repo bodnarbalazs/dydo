@@ -102,6 +102,7 @@ public static class ProcessUtils
     [SupportedOSPlatform("windows")]
     private static int GetParentProcessIdWindows(int processId)
     {
+#if WINDOWS
         try
         {
             // Use WMI via Process class workaround
@@ -119,7 +120,7 @@ public static class ProcessUtils
             // Fallback: try reading from /proc style if available (WSL)
             // or return -1
         }
-
+#endif
         return -1;
     }
 

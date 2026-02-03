@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -13,9 +12,9 @@ public static class InboxCommand
     {
         var command = new Command("inbox", "Manage agent inbox");
 
-        command.AddCommand(CreateListCommand());
-        command.AddCommand(CreateShowCommand());
-        command.AddCommand(CreateClearCommand());
+        command.Subcommands.Add(CreateListCommand());
+        command.Subcommands.Add(CreateShowCommand());
+        command.Subcommands.Add(CreateClearCommand());
 
         return command;
     }
@@ -24,10 +23,7 @@ public static class InboxCommand
     {
         var command = new Command("list", "List agents with pending inbox items");
 
-        command.SetHandler((InvocationContext ctx) =>
-        {
-            ctx.ExitCode = ExecuteList();
-        });
+        command.SetAction(_ => ExecuteList());
 
         return command;
     }
@@ -36,30 +32,32 @@ public static class InboxCommand
     {
         var command = new Command("show", "Show current agent's inbox");
 
-        command.SetHandler((InvocationContext ctx) =>
-        {
-            ctx.ExitCode = ExecuteShow();
-        });
+        command.SetAction(_ => ExecuteShow());
 
         return command;
     }
 
     private static Command CreateClearCommand()
     {
-        var allOption = new Option<bool>("--all", "Clear all items");
-        var idOption = new Option<string?>("--id", "Clear specific item by ID");
-
-        var command = new Command("clear", "Clear processed inbox items")
+        var allOption = new Option<bool>("--all")
         {
-            allOption,
-            idOption
+            Description = "Clear all items"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var idOption = new Option<string?>("--id")
         {
-            var all = ctx.ParseResult.GetValueForOption(allOption);
-            var id = ctx.ParseResult.GetValueForOption(idOption);
-            ctx.ExitCode = ExecuteClear(all, id);
+            Description = "Clear specific item by ID"
+        };
+
+        var command = new Command("clear", "Clear processed inbox items");
+        command.Options.Add(allOption);
+        command.Options.Add(idOption);
+
+        command.SetAction(parseResult =>
+        {
+            var all = parseResult.GetValue(allOption);
+            var id = parseResult.GetValue(idOption);
+            return ExecuteClear(all, id);
         });
 
         return command;

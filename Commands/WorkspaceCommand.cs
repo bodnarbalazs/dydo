@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -11,25 +10,26 @@ public static class WorkspaceCommand
     {
         var command = new Command("workspace", "Manage agent workspace");
 
-        command.AddCommand(CreateInitCommand());
-        command.AddCommand(CreateCheckCommand());
+        command.Subcommands.Add(CreateInitCommand());
+        command.Subcommands.Add(CreateCheckCommand());
 
         return command;
     }
 
     private static Command CreateInitCommand()
     {
-        var pathOption = new Option<string?>("--path", "Base path (defaults to current directory)");
-
-        var command = new Command("init", "Initialize agent workspaces")
+        var pathOption = new Option<string?>("--path")
         {
-            pathOption
+            Description = "Base path (defaults to current directory)"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("init", "Initialize agent workspaces");
+        command.Options.Add(pathOption);
+
+        command.SetAction(parseResult =>
         {
-            var path = ctx.ParseResult.GetValueForOption(pathOption);
-            ctx.ExitCode = ExecuteInit(path);
+            var path = parseResult.GetValue(pathOption);
+            return ExecuteInit(path);
         });
 
         return command;
@@ -39,10 +39,7 @@ public static class WorkspaceCommand
     {
         var command = new Command("check", "Verify workflow requirements before session end");
 
-        command.SetHandler((InvocationContext ctx) =>
-        {
-            ctx.ExitCode = ExecuteCheck();
-        });
+        command.SetAction(_ => ExecuteCheck());
 
         return command;
     }

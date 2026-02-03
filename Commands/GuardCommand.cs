@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
@@ -30,23 +29,32 @@ public static class GuardCommand
 {
     public static Command Create()
     {
-        var actionOption = new Option<string?>("--action", "Action being attempted (edit, write, delete, read)");
-        var pathOption = new Option<string?>("--path", "Path being accessed");
-        var commandOption = new Option<string?>("--command", "Bash command to analyze");
-
-        var command = new Command("guard", "Check if current agent can perform action (used by hooks)")
+        var actionOption = new Option<string?>("--action")
         {
-            actionOption,
-            pathOption,
-            commandOption
+            Description = "Action being attempted (edit, write, delete, read)"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var pathOption = new Option<string?>("--path")
         {
-            var cliAction = ctx.ParseResult.GetValueForOption(actionOption);
-            var cliPath = ctx.ParseResult.GetValueForOption(pathOption);
-            var cliCommand = ctx.ParseResult.GetValueForOption(commandOption);
-            ctx.ExitCode = Execute(cliAction, cliPath, cliCommand);
+            Description = "Path being accessed"
+        };
+
+        var commandOption = new Option<string?>("--command")
+        {
+            Description = "Bash command to analyze"
+        };
+
+        var command = new Command("guard", "Check if current agent can perform action (used by hooks)");
+        command.Options.Add(actionOption);
+        command.Options.Add(pathOption);
+        command.Options.Add(commandOption);
+
+        command.SetAction(parseResult =>
+        {
+            var cliAction = parseResult.GetValue(actionOption);
+            var cliPath = parseResult.GetValue(pathOption);
+            var cliCommand = parseResult.GetValue(commandOption);
+            return Execute(cliAction, cliPath, cliCommand);
         });
 
         return command;

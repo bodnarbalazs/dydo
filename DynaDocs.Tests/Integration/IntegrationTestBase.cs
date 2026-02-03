@@ -89,7 +89,7 @@ public abstract class IntegrationTestBase : IDisposable
 
         try
         {
-            var exitCode = await command.InvokeAsync(args);
+            var exitCode = await command.Parse(args).InvokeAsync();
             return new CommandResult(exitCode, stdoutWriter.ToString(), stderrWriter.ToString());
         }
         finally

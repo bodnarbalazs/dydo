@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Text.RegularExpressions;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -14,43 +13,48 @@ public static class ReviewCommand
     {
         var command = new Command("review", "Manage code reviews");
 
-        command.AddCommand(CreateCompleteCommand());
+        command.Subcommands.Add(CreateCompleteCommand());
 
         return command;
     }
 
     private static Command CreateCompleteCommand()
     {
-        var taskArgument = new Argument<string>("task", "Task name being reviewed");
-
-        var statusOption = new Option<string>("--status", "Review result: pass or fail")
+        var taskArgument = new Argument<string>("task")
         {
-            IsRequired = true
+            Description = "Task name being reviewed"
         };
-        statusOption.AddValidator(result =>
+
+        var statusOption = new Option<string>("--status")
         {
-            var value = result.GetValueOrDefault<string>();
+            Description = "Review result: pass or fail",
+            Required = true
+        };
+        statusOption.Validators.Add(result =>
+        {
+            var value = result.GetValue(statusOption);
             if (value != "pass" && value != "fail")
             {
-                result.ErrorMessage = "Status must be 'pass' or 'fail'";
+                result.AddError("Status must be 'pass' or 'fail'");
             }
         });
 
-        var notesOption = new Option<string?>("--notes", "Review notes");
-
-        var command = new Command("complete", "Complete a code review")
+        var notesOption = new Option<string?>("--notes")
         {
-            taskArgument,
-            statusOption,
-            notesOption
+            Description = "Review notes"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("complete", "Complete a code review");
+        command.Arguments.Add(taskArgument);
+        command.Options.Add(statusOption);
+        command.Options.Add(notesOption);
+
+        command.SetAction(parseResult =>
         {
-            var task = ctx.ParseResult.GetValueForArgument(taskArgument);
-            var status = ctx.ParseResult.GetValueForOption(statusOption)!;
-            var notes = ctx.ParseResult.GetValueForOption(notesOption);
-            ctx.ExitCode = ExecuteComplete(task, status, notes);
+            var task = parseResult.GetValue(taskArgument)!;
+            var status = parseResult.GetValue(statusOption)!;
+            var notes = parseResult.GetValue(notesOption);
+            return ExecuteComplete(task, status, notes);
         });
 
         return command;

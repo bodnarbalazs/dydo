@@ -4,31 +4,32 @@ using DynaDocs.Commands;
 
 var rootCommand = new RootCommand("DynaDocs (dydo) - Dynamic Documentation validation and management tool");
 
-rootCommand.AddCommand(CheckCommand.Create());
-rootCommand.AddCommand(FixCommand.Create());
-rootCommand.AddCommand(IndexCommand.Create());
-rootCommand.AddCommand(InitCommand.Create());
-rootCommand.AddCommand(GraphCommand.Create());
-rootCommand.AddCommand(AgentCommand.Create());
-rootCommand.AddCommand(GuardCommand.Create());
-rootCommand.AddCommand(DispatchCommand.Create());
-rootCommand.AddCommand(InboxCommand.Create());
-rootCommand.AddCommand(TaskCommand.Create());
-rootCommand.AddCommand(ReviewCommand.Create());
-rootCommand.AddCommand(CleanCommand.Create());
-rootCommand.AddCommand(WorkspaceCommand.Create());
-rootCommand.AddCommand(WhoamiCommand.Create());
+rootCommand.Subcommands.Add(CheckCommand.Create());
+rootCommand.Subcommands.Add(FixCommand.Create());
+rootCommand.Subcommands.Add(IndexCommand.Create());
+rootCommand.Subcommands.Add(InitCommand.Create());
+rootCommand.Subcommands.Add(GraphCommand.Create());
+rootCommand.Subcommands.Add(AgentCommand.Create());
+rootCommand.Subcommands.Add(GuardCommand.Create());
+rootCommand.Subcommands.Add(DispatchCommand.Create());
+rootCommand.Subcommands.Add(InboxCommand.Create());
+rootCommand.Subcommands.Add(TaskCommand.Create());
+rootCommand.Subcommands.Add(ReviewCommand.Create());
+rootCommand.Subcommands.Add(CleanCommand.Create());
+rootCommand.Subcommands.Add(WorkspaceCommand.Create());
+rootCommand.Subcommands.Add(WhoamiCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
-versionCommand.SetHandler(() =>
+versionCommand.SetAction(_ =>
 {
     var version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
     Console.WriteLine($"dydo version {version.Major}.{version.Minor}.{version.Build}");
+    return 0;
 });
-rootCommand.AddCommand(versionCommand);
+rootCommand.Subcommands.Add(versionCommand);
 
 var helpCommand = new Command("help", "Display help information");
-helpCommand.SetHandler(() =>
+helpCommand.SetAction(_ =>
 {
     Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation validation and workflow tool");
     Console.WriteLine();
@@ -92,7 +93,8 @@ helpCommand.SetHandler(() =>
     Console.WriteLine("  2 - Tool error / Action blocked");
     Console.WriteLine();
     Console.WriteLine("For detailed command reference, see: dydo/reference/dydo-commands.md");
+    return 0;
 });
-rootCommand.AddCommand(helpCommand);
+rootCommand.Subcommands.Add(helpCommand);
 
-return await rootCommand.InvokeAsync(args);
+return await rootCommand.Parse(args).InvokeAsync();

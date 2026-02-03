@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -15,31 +14,36 @@ public static class TaskCommand
     {
         var command = new Command("task", "Manage tasks");
 
-        command.AddCommand(CreateCreateCommand());
-        command.AddCommand(CreateReadyForReviewCommand());
-        command.AddCommand(CreateApproveCommand());
-        command.AddCommand(CreateRejectCommand());
-        command.AddCommand(CreateListCommand());
+        command.Subcommands.Add(CreateCreateCommand());
+        command.Subcommands.Add(CreateReadyForReviewCommand());
+        command.Subcommands.Add(CreateApproveCommand());
+        command.Subcommands.Add(CreateRejectCommand());
+        command.Subcommands.Add(CreateListCommand());
 
         return command;
     }
 
     private static Command CreateCreateCommand()
     {
-        var nameArgument = new Argument<string>("name", "Task name (kebab-case)");
-        var descriptionOption = new Option<string?>("--description", "Task description");
-
-        var command = new Command("create", "Create a new task")
+        var nameArgument = new Argument<string>("name")
         {
-            nameArgument,
-            descriptionOption
+            Description = "Task name (kebab-case)"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var descriptionOption = new Option<string?>("--description")
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var description = ctx.ParseResult.GetValueForOption(descriptionOption);
-            ctx.ExitCode = ExecuteCreate(name, description);
+            Description = "Task description"
+        };
+
+        var command = new Command("create", "Create a new task");
+        command.Arguments.Add(nameArgument);
+        command.Options.Add(descriptionOption);
+
+        command.SetAction(parseResult =>
+        {
+            var name = parseResult.GetValue(nameArgument)!;
+            var description = parseResult.GetValue(descriptionOption);
+            return ExecuteCreate(name, description);
         });
 
         return command;
@@ -47,23 +51,26 @@ public static class TaskCommand
 
     private static Command CreateReadyForReviewCommand()
     {
-        var nameArgument = new Argument<string>("name", "Task name");
-        var summaryOption = new Option<string>("--summary", "Review summary")
+        var nameArgument = new Argument<string>("name")
         {
-            IsRequired = true
+            Description = "Task name"
         };
 
-        var command = new Command("ready-for-review", "Mark task ready for review")
+        var summaryOption = new Option<string>("--summary")
         {
-            nameArgument,
-            summaryOption
+            Description = "Review summary",
+            Required = true
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("ready-for-review", "Mark task ready for review");
+        command.Arguments.Add(nameArgument);
+        command.Options.Add(summaryOption);
+
+        command.SetAction(parseResult =>
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var summary = ctx.ParseResult.GetValueForOption(summaryOption)!;
-            ctx.ExitCode = ExecuteReadyForReview(name, summary);
+            var name = parseResult.GetValue(nameArgument)!;
+            var summary = parseResult.GetValue(summaryOption)!;
+            return ExecuteReadyForReview(name, summary);
         });
 
         return command;
@@ -71,20 +78,25 @@ public static class TaskCommand
 
     private static Command CreateApproveCommand()
     {
-        var nameArgument = new Argument<string>("name", "Task name");
-        var notesOption = new Option<string?>("--notes", "Approval notes");
-
-        var command = new Command("approve", "Approve a task (human only)")
+        var nameArgument = new Argument<string>("name")
         {
-            nameArgument,
-            notesOption
+            Description = "Task name"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var notesOption = new Option<string?>("--notes")
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var notes = ctx.ParseResult.GetValueForOption(notesOption);
-            ctx.ExitCode = ExecuteApprove(name, notes);
+            Description = "Approval notes"
+        };
+
+        var command = new Command("approve", "Approve a task (human only)");
+        command.Arguments.Add(nameArgument);
+        command.Options.Add(notesOption);
+
+        command.SetAction(parseResult =>
+        {
+            var name = parseResult.GetValue(nameArgument)!;
+            var notes = parseResult.GetValue(notesOption);
+            return ExecuteApprove(name, notes);
         });
 
         return command;
@@ -92,23 +104,26 @@ public static class TaskCommand
 
     private static Command CreateRejectCommand()
     {
-        var nameArgument = new Argument<string>("name", "Task name");
-        var notesOption = new Option<string>("--notes", "Rejection reason")
+        var nameArgument = new Argument<string>("name")
         {
-            IsRequired = true
+            Description = "Task name"
         };
 
-        var command = new Command("reject", "Reject a task (human only)")
+        var notesOption = new Option<string>("--notes")
         {
-            nameArgument,
-            notesOption
+            Description = "Rejection reason",
+            Required = true
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var command = new Command("reject", "Reject a task (human only)");
+        command.Arguments.Add(nameArgument);
+        command.Options.Add(notesOption);
+
+        command.SetAction(parseResult =>
         {
-            var name = ctx.ParseResult.GetValueForArgument(nameArgument);
-            var notes = ctx.ParseResult.GetValueForOption(notesOption)!;
-            ctx.ExitCode = ExecuteReject(name, notes);
+            var name = parseResult.GetValue(nameArgument)!;
+            var notes = parseResult.GetValue(notesOption)!;
+            return ExecuteReject(name, notes);
         });
 
         return command;
@@ -116,20 +131,25 @@ public static class TaskCommand
 
     private static Command CreateListCommand()
     {
-        var needsReviewOption = new Option<bool>("--needs-review", "Show only tasks needing human review");
-        var allOption = new Option<bool>("--all", "Show all tasks including closed");
-
-        var command = new Command("list", "List tasks")
+        var needsReviewOption = new Option<bool>("--needs-review")
         {
-            needsReviewOption,
-            allOption
+            Description = "Show only tasks needing human review"
         };
 
-        command.SetHandler((InvocationContext ctx) =>
+        var allOption = new Option<bool>("--all")
         {
-            var needsReview = ctx.ParseResult.GetValueForOption(needsReviewOption);
-            var all = ctx.ParseResult.GetValueForOption(allOption);
-            ctx.ExitCode = ExecuteList(needsReview, all);
+            Description = "Show all tasks including closed"
+        };
+
+        var command = new Command("list", "List tasks");
+        command.Options.Add(needsReviewOption);
+        command.Options.Add(allOption);
+
+        command.SetAction(parseResult =>
+        {
+            var needsReview = parseResult.GetValue(needsReviewOption);
+            var all = parseResult.GetValue(allOption);
+            return ExecuteList(needsReview, all);
         });
 
         return command;

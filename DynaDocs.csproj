@@ -17,7 +17,7 @@
         <PackageTags>documentation;validation;cli;ai-agents;claude</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>Initial release - A platform-agnostic AI orchestration and context-management framework. -in a cli tool.</PackageReleaseNotes>
+        <PackageReleaseNotes>Initial release - A platform-agnostic AI orchestration and context-management framework.</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>

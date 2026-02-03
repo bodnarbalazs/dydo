@@ -158,9 +158,7 @@ public static class InboxCommand
             foreach (var file in files)
             {
                 var destPath = Path.Combine(archivePath, Path.GetFileName(file));
-                if (File.Exists(destPath))
-                    File.Delete(destPath);  // Overwrite if exists
-                File.Move(file, destPath);
+                File.Move(file, destPath, overwrite: true);
             }
             Console.WriteLine($"Archived {files.Length} item(s) to inbox/archive/");
         }
@@ -176,9 +174,7 @@ public static class InboxCommand
             foreach (var file in files)
             {
                 var destPath = Path.Combine(archivePath, Path.GetFileName(file));
-                if (File.Exists(destPath))
-                    File.Delete(destPath);
-                File.Move(file, destPath);
+                File.Move(file, destPath, overwrite: true);
             }
             Console.WriteLine($"Archived item {id} to inbox/archive/");
         }

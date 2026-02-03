@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+
+const { spawn } = require('child_process');
+const { getPlatformInfo } = require('../lib/platform');
+const { getBinaryPath, isBinaryInstalled } = require('../lib/paths');
+
+function main() {
+  const platformInfo = getPlatformInfo();
+
+  if (!platformInfo.supported) {
+    console.error(`Error: ${platformInfo.error}`);
+    console.error('Install via .NET instead: dotnet tool install -g DynaDocs');
+    process.exit(2);
+  }
+
+  const binaryPath = getBinaryPath(platformInfo);
+
+  if (!isBinaryInstalled(platformInfo)) {
+    console.error('Error: dydo binary not found.');
+    console.error('Try reinstalling: npm install -g dydo');
+    console.error('Or install via .NET: dotnet tool install -g DynaDocs');
+    process.exit(2);
+  }
+
+  // Spawn the native binary with all arguments passed through
+  const child = spawn(binaryPath, process.argv.slice(2), {
+    stdio: 'inherit',
+    windowsHide: false
+  });
+
+  child.on('error', (err) => {
+    console.error(`Error launching dydo: ${err.message}`);
+    process.exit(2);
+  });
+
+  child.on('exit', (code, signal) => {
+    if (signal) {
+      process.exit(1);
+    }
+    process.exit(code ?? 0);
+  });
+}
+
+main();

@@ -48,7 +48,7 @@ jobs:
           sudo apt-get install -y clang llvm gcc-aarch64-linux-gnu
 
       - name: Publish AOT
-        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained -o publish
+        run: dotnet publish DynaDocs.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish
 
       - name: Package (Windows)
         if: matrix.os == 'windows-latest'
@@ -92,7 +92,9 @@ jobs:
   nuget:
     needs: build
     runs-on: ubuntu-latest
-    environment: nuget  # Optional: use GitHub environment for protection rules
+    permissions:
+      id-token: write  # Required for NuGet trusted publishing OIDC
+    environment: nuget
 
     steps:
       - uses: actions/checkout@v4
@@ -107,9 +109,14 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
       - name: Pack
-        run: dotnet pack -c Release -p:Version=${{ steps.version.outputs.VERSION }} -o nupkg
+        run: dotnet pack DynaDocs.csproj -c Release -p:Version=${{ steps.version.outputs.VERSION }} -o nupkg
 
-      - name: Push to NuGet (Trusted Publishing)
+      - name: NuGet login (OIDC)
+        uses: nuget/login@v1
+        with:
+          user: balazsbodnar
+
+      - name: Push to NuGet
         run: dotnet nuget push nupkg/*.nupkg --source https://api.nuget.org/v3/index.json
 
   npm:

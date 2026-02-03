@@ -63,6 +63,8 @@ async function downloadBinary(version, platformInfo, installDir) {
   const { getDownloadUrl } = require('./platform');
   const url = getDownloadUrl(version, platformInfo);
 
+  fs.mkdirSync(installDir, { recursive: true });
+
   const archivePath = path.join(installDir, `dydo${platformInfo.archiveExt}`);
 
   console.log(`[dydo] Downloading v${version} for ${platformInfo.rid}...`);

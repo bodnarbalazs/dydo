@@ -23,7 +23,8 @@ jobs:
           - os: ubuntu-latest
             rid: linux-arm64
             artifact: dydo-linux-arm64.tar.gz
-          - os: macos-13
+            cross: true
+          - os: macos-15
             rid: osx-x64
             artifact: dydo-osx-x64.tar.gz
           - os: macos-latest
@@ -39,6 +40,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Install cross-compilation toolchain (Linux ARM64)
+        if: matrix.cross
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm gcc-aarch64-linux-gnu
 
       - name: Publish AOT
         run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained -o publish

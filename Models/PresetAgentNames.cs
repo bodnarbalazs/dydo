@@ -6,6 +6,11 @@ namespace DynaDocs.Models;
 public static class PresetAgentNames
 {
     /// <summary>
+    /// Maximum number of agents supported (26 names × 4 sets)
+    /// </summary>
+    public const int MaxAgentCount = 104;
+
+    /// <summary>
     /// Primary set of 26 agent names (A-Z)
     /// </summary>
     public static readonly IReadOnlyList<string> Set1 = new[]

@@ -1,3 +1,8 @@
+---
+area: reference
+type: reference
+---
+
 # DynaDocs (dydo)
 
 Context management and agent orchestration for AI coding assistants.
@@ -20,7 +25,7 @@ Think of it like Groundhog Day: the AI wakes up fresh each session, but you've l
 
 You maintain your project's intent, architecture, and conventions in structured documentation. Each session, the AI follows an onboarding funnel — reading just what it needs for the current task. A CLI tool enforces roles and permissions, so the AI stays in its lane.
 
-![DynaDocs Architecture](dydo_diagram.svg)
+![DynaDocs Architecture](./../_assets/dydo-diagram.svg)
 
 ### What you get
 
@@ -254,4 +259,4 @@ Then tell your AI to read `dydo/index.md`. That's it.
 
 ## License
 
-MIT
+MIT — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)

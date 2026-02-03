@@ -1143,8 +1143,9 @@ public partial class AgentRegistry : IAgentRegistry
             }
             catch (JsonException)
             {
-                // Corrupt lock file - treat as stale
-                try { File.Delete(lockPath); } catch { /* ignore */ }
+                // Corrupt lock file - treat as stale, delete and retry
+                // If delete fails, retry will handle it (either succeeds or fails with proper error)
+                try { File.Delete(lockPath); } catch (IOException) { }
                 return TryAcquireLock(agentName, out error, retryCount + 1);
             }
             catch (IOException)

@@ -97,9 +97,9 @@ public static class InitCommand
 
         // Get agent count
         var agentCount = providedAgentCount ?? PromptForInt("Number of agents [26]: ", 26);
-        if (agentCount < 1 || agentCount > 104)
+        if (agentCount < 1 || agentCount > PresetAgentNames.MaxAgentCount)
         {
-            ConsoleOutput.WriteError("Agent count must be between 1 and 104.");
+            ConsoleOutput.WriteError($"Agent count must be between 1 and {PresetAgentNames.MaxAgentCount}.");
             return ExitCodes.ToolError;
         }
 
@@ -231,7 +231,7 @@ public static class InitCommand
         }
 
         // Get agent count
-        var defaultCount = Math.Min(5, 104 - config.Agents.Pool.Count);
+        var defaultCount = Math.Min(5, PresetAgentNames.MaxAgentCount - config.Agents.Pool.Count);
         var agentCount = providedAgentCount ?? PromptForInt($"Number of agents [{defaultCount}]: ", defaultCount);
         if (agentCount < 1)
         {

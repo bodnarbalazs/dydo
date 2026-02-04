@@ -211,6 +211,13 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(welcomePath, TemplateGenerator.GenerateWelcomeMd());
         }
 
+        // glossary.md (project glossary, referenced by welcome.md)
+        var glossaryPath = Path.Combine(basePath, "glossary.md");
+        if (!File.Exists(glossaryPath))
+        {
+            File.WriteAllText(glossaryPath, TemplateGenerator.GenerateGlossaryMd());
+        }
+
         // understand/about.md (project context)
         var aboutPath = Path.Combine(basePath, "understand", "about.md");
         if (!File.Exists(aboutPath))

@@ -110,6 +110,63 @@ public class HubFilesRuleTests
         Assert.True(_rule.CanAutoFix);
     }
 
+    #region Exclusions
+
+    [Fact]
+    public void ValidateFolder_SkipsSystemFolders()
+    {
+        var docs = new List<DocFile>
+        {
+            CreateDoc("_system/templates/agent-workflow.template.md")
+        };
+
+        var violations = _rule.ValidateFolder("/base/_system/templates", docs, "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void ValidateFolder_SkipsAgentWorkspaces()
+    {
+        var docs = new List<DocFile>
+        {
+            CreateDoc("agents/Adele/modes/code-writer.md")
+        };
+
+        var violations = _rule.ValidateFolder("/base/agents/Adele/modes", docs, "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void ValidateFolder_SkipsAgentRootFolder()
+    {
+        var docs = new List<DocFile>
+        {
+            CreateDoc("agents/Adele/workflow.md")
+        };
+
+        var violations = _rule.ValidateFolder("/base/agents/Adele", docs, "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void ValidateFolder_SkipsAgentsFolder()
+    {
+        var docs = new List<DocFile>
+        {
+            CreateDoc("agents/Adele/workflow.md"),
+            CreateDoc("agents/Brian/workflow.md")
+        };
+
+        var violations = _rule.ValidateFolder("/base/agents", docs, "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
     private static DocFile CreateDoc(string relativePath)
     {
         var fileName = Path.GetFileName(relativePath);

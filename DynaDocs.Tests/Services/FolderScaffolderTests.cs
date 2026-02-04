@@ -66,12 +66,27 @@ public class FolderScaffolderTests : IDisposable
         _scaffolder.Scaffold(_testDir);
 
         Assert.True(File.Exists(Path.Combine(_testDir, "welcome.md")));
+        Assert.True(File.Exists(Path.Combine(_testDir, "glossary.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "about.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "understand", "architecture.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "guides", "coding-standards.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "guides", "how-to-use-docs.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "reference", "writing-docs.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, "files-off-limits.md")));
+    }
+
+    [Fact]
+    public void Scaffold_CreatesGlossaryMd()
+    {
+        _scaffolder.Scaffold(_testDir);
+
+        var glossaryPath = Path.Combine(_testDir, "glossary.md");
+        Assert.True(File.Exists(glossaryPath));
+
+        var content = File.ReadAllText(glossaryPath);
+        Assert.Contains("Glossary", content);
+        Assert.Contains("area: general", content);
+        Assert.Contains("type: reference", content);
     }
 
     [Fact]

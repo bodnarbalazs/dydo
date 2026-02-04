@@ -53,6 +53,10 @@ public static class FixCommand
             Console.WriteLine("FIXED:");
             foreach (var doc in docs.ToList())
             {
+                // Skip excluded paths (same as check command)
+                if (IsExcludedPath(doc.RelativePath))
+                    continue;
+
                 if (!PathUtils.IsKebabCase(doc.FileName))
                 {
                     var newName = PathUtils.ToKebabCase(Path.GetFileNameWithoutExtension(doc.FileName)) + ".md";
@@ -114,6 +118,10 @@ public static class FixCommand
 
                 if (relativeFolderPath == ".") continue;
 
+                // Skip excluded folders (same as check command)
+                if (IsExcludedFolder(relativeFolderPath))
+                    continue;
+
                 var docsInFolder = docs.Where(d =>
                 {
                     var docDir = Path.GetDirectoryName(d.RelativePath) ?? "";
@@ -137,6 +145,10 @@ public static class FixCommand
             docs = scanner.ScanDirectory(basePath);
             foreach (var doc in docs)
             {
+                // Skip excluded paths (same as check command)
+                if (IsExcludedPath(doc.RelativePath))
+                    continue;
+
                 if (!doc.HasFrontmatter)
                     manualFixNeeded.Add($"{doc.RelativePath} - Add frontmatter");
                 else if (string.IsNullOrEmpty(doc.SummaryParagraph))
@@ -261,5 +273,45 @@ public static class FixCommand
 
         // Truncate if too long
         return sentence.Length > 100 ? sentence[..97] + "..." : sentence;
+    }
+
+    /// <summary>
+    /// Check if a file path should be excluded from fix operations.
+    /// Matches the exclusions used in check rules.
+    /// </summary>
+    private static bool IsExcludedPath(string relativePath)
+    {
+        var normalized = PathUtils.NormalizePath(relativePath);
+
+        // Skip template files
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Skip agent workspace files
+        if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Check if a folder should be excluded from hub file creation.
+    /// Matches the exclusions used in HubFilesRule.
+    /// </summary>
+    private static bool IsExcludedFolder(string relativeFolderPath)
+    {
+        // Skip system folders
+        if (relativeFolderPath.StartsWith("_system", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Skip agent workspace folders
+        if (relativeFolderPath.StartsWith("agents", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Skip assets folder
+        if (relativeFolderPath.StartsWith("_assets", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
     }
 }

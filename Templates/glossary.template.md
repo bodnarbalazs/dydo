@@ -14,7 +14,7 @@ Keep it around 15-20 terms max, don't make this an encylopedia, the rest of the 
 
 ## How to Use
 
-- Link to specific terms: `[Term](./glossary.md#term-name)`
+- Link to specific terms using the format: `[Term](./glossary.md#term-name)`
 - Terms are alphabetized
 - Each term has an anchor matching its kebab-case name
 
@@ -22,21 +22,14 @@ Keep it around 15-20 terms max, don't make this an encylopedia, the rest of the 
 
 ## Project Terms
 
-### Example Term
+_Add your project-specific terms below, alphabetized._
 
-Brief definition (1-2 sentences). Include context about when/where this concept applies.
-
-**See also:** [Related Doc](./understand/related.md)
-
----
-
-<!--
-Add terms alphabetically. Format:
+<!-- Example format:
 
 ### Term Name
 
-Definition. Context.
+Brief definition (1-2 sentences). Include context about when/where this concept applies.
 
-**See also:** [Link](./path.md) (optional)
+**See also:** Related Doc (link to relevant documentation)
 
 -->

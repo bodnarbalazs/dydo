@@ -191,6 +191,20 @@ public class FrontmatterRuleTests
         Assert.Empty(violations);
     }
 
+    [Fact]
+    public void Validate_AcceptsProjectArea()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "project",
+            Type = "hub"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
     #endregion
 
     #region Exclusions
@@ -229,6 +243,16 @@ public class FrontmatterRuleTests
     public void Validate_SkipsFilesOffLimitsInSubfolder()
     {
         var doc = CreateDocWithFrontmatter(null, "dydo/files-off-limits.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsTemplateFiles()
+    {
+        var doc = CreateDocWithFrontmatter(null, "_system/templates/mode-code-writer.template.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

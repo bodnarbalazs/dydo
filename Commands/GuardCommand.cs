@@ -2,6 +2,7 @@ namespace DynaDocs.Commands;
 
 using System.CommandLine;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 using DynaDocs.Services;
@@ -72,26 +73,23 @@ public static class GuardCommand
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
 
         // Try to read stdin JSON (hook mode) only if no CLI args provided
-        if (!hasCliArgs && Console.IsInputRedirected)
+        if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
         {
             try
             {
-                var json = Console.In.ReadToEnd();
-                if (!string.IsNullOrWhiteSpace(json))
+                var hookInput = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.HookInput);
+                if (hookInput != null)
                 {
-                    var hookInput = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.HookInput);
-                    if (hookInput != null)
-                    {
-                        filePath = hookInput.GetFilePath();
-                        action = hookInput.GetAction();
-                        toolName = hookInput.ToolName?.ToLowerInvariant();
-                        bashCommand = hookInput.GetCommand();
-                    }
+                    filePath = hookInput.GetFilePath();
+                    action = hookInput.GetAction();
+                    toolName = hookInput.ToolName?.ToLowerInvariant();
+                    bashCommand = hookInput.GetCommand();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Failed to parse JSON, fall back to CLI args
+                // Log the error for debugging - silent failures are dangerous
+                Console.Error.WriteLine($"WARNING: Failed to parse hook input: {ex.Message}");
             }
         }
 
@@ -110,17 +108,41 @@ public static class GuardCommand
 
         // ============================================================
         // SECURITY LAYER 1: Check off-limits patterns for direct file operations
+        // For read operations, certain files bypass off-limits based on staged access:
+        // - Bootstrap files: always readable (for onboarding)
+        // - Mode files: readable based on agent state (Stage 1+)
         // ============================================================
         if (!string.IsNullOrEmpty(filePath))
         {
-            var offLimitsPattern = offLimitsService.IsPathOffLimits(filePath);
-            if (offLimitsPattern != null)
+            // Get agent early for staged access checks
+            var agentForOffLimits = registry.GetCurrentAgent();
+
+            // Check if this read bypasses off-limits due to staged access
+            var bypassOffLimits = false;
+            if (action == "read")
             {
-                Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-                Console.Error.WriteLine($"  Path: {filePath}");
-                Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
-                return ExitCodes.ToolError;
+                // Bootstrap files always bypass off-limits (Stage 0+)
+                if (IsBootstrapFile(filePath))
+                    bypassOffLimits = true;
+                // Mode files for own agent bypass off-limits (Stage 1+)
+                else if (agentForOffLimits != null && IsModeFile(filePath, agentForOffLimits.Name))
+                    bypassOffLimits = true;
+                // With a role set, all mode files bypass off-limits (Stage 2)
+                else if (agentForOffLimits != null && !string.IsNullOrEmpty(agentForOffLimits.Role) && IsAnyModeFile(filePath))
+                    bypassOffLimits = true;
+            }
+
+            if (!bypassOffLimits)
+            {
+                var offLimitsPattern = offLimitsService.IsPathOffLimits(filePath);
+                if (offLimitsPattern != null)
+                {
+                    Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
+                    Console.Error.WriteLine($"  Path: {filePath}");
+                    Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+                    Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+                    return ExitCodes.ToolError;
+                }
             }
         }
 
@@ -133,13 +155,34 @@ public static class GuardCommand
         }
 
         // ============================================================
-        // SECURITY LAYER 3: Role-based permissions for write operations
+        // SECURITY LAYER 3: Staged access control
         // ============================================================
 
-        // For Read operations, only off-limits check applies (done above)
-        // Role permissions only restrict writes, not reads
+        // Get current agent (may be null if not claimed)
+        var agent = registry.GetCurrentAgent();
+
+        // For Read operations, apply staged access control
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
         {
+            if (!IsReadAllowed(filePath, agent))
+            {
+                Console.Error.WriteLine("BLOCKED: Read access denied.");
+                if (agent == null)
+                {
+                    Console.Error.WriteLine("  No agent identity assigned to this process.");
+                    Console.Error.WriteLine("  Read your workflow.md to learn how to onboard:");
+                    Console.Error.WriteLine("    dydo/agents/*/workflow.md");
+                    Console.Error.WriteLine("  Then run: dydo agent claim auto");
+                }
+                else if (string.IsNullOrEmpty(agent.Role))
+                {
+                    Console.Error.WriteLine($"  Agent {agent.Name} has no role set.");
+                    Console.Error.WriteLine("  Read your mode files to understand available roles:");
+                    Console.Error.WriteLine($"    dydo/agents/{agent.Name}/modes/*.md");
+                    Console.Error.WriteLine("  Then run: dydo agent role <role>");
+                }
+                return ExitCodes.ToolError;
+            }
             return ExitCodes.Success;
         }
 
@@ -150,25 +193,20 @@ public static class GuardCommand
             return ExitCodes.Success;
         }
 
-        // Check if there's an agent claimed
-        var agent = registry.GetCurrentAgent();
+        // Check if there's an agent claimed (required for writes)
         if (agent == null)
         {
-            // No agent claimed - warn but allow in non-strict mode
-            // This allows dydo to be used in projects without full workflow setup
-            Console.Error.WriteLine("WARNING: No agent identity assigned to this process.");
+            Console.Error.WriteLine("BLOCKED: No agent identity assigned to this process.");
             Console.Error.WriteLine("  Run 'dydo agent claim auto' to claim an agent identity.");
-            Console.Error.WriteLine("  Allowing operation (no strict enforcement).");
-            return ExitCodes.Success;
+            return ExitCodes.ToolError;
         }
 
-        // Check if agent has a role
+        // Check if agent has a role (required for writes)
         if (string.IsNullOrEmpty(agent.Role))
         {
-            Console.Error.WriteLine($"WARNING: Agent {agent.Name} has no role set.");
+            Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
             Console.Error.WriteLine("  Run 'dydo agent role <role>' to set your role.");
-            Console.Error.WriteLine("  Allowing operation (no strict enforcement).");
-            return ExitCodes.Success;
+            return ExitCodes.ToolError;
         }
 
         // Check role permissions for write operations
@@ -274,5 +312,119 @@ public static class GuardCommand
         if (command.Length <= maxLength)
             return command;
         return command[..maxLength] + "...";
+    }
+
+    /// <summary>
+    /// Try to read JSON from stdin using a reliable detection method.
+    /// Uses Console.KeyAvailable which throws InvalidOperationException when stdin is redirected.
+    /// This is more reliable than Console.IsInputRedirected on Windows.
+    /// </summary>
+    private static bool TryReadStdinJson(out string? json)
+    {
+        json = null;
+        try
+        {
+            // KeyAvailable throws InvalidOperationException when stdin is redirected
+            // This is more reliable than Console.IsInputRedirected on Windows
+            _ = Console.KeyAvailable;
+            return false; // Not redirected, no stdin to read
+        }
+        catch (InvalidOperationException)
+        {
+            // Stdin is redirected, read it
+            json = Console.In.ReadToEnd();
+            return !string.IsNullOrWhiteSpace(json);
+        }
+    }
+
+    /// <summary>
+    /// Check if a read operation is allowed based on staged access control.
+    /// Stage 0 (no identity): Only bootstrap files (root files, index.md, workflow.md)
+    /// Stage 1 (identity, no role): + mode files for claimed agent
+    /// Stage 2 (identity + role): All reads allowed (RBAC only restricts writes)
+    /// </summary>
+    private static bool IsReadAllowed(string? filePath, AgentState? agent)
+    {
+        // No path = allow (might be a non-file operation)
+        if (string.IsNullOrEmpty(filePath))
+            return true;
+
+        // Stage 0: Bootstrap files are always allowed
+        if (IsBootstrapFile(filePath))
+            return true;
+
+        // No identity = only bootstrap files
+        if (agent == null)
+            return false;
+
+        // Stage 1: Identity claimed - unlock mode files for this agent
+        if (IsModeFile(filePath, agent.Name))
+            return true;
+
+        // No role = only bootstrap + mode files
+        if (string.IsNullOrEmpty(agent.Role))
+            return false;
+
+        // Stage 2: Role set - all reads allowed (RBAC only restricts writes per spec)
+        // Note: Off-limits check already happened before this point
+        return true;
+    }
+
+    /// <summary>
+    /// Check if a file is a bootstrap file that can be read without identity.
+    /// Bootstrap files: root-level files, dydo/index.md, dydo/agents/*/workflow.md
+    /// </summary>
+    private static bool IsBootstrapFile(string filePath)
+    {
+        // Normalize path separators for consistent matching
+        var normalizedPath = filePath.Replace('\\', '/');
+
+        // Root level files (no directory separator, or just the filename)
+        // Check if there's no slash, or if it's just a simple filename
+        var lastSlash = normalizedPath.LastIndexOf('/');
+        if (lastSlash == -1)
+            return true; // No directory component = root file
+
+        // Check for paths that end with just a filename (relative from project root)
+        var pathParts = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (pathParts.Length == 1)
+            return true; // Single component = root file
+
+        // dydo/index.md
+        if (normalizedPath.EndsWith("dydo/index.md", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // dydo/agents/*/workflow.md
+        if (Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Check if a file is a mode file for the specified agent.
+    /// Mode files: dydo/agents/{agentName}/modes/*.md
+    /// </summary>
+    private static bool IsModeFile(string filePath, string agentName)
+    {
+        // Normalize path separators for consistent matching
+        var normalizedPath = filePath.Replace('\\', '/');
+
+        // dydo/agents/{agentName}/modes/*.md
+        var pattern = $@"dydo/agents/{Regex.Escape(agentName)}/modes/[^/]+\.md$";
+        return Regex.IsMatch(normalizedPath, pattern, RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Check if a file is any agent's mode file.
+    /// Mode files: dydo/agents/*/modes/*.md
+    /// </summary>
+    private static bool IsAnyModeFile(string filePath)
+    {
+        // Normalize path separators for consistent matching
+        var normalizedPath = filePath.Replace('\\', '/');
+
+        // dydo/agents/*/modes/*.md
+        return Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/modes/[^/]+\.md$", RegexOptions.IgnoreCase);
     }
 }

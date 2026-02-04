@@ -18,6 +18,18 @@ public class HubFilesRule : RuleBase
             yield break;
         }
 
+        // Skip system folders - no hub files required
+        if (relativeFolderPath.StartsWith("_system", StringComparison.OrdinalIgnoreCase))
+        {
+            yield break;
+        }
+
+        // Skip agent workspace folders - managed separately
+        if (relativeFolderPath.StartsWith("agents", StringComparison.OrdinalIgnoreCase))
+        {
+            yield break;
+        }
+
         var docsInFolder = allDocs.Where(d =>
         {
             var docDir = Path.GetDirectoryName(d.RelativePath) ?? "";

@@ -1072,6 +1072,49 @@ public static class TemplateGenerator
     }
 
     /// <summary>
+    /// Generate the glossary.md reference document.
+    /// Reads from glossary.template.md if available.
+    /// </summary>
+    public static string GenerateGlossaryMd()
+    {
+        try
+        {
+            return ReadTemplate("glossary.template.md");
+        }
+        catch (FileNotFoundException)
+        {
+            return """
+                ---
+                area: general
+                type: reference
+                ---
+
+                # Glossary
+
+                Definitions of domain-specific terms used throughout this project.
+
+                ---
+
+                ## Project Terms
+
+                ### Example Term
+
+                Brief definition. Include context about when/where this concept applies.
+
+                ---
+
+                <!--
+                Add terms alphabetically. Format:
+
+                ### Term Name
+
+                Definition. Context.
+                -->
+                """;
+        }
+    }
+
+    /// <summary>
     /// Generate the about-dynadocs.md reference document.
     /// Reads from about-dynadocs.template.md if available.
     /// </summary>

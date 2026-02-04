@@ -202,6 +202,11 @@ public class OffLimitsService : IOffLimitsService
             if (string.IsNullOrWhiteSpace(patternCandidate) || patternCandidate.StartsWith('#'))
                 continue;
 
+            // Skip list items that don't look like file patterns (descriptive text)
+            // Only applies to list items outside code blocks
+            if (!inCodeBlock && !LooksLikePattern(patternCandidate))
+                continue;
+
             // Handle inline comments
             var commentIndex = patternCandidate.IndexOf(" #", StringComparison.Ordinal);
             if (commentIndex > 0)
@@ -242,6 +247,27 @@ public class OffLimitsService : IOffLimitsService
     private static bool ContainsWildcard(string pattern)
     {
         return pattern.Contains('*') || pattern.Contains('?');
+    }
+
+    /// <summary>
+    /// Check if text looks like a file pattern rather than descriptive text.
+    /// Patterns typically contain: path separators, wildcards, dots (extensions), or start with special chars.
+    /// </summary>
+    private static bool LooksLikePattern(string text)
+    {
+        // If text contains multiple spaces, it's likely a descriptive sentence, not a pattern
+        // e.g., "Glob patterns supported: `*` matches within directory"
+        var spaceCount = text.Count(c => c == ' ');
+        if (spaceCount >= 2)
+            return false;
+
+        // Patterns contain: path separators, wildcards, or look like filenames
+        return text.Contains('/') ||
+               text.Contains('\\') ||
+               text.Contains('*') ||
+               text.Contains('?') ||
+               text.StartsWith('.') ||  // .env, .gitignore, etc.
+               (text.Contains('.') && !text.Contains(' '));  // file.ext but not "a sentence."
     }
 
     /// <summary>

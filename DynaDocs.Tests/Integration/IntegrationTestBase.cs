@@ -19,6 +19,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly string? _originalHuman;
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
+    private readonly TextReader _originalIn;
 
     protected IntegrationTestBase()
     {
@@ -31,6 +32,7 @@ public abstract class IntegrationTestBase : IDisposable
         _originalHuman = Environment.GetEnvironmentVariable("DYDO_HUMAN");
         _originalOut = Console.Out;
         _originalErr = Console.Error;
+        _originalIn = Console.In;
 
         // Set working directory to test dir
         Environment.CurrentDirectory = TestDir;
@@ -43,6 +45,7 @@ public abstract class IntegrationTestBase : IDisposable
         Environment.SetEnvironmentVariable("DYDO_HUMAN", _originalHuman);
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
+        Console.SetIn(_originalIn);
 
         // Clean up test directory
         if (Directory.Exists(TestDir))
@@ -200,6 +203,33 @@ public abstract class IntegrationTestBase : IDisposable
     {
         var command = GuardCommand.Create();
         return await RunAsync(command, "--action", action, "--path", path);
+    }
+
+    /// <summary>
+    /// Run guard command with JSON piped to stdin (simulates Claude Code hook).
+    /// </summary>
+    protected async Task<CommandResult> GuardWithStdinAsync(string json)
+    {
+        var command = GuardCommand.Create();
+        var stdoutWriter = new StringWriter();
+        var stderrWriter = new StringWriter();
+        var stdinReader = new StringReader(json);
+
+        Console.SetOut(stdoutWriter);
+        Console.SetError(stderrWriter);
+        Console.SetIn(stdinReader);
+
+        try
+        {
+            var exitCode = await command.Parse(Array.Empty<string>()).InvokeAsync();
+            return new CommandResult(exitCode, stdoutWriter.ToString(), stderrWriter.ToString());
+        }
+        finally
+        {
+            Console.SetOut(_originalOut);
+            Console.SetError(_originalErr);
+            Console.SetIn(_originalIn);
+        }
     }
 
     /// <summary>

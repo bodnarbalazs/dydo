@@ -5,44 +5,81 @@ using DynaDocs.Utils;
 
 public class OrphanDocsRule : RuleBase
 {
-    // Cache to avoid recomputing reachable docs for every document (O(n²) → O(n))
-    private HashSet<string>? _cachedReachableDocs;
+    // Cache per-folder reachable docs to avoid recomputing for every document
+    private Dictionary<string, HashSet<string>>? _cachedReachableDocsByFolder;
     private List<DocFile>? _cachedAllDocs;
     private string? _cachedBasePath;
 
+    private static readonly string[] MainDocFolders = ["guides", "project", "reference", "understand"];
+
     public override string Name => "OrphanDocs";
-    public override string Description => "Every doc should be reachable from index.md";
+    public override string Description => "Every doc in main folders must be reachable from its folder's _index.md";
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
-        if (doc.IsIndexFile) yield break;
+        // Skip index and hub files
+        if (doc.IsIndexFile || doc.IsHubFile) yield break;
 
-        var indexDoc = allDocs.FirstOrDefault(d => d.IsIndexFile);
-        if (indexDoc == null) yield break;
+        // Only check files in the four main documentation folders
+        var mainFolder = GetMainFolder(doc.RelativePath);
+        if (mainFolder == null) yield break;
 
-        var reachableDocs = GetCachedReachableDocs(indexDoc, allDocs, basePath);
+        // Find the hub file for this main folder
+        var hubPath = mainFolder + "/_index.md";
+        var hubDoc = allDocs.FirstOrDefault(d =>
+            PathUtils.NormalizePath(d.RelativePath).Equals(hubPath, StringComparison.OrdinalIgnoreCase));
+
+        // No hub file = can't validate (HubFilesRule will catch this)
+        if (hubDoc == null) yield break;
+
+        var reachableDocs = GetCachedReachableDocsForFolder(mainFolder, hubDoc, allDocs, basePath);
 
         if (!reachableDocs.Contains(doc.RelativePath, StringComparer.OrdinalIgnoreCase))
         {
-            yield return CreateWarning(doc, "Orphan doc: not reachable from index.md");
+            yield return CreateWarning(doc, $"Orphan doc: not reachable from {hubPath}");
         }
     }
 
-    private HashSet<string> GetCachedReachableDocs(DocFile indexDoc, List<DocFile> allDocs, string basePath)
+    /// <summary>
+    /// Get the main documentation folder from a relative path.
+    /// Returns null if the file is not in one of the four main folders.
+    /// </summary>
+    private static string? GetMainFolder(string relativePath)
     {
-        // Use referential equality for cache key - same list instance means same validation run
-        if (_cachedReachableDocs != null &&
-            ReferenceEquals(_cachedAllDocs, allDocs) &&
-            _cachedBasePath == basePath)
+        var normalized = PathUtils.NormalizePath(relativePath);
+        foreach (var folder in MainDocFolders)
         {
-            return _cachedReachableDocs;
+            if (normalized.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase))
+                return folder;
+        }
+        return null;
+    }
+
+    private HashSet<string> GetCachedReachableDocsForFolder(
+        string mainFolder,
+        DocFile hubDoc,
+        List<DocFile> allDocs,
+        string basePath)
+    {
+        // Initialize cache if needed or if context changed
+        if (_cachedReachableDocsByFolder == null ||
+            !ReferenceEquals(_cachedAllDocs, allDocs) ||
+            _cachedBasePath != basePath)
+        {
+            _cachedReachableDocsByFolder = new Dictionary<string, HashSet<string>>(
+                StringComparer.OrdinalIgnoreCase);
+            _cachedAllDocs = allDocs;
+            _cachedBasePath = basePath;
         }
 
-        _cachedReachableDocs = FindReachableDocs(indexDoc, allDocs, basePath);
-        _cachedAllDocs = allDocs;
-        _cachedBasePath = basePath;
+        // Check cache for this folder
+        if (!_cachedReachableDocsByFolder.TryGetValue(mainFolder, out var reachableDocs))
+        {
+            reachableDocs = FindReachableDocs(hubDoc, allDocs, basePath);
+            _cachedReachableDocsByFolder[mainFolder] = reachableDocs;
+        }
 
-        return _cachedReachableDocs;
+        return reachableDocs;
     }
 
     private static HashSet<string> FindReachableDocs(DocFile startDoc, List<DocFile> allDocs, string basePath)

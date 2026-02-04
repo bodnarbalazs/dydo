@@ -18,6 +18,12 @@ public class FrontmatterRule : RuleBase
             yield break;
         }
 
+        // Skip template files - they use a different frontmatter schema (agent/mode/type:workflow)
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+        {
+            yield break;
+        }
+
         // Skip files-off-limits.md which uses type: config
         if (doc.FileName.Equals("files-off-limits.md", StringComparison.OrdinalIgnoreCase))
         {

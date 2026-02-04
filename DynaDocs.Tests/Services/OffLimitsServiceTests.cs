@@ -150,6 +150,36 @@ public class OffLimitsServiceTests : IDisposable
     }
 
     [Fact]
+    public void LoadPatterns_SkipsDescriptiveListItems()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            # Files Off-Limits
+
+            ## Syntax
+
+            - Patterns are listed in the code block below
+            - Lines starting with `#` are comments
+            - Glob patterns supported: `*` matches within directory
+
+            ## Patterns
+
+            ```
+            .env
+            secrets.json
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        Assert.Equal(2, service.Patterns.Count);
+        Assert.Contains(".env", service.Patterns);
+        Assert.Contains("secrets.json", service.Patterns);
+        Assert.DoesNotContain(service.Patterns, p => p.Contains("Patterns are listed"));
+        Assert.DoesNotContain(service.Patterns, p => p.Contains("Lines starting"));
+    }
+
+    [Fact]
     public void LoadPatterns_ReturnsEmptyWhenFileNotExists()
     {
         var service = new OffLimitsService();

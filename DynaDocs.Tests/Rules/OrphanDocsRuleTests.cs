@@ -122,6 +122,46 @@ public class OrphanDocsRuleTests
         Assert.Single(violations); // Still orphan because external link doesn't count
     }
 
+    #region Exclusions
+
+    [Fact]
+    public void Validate_SkipsTemplateFiles()
+    {
+        var index = CreateDoc("index.md", linksTo: []);
+        var template = CreateDoc("_system/templates/agent-workflow.template.md");
+        var allDocs = new List<DocFile> { index, template };
+
+        var violations = _rule.Validate(template, allDocs, BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsAgentWorkspaceFiles()
+    {
+        var index = CreateDoc("index.md", linksTo: []);
+        var agentDoc = CreateDoc("agents/Adele/workflow.md");
+        var allDocs = new List<DocFile> { index, agentDoc };
+
+        var violations = _rule.Validate(agentDoc, allDocs, BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsAgentModeFiles()
+    {
+        var index = CreateDoc("index.md", linksTo: []);
+        var modeDoc = CreateDoc("agents/Adele/modes/code-writer.md");
+        var allDocs = new List<DocFile> { index, modeDoc };
+
+        var violations = _rule.Validate(modeDoc, allDocs, BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
     private static DocFile CreateDoc(string relativePath, string[]? linksTo = null)
     {
         var links = (linksTo ?? []).Select(t => new LinkInfo(

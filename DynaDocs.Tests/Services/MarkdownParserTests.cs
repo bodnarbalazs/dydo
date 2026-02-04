@@ -125,6 +125,69 @@ public class MarkdownParserTests
     }
 
     [Fact]
+    public void ExtractLinks_SkipsLinksInCodeBlocks()
+    {
+        var content = """
+            Real link: [Guide](./guide.md)
+
+            ```markdown
+            Example: [Example](./example.md)
+            ```
+
+            Another real link: [Reference](./reference.md)
+            """;
+
+        var links = _parser.ExtractLinks(content);
+
+        Assert.Equal(2, links.Count);
+        Assert.Equal("./guide.md", links[0].Target);
+        Assert.Equal("./reference.md", links[1].Target);
+        Assert.DoesNotContain(links, l => l.Target == "./example.md");
+    }
+
+    [Fact]
+    public void ExtractLinks_SkipsLinksInInlineCode()
+    {
+        var content = """
+            Use format: `[Link Text](./path.md)`
+
+            Real link: [Real](./real.md)
+            """;
+
+        var links = _parser.ExtractLinks(content);
+
+        Assert.Single(links);
+        Assert.Equal("./real.md", links[0].Target);
+    }
+
+    [Fact]
+    public void ExtractLinks_HandlesMultipleCodeBlocks()
+    {
+        var content = """
+            [Before](./before.md)
+
+            ```
+            [Inside1](./inside1.md)
+            ```
+
+            [Middle](./middle.md)
+
+            ```bash
+            [Inside2](./inside2.md)
+            ```
+
+            [After](./after.md)
+            """;
+
+        var links = _parser.ExtractLinks(content);
+
+        Assert.Equal(3, links.Count);
+        Assert.Equal("./before.md", links[0].Target);
+        Assert.Equal("./middle.md", links[1].Target);
+        Assert.Equal("./after.md", links[2].Target);
+    }
+
+    [Fact]
     public void ExtractTitle_FindsFirstHeading()
     {
         var content = """

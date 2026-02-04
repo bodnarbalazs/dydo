@@ -53,12 +53,23 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_ReportsIssues_WhenPresent()
     {
-        // Init creates docs with known validation issues (broken links, etc.)
         await InitProjectAsync("none", "balazs", 3);
+
+        // Create a doc with a broken link to trigger an error
+        WriteFile("dydo/guides/test-broken.md", """
+            ---
+            area: guides
+            type: guide
+            ---
+
+            # Test
+
+            This has a [broken link](./does-not-exist.md).
+            """);
 
         var result = await CheckAsync();
 
-        // Should find the broken links in templates
+        // Should find the broken link
         result.AssertExitCode(1);
         result.AssertStdoutContains("Found");
         result.AssertStdoutContains("errors");
@@ -369,6 +380,99 @@ public class DocumentationTests : IntegrationTestBase
         Assert.Contains("[Actual Guide]", hubContent);
         Assert.DoesNotContain("[Tutorials Index]", hubContent);
     }
+
+    #region Fix Exclusions
+
+    [Fact]
+    public async Task Fix_DoesNotRenameTemplateFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Template files have .template.md suffix which isn't kebab-case
+        // Verify they exist and aren't renamed
+        AssertFileExists("dydo/_system/templates/agent-workflow.template.md");
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        // Template file should still exist with original name
+        AssertFileExists("dydo/_system/templates/agent-workflow.template.md");
+        Assert.DoesNotContain("agent-workflow.template.md", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Fix_DoesNotRenameAgentWorkspaceFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Agent folders use PascalCase names (Adele, Brian, etc.)
+        AssertDirectoryExists("dydo/agents/Adele");
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        // Agent workspace should still exist with original name
+        AssertDirectoryExists("dydo/agents/Adele");
+        AssertFileExists("dydo/agents/Adele/workflow.md");
+    }
+
+    [Fact]
+    public async Task Fix_DoesNotCreateHubFilesInAgentFolders()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Agent modes folder has files but no _index.md (by design)
+        AssertDirectoryExists("dydo/agents/Adele/modes");
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes/_index.md")));
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        // Should NOT create _index.md in agent modes folder
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes/_index.md")));
+    }
+
+    [Fact]
+    public async Task Fix_DoesNotCreateHubFilesInSystemFolders()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // _system/templates has files but no _index.md (by design)
+        AssertDirectoryExists("dydo/_system/templates");
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/templates/_index.md")));
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        // Should NOT create _index.md in _system/templates
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/templates/_index.md")));
+    }
+
+    [Fact]
+    public async Task Fix_DoesNotReportManualFixesForTemplates()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        // Should not report template files as needing frontmatter fixes
+        Assert.DoesNotContain("_system/templates", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Fix_DoesNotReportManualFixesForAgentFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await FixAsync();
+
+        result.AssertSuccess();
+        // Should not report agent workspace files as needing fixes
+        Assert.DoesNotContain("agents/Adele", result.Stdout);
+    }
+
+    #endregion
 
     #endregion
 

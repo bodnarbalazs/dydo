@@ -31,6 +31,8 @@ You maintain your project's intent, architecture, and conventions in structured 
 - **Multi-agent workflows** — Run parallel agents on different tasks
 - **Team support** — Each team member gets their own pool of agents
 - **Platform-agnostic** — Works across AI tools (Claude, Cursor, etc.) and operating systems
+- **Useful history** — Need fixing a bug caused by a change three days ago? 
+  - No problem, the agent will have a record of each finished task and the files touched.
 
 ---
 
@@ -253,6 +255,9 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo workspace check` | Verify workflow before session end |
 
 ---
+
+### Limitations
+Currently it's tested to work with Claude Code (hooks setup), but the principle should be the same for all coding agents.
 
 ## License
 

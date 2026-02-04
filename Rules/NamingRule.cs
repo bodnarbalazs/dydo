@@ -11,6 +11,16 @@ public class NamingRule : RuleBase
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
+        var normalized = PathUtils.NormalizePath(doc.RelativePath);
+
+        // Skip template files - they use .template.md naming by design
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+            yield break;
+
+        // Skip agent workspace files - agent names are PascalCase identities by design
+        if (normalized.StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
+            yield break;
+
         if (!PathUtils.IsKebabCase(doc.FileName))
         {
             var suggested = PathUtils.ToKebabCase(Path.GetFileNameWithoutExtension(doc.FileName)) + ".md";

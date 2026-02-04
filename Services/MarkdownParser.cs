@@ -45,14 +45,30 @@ public partial class MarkdownParser : IMarkdownParser
     {
         var links = new List<LinkInfo>();
         var lines = content.Split('\n');
+        var inCodeBlock = false;
 
         for (int i = 0; i < lines.Length; i++)
         {
             var line = lines[i];
             var lineNumber = i + 1;
 
+            // Track fenced code block state
+            if (line.TrimStart().StartsWith("```"))
+            {
+                inCodeBlock = !inCodeBlock;
+                continue;
+            }
+
+            // Skip links inside code blocks
+            if (inCodeBlock)
+                continue;
+
             foreach (Match match in MarkdownLinkRegex().Matches(line))
             {
+                // Skip links inside inline code (backticks)
+                if (IsInsideInlineCode(line, match.Index))
+                    continue;
+
                 var target = match.Groups[2].Value;
                 var (path, anchor) = SplitAnchor(target);
 
@@ -214,6 +230,21 @@ public partial class MarkdownParser : IMarkdownParser
         var anchorIndex = target.IndexOf('#');
         if (anchorIndex == -1) return (target, null);
         return (target[..anchorIndex], target[(anchorIndex + 1)..]);
+    }
+
+    /// <summary>
+    /// Check if a position in a line is inside inline code (backticks).
+    /// Counts backticks before the position - odd count means inside code.
+    /// </summary>
+    private static bool IsInsideInlineCode(string line, int position)
+    {
+        var backtickCount = 0;
+        for (int i = 0; i < position && i < line.Length; i++)
+        {
+            if (line[i] == '`')
+                backtickCount++;
+        }
+        return backtickCount % 2 == 1;
     }
 
     [GeneratedRegex(@"\[([^\]]+)\]\(([^)]+)\)")]

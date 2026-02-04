@@ -138,6 +138,51 @@ public class NamingRuleTests
 
     #endregion
 
+    #region Exclusions
+
+    [Fact]
+    public void Validate_SkipsTemplateFiles()
+    {
+        var doc = CreateDoc("agent-workflow.template.md", "_system/templates/agent-workflow.template.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsAgentWorkspaceFiles()
+    {
+        var doc = CreateDoc("workflow.md", "agents/Adele/workflow.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsPascalCaseAgentFolders()
+    {
+        var doc = CreateDoc("code-writer.md", "agents/Adele/modes/code-writer.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_DoesNotSkipNonAgentPascalCaseFolders()
+    {
+        var doc = CreateDoc("test.md", "BadFolder/test.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("BadFolder", violations[0].Message);
+    }
+
+    #endregion
+
     private static DocFile CreateDoc(string fileName, string relativePath = "")
     {
         if (string.IsNullOrEmpty(relativePath))

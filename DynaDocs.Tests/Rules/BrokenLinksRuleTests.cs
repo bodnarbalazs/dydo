@@ -125,6 +125,21 @@ public class BrokenLinksRuleTests
         Assert.Equal(2, violations.Count);
     }
 
+    #region Exclusions
+
+    [Fact]
+    public void Validate_SkipsTemplateFiles()
+    {
+        var source = CreateDoc("_system/templates/mode-code-writer.template.md",
+            links: [CreateLink("../../../understand/about.md", LinkType.Markdown)]);
+
+        var violations = _rule.Validate(source, [source], BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
     private static DocFile CreateDoc(string relativePath, List<LinkInfo>? links = null, List<string>? anchors = null)
     {
         var fullPath = Path.GetFullPath(Path.Combine(BasePath, relativePath));

@@ -22,7 +22,7 @@
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>dydo</ToolCommandName>
-        <PackageId>DynaDocs</PackageId>
+        <PackageId>dydo</PackageId>
 
         <!-- Native AOT publishing -->
         <PublishAot>true</PublishAot>

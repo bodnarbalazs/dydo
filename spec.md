@@ -300,6 +300,8 @@ The command auto-detects which mode based on whether stdin has data.
 - Exit code: `0`
 - Stdout: (silent - no output)
 
+*Why silent?* The guard runs on every file operation. Any output would accumulate and rot the agent's context over a session. Agents needing orientation should use `dydo whoami`.
+
 **Block action:**
 - Exit code: `2`
 - Stderr: Error message explaining why blocked

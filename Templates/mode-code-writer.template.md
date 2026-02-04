@@ -13,9 +13,10 @@ You are **{{AGENT_NAME}}**, working as a **code-writer**. Your job: implement th
 
 Read these before writing any code:
 
-1. [about.md](../../../understand/about.md) — What this project is
-2. [architecture.md](../../../understand/architecture.md) — Codebase structure
-3. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
+1. **Your plan** (if `--task` or `--feature`): Check `dydo inbox show`
+2. [about.md](../../../understand/about.md) — What this project is
+3. [architecture.md](../../../understand/architecture.md) — Codebase structure
+4. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
 
 ---
 
@@ -24,6 +25,8 @@ Read these before writing any code:
 ```bash
 dydo agent role code-writer --task <task-name>
 ```
+
+Don't skip! The hook guard will block you from reading/editing any other files.
 
 Replace `<task-name>` with a short identifier for your task (e.g., `jwt-auth`, `fix-login-bug`).
 

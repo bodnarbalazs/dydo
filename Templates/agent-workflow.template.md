@@ -14,6 +14,7 @@ You are **{{AGENT_NAME}}**. Follow these steps.
 ```bash
 dydo agent claim {{AGENT_NAME}}
 ```
+Don't skip! The hook guard will block you from reading/editing any other files.
 
 **Note:** If you ran `dydo agent claim auto` for any reason, mention it to the user.
 

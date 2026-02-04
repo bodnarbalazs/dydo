@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -141,16 +140,17 @@ public static class FixCommand
                 // Check for existing hub
                 var existingHub = docsInFolder.FirstOrDefault(d => d.FileName == "_index.md");
 
-                // Get content docs and subfolder hubs
-                var contentDocs = docsInFolder.Where(d => !d.IsHubFile && !d.IsIndexFile).ToList();
+                // Get content docs and subfolder hubs (exclude hub, index, and meta files)
+                var contentDocs = docsInFolder.Where(d =>
+                    !d.IsHubFile && !d.IsIndexFile && !d.FileName.StartsWith("_")).ToList();
                 var subfolderHubs = GetSubfolderHubs(folder, docs, basePath, generatedHubs);
 
                 // Skip if no docs, no subfolders, AND no existing hub to regenerate
                 if (contentDocs.Count == 0 && !subfolderHubs.Any() && existingHub == null) continue;
 
-                // Generate the full hub content
+                // Generate the full hub content using shared HubGenerator
                 var hubPath = Path.Combine(folder, "_index.md");
-                var newContent = GenerateFullHub(relativeFolderPath, docsInFolder, subfolderHubs, docs);
+                var newContent = HubGenerator.GenerateHub(relativeFolderPath, contentDocs, subfolderHubs, docs);
 
                 // Track this hub for parent folder detection
                 generatedHubs[relativeFolderPath] = newContent;
@@ -258,45 +258,6 @@ public static class FixCommand
     }
 
     /// <summary>
-    /// Generates a complete hub file with auto-generated comment, frontmatter, contents, and subfolders.
-    /// </summary>
-    private static string GenerateFullHub(
-        string relativeFolderPath,
-        IEnumerable<DocFile> docsInFolder,
-        IEnumerable<DocFile> subfolderHubs,
-        List<DocFile> allDocs)
-    {
-        var folderName = Path.GetFileName(relativeFolderPath);
-        var title = ToTitleCase(folderName);
-        var area = GetAreaForFolder(relativeFolderPath);
-
-        var sb = new StringBuilder();
-        sb.AppendLine("---");
-        sb.AppendLine($"area: {area}");
-        sb.AppendLine("type: hub");
-        sb.AppendLine("---");
-        sb.AppendLine();
-        sb.AppendLine(AutoGenComment);
-        sb.AppendLine();
-        sb.AppendLine($"# {title}");
-        sb.AppendLine();
-        sb.AppendLine("## Contents");
-        sb.AppendLine();
-        sb.AppendLine(GenerateDocumentLinks(docsInFolder));
-
-        var subfolders = subfolderHubs.ToList();
-        if (subfolders.Count > 0)
-        {
-            sb.AppendLine();
-            sb.AppendLine("## Subfolders");
-            sb.AppendLine();
-            sb.AppendLine(GenerateSubfolderLinks(subfolders, relativeFolderPath, allDocs));
-        }
-
-        return sb.ToString().TrimEnd() + "\n";
-    }
-
-    /// <summary>
     /// Finds _index.md files in immediate child directories.
     /// Checks both existing docs and newly generated hubs.
     /// </summary>
@@ -355,57 +316,6 @@ public static class FixCommand
     }
 
     /// <summary>
-    /// Generates markdown links for subfolder hub files.
-    /// Uses meta file summary if available, otherwise falls back to hub summary.
-    /// </summary>
-    private static string GenerateSubfolderLinks(IEnumerable<DocFile> subfolderHubs, string parentFolderPath, List<DocFile> allDocs)
-    {
-        var hubs = subfolderHubs
-            .OrderBy(d => d.RelativePath, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (hubs.Count == 0)
-            return "*No subfolders.*";
-
-        var sb = new StringBuilder();
-        foreach (var hub in hubs)
-        {
-            var hubDir = Path.GetDirectoryName(hub.RelativePath) ?? "";
-            var folderName = Path.GetFileName(hubDir);
-            var displayText = ToTitleCase(folderName);
-            var relativePath = "./" + folderName + "/_index.md";
-
-            // Try to find meta file for description
-            var metaFileName = $"_{folderName}.md";
-            var metaFile = allDocs.FirstOrDefault(d =>
-                d.FileName == metaFileName &&
-                PathUtils.NormalizePath(Path.GetDirectoryName(d.RelativePath) ?? "")
-                    .Equals(PathUtils.NormalizePath(hubDir), StringComparison.OrdinalIgnoreCase));
-
-            var description = metaFile != null
-                ? GetFirstSentence(metaFile.SummaryParagraph)
-                : GetFirstSentence(hub.SummaryParagraph);
-
-            if (!string.IsNullOrEmpty(description))
-                sb.AppendLine($"- [{displayText}]({relativePath}) - {description}");
-            else
-                sb.AppendLine($"- [{displayText}]({relativePath})");
-        }
-
-        return sb.ToString().TrimEnd();
-    }
-
-    /// <summary>
-    /// Gets the area for a folder path (uses top-level folder name).
-    /// </summary>
-    private static string GetAreaForFolder(string relativeFolderPath)
-    {
-        var normalized = PathUtils.NormalizePath(relativeFolderPath);
-        var topLevel = normalized.Split('/')[0];
-        return topLevel.ToLowerInvariant();
-    }
-
-    /// <summary>
     /// Converts kebab-case folder name to Title Case.
     /// </summary>
     private static string ToTitleCase(string folderName)
@@ -415,34 +325,6 @@ public static class FixCommand
 
         return System.Globalization.CultureInfo.CurrentCulture
             .TextInfo.ToTitleCase(folderName.Replace("-", " "));
-    }
-
-    /// <summary>
-    /// Generates markdown link entries for documents in a folder.
-    /// </summary>
-    private static string GenerateDocumentLinks(IEnumerable<DocFile> docsInFolder)
-    {
-        var contentDocs = docsInFolder
-            .Where(d => !d.IsHubFile && !d.IsIndexFile)
-            .OrderBy(d => d.Title ?? d.FileName, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (contentDocs.Count == 0)
-            return "*No documents in this folder yet.*";
-
-        var sb = new StringBuilder();
-        foreach (var doc in contentDocs)
-        {
-            var displayText = GetDisplayText(doc);
-            var description = GetFirstSentence(doc.SummaryParagraph);
-
-            if (!string.IsNullOrEmpty(description))
-                sb.AppendLine($"- [{displayText}](./{doc.FileName}) - {description}");
-            else
-                sb.AppendLine($"- [{displayText}](./{doc.FileName})");
-        }
-
-        return sb.ToString().TrimEnd();
     }
 
     /// <summary>
@@ -461,40 +343,6 @@ public static class FixCommand
 
             TODO: Describe the purpose of this folder.
             """;
-    }
-
-    private static string GetDisplayText(DocFile doc)
-    {
-        if (!string.IsNullOrEmpty(doc.Title))
-            return doc.Title;
-
-        // Convert "user-auth.md" -> "User Auth"
-        var name = Path.GetFileNameWithoutExtension(doc.FileName);
-        return System.Globalization.CultureInfo.CurrentCulture
-            .TextInfo.ToTitleCase(name.Replace("-", " "));
-    }
-
-    private static string GetFirstSentence(string? paragraph)
-    {
-        if (string.IsNullOrEmpty(paragraph))
-            return string.Empty;
-
-        var endMarkers = new[] { ". ", "! ", "? ", ".\n", "!\n", "?\n" };
-        var firstEnd = paragraph.Length;
-
-        foreach (var marker in endMarkers)
-        {
-            var idx = paragraph.IndexOf(marker, StringComparison.Ordinal);
-            if (idx >= 0 && idx < firstEnd)
-                firstEnd = idx;
-        }
-
-        var sentence = firstEnd < paragraph.Length
-            ? paragraph[..(firstEnd + 1)].Trim()
-            : paragraph.Trim();
-
-        // Truncate if too long
-        return sentence.Length > 100 ? sentence[..97] + "..." : sentence;
     }
 
     /// <summary>

@@ -440,5 +440,62 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         Assert.Contains("Custom description that should not be overwritten", content);
     }
 
+    [Fact]
+    public async Task Fix_AfterInit_PreservesProjectSubfolderMetaFiles()
+    {
+        // Arrange - Initialize a fresh project
+        var initResult = await InitProjectAsync();
+        initResult.AssertSuccess();
+
+        // Capture meta file content before fix
+        var tasksMetaBefore = ReadFile("dydo/project/tasks/_tasks.md");
+        var decisionsMetaBefore = ReadFile("dydo/project/decisions/_decisions.md");
+        var changelogMetaBefore = ReadFile("dydo/project/changelog/_changelog.md");
+        var pitfallsMetaBefore = ReadFile("dydo/project/pitfalls/_pitfalls.md");
+
+        // Act - Run fix immediately after init
+        var fixCommand = FixCommand.Create();
+        var fixResult = await RunAsync(fixCommand, DydoDir);
+
+        // Assert - Fix should succeed
+        fixResult.AssertSuccess();
+
+        // Meta files should be unchanged (not recreated by fix)
+        Assert.Equal(tasksMetaBefore, ReadFile("dydo/project/tasks/_tasks.md"));
+        Assert.Equal(decisionsMetaBefore, ReadFile("dydo/project/decisions/_decisions.md"));
+        Assert.Equal(changelogMetaBefore, ReadFile("dydo/project/changelog/_changelog.md"));
+        Assert.Equal(pitfallsMetaBefore, ReadFile("dydo/project/pitfalls/_pitfalls.md"));
+
+        // Fix should not report creating new meta files for project subfolders
+        // (they already exist from init)
+        Assert.DoesNotContain("Created project/tasks/_tasks.md", fixResult.Stdout);
+        Assert.DoesNotContain("Created project/decisions/_decisions.md", fixResult.Stdout);
+        Assert.DoesNotContain("Created project/changelog/_changelog.md", fixResult.Stdout);
+        Assert.DoesNotContain("Created project/pitfalls/_pitfalls.md", fixResult.Stdout);
+    }
+
+    [Fact]
+    public async Task Fix_AfterInit_ProducesNoChanges()
+    {
+        // Arrange - Fresh init
+        var initResult = await InitProjectAsync();
+        initResult.AssertSuccess();
+
+        // Act & Assert - Check should pass with no errors
+        var checkResult = await CheckAsync(DydoDir);
+        checkResult.AssertSuccess();
+        Assert.DoesNotContain("Found errors", checkResult.Stdout);
+
+        // Act - Run fix
+        var fixCommand = FixCommand.Create();
+        var fixResult = await RunAsync(fixCommand, DydoDir);
+
+        // Assert - Fix should succeed with no changes
+        fixResult.AssertSuccess();
+        Assert.Contains("Fixed 0 issues", fixResult.Stdout);
+        Assert.DoesNotContain("Created", fixResult.Stdout);
+        Assert.DoesNotContain("Updated", fixResult.Stdout);
+    }
+
     #endregion
 }

@@ -26,22 +26,11 @@ public class FolderScaffolder : IFolderScaffolder
     /// </summary>
     public void Scaffold(string basePath)
     {
-        // Create folder structure
+        // Create folder structure (without hubs - they'll be generated at the end)
         foreach (var folder in Folders)
         {
             var folderPath = Path.Combine(basePath, folder.Path);
             Directory.CreateDirectory(folderPath);
-
-            // Only create _index.md for main content folders (not subfolders like project/tasks or _system)
-            if (!folder.Path.Contains('/') && !folder.Path.StartsWith("_"))
-            {
-                var indexPath = Path.Combine(folderPath, "_index.md");
-                if (!File.Exists(indexPath))
-                {
-                    var content = GenerateHubContent(folder);
-                    File.WriteAllText(indexPath, content);
-                }
-            }
         }
 
         // Create agents folder (will be gitignored)
@@ -68,6 +57,12 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Create foundation documentation (must-reads)
         ScaffoldFoundationDocs(basePath);
+
+        // Create project subfolder documentation (meta files only, hubs generated below)
+        ScaffoldProjectSubfolderMetaFiles(basePath);
+
+        // Generate all hub files now that docs exist
+        GenerateHubFiles(basePath);
     }
 
     /// <summary>
@@ -75,22 +70,11 @@ public class FolderScaffolder : IFolderScaffolder
     /// </summary>
     public void Scaffold(string basePath, List<string> agentNames)
     {
-        // Create folder structure
+        // Create folder structure (without hubs - they'll be generated at the end)
         foreach (var folder in Folders)
         {
             var folderPath = Path.Combine(basePath, folder.Path);
             Directory.CreateDirectory(folderPath);
-
-            // Only create _index.md for main content folders (not subfolders or _system)
-            if (!folder.Path.Contains('/') && !folder.Path.StartsWith("_"))
-            {
-                var indexPath = Path.Combine(folderPath, "_index.md");
-                if (!File.Exists(indexPath))
-                {
-                    var content = GenerateHubContent(folder);
-                    File.WriteAllText(indexPath, content);
-                }
-            }
         }
 
         // Create agents folder
@@ -116,6 +100,12 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Create foundation documentation
         ScaffoldFoundationDocs(basePath);
+
+        // Create project subfolder documentation (meta files only, hubs generated below)
+        ScaffoldProjectSubfolderMetaFiles(basePath);
+
+        // Generate all hub files now that docs exist
+        GenerateHubFiles(basePath);
     }
 
     /// <summary>
@@ -276,6 +266,65 @@ public class FolderScaffolder : IFolderScaffolder
     }
 
     /// <summary>
+    /// Create meta files for project subfolders (tasks, decisions, changelog, pitfalls).
+    /// Hub files are generated separately by GenerateHubFiles().
+    /// </summary>
+    private void ScaffoldProjectSubfolderMetaFiles(string basePath)
+    {
+        // Tasks folder meta
+        var tasksMetaPath = Path.Combine(basePath, "project", "tasks", "_tasks.md");
+        if (!File.Exists(tasksMetaPath))
+        {
+            File.WriteAllText(tasksMetaPath, TemplateGenerator.GenerateTasksMetaMd());
+        }
+
+        // Decisions folder meta
+        var decisionsMetaPath = Path.Combine(basePath, "project", "decisions", "_decisions.md");
+        if (!File.Exists(decisionsMetaPath))
+        {
+            File.WriteAllText(decisionsMetaPath, TemplateGenerator.GenerateDecisionsMetaMd());
+        }
+
+        // Changelog folder meta
+        var changelogMetaPath = Path.Combine(basePath, "project", "changelog", "_changelog.md");
+        if (!File.Exists(changelogMetaPath))
+        {
+            File.WriteAllText(changelogMetaPath, TemplateGenerator.GenerateChangelogMetaMd());
+        }
+
+        // Pitfalls folder meta
+        var pitfallsMetaPath = Path.Combine(basePath, "project", "pitfalls", "_pitfalls.md");
+        if (!File.Exists(pitfallsMetaPath))
+        {
+            File.WriteAllText(pitfallsMetaPath, TemplateGenerator.GeneratePitfallsMetaMd());
+        }
+    }
+
+    /// <summary>
+    /// Generate hub files (_index.md) for all documentation folders.
+    /// Uses DocScanner to scan existing docs and HubGenerator for consistent output.
+    /// </summary>
+    private void GenerateHubFiles(string basePath)
+    {
+        var parser = new MarkdownParser();
+        var scanner = new DocScanner(parser);
+        var docs = scanner.ScanDirectory(basePath);
+
+        var hubs = HubGenerator.GenerateAllHubs(basePath, docs);
+
+        foreach (var (relativePath, content) in hubs)
+        {
+            var fullPath = Path.Combine(basePath, relativePath);
+            var directory = Path.GetDirectoryName(fullPath);
+            if (directory != null)
+            {
+                Directory.CreateDirectory(directory);
+            }
+            File.WriteAllText(fullPath, content);
+        }
+    }
+
+    /// <summary>
     /// Copy all built-in templates to _system/templates/ for project-local customization.
     /// </summary>
     private void CopyBuiltInTemplates(string basePath)
@@ -316,30 +365,4 @@ public class FolderScaffolder : IFolderScaffolder
         }
     }
 
-    private static string GenerateHubContent(FolderSpec folder)
-    {
-        var title = char.ToUpper(folder.Path[0]) + folder.Path[1..];
-
-        // Remove path prefix for subfolders
-        if (folder.Path.Contains('/'))
-        {
-            var parts = folder.Path.Split('/');
-            title = char.ToUpper(parts[^1][0]) + parts[^1][1..];
-        }
-
-        return $"""
-            ---
-            area: {folder.Area}
-            type: hub
-            ---
-
-            # {title}
-
-            {folder.Description}
-
-            ## Contents
-
-            *Add links to documents in this section.*
-            """;
-    }
 }

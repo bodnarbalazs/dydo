@@ -1210,4 +1210,222 @@ public static class TemplateGenerator
         return memoryStream.ToArray();
     }
 
+    /// <summary>
+    /// Generate a hub _index.md file for a project subfolder.
+    /// Minimal content since the meta file has the details.
+    /// </summary>
+    public static string GenerateProjectSubfolderHub(string folderName, string description)
+    {
+        var title = char.ToUpper(folderName[0]) + folderName[1..];
+
+        return $"""
+            ---
+            area: project
+            type: hub
+            ---
+
+            # {title}
+
+            {description}
+
+            ## Contents
+
+            *No documents in this folder yet.*
+            """;
+    }
+
+    /// <summary>
+    /// Generate the _tasks.md meta file describing the tasks folder.
+    /// </summary>
+    public static string GenerateTasksMetaMd()
+    {
+        return """
+            ---
+            area: project
+            type: folder-meta
+            ---
+
+            # Tasks
+
+            Task tracking for work in progress. Tasks are created by agents when starting work and updated throughout the workflow.
+
+            ## Task Lifecycle
+
+            1. **pending** - Created, work not started
+            2. **in-progress** - Work underway
+            3. **review-pending** - Ready for code review
+            4. **approved** / **rejected** - Final human decision
+
+            ## File Format
+
+            Tasks are created via `dydo task create <name>`. Each task has:
+            - Frontmatter: name, status, created, assigned, updated
+            - Progress checklist
+            - Files Changed section (critical for debugging)
+            - Review Summary
+
+            ## Organization
+
+            Tasks stay flat in this folder. Completed tasks can be archived or deleted after their changelog entry is written.
+
+            ---
+
+            ## Related
+
+            - [Changelog](../changelog/_index.md) - Where completed work is documented
+            """;
+    }
+
+    /// <summary>
+    /// Generate the _decisions.md meta file describing the decisions folder.
+    /// </summary>
+    public static string GenerateDecisionsMetaMd()
+    {
+        return """
+            ---
+            area: project
+            type: folder-meta
+            ---
+
+            # Decisions
+
+            Architecture Decision Records (ADRs) documenting significant technical choices.
+
+            ## When to Write an ADR
+
+            Write an ADR when:
+            - Choosing between technologies or libraries
+            - Establishing patterns that affect multiple files
+            - Making trade-offs with long-term consequences
+            - Changing an existing architectural approach
+
+            ## File Format
+
+            Filename: `NNN-kebab-case-title.md` (e.g., `001-clean-architecture.md`)
+
+            Required frontmatter:
+            - `type: decision`
+            - `status: proposed | accepted | deprecated | superseded`
+            - `date: YYYY-MM-DD`
+
+            See template in `_system/templates/decision.template.md`.
+
+            ## Status Values
+
+            - **proposed** - Under discussion
+            - **accepted** - Decision made, in effect
+            - **deprecated** - No longer recommended
+            - **superseded** - Replaced by another decision (link to it)
+
+            ---
+
+            ## Related
+
+            - [Pitfalls](../pitfalls/_index.md) - Known issues from past decisions
+            """;
+    }
+
+    /// <summary>
+    /// Generate the _changelog.md meta file describing the changelog folder.
+    /// </summary>
+    public static string GenerateChangelogMetaMd()
+    {
+        return """
+            ---
+            area: project
+            type: folder-meta
+            ---
+
+            # Changelog
+
+            Chronological record of completed work. Essential for debugging and understanding what changed when.
+
+            ## When to Write an Entry
+
+            Create a changelog entry when:
+            - A task is approved
+            - Significant changes are deployed
+            - Bugs are fixed
+
+            ## Folder Structure
+
+            Organize by year and date:
+            ```
+            changelog/
+            ├── 2025/
+            │   ├── 2025-01-15/
+            │   │   ├── auth-refactor.md
+            │   │   └── token-migration.md
+            │   └── 2025-01-20/
+            │       └── api-versioning.md
+            └── 2026/
+                └── ...
+            ```
+
+            ## File Format
+
+            Filename: `topic-name.md` (kebab-case)
+
+            Required sections:
+            - **Summary** - What was done and why
+            - **Files Changed** - Every file touched (critical for debugging)
+
+            See template in `_system/templates/changelog.template.md`.
+
+            ---
+
+            ## Related
+
+            - [Tasks](../tasks/_index.md) - Work in progress
+            - [Decisions](../decisions/_index.md) - Why choices were made
+            """;
+    }
+
+    /// <summary>
+    /// Generate the _pitfalls.md meta file describing the pitfalls folder.
+    /// </summary>
+    public static string GeneratePitfallsMetaMd()
+    {
+        return """
+            ---
+            area: project
+            type: folder-meta
+            ---
+
+            # Pitfalls
+
+            Known gotchas and issues that catch people repeatedly. Quick reference, not tutorials.
+
+            ## When to Document a Pitfall
+
+            Add a pitfall when:
+            - The same issue trips up multiple people
+            - A bug has a non-obvious cause
+            - Setup or configuration has hidden requirements
+            - A workaround exists for a framework limitation
+
+            ## File Format
+
+            Filename: `kebab-case-problem-name.md` (e.g., `ef-migration-conflicts.md`)
+
+            Name by the problem, not the solution:
+            - ✓ `ef-migration-conflicts.md`
+            - ✗ `how-to-fix-migrations.md`
+
+            Required sections:
+            - **Symptoms** - How do you know you hit this?
+            - **Cause** - Why does this happen?
+            - **Solution** - How to fix it
+            - **Prevention** - How to avoid it
+
+            See template in `_system/templates/pitfall.template.md`.
+
+            ---
+
+            ## Related
+
+            - [Decisions](../decisions/_index.md) - Decisions that may have caused pitfalls
+            """;
+    }
+
 }

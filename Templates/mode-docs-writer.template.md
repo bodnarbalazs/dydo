@@ -25,6 +25,8 @@ Read these to understand the documentation system:
 dydo agent role docs-writer --task <task-name>
 ```
 
+Don't skip! The hook guard will block you from reading/editing any other files.
+
 ---
 
 ## Verify

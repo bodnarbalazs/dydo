@@ -83,6 +83,56 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileContains(".gitignore", "dydo/agents/");
     }
 
+    [Fact]
+    public async Task Init_None_CreatesProjectSubfolderDocs()
+    {
+        var result = await InitProjectAsync("none", "balazs", 3);
+
+        result.AssertSuccess();
+
+        // Tasks folder - hub and meta
+        AssertFileExists("dydo/project/tasks/_index.md");
+        AssertFileExists("dydo/project/tasks/_tasks.md");
+
+        // Decisions folder - hub and meta
+        AssertFileExists("dydo/project/decisions/_index.md");
+        AssertFileExists("dydo/project/decisions/_decisions.md");
+
+        // Changelog folder - hub and meta
+        AssertFileExists("dydo/project/changelog/_index.md");
+        AssertFileExists("dydo/project/changelog/_changelog.md");
+
+        // Pitfalls folder - hub and meta
+        AssertFileExists("dydo/project/pitfalls/_index.md");
+        AssertFileExists("dydo/project/pitfalls/_pitfalls.md");
+    }
+
+    [Fact]
+    public async Task Init_None_MetaFilesHaveMeaningfulContent()
+    {
+        var result = await InitProjectAsync("none", "balazs", 3);
+
+        result.AssertSuccess();
+
+        // Tasks meta should describe task lifecycle
+        AssertFileContains("dydo/project/tasks/_tasks.md", "Task Lifecycle");
+        AssertFileContains("dydo/project/tasks/_tasks.md", "pending");
+        AssertFileContains("dydo/project/tasks/_tasks.md", "review-pending");
+
+        // Decisions meta should describe ADR format
+        AssertFileContains("dydo/project/decisions/_decisions.md", "Architecture Decision Records");
+        AssertFileContains("dydo/project/decisions/_decisions.md", "proposed");
+        AssertFileContains("dydo/project/decisions/_decisions.md", "accepted");
+
+        // Changelog meta should describe folder structure
+        AssertFileContains("dydo/project/changelog/_changelog.md", "Chronological record");
+        AssertFileContains("dydo/project/changelog/_changelog.md", "Files Changed");
+
+        // Pitfalls meta should describe naming conventions
+        AssertFileContains("dydo/project/pitfalls/_pitfalls.md", "Known gotchas");
+        AssertFileContains("dydo/project/pitfalls/_pitfalls.md", "Symptoms");
+    }
+
     #endregion
 
     #region Init Claude

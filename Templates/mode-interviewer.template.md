@@ -26,6 +26,8 @@ Read these to understand context:
 dydo agent role interviewer --task <task-name>
 ```
 
+Don't skip! The hook guard will block you from reading/editing any other files.
+
 ---
 
 ## Verify

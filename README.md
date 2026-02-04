@@ -20,7 +20,7 @@ Think of it like Groundhog Day: the AI wakes up fresh each session, but you've l
 
 You maintain your project's intent, architecture, and conventions in structured documentation. Each session, the AI follows an onboarding funnel — reading just what it needs for the current task. A CLI tool enforces roles and permissions, so the AI stays in its lane.
 
-![DynaDocs Architecture](dydo_diagram.svg)
+![DynaDocs Architecture](https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo_diagram.svg)
 
 ### What you get
 
@@ -288,4 +288,4 @@ Currently it's tested to work with Claude Code (hooks setup), but the principle 
 
 ## License
 
-MIT
+MIT — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)

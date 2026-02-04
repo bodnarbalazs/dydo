@@ -74,6 +74,8 @@ public static class CheckCommand
 
                 if (result.HasErrors)
                     hasErrors = true;
+                if (result.WarningCount > 0)
+                    hasWarnings = true;
             }
             else if (string.IsNullOrEmpty(path))
             {
@@ -218,7 +220,8 @@ public static class CheckCommand
             new HubFilesRule(),
             new FolderMetaFilesRule(),
             new OrphanDocsRule(),
-            new OffLimitsRule()
+            new OffLimitsRule(),
+            new UncustomizedDocsRule()
         ];
     }
 }

@@ -8,7 +8,7 @@ namespace DynaDocs.Tests.Integration;
 public class InitCheckIntegrationTests : IntegrationTestBase
 {
     [Fact]
-    public async Task FreshInit_PassesCheck_WithNoErrors()
+    public async Task FreshInit_PassesCheck_WithOneWarning()
     {
         // Arrange - Initialize dydo in test directory
         var initResult = await InitProjectAsync("none", "testuser", 3);
@@ -17,11 +17,10 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         // Act - Run check
         var checkResult = await CheckAsync();
 
-        // Assert - No errors (warnings are acceptable)
-        // Check command returns "All checks passed." or "Found warnings (no errors)." on success
-        Assert.True(
-            !checkResult.Stdout.Contains("Found errors"),
-            $"Expected no errors but check failed.\n\n=== STDOUT ===\n{checkResult.Stdout}\n\n=== STDERR ===\n{checkResult.Stderr}");
+        // Assert - No errors, exactly one warning about uncustomized about.md
+        Assert.DoesNotContain("Found errors", checkResult.Stdout);
+        Assert.Contains("Found warnings", checkResult.Stdout);
+        Assert.Contains("About.md is not customized", checkResult.Stdout);
     }
 
     [Fact]

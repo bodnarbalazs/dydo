@@ -25,6 +25,8 @@ Read these to understand the standards:
 dydo agent role reviewer --task <task-name>
 ```
 
+Don't skip! The hook guard will block you from reading/editing any other files.
+
 ---
 
 ## Verify
@@ -98,7 +100,7 @@ If `--to` is omitted, it goes to the original author by default.
 
 ### If This Is the Second Failed Review
 
-After 2 failed reviews on the same task, consider escalating to a fresh agent:
+After 2 consecutive failed reviews on the same task, consider escalating to a fresh agent:
 
 ```bash
 dydo dispatch --role code-writer --task <task-name> --brief "Escalating after 2 failed reviews. Issues: [...]" --escalate

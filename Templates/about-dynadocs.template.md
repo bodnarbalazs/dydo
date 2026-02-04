@@ -30,6 +30,7 @@ You maintain your project's intent, architecture, and conventions in structured 
 ### What you get
 
 - **Documentation as memory** — Your docs are the source of truth; AI re-reads them each session
+- **Self-documenting folders** — Meta files describe folder purposes; summaries appear in hub links
 - **Self-onboarding** — AI follows the funnel, no manual context-setting
 - **Role-based permissions** — Reviewer can't edit code, code-writer can't touch docs
 - **No self-review** — The agent that wrote the code cannot review it
@@ -101,11 +102,13 @@ dydo check    # Find issues
 dydo fix      # Auto-fix what's possible
 ```
 
-**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward.
+**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward. The fix command also generates missing hub files and folder meta files.
 
 ### 5. Customize the templates
 
 Edit templates in `dydo/_system/templates/` to fit your project. Changes take effect when agents are claimed.
+
+Fill out the `about.md` and modify the `coding-standards.md` to your taste.
 
 You're ready to go. For best results, keep docs up to date and accurate to match your intent. Not everything needs documenting—just what you wouldn't know from reading the code.
 
@@ -158,17 +161,41 @@ You're ready to go. For best results, keep docs up to date and accurate to match
 
 ```
 project/
-├── dydo.json                 # Configuration
-├── CLAUDE.md                 # AI entry point (or equivalent)
+├── dydo.json                    # Configuration
+├── CLAUDE.md                    # AI entry point
 └── dydo/
-    ├── index.md              # Documentation root
-    ├── _system/templates/    # Customizable templates
-    ├── understand/           # Domain concepts, architecture
-    ├── guides/               # How-to guides
-    ├── reference/            # API docs, specs
-    ├── project/              # Decisions, pitfalls, changelog
-    │   └── tasks/            # Cross-agent task handoff
-    └── agents/               # Agent workspaces (gitignored)
+    ├── index.md                 # Documentation root
+    ├── welcome.md               # Human entry point
+    ├── glossary.md              # Project glossary
+    ├── files-off-limits.md      # Security boundaries
+    │
+    ├── understand/              # Domain concepts, architecture
+    │   ├── _index.md            # Hub file (auto-generated)
+    │   ├── about.md             # Project context
+    │   └── architecture.md      # Architecture overview
+    │
+    ├── guides/                  # How-to guides
+    │   ├── _index.md            # Hub file (auto-generated)
+    │   ├── coding-standards.md  # Development standards
+    │   └── how-to-use-docs.md   # Documentation usage
+    │
+    ├── reference/               # API docs, specs
+    │   ├── _index.md            # Hub file (auto-generated)
+    │   ├── writing-docs.md      # Documentation guide
+    │   └── about-dynadocs.md    # About DynaDocs
+    │
+    ├── project/                 # Decisions, pitfalls, changelog
+    │   ├── _index.md            # Hub file (auto-generated)
+    │   ├── tasks/               # Task tracking
+    │   ├── decisions/           # ADRs
+    │   ├── changelog/           # Change history
+    │   └── pitfalls/            # Known issues
+    │
+    ├── _system/templates/       # Customizable templates
+    ├── _assets/                 # Images, diagrams
+    │   └── dydo-diagram.svg
+    └── agents/                  # Agent workspaces (gitignored)
+        └── [Adele, Brian, ...]  # Per-agent folders
 ```
 
 ---

@@ -130,4 +130,44 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         var checkResult = await CheckAsync();
         Assert.DoesNotContain("Found errors", checkResult.Stdout);
     }
+
+    [Fact]
+    public async Task Check_ReportsMissingMetaFile()
+    {
+        // Arrange
+        var initResult = await InitProjectAsync("none", "testuser", 3);
+        initResult.AssertSuccess();
+
+        // Create subfolder without meta file
+        WriteFile("dydo/guides/testing/unit-tests.md",
+            "---\narea: guides\ntype: guide\n---\n\n# Unit Tests\n\nHow to write tests.");
+
+        // Act
+        var checkResult = await CheckAsync(DydoDir);
+
+        // Assert - Should report missing meta file
+        var output = checkResult.Stdout + checkResult.Stderr;
+        Assert.Contains("_testing.md", output);
+    }
+
+    [Fact]
+    public async Task Check_AcceptsFolderWithMetaFile()
+    {
+        // Arrange
+        var initResult = await InitProjectAsync("none", "testuser", 3);
+        initResult.AssertSuccess();
+
+        // Create subfolder with meta file
+        WriteFile("dydo/guides/testing/_testing.md",
+            "---\narea: guides\ntype: folder-meta\n---\n\n# Testing\n\nTesting guides.");
+        WriteFile("dydo/guides/testing/unit-tests.md",
+            "---\narea: guides\ntype: guide\n---\n\n# Unit Tests\n\nHow to write tests.");
+
+        // Act
+        var checkResult = await CheckAsync(DydoDir);
+
+        // Assert - Should not complain about missing meta file
+        var output = checkResult.Stdout + checkResult.Stderr;
+        Assert.DoesNotContain("_testing.md", output);
+    }
 }

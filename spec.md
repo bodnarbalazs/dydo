@@ -64,6 +64,9 @@ project/
     │
     │── understand/              # ┐
     │── guides/                  # │ The "Dy" - Documentation
+    │   └── api/                 # │ Each subfolder has:
+    │       ├── _api.md          # │   - _foldername.md (meta file)
+    │       └── _index.md        # │   - _index.md (hub file)
     │── reference/               # │ (committed to git)
     │── project/                 # │
     │   ├── tasks/               # │ ← Cross-human dispatch
@@ -111,6 +114,7 @@ dydo/agents/
 | `guides/` | "How do I DO this?" | Step-by-step task instructions |
 | `reference/` | "What are the specs?" | API docs, config options, tool docs |
 | `project/` | "Why/how do we work?" | Decisions, pitfalls, changelog, tasks |
+| `*/_foldername.md` | "What is this folder for?" | Purpose description for the folder |
 
 ---
 
@@ -301,10 +305,40 @@ The command auto-detects which mode based on whether stdin has data.
 - Stderr: Error message explaining why blocked
 
 Example stderr messages:
+
+**Write blocked (no identity):**
 ```
-Agent Adele (reviewer) cannot edit src/Auth.cs. Reviewer role has no write permissions.
-Agent Frank is assigned to human 'alice', not 'balazs'. Cannot perform action.
-No agent identity assigned to this process. Run 'dydo agent claim auto' first.
+BLOCKED: No agent identity assigned to this process.
+  Run 'dydo agent claim auto' to claim an agent identity.
+```
+
+**Write blocked (no role):**
+```
+BLOCKED: Agent Adele has no role set.
+  Run 'dydo agent role <role>' to set your role.
+```
+
+**Read blocked (no identity):**
+```
+BLOCKED: Read access denied.
+  No agent identity assigned to this process.
+  Read your workflow.md to learn how to onboard:
+    dydo/agents/*/workflow.md
+  Then run: dydo agent claim auto
+```
+
+**Read blocked (no role):**
+```
+BLOCKED: Read access denied.
+  Agent Adele has no role set.
+  Read your mode files to understand available roles:
+    dydo/agents/Adele/modes/*.md
+  Then run: dydo agent role <role>
+```
+
+**Role violation:**
+```
+BLOCKED: Agent Adele (reviewer) cannot edit src/Auth.cs. Reviewer role has no write permissions.
 ```
 
 ### Claude Code Hook Configuration
@@ -316,7 +350,7 @@ When `dydo init claude` runs, it creates/updates `.claude/settings.local.json`:
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|Read|Bash",
         "hooks": [
           {
             "type": "command",
@@ -328,6 +362,40 @@ When `dydo init claude` runs, it creates/updates `.claude/settings.local.json`:
   }
 }
 ```
+
+### Staged Read Access Control
+
+The guard enforces a **staged access control** system that progressively unlocks file access as agents complete onboarding steps. This ensures agents follow the proper workflow.
+
+| Stage | Condition | Can Read | Can Write |
+|-------|-----------|----------|-----------|
+| 0 | No identity | Bootstrap files only | Nothing |
+| 1 | Identity claimed | + own mode files | Nothing |
+| 2 | Identity + role | Everything (except off-limits) | Per RBAC |
+
+**Stage 0 - Bootstrap Files (no identity required):**
+- Root-level files (`CLAUDE.md`, `.Cursorrules`, etc.)
+- `dydo/index.md`
+- `dydo/agents/*/workflow.md`
+
+These files teach the agent how to claim an identity.
+
+**Stage 1 - Mode Files (identity claimed, no role):**
+- All Stage 0 files
+- `dydo/agents/{self}/modes/*.md`
+
+Mode files explain the available roles and help the agent choose one.
+
+**Stage 2 - Full Access (identity + role):**
+- All reads allowed (except off-limits patterns)
+- Writes governed by role-based permissions (RBAC)
+
+This staged approach ensures agents must:
+1. Read workflow.md to learn the onboarding process
+2. Claim an identity with `dydo agent claim`
+3. Read mode files to understand available roles
+4. Set a role with `dydo agent role`
+5. Only then can they access project files
 
 ---
 
@@ -712,9 +780,9 @@ CLAUDE.md (project root)
 Related docs link to each other bidirectionally:
 
 ```
-teases.md ◄──────────► glossary.md#tease
+authentication.md ◄──────────► glossary.md#jwt
     │
-    └──────────────────► 001-tease-structure-decision.md
+    └──────────────────► 001-auth-strategy-decision.md
 ```
 
 ### Hub Files (`_index.md`)
@@ -805,6 +873,14 @@ Every doc must be reachable from `index.md`.
 
 **Auto-fix:** No - report as warning
 
+### Rule 8: Folder Meta Files Required
+
+Direct children of `guides/`, `project/`, `reference/`, and `understand/` must have a meta file named `_foldername.md` (e.g., `guides/api/` needs `_api.md`).
+
+**Purpose:** Provides folder descriptions used in hub links and ensures empty folders are tracked by git.
+
+**Auto-fix:** Yes - creates scaffold with placeholder content
+
 ---
 
 ## Project Structure (Tool)
@@ -860,6 +936,7 @@ DynaDocs/
 │
 ├── Rules/
 │   ├── BrokenLinksRule.cs
+│   ├── FolderMetaFilesRule.cs
 │   ├── FrontmatterRule.cs
 │   ├── HubFilesRule.cs
 │   ├── IRule.cs
@@ -1050,13 +1127,15 @@ The `task-role-history` field tracks which roles an agent has held on each task.
 DynaDocs (`dydo`) is a C# console tool that:
 
 1. **Validates** docs against naming, linking, and structure rules
-2. **Auto-fixes** what it can (renames, link conversion, skeleton hubs)
+2. **Auto-fixes** what it can (renames, link conversion, skeleton hubs, folder meta files)
 3. **Generates** index.md from doc structure
 4. **Queries** the doc graph for context gathering
 5. **Orchestrates** multi-agent workflows with role-based permissions
 6. **Supports multi-user** collaboration via agent assignments
 7. **Prevents self-review** through task role history tracking
 8. **Supports template customization** via project-local `_system/templates/`
+9. **Enforces staged access** - agents must claim identity and role before accessing files
+10. **Folder meta files** for self-documenting folder purposes
 
 ### Key Principles
 
@@ -1071,3 +1150,5 @@ DynaDocs (`dydo`) is a C# console tool that:
 9. **Kebab-case everywhere**: Consistent, parseable filenames
 10. **No self-review**: Code-writer cannot become reviewer on same task (fresh eyes validation)
 11. **Customizable templates**: Project-local `_system/templates/` overrides built-in defaults
+12. **Staged access control**: Progressive file access unlocks as agents claim identity and set role
+13. **Fail-closed security**: Guard blocks operations without identity/role (doesn't just warn)

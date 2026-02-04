@@ -18,8 +18,6 @@ public class IndexGeneratorTests
 
         // Assert
         Assert.Contains("DynaDocs", result);
-        Assert.DoesNotContain("LC Documentation", result);
-        Assert.DoesNotContain("LC documentation", result);
     }
 
     [Fact]

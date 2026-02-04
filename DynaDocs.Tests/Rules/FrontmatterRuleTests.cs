@@ -309,6 +309,24 @@ public class FrontmatterRuleTests
 
     #endregion
 
+    #region Folder Meta Type
+
+    [Fact]
+    public void Validate_AcceptsFolderMetaType()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "guides",
+            Type = "folder-meta"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
     private static DocFile CreateDocWithFrontmatter(Frontmatter? frontmatter, string relativePath = "test.md")
     {
         var fileName = Path.GetFileName(relativePath);

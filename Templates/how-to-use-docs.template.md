@@ -19,6 +19,8 @@ Navigate to what you need, when you need it. Read what's seems to be relevant an
 | `reference/` | Command reference, API specs, config | When you need exact details |
 | `project/` | Decisions, changelog, tasks, pitfalls | When you need history/context |
 
+**Subfolders:** Each subfolder has a `_foldername.md` meta file that describes its purpose. Check this first to understand what a folder contains.
+
 ---
 
 ## Document Types
@@ -46,6 +48,8 @@ Every folder has an `_index.md` — the table of contents for that area:
 | `guides/_index.md` | How-to guides |
 | `reference/_index.md` | Reference docs |
 | `project/_index.md` | Decisions, changelog, pitfalls |
+
+**Folder Meta Files:** Subfolders also have `_foldername.md` files (e.g., `guides/api/_api.md`) that describe the folder's purpose. The first sentence appears as a summary in the parent `_index.md`.
 
 ### Related Links
 

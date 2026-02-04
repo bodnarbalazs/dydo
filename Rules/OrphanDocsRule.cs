@@ -20,6 +20,9 @@ public class OrphanDocsRule : RuleBase
         // Skip index and hub files
         if (doc.IsIndexFile || doc.IsHubFile) yield break;
 
+        // Skip folder meta files (_foldername.md)
+        if (IsFolderMetaFile(doc)) yield break;
+
         // Only check files in the four main documentation folders
         var mainFolder = GetMainFolder(doc.RelativePath);
         if (mainFolder == null) yield break;
@@ -38,6 +41,22 @@ public class OrphanDocsRule : RuleBase
         {
             yield return CreateWarning(doc, $"Orphan doc: not reachable from {hubPath}");
         }
+    }
+
+    /// <summary>
+    /// Check if a file is a folder meta file (_foldername.md).
+    /// </summary>
+    private static bool IsFolderMetaFile(DocFile doc)
+    {
+        // Meta files follow pattern _foldername.md
+        if (!doc.FileName.StartsWith("_") || doc.FileName == "_index.md")
+            return false;
+
+        // Check if filename matches the folder name
+        var folderName = Path.GetFileName(Path.GetDirectoryName(doc.RelativePath) ?? "");
+        var expectedFileName = $"_{folderName}.md";
+
+        return doc.FileName.Equals(expectedFileName, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

@@ -340,7 +340,7 @@ public class DocumentationTests : IntegrationTestBase
         var result = await FixAsync();
 
         result.AssertSuccess();
-        result.AssertStdoutContains("(2 links)");
+        result.AssertStdoutContains("(2 docs,");
     }
 
     [Fact]

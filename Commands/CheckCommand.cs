@@ -216,6 +216,7 @@ public static class CheckCommand
             new SummaryRule(),
             new BrokenLinksRule(linkResolver),
             new HubFilesRule(),
+            new FolderMetaFilesRule(),
             new OrphanDocsRule(),
             new OffLimitsRule()
         ];

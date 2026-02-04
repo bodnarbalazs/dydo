@@ -48,6 +48,7 @@ type: guide
 | `decision` | Architecture Decision Record | Context → Decision → Consequences |
 | `pitfall` | Known gotcha | Problem → Symptom → Solution |
 | `changelog` | Change log entry | What changed → Why → Impact |
+| `folder-meta` | Describe a folder's purpose | Title → Summary paragraph |
 
 ---
 
@@ -56,6 +57,7 @@ type: guide
 - **Files:** `kebab-case.md` (lowercase, hyphens)
 - **Folders:** `kebab-case/` (lowercase, hyphens)
 - **Hub files:** `_index.md` in each folder
+- **Meta files:** `_foldername.md` in direct children of main folders (e.g., `guides/api/_api.md`)
 
 Examples:
 - `api-authentication.md` (correct)
@@ -77,6 +79,8 @@ A 1-3 sentence summary of what this document covers.
 ```
 
 The summary helps agents quickly determine if this doc is relevant.
+
+**Note:** For folder meta files (`_foldername.md`), the first sentence of the summary is automatically extracted and displayed in hub file links.
 
 ### Related Section
 
@@ -118,6 +122,7 @@ dydo fix                # Auto-fix what's possible
 | Summary | Title exists, summary paragraph follows |
 | Links | Relative paths, no broken links |
 | Hub Files | Each folder has `_index.md` |
+| Folder Meta Files | Direct children of main folders have `_foldername.md` |
 | Orphans | Every doc is linked from somewhere |
 
 ---

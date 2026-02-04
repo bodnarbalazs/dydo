@@ -251,6 +251,15 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
+    /// Assert file does NOT exist in test directory.
+    /// </summary>
+    protected void AssertFileNotExists(string relativePath)
+    {
+        var fullPath = Path.Combine(TestDir, relativePath);
+        Assert.False(File.Exists(fullPath), $"Expected file to NOT exist: {relativePath}");
+    }
+
+    /// <summary>
     /// Assert file contains text.
     /// </summary>
     protected void AssertFileContains(string relativePath, string expectedContent)

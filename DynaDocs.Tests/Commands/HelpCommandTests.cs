@@ -33,7 +33,7 @@ public class HelpCommandTests
 
     private static void PrintHelp()
     {
-        Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation validation and workflow tool");
+        Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation agent orchestration");
         Console.WriteLine();
         Console.WriteLine("Setup Commands:");
         Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");

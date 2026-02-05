@@ -32,7 +32,7 @@ rootCommand.Subcommands.Add(versionCommand);
 var helpCommand = new Command("help", "Display help information");
 helpCommand.SetAction(_ =>
 {
-    Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation validation and workflow tool");
+    Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation agent orchestration");
     Console.WriteLine();
     Console.WriteLine("Setup Commands:");
     Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");

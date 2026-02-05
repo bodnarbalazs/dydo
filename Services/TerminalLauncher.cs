@@ -35,7 +35,8 @@ public class TerminalLauncher
 
     public static string GetWindowsArguments(string agentName)
     {
-        return $"-Command \"claude \"\"--inbox {agentName}\"\"\"";
+        // -NoExit keeps PowerShell open after the command completes
+        return $"-NoExit -Command \"claude \"\"--inbox {agentName}\"\"\"";
     }
 
     public static string GetLinuxArguments(string terminalName, string agentName)
@@ -55,12 +56,16 @@ public class TerminalLauncher
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Process.Start(new ProcessStartInfo
+                // Try Windows Terminal first (modern), fall back to PowerShell
+                if (!TryLaunchWindowsTerminal(agentName))
                 {
-                    FileName = "powershell",
-                    Arguments = GetWindowsArguments(agentName),
-                    UseShellExecute = true
-                });
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "powershell",
+                        Arguments = GetWindowsArguments(agentName),
+                        UseShellExecute = true
+                    });
+                }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -104,5 +109,25 @@ public class TerminalLauncher
             }
         }
         return false;
+    }
+
+    private static bool TryLaunchWindowsTerminal(string agentName)
+    {
+        try
+        {
+            // Windows Terminal (wt) with new tab running PowerShell
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "wt",
+                Arguments = $"new-tab powershell {GetWindowsArguments(agentName)}",
+                UseShellExecute = true
+            });
+            return true;
+        }
+        catch
+        {
+            // Windows Terminal not available
+            return false;
+        }
     }
 }

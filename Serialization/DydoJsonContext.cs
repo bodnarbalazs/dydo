@@ -26,4 +26,8 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(HookInput))]
 [JsonSerializable(typeof(ToolInputData))]
 [JsonSerializable(typeof(AgentSession))]
+[JsonSerializable(typeof(AuditEvent))]
+[JsonSerializable(typeof(AuditSession))]
+[JsonSerializable(typeof(List<AuditEvent>))]
+[JsonSerializable(typeof(List<AuditSession>))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }

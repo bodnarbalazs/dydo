@@ -93,8 +93,9 @@ public static class InboxCommand
     private static int ExecuteShow()
     {
         var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
 
-        var agent = registry.GetCurrentAgent();
+        var agent = registry.GetCurrentAgent(sessionId);
         if (agent == null)
         {
             ConsoleOutput.WriteError("No agent identity assigned to this process.");
@@ -134,8 +135,9 @@ public static class InboxCommand
     private static int ExecuteClear(bool all, string? id)
     {
         var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
 
-        var agent = registry.GetCurrentAgent();
+        var agent = registry.GetCurrentAgent(sessionId);
         if (agent == null)
         {
             ConsoleOutput.WriteError("No agent identity assigned to this process.");

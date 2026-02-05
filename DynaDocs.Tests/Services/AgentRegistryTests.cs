@@ -107,7 +107,7 @@ public class AgentRegistryTests : IDisposable
     [Fact]
     public void SetRole_FailsWithError_WhenNoAgentClaimed()
     {
-        var result = _registry.SetRole("code-writer", null, out var error);
+        var result = _registry.SetRole(null, "code-writer", null, out var error);
 
         Assert.False(result);
         Assert.Contains("No agent identity assigned", error);
@@ -133,7 +133,7 @@ public class AgentRegistryTests : IDisposable
     {
         // This test verifies the role is in RolePermissions dictionary
         // SetRole will fail with "No agent identity assigned" but NOT "Invalid role"
-        var result = _registry.SetRole(role, null, out var error);
+        var result = _registry.SetRole(null, role, null, out var error);
 
         Assert.False(result); // Expected - no agent claimed
         Assert.Contains("No agent identity assigned", error);
@@ -150,9 +150,95 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ClaimAgent_FailsWithoutPendingSession()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.False(result);
+        Assert.Contains("session ID", error, StringComparison.OrdinalIgnoreCase);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void ClaimAgent_SucceedsWithPendingSession()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Store pending session (simulates guard interception)
+        registry.StorePendingSessionId("Adele", "test-session-123");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent failed: {error}");
+
+        // Verify session file created with session_id
+        var session = registry.GetSession("Adele");
+        Assert.NotNull(session);
+        Assert.Equal("test-session-123", session.SessionId);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void GetCurrentAgent_ReturnsNull_WhenNoSessionId()
+    {
+        Assert.Null(_registry.GetCurrentAgent(null));
+        Assert.Null(_registry.GetCurrentAgent(""));
+    }
+
+    [Fact]
+    public void GetCurrentAgent_FindsAgent_WithMatchingSessionId()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-456");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.GetCurrentAgent("test-session-456");
+
+        Assert.NotNull(result);
+        Assert.Equal("Adele", result.Name);
+    }
+
+    [Fact]
+    public void GetCurrentAgent_ReturnsNull_WhenSessionIdDoesNotMatch()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "session-aaa");
+
+        var registry = new AgentRegistry(_testDir);
+        Assert.Null(registry.GetCurrentAgent("session-bbb"));
+    }
+
+    private void CreateSessionFile(string agentName, string sessionId)
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+
+        var sessionJson = $$"""
+            {"Agent":"{{agentName}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}"}
+            """;
+        File.WriteAllText(Path.Combine(workspace, ".session"), sessionJson);
+
+        // Also create state file
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: {{agentName}}
+            status: working
+            assigned: testuser
+            ---
+            """);
+    }
+
+    [Fact]
     public void ReleaseAgent_FailsWithError_WhenNoAgentClaimed()
     {
-        var result = _registry.ReleaseAgent(out var error);
+        var result = _registry.ReleaseAgent(null, out var error);
 
         Assert.False(result);
         Assert.Contains("No agent identity assigned", error);
@@ -161,7 +247,7 @@ public class AgentRegistryTests : IDisposable
     [Fact]
     public void IsPathAllowed_FailsWithError_WhenNoAgentClaimed()
     {
-        var result = _registry.IsPathAllowed("src/file.cs", "edit", out var error);
+        var result = _registry.IsPathAllowed(null, "src/file.cs", "edit", out var error);
 
         Assert.False(result);
         Assert.Contains("No agent identity assigned", error);
@@ -546,7 +632,7 @@ public class AgentRegistryTests : IDisposable
     public void SetRole_RejectsInvalidRole_ButAcceptsValidRole(string role)
     {
         // Valid roles should fail with "No agent identity assigned", not "Invalid role"
-        var result = _registry.SetRole(role, null, out var error);
+        var result = _registry.SetRole(null, role, null, out var error);
 
         Assert.False(result);
         Assert.Contains("No agent identity assigned", error);
@@ -559,7 +645,7 @@ public class AgentRegistryTests : IDisposable
     [InlineData("superuser")]
     public void SetRole_RejectsInvalidRoles(string invalidRole)
     {
-        var result = _registry.SetRole(invalidRole, null, out var error);
+        var result = _registry.SetRole(null, invalidRole, null, out var error);
 
         Assert.False(result);
         // Should fail with invalid role error (though may also fail with no agent claimed first)
@@ -573,7 +659,7 @@ public class AgentRegistryTests : IDisposable
 
         foreach (var role in knownRoles)
         {
-            var result = _registry.SetRole(role, null, out var error);
+            var result = _registry.SetRole(null, role, null, out var error);
 
             // Should NOT say "Invalid role" for any known role
             Assert.DoesNotContain("Invalid role", error);
@@ -589,14 +675,16 @@ public class AgentRegistryTests : IDisposable
     {
         // Setup config
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         var registry = new AgentRegistry(_testDir);
 
-        // Attempt claim (will fail due to no terminal PID in test environment)
+        // Attempt claim (will fail due to no pending session)
         var result = registry.ClaimAgent("Adele", out var error);
 
         // Lock file should not exist after the attempt (cleaned up in finally)
         var lockPath = Path.Combine(_testDir, "dydo", "agents", "Adele", ".claim.lock");
         Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after claim attempt");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
     [Fact]
@@ -604,6 +692,7 @@ public class AgentRegistryTests : IDisposable
     {
         // Setup config
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
 
         // Create workspace and lock file with current process PID (simulates another claimer)
         var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
@@ -613,7 +702,11 @@ public class AgentRegistryTests : IDisposable
         var lockContent = $"{{\"Pid\":{Environment.ProcessId},\"Acquired\":\"{DateTime.UtcNow:o}\"}}";
         File.WriteAllText(lockPath, lockContent);
 
-        var registry = new AgentRegistry(_testDir);
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Store pending session
+        registry.StorePendingSessionId("Adele", "test-session");
 
         // Attempt claim
         var result = registry.ClaimAgent("Adele", out var error);
@@ -621,6 +714,7 @@ public class AgentRegistryTests : IDisposable
         Assert.False(result);
         Assert.Contains("claim in progress", error);
         Assert.Contains(Environment.ProcessId.ToString(), error);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
     [Fact]
@@ -628,6 +722,7 @@ public class AgentRegistryTests : IDisposable
     {
         // Setup config
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
 
         // Create workspace and lock file with dead PID
         var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
@@ -638,16 +733,21 @@ public class AgentRegistryTests : IDisposable
         var lockContent = $"{{\"Pid\":{stalePid},\"Acquired\":\"2024-01-01T00:00:00Z\"}}";
         File.WriteAllText(lockPath, lockContent);
 
-        var registry = new AgentRegistry(_testDir);
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
 
-        // Attempt claim - should proceed past lock (though may fail later due to no terminal PID)
+        // Store pending session
+        registry.StorePendingSessionId("Adele", "test-session");
+
+        // Attempt claim - should proceed past lock and succeed
         var result = registry.ClaimAgent("Adele", out var error);
 
-        // The important thing is it didn't fail with "claim in progress" error
-        Assert.DoesNotContain("claim in progress", error);
+        // Should succeed since we have pending session and stale lock is removed
+        Assert.True(result, $"ClaimAgent failed: {error}");
 
         // Lock file should be cleaned up
         Assert.False(File.Exists(lockPath), "Stale lock file should be removed");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
     [Fact]
@@ -655,6 +755,7 @@ public class AgentRegistryTests : IDisposable
     {
         // Setup config
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
 
         // Create workspace and corrupt lock file
         var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
@@ -663,13 +764,18 @@ public class AgentRegistryTests : IDisposable
         var lockPath = Path.Combine(workspacePath, ".claim.lock");
         File.WriteAllText(lockPath, "this is not valid json");
 
-        var registry = new AgentRegistry(_testDir);
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Store pending session
+        registry.StorePendingSessionId("Adele", "test-session");
 
         // Attempt claim - should treat corrupt lock as stale and proceed
         var result = registry.ClaimAgent("Adele", out var error);
 
-        // Should not fail with "claim in progress" error
-        Assert.DoesNotContain("claim in progress", error);
+        // Should succeed since corrupt lock is treated as stale
+        Assert.True(result, $"ClaimAgent failed: {error}");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
     [Fact]
@@ -691,16 +797,28 @@ public class AgentRegistryTests : IDisposable
     {
         // Setup config
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
 
         var successCount = 0;
         var lockInProgressCount = 0;
         var otherErrorCount = 0;
 
-        // Launch multiple concurrent claim attempts
-        var tasks = Enumerable.Range(0, 5).Select(_ => Task.Run(() =>
+        // Pre-create workspace to avoid directory creation race
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+
+        // Store a single pending session (in real usage, guard runs before each claim)
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+        registry.StorePendingSessionId("Adele", "shared-session");
+
+        // Launch multiple concurrent claim attempts (simulates multiple processes trying to claim)
+        var tasks = Enumerable.Range(0, 5).Select(i => Task.Run(() =>
         {
-            var registry = new AgentRegistry(_testDir);
-            var result = registry.ClaimAgent("Adele", out var error);
+            var taskRegistry = new AgentRegistry(_testDir, null, scaffolder);
+
+            // Note: All tasks use same pending session (race condition on who reads it first)
+            var result = taskRegistry.ClaimAgent("Adele", out var error);
 
             if (result)
             {
@@ -712,15 +830,13 @@ public class AgentRegistryTests : IDisposable
             }
             else
             {
-                // Other errors (like "Could not determine terminal PID") are expected in tests
                 Interlocked.Increment(ref otherErrorCount);
             }
         })).ToArray();
 
         await Task.WhenAll(tasks);
 
-        // At most one should succeed (in practice, all may fail due to terminal PID check)
-        // But importantly, no crashes and lock contention is properly handled
+        // At most one should succeed (the one that reads pending session first and acquires lock)
         Assert.True(successCount <= 1, $"At most one claim should succeed, got {successCount}");
 
         // Lock file should be cleaned up (allow brief delay for file system on Windows)
@@ -730,6 +846,7 @@ public class AgentRegistryTests : IDisposable
             await Task.Delay(50);
         }
         Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after concurrent claims");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
     #endregion

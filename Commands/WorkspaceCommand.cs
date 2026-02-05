@@ -112,7 +112,8 @@ public static class WorkspaceCommand
     {
         var registry = new AgentRegistry();
         var configService = new ConfigService();
-        var agent = registry.GetCurrentAgent();
+        var sessionId = registry.GetSessionContext();
+        var agent = registry.GetCurrentAgent(sessionId);
 
         if (agent == null)
         {

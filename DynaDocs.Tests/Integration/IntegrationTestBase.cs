@@ -132,17 +132,57 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> WhoamiAsync()
     {
+        StoreSessionContext();
         var command = WhoamiCommand.Create();
         return await RunAsync(command);
     }
+
+    // Test session ID for integration tests
+    protected const string TestSessionId = "test-integration-session";
 
     /// <summary>
     /// Claim an agent.
     /// </summary>
     protected async Task<CommandResult> ClaimAgentAsync(string nameOrAuto = "auto")
     {
+        // Store pending session (simulates guard hook interception)
+        var agentName = nameOrAuto;
+        if (nameOrAuto.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        {
+            // For auto, get first agent in pool
+            var configPath = Path.Combine(TestDir, "dydo.json");
+            if (File.Exists(configPath))
+            {
+                var content = File.ReadAllText(configPath);
+                var match = System.Text.RegularExpressions.Regex.Match(content, @"""pool"":\s*\[\s*""([^""]+)""");
+                if (match.Success)
+                    agentName = match.Groups[1].Value;
+            }
+        }
+        else if (nameOrAuto.Length == 1 && char.IsLetter(nameOrAuto[0]))
+        {
+            // Resolve single letter to agent name (A -> Adele, B -> Brian, etc.)
+            var letter = char.ToUpperInvariant(nameOrAuto[0]);
+            agentName = ResolveLetterToAgentName(letter);
+        }
+
+        StorePendingSession(agentName);
+        StoreSessionContext();
+
         var command = AgentCommand.Create();
         return await RunAsync(command, "claim", nameOrAuto);
+    }
+
+    /// <summary>
+    /// Resolve a letter to an agent name.
+    /// </summary>
+    private string ResolveLetterToAgentName(char letter)
+    {
+        var names = new[] { "Adele", "Brian", "Charlie", "Dexter", "Emma", "Frank", "Grace", "Henry",
+            "Iris", "Jack", "Kate", "Liam", "Mia", "Noah", "Olivia", "Peter", "Quinn", "Ruby",
+            "Sam", "Tina", "Uma", "Victor", "Wendy", "Xavier", "Yuki", "Zelda" };
+        var index = letter - 'A';
+        return index >= 0 && index < names.Length ? names[index] : letter.ToString();
     }
 
     /// <summary>
@@ -150,6 +190,7 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> ReleaseAgentAsync()
     {
+        StoreSessionContext();
         var command = AgentCommand.Create();
         return await RunAsync(command, "release");
     }
@@ -159,11 +200,34 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> SetRoleAsync(string role, string? task = null)
     {
+        StoreSessionContext();
         var command = AgentCommand.Create();
         var args = task != null
             ? new[] { "role", role, "--task", task }
             : new[] { "role", role };
         return await RunAsync(command, args);
+    }
+
+    /// <summary>
+    /// Store pending session for claim (simulates guard hook).
+    /// </summary>
+    protected void StorePendingSession(string agentName)
+    {
+        var pendingPath = Path.Combine(DydoDir, "agents", agentName, ".pending-session");
+        var dir = Path.GetDirectoryName(pendingPath);
+        if (dir != null) Directory.CreateDirectory(dir);
+        File.WriteAllText(pendingPath, TestSessionId);
+    }
+
+    /// <summary>
+    /// Store session context (simulates guard hook).
+    /// </summary>
+    protected void StoreSessionContext()
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var dir = Path.GetDirectoryName(contextPath);
+        if (dir != null) Directory.CreateDirectory(dir);
+        File.WriteAllText(contextPath, TestSessionId);
     }
 
     /// <summary>
@@ -181,6 +245,7 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> AgentStatusAsync(string? name = null)
     {
+        StoreSessionContext();
         var command = AgentCommand.Create();
         var args = name != null ? new[] { "status", name } : new[] { "status" };
         return await RunAsync(command, args);
@@ -201,6 +266,7 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> GuardAsync(string action, string path)
     {
+        StoreSessionContext();
         var command = GuardCommand.Create();
         return await RunAsync(command, "--action", action, "--path", path);
     }

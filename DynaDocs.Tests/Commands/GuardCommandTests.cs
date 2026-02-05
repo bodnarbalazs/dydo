@@ -58,7 +58,21 @@ public class GuardCommandTests : IDisposable
     {
         Environment.CurrentDirectory = _originalDir;
         if (Directory.Exists(_testDir))
-            Directory.Delete(_testDir, true);
+        {
+            // Retry deletion to handle transient file locking on Windows
+            for (var i = 0; i < 3; i++)
+            {
+                try
+                {
+                    Directory.Delete(_testDir, true);
+                    return;
+                }
+                catch (IOException) when (i < 2)
+                {
+                    Thread.Sleep(50 * (i + 1));
+                }
+            }
+        }
     }
 
     #region Off-Limits Integration Tests

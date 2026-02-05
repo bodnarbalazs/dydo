@@ -127,6 +127,14 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
+    /// Get the audit folder path (dydo/_system/audit/)
+    /// </summary>
+    public string GetAuditPath(string? startPath = null)
+    {
+        return Path.Combine(GetDydoRoot(startPath), "_system", "audit");
+    }
+
+    /// <summary>
     /// Create a default configuration for a new project
     /// </summary>
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

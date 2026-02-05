@@ -20,8 +20,8 @@ public interface IAgentRegistry
     string GetAgentWorkspace(string agentName);
 
     /// <summary>
-    /// Claims an agent for the current terminal.
-    /// Validates against human assignment if config exists.
+    /// Claims an agent for the current session.
+    /// Requires a pending session ID from the guard hook.
     /// </summary>
     bool ClaimAgent(string agentName, out string error);
 
@@ -31,14 +31,14 @@ public interface IAgentRegistry
     bool ClaimAuto(out string claimedAgent, out string error);
 
     /// <summary>
-    /// Releases the currently claimed agent.
+    /// Releases the agent claimed by the given session.
     /// </summary>
-    bool ReleaseAgent(out string error);
+    bool ReleaseAgent(string? sessionId, out string error);
 
     /// <summary>
     /// Sets the role for the current agent.
     /// </summary>
-    bool SetRole(string role, string? task, out string error);
+    bool SetRole(string? sessionId, string role, string? task, out string error);
 
     /// <summary>
     /// Checks if an agent can take a specific role on a task.
@@ -67,9 +67,10 @@ public interface IAgentRegistry
     List<AgentState> GetFreeAgentsForHuman(string human);
 
     /// <summary>
-    /// Gets the current agent based on calling process PID.
+    /// Gets the current agent for the given session ID.
+    /// Returns null if no agent is claimed for this session.
     /// </summary>
-    AgentState? GetCurrentAgent();
+    AgentState? GetCurrentAgent(string? sessionId);
 
     /// <summary>
     /// Gets the session for an agent.
@@ -79,7 +80,7 @@ public interface IAgentRegistry
     /// <summary>
     /// Checks if a path is allowed for the current agent's role.
     /// </summary>
-    bool IsPathAllowed(string path, string action, out string error);
+    bool IsPathAllowed(string? sessionId, string path, string action, out string error);
 
     /// <summary>
     /// Validates that an agent name is valid.
@@ -130,4 +131,28 @@ public interface IAgentRegistry
     /// Reassigns an agent to a different human.
     /// </summary>
     bool ReassignAgent(string name, string newHuman, out string error);
+
+    /// <summary>
+    /// Stores a pending session ID for an agent.
+    /// Called by the guard hook when it intercepts a claim command.
+    /// </summary>
+    void StorePendingSessionId(string agentName, string sessionId);
+
+    /// <summary>
+    /// Gets and clears the pending session ID for an agent.
+    /// Used during claim to retrieve the session ID stored by the guard hook.
+    /// </summary>
+    string? GetPendingSessionId(string agentName);
+
+    /// <summary>
+    /// Gets the current session ID from context file.
+    /// Used by commands that run as subprocesses to identify the session.
+    /// </summary>
+    string? GetSessionContext();
+
+    /// <summary>
+    /// Stores the session ID to context file.
+    /// Called by the guard hook before allowing dydo commands.
+    /// </summary>
+    void StoreSessionContext(string sessionId);
 }

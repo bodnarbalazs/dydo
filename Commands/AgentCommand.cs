@@ -172,15 +172,16 @@ public static class AgentCommand
     private static int ExecuteRelease()
     {
         var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
 
-        var current = registry.GetCurrentAgent();
+        var current = registry.GetCurrentAgent(sessionId);
         if (current == null)
         {
             ConsoleOutput.WriteError("No agent identity assigned to this process.");
             return ExitCodes.ToolError;
         }
 
-        if (!registry.ReleaseAgent(out var error))
+        if (!registry.ReleaseAgent(sessionId, out var error))
         {
             ConsoleOutput.WriteError(error);
             return ExitCodes.ToolError;
@@ -194,11 +195,12 @@ public static class AgentCommand
     private static int ExecuteStatus(string? name)
     {
         var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
 
         AgentState? state;
         if (string.IsNullOrEmpty(name))
         {
-            state = registry.GetCurrentAgent();
+            state = registry.GetCurrentAgent(sessionId);
             if (state == null)
             {
                 ConsoleOutput.WriteError("No agent identity assigned to this process.");
@@ -237,8 +239,7 @@ public static class AgentCommand
         {
             Console.WriteLine();
             Console.WriteLine("Session:");
-            Console.WriteLine($"  Terminal PID: {session.TerminalPid}");
-            Console.WriteLine($"  Claude PID: {session.ClaudePid}");
+            Console.WriteLine($"  Session ID: {session.SessionId}");
             Console.WriteLine($"  Claimed: {session.Claimed:yyyy-MM-dd HH:mm:ss} UTC");
         }
 
@@ -288,15 +289,16 @@ public static class AgentCommand
     private static int ExecuteRole(string role, string? task)
     {
         var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
 
-        var current = registry.GetCurrentAgent();
+        var current = registry.GetCurrentAgent(sessionId);
         if (current == null)
         {
             ConsoleOutput.WriteError("No agent identity assigned to this process. Run 'dydo agent claim auto' first.");
             return ExitCodes.ToolError;
         }
 
-        if (!registry.SetRole(role, task, out var error))
+        if (!registry.SetRole(sessionId, role, task, out var error))
         {
             ConsoleOutput.WriteError(error);
             return ExitCodes.ToolError;

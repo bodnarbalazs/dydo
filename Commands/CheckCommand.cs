@@ -164,13 +164,14 @@ public static class CheckCommand
                 }
             }
 
-            // Check for stale sessions
+            // Check for stale sessions (age-based: > 24 hours)
             var session = registry.GetSession(agentName);
             if (session != null)
             {
-                if (!ProcessUtils.IsProcessRunning(session.TerminalPid))
+                var sessionAge = DateTime.UtcNow - session.Claimed;
+                if (sessionAge.TotalHours > 24)
                 {
-                    warnings.Add($"Agent '{agentName}' has stale session (terminal PID {session.TerminalPid} no longer running).");
+                    warnings.Add($"Agent '{agentName}' has stale session (claimed {sessionAge.TotalHours:F0} hours ago).");
                 }
             }
         }

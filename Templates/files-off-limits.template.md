@@ -32,6 +32,8 @@ dydo/agents/*/modes/**
 # Edit via: dydo agent claim, dydo agent release, dydo agent role
 dydo/agents/*/state.md
 dydo/agents/*/.session
+dydo/agents/*/.pending-session
+dydo/agents/.session-context
 
 # DynaDocs entry point
 # Edit via: dydo init

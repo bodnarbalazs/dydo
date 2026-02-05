@@ -72,7 +72,8 @@ public static class ReviewCommand
     private static int ExecuteComplete(string taskName, string status, string? notes)
     {
         var registry = new AgentRegistry();
-        var agent = registry.GetCurrentAgent();
+        var sessionId = registry.GetSessionContext();
+        var agent = registry.GetCurrentAgent(sessionId);
 
         var tasksPath = GetTasksPath();
         var taskPath = Path.Combine(tasksPath, $"{taskName}.md");

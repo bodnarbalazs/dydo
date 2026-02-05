@@ -87,6 +87,8 @@ public class AgentLifecycleTests : IntegrationTestBase
 
         // Set human to balazs and try to claim alice's agent
         SetHuman("balazs");
+        // Store pending session (simulates guard hook) - must do this before claim
+        StorePendingSession("Dexter");
         var command = AgentCommand.Create();
         var result = await RunAsync(command, "claim", "Dexter"); // Dexter is alice's agent
 
@@ -497,6 +499,7 @@ public class AgentLifecycleTests : IntegrationTestBase
 
     private async Task<CommandResult> InboxClearAsync(bool all = false, string? id = null)
     {
+        StoreSessionContext();
         var command = InboxCommand.Create();
         var args = new List<string> { "clear" };
         if (all) args.Add("--all");

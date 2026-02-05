@@ -82,10 +82,11 @@ public static class DispatchCommand
     private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate)
     {
         var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
         var currentHuman = registry.GetCurrentHuman();
 
         // Get sender info
-        var sender = registry.GetCurrentAgent();
+        var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
 
         // Determine target agent

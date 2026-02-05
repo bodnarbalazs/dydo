@@ -18,6 +18,7 @@ rootCommand.Subcommands.Add(ReviewCommand.Create());
 rootCommand.Subcommands.Add(CleanCommand.Create());
 rootCommand.Subcommands.Add(WorkspaceCommand.Create());
 rootCommand.Subcommands.Add(WhoamiCommand.Create());
+rootCommand.Subcommands.Add(AuditCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>
@@ -70,6 +71,12 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  clean <agent>          Clean agent workspace");
     Console.WriteLine("  workspace init         Initialize agent workspaces");
     Console.WriteLine("  workspace check        Verify workflow before session end");
+    Console.WriteLine();
+    Console.WriteLine("Audit Commands:");
+    Console.WriteLine("  audit                  Generate activity replay visualization");
+    Console.WriteLine("  audit /2025            Filter to specific year");
+    Console.WriteLine("  audit --list           List available sessions");
+    Console.WriteLine("  audit --session <id>   Show details for a session");
     Console.WriteLine();
     Console.WriteLine("Task Commands:");
     Console.WriteLine("  task create <name>     Create a new task");

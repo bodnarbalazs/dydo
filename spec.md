@@ -78,7 +78,7 @@ project/
         ├── Adele/
         │   ├── workflow.md      # Agent-specific workflow (generated from template)
         │   ├── state.md         # Role, task, permissions, role history
-        │   ├── .session         # PID tracking
+        │   ├── .session         # Session tracking (session_id from hook)
         │   ├── inbox/           # Messages from other agents
         │   └── modes/           # Role-specific guidance files
         │       ├── code-writer.md
@@ -688,7 +688,7 @@ Checking agent assignments...
     but dydo.json assigns Adele to balazs
   ⚠ Agent "Frank" in dydo.json but no workspace exists
     Run: dydo workspace init
-  ⚠ Stale session: dydo/agents/Brian/.session references PID 12345 (not running)
+  ⚠ Stale session: dydo/agents/Brian/.session claimed 26 hours ago
 
 Found 0 errors, 4 warnings
 ```
@@ -1047,17 +1047,22 @@ Terminal F (Frank - owned by alice):
 
 ## Implementation Notes
 
-### Process Tree Walking
+### Session-Based Identity
 
-To identify which terminal owns which agent:
+Agent identity is tracked via `session_id` provided by the coding tool's hook system (e.g., Claude Code):
 
+```json
+{
+  "Agent": "Adele",
+  "SessionId": "abc123-def456",
+  "Claimed": "2024-01-15T10:30:00Z"
+}
 ```
-Terminal (PowerShell) ─── PID: 1000
-    └── Claude Code ───── PID: 1001
-          └── Hook (dydo) ─ PID: 1002
-```
 
-When `dydo guard` runs (PID 1002), it walks up to find terminal PID (1000), then searches `.session` files for a match.
+When `dydo guard` runs:
+1. It receives JSON input from the hook system containing `session_id`
+2. For dydo commands, it stores session context for subprocesses to read
+3. For claim commands, it also stores a pending session file for the claim operation
 
 ### Glob Pattern Matching
 

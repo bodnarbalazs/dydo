@@ -167,7 +167,8 @@ public static class TaskCommand
     private static int ExecuteCreate(string name, string? description)
     {
         var registry = new AgentRegistry();
-        var agent = registry.GetCurrentAgent();
+        var sessionId = registry.GetSessionContext();
+        var agent = registry.GetCurrentAgent(sessionId);
 
         var tasksPath = GetTasksPath();
         Directory.CreateDirectory(tasksPath);

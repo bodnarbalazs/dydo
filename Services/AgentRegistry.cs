@@ -23,13 +23,15 @@ public partial class AgentRegistry : IAgentRegistry
     private readonly string _basePath;
     private readonly IConfigService _configService;
     private readonly IFolderScaffolder _folderScaffolder;
+    private readonly IAuditService _auditService;
     private readonly DydoConfig? _config;
 
-    public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null)
+    public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
     {
         _basePath = basePath ?? Environment.CurrentDirectory;
         _configService = configService ?? new ConfigService();
         _folderScaffolder = folderScaffolder ?? new FolderScaffolder();
+        _auditService = auditService ?? new AuditService(_configService, _basePath);
         _config = _configService.LoadConfig(_basePath);
     }
 
@@ -63,6 +65,14 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
+        // Get pending session_id from guard hook
+        var sessionId = GetPendingSessionId(agentName);
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            error = "No session ID available. Claim must be initiated via hook.";
+            return false;
+        }
+
         // Acquire lock before any state checks to prevent race conditions
         if (!TryAcquireLock(agentName, out error))
             return false;
@@ -78,37 +88,32 @@ public partial class AgentRegistry : IAgentRegistry
                 return false;
             }
 
-            var state = GetAgentState(agentName);
-            if (state?.Status != AgentStatus.Free)
+            // Check if this session already has a different agent
+            var existingAgent = GetCurrentAgent(sessionId);
+            if (existingAgent != null && existingAgent.Name != agentName)
             {
-                var session = GetSession(agentName);
-                if (session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
-                {
-                    error = $"Agent {agentName} is already claimed (terminal PID {session.TerminalPid}).";
-                    if (_config != null && human != null)
-                    {
-                        var claimable = GetFreeAgentsForHuman(human);
-                        if (claimable.Count > 0)
-                            error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
-                    }
-                    error += "\nUse 'dydo agent claim auto' to claim the first available.";
-                    return false;
-                }
-                // Stale claim - terminal died, allow reclaim
-            }
-
-            var (terminalPid, claudePid) = ProcessUtils.GetProcessAncestors();
-            if (terminalPid <= 0)
-            {
-                error = "Could not determine terminal PID";
+                error = $"This session already has agent {existingAgent.Name} claimed. Release first.";
                 return false;
             }
 
-            // Check if this terminal already has an agent
-            var existingAgent = GetCurrentAgent();
-            if (existingAgent != null && existingAgent.Name != agentName)
+            // Check if agent is already claimed by another session
+            var state = GetAgentState(agentName);
+            var existingSession = GetSession(agentName);
+            if (state?.Status != AgentStatus.Free && existingSession != null)
             {
-                error = $"This terminal already has agent {existingAgent.Name} claimed. Release first.";
+                if (existingSession.SessionId == sessionId)
+                {
+                    // Same session reclaiming - idempotent, success
+                    return true;
+                }
+                error = $"Agent {agentName} is already claimed by another session.";
+                if (_config != null && human != null)
+                {
+                    var claimable = GetFreeAgentsForHuman(human);
+                    if (claimable.Count > 0)
+                        error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
+                }
+                error += "\nUse 'dydo agent claim auto' to claim the first available.";
                 return false;
             }
 
@@ -119,16 +124,15 @@ public partial class AgentRegistry : IAgentRegistry
             // Regenerate mode files from templates (fresh start for each claim)
             _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName);
 
-            var session2 = new AgentSession
+            var session = new AgentSession
             {
                 Agent = agentName,
-                TerminalPid = terminalPid,
-                ClaudePid = claudePid,
+                SessionId = sessionId,
                 Claimed = DateTime.UtcNow
             };
 
             var sessionPath = Path.Combine(workspace, ".session");
-            File.WriteAllText(sessionPath, JsonSerializer.Serialize(session2, DydoDefaultJsonContext.Default.AgentSession));
+            File.WriteAllText(sessionPath, JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
 
             // Update state
             UpdateAgentState(agentName, s =>
@@ -137,6 +141,13 @@ public partial class AgentRegistry : IAgentRegistry
                 s.Since = DateTime.UtcNow;
                 s.AssignedHuman = human;
             });
+
+            // Log claim event
+            LogLifecycleEvent(sessionId, new AuditEvent
+            {
+                EventType = AuditEventType.Claim,
+                AgentName = agentName
+            }, agentName, human);
 
             return true;
         }
@@ -188,14 +199,14 @@ public partial class AgentRegistry : IAgentRegistry
         return true;
     }
 
-    public bool ReleaseAgent(out string error)
+    public bool ReleaseAgent(string? sessionId, out string error)
     {
         error = string.Empty;
 
-        var agent = GetCurrentAgent();
+        var agent = GetCurrentAgent(sessionId);
         if (agent == null)
         {
-            error = "No agent identity assigned to this process.";
+            error = "No agent identity assigned to this session.";
             return false;
         }
 
@@ -241,6 +252,14 @@ public partial class AgentRegistry : IAgentRegistry
             if (File.Exists(sessionPath))
                 File.Delete(sessionPath);
 
+            // Log release event before clearing state
+            var human = GetCurrentHuman();
+            LogLifecycleEvent(sessionId, new AuditEvent
+            {
+                EventType = AuditEventType.Release,
+                AgentName = agent.Name
+            }, agent.Name, human);
+
             UpdateAgentState(agent.Name, s =>
             {
                 s.Status = AgentStatus.Free;
@@ -259,14 +278,14 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
-    public bool SetRole(string role, string? task, out string error)
+    public bool SetRole(string? sessionId, string role, string? task, out string error)
     {
         error = string.Empty;
 
-        var agent = GetCurrentAgent();
+        var agent = GetCurrentAgent(sessionId);
         if (agent == null)
         {
-            error = "No agent identity assigned to this process. Run 'dydo agent claim auto' first.";
+            error = "No agent identity assigned to this session. Run 'dydo agent claim auto' first.";
             return false;
         }
 
@@ -312,6 +331,15 @@ public partial class AgentRegistry : IAgentRegistry
                 }
             }
         });
+
+        // Log role change event
+        var human = GetCurrentHuman();
+        LogLifecycleEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Role,
+            Role = role,
+            Task = task
+        }, agent.Name, human);
 
         return true;
     }
@@ -382,27 +410,111 @@ public partial class AgentRegistry : IAgentRegistry
             .ToList();
     }
 
-    public AgentState? GetCurrentAgent()
+    /// <summary>
+    /// Gets the current agent for a given session ID.
+    /// Returns null if no agent is claimed for this session.
+    /// </summary>
+    public AgentState? GetCurrentAgent(string? sessionId)
     {
-        var (terminalPid, claudePid) = ProcessUtils.GetProcessAncestors();
-        if (terminalPid <= 0 && claudePid <= 0)
+        if (string.IsNullOrEmpty(sessionId))
             return null;
 
         foreach (var name in AgentNames)
         {
             var session = GetSession(name);
-            if (session == null) continue;
-
-            // Match by terminal PID or Claude PID
-            if (session.TerminalPid == terminalPid || session.ClaudePid == claudePid)
-            {
-                if (ProcessUtils.IsProcessRunning(session.TerminalPid))
-                    return GetAgentState(name);
-            }
+            if (session?.SessionId == sessionId)
+                return GetAgentState(name);
         }
 
         return null;
     }
+
+    #region Session Context Support
+
+    private string GetPendingSessionPath(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), ".pending-session");
+
+    private string GetSessionContextPath() =>
+        Path.Combine(WorkspacePath, ".session-context");
+
+    /// <summary>
+    /// Gets and clears the pending session ID for an agent.
+    /// Used during claim to retrieve the session ID stored by the guard hook.
+    /// </summary>
+    public string? GetPendingSessionId(string agentName)
+    {
+        var path = GetPendingSessionPath(agentName);
+        if (!File.Exists(path)) return null;
+
+        try
+        {
+            var sessionId = File.ReadAllText(path).Trim();
+            File.Delete(path);  // Clean up after reading
+            return sessionId;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Stores a pending session ID for an agent.
+    /// Called by the guard hook when it intercepts a claim command.
+    /// </summary>
+    public void StorePendingSessionId(string agentName, string sessionId)
+    {
+        var path = GetPendingSessionPath(agentName);
+        var dir = Path.GetDirectoryName(path);
+        if (dir != null) Directory.CreateDirectory(dir);
+
+        // Retry on file access errors (concurrent access in tests)
+        for (var i = 0; i < 3; i++)
+        {
+            try
+            {
+                File.WriteAllText(path, sessionId);
+                return;
+            }
+            catch (IOException) when (i < 2)
+            {
+                Thread.Sleep(10 * (i + 1));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the current session ID from context file.
+    /// Used by commands that run as subprocesses to identify the session.
+    /// </summary>
+    public string? GetSessionContext()
+    {
+        var path = GetSessionContextPath();
+        if (!File.Exists(path)) return null;
+
+        try
+        {
+            return File.ReadAllText(path).Trim();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Stores the session ID to context file.
+    /// Called by the guard hook before allowing dydo commands.
+    /// </summary>
+    public void StoreSessionContext(string sessionId)
+    {
+        var path = GetSessionContextPath();
+        var dir = Path.GetDirectoryName(path);
+        if (dir != null) Directory.CreateDirectory(dir);
+        File.WriteAllText(path, sessionId);
+    }
+
+    #endregion
 
     public AgentSession? GetSession(string agentName)
     {
@@ -421,14 +533,14 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
-    public bool IsPathAllowed(string path, string action, out string error)
+    public bool IsPathAllowed(string? sessionId, string path, string action, out string error)
     {
         error = string.Empty;
 
-        var agent = GetCurrentAgent();
+        var agent = GetCurrentAgent(sessionId);
         if (agent == null)
         {
-            error = "No agent identity assigned to this process. Run 'dydo agent claim auto' first.";
+            error = "No agent identity assigned to this session. Run 'dydo agent claim auto' first.";
             return false;
         }
 
@@ -864,7 +976,7 @@ public partial class AgentRegistry : IAgentRegistry
         // Check agent is not claimed
         var state = GetAgentState(existingName);
         var session = GetSession(existingName);
-        if (state?.Status != AgentStatus.Free && session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+        if (state?.Status != AgentStatus.Free && session != null)
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
@@ -951,7 +1063,7 @@ public partial class AgentRegistry : IAgentRegistry
         // Check agent is not claimed
         var state = GetAgentState(existingName);
         var session = GetSession(existingName);
-        if (state?.Status != AgentStatus.Free && session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+        if (state?.Status != AgentStatus.Free && session != null)
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
@@ -1021,7 +1133,7 @@ public partial class AgentRegistry : IAgentRegistry
         // Check agent is not claimed
         var state = GetAgentState(existingName);
         var session = GetSession(existingName);
-        if (state?.Status != AgentStatus.Free && session != null && ProcessUtils.IsProcessRunning(session.TerminalPid))
+        if (state?.Status != AgentStatus.Free && session != null)
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
@@ -1188,6 +1300,29 @@ public partial class AgentRegistry : IAgentRegistry
                 // Other errors - give up, lock will be detected as stale later
                 return;
             }
+        }
+    }
+
+    #endregion
+
+    #region Audit Logging
+
+    /// <summary>
+    /// Helper to log lifecycle events (claim, release, role) with proper error handling.
+    /// </summary>
+    private void LogLifecycleEvent(string? sessionId, AuditEvent @event, string? agentName, string? human)
+    {
+        if (string.IsNullOrEmpty(sessionId))
+            return;
+
+        try
+        {
+            _auditService.LogEvent(sessionId, @event, agentName, human);
+        }
+        catch
+        {
+            // Audit logging should never break agent operations
+            // Silently ignore errors
         }
     }
 

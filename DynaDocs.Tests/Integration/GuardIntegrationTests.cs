@@ -258,7 +258,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         // Don't claim an agent
 
-        var json = """{"tool_name":"Read","tool_input":{"file_path":"src/test.cs"}}""";
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertExitCode(2);
@@ -271,7 +271,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         // Don't claim an agent
 
-        var json = """{"tool_name":"Read","tool_input":{"file_path":"CLAUDE.md"}}""";
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"CLAUDE.md\"}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
@@ -284,7 +284,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await ClaimAgentAsync("Adele");
         await SetRoleAsync("code-writer");
 
-        var json = """{"tool_name":"Write","tool_input":{"file_path":"src/test.cs"}}""";
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
@@ -296,7 +296,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         // Don't claim an agent
 
-        var json = """{"tool_name":"Write","tool_input":{"file_path":"src/test.cs"}}""";
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertExitCode(2);

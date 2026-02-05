@@ -1,12 +1,18 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Text.Json;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
 /// Shows the current agent identity and human information.
 /// Uses objective language suitable for both humans and AI readers.
+///
+/// Supports two modes:
+/// 1. Hook mode (stdin JSON): Uses session_id to identify agent
+/// 2. CLI mode (no stdin): Shows general info without specific agent identity
 /// </summary>
 public static class WhoamiCommand
 {
@@ -24,8 +30,26 @@ public static class WhoamiCommand
         var registry = new AgentRegistry();
         var configService = new ConfigService();
 
+        // Try to read session_id from stdin JSON (hook mode)
+        string? sessionId = null;
+        if (TryReadStdinJson(out var json) && json != null)
+        {
+            try
+            {
+                var hookInput = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.HookInput);
+                sessionId = hookInput?.SessionId;
+            }
+            catch { /* ignore parse errors */ }
+        }
+
+        // Fall back to session context file (set by guard for subprocess commands)
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            sessionId = registry.GetSessionContext();
+        }
+
         var human = registry.GetCurrentHuman();
-        var agent = registry.GetCurrentAgent();
+        var agent = registry.GetCurrentAgent(sessionId);
 
         if (agent != null)
         {
@@ -91,5 +115,25 @@ public static class WhoamiCommand
         }
 
         return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// Try to read JSON from stdin using a reliable detection method.
+    /// </summary>
+    private static bool TryReadStdinJson(out string? json)
+    {
+        json = null;
+        try
+        {
+            // KeyAvailable throws InvalidOperationException when stdin is redirected
+            _ = Console.KeyAvailable;
+            return false; // Not redirected, no stdin to read
+        }
+        catch (InvalidOperationException)
+        {
+            // Stdin is redirected, read it
+            json = Console.In.ReadToEnd();
+            return !string.IsNullOrWhiteSpace(json);
+        }
     }
 }

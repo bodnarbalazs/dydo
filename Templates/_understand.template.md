@@ -15,7 +15,6 @@ This folder answers "What IS this?" — the foundational context that agents nee
 
 - **about.md** - Project overview, purpose, and scope
 - **architecture.md** - Technical structure and key components
-- **Domain concepts** - Business logic and terminology
 
 ## When to Add Docs Here
 

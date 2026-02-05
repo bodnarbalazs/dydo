@@ -15,7 +15,6 @@ This folder answers "How do I DO this?" — step-by-step instructions for common
 
 - **coding-standards.md** - Code conventions and style rules
 - **how-to-use-docs.md** - Navigating this documentation
-- **Task-specific guides** - How to implement features, fix issues, etc.
 
 ## When to Add Docs Here
 

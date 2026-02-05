@@ -16,7 +16,6 @@ This folder answers "What are the exact specs?" — detailed reference material 
 - **writing-docs.md** - Documentation conventions and validation rules
 - **dydo-commands.md** - CLI command reference
 - **about-dynadocs.md** - About the DynaDocs system
-- **API specs** - Endpoint documentation, schemas
 
 ## When to Add Docs Here
 

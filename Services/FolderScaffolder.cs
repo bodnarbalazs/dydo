@@ -13,7 +13,7 @@ public class FolderScaffolder : IFolderScaffolder
         new("reference", "API specs, configuration, and tool documentation", "reference"),
         new("project", "Decisions, pitfalls, changelog, and meta documentation", "project"),
         new("project/tasks", "Task tracking and dispatch", "project"),
-        new("project/decisions", "Architecture decision records", "project"),
+        new("project/decisions", "Decision records", "project"),
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
         new("_system", "System configuration (committed)", "_system"),

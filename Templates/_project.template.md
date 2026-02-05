@@ -14,7 +14,7 @@ This folder answers "What happened and why?" — the living record of project ev
 ## Contents
 
 - **tasks/** - Work in progress and task tracking
-- **decisions/** - Architecture Decision Records (ADRs)
+- **decisions/** - Decision records
 - **changelog/** - History of completed work
 - **pitfalls/** - Known gotchas and issues
 

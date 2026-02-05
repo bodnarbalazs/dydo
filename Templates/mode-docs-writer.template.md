@@ -67,7 +67,7 @@ Write for the reader who comes after you. Be clear. Be accurate. Be concise.
 | `understand/` | Domain concepts, architecture | New features, architectural changes |
 | `guides/` | How-to instructions | New patterns, workflow changes |
 | `reference/` | API specs, configs | API changes, new config options |
-| `project/decisions/` | ADRs | Significant technical decisions |
+| `project/decisions/` | Decision records | Significant technical decisions |
 | `project/pitfalls/` | Known issues | Discovered gotchas, common mistakes |
 | `project/changelog/` | Change history | After releases or major changes |
 

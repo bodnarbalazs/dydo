@@ -190,7 +190,7 @@ project/
     ├── project/                 # Decisions, pitfalls, changelog
     │   ├── _index.md            # Hub file (auto-generated)
     │   ├── tasks/               # Task tracking
-    │   ├── decisions/           # ADRs
+    │   ├── decisions/           # Decision records
     │   ├── changelog/           # Change history
     │   └── pitfalls/            # Known issues
     │

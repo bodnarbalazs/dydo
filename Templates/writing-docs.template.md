@@ -45,7 +45,7 @@ type: guide
 | `guide` | Step-by-step instructions | Goal → Prerequisites → Steps → Verification |
 | `reference` | Look-up information | Tables, lists, specifications |
 | `hub` | Index page for a folder | Title → Description → Links to contents |
-| `decision` | Architecture Decision Record | Context → Decision → Consequences |
+| `decision` | Decision record | Context → Decision → Consequences |
 | `pitfall` | Known gotcha | Problem → Symptom → Solution |
 | `changelog` | Change log entry | What changed → Why → Impact |
 | `folder-meta` | Describe a folder's purpose | Title → Summary paragraph |

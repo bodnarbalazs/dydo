@@ -6,6 +6,8 @@ Context management and agent orchestration for AI coding assistants.
 
 ## The Problem
 
+**Is your project too large for LLMs to understand? Then this is for you.**
+
 AI code editors forget everything between sessions. Every time you start, the agent wakes up with amnesia — no memory of your architecture, your conventions, or the context from yesterday.
 
 So you explain the same things. Again. And again.
@@ -32,6 +34,7 @@ You maintain your project's intent, architecture, and conventions in structured 
 - **Multi-agent workflows** — Run parallel agents on different tasks
 - **Team support** — Each team member gets their own pool of agents
 - **Platform-agnostic** — Works across AI tools (Claude, Cursor, etc.) and operating systems
+- **Your process, your rules** — Modify templates, roles, and workflows to match how you work
 - **Useful history** — Need fixing a bug caused by a change three days ago? 
   - No problem, the agent will have a record of each finished task and the files touched.
 

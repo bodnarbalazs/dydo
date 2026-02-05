@@ -199,6 +199,9 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         var initResult = await InitProjectAsync();
         initResult.AssertSuccess();
 
+        // Delete a hub to force regeneration
+        File.Delete(Path.Combine(TestDir, "dydo", "guides", "_index.md"));
+
         // Act
         var fixCommand = FixCommand.Create();
         var fixResult = await RunAsync(fixCommand, DydoDir);
@@ -481,10 +484,10 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         var initResult = await InitProjectAsync();
         initResult.AssertSuccess();
 
-        // Act & Assert - Check should pass with no errors
+        // Act & Assert - Check should pass with no errors (warnings about uncustomized docs are expected)
         var checkResult = await CheckAsync(DydoDir);
         checkResult.AssertSuccess();
-        Assert.DoesNotContain("Found errors", checkResult.Stdout);
+        Assert.DoesNotContain("ERRORS:", checkResult.Stdout);
 
         // Act - Run fix
         var fixCommand = FixCommand.Create();

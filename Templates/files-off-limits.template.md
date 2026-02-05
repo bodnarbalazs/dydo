@@ -33,10 +33,6 @@ dydo/agents/*/modes/**
 dydo/agents/*/state.md
 dydo/agents/*/.session
 
-# Agent registry (all agents overview)
-# Edit via: dydo agent commands
-dydo/agents/agent-states.md
-
 # DynaDocs entry point
 # Edit via: dydo init
 dydo/index.md
@@ -50,13 +46,8 @@ dydo/files-off-limits.md
 # ============================================================
 
 # Environment and secrets
-.env
-.env.*
-.env.local
-.env.development
-.env.production
-.env.test
-secrets.json
+# .env* matches .env, .env.local, .env.development, .env.production, .env.test, etc.
+.env*
 **/secrets.json
 **/secret.json
 **/secrets.yaml

@@ -19,5 +19,13 @@ public class UncustomizedDocsRule : RuleBase
                 yield return CreateWarning(doc, "About.md is not customized. Consider updating it.");
             }
         }
+
+        if (normalized.EndsWith("understand/architecture.md", StringComparison.OrdinalIgnoreCase))
+        {
+            if (doc.Content.Contains("**Fill this in.**"))
+            {
+                yield return CreateWarning(doc, "Architecture.md is not customized. Consider updating it.");
+            }
+        }
     }
 }

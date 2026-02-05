@@ -76,36 +76,7 @@ If you reach a decision worth documenting:
 dydo/project/decisions/NNN-<decision-name>.md
 ```
 
-Structure:
-```markdown
----
-area: general
-type: decision
-status: accepted
-date: YYYY-MM-DD
----
-
-# Decision: <Title>
-
-Summary of what was decided in one sentence.
-
-## Context
-
-What prompted this decision? What problem were we solving?
-
-## Options Considered
-
-1. **Option A** — Description. Pros: ... Cons: ...
-2. **Option B** — Description. Pros: ... Cons: ...
-
-## Decision
-
-We chose Option X because...
-
-## Consequences
-
-What this decision means going forward.
-```
+See [decisions/_index.md](../../../project/decisions/_index.md) for format and area tags.
 
 ### Optional: Working Notes
 

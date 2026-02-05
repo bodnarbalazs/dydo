@@ -119,8 +119,8 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileContains("dydo/project/tasks/_tasks.md", "pending");
         AssertFileContains("dydo/project/tasks/_tasks.md", "review-pending");
 
-        // Decisions meta should describe ADR format
-        AssertFileContains("dydo/project/decisions/_decisions.md", "Architecture Decision Records");
+        // Decisions meta should describe decision record format
+        AssertFileContains("dydo/project/decisions/_decisions.md", "Decision Records");
         AssertFileContains("dydo/project/decisions/_decisions.md", "proposed");
         AssertFileContains("dydo/project/decisions/_decisions.md", "accepted");
 

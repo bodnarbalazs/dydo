@@ -263,6 +263,31 @@ public class FolderScaffolder : IFolderScaffolder
         {
             File.WriteAllText(offLimitsPath, TemplateGenerator.GenerateFilesOffLimitsMd());
         }
+
+        // Main folder meta files
+        var understandMetaPath = Path.Combine(basePath, "understand", "_understand.md");
+        if (!File.Exists(understandMetaPath))
+        {
+            File.WriteAllText(understandMetaPath, TemplateGenerator.GenerateUnderstandMetaMd());
+        }
+
+        var guidesMetaPath = Path.Combine(basePath, "guides", "_guides.md");
+        if (!File.Exists(guidesMetaPath))
+        {
+            File.WriteAllText(guidesMetaPath, TemplateGenerator.GenerateGuidesMetaMd());
+        }
+
+        var referenceMetaPath = Path.Combine(basePath, "reference", "_reference.md");
+        if (!File.Exists(referenceMetaPath))
+        {
+            File.WriteAllText(referenceMetaPath, TemplateGenerator.GenerateReferenceMetaMd());
+        }
+
+        var projectMetaPath = Path.Combine(basePath, "project", "_project.md");
+        if (!File.Exists(projectMetaPath))
+        {
+            File.WriteAllText(projectMetaPath, TemplateGenerator.GenerateProjectMetaMd());
+        }
     }
 
     /// <summary>

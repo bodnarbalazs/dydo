@@ -35,6 +35,8 @@ public static class HubGenerator
         sb.AppendLine();
         sb.AppendLine($"# {title}");
         sb.AppendLine();
+        sb.AppendLine($"Index of {folderName} documentation.");
+        sb.AppendLine();
         sb.AppendLine("## Contents");
         sb.AppendLine();
         sb.AppendLine(GenerateDocumentLinks(docsInFolder));

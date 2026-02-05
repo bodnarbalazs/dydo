@@ -17,10 +17,11 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         // Act - Run check
         var checkResult = await CheckAsync();
 
-        // Assert - No errors, exactly one warning about uncustomized about.md
+        // Assert - No errors, warnings about uncustomized about.md and architecture.md
         Assert.DoesNotContain("Found errors", checkResult.Stdout);
         Assert.Contains("Found warnings", checkResult.Stdout);
         Assert.Contains("About.md is not customized", checkResult.Stdout);
+        Assert.Contains("Architecture.md is not customized", checkResult.Stdout);
     }
 
     [Fact]
@@ -58,6 +59,26 @@ public class InitCheckIntegrationTests : IntegrationTestBase
 
         // Assert - Assets exist
         AssertFileExists("dydo/_assets/dydo-diagram.svg");
+    }
+
+    [Fact]
+    public async Task FreshInit_CreatesMainFolderMetaFiles()
+    {
+        // Arrange & Act
+        var initResult = await InitProjectAsync("none", "testuser", 3);
+        initResult.AssertSuccess();
+
+        // Assert - Main folder meta files exist
+        AssertFileExists("dydo/understand/_understand.md");
+        AssertFileExists("dydo/guides/_guides.md");
+        AssertFileExists("dydo/reference/_reference.md");
+        AssertFileExists("dydo/project/_project.md");
+
+        // Assert - Project subfolder meta files exist
+        AssertFileExists("dydo/project/tasks/_tasks.md");
+        AssertFileExists("dydo/project/decisions/_decisions.md");
+        AssertFileExists("dydo/project/changelog/_changelog.md");
+        AssertFileExists("dydo/project/pitfalls/_pitfalls.md");
     }
 
     [Fact]

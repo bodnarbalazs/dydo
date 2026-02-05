@@ -6,6 +6,43 @@ using System.Runtime.Versioning;
 
 public static class ProcessUtils
 {
+    #region Windows P/Invoke (AOT-compatible, no WMI dependency)
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESSENTRY32
+    {
+        public uint dwSize;
+        public uint cntUsage;
+        public uint th32ProcessID;
+        public IntPtr th32DefaultHeapID;
+        public uint th32ModuleID;
+        public uint cntThreads;
+        public uint th32ParentProcessID;
+        public int pcPriClassBase;
+        public uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+        public string szExeFile;
+    }
+
+    private const uint TH32CS_SNAPPROCESS = 0x00000002;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr CreateToolhelp32Snapshot(uint dwFlags, uint th32ProcessID);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool Process32First(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool Process32Next(IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr hObject);
+
+    #endregion
+
     /// <summary>
     /// Gets the parent process ID of the current process.
     /// </summary>
@@ -102,25 +139,37 @@ public static class ProcessUtils
     [SupportedOSPlatform("windows")]
     private static int GetParentProcessIdWindows(int processId)
     {
-#if WINDOWS
+        // Use CreateToolhelp32Snapshot - works with AOT, no WMI dependency
+        var snapshot = IntPtr.Zero;
         try
         {
-            // Use WMI via Process class workaround
-            // On Windows, we can use the ParentProcessId from performance counters
-            using var query = new System.Management.ManagementObjectSearcher(
-                $"SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = {processId}");
+            snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if (snapshot == IntPtr.Zero || snapshot == new IntPtr(-1))
+                return -1;
 
-            foreach (var item in query.Get())
+            var entry = new PROCESSENTRY32 { dwSize = (uint)Marshal.SizeOf<PROCESSENTRY32>() };
+
+            if (!Process32First(snapshot, ref entry))
+                return -1;
+
+            do
             {
-                return Convert.ToInt32(item["ParentProcessId"]);
-            }
+                if (entry.th32ProcessID == (uint)processId)
+                {
+                    return (int)entry.th32ParentProcessID;
+                }
+            } while (Process32Next(snapshot, ref entry));
         }
         catch
         {
-            // Fallback: try reading from /proc style if available (WSL)
-            // or return -1
+            // Fallback failed
         }
-#endif
+        finally
+        {
+            if (snapshot != IntPtr.Zero && snapshot != new IntPtr(-1))
+                CloseHandle(snapshot);
+        }
+
         return -1;
     }
 

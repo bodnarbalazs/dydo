@@ -462,4 +462,154 @@ public class TemplateGeneratorTests
     }
 
     #endregion
+
+    #region Meta File Template Tests
+
+    [Fact]
+    public void GenerateProjectMetaMd_UsesContentsHeader()
+    {
+        var content = TemplateGenerator.GenerateProjectMetaMd();
+
+        Assert.Contains("## Contents", content);
+        Assert.DoesNotContain("## Subfolders", content);
+    }
+
+    [Fact]
+    public void TopLevelMetaTemplates_HaveRelatedSectionsWithCorrectPaths()
+    {
+        // _understand.md links to docs in other folders
+        var understand = TemplateGenerator.GenerateUnderstandMetaMd();
+        Assert.Contains("## Related", understand);
+        Assert.Contains("../reference/about-dynadocs.md", understand);
+        Assert.Contains("../guides/how-to-use-docs.md", understand);
+        Assert.Contains("../reference/writing-docs.md", understand);
+
+        // _guides.md links to how-to-use-docs in same folder, others in different folders
+        var guides = TemplateGenerator.GenerateGuidesMetaMd();
+        Assert.Contains("## Related", guides);
+        Assert.Contains("../reference/about-dynadocs.md", guides);
+        Assert.Contains("./how-to-use-docs.md", guides);  // Same folder
+        Assert.Contains("../reference/writing-docs.md", guides);
+
+        // _reference.md links to docs in same folder, others in different folders
+        var reference = TemplateGenerator.GenerateReferenceMetaMd();
+        Assert.Contains("## Related", reference);
+        Assert.Contains("./about-dynadocs.md", reference);  // Same folder
+        Assert.Contains("../guides/how-to-use-docs.md", reference);
+        Assert.Contains("./writing-docs.md", reference);  // Same folder
+
+        // _project.md links to docs in other folders
+        var project = TemplateGenerator.GenerateProjectMetaMd();
+        Assert.Contains("## Related", project);
+        Assert.Contains("../reference/about-dynadocs.md", project);
+        Assert.Contains("../guides/how-to-use-docs.md", project);
+        Assert.Contains("../reference/writing-docs.md", project);
+    }
+
+    [Fact]
+    public void GenerateChangelogMetaMd_HasSoftRuleNote()
+    {
+        var content = TemplateGenerator.GenerateChangelogMetaMd();
+
+        Assert.Contains("This structure is a suggestion", content);
+        Assert.Contains("dydo doesn't enforce changelog folder structure", content);
+    }
+
+    [Fact]
+    public void ProjectSubfolderMetas_DoNotReferenceNonExistentTemplates()
+    {
+        // These meta files should NOT reference templates in _system/templates/
+        // because changelog/decision/pitfall templates are not copied there
+        // (only agent-workflow and mode-* templates are copied)
+
+        var changelog = TemplateGenerator.GenerateChangelogMetaMd();
+        Assert.DoesNotContain("_system/templates/", changelog);
+
+        var decisions = TemplateGenerator.GenerateDecisionsMetaMd();
+        Assert.DoesNotContain("_system/templates/", decisions);
+
+        var pitfalls = TemplateGenerator.GeneratePitfallsMetaMd();
+        Assert.DoesNotContain("_system/templates/", pitfalls);
+    }
+
+    [Fact]
+    public void GenerateReferenceMetaMd_ListsCorrectDefaultFiles()
+    {
+        var content = TemplateGenerator.GenerateReferenceMetaMd();
+
+        // These files are created by default scaffolding
+        Assert.Contains("writing-docs.md", content);
+        Assert.Contains("dydo-commands.md", content);
+        Assert.Contains("about-dynadocs.md", content);
+    }
+
+    [Fact]
+    public void GenerateUnderstandMetaMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateUnderstandMetaMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: understand", content);
+        Assert.Contains("type: folder-meta", content);
+    }
+
+    [Fact]
+    public void GenerateGuidesMetaMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateGuidesMetaMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: folder-meta", content);
+    }
+
+    [Fact]
+    public void GenerateReferenceMetaMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateReferenceMetaMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: folder-meta", content);
+    }
+
+    [Fact]
+    public void GenerateProjectMetaMd_HasCorrectFrontmatter()
+    {
+        var content = TemplateGenerator.GenerateProjectMetaMd();
+
+        Assert.StartsWith("---", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: folder-meta", content);
+    }
+
+    [Fact]
+    public void TopLevelMetaTemplates_LinkToSiblingFolders()
+    {
+        // _understand.md should link to guides, reference, project (but not understand)
+        var understandContent = TemplateGenerator.GenerateUnderstandMetaMd();
+        Assert.Contains("../guides/_index.md", understandContent);
+        Assert.Contains("../reference/_index.md", understandContent);
+        Assert.Contains("../project/_index.md", understandContent);
+
+        // _guides.md should link to understand, reference, project (but not guides)
+        var guidesContent = TemplateGenerator.GenerateGuidesMetaMd();
+        Assert.Contains("../understand/_index.md", guidesContent);
+        Assert.Contains("../reference/_index.md", guidesContent);
+        Assert.Contains("../project/_index.md", guidesContent);
+
+        // _reference.md should link to understand, guides, project (but not reference)
+        var referenceContent = TemplateGenerator.GenerateReferenceMetaMd();
+        Assert.Contains("../understand/_index.md", referenceContent);
+        Assert.Contains("../guides/_index.md", referenceContent);
+        Assert.Contains("../project/_index.md", referenceContent);
+
+        // _project.md should link to understand, guides, reference (but not project)
+        var projectContent = TemplateGenerator.GenerateProjectMetaMd();
+        Assert.Contains("../understand/_index.md", projectContent);
+        Assert.Contains("../guides/_index.md", projectContent);
+        Assert.Contains("../reference/_index.md", projectContent);
+    }
+
+    #endregion
 }

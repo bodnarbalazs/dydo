@@ -1,5 +1,5 @@
 ---
-area: general
+area: general  # technical | product | process | business | design
 type: decision
 status: proposed
 date: YYYY-MM-DD
@@ -40,9 +40,16 @@ What changes as a result? What trade-offs are we accepting?
 - [Doc Name](../../path/to/affected-doc.md)
 
 <!--
-Decision (ADR) guidelines:
+Decision Record guidelines:
 
-Filename: NNN-kebab-case-title.md (e.g., 001-clean-architecture.md)
+Filename: NNN-kebab-case-title.md (e.g., 001-postgres-over-mongo.md)
+
+Area values (for filtering, not rigid categories):
+- technical: Architecture, libraries, infrastructure
+- product: Features, UX, user-facing choices
+- process: Workflow, team practices, release cadence
+- business: Pricing, partnerships, strategy
+- design: Visual, interaction patterns
 
 Status values:
 - proposed: Under discussion
@@ -50,5 +57,5 @@ Status values:
 - deprecated: No longer recommended
 - superseded: Replaced by another decision (link to it)
 
-Update "Affects" section with bidirectional links to all docs impacted by this decision.
+Update "Affects" section with links to docs impacted by this decision.
 -->

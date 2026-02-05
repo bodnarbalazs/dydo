@@ -22,8 +22,14 @@ public static class AuditCommand
             Description = "Path filter (e.g., /2025 for year 2025)"
         };
 
-        var listOption = new Option<bool>("--list", "List available sessions");
-        var sessionOption = new Option<string?>("--session", "Show details for a specific session ID");
+        var listOption = new Option<bool>("--list")
+        {
+            Description = "List available sessions"
+        };
+        var sessionOption = new Option<string?>("--session")
+        {
+            Description = "Show details for a specific session ID"
+        };
 
         var command = new Command("audit", "View and visualize agent activity logs");
         command.Arguments.Add(pathArgument);

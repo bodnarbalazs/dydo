@@ -446,40 +446,8 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
-    [Fact]
-    public async Task Release_PrunesArchiveToTen()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        // Create archive folder with 15 items
-        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/inbox/archive");
-        Directory.CreateDirectory(archivePath);
-
-        for (var i = 0; i < 15; i++)
-        {
-            var filePath = Path.Combine(archivePath, $"item-{i:D2}.md");
-            File.WriteAllText(filePath, $"# Item {i}");
-            // Stagger the write times so we can verify oldest are removed
-            File.SetLastWriteTimeUtc(filePath, DateTime.UtcNow.AddMinutes(-i));
-        }
-
-        // Release the agent
-        var result = await ReleaseAgentAsync();
-        result.AssertSuccess();
-
-        // Verify only 10 items remain (the 10 newest)
-        var remainingFiles = Directory.GetFiles(archivePath, "*.md");
-        Assert.Equal(10, remainingFiles.Length);
-
-        // Verify the 5 oldest were removed (items 10-14 had oldest timestamps)
-        Assert.False(File.Exists(Path.Combine(archivePath, "item-10.md")));
-        Assert.False(File.Exists(Path.Combine(archivePath, "item-14.md")));
-
-        // Verify the 10 newest remain
-        Assert.True(File.Exists(Path.Combine(archivePath, "item-00.md")));
-        Assert.True(File.Exists(Path.Combine(archivePath, "item-09.md")));
-    }
+    // Release_PrunesArchiveToTen removed — inbox archive pruning on release
+    // is superseded by workspace-level archiving on claim (ArchiveWorkspace + PruneArchive).
 
     [Fact]
     public async Task Release_IgnoresArchiveWhenCheckingInbox()

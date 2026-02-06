@@ -18,7 +18,7 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetWindowsArguments(agentName);
 
         // Should contain the agent name and --inbox flag
-        // Expected: -NoExit -Command "claude ""AgentName --inbox"""
+        // Expected: -NoExit -Command "claude 'AgentName --inbox'"
         Assert.Contains(agentName, args);
         Assert.Contains("--inbox", args);
         Assert.Contains("-NoExit", args);
@@ -66,12 +66,27 @@ public class TerminalLauncherTests
 
     [Theory]
     [InlineData("Agent With Space")]
-    [InlineData("Agent'Quote")]
     public void GetWindowsArguments_HandlesSpecialCharacters(string agentName)
     {
         // Should not throw - quoting handles spaces
         var args = TerminalLauncher.GetWindowsArguments(agentName);
         Assert.Contains(agentName, args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_EscapesSingleQuotesInAgentName()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Agent'Quote");
+        // Single quotes inside the prompt must be doubled for PowerShell
+        Assert.Contains("Agent''Quote", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_UsesSingleQuotesAroundPrompt()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        // The prompt must be wrapped in single quotes so PowerShell treats it as one argument
+        Assert.Contains("claude 'Adele --inbox'", args);
     }
 
     [Fact]
@@ -88,6 +103,48 @@ public class TerminalLauncherTests
         var command = TerminalLauncher.GetClaudeCommand("Adele");
 
         Assert.Equal("claude \"Adele --inbox\"", command);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_ExactFormat()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        Assert.Equal("-NoExit -Command \"claude 'Adele --inbox'\"", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal", "Adele")]
+    [InlineData("konsole", "Brian")]
+    [InlineData("xfce4-terminal", "Charlie")]
+    [InlineData("alacritty", "Dexter")]
+    [InlineData("kitty", "Emma")]
+    [InlineData("wezterm", "Frank")]
+    [InlineData("tilix", "Grace")]
+    [InlineData("foot", "Henry")]
+    [InlineData("xterm", "Iris")]
+    public void GetLinuxArguments_PromptIsInsideSingleQuotes(string terminal, string agentName)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, agentName);
+        Assert.Contains($"'{agentName} --inbox'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_PromptIsQuotedAsUnit()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+        // In the AppleScript string, the prompt is wrapped in escaped double quotes
+        Assert.Contains("Adele --inbox", args);
+        // Verify it's inside quotes (escaped for AppleScript)
+        Assert.Contains("\\\"Adele --inbox\\\"", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_InboxIsNotStandaloneToken()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        var tokens = args.Split(' ');
+        Assert.DoesNotContain("--inbox", tokens);
+        Assert.DoesNotContain("\"--inbox\"", tokens);
     }
 
     #endregion

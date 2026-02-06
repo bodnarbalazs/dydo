@@ -11,10 +11,10 @@ public partial class AgentRegistry : IAgentRegistry
 {
     private static readonly Dictionary<string, (List<string> Allowed, List<string> Denied)> RolePermissions = new()
     {
-        ["code-writer"] = (["src/**", "tests/**"], ["dydo/**", "project/**"]),
+        ["code-writer"] = (["src/**", "tests/**", "dydo/agents/{self}/**"], ["dydo/**", "project/**"]),
         ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
         ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], ["src/**", "tests/**"]),
-        ["docs-writer"] = (["dydo/**"], ["dydo/agents/**", "src/**", "tests/**"]),
+        ["docs-writer"] = (["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"], ["src/**", "tests/**"]),
         ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
         ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], ["src/**"]),
         ["tester"] = (["dydo/agents/{self}/**", "tests/**", "dydo/project/pitfalls/**"], ["src/**"])
@@ -120,6 +120,17 @@ public partial class AgentRegistry : IAgentRegistry
             // Write session file
             var workspace = GetAgentWorkspace(agentName);
             Directory.CreateDirectory(workspace);
+
+            // Archive user files from previous session (if any)
+            try
+            {
+                ArchiveWorkspace(workspace);
+                PruneArchive(workspace);
+            }
+            catch
+            {
+                // Archive failure should not block agent claim
+            }
 
             // Regenerate mode files from templates (fresh start for each claim)
             _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName);
@@ -240,22 +251,6 @@ public partial class AgentRegistry : IAgentRegistry
                     error = $"Cannot release: {unprocessedItems} unprocessed inbox item(s).\n" +
                             "Process all inbox items, then run 'dydo inbox clear' before releasing.";
                     return false;
-                }
-
-                // Prune archive to last 10 items
-                var archivePath = Path.Combine(inboxPath, "archive");
-                if (Directory.Exists(archivePath))
-                {
-                    var archivedFiles = Directory.GetFiles(archivePath, "*.md")
-                        .Select(f => new FileInfo(f))
-                        .OrderByDescending(f => f.LastWriteTimeUtc)
-                        .Skip(10)
-                        .ToList();
-
-                    foreach (var file in archivedFiles)
-                    {
-                        file.Delete();
-                    }
                 }
             }
 
@@ -603,9 +598,9 @@ public partial class AgentRegistry : IAgentRegistry
         return role switch
         {
             "reviewer" => "Reviewer role can only edit own workspace.",
-            "code-writer" => "Code-writer role can only edit src/** and tests/**.",
+            "code-writer" => "Code-writer role can only edit src/**, tests/**, and own workspace.",
             "co-thinker" => "Co-thinker role can edit own workspace and decisions.",
-            "docs-writer" => "Docs-writer role can only edit dydo/** (except agents/).",
+            "docs-writer" => "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace.",
             "interviewer" => "Interviewer role can only edit own workspace.",
             "planner" => "Planner role can only edit own workspace and tasks.",
             "tester" => "Tester role can edit own workspace, tests, and pitfalls.",
@@ -1335,6 +1330,89 @@ public partial class AgentRegistry : IAgentRegistry
         {
             // Audit logging should never break agent operations
             // Silently ignore errors
+        }
+    }
+
+    #endregion
+
+    #region Workspace Archiving
+
+    private static readonly HashSet<string> SystemManagedEntries = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox"
+    };
+
+    /// <summary>
+    /// Archives non-system files from a workspace into archive/{timestamp}/.
+    /// Returns the snapshot path, or null if nothing to archive.
+    /// </summary>
+    public static string? ArchiveWorkspace(string workspace)
+    {
+        if (!Directory.Exists(workspace))
+            return null;
+
+        var entries = Directory.GetFileSystemEntries(workspace)
+            .Where(e => !SystemManagedEntries.Contains(Path.GetFileName(e)))
+            .ToList();
+
+        if (entries.Count == 0)
+            return null;
+
+        var snapshotName = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
+        var snapshotPath = Path.Combine(workspace, "archive", snapshotName);
+        Directory.CreateDirectory(snapshotPath);
+
+        foreach (var entry in entries)
+        {
+            var name = Path.GetFileName(entry);
+            var dest = Path.Combine(snapshotPath, name);
+
+            if (File.Exists(entry))
+                File.Move(entry, dest);
+            else if (Directory.Exists(entry))
+                Directory.Move(entry, dest);
+        }
+
+        return snapshotPath;
+    }
+
+    /// <summary>
+    /// Prunes the archive directory so total files across all snapshots stays within maxFiles.
+    /// Deletes oldest snapshots first.
+    /// </summary>
+    public static void PruneArchive(string workspace, int maxFiles = 30)
+    {
+        var archivePath = Path.Combine(workspace, "archive");
+        if (!Directory.Exists(archivePath))
+            return;
+
+        var snapshots = Directory.GetDirectories(archivePath)
+            .OrderBy(d => Path.GetFileName(d))
+            .ToList();
+
+        if (snapshots.Count == 0)
+            return;
+
+        var totalFiles = snapshots.Sum(CountFilesRecursive);
+
+        while (totalFiles > maxFiles && snapshots.Count > 0)
+        {
+            var oldest = snapshots[0];
+            totalFiles -= CountFilesRecursive(oldest);
+            Directory.Delete(oldest, recursive: true);
+            snapshots.RemoveAt(0);
+        }
+    }
+
+    private static int CountFilesRecursive(string directory)
+    {
+        try
+        {
+            return Directory.GetFiles(directory, "*", SearchOption.AllDirectories).Length;
+        }
+        catch
+        {
+            return 0;
         }
     }
 

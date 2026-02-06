@@ -1,6 +1,6 @@
 {
   "name": "dydo",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Documentation-driven context and agent orchestration for AI coding assistants.",
   "keywords": [
     "documentation",

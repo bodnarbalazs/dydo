@@ -35,7 +35,7 @@ Don't skip! The hook guard will block you from reading/editing any other files.
 dydo agent status
 ```
 
-You can edit: `dydo/**` (except `dydo/agents/`)
+You can edit: `dydo/**` (except other agents' workspaces), `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
 
 You cannot edit: source code (`src/**`, `tests/**`)
 

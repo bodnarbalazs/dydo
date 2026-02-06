@@ -75,8 +75,11 @@ public class TerminalLauncher
     {
         var prompt = GetClaudePrompt(agentName);
         // -NoExit keeps PowerShell open after the command completes
-        // The prompt is simple (AgentName --inbox) so minimal escaping needed
-        return $"-NoExit -Command \"claude \"\"{prompt}\"\"\"";
+        // Single quotes in PowerShell create a literal string, ensuring the entire
+        // prompt (including --inbox) is passed as one argument to claude.
+        // Double-quote escaping ("") breaks when passing through wt → powershell layers.
+        var escapedPrompt = prompt.Replace("'", "''");
+        return $"-NoExit -Command \"claude '{escapedPrompt}'\"";
     }
 
     public static string GetLinuxArguments(string terminalName, string agentName)

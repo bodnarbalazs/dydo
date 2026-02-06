@@ -144,6 +144,13 @@ public static class InboxCommand
             return ExitCodes.ToolError;
         }
 
+        // Validate arguments before checking inbox state
+        if (!all && string.IsNullOrEmpty(id))
+        {
+            ConsoleOutput.WriteError("Specify --all or --id <id>");
+            return ExitCodes.ToolError;
+        }
+
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
         if (!Directory.Exists(inboxPath))
         {
@@ -164,7 +171,7 @@ public static class InboxCommand
             }
             Console.WriteLine($"Archived {files.Length} item(s) to inbox/archive/");
         }
-        else if (!string.IsNullOrEmpty(id))
+        else
         {
             var files = Directory.GetFiles(inboxPath, $"{id}*.md");
             if (files.Length == 0)
@@ -179,11 +186,6 @@ public static class InboxCommand
                 File.Move(file, destPath, overwrite: true);
             }
             Console.WriteLine($"Archived item {id} to inbox/archive/");
-        }
-        else
-        {
-            ConsoleOutput.WriteError("Specify --all or --id <id>");
-            return ExitCodes.ToolError;
         }
 
         return ExitCodes.Success;

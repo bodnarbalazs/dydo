@@ -232,7 +232,9 @@ public static class AuditCommand
         sb.AppendLine("    <h1>Project Audit Visualization</h1>");
         sb.AppendLine();
 
-        // Controls row
+        // Controls + Event log (side by side)
+        sb.AppendLine("    <div style=\"display:flex; gap:10px; align-items:flex-start\">");
+        sb.AppendLine("    <div>");
         sb.AppendLine("    <table border=\"1\" cellpadding=\"5\">");
         sb.AppendLine("        <tr>");
         sb.AppendLine("            <td>");
@@ -264,6 +266,14 @@ public static class AuditCommand
         sb.AppendLine("            <td id=\"agentLegend\"></td>");
         sb.AppendLine("        </tr>");
         sb.AppendLine("    </table>");
+        sb.AppendLine("    </div>");
+        sb.AppendLine();
+        // Event log (right side, next to controls)
+        sb.AppendLine("    <div style=\"flex:1; border:1px solid #ccc; padding:5px; min-width:300px\">");
+        sb.AppendLine("        <b>Event Log</b>");
+        sb.AppendLine("        <div id=\"eventLog\" style=\"height:200px; overflow-y:auto; font-family:monospace; font-size:11px; margin-top:5px\"></div>");
+        sb.AppendLine("    </div>");
+        sb.AppendLine("    </div>");
         sb.AppendLine();
 
         // 3 Graph slots
@@ -283,13 +293,6 @@ public static class AuditCommand
             sb.AppendLine("        </div>");
             sb.AppendLine("    </div>");
         }
-        sb.AppendLine();
-
-        // Event log
-        sb.AppendLine("    <div style=\"margin-top:10px; border:1px solid #ccc; padding:5px\">");
-        sb.AppendLine("        <b>Event Log</b>");
-        sb.AppendLine("        <div id=\"eventLog\" style=\"height:200px; overflow-y:auto; font-family:monospace; font-size:11px; margin-top:5px\"></div>");
-        sb.AppendLine("    </div>");
         sb.AppendLine();
 
         // Sessions info
@@ -417,6 +420,27 @@ public static class AuditCommand
 
         // Folder options for dropdowns
         let folderOptions = [];
+
+        // Build lookup set for path normalization (event paths may be absolute/Windows)
+        const snapshotPathSet = new Set();
+        for (const file of combinedSnapshot.files) {
+            snapshotPathSet.add(file.toLowerCase());
+        }
+        for (const folder of combinedSnapshot.folders) {
+            snapshotPathSet.add(folder.toLowerCase());
+        }
+
+        function normalizeEventPath(eventPath) {
+            if (!eventPath) return eventPath;
+            let lower = eventPath.replace(/\\/g, '/').toLowerCase();
+            if (snapshotPathSet.has(lower)) return lower;
+            const parts = lower.split('/');
+            for (let i = 1; i < parts.length; i++) {
+                const suffix = parts.slice(i).join('/');
+                if (snapshotPathSet.has(suffix)) return suffix;
+            }
+            return lower;
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             buildAgentLegend();
@@ -718,7 +742,8 @@ public static class AuditCommand
             for (let i = 0; i < currentStep; i++) {
                 const event = mergedTimeline[i];
                 if (event.Path) {
-                    flashNodeInGraph(index, event.Path, event.EventType, false);
+                    const normalizedPath = normalizeEventPath(event.Path);
+                    flashNodeInGraph(index, normalizedPath, event.EventType, false, event.Agent);
                 }
             }
         }
@@ -737,18 +762,19 @@ public static class AuditCommand
             log.scrollTop = log.scrollHeight;
 
             if (event.Path) {
-                accessedFiles.add(event.Path.toLowerCase());
+                const normalizedPath = normalizeEventPath(event.Path);
+                accessedFiles.add(normalizedPath);
 
                 // Flash in all enabled graphs
                 for (let i = 0; i < 3; i++) {
                     if (graphs[i].enabled && !graphs[i].collapsed && graphs[i].network) {
-                        flashNodeInGraph(i, event.Path, event.EventType, true);
+                        flashNodeInGraph(i, normalizedPath, event.EventType, true, event.Agent);
                     }
                 }
             }
         }
 
-        function flashNodeInGraph(index, path, eventType, animate) {
+        function flashNodeInGraph(index, path, eventType, animate, agentName) {
             const g = graphs[index];
             const pathLower = path.toLowerCase();
 
@@ -757,6 +783,7 @@ public static class AuditCommand
                 return;
             }
 
+            const flashColor = agentColors[agentName] || '#CCCCCC';
             let nodeId = g.nodeIdMap[pathLower];
 
             if (!nodeId) {
@@ -767,18 +794,27 @@ public static class AuditCommand
                     id: nodeId,
                     label: parts[parts.length - 1],
                     title: path,
-                    color: getEventColor(eventType),
+                    color: flashColor,
                     shape: 'box'
                 });
             } else if (animate) {
-                // Flash the node with event color
-                const flashColor = getEventColor(eventType);
-                g.nodes.update({ id: nodeId, color: flashColor });
+                // Flash the node with agent color + border highlight
+                g.nodes.update({
+                    id: nodeId,
+                    color: { background: flashColor, border: '#333333' },
+                    borderWidth: 3,
+                    font: { size: 12, bold: true }
+                });
 
-                // Reset color after delay
+                // Reset after delay
                 setTimeout(() => {
-                    g.nodes.update({ id: nodeId, color: '#E8E8E8' });
-                }, 400);
+                    g.nodes.update({
+                        id: nodeId,
+                        color: '#E8E8E8',
+                        borderWidth: 1,
+                        font: { size: 10, bold: false }
+                    });
+                }, 800);
 
                 g.network.selectNodes([nodeId]);
             } else {

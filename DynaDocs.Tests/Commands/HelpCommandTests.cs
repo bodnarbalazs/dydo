@@ -33,7 +33,7 @@ public class HelpCommandTests
 
     private static void PrintHelp()
     {
-        Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation agent orchestration");
+        Console.WriteLine("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
         Console.WriteLine();
         Console.WriteLine("Setup Commands:");
         Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");
@@ -45,6 +45,7 @@ public class HelpCommandTests
         Console.WriteLine("  fix [path]             Auto-fix issues where possible");
         Console.WriteLine("  index [path]           Regenerate index.md from structure");
         Console.WriteLine("  graph <file>           Show graph connections for a file");
+        Console.WriteLine("  graph stats [--top N]  Show top docs by incoming links");
         Console.WriteLine();
         Console.WriteLine("Agent Workflow Commands:");
         Console.WriteLine("  agent claim auto       Claim first available agent");
@@ -72,6 +73,12 @@ public class HelpCommandTests
         Console.WriteLine("  workspace init         Initialize agent workspaces");
         Console.WriteLine("  workspace check        Verify workflow before session end");
         Console.WriteLine();
+        Console.WriteLine("Audit Commands:");
+        Console.WriteLine("  audit                  Generate activity replay visualization");
+        Console.WriteLine("  audit /2025            Filter to specific year");
+        Console.WriteLine("  audit --list           List available sessions");
+        Console.WriteLine("  audit --session <id>   Show details for a session");
+        Console.WriteLine();
         Console.WriteLine("Task Commands:");
         Console.WriteLine("  task create <name>     Create a new task");
         Console.WriteLine("  task ready-for-review  Mark task ready for review");
@@ -93,7 +100,7 @@ public class HelpCommandTests
         Console.WriteLine("  1 - Validation errors found");
         Console.WriteLine("  2 - Tool error / Action blocked");
         Console.WriteLine();
-        Console.WriteLine("For detailed command reference, see: dydo/reference/dydo-commands.md");
+        Console.WriteLine("For detailed command reference, see: ./dydo/reference/dydo-commands.md");
     }
 
     [Fact]
@@ -116,6 +123,7 @@ public class HelpCommandTests
         Assert.Contains("clean", output);
         Assert.Contains("workspace", output);
         Assert.Contains("whoami", output);
+        Assert.Contains("audit", output);
         Assert.Contains("version", output);
         Assert.Contains("help", output);
     }
@@ -206,6 +214,7 @@ public class HelpCommandTests
         Assert.Contains("Agent Management Commands:", output);
         Assert.Contains("Dispatch & Inbox Commands:", output);
         Assert.Contains("Workspace Commands:", output);
+        Assert.Contains("Audit Commands:", output);
         Assert.Contains("Task Commands:", output);
         Assert.Contains("Utility:", output);
     }

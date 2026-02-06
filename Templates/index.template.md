@@ -5,7 +5,7 @@ type: hub
 
 # DynaDocs - AI Agent Entry Point
 
-Dynamic documentation and agent orchestration system. Provides structured context retrieval for AI agents and coordinates multi-agent workflows.
+Documentation-driven context and agent orchestration for AI coding assistants.
 
 You need an assigned identity to work here.
 

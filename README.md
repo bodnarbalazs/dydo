@@ -1,6 +1,6 @@
 # DynaDocs (dydo)
 
-Context management and agent orchestration for AI coding assistants.
+Documentation-driven context and agent orchestration for AI coding assistants.
 
 100% local, 100% under your control.
 
@@ -283,6 +283,13 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo clean <agent>` | Clean agent workspace |
 | `dydo workspace init` | Initialize agent workspaces |
 | `dydo workspace check` | Verify workflow before session end |
+
+### Audit
+| Command | Description |
+|---------|-------------|
+| `dydo audit` | Generate activity replay visualization |
+| `dydo audit --list` | List available sessions |
+| `dydo audit --session <id>` | Show details for a session |
 
 ---
 

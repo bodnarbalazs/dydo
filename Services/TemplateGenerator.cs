@@ -1002,6 +1002,28 @@ public static class TemplateGenerator
                 | `dydo task reject <name>` | Reject task |
                 | `dydo task list` | List tasks |
 
+                ## Workflow Commands
+
+                | Command | Description |
+                |---------|-------------|
+                | `dydo dispatch` | Dispatch work to another agent |
+                | `dydo inbox list` | List agents with inbox items |
+                | `dydo inbox show` | Show current agent's inbox |
+                | `dydo inbox clear` | Clear processed inbox items |
+                | `dydo guard` | Check permissions (for hooks) |
+                | `dydo clean <agent>` | Clean agent workspace |
+                | `dydo workspace init` | Initialize agent workspaces |
+                | `dydo workspace check` | Verify workflow before session end |
+                | `dydo review complete <task>` | Complete a code review |
+
+                ## Audit Commands
+
+                | Command | Description |
+                |---------|-------------|
+                | `dydo audit` | Generate activity replay visualization |
+                | `dydo audit --list` | List available sessions |
+                | `dydo audit --session <id>` | Show details for a session |
+
                 ---
 
                 Run `dydo <command> --help` for detailed usage of each command.
@@ -1134,7 +1156,7 @@ public static class TemplateGenerator
 
                 # DynaDocs (dydo)
 
-                A platform-agnostic AI orchestration and context-management framework.
+                Documentation-driven context and agent orchestration for AI coding assistants.
 
                 100% local, 100% under your control.
 

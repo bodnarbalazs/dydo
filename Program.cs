@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.Reflection;
 using DynaDocs.Commands;
 
-var rootCommand = new RootCommand("DynaDocs (dydo) - Dynamic Documentation validation and management tool");
+var rootCommand = new RootCommand("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
 
 rootCommand.Subcommands.Add(CheckCommand.Create());
 rootCommand.Subcommands.Add(FixCommand.Create());
@@ -32,7 +32,7 @@ rootCommand.Subcommands.Add(versionCommand);
 var helpCommand = new Command("help", "Display help information");
 helpCommand.SetAction(_ =>
 {
-    Console.WriteLine("DynaDocs (dydo) - Dynamic Documentation agent orchestration");
+    Console.WriteLine("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
     Console.WriteLine();
     Console.WriteLine("Setup Commands:");
     Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");

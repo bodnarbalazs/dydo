@@ -436,6 +436,28 @@ dydo review complete auth-login --status fail --notes "Found security issue"
 
 ---
 
+## Audit Commands
+
+### dydo audit
+
+View and visualize agent activity logs.
+
+```bash
+dydo audit                   # Generate activity replay visualization
+dydo audit /2025             # Filter to specific year
+dydo audit --list            # List available sessions
+dydo audit --session <id>    # Show details for a session
+```
+
+**Arguments:**
+- `path` - Path filter (e.g., /2025 for year 2025)
+
+**Options:**
+- `--list` - List available sessions
+- `--session <id>` - Show details for a specific session ID
+
+---
+
 ## Utility Commands
 
 ### dydo version

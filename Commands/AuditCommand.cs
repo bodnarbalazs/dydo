@@ -250,10 +250,6 @@ public static class AuditCommand
         sb.AppendLine("                Step: <span id=\"stepNum\">0</span> / <span id=\"totalSteps\">0</span>");
         sb.AppendLine("            </td>");
         sb.AppendLine("            <td>");
-        sb.AppendLine("                <input type=\"checkbox\" id=\"showAll\" onchange=\"toggleShowAll()\" checked>");
-        sb.AppendLine("                <label for=\"showAll\">Show all files</label>");
-        sb.AppendLine("            </td>");
-        sb.AppendLine("            <td>");
         sb.AppendLine("                <input type=\"checkbox\" id=\"showDocLinks\" onchange=\"toggleDocLinks()\">");
         sb.AppendLine("                <label for=\"showDocLinks\">Show doc links</label>");
         sb.AppendLine("            </td>");
@@ -270,17 +266,30 @@ public static class AuditCommand
         sb.AppendLine("    </table>");
         sb.AppendLine();
 
-        // Main graph + event log
-        sb.AppendLine("    <table border=\"1\" cellpadding=\"5\" style=\"margin-top:10px\">");
-        sb.AppendLine("        <tr>");
-        sb.AppendLine("            <td style=\"width:70%; height:600px; vertical-align:top\">");
-        sb.AppendLine("                <div id=\"graph\" style=\"width:100%; height:100%\"></div>");
-        sb.AppendLine("            </td>");
-        sb.AppendLine("            <td style=\"width:30%; vertical-align:top\">");
-        sb.AppendLine("                <div id=\"eventLog\" style=\"height:600px; overflow-y:auto; font-family:monospace; font-size:11px\"></div>");
-        sb.AppendLine("            </td>");
-        sb.AppendLine("        </tr>");
-        sb.AppendLine("    </table>");
+        // 3 Graph slots
+        for (int i = 0; i < 3; i++)
+        {
+            var defaultEnabled = i < 2 ? "checked" : "";
+            var defaultCollapsed = i >= 2 ? "none" : "block";
+            sb.AppendLine($"    <div id=\"graphSlot{i}\" style=\"margin-top:10px; border:1px solid #ccc; padding:5px\">");
+            sb.AppendLine($"        <b>Graph {i + 1}:</b>");
+            sb.AppendLine($"        <select id=\"filter{i}\" onchange=\"onFilterChange({i})\"></select>");
+            sb.AppendLine($"        <input type=\"checkbox\" id=\"enabled{i}\" onchange=\"onEnableChange({i})\" {defaultEnabled}>");
+            sb.AppendLine($"        <label for=\"enabled{i}\">Enabled</label>");
+            sb.AppendLine($"        <button onclick=\"toggleCollapse({i})\" id=\"collapseBtn{i}\">Collapse</button>");
+            sb.AppendLine($"        <span id=\"nodeCount{i}\" style=\"margin-left:10px; color:#666\"></span>");
+            sb.AppendLine($"        <div id=\"graphContainer{i}\" style=\"display:{defaultCollapsed}; margin-top:5px\">");
+            sb.AppendLine($"            <div id=\"graph{i}\" style=\"width:95vw; height:80vh; border:1px solid #999\"></div>");
+            sb.AppendLine("        </div>");
+            sb.AppendLine("    </div>");
+        }
+        sb.AppendLine();
+
+        // Event log
+        sb.AppendLine("    <div style=\"margin-top:10px; border:1px solid #ccc; padding:5px\">");
+        sb.AppendLine("        <b>Event Log</b>");
+        sb.AppendLine("        <div id=\"eventLog\" style=\"height:200px; overflow-y:auto; font-family:monospace; font-size:11px; margin-top:5px\"></div>");
+        sb.AppendLine("    </div>");
         sb.AppendLine();
 
         // Sessions info
@@ -392,22 +401,28 @@ public static class AuditCommand
     }
 
     private static string GetJavaScript() => """
+        // Playback state
         let currentStep = 0;
         let playing = false;
         let playInterval = null;
-        let network = null;
-        let nodes = null;
-        let edges = null;
-        let showAllFiles = true;
         let showDocLinks = false;
         let accessedFiles = new Set();
-        let nodeIdMap = {};
-        let nextNodeId = 1;
-        let docLinkEdgeIds = [];
+
+        // 3 graph slots
+        const graphs = [
+            { network: null, nodes: null, edges: null, filter: '', enabled: true, collapsed: false, nodeIdMap: {}, nextNodeId: 1, docLinkEdgeIds: [] },
+            { network: null, nodes: null, edges: null, filter: '', enabled: true, collapsed: false, nodeIdMap: {}, nextNodeId: 1, docLinkEdgeIds: [] },
+            { network: null, nodes: null, edges: null, filter: '', enabled: false, collapsed: true, nodeIdMap: {}, nextNodeId: 1, docLinkEdgeIds: [] }
+        ];
+
+        // Folder options for dropdowns
+        let folderOptions = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             buildAgentLegend();
-            initializeGraph();
+            buildFolderOptions();
+            populateDropdowns();
+            initializeAllGraphs();
             document.getElementById('totalSteps').textContent = mergedTimeline.length;
         });
 
@@ -422,28 +437,78 @@ public static class AuditCommand
             legend.innerHTML = html;
         }
 
-        function initializeGraph() {
-            nodes = new vis.DataSet();
-            edges = new vis.DataSet();
-            nodeIdMap = {};
-            nextNodeId = 1;
-            docLinkEdgeIds = [];
-
-            if (showAllFiles && combinedSnapshot.files.length > 0) {
-                buildFullTree();
+        function buildFolderOptions() {
+            // Get unique top-level folders
+            const topFolders = new Set();
+            for (const file of combinedSnapshot.files) {
+                const parts = file.split('/');
+                if (parts.length > 1) {
+                    topFolders.add(parts[0]);
+                }
             }
+            folderOptions = ['(All files)', ...Array.from(topFolders).sort()];
+        }
 
-            const container = document.getElementById('graph');
-            network = new vis.Network(container, { nodes: nodes, edges: edges }, {
-                layout: {
-                    hierarchical: {
-                        enabled: false
+        function populateDropdowns() {
+            for (let i = 0; i < 3; i++) {
+                const select = document.getElementById('filter' + i);
+                select.innerHTML = '';
+                for (const opt of folderOptions) {
+                    const option = document.createElement('option');
+                    option.value = opt === '(All files)' ? '' : opt;
+                    option.textContent = opt;
+                    select.appendChild(option);
+                }
+                // Set default filters
+                if (i === 0 && folderOptions.includes('dydo')) {
+                    select.value = 'dydo';
+                    graphs[i].filter = 'dydo';
+                } else if (i === 1 && folderOptions.length > 2) {
+                    // Second non-dydo folder
+                    const secondFolder = folderOptions.find(f => f !== '(All files)' && f !== 'dydo');
+                    if (secondFolder) {
+                        select.value = secondFolder;
+                        graphs[i].filter = secondFolder;
                     }
+                }
+            }
+        }
+
+        function initializeAllGraphs() {
+            for (let i = 0; i < 3; i++) {
+                if (graphs[i].enabled && !graphs[i].collapsed) {
+                    initGraph(i);
+                }
+            }
+        }
+
+        function initGraph(index) {
+            const g = graphs[index];
+            g.nodes = new vis.DataSet();
+            g.edges = new vis.DataSet();
+            g.nodeIdMap = {};
+            g.nextNodeId = 1;
+            g.docLinkEdgeIds = [];
+
+            buildFilteredTree(index);
+
+            const container = document.getElementById('graph' + index);
+            g.network = new vis.Network(container, { nodes: g.nodes, edges: g.edges }, {
+                layout: {
+                    improvedLayout: false
                 },
                 physics: {
                     enabled: true,
-                    stabilization: { iterations: 100 },
-                    barnesHut: { gravitationalConstant: -2000, springLength: 100 }
+                    stabilization: {
+                        enabled: true,
+                        iterations: 150,
+                        updateInterval: 25
+                    },
+                    barnesHut: {
+                        gravitationalConstant: -3000,
+                        springLength: 120,
+                        springConstant: 0.04
+                    }
                 },
                 nodes: {
                     shape: 'box',
@@ -451,22 +516,53 @@ public static class AuditCommand
                     margin: 5
                 },
                 edges: {
-                    arrows: { to: { enabled: true, scaleFactor: 0.5 } },
                     smooth: { type: 'cubicBezier' }
                 }
             });
 
-            updateStepDisplay();
+            // Freeze physics after stabilization
+            g.network.on('stabilized', function() {
+                g.network.setOptions({ physics: { enabled: false } });
+            });
+
+            updateNodeCount(index);
         }
 
-        function buildFullTree() {
+        function destroyGraph(index) {
+            const g = graphs[index];
+            if (g.network) {
+                g.network.destroy();
+                g.network = null;
+                g.nodes = null;
+                g.edges = null;
+                g.nodeIdMap = {};
+                g.nextNodeId = 1;
+                g.docLinkEdgeIds = [];
+            }
+            document.getElementById('nodeCount' + index).textContent = '';
+        }
+
+        function buildFilteredTree(index) {
+            const g = graphs[index];
+            const filter = g.filter.toLowerCase();
+
+            // Filter folders
+            const filteredFolders = filter
+                ? combinedSnapshot.folders.filter(f => f.toLowerCase().startsWith(filter))
+                : combinedSnapshot.folders;
+
+            // Filter files
+            const filteredFiles = filter
+                ? combinedSnapshot.files.filter(f => f.toLowerCase().startsWith(filter))
+                : combinedSnapshot.files;
+
             // Add folder nodes
-            for (const folder of combinedSnapshot.folders) {
+            for (const folder of filteredFolders) {
                 const parts = folder.split('/');
                 const label = '[' + parts[parts.length - 1] + ']';
-                const id = getNodeId(folder);
+                const id = getNodeId(index, folder);
 
-                nodes.add({
+                g.nodes.add({
                     id: id,
                     label: label,
                     title: folder,
@@ -474,40 +570,47 @@ public static class AuditCommand
                     shape: 'box'
                 });
 
-                // Add edge to parent folder
+                // Add edge to parent folder (if parent is in filtered set)
                 if (parts.length > 1) {
                     const parentPath = parts.slice(0, -1).join('/');
-                    const parentId = getNodeId(parentPath);
-                    edges.add({
-                        from: parentId,
-                        to: id,
-                        color: { color: '#CCCCCC' },
-                        dashes: false,
-                        arrows: ''
-                    });
+                    if (!filter || parentPath.toLowerCase().startsWith(filter)) {
+                        const parentId = g.nodeIdMap[parentPath.toLowerCase()];
+                        if (parentId) {
+                            g.edges.add({
+                                from: parentId,
+                                to: id,
+                                color: { color: '#CCCCCC' },
+                                dashes: false,
+                                arrows: ''
+                            });
+                        }
+                    }
                 }
             }
 
             // Add file nodes
-            for (const file of combinedSnapshot.files) {
+            for (const file of filteredFiles) {
                 const parts = file.split('/');
                 const label = parts[parts.length - 1];
-                const id = getNodeId(file);
+                const id = getNodeId(index, file);
                 const folderPath = parts.slice(0, -1).join('/');
 
-                nodes.add({
+                // Check if already accessed
+                const isAccessed = accessedFiles.has(file.toLowerCase());
+
+                g.nodes.add({
                     id: id,
                     label: label,
                     title: file,
-                    color: '#F5F5F5',
+                    color: isAccessed ? '#E8E8E8' : '#F5F5F5',
                     shape: 'box'
                 });
 
                 // Add edge to parent folder
                 if (folderPath) {
-                    const parentId = nodeIdMap[folderPath.toLowerCase()];
+                    const parentId = g.nodeIdMap[folderPath.toLowerCase()];
                     if (parentId) {
-                        edges.add({
+                        g.edges.add({
                             from: parentId,
                             to: id,
                             color: { color: '#CCCCCC' },
@@ -519,44 +622,105 @@ public static class AuditCommand
             }
 
             if (showDocLinks) {
-                addDocLinks();
+                addDocLinksToGraph(index);
             }
         }
 
-        function addDocLinks() {
+        function addDocLinksToGraph(index) {
+            const g = graphs[index];
             for (const [source, targets] of Object.entries(combinedSnapshot.doc_links)) {
-                const sourceId = nodeIdMap[source.toLowerCase()];
+                const sourceId = g.nodeIdMap[source.toLowerCase()];
                 if (!sourceId) continue;
 
                 for (const target of targets) {
-                    const targetId = nodeIdMap[target.toLowerCase()];
+                    const targetId = g.nodeIdMap[target.toLowerCase()];
                     if (!targetId) continue;
 
-                    const edgeId = edges.add({
+                    const edgeId = g.edges.add({
                         from: sourceId,
                         to: targetId,
                         color: { color: '#4169E1' },
                         dashes: true,
                         arrows: 'to'
                     })[0];
-                    docLinkEdgeIds.push(edgeId);
+                    g.docLinkEdgeIds.push(edgeId);
                 }
             }
         }
 
-        function removeDocLinks() {
-            for (const edgeId of docLinkEdgeIds) {
-                try { edges.remove(edgeId); } catch(e) {}
+        function removeDocLinksFromGraph(index) {
+            const g = graphs[index];
+            for (const edgeId of g.docLinkEdgeIds) {
+                try { g.edges.remove(edgeId); } catch(e) {}
             }
-            docLinkEdgeIds = [];
+            g.docLinkEdgeIds = [];
         }
 
-        function getNodeId(path) {
+        function getNodeId(index, path) {
+            const g = graphs[index];
             const key = path.toLowerCase();
-            if (!nodeIdMap[key]) {
-                nodeIdMap[key] = nextNodeId++;
+            if (!g.nodeIdMap[key]) {
+                g.nodeIdMap[key] = g.nextNodeId++;
             }
-            return nodeIdMap[key];
+            return g.nodeIdMap[key];
+        }
+
+        function updateNodeCount(index) {
+            const g = graphs[index];
+            const count = g.nodes ? g.nodes.length : 0;
+            document.getElementById('nodeCount' + index).textContent = count + ' nodes';
+        }
+
+        function onFilterChange(index) {
+            const g = graphs[index];
+            g.filter = document.getElementById('filter' + index).value;
+            if (g.enabled && !g.collapsed && g.network) {
+                destroyGraph(index);
+                initGraph(index);
+                // Replay events to restore accessed state
+                replayEventsToGraph(index);
+            }
+        }
+
+        function onEnableChange(index) {
+            const g = graphs[index];
+            g.enabled = document.getElementById('enabled' + index).checked;
+            if (g.enabled && !g.collapsed) {
+                initGraph(index);
+                replayEventsToGraph(index);
+            } else {
+                destroyGraph(index);
+            }
+        }
+
+        function toggleCollapse(index) {
+            const g = graphs[index];
+            g.collapsed = !g.collapsed;
+            const container = document.getElementById('graphContainer' + index);
+            const btn = document.getElementById('collapseBtn' + index);
+
+            if (g.collapsed) {
+                container.style.display = 'none';
+                btn.textContent = 'Expand';
+                destroyGraph(index);
+            } else {
+                container.style.display = 'block';
+                btn.textContent = 'Collapse';
+                if (g.enabled) {
+                    initGraph(index);
+                    replayEventsToGraph(index);
+                }
+            }
+        }
+
+        function replayEventsToGraph(index) {
+            // Flash nodes for already-processed events
+            for (let i = 0; i < currentStep; i++) {
+                const event = mergedTimeline[i];
+                if (event.Path) {
+                    flashNodeInGraph(index, event.Path, event.EventType, false);
+                }
+            }
         }
 
         function processEvent(event) {
@@ -573,35 +737,53 @@ public static class AuditCommand
             log.scrollTop = log.scrollHeight;
 
             if (event.Path) {
-                const pathLower = event.Path.toLowerCase();
-                accessedFiles.add(pathLower);
+                accessedFiles.add(event.Path.toLowerCase());
 
-                let nodeId = nodeIdMap[pathLower];
-
-                // Create node if not exists (for files not in snapshot)
-                if (!nodeId) {
-                    nodeId = getNodeId(event.Path);
-                    const parts = event.Path.split('/');
-                    nodes.add({
-                        id: nodeId,
-                        label: parts[parts.length - 1],
-                        title: event.Path,
-                        color: getEventColor(event.EventType),
-                        shape: 'box'
-                    });
-                } else {
-                    // Flash the node with event color
-                    const flashColor = getEventColor(event.EventType);
-                    nodes.update({ id: nodeId, color: flashColor });
-
-                    // Reset color after delay
-                    setTimeout(() => {
-                        const baseColor = accessedFiles.has(pathLower) ? '#E8E8E8' : '#F5F5F5';
-                        nodes.update({ id: nodeId, color: baseColor });
-                    }, 400);
+                // Flash in all enabled graphs
+                for (let i = 0; i < 3; i++) {
+                    if (graphs[i].enabled && !graphs[i].collapsed && graphs[i].network) {
+                        flashNodeInGraph(i, event.Path, event.EventType, true);
+                    }
                 }
+            }
+        }
 
-                network.selectNodes([nodeId]);
+        function flashNodeInGraph(index, path, eventType, animate) {
+            const g = graphs[index];
+            const pathLower = path.toLowerCase();
+
+            // Check if path matches filter
+            if (g.filter && !pathLower.startsWith(g.filter.toLowerCase())) {
+                return;
+            }
+
+            let nodeId = g.nodeIdMap[pathLower];
+
+            if (!nodeId) {
+                // Create node if not exists (for files not in snapshot)
+                nodeId = getNodeId(index, path);
+                const parts = path.split('/');
+                g.nodes.add({
+                    id: nodeId,
+                    label: parts[parts.length - 1],
+                    title: path,
+                    color: getEventColor(eventType),
+                    shape: 'box'
+                });
+            } else if (animate) {
+                // Flash the node with event color
+                const flashColor = getEventColor(eventType);
+                g.nodes.update({ id: nodeId, color: flashColor });
+
+                // Reset color after delay
+                setTimeout(() => {
+                    g.nodes.update({ id: nodeId, color: '#E8E8E8' });
+                }, 400);
+
+                g.network.selectNodes([nodeId]);
+            } else {
+                // Just mark as accessed (no animation)
+                g.nodes.update({ id: nodeId, color: '#E8E8E8' });
             }
         }
 
@@ -616,36 +798,27 @@ public static class AuditCommand
             }
         }
 
-        function toggleShowAll() {
-            showAllFiles = document.getElementById('showAll').checked;
-            rebuildGraph();
-        }
-
         function toggleDocLinks() {
             showDocLinks = document.getElementById('showDocLinks').checked;
-            if (showDocLinks) {
-                addDocLinks();
-            } else {
-                removeDocLinks();
+            for (let i = 0; i < 3; i++) {
+                const g = graphs[i];
+                if (g.enabled && !g.collapsed && g.network) {
+                    if (showDocLinks) {
+                        addDocLinksToGraph(i);
+                    } else {
+                        removeDocLinksFromGraph(i);
+                    }
+                }
             }
         }
 
-        function rebuildGraph() {
-            nodes.clear();
-            edges.clear();
-            nodeIdMap = {};
-            nextNodeId = 1;
-            docLinkEdgeIds = [];
-
-            if (showAllFiles && combinedSnapshot.files.length > 0) {
-                buildFullTree();
-            }
-
-            // Replay events up to current step to restore state
-            accessedFiles.clear();
-            document.getElementById('eventLog').innerHTML = '';
-            for (let i = 0; i < currentStep; i++) {
-                processEvent(mergedTimeline[i]);
+        function rebuildAllGraphs() {
+            for (let i = 0; i < 3; i++) {
+                const g = graphs[i];
+                if (g.enabled && !g.collapsed) {
+                    destroyGraph(i);
+                    initGraph(i);
+                }
             }
         }
 
@@ -660,14 +833,22 @@ public static class AuditCommand
         function stepBack() {
             if (currentStep > 0) {
                 currentStep--;
-                rebuildGraph();
+                accessedFiles.clear();
+                document.getElementById('eventLog').innerHTML = '';
+                rebuildAllGraphs();
+                // Replay events up to current step
+                for (let i = 0; i < currentStep; i++) {
+                    processEvent(mergedTimeline[i]);
+                }
                 updateStepDisplay();
             }
         }
 
         function stepFirst() {
             currentStep = 0;
-            rebuildGraph();
+            accessedFiles.clear();
+            document.getElementById('eventLog').innerHTML = '';
+            rebuildAllGraphs();
             updateStepDisplay();
         }
 
@@ -702,7 +883,7 @@ public static class AuditCommand
             currentStep = 0;
             accessedFiles.clear();
             document.getElementById('eventLog').innerHTML = '';
-            rebuildGraph();
+            rebuildAllGraphs();
             updateStepDisplay();
         }
 

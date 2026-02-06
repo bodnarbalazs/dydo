@@ -46,4 +46,13 @@ public class AuditSession
     /// </summary>
     [JsonPropertyName("events")]
     public List<AuditEvent> Events { get; set; } = [];
+
+    /// <summary>
+    /// Snapshot of project state at session claim time.
+    /// Contains git-tracked files, folders, and doc links for visualization.
+    /// Null for sessions started before this feature was added.
+    /// </summary>
+    [JsonPropertyName("snapshot")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ProjectSnapshot? Snapshot { get; set; }
 }

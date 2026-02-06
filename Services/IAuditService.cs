@@ -15,7 +15,8 @@ public interface IAuditService
     /// <param name="event">The event to log</param>
     /// <param name="agentName">Optional agent name (for session metadata)</param>
     /// <param name="human">Optional human name (for session metadata)</param>
-    void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null);
+    /// <param name="snapshot">Optional project snapshot (only stored on session creation)</param>
+    void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null, ProjectSnapshot? snapshot = null);
 
     /// <summary>
     /// Get a specific session by ID.

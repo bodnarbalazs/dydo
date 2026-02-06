@@ -1,6 +1,7 @@
 namespace DynaDocs.Serialization;
 
 using System.Text.Json.Serialization;
+using DynaDocs.Commands;
 using DynaDocs.Models;
 
 /// <summary>
@@ -28,6 +29,10 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(AgentSession))]
 [JsonSerializable(typeof(AuditEvent))]
 [JsonSerializable(typeof(AuditSession))]
+[JsonSerializable(typeof(ProjectSnapshot))]
 [JsonSerializable(typeof(List<AuditEvent>))]
 [JsonSerializable(typeof(List<AuditSession>))]
+[JsonSerializable(typeof(MergedEvent))]
+[JsonSerializable(typeof(List<MergedEvent>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }

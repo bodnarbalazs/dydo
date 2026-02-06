@@ -14,6 +14,13 @@ using DynaDocs.Utils;
 /// </summary>
 public static class AuditCommand
 {
+    // Agent color palette for multi-agent visualization
+    private static readonly string[] AgentColors =
+    [
+        "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4",
+        "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F"
+    ];
+
     public static Command Create()
     {
         var pathArgument = new Argument<string?>("path")
@@ -106,6 +113,7 @@ public static class AuditCommand
             Console.WriteLine($"Human: {session.Human ?? "(none)"}");
             Console.WriteLine($"Started: {session.Started:yyyy-MM-dd HH:mm:ss}");
             Console.WriteLine($"Git HEAD: {session.GitHead ?? "(none)"}");
+            Console.WriteLine($"Snapshot: {(session.Snapshot != null ? $"{session.Snapshot.Files.Count} files" : "(none)")}");
             Console.WriteLine($"Events: {session.Events.Count}");
             Console.WriteLine();
 
@@ -140,7 +148,6 @@ public static class AuditCommand
         try
         {
             var auditService = new AuditService();
-            var configService = new ConfigService();
 
             // Ensure audit folder exists
             auditService.EnsureAuditFolder();
@@ -199,63 +206,103 @@ public static class AuditCommand
 
     private static string GenerateVisualizationHtml(IReadOnlyList<AuditSession> sessions)
     {
-        // Serialize sessions to JSON for embedding
-        var sessionsJson = JsonSerializer.Serialize(sessions, DydoDefaultJsonContext.Default.ListAuditSession);
+        // Assign colors to agents
+        var agentColors = AssignAgentColors(sessions);
 
-        // Using StringBuilder to avoid complex escaping issues with JavaScript in raw strings
+        // Merge all events across sessions, sorted by timestamp
+        var mergedTimeline = MergeTimelines(sessions);
+
+        // Build combined snapshot (union of all files/folders/links)
+        var combinedSnapshot = BuildCombinedSnapshot(sessions);
+
+        // Serialize data for embedding
+        var sessionsJson = JsonSerializer.Serialize(sessions, DydoDefaultJsonContext.Default.ListAuditSession);
+        var agentColorsJson = JsonSerializer.Serialize(agentColors, DydoDefaultJsonContext.Default.DictionaryStringString);
+        var timelineJson = JsonSerializer.Serialize(mergedTimeline, DydoDefaultJsonContext.Default.ListMergedEvent);
+        var snapshotJson = JsonSerializer.Serialize(combinedSnapshot, DydoDefaultJsonContext.Default.ProjectSnapshot);
+
         var sb = new StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
         sb.AppendLine("<html>");
         sb.AppendLine("<head>");
-        sb.AppendLine("    <title>Audit Replay - DynaDocs</title>");
+        sb.AppendLine("    <title>Audit Visualization - DynaDocs</title>");
         sb.AppendLine("    <script src=\"https://unpkg.com/vis-network/standalone/umd/vis-network.min.js\"></script>");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
-        sb.AppendLine("    <h1>Audit Replay</h1>");
+        sb.AppendLine("    <h1>Project Audit Visualization</h1>");
         sb.AppendLine();
+
+        // Controls row
         sb.AppendLine("    <table border=\"1\" cellpadding=\"5\">");
         sb.AppendLine("        <tr>");
         sb.AppendLine("            <td>");
-        sb.AppendLine("                <label>Session: </label>");
-        sb.AppendLine("                <select id=\"sessionSelect\" onchange=\"loadSession()\"></select>");
-        sb.AppendLine("            </td>");
-        sb.AppendLine("            <td>");
+        sb.AppendLine("                <button onclick=\"stepFirst()\">&lt;&lt;</button>");
         sb.AppendLine("                <button onclick=\"stepBack()\">&lt;</button>");
         sb.AppendLine("                <button onclick=\"togglePlay()\" id=\"playBtn\">Play</button>");
         sb.AppendLine("                <button onclick=\"stepForward()\">&gt;</button>");
+        sb.AppendLine("                <button onclick=\"stepLast()\">&gt;&gt;</button>");
         sb.AppendLine("                <button onclick=\"reset()\">Reset</button>");
         sb.AppendLine("            </td>");
         sb.AppendLine("            <td>");
-        sb.AppendLine("                <label>Speed: </label>");
-        sb.AppendLine("                <input type=\"range\" id=\"speed\" min=\"100\" max=\"2000\" value=\"500\">");
+        sb.AppendLine("                Speed: <input type=\"range\" id=\"speed\" min=\"50\" max=\"2000\" value=\"300\">");
         sb.AppendLine("            </td>");
         sb.AppendLine("            <td>");
         sb.AppendLine("                Step: <span id=\"stepNum\">0</span> / <span id=\"totalSteps\">0</span>");
         sb.AppendLine("            </td>");
+        sb.AppendLine("            <td>");
+        sb.AppendLine("                <input type=\"checkbox\" id=\"showAll\" onchange=\"toggleShowAll()\" checked>");
+        sb.AppendLine("                <label for=\"showAll\">Show all files</label>");
+        sb.AppendLine("            </td>");
+        sb.AppendLine("            <td>");
+        sb.AppendLine("                <input type=\"checkbox\" id=\"showDocLinks\" onchange=\"toggleDocLinks()\">");
+        sb.AppendLine("                <label for=\"showDocLinks\">Show doc links</label>");
+        sb.AppendLine("            </td>");
         sb.AppendLine("        </tr>");
         sb.AppendLine("    </table>");
         sb.AppendLine();
-        sb.AppendLine("    <table border=\"1\" cellpadding=\"5\" style=\"margin-top: 10px;\">");
+
+        // Agent legend
+        sb.AppendLine("    <table border=\"1\" cellpadding=\"3\" style=\"margin-top:5px\">");
         sb.AppendLine("        <tr>");
-        sb.AppendLine("            <td style=\"width: 70%; height: 500px; vertical-align: top;\">");
-        sb.AppendLine("                <div id=\"graph\" style=\"width: 100%; height: 100%;\"></div>");
+        sb.AppendLine("            <td><b>Agents:</b></td>");
+        sb.AppendLine("            <td id=\"agentLegend\"></td>");
+        sb.AppendLine("        </tr>");
+        sb.AppendLine("    </table>");
+        sb.AppendLine();
+
+        // Main graph + event log
+        sb.AppendLine("    <table border=\"1\" cellpadding=\"5\" style=\"margin-top:10px\">");
+        sb.AppendLine("        <tr>");
+        sb.AppendLine("            <td style=\"width:70%; height:600px; vertical-align:top\">");
+        sb.AppendLine("                <div id=\"graph\" style=\"width:100%; height:100%\"></div>");
         sb.AppendLine("            </td>");
-        sb.AppendLine("            <td style=\"width: 30%; vertical-align: top;\">");
-        sb.AppendLine("                <div id=\"eventLog\" style=\"height: 500px; overflow-y: auto; font-family: monospace; font-size: 12px;\"></div>");
+        sb.AppendLine("            <td style=\"width:30%; vertical-align:top\">");
+        sb.AppendLine("                <div id=\"eventLog\" style=\"height:600px; overflow-y:auto; font-family:monospace; font-size:11px\"></div>");
         sb.AppendLine("            </td>");
         sb.AppendLine("        </tr>");
         sb.AppendLine("    </table>");
         sb.AppendLine();
-        sb.AppendLine("    <h3>Session Info</h3>");
-        sb.AppendLine("    <table border=\"1\" cellpadding=\"5\" id=\"sessionInfo\">");
-        sb.AppendLine("        <tr><td>Agent</td><td id=\"infoAgent\">-</td></tr>");
-        sb.AppendLine("        <tr><td>Human</td><td id=\"infoHuman\">-</td></tr>");
-        sb.AppendLine("        <tr><td>Started</td><td id=\"infoStarted\">-</td></tr>");
-        sb.AppendLine("        <tr><td>Git HEAD</td><td id=\"infoGitHead\">-</td></tr>");
+
+        // Sessions info
+        sb.AppendLine("    <h3>Sessions Loaded</h3>");
+        sb.AppendLine("    <table border=\"1\" cellpadding=\"5\" id=\"sessionsTable\">");
+        sb.AppendLine("        <tr><th>Agent</th><th>Human</th><th>Started</th><th>Events</th><th>Snapshot</th></tr>");
+        foreach (var session in sessions)
+        {
+            var snapshotInfo = session.Snapshot != null
+                ? $"{session.Snapshot.Files.Count} files"
+                : "none";
+            sb.AppendLine($"        <tr><td>{session.AgentName ?? "Unknown"}</td><td>{session.Human ?? "-"}</td><td>{session.Started:yyyy-MM-dd HH:mm}</td><td>{session.Events.Count}</td><td>{snapshotInfo}</td></tr>");
+        }
         sb.AppendLine("    </table>");
         sb.AppendLine();
+
+        // Embedded data and JavaScript
         sb.AppendLine("    <script>");
         sb.AppendLine($"        const sessionsData = {sessionsJson};");
+        sb.AppendLine($"        const agentColors = {agentColorsJson};");
+        sb.AppendLine($"        const mergedTimeline = {timelineJson};");
+        sb.AppendLine($"        const combinedSnapshot = {snapshotJson};");
         sb.AppendLine();
         sb.AppendLine(GetJavaScript());
         sb.AppendLine("    </script>");
@@ -265,109 +312,346 @@ public static class AuditCommand
         return sb.ToString();
     }
 
+    private static Dictionary<string, string> AssignAgentColors(IReadOnlyList<AuditSession> sessions)
+    {
+        var colors = new Dictionary<string, string>();
+        var colorIndex = 0;
+
+        foreach (var session in sessions)
+        {
+            var agent = session.AgentName ?? session.SessionId;
+            if (!colors.ContainsKey(agent))
+            {
+                colors[agent] = AgentColors[colorIndex % AgentColors.Length];
+                colorIndex++;
+            }
+        }
+
+        return colors;
+    }
+
+    private static List<MergedEvent> MergeTimelines(IReadOnlyList<AuditSession> sessions)
+    {
+        var merged = new List<MergedEvent>();
+
+        foreach (var session in sessions)
+        {
+            var agent = session.AgentName ?? session.SessionId;
+            foreach (var evt in session.Events)
+            {
+                merged.Add(new MergedEvent
+                {
+                    Timestamp = evt.Timestamp,
+                    Agent = agent,
+                    EventType = evt.EventType.ToString(),
+                    Path = evt.Path,
+                    Command = evt.Command,
+                    Role = evt.Role,
+                    Task = evt.Task
+                });
+            }
+        }
+
+        return merged.OrderBy(e => e.Timestamp).ToList();
+    }
+
+    private static ProjectSnapshot BuildCombinedSnapshot(IReadOnlyList<AuditSession> sessions)
+    {
+        var combined = new ProjectSnapshot
+        {
+            GitCommit = sessions.FirstOrDefault(s => s.Snapshot != null)?.Snapshot?.GitCommit ?? "unknown"
+        };
+
+        var allFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var allLinks = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var session in sessions.Where(s => s.Snapshot != null))
+        {
+            foreach (var file in session.Snapshot!.Files)
+                allFiles.Add(file);
+            foreach (var folder in session.Snapshot.Folders)
+                allFolders.Add(folder);
+            foreach (var (source, targets) in session.Snapshot.DocLinks)
+            {
+                if (!allLinks.ContainsKey(source))
+                    allLinks[source] = new List<string>();
+                foreach (var target in targets)
+                {
+                    if (!allLinks[source].Contains(target, StringComparer.OrdinalIgnoreCase))
+                        allLinks[source].Add(target);
+                }
+            }
+        }
+
+        combined.Files = allFiles.OrderBy(f => f).ToList();
+        combined.Folders = allFolders.OrderBy(f => f).ToList();
+        combined.DocLinks = allLinks;
+
+        return combined;
+    }
+
     private static string GetJavaScript() => """
-        let currentSession = null;
         let currentStep = 0;
         let playing = false;
         let playInterval = null;
         let network = null;
         let nodes = null;
         let edges = null;
-        let nodeIds = {};
-        let lastNodeId = null;
+        let showAllFiles = true;
+        let showDocLinks = false;
+        let accessedFiles = new Set();
+        let nodeIdMap = {};
+        let nextNodeId = 1;
+        let docLinkEdgeIds = [];
 
         document.addEventListener('DOMContentLoaded', function() {
-            const select = document.getElementById('sessionSelect');
-            sessionsData.forEach(function(s, i) {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.text = (s.agent || 'Unknown') + ' - ' + s.started.substring(0, 10) + ' (' + s.events.length + ' events)';
-                select.add(opt);
-            });
-            if (sessionsData.length > 0) { loadSession(); }
+            buildAgentLegend();
+            initializeGraph();
+            document.getElementById('totalSteps').textContent = mergedTimeline.length;
         });
 
-        function loadSession() {
-            const idx = parseInt(document.getElementById('sessionSelect').value);
-            currentSession = sessionsData[idx];
-            currentStep = 0;
-            lastNodeId = null;
-            nodeIds = {};
+        function buildAgentLegend() {
+            const legend = document.getElementById('agentLegend');
+            let html = '';
+            for (const [agent, color] of Object.entries(agentColors)) {
+                html += '<span style="display:inline-block;margin-right:10px">';
+                html += '<span style="display:inline-block;width:12px;height:12px;background:' + color + ';margin-right:3px"></span>';
+                html += agent + '</span>';
+            }
+            legend.innerHTML = html;
+        }
 
-            document.getElementById('infoAgent').textContent = currentSession.agent || '-';
-            document.getElementById('infoHuman').textContent = currentSession.human || '-';
-            document.getElementById('infoStarted').textContent = currentSession.started;
-            document.getElementById('infoGitHead').textContent = currentSession.git_head || '-';
-            document.getElementById('totalSteps').textContent = currentSession.events.length;
-
+        function initializeGraph() {
             nodes = new vis.DataSet();
             edges = new vis.DataSet();
+            nodeIdMap = {};
+            nextNodeId = 1;
+            docLinkEdgeIds = [];
+
+            if (showAllFiles && combinedSnapshot.files.length > 0) {
+                buildFullTree();
+            }
 
             const container = document.getElementById('graph');
             network = new vis.Network(container, { nodes: nodes, edges: edges }, {
-                physics: { stabilization: false },
-                nodes: { shape: 'box', font: { size: 10 } },
-                edges: { arrows: 'to' }
+                layout: {
+                    hierarchical: {
+                        enabled: false
+                    }
+                },
+                physics: {
+                    enabled: true,
+                    stabilization: { iterations: 100 },
+                    barnesHut: { gravitationalConstant: -2000, springLength: 100 }
+                },
+                nodes: {
+                    shape: 'box',
+                    font: { size: 10 },
+                    margin: 5
+                },
+                edges: {
+                    arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+                    smooth: { type: 'cubicBezier' }
+                }
             });
 
-            document.getElementById('eventLog').innerHTML = '';
             updateStepDisplay();
         }
 
-        function updateStepDisplay() {
-            document.getElementById('stepNum').textContent = currentStep;
+        function buildFullTree() {
+            // Add folder nodes
+            for (const folder of combinedSnapshot.folders) {
+                const parts = folder.split('/');
+                const label = '[' + parts[parts.length - 1] + ']';
+                const id = getNodeId(folder);
+
+                nodes.add({
+                    id: id,
+                    label: label,
+                    title: folder,
+                    color: '#FFFACD',
+                    shape: 'box'
+                });
+
+                // Add edge to parent folder
+                if (parts.length > 1) {
+                    const parentPath = parts.slice(0, -1).join('/');
+                    const parentId = getNodeId(parentPath);
+                    edges.add({
+                        from: parentId,
+                        to: id,
+                        color: { color: '#CCCCCC' },
+                        dashes: false,
+                        arrows: ''
+                    });
+                }
+            }
+
+            // Add file nodes
+            for (const file of combinedSnapshot.files) {
+                const parts = file.split('/');
+                const label = parts[parts.length - 1];
+                const id = getNodeId(file);
+                const folderPath = parts.slice(0, -1).join('/');
+
+                nodes.add({
+                    id: id,
+                    label: label,
+                    title: file,
+                    color: '#F5F5F5',
+                    shape: 'box'
+                });
+
+                // Add edge to parent folder
+                if (folderPath) {
+                    const parentId = nodeIdMap[folderPath.toLowerCase()];
+                    if (parentId) {
+                        edges.add({
+                            from: parentId,
+                            to: id,
+                            color: { color: '#CCCCCC' },
+                            dashes: false,
+                            arrows: ''
+                        });
+                    }
+                }
+            }
+
+            if (showDocLinks) {
+                addDocLinks();
+            }
         }
 
-        function getNodeColor(eventType) {
-            switch(eventType) {
-                case 'Read': return '#a0d8ef';
-                case 'Write': return '#90EE90';
-                case 'Edit': return '#FFD700';
-                case 'Delete': return '#FF6B6B';
-                case 'Bash': return '#DDA0DD';
-                case 'Blocked': return '#FF0000';
-                default: return '#cccccc';
+        function addDocLinks() {
+            for (const [source, targets] of Object.entries(combinedSnapshot.doc_links)) {
+                const sourceId = nodeIdMap[source.toLowerCase()];
+                if (!sourceId) continue;
+
+                for (const target of targets) {
+                    const targetId = nodeIdMap[target.toLowerCase()];
+                    if (!targetId) continue;
+
+                    const edgeId = edges.add({
+                        from: sourceId,
+                        to: targetId,
+                        color: { color: '#4169E1' },
+                        dashes: true,
+                        arrows: 'to'
+                    })[0];
+                    docLinkEdgeIds.push(edgeId);
+                }
             }
+        }
+
+        function removeDocLinks() {
+            for (const edgeId of docLinkEdgeIds) {
+                try { edges.remove(edgeId); } catch(e) {}
+            }
+            docLinkEdgeIds = [];
+        }
+
+        function getNodeId(path) {
+            const key = path.toLowerCase();
+            if (!nodeIdMap[key]) {
+                nodeIdMap[key] = nextNodeId++;
+            }
+            return nodeIdMap[key];
         }
 
         function processEvent(event) {
             const log = document.getElementById('eventLog');
-            const time = event.ts.substring(11, 19);
+            const agentColor = agentColors[event.Agent] || '#666666';
+            const time = event.Timestamp.substring(11, 19);
+
             const line = document.createElement('div');
-            line.textContent = time + ' ' + event.event + ' ' + (event.path || event.cmd || event.role || '');
-            line.style.backgroundColor = currentStep % 2 === 0 ? '#f0f0f0' : '#ffffff';
+            line.innerHTML = '<span style="background:' + agentColor + ';color:white;padding:0 3px;margin-right:3px">' +
+                event.Agent.substring(0, 8) + '</span>' +
+                time + ' ' + event.EventType + ' ' +
+                (event.Path || event.Command || event.Role || '');
             log.appendChild(line);
             log.scrollTop = log.scrollHeight;
 
-            if (event.path) {
-                const path = event.path;
-                let nodeId = nodeIds[path];
+            if (event.Path) {
+                const pathLower = event.Path.toLowerCase();
+                accessedFiles.add(pathLower);
 
+                let nodeId = nodeIdMap[pathLower];
+
+                // Create node if not exists (for files not in snapshot)
                 if (!nodeId) {
-                    nodeId = Object.keys(nodeIds).length + 1;
-                    nodeIds[path] = nodeId;
+                    nodeId = getNodeId(event.Path);
+                    const parts = event.Path.split('/');
                     nodes.add({
                         id: nodeId,
-                        label: path.split('/').pop(),
-                        title: path,
-                        color: getNodeColor(event.event)
+                        label: parts[parts.length - 1],
+                        title: event.Path,
+                        color: getEventColor(event.EventType),
+                        shape: 'box'
                     });
                 } else {
-                    nodes.update({ id: nodeId, color: getNodeColor(event.event) });
+                    // Flash the node with event color
+                    const flashColor = getEventColor(event.EventType);
+                    nodes.update({ id: nodeId, color: flashColor });
+
+                    // Reset color after delay
+                    setTimeout(() => {
+                        const baseColor = accessedFiles.has(pathLower) ? '#E8E8E8' : '#F5F5F5';
+                        nodes.update({ id: nodeId, color: baseColor });
+                    }, 400);
                 }
 
-                if (lastNodeId && lastNodeId !== nodeId) {
-                    edges.add({ from: lastNodeId, to: nodeId, color: { color: '#888888' } });
-                }
-
-                lastNodeId = nodeId;
                 network.selectNodes([nodeId]);
             }
         }
 
+        function getEventColor(eventType) {
+            switch(eventType) {
+                case 'Read': return '#90EE90';
+                case 'Write': return '#87CEEB';
+                case 'Edit': return '#FFD700';
+                case 'Delete': return '#FF6B6B';
+                case 'Blocked': return '#FF0000';
+                default: return '#CCCCCC';
+            }
+        }
+
+        function toggleShowAll() {
+            showAllFiles = document.getElementById('showAll').checked;
+            rebuildGraph();
+        }
+
+        function toggleDocLinks() {
+            showDocLinks = document.getElementById('showDocLinks').checked;
+            if (showDocLinks) {
+                addDocLinks();
+            } else {
+                removeDocLinks();
+            }
+        }
+
+        function rebuildGraph() {
+            nodes.clear();
+            edges.clear();
+            nodeIdMap = {};
+            nextNodeId = 1;
+            docLinkEdgeIds = [];
+
+            if (showAllFiles && combinedSnapshot.files.length > 0) {
+                buildFullTree();
+            }
+
+            // Replay events up to current step to restore state
+            accessedFiles.clear();
+            document.getElementById('eventLog').innerHTML = '';
+            for (let i = 0; i < currentStep; i++) {
+                processEvent(mergedTimeline[i]);
+            }
+        }
+
         function stepForward() {
-            if (currentSession && currentStep < currentSession.events.length) {
-                processEvent(currentSession.events[currentStep]);
+            if (currentStep < mergedTimeline.length) {
+                processEvent(mergedTimeline[currentStep]);
                 currentStep++;
                 updateStepDisplay();
             }
@@ -375,10 +659,24 @@ public static class AuditCommand
 
         function stepBack() {
             if (currentStep > 0) {
-                const targetStep = currentStep - 1;
-                loadSession();
-                while (currentStep < targetStep) { stepForward(); }
+                currentStep--;
+                rebuildGraph();
+                updateStepDisplay();
             }
+        }
+
+        function stepFirst() {
+            currentStep = 0;
+            rebuildGraph();
+            updateStepDisplay();
+        }
+
+        function stepLast() {
+            while (currentStep < mergedTimeline.length) {
+                processEvent(mergedTimeline[currentStep]);
+                currentStep++;
+            }
+            updateStepDisplay();
         }
 
         function togglePlay() {
@@ -386,9 +684,9 @@ public static class AuditCommand
             document.getElementById('playBtn').textContent = playing ? 'Pause' : 'Play';
 
             if (playing) {
-                const speed = parseInt(document.getElementById('speed').value);
+                const speed = 2100 - parseInt(document.getElementById('speed').value);
                 playInterval = setInterval(function() {
-                    if (currentStep >= currentSession.events.length) {
+                    if (currentStep >= mergedTimeline.length) {
                         togglePlay();
                     } else {
                         stepForward();
@@ -401,7 +699,15 @@ public static class AuditCommand
 
         function reset() {
             if (playing) togglePlay();
-            loadSession();
+            currentStep = 0;
+            accessedFiles.clear();
+            document.getElementById('eventLog').innerHTML = '';
+            rebuildGraph();
+            updateStepDisplay();
+        }
+
+        function updateStepDisplay() {
+            document.getElementById('stepNum').textContent = currentStep;
         }
 """;
 
@@ -412,4 +718,19 @@ public static class AuditCommand
             return command;
         return command[..maxLength] + "...";
     }
+}
+
+/// <summary>
+/// Represents a merged event from multiple sessions for timeline visualization.
+/// Internal to allow source-generated JSON serialization.
+/// </summary>
+internal class MergedEvent
+{
+    public DateTime Timestamp { get; set; }
+    public string Agent { get; set; } = "";
+    public string EventType { get; set; } = "";
+    public string? Path { get; set; }
+    public string? Command { get; set; }
+    public string? Role { get; set; }
+    public string? Task { get; set; }
 }

@@ -34,7 +34,7 @@ public partial class AuditService : IAuditService
         Directory.CreateDirectory(Path.Combine(auditPath, "reports"));
     }
 
-    public void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null)
+    public void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null, ProjectSnapshot? snapshot = null)
     {
         if (string.IsNullOrEmpty(sessionId))
             return;
@@ -51,6 +51,10 @@ public partial class AuditService : IAuditService
             session.AgentName = agentName;
         if (!string.IsNullOrEmpty(human) && string.IsNullOrEmpty(session.Human))
             session.Human = human;
+
+        // Store snapshot only on first event (when session was just created)
+        if (snapshot != null && session.Snapshot == null)
+            session.Snapshot = snapshot;
 
         // Add event
         session.Events.Add(@event);

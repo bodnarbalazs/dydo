@@ -142,12 +142,24 @@ public partial class AgentRegistry : IAgentRegistry
                 s.AssignedHuman = human;
             });
 
-            // Log claim event
+            // Capture project snapshot for audit visualization
+            ProjectSnapshot? snapshot = null;
+            try
+            {
+                var snapshotService = new SnapshotService(_configService);
+                snapshot = snapshotService.CaptureSnapshot(_basePath);
+            }
+            catch
+            {
+                // Snapshot failure should not block agent claim
+            }
+
+            // Log claim event with snapshot
             LogLifecycleEvent(sessionId, new AuditEvent
             {
                 EventType = AuditEventType.Claim,
                 AgentName = agentName
-            }, agentName, human);
+            }, agentName, human, snapshot);
 
             return true;
         }
@@ -1310,14 +1322,14 @@ public partial class AgentRegistry : IAgentRegistry
     /// <summary>
     /// Helper to log lifecycle events (claim, release, role) with proper error handling.
     /// </summary>
-    private void LogLifecycleEvent(string? sessionId, AuditEvent @event, string? agentName, string? human)
+    private void LogLifecycleEvent(string? sessionId, AuditEvent @event, string? agentName, string? human, ProjectSnapshot? snapshot = null)
     {
         if (string.IsNullOrEmpty(sessionId))
             return;
 
         try
         {
-            _auditService.LogEvent(sessionId, @event, agentName, human);
+            _auditService.LogEvent(sessionId, @event, agentName, human, snapshot);
         }
         catch
         {

@@ -413,4 +413,190 @@ public class AuditServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Snapshot Tests
+
+    [Fact]
+    public void LogEvent_StoresSnapshotOnFirstEvent()
+    {
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "snapshot-test-1";
+
+        var snapshot = new ProjectSnapshot
+        {
+            GitCommit = "abc123def456",
+            Files = ["src/main.cs", "README.md"],
+            Folders = ["src"],
+            DocLinks = new Dictionary<string, List<string>>
+            {
+                ["README.md"] = ["docs/intro.md"]
+            }
+        };
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "test.md"
+        }, snapshot: snapshot);
+
+        var session = service.GetSession(sessionId);
+        Assert.NotNull(session);
+        Assert.NotNull(session.Snapshot);
+        Assert.Equal("abc123def456", session.Snapshot.GitCommit);
+        Assert.Equal(2, session.Snapshot.Files.Count);
+        Assert.Contains("src/main.cs", session.Snapshot.Files);
+    }
+
+    [Fact]
+    public void LogEvent_DoesNotOverwriteExistingSnapshot()
+    {
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "snapshot-test-2";
+
+        var originalSnapshot = new ProjectSnapshot
+        {
+            GitCommit = "original-commit",
+            Files = ["original.md"],
+            Folders = []
+        };
+
+        var newSnapshot = new ProjectSnapshot
+        {
+            GitCommit = "new-commit",
+            Files = ["new.md"],
+            Folders = []
+        };
+
+        // First event with original snapshot
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "test1.md"
+        }, snapshot: originalSnapshot);
+
+        // Second event with new snapshot (should be ignored)
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "test2.md"
+        }, snapshot: newSnapshot);
+
+        var session = service.GetSession(sessionId);
+        Assert.NotNull(session);
+        Assert.NotNull(session.Snapshot);
+        Assert.Equal("original-commit", session.Snapshot.GitCommit);
+        Assert.Contains("original.md", session.Snapshot.Files);
+        Assert.DoesNotContain("new.md", session.Snapshot.Files);
+    }
+
+    [Fact]
+    public void LogEvent_WorksWithoutSnapshot()
+    {
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "snapshot-test-3";
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "test.md"
+        }); // No snapshot provided
+
+        var session = service.GetSession(sessionId);
+        Assert.NotNull(session);
+        Assert.Null(session.Snapshot);
+        Assert.Single(session.Events);
+    }
+
+    [Fact]
+    public void Session_SerializesSnapshotToJson()
+    {
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "snapshot-json-test";
+
+        var snapshot = new ProjectSnapshot
+        {
+            GitCommit = "abc123",
+            Files = ["file1.md", "file2.md"],
+            Folders = ["folder1"],
+            DocLinks = new Dictionary<string, List<string>>
+            {
+                ["file1.md"] = ["file2.md"]
+            }
+        };
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "test.md"
+        }, snapshot: snapshot);
+
+        var year = DateTime.UtcNow.Year.ToString();
+        var files = Directory.GetFiles(Path.Combine(_auditDir, year), $"*-{sessionId}.json");
+        var json = File.ReadAllText(files[0]);
+
+        // Verify snapshot is serialized
+        Assert.Contains("\"snapshot\"", json);
+        Assert.Contains("\"git_commit\"", json);
+        Assert.Contains("\"abc123\"", json);
+        Assert.Contains("\"files\"", json);
+        Assert.Contains("\"folders\"", json);
+        Assert.Contains("\"doc_links\"", json);
+    }
+
+    [Fact]
+    public void Session_OmitsSnapshotWhenNull()
+    {
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "no-snapshot-json-test";
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "test.md"
+        }); // No snapshot
+
+        var year = DateTime.UtcNow.Year.ToString();
+        var files = Directory.GetFiles(Path.Combine(_auditDir, year), $"*-{sessionId}.json");
+        var json = File.ReadAllText(files[0]);
+
+        // Snapshot field should not appear when null
+        Assert.DoesNotContain("\"snapshot\"", json);
+    }
+
+    [Fact]
+    public void Session_DeserializesSnapshotFromJson()
+    {
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "snapshot-deserialize-test";
+
+        var snapshot = new ProjectSnapshot
+        {
+            GitCommit = "deserialize-test-commit",
+            Files = ["a.md", "b.md", "c.md"],
+            Folders = ["dir1", "dir2"],
+            DocLinks = new Dictionary<string, List<string>>
+            {
+                ["a.md"] = ["b.md", "c.md"]
+            }
+        };
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Claim
+        }, snapshot: snapshot);
+
+        // Create new service instance to force reload from disk
+        var service2 = new AuditService(basePath: _testDir);
+        var session = service2.GetSession(sessionId);
+
+        Assert.NotNull(session);
+        Assert.NotNull(session.Snapshot);
+        Assert.Equal("deserialize-test-commit", session.Snapshot.GitCommit);
+        Assert.Equal(3, session.Snapshot.Files.Count);
+        Assert.Equal(2, session.Snapshot.Folders.Count);
+        Assert.True(session.Snapshot.DocLinks.ContainsKey("a.md"));
+        Assert.Equal(2, session.Snapshot.DocLinks["a.md"].Count);
+    }
+
+    #endregion
 }

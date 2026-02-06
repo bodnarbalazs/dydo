@@ -456,7 +456,7 @@ public class AgentLifecycleTests : IntegrationTestBase
         await ClaimAgentAsync("Adele");
 
         // Create archive folder with items (these should not block release)
-        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/inbox/archive");
+        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/archive/inbox");
         Directory.CreateDirectory(archivePath);
         File.WriteAllText(Path.Combine(archivePath, "archived-item.md"), "# Archived");
 

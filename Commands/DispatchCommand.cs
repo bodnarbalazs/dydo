@@ -178,7 +178,8 @@ public static class DispatchCommand
         // Launch new terminal if requested
         if (!noLaunch)
         {
-            TerminalLauncher.LaunchNewTerminal(targetAgentName);
+            var projectRoot = PathUtils.FindProjectRoot();
+            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot);
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 

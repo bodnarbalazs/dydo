@@ -15,7 +15,7 @@ public class TerminalLauncher
 {
     private readonly IProcessStarter _processStarter;
 
-    public record TerminalConfig(string FileName, Func<string, string> GetArguments);
+    public record TerminalConfig(string FileName, Func<string, string?, string> GetArguments);
 
     /// <summary>
     /// Create a TerminalLauncher with optional process starter for testing.
@@ -48,28 +48,46 @@ public class TerminalLauncher
     [
         // Modern terminals (most common on current distros)
         // Prompt format: claude "AgentName --inbox"
-        new("gnome-terminal", agentName => $"-- bash -c \"claude '{agentName} --inbox'; exec bash\""),
-        new("konsole", agentName => $"-e bash -c \"claude '{agentName} --inbox'; exec bash\""),
-        new("xfce4-terminal", agentName => $"-e \"bash -c \\\"claude '{agentName} --inbox'; exec bash\\\"\""),
+        // When workingDirectory is provided, prefix with cd to ensure shell starts in the right place
+        new("gnome-terminal", (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("konsole", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("xfce4-terminal", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\\\"\""),
 
         // Popular third-party terminals
-        new("alacritty", agentName => $"-e bash -c \"claude '{agentName} --inbox'; exec bash\""),
-        new("kitty", agentName => $"bash -c \"claude '{agentName} --inbox'; exec bash\""),
-        new("wezterm", agentName => $"start -- bash -c \"claude '{agentName} --inbox'; exec bash\""),
-        new("tilix", agentName => $"-e \"bash -c \\\"claude '{agentName} --inbox'; exec bash\\\"\""),
+        new("alacritty", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("kitty", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("wezterm", (agentName, wd) => $"start -- bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("tilix", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\\\"\""),
 
         // Wayland-native
-        new("foot", agentName => $"bash -c \"claude '{agentName} --inbox'; exec bash\""),
+        new("foot", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
 
         // Fallback (usually available)
-        new("xterm", agentName => $"-e bash -c \"claude '{agentName} --inbox'; exec bash\""),
+        new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
     ];
 
     public static readonly TerminalConfig[] MacTerminals =
     [
         // Terminal.app is always present on macOS
-        new("osascript", agentName => $"-e 'tell app \"Terminal\" to do script \"claude \\\"{agentName} --inbox\\\"\"'"),
+        new("osascript", (agentName, wd) =>
+            $"-e 'tell app \"Terminal\" to do script \"{CdPrefix(wd)}claude \\\"{agentName} --inbox\\\"\"'"),
     ];
+
+    /// <summary>
+    /// Returns "cd '/path' && " when a working directory is provided, empty string otherwise.
+    /// Used to prefix shell commands in Linux terminals.
+    /// </summary>
+    internal static string CdPrefix(string? workingDirectory)
+    {
+        if (workingDirectory == null)
+            return "";
+
+        if (workingDirectory.Contains('\''))
+            throw new ArgumentException(
+                $"Project path contains a single quote and cannot be safely used in a shell cd command: {workingDirectory}");
+
+        return $"cd '{workingDirectory}' && ";
+    }
 
     public static string GetWindowsArguments(string agentName)
     {
@@ -82,46 +100,46 @@ public class TerminalLauncher
         return $"-NoExit -Command \"claude '{escapedPrompt}'\"";
     }
 
-    public static string GetLinuxArguments(string terminalName, string agentName)
+    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null)
     {
         var config = LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
-        return config?.GetArguments(agentName) ?? throw new ArgumentException($"Unknown terminal: {terminalName}");
+        return config?.GetArguments(agentName, workingDirectory) ?? throw new ArgumentException($"Unknown terminal: {terminalName}");
     }
 
-    public static string GetMacArguments(string agentName)
+    public static string GetMacArguments(string agentName, string? workingDirectory = null)
     {
-        return MacTerminals[0].GetArguments(agentName);
+        return MacTerminals[0].GetArguments(agentName, workingDirectory);
     }
 
     /// <summary>
     /// Static convenience method for backward compatibility.
     /// </summary>
-    public static void LaunchNewTerminal(string agentName)
+    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null)
     {
-        new TerminalLauncher().Launch(agentName);
+        new TerminalLauncher().Launch(agentName, workingDirectory);
     }
 
     /// <summary>
     /// Launch a new terminal for the specified agent.
     /// </summary>
-    public void Launch(string agentName)
+    public void Launch(string agentName, string? workingDirectory = null)
     {
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                LaunchWindows(agentName);
+                LaunchWindows(agentName, workingDirectory);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                if (!TryLaunchTerminals(MacTerminals, agentName))
+                if (!TryLaunchTerminals(MacTerminals, agentName, workingDirectory))
                 {
                     throw new InvalidOperationException("No terminal found");
                 }
             }
             else
             {
-                if (!TryLaunchTerminals(LinuxTerminals, agentName))
+                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory))
                 {
                     throw new InvalidOperationException("No terminal found");
                 }
@@ -138,17 +156,23 @@ public class TerminalLauncher
     /// <summary>
     /// Launch terminal on Windows. Tries Windows Terminal first, falls back to PowerShell.
     /// </summary>
-    public void LaunchWindows(string agentName)
+    public void LaunchWindows(string agentName, string? workingDirectory = null)
     {
         // Try Windows Terminal first (modern)
         try
         {
-            _processStarter.Start(new ProcessStartInfo
+            var wtDirArg = workingDirectory != null
+                ? $"--startingDirectory \"{workingDirectory}\" "
+                : "";
+            var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"new-tab powershell {GetWindowsArguments(agentName)}",
+                Arguments = $"new-tab {wtDirArg}powershell {GetWindowsArguments(agentName)}",
                 UseShellExecute = true
-            });
+            };
+            if (workingDirectory != null)
+                psi.WorkingDirectory = workingDirectory;
+            _processStarter.Start(psi);
             return;
         }
         catch
@@ -157,18 +181,21 @@ public class TerminalLauncher
         }
 
         // Fall back to PowerShell
-        _processStarter.Start(new ProcessStartInfo
+        var fallbackPsi = new ProcessStartInfo
         {
             FileName = "powershell",
             Arguments = GetWindowsArguments(agentName),
             UseShellExecute = true
-        });
+        };
+        if (workingDirectory != null)
+            fallbackPsi.WorkingDirectory = workingDirectory;
+        _processStarter.Start(fallbackPsi);
     }
 
     /// <summary>
     /// Try to launch one of the configured terminals.
     /// </summary>
-    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName)
+    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null)
     {
         foreach (var terminal in terminals)
         {
@@ -177,14 +204,19 @@ public class TerminalLauncher
                 _processStarter.Start(new ProcessStartInfo
                 {
                     FileName = terminal.FileName,
-                    Arguments = terminal.GetArguments(agentName),
+                    Arguments = terminal.GetArguments(agentName, workingDirectory),
                     UseShellExecute = true
                 });
                 return true;
             }
+            catch (ArgumentException)
+            {
+                // Path validation error (e.g. single quote in path) — re-throw immediately
+                throw;
+            }
             catch
             {
-                // Try next terminal
+                // Terminal not found — try next one
             }
         }
         return false;

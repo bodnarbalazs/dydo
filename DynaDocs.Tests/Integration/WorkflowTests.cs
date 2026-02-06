@@ -193,7 +193,7 @@ public class WorkflowTests : IntegrationTestBase
         Assert.Empty(files);
 
         // Verify items are in archive
-        var archivePath = Path.Combine(inboxPath, "archive");
+        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/archive/inbox");
         Assert.True(Directory.Exists(archivePath), "Archive folder should exist");
         var archivedFiles = Directory.GetFiles(archivePath, "*.md");
         Assert.Equal(2, archivedFiles.Length);
@@ -229,7 +229,7 @@ public class WorkflowTests : IntegrationTestBase
         Assert.False(File.Exists(itemPath), "Original file should be moved");
 
         // Verify item was archived
-        var archivePath = Path.Combine(inboxPath, "archive", "abc12345-test-task.md");
+        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/archive/inbox", "abc12345-test-task.md");
         Assert.True(File.Exists(archivePath), "Item should be archived");
     }
 
@@ -301,7 +301,7 @@ public class WorkflowTests : IntegrationTestBase
         Assert.False(File.Exists(itemPath), "Original file should be moved");
 
         // Verify item was archived
-        var archivePath = Path.Combine(inboxPath, "archive", "abc12345-test-task.md");
+        var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/archive/inbox", "abc12345-test-task.md");
         Assert.True(File.Exists(archivePath), "Item should be archived");
     }
 

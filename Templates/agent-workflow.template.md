@@ -69,7 +69,7 @@ For each inbox item:
 2. Set your role: `dydo agent role <role> --task <task-name>`
 3. Go to the appropriate mode file
 
-**Important:** You cannot release while inbox has unprocessed items. Archived items are kept in `inbox/archive/` (last 10 preserved).
+**Important:** You cannot release while inbox has unprocessed items. Archived items are kept in `archive/inbox/`.
 
 ---
 

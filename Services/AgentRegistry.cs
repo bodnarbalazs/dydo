@@ -1387,6 +1387,7 @@ public partial class AgentRegistry : IAgentRegistry
             return;
 
         var snapshots = Directory.GetDirectories(archivePath)
+            .Where(d => !string.Equals(Path.GetFileName(d), "inbox", StringComparison.OrdinalIgnoreCase))
             .OrderBy(d => Path.GetFileName(d))
             .ToList();
 

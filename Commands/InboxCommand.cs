@@ -151,14 +151,15 @@ public static class InboxCommand
             return ExitCodes.ToolError;
         }
 
-        var inboxPath = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
+        var workspace = registry.GetAgentWorkspace(agent.Name);
+        var inboxPath = Path.Combine(workspace, "inbox");
         if (!Directory.Exists(inboxPath))
         {
             Console.WriteLine("Inbox already empty.");
             return ExitCodes.Success;
         }
 
-        var archivePath = Path.Combine(inboxPath, "archive");
+        var archivePath = Path.Combine(workspace, "archive", "inbox");
         Directory.CreateDirectory(archivePath);
 
         if (all)
@@ -169,7 +170,7 @@ public static class InboxCommand
                 var destPath = Path.Combine(archivePath, Path.GetFileName(file));
                 File.Move(file, destPath, overwrite: true);
             }
-            Console.WriteLine($"Archived {files.Length} item(s) to inbox/archive/");
+            Console.WriteLine($"Archived {files.Length} item(s) to archive/inbox/");
         }
         else
         {
@@ -185,7 +186,7 @@ public static class InboxCommand
                 var destPath = Path.Combine(archivePath, Path.GetFileName(file));
                 File.Move(file, destPath, overwrite: true);
             }
-            Console.WriteLine($"Archived item {id} to inbox/archive/");
+            Console.WriteLine($"Archived item {id} to archive/inbox/");
         }
 
         return ExitCodes.Success;

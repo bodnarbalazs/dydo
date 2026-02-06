@@ -147,6 +147,70 @@ public class TerminalLauncherTests
         Assert.DoesNotContain("\"--inbox\"", tokens);
     }
 
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_ContainsCdPrefix_WhenWorkingDirectoryProvided(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", "/home/user/project");
+        Assert.Contains("cd '/home/user/project' && claude", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_NoCdPrefix_WhenNoWorkingDirectory(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+        Assert.DoesNotContain("cd ", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_ContainsCdPrefix_WhenWorkingDirectoryProvided()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", "/Users/dev/project");
+        Assert.Contains("cd '/Users/dev/project' && claude", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_NoCdPrefix_WhenNoWorkingDirectory()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+        Assert.DoesNotContain("cd ", args);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_Throws_WhenPathContainsSingleQuote()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", "/home/user/it's-a-project"));
+
+        Assert.Contains("single quote", ex.Message);
+    }
+
+    [Fact]
+    public void GetMacArguments_Throws_WhenPathContainsSingleQuote()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.GetMacArguments("Adele", "/Users/dev/it's-a-project"));
+
+        Assert.Contains("single quote", ex.Message);
+    }
+
+    [Fact]
+    public void TryLaunchTerminals_RethrowsArgumentException_ForInvalidPath()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        Assert.Throws<ArgumentException>(() =>
+            launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", "/home/it's-broken"));
+    }
+
     #endregion
 
     #region Behavior Tests with IProcessStarter
@@ -207,6 +271,85 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void LaunchWindows_SetsWorkingDirectory_WhenProvided()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+        var projectRoot = "/home/user/my-project";
+
+        launcher.LaunchWindows("Adele", projectRoot);
+
+        Assert.Equal(projectRoot, recorder.Started[0].WorkingDirectory);
+    }
+
+    [Fact]
+    public void LaunchWindows_PowerShellFallback_SetsWorkingDirectory()
+    {
+        var recorder = new RecordingProcessStarter();
+        recorder.FailOnFileName("wt");
+        var launcher = new TerminalLauncher(recorder);
+        var projectRoot = "/home/user/my-project";
+
+        launcher.LaunchWindows("Adele", projectRoot);
+
+        var psCall = recorder.Started.First(p => p.FileName == "powershell");
+        Assert.Equal(projectRoot, psCall.WorkingDirectory);
+    }
+
+    [Fact]
+    public void LaunchWindows_WtArgs_ContainStartingDirectory()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+        var projectRoot = "/home/user/my-project";
+
+        launcher.LaunchWindows("Adele", projectRoot);
+
+        Assert.Contains("--startingDirectory", recorder.Started[0].Arguments);
+        Assert.Contains(projectRoot, recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_WtArgs_OmitStartingDirectory_WhenNoWorkingDirectory()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele");
+
+        Assert.DoesNotContain("--startingDirectory", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_WtArgs_HandlesPathsWithSpaces()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", @"C:\Users\Some User\My Projects\app");
+
+        // Path is wrapped in double quotes inside wt args
+        Assert.Contains(@"--startingDirectory ""C:\Users\Some User\My Projects\app""", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_HandlesPathsWithSpaces()
+    {
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", "/home/some user/my project");
+
+        // Single quotes handle spaces in bash
+        Assert.Contains("cd '/home/some user/my project'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_HandlesPathsWithSpaces()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", "/Users/Some User/My Project");
+
+        Assert.Contains("cd '/Users/Some User/My Project'", args);
+    }
+
+    [Fact]
     public void TryLaunchTerminals_StopsOnFirstSuccess()
     {
         var recorder = new RecordingProcessStarter();
@@ -259,6 +402,29 @@ public class TerminalLauncherTests
 
         Assert.Contains("Brian", recorder.Started[0].Arguments);
         Assert.Contains("--inbox", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void TryLaunchTerminals_ArgumentsContainCdPrefix_WhenWorkingDirectoryProvided()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+        var projectRoot = "/home/user/my-project";
+
+        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", projectRoot);
+
+        Assert.Contains($"cd '{projectRoot}'", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void TryLaunchTerminals_NoCdPrefix_WhenNoWorkingDirectory()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+
+        Assert.DoesNotContain("cd ", recorder.Started[0].Arguments);
     }
 
     #endregion

@@ -288,5 +288,39 @@ public class WorkspaceArchiveTests : IDisposable
         Assert.True(Directory.Exists(snap3));
     }
 
+    [Fact]
+    public void PruneArchive_IgnoresInboxSubfolder()
+    {
+        var workspace = CreateWorkspace();
+        var archiveDir = Path.Combine(workspace, "archive");
+
+        // Create inbox subfolder with archived messages
+        var inboxDir = Path.Combine(archiveDir, "inbox");
+        Directory.CreateDirectory(inboxDir);
+        File.WriteAllText(Path.Combine(inboxDir, "task1.md"), "# Task 1");
+        File.WriteAllText(Path.Combine(inboxDir, "task2.md"), "# Task 2");
+
+        // Create snapshots that push over the limit
+        var snap1 = Path.Combine(archiveDir, "20260101-100000");
+        Directory.CreateDirectory(snap1);
+        for (int i = 0; i < 20; i++)
+            File.WriteAllText(Path.Combine(snap1, $"f{i}.md"), "X");
+
+        var snap2 = Path.Combine(archiveDir, "20260101-110000");
+        Directory.CreateDirectory(snap2);
+        for (int i = 0; i < 20; i++)
+            File.WriteAllText(Path.Combine(snap2, $"f{i}.md"), "X");
+
+        AgentRegistry.PruneArchive(workspace, maxFiles: 20);
+
+        // Oldest snapshot pruned to get under limit
+        Assert.False(Directory.Exists(snap1));
+        Assert.True(Directory.Exists(snap2));
+
+        // Inbox subfolder must survive pruning
+        Assert.True(Directory.Exists(inboxDir), "archive/inbox/ must not be pruned");
+        Assert.Equal(2, Directory.GetFiles(inboxDir, "*.md").Length);
+    }
+
     #endregion
 }

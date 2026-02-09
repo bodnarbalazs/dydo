@@ -55,7 +55,10 @@ public static class GraphCommand
 
             var parser = new MarkdownParser();
             var scanner = new DocScanner(parser);
-            var docs = scanner.ScanDirectory(basePath);
+            var docs = scanner.ScanDirectory(basePath)
+                .Where(d => !PathUtils.NormalizePath(d.RelativePath)
+                    .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             var graph = new DocGraph();
             graph.Build(docs, basePath);
@@ -215,7 +218,10 @@ public static class GraphCommand
 
             var parser = new MarkdownParser();
             var scanner = new DocScanner(parser);
-            var docs = scanner.ScanDirectory(basePath);
+            var docs = scanner.ScanDirectory(basePath)
+                .Where(d => !PathUtils.NormalizePath(d.RelativePath)
+                    .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             var graph = new DocGraph();
             graph.Build(docs, basePath);

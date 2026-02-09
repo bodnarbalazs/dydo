@@ -54,7 +54,7 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(rootIndexPath, indexContent);
         }
 
-        // Create agent workspaces with workflow and mode files
+        // Create agent workspaces
         ScaffoldAgentWorkspaces(basePath);
 
         // Create foundation documentation (must-reads)
@@ -97,7 +97,7 @@ public class FolderScaffolder : IFolderScaffolder
             File.WriteAllText(rootIndexPath, indexContent);
         }
 
-        // Create agent workspaces with workflow and mode files
+        // Create agent workspaces
         ScaffoldAgentWorkspaces(basePath, agentNames);
 
         // Create foundation documentation
@@ -111,7 +111,7 @@ public class FolderScaffolder : IFolderScaffolder
     }
 
     /// <summary>
-    /// Create agent workspaces with workflow.md and mode files for each agent.
+    /// Create agent workspaces with workflow.md and inbox for each agent.
     /// </summary>
     private void ScaffoldAgentWorkspaces(string basePath, List<string>? agentNames = null)
     {
@@ -127,7 +127,7 @@ public class FolderScaffolder : IFolderScaffolder
     }
 
     /// <summary>
-    /// Create a single agent's workspace with workflow.md and mode files.
+    /// Create a single agent's workspace with workflow.md and inbox.
     /// </summary>
     public void ScaffoldAgentWorkspace(string agentsPath, string agentName)
     {
@@ -136,10 +136,6 @@ public class FolderScaffolder : IFolderScaffolder
 
         var agentPath = Path.Combine(agentsPath, agentName);
         Directory.CreateDirectory(agentPath);
-
-        // Create modes folder
-        var modesPath = Path.Combine(agentPath, "modes");
-        Directory.CreateDirectory(modesPath);
 
         // Create inbox folder
         var inboxPath = Path.Combine(agentPath, "inbox");
@@ -151,17 +147,6 @@ public class FolderScaffolder : IFolderScaffolder
         {
             var content = TemplateGenerator.GenerateWorkflowFile(agentName, basePath);
             File.WriteAllText(workflowPath, content);
-        }
-
-        // Create mode files
-        foreach (var modeName in TemplateGenerator.GetModeNames())
-        {
-            var modePath = Path.Combine(modesPath, $"{modeName}.md");
-            if (!File.Exists(modePath))
-            {
-                var content = TemplateGenerator.GenerateModeFile(agentName, modeName, basePath);
-                File.WriteAllText(modePath, content);
-            }
         }
     }
 

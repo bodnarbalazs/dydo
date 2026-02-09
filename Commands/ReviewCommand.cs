@@ -7,8 +7,6 @@ using DynaDocs.Utils;
 
 public static class ReviewCommand
 {
-    private const string TasksFolder = "project/tasks";
-
     public static Command Create()
     {
         var command = new Command("review", "Manage code reviews");
@@ -62,11 +60,8 @@ public static class ReviewCommand
 
     private static string GetTasksPath()
     {
-        var docsPath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
-        if (docsPath == null)
-            return Path.Combine(Environment.CurrentDirectory, TasksFolder);
-
-        return Path.Combine(Path.GetDirectoryName(docsPath)!, TasksFolder);
+        var configService = new ConfigService();
+        return configService.GetTasksPath();
     }
 
     private static int ExecuteComplete(string taskName, string status, string? notes)

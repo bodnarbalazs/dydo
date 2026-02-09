@@ -15,10 +15,10 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "balazs", 3);
 
-        // Init creates agent workspaces with workflow.md and modes
+        // Init creates agent workspaces with workflow.md (modes created at claim)
         AssertDirectoryExists("dydo/agents/Adele");
         AssertFileExists("dydo/agents/Adele/workflow.md");
-        AssertDirectoryExists("dydo/agents/Adele/modes");
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes")));
     }
 
     [Fact]

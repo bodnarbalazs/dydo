@@ -100,7 +100,7 @@ public class FolderScaffolderTests : IDisposable
         {
             var agentPath = Path.Combine(_testDir, "agents", name);
             Assert.True(Directory.Exists(agentPath), $"Agent workspace for {name} should exist");
-            Assert.True(Directory.Exists(Path.Combine(agentPath, "modes")), $"Modes folder for {name} should exist");
+            Assert.False(Directory.Exists(Path.Combine(agentPath, "modes")), $"Modes folder for {name} should NOT exist before claim");
             Assert.True(Directory.Exists(Path.Combine(agentPath, "inbox")), $"Inbox folder for {name} should exist");
             Assert.True(File.Exists(Path.Combine(agentPath, "workflow.md")), $"workflow.md for {name} should exist");
         }
@@ -123,7 +123,7 @@ public class FolderScaffolderTests : IDisposable
     }
 
     [Fact]
-    public void ScaffoldAgentWorkspace_CreatesModeFiles()
+    public void ScaffoldAgentWorkspace_DoesNotCreateModeFiles()
     {
         var agentsPath = Path.Combine(_testDir, "agents");
         Directory.CreateDirectory(agentsPath);
@@ -131,15 +131,13 @@ public class FolderScaffolderTests : IDisposable
         _scaffolder.ScaffoldAgentWorkspace(agentsPath, "TestAgent");
 
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        Assert.False(Directory.Exists(modesPath), "Modes folder should NOT exist after scaffold");
 
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
         foreach (var mode in expectedModes)
         {
             var modePath = Path.Combine(modesPath, $"{mode}.md");
-            Assert.True(File.Exists(modePath), $"Mode file {mode}.md should exist");
-
-            var content = File.ReadAllText(modePath);
-            Assert.Contains("TestAgent", content);  // Agent name should be baked in
+            Assert.False(File.Exists(modePath), $"Mode file {mode}.md should NOT exist before claim");
         }
     }
 
@@ -232,12 +230,13 @@ public class FolderScaffolderTests : IDisposable
     }
 
     [Fact]
-    public void ScaffoldAgentWorkspace_ModeFiles_HaveCorrectFrontmatter()
+    public void RegenerateAgentFiles_ModeFiles_HaveCorrectFrontmatter()
     {
         var agentsPath = Path.Combine(_testDir, "agents");
         Directory.CreateDirectory(agentsPath);
 
         _scaffolder.ScaffoldAgentWorkspace(agentsPath, "TestAgent");
+        _scaffolder.RegenerateAgentFiles(agentsPath, "TestAgent");
 
         var codeWriterPath = Path.Combine(agentsPath, "TestAgent", "modes", "code-writer.md");
         var content = File.ReadAllText(codeWriterPath);
@@ -245,6 +244,33 @@ public class FolderScaffolderTests : IDisposable
         Assert.StartsWith("---", content);
         Assert.Contains("agent: TestAgent", content);
         Assert.Contains("mode: code-writer", content);
+    }
+
+    [Fact]
+    public void RegenerateAgentFiles_CreatesAllModeFiles()
+    {
+        var agentsPath = Path.Combine(_testDir, "agents");
+        Directory.CreateDirectory(agentsPath);
+
+        // Scaffold workspace (no modes created)
+        _scaffolder.ScaffoldAgentWorkspace(agentsPath, "TestAgent");
+        Assert.False(Directory.Exists(Path.Combine(agentsPath, "TestAgent", "modes")));
+
+        // Regenerate creates modes
+        _scaffolder.RegenerateAgentFiles(agentsPath, "TestAgent");
+
+        var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
+        Assert.True(Directory.Exists(modesPath), "Modes folder should exist after regenerate");
+
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        foreach (var mode in expectedModes)
+        {
+            var modePath = Path.Combine(modesPath, $"{mode}.md");
+            Assert.True(File.Exists(modePath), $"Mode file {mode}.md should exist after regenerate");
+
+            var content = File.ReadAllText(modePath);
+            Assert.Contains("TestAgent", content);
+        }
     }
 
     [Fact]

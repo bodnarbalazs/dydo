@@ -353,24 +353,14 @@ public class ProcessWorkflowTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Init_AgentWorkspaces_HaveAllModeFiles()
+    public async Task Init_AgentWorkspaces_DoNotHaveModeFiles()
     {
         // Initialize project
         var result = await InitProjectAsync();
         result.AssertSuccess();
 
-        // Verify first agent has all mode files
+        // Modes are NOT created at init (only at claim)
         var modesPath = Path.Combine(TestDir, "dydo", "agents", "Adele", "modes");
-        Assert.True(Directory.Exists(modesPath), "Modes folder should exist");
-
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
-        foreach (var mode in expectedModes)
-        {
-            var modePath = Path.Combine(modesPath, $"{mode}.md");
-            Assert.True(File.Exists(modePath), $"Mode file {mode}.md should exist");
-
-            var content = File.ReadAllText(modePath);
-            Assert.Contains("Adele", content); // Agent name should be baked in
-        }
+        Assert.False(Directory.Exists(modesPath), "Modes folder should NOT exist after init");
     }
 }

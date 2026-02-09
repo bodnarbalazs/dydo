@@ -465,6 +465,23 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
+    [Fact]
+    public async Task Release_RemovesModeFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Modes exist after claim
+        var modesPath = Path.Combine(TestDir, "dydo/agents/Adele/modes");
+        Assert.True(Directory.Exists(modesPath));
+
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+
+        // Modes should be removed after release
+        Assert.False(Directory.Exists(modesPath), "Modes folder should be removed after release");
+    }
+
     private async Task<CommandResult> InboxClearAsync(bool all = false, string? id = null)
     {
         StoreSessionContext();

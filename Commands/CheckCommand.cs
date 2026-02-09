@@ -48,8 +48,17 @@ public static class CheckCommand
                 var scanner = new DocScanner(parser);
                 var linkResolver = new LinkResolver();
 
-                var docs = scanner.ScanDirectory(basePath);
-                var folders = scanner.GetAllFolders(basePath);
+                var docs = scanner.ScanDirectory(basePath)
+                    .Where(d => !PathUtils.NormalizePath(d.RelativePath)
+                        .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                var folders = scanner.GetAllFolders(basePath)
+                    .Where(f =>
+                    {
+                        var rel = PathUtils.NormalizePath(Path.GetRelativePath(basePath, f));
+                        return !rel.StartsWith("agents", StringComparison.OrdinalIgnoreCase);
+                    })
+                    .ToList();
 
                 var rules = CreateRules(linkResolver);
                 var result = new ValidationResult { TotalFilesChecked = docs.Count };

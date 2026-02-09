@@ -323,7 +323,7 @@ public class WorkflowTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("PASSED");
-        AssertFileContains("project/tasks/review-test.md", "human-reviewed");
+        AssertFileContains("dydo/project/tasks/review-test.md", "human-reviewed");
     }
 
     [Fact]
@@ -338,7 +338,7 @@ public class WorkflowTests : IntegrationTestBase
         var result = await ReviewCompleteAsync("lgtm-task", "pass", "LGTM! Great work.");
 
         result.AssertSuccess();
-        AssertFileContains("project/tasks/lgtm-task.md", "LGTM");
+        AssertFileContains("dydo/project/tasks/lgtm-task.md", "LGTM");
     }
 
     [Fact]
@@ -354,8 +354,8 @@ public class WorkflowTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("FAILED");
-        AssertFileContains("project/tasks/fail-task.md", "review-failed");
-        AssertFileContains("project/tasks/fail-task.md", "Missing error handling");
+        AssertFileContains("dydo/project/tasks/fail-task.md", "review-failed");
+        AssertFileContains("dydo/project/tasks/fail-task.md", "Missing error handling");
     }
 
     [Fact]

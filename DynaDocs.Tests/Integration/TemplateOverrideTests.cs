@@ -70,9 +70,12 @@ public class TemplateOverrideTests : IntegrationTestBase
         content = "<!-- CUSTOM_MODE_MARKER -->\n" + content;
         File.WriteAllText(templatePath, content);
 
-        // Create new agent
+        // Create new agent and claim it (mode files are created at claim)
         var result = await AgentNewAsync("Zara", "alice");
         result.AssertSuccess();
+        SetHuman("alice");
+        var claimResult = await ClaimAgentAsync("Zara");
+        claimResult.AssertSuccess();
 
         // Verify custom template was used for mode file
         var modeContent = ReadFile("dydo/agents/Zara/modes/code-writer.md");
@@ -95,9 +98,12 @@ public class TemplateOverrideTests : IntegrationTestBase
         var reviewerTemplatePath = Path.Combine(TestDir, "dydo/_system/templates/mode-reviewer.template.md");
         File.Delete(reviewerTemplatePath);
 
-        // Create new agent
+        // Create new agent and claim it (mode files are created at claim)
         var result = await AgentNewAsync("Zara", "alice");
         result.AssertSuccess();
+        SetHuman("alice");
+        var claimResult = await ClaimAgentAsync("Zara");
+        claimResult.AssertSuccess();
 
         // Verify code-writer used custom template
         var codeWriterContent = ReadFile("dydo/agents/Zara/modes/code-writer.md");

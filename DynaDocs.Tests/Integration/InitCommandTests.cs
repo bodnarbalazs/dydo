@@ -54,10 +54,9 @@ public class InitCommandTests : IntegrationTestBase
         AssertDirectoryExists("dydo/agents/Brian");
         AssertDirectoryExists("dydo/agents/Charlie");
 
-        // Each with workflow and modes
+        // Each with workflow (modes created at claim, not init)
         AssertFileExists("dydo/agents/Adele/workflow.md");
-        AssertDirectoryExists("dydo/agents/Adele/modes");
-        AssertFileExists("dydo/agents/Adele/modes/code-writer.md");
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes")));
     }
 
     [Fact]

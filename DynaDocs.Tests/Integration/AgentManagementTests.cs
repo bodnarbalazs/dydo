@@ -35,7 +35,6 @@ public class AgentManagementTests : IntegrationTestBase
 
         AssertDirectoryExists("dydo/agents/Zoe");
         AssertFileExists("dydo/agents/Zoe/workflow.md");
-        AssertDirectoryExists("dydo/agents/Zoe/modes");
     }
 
     [Fact]

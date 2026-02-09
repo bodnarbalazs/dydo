@@ -93,7 +93,6 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         foreach (var agent in expectedAgents)
         {
             AssertDirectoryExists($"dydo/agents/{agent}");
-            AssertDirectoryExists($"dydo/agents/{agent}/modes");
             AssertDirectoryExists($"dydo/agents/{agent}/inbox");
             AssertFileExists($"dydo/agents/{agent}/workflow.md");
         }
@@ -189,5 +188,65 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         // Assert - Should not complain about missing meta file
         var output = checkResult.Stdout + checkResult.Stderr;
         Assert.DoesNotContain("_testing.md", output);
+    }
+
+    [Fact]
+    public async Task Check_ExcludesAgentWorkspaceFiles()
+    {
+        // Arrange
+        var initResult = await InitProjectAsync("none", "testuser", 3);
+        initResult.AssertSuccess();
+
+        // Write a malformed .md into an agent workspace
+        WriteFile("dydo/agents/Adele/bad-doc.md", "no frontmatter at all, this is invalid");
+
+        // Act
+        var checkResult = await CheckAsync();
+
+        // Assert - The malformed agent file should NOT be reported
+        var output = checkResult.Stdout + checkResult.Stderr;
+        Assert.DoesNotContain("bad-doc.md", output);
+        Assert.DoesNotContain("Found errors", output);
+    }
+
+    [Fact]
+    public async Task FreshInit_DoesNotCreateModeFiles()
+    {
+        // Arrange & Act
+        var initResult = await InitProjectAsync("none", "testuser", 3);
+        initResult.AssertSuccess();
+
+        // Assert - No modes/ directory for any agent
+        var expectedAgents = new[] { "Adele", "Brian", "Charlie" };
+        foreach (var agent in expectedAgents)
+        {
+            var modesPath = Path.Combine(TestDir, "dydo", "agents", agent, "modes");
+            Assert.False(Directory.Exists(modesPath), $"Modes folder for {agent} should NOT exist after init");
+        }
+    }
+
+    [Fact]
+    public async Task ClaimAgent_CreatesModeFiles()
+    {
+        // Arrange
+        var initResult = await InitProjectAsync("none", "testuser", 3);
+        initResult.AssertSuccess();
+
+        // Verify no modes before claim
+        var modesPath = Path.Combine(TestDir, "dydo", "agents", "Adele", "modes");
+        Assert.False(Directory.Exists(modesPath));
+
+        // Act - Claim agent
+        var claimResult = await ClaimAgentAsync("Adele");
+        claimResult.AssertSuccess();
+
+        // Assert - Modes folder and all 7 mode files exist after claim
+        Assert.True(Directory.Exists(modesPath), "Modes folder should exist after claim");
+
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        foreach (var mode in expectedModes)
+        {
+            AssertFileExists($"dydo/agents/Adele/modes/{mode}.md");
+        }
     }
 }

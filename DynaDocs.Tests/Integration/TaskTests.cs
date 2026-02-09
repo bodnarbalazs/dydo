@@ -20,7 +20,7 @@ public class TaskTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("Created task");
-        AssertFileExists("project/tasks/my-feature.md");
+        AssertFileExists("dydo/project/tasks/my-feature.md");
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class TaskTests : IntegrationTestBase
         var result = await TaskCreateAsync("auth-fix", "Fix authentication bug in login");
 
         result.AssertSuccess();
-        AssertFileContains("project/tasks/auth-fix.md", "Fix authentication bug");
+        AssertFileContains("dydo/project/tasks/auth-fix.md", "Fix authentication bug");
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class TaskTests : IntegrationTestBase
         var result = await TaskCreateAsync("my-task");
 
         result.AssertSuccess();
-        AssertFileContains("project/tasks/my-task.md", "assigned: Adele");
+        AssertFileContains("dydo/project/tasks/my-task.md", "assigned: Adele");
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class TaskTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("ready for review");
-        AssertFileContains("project/tasks/feature-x.md", "status: review-pending");
+        AssertFileContains("dydo/project/tasks/feature-x.md", "status: review-pending");
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public class TaskTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("approved");
-        AssertFileContains("project/tasks/approved-task.md", "status: closed");
+        AssertFileContains("dydo/project/tasks/approved-task.md", "status: closed");
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class TaskTests : IntegrationTestBase
         var result = await TaskApproveAsync("good-task", "Great work!");
 
         result.AssertSuccess();
-        AssertFileContains("project/tasks/good-task.md", "Great work!");
+        AssertFileContains("dydo/project/tasks/good-task.md", "Great work!");
     }
 
     [Fact]
@@ -172,8 +172,8 @@ public class TaskTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("rejected");
-        AssertFileContains("project/tasks/rejected-task.md", "status: review-failed");
-        AssertFileContains("project/tasks/rejected-task.md", "Missing error handling");
+        AssertFileContains("dydo/project/tasks/rejected-task.md", "status: review-failed");
+        AssertFileContains("dydo/project/tasks/rejected-task.md", "Missing error handling");
     }
 
     #endregion

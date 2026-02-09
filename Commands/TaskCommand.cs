@@ -8,8 +8,6 @@ using DynaDocs.Utils;
 
 public static class TaskCommand
 {
-    private const string TasksFolder = "project/tasks";
-
     public static Command Create()
     {
         var command = new Command("task", "Manage tasks");
@@ -157,11 +155,8 @@ public static class TaskCommand
 
     private static string GetTasksPath()
     {
-        var docsPath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
-        if (docsPath == null)
-            return Path.Combine(Environment.CurrentDirectory, TasksFolder);
-
-        return Path.Combine(Path.GetDirectoryName(docsPath)!, TasksFolder);
+        var configService = new ConfigService();
+        return configService.GetTasksPath();
     }
 
     private static int ExecuteCreate(string name, string? description)
@@ -314,7 +309,8 @@ public static class TaskCommand
 
         foreach (var file in Directory.GetFiles(tasksPath, "*.md"))
         {
-            if (Path.GetFileName(file) == "_index.md") continue;
+            var fileName = Path.GetFileName(file);
+            if (fileName.StartsWith('_')) continue;
 
             var content = File.ReadAllText(file);
             var name = Path.GetFileNameWithoutExtension(file);

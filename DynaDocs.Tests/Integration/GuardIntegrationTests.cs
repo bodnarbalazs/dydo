@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for the guard command.
@@ -54,6 +55,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
         await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
 
         // src/file.cs is typically allowed for code-writer
         var result = await GuardAsync("edit", "src/file.cs");
@@ -100,6 +102,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
         await SetRoleAsync("reviewer"); // Reviewers can only read, not write
+        await ReadMustReadsAsync();
 
         // Try to write outside allowed paths
         var result = await GuardAsync("edit", "src/code.cs");
@@ -283,6 +286,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
         await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -324,6 +328,120 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         // Without toolName=bash from stdin, bash analysis is skipped
         result.AssertSuccess();
+    }
+
+    #endregion
+
+    #region Must-Read Enforcement
+
+    [Fact]
+    public async Task Guard_BlocksWriteWhenMustReadsRemain()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Templates already have must-read: true on about.md, architecture.md, coding-standards.md
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Attempt a write — should be blocked since must-reads haven't been read
+        var result = await GuardAsync("edit", "src/file.cs");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("not read the required files");
+        // Should list specific unread files
+        result.AssertStderrContains("about.md");
+    }
+
+    [Fact]
+    public async Task Guard_AllowsWriteAfterAllMustReadsRead()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Read all must-read files
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+        Assert.True(state.UnreadMustReads.Count > 0, "Should have must-reads after SetRole");
+
+        foreach (var mustRead in state.UnreadMustReads.ToList())
+        {
+            await GuardAsync("read", mustRead);
+        }
+
+        // Now write should succeed
+        var result = await GuardAsync("edit", "src/file.cs");
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_TracksReadOfMustReadFile()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        var registry = new AgentRegistry(TestDir);
+        var stateBefore = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(stateBefore);
+        var countBefore = stateBefore.UnreadMustReads.Count;
+        Assert.True(countBefore > 0);
+
+        // Read a must-read file
+        var firstMustRead = stateBefore.UnreadMustReads.First();
+        await GuardAsync("read", firstMustRead);
+
+        // Re-read state — should have one fewer unread
+        var registryAfter = new AgentRegistry(TestDir);
+        var stateAfter = registryAfter.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(stateAfter);
+        Assert.Equal(countBefore - 1, stateAfter.UnreadMustReads.Count);
+        Assert.DoesNotContain(stateAfter.UnreadMustReads,
+            p => p.Equals(firstMustRead, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Guard_AllowsReadsAlways()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Verify must-reads exist (writes would be blocked)
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+        Assert.True(state.UnreadMustReads.Count > 0);
+
+        // Read a non-must-read file — should be allowed even with unread must-reads
+        var result = await GuardAsync("read", "src/some-file.cs");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_TracksReadOfMustReadFile_WithAbsolutePath()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        var registry = new AgentRegistry(TestDir);
+        var stateBefore = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(stateBefore);
+        var countBefore = stateBefore.UnreadMustReads.Count;
+
+        // Read a must-read file using its absolute path (as the hook would provide)
+        var firstMustRead = stateBefore.UnreadMustReads.First();
+        var absolutePath = Path.Combine(TestDir, firstMustRead.Replace('/', Path.DirectorySeparatorChar));
+        await GuardAsync("read", absolutePath);
+
+        // Should still track it despite the path format difference
+        var registryAfter = new AgentRegistry(TestDir);
+        var stateAfter = registryAfter.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(stateAfter);
+        Assert.Equal(countBefore - 1, stateAfter.UnreadMustReads.Count);
     }
 
     #endregion

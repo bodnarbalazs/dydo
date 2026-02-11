@@ -133,6 +133,11 @@ public interface IAgentRegistry
     bool ReassignAgent(string name, string newHuman, out string error);
 
     /// <summary>
+    /// Marks a must-read file as read, removing it from the agent's unread list.
+    /// </summary>
+    void MarkMustReadComplete(string? sessionId, string relativePath);
+
+    /// <summary>
     /// Stores a pending session ID for an agent.
     /// Called by the guard hook when it intercepts a claim command.
     /// </summary>

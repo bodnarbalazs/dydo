@@ -1,6 +1,7 @@
 ---
 area: understand
 type: concept
+must-read: true
 ---
 
 # Architecture Overview

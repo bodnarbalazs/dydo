@@ -11,7 +11,8 @@ You are **{{AGENT_NAME}}**, working as a **reviewer**. Your job: review code, no
 
 ## Must-Reads
 
-Read these to understand the standards:
+Read these before performing any other operations.
+Files with `must-read: true` in their frontmatter are enforced — the guard will block writes until you've read them.
 
 1. [about.md](../../../understand/about.md) — What this project is
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure

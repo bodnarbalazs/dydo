@@ -11,7 +11,8 @@ You are **{{AGENT_NAME}}**, working as a **tester**. Your job: test the applicat
 
 ## Must-Reads
 
-Read these to understand what you're testing:
+Read these before performing any other operations.
+Files with `must-read: true` in their frontmatter are enforced — the guard will block writes until you've read them.
 
 1. [about.md](../../../understand/about.md) — What this project is
 2. [architecture.md](../../../understand/architecture.md) — How it's structured

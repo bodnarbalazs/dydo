@@ -619,6 +619,92 @@ public class AgentRegistryTests : IDisposable
 
     #endregion
 
+    #region Task File Auto-Creation Tests
+
+    [Fact]
+    public void SetRole_WithTask_CreatesTaskFile()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-task");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-task", "code-writer", "jwt-auth", out var error);
+
+        Assert.True(result, $"SetRole failed: {error}");
+
+        // Verify task file was created
+        var taskFilePath = Path.Combine(_testDir, "dydo", "project", "tasks", "jwt-auth.md");
+        Assert.True(File.Exists(taskFilePath), "Task file should be created");
+
+        var content = File.ReadAllText(taskFilePath);
+        Assert.Contains("name: jwt-auth", content);
+        Assert.Contains("status: pending", content);
+        Assert.Contains("assigned: Adele", content);
+        Assert.Contains("# Task: jwt-auth", content);
+        Assert.Contains("(No description)", content);
+    }
+
+    [Fact]
+    public void SetRole_WithTask_DoesNotOverwriteExistingTaskFile()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-task2");
+
+        // Pre-create the task file with custom content
+        var tasksDir = Path.Combine(_testDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(tasksDir);
+        var taskFilePath = Path.Combine(tasksDir, "existing-task.md");
+        var originalContent = "# My custom task content\nDo not overwrite me!";
+        File.WriteAllText(taskFilePath, originalContent);
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-task2", "code-writer", "existing-task", out var error);
+
+        Assert.True(result, $"SetRole failed: {error}");
+
+        // Verify original content is preserved
+        var content = File.ReadAllText(taskFilePath);
+        Assert.Equal(originalContent, content);
+    }
+
+    [Fact]
+    public void SetRole_WithoutTask_DoesNotCreateTaskFile()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-notask");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-notask", "code-writer", null, out var error);
+
+        Assert.True(result, $"SetRole failed: {error}");
+
+        // Verify tasks directory was not created
+        var tasksDir = Path.Combine(_testDir, "dydo", "project", "tasks");
+        Assert.False(Directory.Exists(tasksDir), "Tasks directory should not be created when no task is specified");
+    }
+
+    [Fact]
+    public void SetRole_WithTask_SucceedsEvenWhenTaskFileCreationFails()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-badfn");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Use invalid filename characters so File.WriteAllText throws
+        var result = registry.SetRole("test-session-badfn", "code-writer", "bad:task<>name", out var error);
+
+        // SetRole should still succeed — task file creation is non-blocking
+        Assert.True(result, $"SetRole should succeed even when task file creation fails: {error}");
+
+        // Verify the role was actually set
+        var state = registry.GetAgentState("Adele");
+        Assert.Equal("code-writer", state?.Role);
+        Assert.Equal("bad:task<>name", state?.Task);
+    }
+
+    #endregion
+
     #region Role Validation Tests
 
     [Theory]
@@ -847,6 +933,190 @@ public class AgentRegistryTests : IDisposable
         }
         Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after concurrent claims");
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    #endregion
+
+    #region Must-Read State Persistence
+
+    [Fact]
+    public void ParseStateFile_ParsesUnreadMustReads()
+    {
+        // Write a state file with unread-must-reads
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        var statePath = Path.Combine(workspace, "state.md");
+        File.WriteAllText(statePath, """
+            ---
+            agent: Adele
+            role: code-writer
+            task: test-task
+            status: working
+            assigned: testuser
+            started: null
+            allowed-paths: ["src/**"]
+            denied-paths: ["dydo/**"]
+            unread-must-reads: ["dydo/understand/about.md", "dydo/understand/architecture.md"]
+            task-role-history: {}
+            ---
+
+            # Adele — Session State
+            """);
+
+        var state = _registry.GetAgentState("Adele");
+
+        Assert.NotNull(state);
+        Assert.Equal(2, state.UnreadMustReads.Count);
+        Assert.Contains("dydo/understand/about.md", state.UnreadMustReads);
+        Assert.Contains("dydo/understand/architecture.md", state.UnreadMustReads);
+    }
+
+    [Fact]
+    public void WriteStateFile_PersistsUnreadMustReads()
+    {
+        // Test round-trip: MarkMustReadComplete triggers WriteStateFile, then verify output
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        // Create session file
+        var sessionPath = Path.Combine(workspace, ".session");
+        File.WriteAllText(sessionPath, """{"Agent":"Adele","SessionId":"test-session","Claimed":"2025-01-01T00:00:00Z"}""");
+
+        // Create initial state with must-reads
+        var statePath = Path.Combine(workspace, "state.md");
+        File.WriteAllText(statePath, """
+            ---
+            agent: Adele
+            role: code-writer
+            task: null
+            status: working
+            assigned: testuser
+            started: null
+            allowed-paths: []
+            denied-paths: []
+            unread-must-reads: ["dydo/understand/about.md", "dydo/guides/coding-standards.md"]
+            task-role-history: {}
+            ---
+
+            # Adele — Session State
+            """);
+
+        // Trigger WriteStateFile by marking one must-read complete
+        _registry.MarkMustReadComplete("test-session", "dydo/understand/about.md");
+
+        // Verify the written file contains the updated must-reads YAML
+        var writtenContent = File.ReadAllText(statePath);
+        Assert.Contains("unread-must-reads:", writtenContent);
+        Assert.Contains("coding-standards.md", writtenContent);
+        Assert.DoesNotContain("about.md", writtenContent);
+    }
+
+    [Fact]
+    public void ParseStateFile_EmptyUnreadMustReads_ParsesAsEmptyList()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        var statePath = Path.Combine(workspace, "state.md");
+        File.WriteAllText(statePath, """
+            ---
+            agent: Adele
+            role: code-writer
+            task: null
+            status: working
+            assigned: testuser
+            started: null
+            allowed-paths: []
+            denied-paths: []
+            unread-must-reads: []
+            task-role-history: {}
+            ---
+
+            # Adele — Session State
+            """);
+
+        var state = _registry.GetAgentState("Adele");
+
+        Assert.NotNull(state);
+        Assert.Empty(state.UnreadMustReads);
+    }
+
+    [Fact]
+    public void MarkMustReadComplete_RemovesFromList()
+    {
+        // Set up agent with must-reads
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        // Create session file
+        var sessionPath = Path.Combine(workspace, ".session");
+        File.WriteAllText(sessionPath, """{"Agent":"Adele","SessionId":"test-session","Claimed":"2025-01-01T00:00:00Z"}""");
+
+        // Create state file with must-reads
+        var statePath = Path.Combine(workspace, "state.md");
+        File.WriteAllText(statePath, """
+            ---
+            agent: Adele
+            role: code-writer
+            task: null
+            status: working
+            assigned: testuser
+            started: null
+            allowed-paths: []
+            denied-paths: []
+            unread-must-reads: ["dydo/understand/about.md", "dydo/understand/architecture.md"]
+            task-role-history: {}
+            ---
+
+            # Adele — Session State
+            """);
+
+        // Mark one as read
+        _registry.MarkMustReadComplete("test-session", "dydo/understand/about.md");
+
+        // Verify it was removed
+        var state = _registry.GetAgentState("Adele");
+        Assert.NotNull(state);
+        Assert.Single(state.UnreadMustReads);
+        Assert.Contains("dydo/understand/architecture.md", state.UnreadMustReads);
+    }
+
+    [Fact]
+    public void MarkMustReadComplete_CaseInsensitive()
+    {
+        // Set up agent with must-reads
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        // Create session file
+        var sessionPath = Path.Combine(workspace, ".session");
+        File.WriteAllText(sessionPath, """{"Agent":"Adele","SessionId":"test-session","Claimed":"2025-01-01T00:00:00Z"}""");
+
+        // Create state file with must-reads
+        var statePath = Path.Combine(workspace, "state.md");
+        File.WriteAllText(statePath, """
+            ---
+            agent: Adele
+            role: code-writer
+            task: null
+            status: working
+            assigned: testuser
+            started: null
+            allowed-paths: []
+            denied-paths: []
+            unread-must-reads: ["dydo/understand/About.md"]
+            task-role-history: {}
+            ---
+
+            # Adele — Session State
+            """);
+
+        // Mark with different case
+        _registry.MarkMustReadComplete("test-session", "dydo/understand/about.md");
+
+        // Verify it was removed despite case difference
+        var state = _registry.GetAgentState("Adele");
+        Assert.NotNull(state);
+        Assert.Empty(state.UnreadMustReads);
     }
 
     #endregion

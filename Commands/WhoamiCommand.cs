@@ -63,7 +63,12 @@ public static class WhoamiCommand
                 Console.WriteLine("  Role: (none set)");
 
             if (!string.IsNullOrEmpty(agent.Task))
+            {
                 Console.WriteLine($"  Task: {agent.Task}");
+                var taskFilePath = Path.Combine(configService.GetTasksPath(), $"{agent.Task}.md");
+                if (File.Exists(taskFilePath))
+                    Console.WriteLine($"  Task file: {taskFilePath}");
+            }
 
             Console.WriteLine($"  Status: {agent.Status.ToString().ToLowerInvariant()}");
             Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(agent.Name)}");

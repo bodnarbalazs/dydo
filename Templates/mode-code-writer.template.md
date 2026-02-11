@@ -11,7 +11,8 @@ You are **{{AGENT_NAME}}**, working as a **code-writer**. Your job: implement th
 
 ## Must-Reads
 
-Read these before writing any code:
+Read these before performing any other operations.
+Files with `must-read: true` in their frontmatter are enforced — the guard will block writes until you've read them.
 
 1. **Your plan** (if `--task` or `--feature`): Check `dydo inbox show`
 2. [about.md](../../../understand/about.md) — What this project is

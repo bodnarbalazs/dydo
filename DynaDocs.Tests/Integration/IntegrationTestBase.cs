@@ -299,6 +299,22 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
+    /// Read all must-read files for the current agent so the guard allows writes.
+    /// Call this after SetRoleAsync if the test needs to perform writes.
+    /// </summary>
+    protected async Task ReadMustReadsAsync()
+    {
+        var registry = new DynaDocs.Services.AgentRegistry(TestDir);
+        var agent = registry.GetCurrentAgent(TestSessionId);
+        if (agent == null || agent.UnreadMustReads.Count == 0) return;
+
+        foreach (var mustRead in agent.UnreadMustReads.ToList())
+        {
+            await GuardAsync("read", mustRead);
+        }
+    }
+
+    /// <summary>
     /// Assert file exists in test directory.
     /// </summary>
     protected void AssertFileExists(string relativePath)

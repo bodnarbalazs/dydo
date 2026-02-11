@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for agent lifecycle commands:
@@ -490,6 +491,152 @@ public class AgentLifecycleTests : IntegrationTestBase
         if (all) args.Add("--all");
         if (id != null) { args.Add("--id"); args.Add(id); }
         return await RunAsync(command, args.ToArray());
+    }
+
+    #endregion
+
+    #region Task File Auto-Creation
+
+    [Fact]
+    public async Task Role_WithTask_AutoCreatesTaskFile()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        await SetRoleAsync("code-writer", "jwt-auth");
+
+        // Verify task file was created with correct frontmatter
+        AssertFileExists("dydo/project/tasks/jwt-auth.md");
+        AssertFileContains("dydo/project/tasks/jwt-auth.md", "name: jwt-auth");
+        AssertFileContains("dydo/project/tasks/jwt-auth.md", "status: pending");
+        AssertFileContains("dydo/project/tasks/jwt-auth.md", "assigned: Adele");
+    }
+
+    [Fact]
+    public async Task Role_WithTask_ShowsTaskFilePath()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var result = await SetRoleAsync("code-writer", "jwt-auth");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Task file:");
+    }
+
+    [Fact]
+    public async Task Status_WithTask_ShowsTaskFilePath()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "jwt-auth");
+
+        var result = await AgentStatusAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Task file:");
+    }
+
+    [Fact]
+    public async Task Whoami_WithTask_ShowsTaskFilePath()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "jwt-auth");
+
+        var result = await WhoamiAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Task file:");
+    }
+
+    [Fact]
+    public async Task Role_WithExistingTask_DoesNotOverwrite()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Pre-create the task file with custom content
+        var customContent = "# My custom task\nDo not overwrite!";
+        WriteFile("dydo/project/tasks/existing-task.md", customContent);
+
+        await SetRoleAsync("code-writer", "existing-task");
+
+        // Verify original content is preserved
+        var content = ReadFile("dydo/project/tasks/existing-task.md");
+        Assert.Equal(customContent, content);
+    }
+
+    #endregion
+
+    #region Must-Read Enforcement
+
+    [Fact]
+    public async Task SetRole_PopulatesUnreadMustReads()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Templates already have must-read: true on about.md, architecture.md, coding-standards.md
+
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Verify state has unread must-reads
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+        Assert.True(state.UnreadMustReads.Count > 0, "Should have unread must-reads after SetRole");
+
+        // The mode file itself should always be in must-reads
+        Assert.Contains(state.UnreadMustReads, p => p.Contains("modes/code-writer.md"));
+        // Must-read tagged files should also be present
+        Assert.Contains(state.UnreadMustReads, p => p.Contains("about.md"));
+    }
+
+    [Fact]
+    public async Task SetRole_FiltersAlreadyReadFromAudit()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Read the mode file via guard (which logs audit)
+        var modeFilePath = "dydo/agents/Adele/modes/code-writer.md";
+        await GuardAsync("read", modeFilePath);
+
+        // Now set role — the mode file should not be in unread list since we read it
+        await SetRoleAsync("code-writer", "test-task");
+
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+
+        // Mode file should NOT be in unread list (was already read)
+        Assert.DoesNotContain(state.UnreadMustReads,
+            p => p.Equals(modeFilePath, StringComparison.OrdinalIgnoreCase));
+
+        // But other must-reads should still be there
+        Assert.Contains(state.UnreadMustReads, p => p.Contains("about.md"));
+    }
+
+    [Fact]
+    public async Task Release_ClearsUnreadMustReads()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Verify must-reads were populated
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+        Assert.True(state.UnreadMustReads.Count > 0);
+
+        await ReadMustReadsAsync();
+        await ReleaseAgentAsync();
+
+        // After release, state should have empty must-reads
+        var stateAfter = registry.GetAgentState("Adele");
+        Assert.NotNull(stateAfter);
+        Assert.Empty(stateAfter.UnreadMustReads);
     }
 
     #endregion

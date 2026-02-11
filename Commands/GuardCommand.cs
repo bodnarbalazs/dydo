@@ -226,6 +226,16 @@ public static class GuardCommand
                 Tool = toolName
             });
 
+            // Track must-read completion
+            if (agent != null && agent.UnreadMustReads.Count > 0 && !string.IsNullOrEmpty(filePath))
+            {
+                var relPath = NormalizeForMustReadComparison(filePath);
+                if (agent.UnreadMustReads.Any(p => p.Equals(relPath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    registry.MarkMustReadComplete(sessionId, relPath);
+                }
+            }
+
             return ExitCodes.Success;
         }
 
@@ -265,6 +275,25 @@ public static class GuardCommand
 
             Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
             Console.Error.WriteLine("  Run 'dydo agent role <role>' to set your role.");
+            return ExitCodes.ToolError;
+        }
+
+        // Check must-read enforcement (re-fetch state after potential read tracking)
+        agent = registry.GetCurrentAgent(sessionId);
+        if (agent != null && agent.UnreadMustReads.Count > 0)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked,
+                Path = filePath,
+                Tool = toolName,
+                BlockReason = "Must-read files not yet read"
+            });
+
+            Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
+            foreach (var unread in agent.UnreadMustReads)
+                Console.Error.WriteLine($"  - {unread}");
+            Console.Error.WriteLine("Read these files before performing other operations.");
             return ExitCodes.ToolError;
         }
 
@@ -358,6 +387,39 @@ public static class GuardCommand
 
             // Allow the dydo command to proceed
             return ExitCodes.Success;
+        }
+
+        // ============================================================
+        // Check must-read enforcement for non-dydo bash commands
+        // ============================================================
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent != null && agent.UnreadMustReads.Count > 0)
+            {
+                // Check if the command has any write-like operations
+                var preAnalysis = bashAnalyzer.Analyze(command);
+                var hasWriteOps = preAnalysis.Operations.Any(op =>
+                    op.Type is FileOperationType.Write or FileOperationType.Delete
+                    or FileOperationType.Move or FileOperationType.Copy
+                    or FileOperationType.PermissionChange);
+
+                if (hasWriteOps)
+                {
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked,
+                        Tool = "bash",
+                        Command = TruncateCommand(command),
+                        BlockReason = "Must-read files not yet read"
+                    });
+
+                    Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
+                    foreach (var unread in agent.UnreadMustReads)
+                        Console.Error.WriteLine($"  - {unread}");
+                    Console.Error.WriteLine("Read these files before performing other operations.");
+                    return ExitCodes.ToolError;
+                }
+            }
         }
 
         // ============================================================
@@ -622,6 +684,17 @@ public static class GuardCommand
         return Regex.IsMatch(command,
             @"(?:^|[;&|]\s*)(?:\./)?dydo\s",
             RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Normalizes a file path for must-read comparison by extracting the project-relative
+    /// portion starting from "dydo/".
+    /// </summary>
+    private static string NormalizeForMustReadComparison(string filePath)
+    {
+        var normalized = filePath.Replace('\\', '/');
+        var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
+        return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
     }
 
     /// <summary>

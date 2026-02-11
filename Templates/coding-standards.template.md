@@ -1,6 +1,7 @@
 ---
 area: general
 type: reference
+must-read: true
 ---
 
 # Coding Standards

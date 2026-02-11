@@ -129,6 +129,9 @@ public partial class MarkdownParser : IMarkdownParser
                 case "type": frontmatter.Type = value; break;
                 case "status": frontmatter.Status = value; break;
                 case "date": frontmatter.Date = value; break;
+                case "must-read":
+                    frontmatter.MustRead = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    break;
             }
         }
 

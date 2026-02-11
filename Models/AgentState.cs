@@ -17,4 +17,10 @@ public class AgentState
     /// Used to prevent self-review (code-writer cannot become reviewer on same task).
     /// </summary>
     public Dictionary<string, List<string>> TaskRoleHistory { get; set; } = new();
+
+    /// <summary>
+    /// Project-relative paths of must-read files that haven't been read yet.
+    /// Populated on role set, cleared as agent reads each file.
+    /// </summary>
+    public List<string> UnreadMustReads { get; set; } = [];
 }

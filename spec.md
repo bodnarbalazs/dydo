@@ -399,6 +399,37 @@ This staged approach ensures agents must:
 4. Set a role with `dydo agent role`
 5. Only then can they access project files
 
+### Must-Read Enforcement
+
+After setting a role, the guard enforces that agents read critical context files before performing any write operations. Files with `must-read: true` in their frontmatter are collected from the mode file's links, plus the mode file itself is always required.
+
+**How it works:**
+1. On `dydo agent role <role>`, the system scans the mode file for links to files with `must-read: true` frontmatter
+2. Files already read in the current session (from the audit log) are excluded
+3. The guard blocks all writes until the agent has read every must-read file
+4. Reads are always allowed, even with unread must-reads remaining
+5. On `dydo agent release`, the must-read list is cleared
+
+**Block message:**
+```
+BLOCKED: You have not read the required files for the code-writer mode:
+  - dydo/agents/Adele/modes/code-writer.md
+  - dydo/understand/about.md
+  - dydo/understand/architecture.md
+Read these files before performing other operations.
+```
+
+**Frontmatter tag:**
+```yaml
+---
+area: understand
+type: context
+must-read: true
+---
+```
+
+By default, `about.md`, `architecture.md`, and `coding-standards.md` are tagged with `must-read: true`.
+
 ---
 
 ## Agent Roles and Permissions
@@ -1090,6 +1121,7 @@ assigned: balazs
 started: 2025-01-28T10:30:00Z
 allowed-paths: ["src/**", "tests/**"]
 denied-paths: ["dydo/**", "project/**"]
+unread-must-reads: ["dydo/agents/Adele/modes/code-writer.md", "dydo/understand/about.md"]
 task-role-history: {"jwt-auth": ["planner", "code-writer"]}
 ---
 
@@ -1142,7 +1174,8 @@ DynaDocs (`dydo`) is a C# console tool that:
 7. **Prevents self-review** through task role history tracking
 8. **Supports template customization** via project-local `_system/templates/`
 9. **Enforces staged access** - agents must claim identity and role before accessing files
-10. **Folder meta files** for self-documenting folder purposes
+10. **Enforces must-reads** - agents must read critical context files before writing after a mode change
+11. **Folder meta files** for self-documenting folder purposes
 
 ### Key Principles
 
@@ -1159,3 +1192,4 @@ DynaDocs (`dydo`) is a C# console tool that:
 11. **Customizable templates**: Project-local `_system/templates/` overrides built-in defaults
 12. **Staged access control**: Progressive file access unlocks as agents claim identity and set role
 13. **Fail-closed security**: Guard blocks operations without identity/role (doesn't just warn)
+14. **Must-read enforcement**: Critical files (`must-read: true`) must be read before writes are allowed after a mode change

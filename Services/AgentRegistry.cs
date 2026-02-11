@@ -275,6 +275,7 @@ public partial class AgentRegistry : IAgentRegistry
                 s.Since = null;
                 s.AllowedPaths = [];
                 s.DeniedPaths = [];
+                s.UnreadMustReads = [];
             });
 
             // Remove modes/ directory (regenerated fresh on next claim)
@@ -323,12 +324,15 @@ public partial class AgentRegistry : IAgentRegistry
         allowed = allowed.Select(p => p.Replace("{self}", agent.Name)).ToList();
         denied = denied.Select(p => p.Replace("{self}", agent.Name)).ToList();
 
+        var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId);
+
         UpdateAgentState(agent.Name, s =>
         {
             s.Role = role;
             s.Task = task;
             s.AllowedPaths = allowed;
             s.DeniedPaths = denied;
+            s.UnreadMustReads = mustReads;
 
             // Track role in task history
             if (!string.IsNullOrEmpty(task))
@@ -343,6 +347,49 @@ public partial class AgentRegistry : IAgentRegistry
                 }
             }
         });
+
+        // Auto-create task file if task specified and file doesn't exist
+        if (!string.IsNullOrEmpty(task))
+        {
+            try
+            {
+                var tasksPath = _configService.GetTasksPath(_basePath);
+                var taskFilePath = Path.Combine(tasksPath, $"{task}.md");
+                if (!File.Exists(taskFilePath))
+                {
+                    Directory.CreateDirectory(tasksPath);
+                    var content = $"""
+                        ---
+                        name: {task}
+                        status: pending
+                        created: {DateTime.UtcNow:o}
+                        assigned: {agent.Name}
+                        ---
+
+                        # Task: {task}
+
+                        (No description)
+
+                        ## Progress
+
+                        - [ ] (Not started)
+
+                        ## Files Changed
+
+                        (None yet)
+
+                        ## Review Summary
+
+                        (Pending)
+                        """;
+                    File.WriteAllText(taskFilePath, content);
+                }
+            }
+            catch
+            {
+                // Non-blocking: task file creation is a convenience side-effect
+            }
+        }
 
         // Log role change event
         var human = GetCurrentHuman();
@@ -666,6 +713,7 @@ public partial class AgentRegistry : IAgentRegistry
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             allowed-paths: [{string.Join(", ", state.AllowedPaths.Select(p => $"\"{p}\""))}]
             denied-paths: [{string.Join(", ", state.DeniedPaths.Select(p => $"\"{p}\""))}]
+            unread-must-reads: [{string.Join(", ", state.UnreadMustReads.Select(p => $"\"{p}\""))}]
             task-role-history: {historyYaml}
             ---
 
@@ -759,6 +807,9 @@ public partial class AgentRegistry : IAgentRegistry
                         break;
                     case "denied-paths":
                         state.DeniedPaths = ParsePathList(value);
+                        break;
+                    case "unread-must-reads":
+                        state.UnreadMustReads = ParsePathList(value);
                         break;
                     case "task-role-history":
                         state.TaskRoleHistory = ParseTaskRoleHistory(value);
@@ -1200,6 +1251,100 @@ public partial class AgentRegistry : IAgentRegistry
         var match = AgentNames.FirstOrDefault(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
         return match ?? name;
     }
+
+    #region Must-Read Enforcement
+
+    /// <summary>
+    /// Computes the list of must-read files for a given role by inspecting the mode file's links.
+    /// Filters out files already read in the current audit session.
+    /// </summary>
+    private List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId)
+    {
+        var workspace = GetAgentWorkspace(agentName);
+        var modeFilePath = Path.Combine(workspace, "modes", $"{role}.md");
+
+        if (!File.Exists(modeFilePath))
+            return [];
+
+        var content = File.ReadAllText(modeFilePath);
+        var parser = new MarkdownParser();
+        var links = parser.ExtractLinks(content);
+
+        var projectRoot = _configService.GetProjectRoot(_basePath) ?? _basePath;
+        var mustReads = new List<string>();
+
+        foreach (var link in links)
+        {
+            if (link.Type == LinkType.External) continue;
+            if (string.IsNullOrEmpty(link.Target)) continue;
+
+            var resolved = PathUtils.ResolvePath(modeFilePath, link.Target);
+
+            if (!File.Exists(resolved)) continue;
+
+            var targetContent = File.ReadAllText(resolved);
+            var frontmatter = parser.ExtractFrontmatter(targetContent);
+
+            if (frontmatter?.MustRead == true)
+            {
+                var relativePath = PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, resolved));
+                mustReads.Add(relativePath);
+            }
+        }
+
+        // Add the mode file itself (always implicitly must-read)
+        var modeRelative = PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, modeFilePath));
+        mustReads.Add(modeRelative);
+
+        // Deduplicate
+        mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        // Filter out files already read in this session
+        if (!string.IsNullOrEmpty(sessionId))
+        {
+            try
+            {
+                var session = _auditService.GetSession(sessionId);
+                if (session != null)
+                {
+                    var readPaths = session.Events
+                        .Where(e => e.EventType == AuditEventType.Read && !string.IsNullOrEmpty(e.Path))
+                        .Select(e => NormalizeMustReadPath(e.Path!))
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    mustReads.RemoveAll(p => readPaths.Contains(NormalizeMustReadPath(p)));
+                }
+            }
+            catch
+            {
+                // Audit service failure should not block role setting
+            }
+        }
+
+        return mustReads;
+    }
+
+    /// <summary>
+    /// Marks a must-read file as read, removing it from the agent's unread list.
+    /// </summary>
+    public void MarkMustReadComplete(string? sessionId, string relativePath)
+    {
+        var agent = GetCurrentAgent(sessionId);
+        if (agent == null) return;
+        UpdateAgentState(agent.Name, s =>
+        {
+            s.UnreadMustReads.RemoveAll(p => p.Equals(relativePath, StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    private static string NormalizeMustReadPath(string path)
+    {
+        var normalized = path.Replace('\\', '/');
+        var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
+        return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
+    }
+
+    #endregion
 
     #region Lock File Support
 

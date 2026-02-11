@@ -223,7 +223,13 @@ public static class AgentCommand
         Console.WriteLine($"  Role: {state.Role ?? "(none)"}");
 
         if (!string.IsNullOrEmpty(state.Task))
+        {
             Console.WriteLine($"  Task: {state.Task}");
+            var configService = new ConfigService();
+            var taskFilePath = Path.Combine(configService.GetTasksPath(), $"{state.Task}.md");
+            if (File.Exists(taskFilePath))
+                Console.WriteLine($"  Task file: {taskFilePath}");
+        }
 
         if (state.Since.HasValue)
             Console.WriteLine($"  Since: {state.Since.Value:yyyy-MM-dd HH:mm:ss} UTC");
@@ -308,7 +314,13 @@ public static class AgentCommand
         Console.WriteLine($"  Role: {role}");
 
         if (!string.IsNullOrEmpty(task))
+        {
             Console.WriteLine($"  Task: {task}");
+            var configService = new ConfigService();
+            var taskFilePath = Path.Combine(configService.GetTasksPath(), $"{task}.md");
+            if (File.Exists(taskFilePath))
+                Console.WriteLine($"  Task file: {taskFilePath}");
+        }
 
         // Show permissions
         var state = registry.GetAgentState(current.Name);

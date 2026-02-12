@@ -757,6 +757,27 @@ public class AgentRegistryTests : IDisposable
     #region Lock File Tests
 
     [Fact]
+    public void ClaimAgent_FallsBackToSessionContext_WhenNoPendingSession()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Store session context (but NOT pending session) — simulates re-claim after release
+        registry.StoreSessionContext("ctx-session-456");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent should fall back to session context: {error}");
+
+        var session = registry.GetSession("Adele");
+        Assert.NotNull(session);
+        Assert.Equal("ctx-session-456", session.SessionId);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
     public void ClaimAgent_CleansUpLockFileAfterAttempt()
     {
         // Setup config

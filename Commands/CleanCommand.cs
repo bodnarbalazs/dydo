@@ -209,5 +209,10 @@ public static class CleanCommand
                 File.Delete(file);
             }
         }
+
+        // Remove modes/ directory (regenerated fresh on next claim)
+        var modesPath = Path.Combine(workspace, "modes");
+        if (Directory.Exists(modesPath))
+            Directory.Delete(modesPath, true);
     }
 }

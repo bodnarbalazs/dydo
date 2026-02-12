@@ -69,6 +69,11 @@ public partial class AgentRegistry : IAgentRegistry
         var sessionId = GetPendingSessionId(agentName);
         if (string.IsNullOrEmpty(sessionId))
         {
+            // Fall back to session context (persists after release from previous guard invocation)
+            sessionId = GetSessionContext();
+        }
+        if (string.IsNullOrEmpty(sessionId))
+        {
             error = "No session ID available. Claim must be initiated via hook.";
             return false;
         }

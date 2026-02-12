@@ -156,6 +156,40 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertStderrContains("Invalid agent name");
     }
 
+    [Fact]
+    public async Task Claim_AfterRelease_Succeeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await ReleaseAgentAsync();
+
+        // Re-claim same agent (uses session context fallback since no new pending session)
+        var result = await ClaimAgentAsync("Adele");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+    }
+
+    [Fact]
+    public async Task Claim_AfterMultipleReleases_Succeeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Cycle 1: claim and release
+        await ClaimAgentAsync("Adele");
+        await ReleaseAgentAsync();
+
+        // Cycle 2: re-claim and release
+        await ClaimAgentAsync("Adele");
+        await ReleaseAgentAsync();
+
+        // Cycle 3: re-claim again
+        var result = await ClaimAgentAsync("Adele");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+    }
+
     #endregion
 
     #region Release

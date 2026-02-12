@@ -142,6 +142,24 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Clean_Agent_RemovesModesDirectory()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // Modes directory should exist after claim
+        var modesPath = Path.Combine(TestDir, "dydo/agents/Adele/modes");
+        Assert.True(Directory.Exists(modesPath), "Modes should exist after claim");
+
+        // Force-clean without releasing (modes still present)
+        var result = await CleanAsync("Adele", force: true);
+
+        result.AssertSuccess();
+        Assert.False(Directory.Exists(modesPath), "Modes directory should be removed by clean");
+    }
+
+    [Fact]
     public async Task Clean_UnknownAgent_Fails()
     {
         await InitProjectAsync("none", "balazs", 3);

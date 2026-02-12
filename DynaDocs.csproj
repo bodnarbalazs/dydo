@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.0.17</Version>
+        <Version>1.0.18</Version>
         <Description>Documentation-driven context and agent orchestration for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>

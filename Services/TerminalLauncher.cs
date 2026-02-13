@@ -167,7 +167,8 @@ public class TerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"new-tab {wtDirArg}powershell {GetWindowsArguments(agentName)}",
+                // wt uses ';' as its own subcommand separator, so escape it with '\;'
+                Arguments = $"new-tab {wtDirArg}powershell {GetWindowsArguments(agentName).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)

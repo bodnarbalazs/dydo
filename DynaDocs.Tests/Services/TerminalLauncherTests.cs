@@ -304,6 +304,19 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void LaunchWindows_WtArgs_EscapesSemicolonsForWt()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele");
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        // wt uses ';' as subcommand separator, so literal semicolons must be escaped as '\;'
+        Assert.Contains("\\;", wtCall.Arguments);
+    }
+
+    [Fact]
     public void LaunchWindows_SetsWorkingDirectory_WhenProvided()
     {
         var recorder = new RecordingProcessStarter();

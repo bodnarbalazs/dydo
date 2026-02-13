@@ -9,7 +9,7 @@ using DynaDocs.Utils;
 
 public partial class AgentRegistry : IAgentRegistry
 {
-    private static readonly Dictionary<string, (List<string> Allowed, List<string> Denied)> RolePermissions = new()
+    private static readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> RolePermissions = new()
     {
         ["code-writer"] = (["src/**", "tests/**", "dydo/agents/{self}/**"], ["dydo/**", "project/**"]),
         ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
@@ -278,8 +278,8 @@ public partial class AgentRegistry : IAgentRegistry
                 s.Role = null;
                 s.Task = null;
                 s.Since = null;
-                s.AllowedPaths = [];
-                s.DeniedPaths = [];
+                s.WritablePaths = [];
+                s.ReadOnlyPaths = [];
                 s.UnreadMustReads = [];
             });
 
@@ -323,11 +323,11 @@ public partial class AgentRegistry : IAgentRegistry
             }
         }
 
-        var (allowed, denied) = RolePermissions[role];
+        var (writable, readOnly) = RolePermissions[role];
 
         // Replace {self} placeholder with agent name
-        allowed = allowed.Select(p => p.Replace("{self}", agent.Name)).ToList();
-        denied = denied.Select(p => p.Replace("{self}", agent.Name)).ToList();
+        writable = writable.Select(p => p.Replace("{self}", agent.Name)).ToList();
+        readOnly = readOnly.Select(p => p.Replace("{self}", agent.Name)).ToList();
 
         var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId);
 
@@ -335,8 +335,8 @@ public partial class AgentRegistry : IAgentRegistry
         {
             s.Role = role;
             s.Task = task;
-            s.AllowedPaths = allowed;
-            s.DeniedPaths = denied;
+            s.WritablePaths = writable;
+            s.ReadOnlyPaths = readOnly;
             s.UnreadMustReads = mustReads;
 
             // Track role in task history
@@ -617,13 +617,13 @@ public partial class AgentRegistry : IAgentRegistry
         // Normalize path
         var relativePath = GetRelativePath(path);
 
-        // Check denied first
-        foreach (var pattern in agent.DeniedPaths)
+        // Check read-only first
+        foreach (var pattern in agent.ReadOnlyPaths)
         {
             if (pattern == "**" || MatchesGlob(relativePath, pattern))
             {
                 // Check if explicitly allowed
-                var isAllowed = agent.AllowedPaths.Any(ap => MatchesGlob(relativePath, ap));
+                var isAllowed = agent.WritablePaths.Any(ap => MatchesGlob(relativePath, ap));
                 if (!isAllowed)
                 {
                     error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role)}";
@@ -632,15 +632,15 @@ public partial class AgentRegistry : IAgentRegistry
             }
         }
 
-        // If no allowed paths, nothing is allowed
-        if (agent.AllowedPaths.Count == 0)
+        // If no writable paths, nothing is allowed
+        if (agent.WritablePaths.Count == 0)
         {
             error = $"Agent {agent.Name} ({agent.Role}) has no write permissions.";
             return false;
         }
 
-        // Check if path matches any allowed pattern
-        var allowed = agent.AllowedPaths.Any(pattern => MatchesGlob(relativePath, pattern));
+        // Check if path matches any writable pattern
+        var allowed = agent.WritablePaths.Any(pattern => MatchesGlob(relativePath, pattern));
         if (!allowed)
         {
             error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role)}";
@@ -716,8 +716,8 @@ public partial class AgentRegistry : IAgentRegistry
             status: {state.Status.ToString().ToLowerInvariant()}
             assigned: {state.AssignedHuman ?? GetHumanForAgent(agentName) ?? "unassigned"}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
-            allowed-paths: [{string.Join(", ", state.AllowedPaths.Select(p => $"\"{p}\""))}]
-            denied-paths: [{string.Join(", ", state.DeniedPaths.Select(p => $"\"{p}\""))}]
+            writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
+            readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
             unread-must-reads: [{string.Join(", ", state.UnreadMustReads.Select(p => $"\"{p}\""))}]
             task-role-history: {historyYaml}
             ---
@@ -807,11 +807,11 @@ public partial class AgentRegistry : IAgentRegistry
                         if (value != "null" && DateTime.TryParse(value, out var dt))
                             state.Since = dt;
                         break;
-                    case "allowed-paths":
-                        state.AllowedPaths = ParsePathList(value);
+                    case "writable-paths":
+                        state.WritablePaths = ParsePathList(value);
                         break;
-                    case "denied-paths":
-                        state.DeniedPaths = ParsePathList(value);
+                    case "readonly-paths":
+                        state.ReadOnlyPaths = ParsePathList(value);
                         break;
                     case "unread-must-reads":
                         state.UnreadMustReads = ParsePathList(value);
@@ -950,8 +950,8 @@ public partial class AgentRegistry : IAgentRegistry
             status: free
             assigned: {human}
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             ---
 
             # {name} — Session State

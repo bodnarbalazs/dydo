@@ -129,8 +129,8 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
             task: feature-auth
             status: free
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             ---
             """);
         WriteFile("dydo/agents/Adele/notes.md", "Auth notes");

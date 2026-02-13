@@ -73,11 +73,11 @@ public static class WhoamiCommand
             Console.WriteLine($"  Status: {agent.Status.ToString().ToLowerInvariant()}");
             Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(agent.Name)}");
 
-            if (agent.AllowedPaths.Count > 0)
-                Console.WriteLine($"  Allowed paths: {string.Join(", ", agent.AllowedPaths)}");
+            if (agent.WritablePaths.Count > 0)
+                Console.WriteLine($"  Writable paths: {string.Join(", ", agent.WritablePaths)}");
 
-            if (agent.DeniedPaths.Count > 0 && agent.DeniedPaths[0] != "**")
-                Console.WriteLine($"  Denied paths: {string.Join(", ", agent.DeniedPaths)}");
+            if (agent.ReadOnlyPaths.Count > 0 && agent.ReadOnlyPaths[0] != "**")
+                Console.WriteLine($"  Read-only paths: {string.Join(", ", agent.ReadOnlyPaths)}");
         }
         else
         {

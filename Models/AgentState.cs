@@ -7,8 +7,8 @@ public class AgentState
     public string? Task { get; set; }
     public AgentStatus Status { get; set; } = AgentStatus.Free;
     public DateTime? Since { get; set; }
-    public List<string> AllowedPaths { get; set; } = [];
-    public List<string> DeniedPaths { get; set; } = [];
+    public List<string> WritablePaths { get; set; } = [];
+    public List<string> ReadOnlyPaths { get; set; } = [];
     public string? AssignedHuman { get; set; }
 
     /// <summary>

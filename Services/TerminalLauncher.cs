@@ -49,28 +49,28 @@ public class TerminalLauncher
         // Modern terminals (most common on current distros)
         // Prompt format: claude "AgentName --inbox"
         // When workingDirectory is provided, prefix with cd to ensure shell starts in the right place
-        new("gnome-terminal", (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
-        new("konsole", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
-        new("xfce4-terminal", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\\\"\""),
+        new("gnome-terminal", (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("konsole", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("xfce4-terminal", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\""),
 
         // Popular third-party terminals
-        new("alacritty", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
-        new("kitty", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
-        new("wezterm", (agentName, wd) => $"start -- bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
-        new("tilix", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\\\"\""),
+        new("alacritty", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("kitty", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("wezterm", (agentName, wd) => $"start -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("tilix", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\""),
 
         // Wayland-native
-        new("foot", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("foot", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
 
         // Fallback (usually available)
-        new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}claude '{agentName} --inbox'; exec bash\""),
+        new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
     ];
 
     public static readonly TerminalConfig[] MacTerminals =
     [
         // Terminal.app is always present on macOS
         new("osascript", (agentName, wd) =>
-            $"-e 'tell app \"Terminal\" to do script \"{CdPrefix(wd)}claude \\\"{agentName} --inbox\\\"\"'"),
+            $"-e 'tell app \"Terminal\" to do script \"{CdPrefix(wd)}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"\"'"),
     ];
 
     /// <summary>
@@ -97,7 +97,7 @@ public class TerminalLauncher
         // prompt (including --inbox) is passed as one argument to claude.
         // Double-quote escaping ("") breaks when passing through wt → powershell layers.
         var escapedPrompt = prompt.Replace("'", "''");
-        return $"-NoExit -Command \"claude '{escapedPrompt}'\"";
+        return $"-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'\"";
     }
 
     public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null)

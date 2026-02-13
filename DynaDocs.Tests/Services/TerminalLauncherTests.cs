@@ -109,7 +109,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_ExactFormat()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele");
-        Assert.Equal("-NoExit -Command \"claude 'Adele --inbox'\"", args);
+        Assert.Equal("-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'\"", args);
     }
 
     [Theory]
@@ -157,7 +157,7 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_ContainsCdPrefix_WhenWorkingDirectoryProvided(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", "/home/user/project");
-        Assert.Contains("cd '/home/user/project' && claude", args);
+        Assert.Contains("cd '/home/user/project' && unset CLAUDECODE; claude", args);
     }
 
     [Theory]
@@ -173,7 +173,7 @@ public class TerminalLauncherTests
     public void GetMacArguments_ContainsCdPrefix_WhenWorkingDirectoryProvided()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", "/Users/dev/project");
-        Assert.Contains("cd '/Users/dev/project' && claude", args);
+        Assert.Contains("cd '/Users/dev/project' && unset CLAUDECODE; claude", args);
     }
 
     [Fact]
@@ -209,6 +209,39 @@ public class TerminalLauncherTests
 
         Assert.Throws<ArgumentException>(() =>
             launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", "/home/it's-broken"));
+    }
+
+    [Fact]
+    public void GetWindowsArguments_ClearsClaudeCodeEnvVar()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        Assert.Contains("Remove-Item Env:CLAUDECODE", args);
+        Assert.True(args.IndexOf("Remove-Item Env:CLAUDECODE") < args.IndexOf("claude"));
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_ClearsClaudeCodeEnvVar(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+        Assert.Contains("unset CLAUDECODE", args);
+        Assert.True(args.IndexOf("unset CLAUDECODE") < args.IndexOf("claude"));
+    }
+
+    [Fact]
+    public void GetMacArguments_ClearsClaudeCodeEnvVar()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+        Assert.Contains("unset CLAUDECODE", args);
+        Assert.True(args.IndexOf("unset CLAUDECODE") < args.IndexOf("claude"));
     }
 
     #endregion

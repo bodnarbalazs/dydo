@@ -42,8 +42,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: free
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             task-role-history: { "my-feature": ["code-writer"] }
             ---
 
@@ -90,8 +90,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: free
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             task-role-history: { "other-feature": ["code-writer"] }
             ---
 
@@ -135,8 +135,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: free
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             task-role-history: {}
             ---
 
@@ -194,8 +194,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: working
             assigned: testuser
             started: null
-            allowed-paths: ["src/**"]
-            denied-paths: ["dydo/**"]
+            writable-paths: ["src/**"]
+            readonly-paths: ["dydo/**"]
             task-role-history: { "my-feature": ["planner", "code-writer"], "old-task": ["reviewer"] }
             ---
 
@@ -229,8 +229,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: free
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             task-role-history: { "my-feature": ["code-writer"] }
             ---
 
@@ -294,8 +294,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: working
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             task-role-history: { "feature-x": ["planner"] }
             ---
 
@@ -327,8 +327,8 @@ public class ProcessWorkflowTests : IntegrationTestBase
             status: working
             assigned: testuser
             started: null
-            allowed-paths: ["src/**", "tests/**"]
-            denied-paths: ["dydo/**", "project/**"]
+            writable-paths: ["src/**", "tests/**"]
+            readonly-paths: ["dydo/**", "project/**"]
             task-role-history: { "feature-x": ["planner", "code-writer"] }
             ---
 

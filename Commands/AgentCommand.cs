@@ -234,11 +234,11 @@ public static class AgentCommand
         if (state.Since.HasValue)
             Console.WriteLine($"  Since: {state.Since.Value:yyyy-MM-dd HH:mm:ss} UTC");
 
-        if (state.AllowedPaths.Count > 0)
-            Console.WriteLine($"  Allowed paths: {string.Join(", ", state.AllowedPaths)}");
+        if (state.WritablePaths.Count > 0)
+            Console.WriteLine($"  Writable paths: {string.Join(", ", state.WritablePaths)}");
 
-        if (state.DeniedPaths.Count > 0 && state.DeniedPaths[0] != "**")
-            Console.WriteLine($"  Denied paths: {string.Join(", ", state.DeniedPaths)}");
+        if (state.ReadOnlyPaths.Count > 0 && state.ReadOnlyPaths[0] != "**")
+            Console.WriteLine($"  Read-only paths: {string.Join(", ", state.ReadOnlyPaths)}");
 
         var session = registry.GetSession(state.Name);
         if (session != null)
@@ -326,10 +326,10 @@ public static class AgentCommand
         var state = registry.GetAgentState(current.Name);
         if (state != null)
         {
-            Console.WriteLine($"  Allowed paths: {string.Join(", ", state.AllowedPaths)}");
-            if (state.DeniedPaths.Count > 0 && state.DeniedPaths[0] != "**")
-                Console.WriteLine($"  Denied paths: {string.Join(", ", state.DeniedPaths)}");
-            else if (state.AllowedPaths.Count == 0)
+            Console.WriteLine($"  Writable paths: {string.Join(", ", state.WritablePaths)}");
+            if (state.ReadOnlyPaths.Count > 0 && state.ReadOnlyPaths[0] != "**")
+                Console.WriteLine($"  Read-only paths: {string.Join(", ", state.ReadOnlyPaths)}");
+            else if (state.WritablePaths.Count == 0)
                 Console.WriteLine("  Note: This role has no write permissions.");
         }
 

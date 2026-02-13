@@ -975,8 +975,8 @@ public class AgentRegistryTests : IDisposable
             status: working
             assigned: testuser
             started: null
-            allowed-paths: ["src/**"]
-            denied-paths: ["dydo/**"]
+            writable-paths: ["src/**"]
+            readonly-paths: ["dydo/**"]
             unread-must-reads: ["dydo/understand/about.md", "dydo/understand/architecture.md"]
             task-role-history: {}
             ---
@@ -1013,8 +1013,8 @@ public class AgentRegistryTests : IDisposable
             status: working
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             unread-must-reads: ["dydo/understand/about.md", "dydo/guides/coding-standards.md"]
             task-role-history: {}
             ---
@@ -1046,8 +1046,8 @@ public class AgentRegistryTests : IDisposable
             status: working
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             unread-must-reads: []
             task-role-history: {}
             ---
@@ -1082,8 +1082,8 @@ public class AgentRegistryTests : IDisposable
             status: working
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             unread-must-reads: ["dydo/understand/about.md", "dydo/understand/architecture.md"]
             task-role-history: {}
             ---
@@ -1122,8 +1122,8 @@ public class AgentRegistryTests : IDisposable
             status: working
             assigned: testuser
             started: null
-            allowed-paths: []
-            denied-paths: []
+            writable-paths: []
+            readonly-paths: []
             unread-must-reads: ["dydo/understand/About.md"]
             task-role-history: {}
             ---

@@ -33,15 +33,23 @@ public static class TaskCommand
             Description = "Task description"
         };
 
+        var areaOption = new Option<string>("--area")
+        {
+            Description = "Task area (e.g., backend, frontend, general)",
+            Required = true
+        };
+
         var command = new Command("create", "Create a new task");
         command.Arguments.Add(nameArgument);
         command.Options.Add(descriptionOption);
+        command.Options.Add(areaOption);
 
         command.SetAction(parseResult =>
         {
             var name = parseResult.GetValue(nameArgument)!;
             var description = parseResult.GetValue(descriptionOption);
-            return ExecuteCreate(name, description);
+            var area = parseResult.GetValue(areaOption)!;
+            return ExecuteCreate(name, description, area);
         });
 
         return command;
@@ -159,8 +167,14 @@ public static class TaskCommand
         return configService.GetTasksPath();
     }
 
-    private static int ExecuteCreate(string name, string? description)
+    private static int ExecuteCreate(string name, string? description, string area)
     {
+        if (!Frontmatter.ValidAreas.Contains(area))
+        {
+            ConsoleOutput.WriteError($"Invalid area '{area}'. Must be one of: {string.Join(", ", Frontmatter.ValidAreas)}");
+            return ExitCodes.ToolError;
+        }
+
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
         var agent = registry.GetCurrentAgent(sessionId);
@@ -177,6 +191,7 @@ public static class TaskCommand
 
         var content = $"""
             ---
+            area: {area}
             name: {name}
             status: pending
             created: {DateTime.UtcNow:o}
@@ -243,6 +258,7 @@ public static class TaskCommand
 
     private static int ExecuteApprove(string name, string? notes)
     {
+        var configService = new ConfigService();
         var tasksPath = GetTasksPath();
         var taskPath = Path.Combine(tasksPath, $"{name}.md");
 
@@ -254,20 +270,216 @@ public static class TaskCommand
 
         var content = File.ReadAllText(taskPath);
 
-        // Update status
-        content = Regex.Replace(content, @"status: \w+(-\w+)?", "status: closed");
+        // Parse task metadata from frontmatter
+        var assignedMatch = Regex.Match(content, @"assigned: (\w+)");
+        var assigned = assignedMatch.Success ? assignedMatch.Groups[1].Value : null;
+
+        var createdMatch = Regex.Match(content, @"created: (.+)");
+        DateTime? taskCreated = null;
+        if (createdMatch.Success && DateTime.TryParse(
+                createdMatch.Groups[1].Value,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out var dt))
+            taskCreated = dt;
+
+        var areaMatch = Regex.Match(content, @"area: ([\w-]+)");
+        var area = areaMatch.Success ? areaMatch.Groups[1].Value : "general";
+
+        // Gather file changes from audit logs
+        var created = new List<string>();
+        var modified = new List<string>();
+        var deleted = new List<string>();
+
+        try
+        {
+            var auditService = new AuditService(configService);
+            var (sessions, _) = auditService.LoadSessions();
+
+            foreach (var session in sessions)
+            {
+                // Filter: matching agent
+                if (!string.IsNullOrEmpty(assigned) &&
+                    !string.Equals(session.AgentName, assigned, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                foreach (var evt in session.Events)
+                {
+                    // Filter: only events after the task was created
+                    if (taskCreated.HasValue && evt.Timestamp < taskCreated.Value)
+                        continue;
+
+                    if (string.IsNullOrEmpty(evt.Path)) continue;
+
+                    // Exclude internal dydo paths
+                    var normalizedPath = evt.Path.Replace('\\', '/');
+                    if (normalizedPath.Contains("dydo/", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    switch (evt.EventType)
+                    {
+                        case AuditEventType.Write:
+                            if (!created.Contains(evt.Path) && !modified.Contains(evt.Path))
+                                created.Add(evt.Path);
+                            break;
+                        case AuditEventType.Edit:
+                            if (!modified.Contains(evt.Path) && !created.Contains(evt.Path))
+                                modified.Add(evt.Path);
+                            break;
+                        case AuditEventType.Delete:
+                            // Remove from created/modified if it was there
+                            created.Remove(evt.Path);
+                            modified.Remove(evt.Path);
+                            if (!deleted.Contains(evt.Path))
+                                deleted.Add(evt.Path);
+                            break;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Audit service failure should not block approval
+        }
+
+        // Print file changes
+        if (created.Count > 0 || modified.Count > 0 || deleted.Count > 0)
+        {
+            Console.WriteLine("Files changed (from audit logs):");
+            foreach (var f in created) Console.WriteLine($"  + {f}");
+            foreach (var f in modified) Console.WriteLine($"  ~ {f}");
+            foreach (var f in deleted) Console.WriteLine($"  - {f}");
+            Console.WriteLine();
+        }
+
+        // Transform frontmatter: remove task-specific fields, add changelog fields
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        content = Regex.Replace(content, @"(?m)^name: .+\n", "");
+        content = Regex.Replace(content, @"(?m)^status: .+\n", "");
+        content = Regex.Replace(content, @"(?m)^created: .+\n", "");
+        content = Regex.Replace(content, @"(?m)^assigned: .+\n", "");
+        content = Regex.Replace(content, @"(?m)^updated: .+\n", "");
+
+        // Add type and date after area
+        content = Regex.Replace(content, @"(?m)^(area: .+)$", $"$1\ntype: changelog\ndate: {today}");
+
+        // Update "Files Changed" section with audit-derived list
+        if (created.Count > 0 || modified.Count > 0 || deleted.Count > 0)
+        {
+            var filesSection = "## Files Changed\n\n";
+            foreach (var f in created) filesSection += $"{f} — Created\n";
+            foreach (var f in modified) filesSection += $"{f} — Modified\n";
+            foreach (var f in deleted) filesSection += $"{f} — Deleted\n";
+
+            content = Regex.Replace(content, @"## Files Changed\s*\n[\s\S]*?(?=\n## |\z)",
+                filesSection.TrimEnd() + "\n\n");
+        }
 
         // Add approval info
-        var approvalSection = $"\n\n## Approval\n\n- Approved: {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+        var approvalSection = $"## Approval\n\n- Approved: {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
         if (!string.IsNullOrEmpty(notes))
             approvalSection += $"\n- Notes: {notes}";
+        content = content.TrimEnd() + "\n\n" + approvalSection + "\n";
 
-        content += approvalSection;
+        // Move file to changelog directory
+        var changelogPath = configService.GetChangelogPath();
+        var datePath = Path.Combine(changelogPath, DateTime.UtcNow.ToString("yyyy"), today);
+        Directory.CreateDirectory(datePath);
 
-        File.WriteAllText(taskPath, content);
-        Console.WriteLine($"Task {name} approved and closed");
+        var changelogFilePath = Path.Combine(datePath, $"{name}.md");
+        File.WriteAllText(changelogFilePath, content);
+        File.Delete(taskPath);
+
+        // Ensure hub files exist for changelog directory structure
+        EnsureChangelogHubs(changelogPath, DateTime.UtcNow, name);
+
+        Console.WriteLine($"Task {name} approved.");
+        var relativeChangelogPath = Path.Combine("project", "changelog", DateTime.UtcNow.ToString("yyyy"), today, $"{name}.md");
+        Console.WriteLine($"Changelog entry created: {relativeChangelogPath}");
+        Console.WriteLine("Tip: Run 'dydo fix' to regenerate hub files.");
 
         return ExitCodes.Success;
+    }
+
+    private static void EnsureChangelogHubs(string changelogPath, DateTime date, string taskName)
+    {
+        var yearStr = date.ToString("yyyy");
+        var dateStr = date.ToString("yyyy-MM-dd");
+
+        // Top-level changelog _index.md
+        var topIndex = Path.Combine(changelogPath, "_index.md");
+        if (!File.Exists(topIndex))
+        {
+            var topContent = """
+                ---
+                area: project
+                type: hub
+                ---
+
+                # Changelog
+
+                """;
+            File.WriteAllText(topIndex, topContent);
+        }
+
+        // Year folder _index.md
+        var yearPath = Path.Combine(changelogPath, yearStr);
+        Directory.CreateDirectory(yearPath);
+        var yearIndex = Path.Combine(yearPath, "_index.md");
+        if (!File.Exists(yearIndex))
+        {
+            var yearContent = $"""
+                ---
+                area: project
+                type: hub
+                ---
+
+                # {yearStr}
+
+                """;
+            File.WriteAllText(yearIndex, yearContent);
+        }
+
+        // Date folder _index.md
+        var datePath = Path.Combine(yearPath, dateStr);
+        Directory.CreateDirectory(datePath);
+        var dateIndex = Path.Combine(datePath, "_index.md");
+        if (!File.Exists(dateIndex))
+        {
+            var dateContent = $"""
+                ---
+                area: project
+                type: hub
+                ---
+
+                # {dateStr}
+
+                """;
+            File.WriteAllText(dateIndex, dateContent);
+        }
+
+        // Append link to date _index.md if not already there
+        var dateIndexContent = File.ReadAllText(dateIndex);
+        var taskLink = $"- [{taskName}](./{taskName}.md)";
+        if (!dateIndexContent.Contains($"{taskName}.md"))
+        {
+            File.AppendAllText(dateIndex, taskLink + "\n");
+        }
+
+        // Append link to year _index.md if not already there
+        var yearIndexContent = File.ReadAllText(yearIndex);
+        var dateLink = $"- [{dateStr}](./{dateStr}/_index.md)";
+        if (!yearIndexContent.Contains($"{dateStr}/"))
+        {
+            File.AppendAllText(yearIndex, dateLink + "\n");
+        }
+
+        // Append link to top _index.md if not already there
+        var topIndexContent = File.ReadAllText(topIndex);
+        var yearLink = $"- [{yearStr}](./{yearStr}/_index.md)";
+        if (!topIndexContent.Contains($"{yearStr}/"))
+        {
+            File.AppendAllText(topIndex, yearLink + "\n");
+        }
     }
 
     private static int ExecuteReject(string name, string notes)

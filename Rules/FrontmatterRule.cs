@@ -30,6 +30,24 @@ public class FrontmatterRule : RuleBase
             yield break;
         }
 
+        // Skip task files - they use task-specific frontmatter (name/status/created/assigned)
+        // Meta files (_tasks.md, _index.md) still go through normal validation
+        if (normalized.Contains("/tasks/", StringComparison.OrdinalIgnoreCase) &&
+            !doc.FileName.StartsWith("_"))
+        {
+            if (!doc.HasFrontmatter)
+            {
+                yield return CreateError(doc, "Missing frontmatter");
+                yield break;
+            }
+            var taskFm = doc.Frontmatter!;
+            if (string.IsNullOrEmpty(taskFm.Area))
+                yield return CreateError(doc, "Missing required frontmatter field: area");
+            else if (!Frontmatter.ValidAreas.Contains(taskFm.Area))
+                yield return CreateError(doc, $"Invalid area value '{taskFm.Area}'. Must be one of: {string.Join(", ", Frontmatter.ValidAreas)}");
+            yield break;
+        }
+
         if (!doc.HasFrontmatter)
         {
             yield return CreateError(doc, "Missing frontmatter");

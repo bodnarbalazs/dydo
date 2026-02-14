@@ -547,6 +547,17 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Role_WithTask_AutoCreatesTaskFileWithArea()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        await SetRoleAsync("code-writer", "area-test");
+
+        AssertFileContains("dydo/project/tasks/area-test.md", "area: general");
+    }
+
+    [Fact]
     public async Task Role_WithTask_ShowsTaskFilePath()
     {
         await InitProjectAsync("none", "balazs", 3);

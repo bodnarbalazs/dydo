@@ -428,10 +428,10 @@ public class WorkflowTests : IntegrationTestBase
         return await RunAsync(command, args.ToArray());
     }
 
-    private async Task<CommandResult> TaskCreateAsync(string name)
+    private async Task<CommandResult> TaskCreateAsync(string name, string area = "general")
     {
         var command = TaskCommand.Create();
-        return await RunAsync(command, "create", name);
+        return await RunAsync(command, "create", name, "--area", area);
     }
 
     private async Task<CommandResult> TaskReadyForReviewAsync(string name, string summary)

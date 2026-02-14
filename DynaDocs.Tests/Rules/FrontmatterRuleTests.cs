@@ -309,6 +309,73 @@ public class FrontmatterRuleTests
 
     #endregion
 
+    #region Task File Validation
+
+    [Fact]
+    public void Validate_TaskFile_WithArea_NoType_Passes()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "backend"
+        }, "project/tasks/my-feature.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_TaskFile_WithoutArea_Fails()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter(), "project/tasks/my-feature.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("area", violations[0].Message);
+    }
+
+    [Fact]
+    public void Validate_TaskFile_InvalidArea_Fails()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "invalid-area"
+        }, "project/tasks/my-feature.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("Invalid area", violations[0].Message);
+    }
+
+    [Fact]
+    public void Validate_TaskMetaFile_StillRequiresType()
+    {
+        // Meta files (starting with _) in tasks folder should go through normal validation
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "project"
+        }, "project/tasks/_tasks.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Contains(violations, v => v.Message.Contains("type"));
+    }
+
+    [Fact]
+    public void Validate_TaskFile_MissingFrontmatter_Fails()
+    {
+        var doc = CreateDocWithFrontmatter(null, "project/tasks/no-frontmatter.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("Missing frontmatter", violations[0].Message);
+    }
+
+    #endregion
+
     #region Folder Meta Type
 
     [Fact]

@@ -135,6 +135,14 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
+    /// Get the changelog folder path (dydo/project/changelog/)
+    /// </summary>
+    public string GetChangelogPath(string? startPath = null)
+    {
+        return Path.Combine(GetDydoRoot(startPath), "project", "changelog");
+    }
+
+    /// <summary>
     /// Create a default configuration for a new project
     /// </summary>
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

@@ -365,6 +365,7 @@ public partial class AgentRegistry : IAgentRegistry
                     Directory.CreateDirectory(tasksPath);
                     var content = $"""
                         ---
+                        area: general
                         name: {task}
                         status: pending
                         created: {DateTime.UtcNow:o}

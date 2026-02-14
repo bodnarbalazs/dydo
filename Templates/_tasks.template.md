@@ -17,8 +17,8 @@ Task tracking for work in progress. Tasks are created by agents when starting wo
 
 ## File Format
 
-Tasks are created via `dydo task create <name>`. Each task has:
-- Frontmatter: name, status, created, assigned, updated
+Tasks are created via `dydo task create <name> --area <area>`. Each task has:
+- Frontmatter: area, name, status, created, assigned, updated
 - Progress checklist
 - Files Changed section (critical for debugging)
 - Review Summary

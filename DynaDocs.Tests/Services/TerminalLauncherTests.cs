@@ -396,6 +396,117 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void LaunchMac_UsesOsascript()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele");
+
+        Assert.Single(recorder.Started);
+        Assert.Equal("osascript", recorder.Started[0].FileName);
+    }
+
+    [Fact]
+    public void LaunchMac_DoesNotUseShellExecute()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele");
+
+        Assert.False(recorder.Started[0].UseShellExecute);
+    }
+
+    [Fact]
+    public void LaunchMac_PassesScriptViaArgumentList()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele");
+
+        var psi = recorder.Started[0];
+        Assert.Equal(2, psi.ArgumentList.Count);
+        Assert.Equal("-e", psi.ArgumentList[0]);
+        Assert.Contains("tell app \"Terminal\" to do script", psi.ArgumentList[1]);
+        Assert.Contains("Adele --inbox", psi.ArgumentList[1]);
+    }
+
+    [Fact]
+    public void LaunchMac_ScriptContainsEscapedQuotesAroundPrompt()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele");
+
+        var script = recorder.Started[0].ArgumentList[1];
+        // AppleScript escaped quotes wrap the prompt so Terminal runs: claude "Adele --inbox"
+        Assert.Contains("\\\"Adele --inbox\\\"", script);
+    }
+
+    [Fact]
+    public void LaunchMac_ScriptContainsCdPrefix_WhenWorkingDirectoryProvided()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele", "/Users/dev/project");
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("cd '/Users/dev/project' &&", script);
+    }
+
+    [Fact]
+    public void LaunchMac_ScriptNoCdPrefix_WhenNoWorkingDirectory()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele");
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.DoesNotContain("cd ", script);
+    }
+
+    [Fact]
+    public void LaunchMac_ScriptClearsClaudeCodeEnvVar()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele");
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("unset CLAUDECODE", script);
+        Assert.True(script.IndexOf("unset CLAUDECODE") < script.IndexOf("claude"));
+    }
+
+    [Fact]
+    public void LaunchMac_Throws_WhenPathContainsSingleQuote()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        Assert.Throws<ArgumentException>(() =>
+            launcher.LaunchMac("Adele", "/Users/dev/it's-a-project"));
+    }
+
+    [Fact]
+    public void TryLaunchTerminals_DoesNotUseShellExecute()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+
+        // UseShellExecute must be false on Unix; 'true' routes through xdg-open/open
+        // which cannot launch terminal emulators.
+        Assert.False(recorder.Started[0].UseShellExecute);
+    }
+
+    [Fact]
     public void TryLaunchTerminals_StopsOnFirstSuccess()
     {
         var recorder = new RecordingProcessStarter();

@@ -132,10 +132,7 @@ public class TerminalLauncher
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                if (!TryLaunchTerminals(MacTerminals, agentName, workingDirectory))
-                {
-                    throw new InvalidOperationException("No terminal found");
-                }
+                LaunchMac(agentName, workingDirectory);
             }
             else
             {
@@ -194,6 +191,31 @@ public class TerminalLauncher
     }
 
     /// <summary>
+    /// Launch terminal on macOS using osascript to open Terminal.app.
+    /// Uses ArgumentList instead of Arguments to bypass shell quoting issues,
+    /// and UseShellExecute = false to invoke osascript directly (UseShellExecute = true
+    /// on macOS routes through the 'open' command, which cannot run CLI tools).
+    /// </summary>
+    public void LaunchMac(string agentName, string? workingDirectory = null)
+    {
+        var cdPrefix = CdPrefix(workingDirectory);
+        // AppleScript: escaped quotes \" become literal " inside the do-script string,
+        // so Terminal.app runs:  claude "AgentName --inbox"
+        var script = $"tell app \"Terminal\" to do script \"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"\"";
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "osascript",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        psi.ArgumentList.Add("-e");
+        psi.ArgumentList.Add(script);
+
+        _processStarter.Start(psi);
+    }
+
+    /// <summary>
     /// Try to launch one of the configured terminals.
     /// </summary>
     public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null)
@@ -206,7 +228,7 @@ public class TerminalLauncher
                 {
                     FileName = terminal.FileName,
                     Arguments = terminal.GetArguments(agentName, workingDirectory),
-                    UseShellExecute = true
+                    UseShellExecute = false
                 });
                 return true;
             }

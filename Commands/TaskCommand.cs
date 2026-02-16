@@ -62,10 +62,9 @@ public static class TaskCommand
             Description = "Task name"
         };
 
-        var summaryOption = new Option<string>("--summary")
+        var summaryOption = new Option<string?>("--summary")
         {
-            Description = "Review summary",
-            Required = true
+            Description = "Review summary (required)"
         };
 
         var command = new Command("ready-for-review", "Mark task ready for review");
@@ -75,7 +74,7 @@ public static class TaskCommand
         command.SetAction(parseResult =>
         {
             var name = parseResult.GetValue(nameArgument)!;
-            var summary = parseResult.GetValue(summaryOption)!;
+            var summary = parseResult.GetValue(summaryOption);
             return ExecuteReadyForReview(name, summary);
         });
 
@@ -189,6 +188,16 @@ public static class TaskCommand
             return ExitCodes.ToolError;
         }
 
+        // Check for changelog collision on today's date
+        var configService = new ConfigService();
+        var todayChangelogDir = Path.Combine(configService.GetChangelogPath(),
+            DateTime.UtcNow.ToString("yyyy"), DateTime.UtcNow.ToString("yyyy-MM-dd"));
+        if (File.Exists(Path.Combine(todayChangelogDir, $"{name}.md")))
+        {
+            ConsoleOutput.WriteError($"A changelog entry named '{name}' already exists for today. Choose a different name.");
+            return ExitCodes.ToolError;
+        }
+
         var content = $"""
             ---
             area: {area}
@@ -222,8 +231,15 @@ public static class TaskCommand
         return ExitCodes.Success;
     }
 
-    private static int ExecuteReadyForReview(string name, string summary)
+    private static int ExecuteReadyForReview(string name, string? summary)
     {
+        if (string.IsNullOrWhiteSpace(summary))
+        {
+            ConsoleOutput.WriteError("--summary is required. Describe what you did:");
+            ConsoleOutput.WriteError("  dydo task ready-for-review <name> --summary \"Brief description of completed work\"");
+            return ExitCodes.ToolError;
+        }
+
         var tasksPath = GetTasksPath();
         var taskPath = Path.Combine(tasksPath, $"{name}.md");
 
@@ -236,7 +252,7 @@ public static class TaskCommand
         var content = File.ReadAllText(taskPath);
 
         // Update status in frontmatter
-        content = Regex.Replace(content, @"status: \w+", "status: review-pending");
+        content = Regex.Replace(content, @"status: [\w-]+", "status: review-pending");
 
         // Add/update updated timestamp
         if (content.Contains("updated:"))
@@ -386,6 +402,12 @@ public static class TaskCommand
         Directory.CreateDirectory(datePath);
 
         var changelogFilePath = Path.Combine(datePath, $"{name}.md");
+        if (File.Exists(changelogFilePath))
+        {
+            ConsoleOutput.WriteError($"A changelog entry named '{name}' already exists for today.");
+            return ExitCodes.ToolError;
+        }
+
         File.WriteAllText(changelogFilePath, content);
         File.Delete(taskPath);
 
@@ -456,7 +478,7 @@ public static class TaskCommand
         var content = File.ReadAllText(taskPath);
 
         // Update status back to active
-        content = Regex.Replace(content, @"status: \w+(-\w+)?", "status: review-failed");
+        content = Regex.Replace(content, @"status: [\w-]+", "status: review-failed");
 
         // Add rejection note
         var rejectionSection = $"\n\n## Review Feedback ({DateTime.UtcNow:yyyy-MM-dd HH:mm})\n\n{notes}";

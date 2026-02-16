@@ -568,4 +568,69 @@ public class BashCommandAnalyzerTests
     }
 
     #endregion
+
+    #region LooksLikePath False Positives
+
+    [Theory]
+    [InlineData("python3 -c \"print(data[0:])\"")]
+    [InlineData("python3 -c \"print(data[0][:20])\"")]
+    [InlineData("python3 -c \"x = data[0]\"")]
+    [InlineData("python3 -c \"result = {key: val}\"")]
+    public void Analyze_DoesNotExtractCodeExpressionsAsPaths(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        // Should not extract array slicing or code expressions as file paths
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Path.Contains('[') || op.Path.Contains(']') ||
+            op.Path.Contains('{') || op.Path.Contains('}'));
+    }
+
+    [Theory]
+    [InlineData("echo 0:")]
+    [InlineData("echo :20")]
+    [InlineData("echo 0:20")]
+    public void Analyze_DoesNotExtractPythonSlicingSyntaxAsPaths(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Path == "0:" || op.Path == ":20" || op.Path == "0:20");
+    }
+
+    [Theory]
+    [InlineData("cat file[1].txt", "file[1].txt")]
+    [InlineData("cat config{prod}.json", "config{prod}.json")]
+    [InlineData("head data[backup].csv", "data[backup].csv")]
+    public void Analyze_StillDetectsRealPathsWithBracketsAndExtensions(string command, string expectedPath)
+    {
+        var result = _analyzer.Analyze(command);
+
+        // Paths with dots/extensions should still be detected even if they contain brackets,
+        // because the dot check (line 679) fires before the bracket exclusion filter.
+        Assert.Contains(result.Operations, op =>
+            op.Type == FileOperationType.Read && op.Path == expectedPath);
+    }
+
+    [Fact]
+    public void Analyze_RedirectionWithBracketPath_StillDetectedIfHasExtension()
+    {
+        var result = _analyzer.Analyze("echo test > output[1].log");
+
+        // Redirection targets with dots should still be detected despite brackets
+        Assert.Contains(result.Operations, op =>
+            op.Type == FileOperationType.Write && op.Path == "output[1].log");
+    }
+
+    [Fact]
+    public void Analyze_RedirectionWithPureBracketToken_NotDetectedAsPath()
+    {
+        var result = _analyzer.Analyze("python3 -c 'x=1' > data[0]");
+
+        // Redirection target without extension but with brackets should NOT be a path
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Path == "data[0]");
+    }
+
+    #endregion
 }

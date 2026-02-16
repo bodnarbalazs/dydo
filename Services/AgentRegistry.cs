@@ -190,6 +190,9 @@ public partial class AgentRegistry : IAgentRegistry
                 // Archive failure should not block agent claim
             }
 
+            // Regenerate missing _system/templates/ from embedded defaults
+            _folderScaffolder.CopyBuiltInTemplates(_basePath);
+
             // Regenerate mode files from templates (fresh start for each claim)
             _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName);
 

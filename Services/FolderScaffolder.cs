@@ -346,7 +346,7 @@ public class FolderScaffolder : IFolderScaffolder
     /// <summary>
     /// Copy all built-in templates to _system/templates/ for project-local customization.
     /// </summary>
-    private void CopyBuiltInTemplates(string basePath)
+    public void CopyBuiltInTemplates(string basePath)
     {
         var destPath = Path.Combine(basePath, "_system", "templates");
         Directory.CreateDirectory(destPath);

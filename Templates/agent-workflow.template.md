@@ -19,44 +19,41 @@ dydo agent claim {{AGENT_NAME}}
 
 **Note:** If you ran `dydo agent claim auto` for any reason, mention it to the user.
 
+> **Do NOT read any files other than your mode files until you have set your role in step 2.**
+> The guard will block you. Follow the steps in order.
+
 ---
 
-## 2. Understand Your Assignment
+## 2. Set Your Role
 
-Your prompt contains your task. It may include a workflow flag which determines your starting mode:
+Your prompt contains your task. It may include a workflow flag which determines your starting mode.
 
-| Flag | Mode | Go To |
-|------|------|-------|
-| `--feature` | Full: interview → plan → code → review | [modes/interviewer.md](modes/interviewer.md) |
-| `--task` | Standard: plan → code → review | [modes/planner.md](modes/planner.md) |
-| `--quick` | Light: just implement | [modes/code-writer.md](modes/code-writer.md) |
-| `--think` | Collaborative exploration | [modes/co-thinker.md](modes/co-thinker.md) |
-| `--review` | Code review | [modes/reviewer.md](modes/reviewer.md) |
-| `--docs` | Documentation | [modes/docs-writer.md](modes/docs-writer.md) |
-| `--test` | Testing & validation | [modes/tester.md](modes/tester.md) |
-| `--inbox` | Dispatched work | See step 4 |
+Read your mode file for the appropriate role, then run the role command:
+
+```bash
+dydo agent role <role> --task <task-name>
+```
+
+| Flag | Role | Mode File |
+|------|------|-----------|
+| `--feature` | interviewer | [modes/interviewer.md](modes/interviewer.md) |
+| `--task` | planner | [modes/planner.md](modes/planner.md) |
+| `--quick` | code-writer | [modes/code-writer.md](modes/code-writer.md) |
+| `--think` | co-thinker | [modes/co-thinker.md](modes/co-thinker.md) |
+| `--review` | reviewer | [modes/reviewer.md](modes/reviewer.md) |
+| `--docs` | docs-writer | [modes/docs-writer.md](modes/docs-writer.md) |
+| `--test` | tester | [modes/tester.md](modes/tester.md) |
+| `--inbox` | (see step 3) | — |
 
 **No flag?** Infer the mode from intent. If ambiguous, ask.
 
----
-
-## 3. Confirm Your Interpretation
-
-If you inferred the mode, state your interpretation:
-
-> "I understand you want [X]. Proceeding as [mode] on [task]. Correct me if I'm wrong."
-
-If the request seems unrelated to your current task:
-
-> "This seems separate from [current-task]. Should I continue here or start fresh?"
-
-Maintain good context hygiene. If the previous task is largely disjunct, it's better to start fresh.
+**After** setting your role, you can read any project files.
 
 ---
 
-## 4. Handle Inbox
+## 3. Handle Inbox
 
-**No `--inbox` flag?** Skip to step 5.
+**No `--inbox` flag?** Skip to step 4.
 
 If you have dispatched work:
 
@@ -70,6 +67,20 @@ For each inbox item:
 3. Go to the appropriate mode file
 
 **Important:** You cannot release while inbox has unprocessed items. Archived items are kept in `archive/inbox/`.
+
+---
+
+## 4. Confirm Your Interpretation
+
+If you inferred the mode, state your interpretation:
+
+> "I understand you want [X]. Proceeding as [mode] on [task]. Correct me if I'm wrong."
+
+If the request seems unrelated to your current task:
+
+> "This seems separate from [current-task]. Should I continue here or start fresh?"
+
+Maintain good context hygiene. If the previous task is largely disjunct, it's better to start fresh.
 
 ---
 

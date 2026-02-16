@@ -274,7 +274,8 @@ public static class GuardCommand
             });
 
             Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
-            Console.Error.WriteLine("  Run 'dydo agent role <role>' to set your role.");
+            Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
+            Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
             return ExitCodes.ToolError;
         }
 
@@ -581,6 +582,10 @@ public static class GuardCommand
         if (string.IsNullOrEmpty(filePath))
             return true;
 
+        // After claiming with a role set, block reading other agents' workflows
+        if (agent != null && !string.IsNullOrEmpty(agent.Role) && IsOtherAgentWorkflow(filePath, agent.Name))
+            return false;
+
         // Stage 0: Bootstrap files are always allowed
         if (IsBootstrapFile(filePath))
             return true;
@@ -645,6 +650,19 @@ public static class GuardCommand
         // dydo/agents/{agentName}/modes/*.md
         var pattern = $@"dydo/agents/{Regex.Escape(agentName)}/modes/[^/]+\.md$";
         return Regex.IsMatch(normalizedPath, pattern, RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Check if a file is another agent's workflow file.
+    /// Returns true if the path is a workflow.md but NOT for the specified agent.
+    /// </summary>
+    private static bool IsOtherAgentWorkflow(string filePath, string agentName)
+    {
+        var normalizedPath = filePath.Replace('\\', '/');
+        if (!Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase))
+            return false; // Not a workflow file at all
+        // It IS a workflow file — check if it's for a different agent
+        return !normalizedPath.Contains($"dydo/agents/{agentName}/", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

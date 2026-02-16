@@ -689,6 +689,14 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (sensitiveNames.Any(n => value.Contains(n, StringComparison.OrdinalIgnoreCase)))
             return true;
 
+        // Skip tokens that look like code expressions (array slicing, indexing, etc.)
+        if (value.Contains('[') || value.Contains(']') || value.Contains('{') || value.Contains('}'))
+            return false;
+
+        // Skip tokens that are just digits with colons (Python slicing: 0:, :20, etc.)
+        if (Regex.IsMatch(value, @"^\d*:\d*$"))
+            return false;
+
         // Single word without special chars could be a filename
         if (!value.Contains(' ') && value.Length < 100)
             return true;

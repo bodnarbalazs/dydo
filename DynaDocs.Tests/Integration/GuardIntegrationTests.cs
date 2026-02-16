@@ -97,6 +97,20 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Guard_NoRole_BlocksWrite_WithGuidanceMessage()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Don't set a role
+
+        var result = await GuardAsync("edit", "src/file.cs");
+
+        // Error message should include step-by-step guidance
+        result.AssertStderrContains("Read your mode file first");
+        result.AssertStderrContains("dydo agent role <role> --task <task-name>");
+    }
+
+    [Fact]
     public async Task Guard_RoleViolation_Blocks()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -221,6 +235,32 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("BLOCKED");
     }
 
+    [Fact]
+    public async Task Guard_IdentityNoRole_ReadOwnWorkflow_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Don't set a role
+
+        // Own workflow is always a bootstrap file
+        var result = await GuardAsync("read", "dydo/agents/Adele/workflow.md");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_IdentityNoRole_ReadOtherAgentWorkflow_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Don't set a role — Stage 1, workflow is still a bootstrap file
+
+        // Before role is set, all workflow.md files are bootstrap files
+        var result = await GuardAsync("read", "dydo/agents/Brian/workflow.md");
+
+        result.AssertSuccess();
+    }
+
     #endregion
 
     #region Stage 2 - Identity + Role
@@ -249,6 +289,61 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardAsync("read", "dydo/agents/Brian/modes/code-writer.md");
 
         result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_IdentityWithRole_ReadOtherAgentWorkflow_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // After claiming and setting role, reading another agent's workflow is blocked
+        var result = await GuardAsync("read", "dydo/agents/Brian/workflow.md");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_IdentityWithRole_ReadOwnWorkflow_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // Reading own workflow is always allowed
+        var result = await GuardAsync("read", "dydo/agents/Adele/workflow.md");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_IdentityWithRole_ReadNonAgentWorkflow_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // A file named workflow.md outside the agents folder should NOT be blocked
+        var result = await GuardAsync("read", "docs/workflow.md");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_IdentityWithRole_ReadSimilarAgentNameWorkflow_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // Agent name prefix attack: "Adele" should NOT be able to read "AdelePlus" workflow
+        // The Contains check uses "dydo/agents/Adele/" (with trailing slash) to prevent prefix matching
+        var result = await GuardAsync("read", "dydo/agents/AdelePlus/workflow.md");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
     }
 
     #endregion

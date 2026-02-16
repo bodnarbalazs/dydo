@@ -60,6 +60,23 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_Create_FailsWhenChangelogExistsForToday()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create and approve a task so it becomes a changelog entry for today
+        await TaskCreateAsync("collision-task", area: "backend");
+        await TaskReadyForReviewAsync("collision-task", "Done");
+        await TaskApproveAsync("collision-task");
+
+        // Creating a new task with the same name should fail
+        var result = await TaskCreateAsync("collision-task", area: "backend");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("changelog entry named 'collision-task' already exists for today");
+    }
+
+    [Fact]
     public async Task Task_Create_WithoutArea_Fails()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -142,6 +159,49 @@ public class TaskTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("ready for review");
         AssertFileContains("dydo/project/tasks/feature-x.md", "status: review-pending");
+    }
+
+    [Fact]
+    public async Task Task_ReadyForReview_WithoutSummary_GivesHelpfulError()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("no-summary-task", area: "backend");
+
+        // Call ready-for-review without --summary
+        var command = TaskCommand.Create();
+        var result = await RunAsync(command, "ready-for-review", "no-summary-task");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--summary is required");
+        result.AssertStderrContains("Brief description of completed work");
+    }
+
+    [Fact]
+    public async Task Task_ReadyForReview_WithEmptySummary_GivesHelpfulError()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("empty-summary-task", area: "backend");
+
+        // Call ready-for-review with --summary "" (empty string)
+        var command = TaskCommand.Create();
+        var result = await RunAsync(command, "ready-for-review", "empty-summary-task", "--summary", "");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--summary is required");
+    }
+
+    [Fact]
+    public async Task Task_ReadyForReview_WithWhitespaceSummary_GivesHelpfulError()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("ws-summary-task", area: "backend");
+
+        // Call ready-for-review with --summary "   " (whitespace only)
+        var command = TaskCommand.Create();
+        var result = await RunAsync(command, "ready-for-review", "ws-summary-task", "--summary", "   ");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--summary is required");
     }
 
     [Fact]
@@ -407,6 +467,29 @@ public class TaskTests : IntegrationTestBase
 
         result.AssertSuccess();
         Assert.DoesNotContain("dydo fix", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Task_Approve_FailsWhenChangelogAlreadyExistsForToday()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Approve a first task to create a changelog entry
+        await TaskCreateAsync("dup-changelog", area: "backend");
+        await TaskReadyForReviewAsync("dup-changelog", "Done");
+        await TaskApproveAsync("dup-changelog");
+
+        // Manually create a second task file with the same name (bypassing the create guard)
+        var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(tasksPath);
+        File.WriteAllText(Path.Combine(tasksPath, "dup-changelog.md"),
+            "---\narea: backend\nname: dup-changelog\nstatus: review-pending\ncreated: 2026-01-01T00:00:00Z\nassigned: unassigned\n---\n\n# Task: dup-changelog\n");
+
+        // Approving should fail because the changelog entry already exists
+        var result = await TaskApproveAsync("dup-changelog");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("changelog entry named 'dup-changelog' already exists for today");
     }
 
     [Fact]

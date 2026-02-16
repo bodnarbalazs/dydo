@@ -21,4 +21,9 @@ public interface IFolderScaffolder
     /// Regenerate workflow and mode files for an agent (used after rename).
     /// </summary>
     void RegenerateAgentFiles(string agentsPath, string agentName);
+
+    /// <summary>
+    /// Copy all built-in templates to _system/templates/ for project-local customization.
+    /// </summary>
+    void CopyBuiltInTemplates(string basePath);
 }

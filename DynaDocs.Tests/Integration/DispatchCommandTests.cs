@@ -230,6 +230,254 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region CanTakeRole at Dispatch Time
+
+    [Fact]
+    public async Task Dispatch_ReviewerToCodeWriter_Fails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Make Adele the code-writer on "auth" by writing task role history into state
+        SetTaskRoleHistory("Adele", "auth", "code-writer");
+
+        var result = await DispatchAsync("reviewer", "auth", "Review this code", to: "Adele");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("code-writer");
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoSelect_SkipsIneligibleAgent()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Make Adele the code-writer on "auth" — she can't be reviewer
+        SetTaskRoleHistory("Adele", "auth", "code-writer");
+
+        var result = await DispatchAsync("reviewer", "auth", "Review this code");
+
+        result.AssertSuccess();
+        // Should skip Adele (ineligible) and select Brian (next alphabetically)
+        result.AssertStdoutContains("Brian");
+    }
+
+    #endregion
+
+    #region Auto-Return Routing
+
+    [Fact]
+    public async Task Dispatch_WithoutTo_ReturnsToOriginAgent()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Simulate: Adele dispatched to Brian, so Brian has an inbox item with origin: Adele
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+
+        // Brian is the sender (claimed), dispatching back without --to
+        await ClaimAgentAsync("Brian");
+
+        var result = await DispatchAsync("code-writer", "auth", "Review failed. Fix issues.");
+
+        result.AssertSuccess();
+        // Should auto-return to Adele (the origin)
+        result.AssertStdoutContains("Adele");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithoutTo_FallsBackToAlphabetical_WhenOriginBusy()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Simulate: Adele dispatched to Brian, so Brian has an inbox item with origin: Adele
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+
+        // Brian is claimed (sender)
+        await ClaimAgentAsync("Brian");
+
+        // Adele is also busy (claimed by someone else)
+        var registry = new DynaDocs.Services.AgentRegistry(TestDir);
+        registry.StorePendingSessionId("Adele", "other-session");
+        registry.StoreSessionContext("other-session");
+        var adeleCmd = DynaDocs.Commands.AgentCommand.Create();
+        await RunAsync(adeleCmd, "claim", "Adele");
+
+        // Restore session context for Brian
+        StoreSessionContext();
+
+        var result = await DispatchAsync("code-writer", "auth", "Review failed. Fix issues.");
+
+        result.AssertSuccess();
+        // Adele is busy, so should fall through to alphabetical — Charlie is next free
+        result.AssertStdoutContains("Charlie");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithoutTo_OriginFromArchive_ReturnsToOriginAgent()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Simulate: Adele dispatched to Brian, Brian cleared inbox (moved to archive)
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+
+        // Move item from inbox to archive/inbox (simulates `inbox clear`)
+        var brianInboxPath = Path.Combine(TestDir, "dydo", "agents", "Brian", "inbox");
+        var brianArchivePath = Path.Combine(TestDir, "dydo", "agents", "Brian", "archive", "inbox");
+        Directory.CreateDirectory(brianArchivePath);
+        foreach (var file in Directory.GetFiles(brianInboxPath, "*.md"))
+        {
+            File.Move(file, Path.Combine(brianArchivePath, Path.GetFileName(file)));
+        }
+
+        // Brian is the sender (claimed), dispatching back without --to
+        await ClaimAgentAsync("Brian");
+
+        var result = await DispatchAsync("code-writer", "auth", "Review failed. Fix issues.");
+
+        result.AssertSuccess();
+        // Should still find origin from archive and auto-return to Adele
+        result.AssertStdoutContains("Adele");
+    }
+
+    [Fact]
+    public async Task Dispatch_OriginPropagatesAcrossMultipleHops()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Hop 1: Adele dispatches to Brian (origin: Adele)
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+
+        // Brian claims and dispatches explicitly to Charlie — origin should carry forward
+        await ClaimAgentAsync("Brian");
+        var result = await DispatchAsync("reviewer", "auth", "Please review", to: "Charlie");
+        result.AssertSuccess();
+
+        // Verify origin: Adele is in Charlie's inbox (not origin: Brian)
+        var charlieInbox = Path.Combine(TestDir, "dydo", "agents", "Charlie", "inbox");
+        Assert.True(Directory.Exists(charlieInbox), "Charlie should have an inbox");
+        var charlieFiles = Directory.GetFiles(charlieInbox, "*-auth.md");
+        Assert.Single(charlieFiles);
+
+        var content = File.ReadAllText(charlieFiles[0]);
+        Assert.Contains("origin: Adele", content);
+        Assert.Contains("from: Brian", content);
+    }
+
+    [Fact]
+    public async Task Dispatch_CodeWriterToFormerReviewer_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Make Adele a former reviewer on "auth" — should NOT block code-writer dispatch
+        SetTaskRoleHistory("Adele", "auth", "reviewer");
+
+        var result = await DispatchAsync("code-writer", "auth", "Implement this feature", to: "Adele");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+    }
+
+    #endregion
+
+    #region Origin in Inbox File
+
+    [Fact]
+    public async Task Dispatch_WritesOriginToInboxFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Implement feature", to: "Brian");
+
+        result.AssertSuccess();
+
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*.md");
+        Assert.Single(inboxFiles);
+
+        var content = File.ReadAllText(inboxFiles[0]);
+        // Origin should be present — sender is Unknown (no claimed agent) so origin is Unknown
+        Assert.Contains("origin:", content);
+    }
+
+    [Fact]
+    public async Task InboxShow_DisplaysOriginWhenDifferentFromSender()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Create inbox item where origin differs from sender
+        CreateInboxItemWithOrigin("Adele", "Brian", "Zara", "code-writer", "auth", "Fix review issues");
+
+        await ClaimAgentAsync("Adele");
+
+        var result = await InboxShowAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("From: Brian");
+        result.AssertStdoutContains("Origin: Zara");
+    }
+
+    [Fact]
+    public async Task InboxShow_HidesOriginWhenSameAsSender()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Create inbox item where origin == sender (first dispatch)
+        CreateInboxItemWithOrigin("Adele", "Brian", "Brian", "code-writer", "auth", "Implement auth");
+
+        await ClaimAgentAsync("Adele");
+
+        var result = await InboxShowAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("From: Brian");
+        Assert.DoesNotContain("Origin:", result.Stdout);
+    }
+
+    #endregion
+
+    #region Double-Dispatch Race Condition Tests
+
+    [Fact]
+    public async Task Dispatch_ToSameAgentTwice_SecondFails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // First dispatch to Brian succeeds
+        var result1 = await DispatchAsync("code-writer", "task-1", "First dispatch", to: "Brian");
+        result1.AssertSuccess();
+        result1.AssertStdoutContains("Brian");
+
+        // Second dispatch to Brian fails (status: dispatched)
+        var result2 = await DispatchAsync("code-writer", "task-2", "Second dispatch", to: "Brian");
+        result2.AssertExitCode(2);
+        result2.AssertStderrContains("not free");
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoSelect_SkipsDispatchedAgent()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // First auto-dispatch selects Adele (first alphabetically)
+        var result1 = await DispatchAsync("code-writer", "task-1", "First dispatch");
+        result1.AssertSuccess();
+        result1.AssertStdoutContains("Adele");
+
+        // Second auto-dispatch should skip Adele (dispatched) and select Brian
+        var result2 = await DispatchAsync("code-writer", "task-2", "Second dispatch");
+        result2.AssertSuccess();
+        result2.AssertStdoutContains("Brian");
+
+        // Verify Adele was NOT selected for second dispatch
+        Assert.DoesNotContain("Adele", result2.Stdout.Split("Brian")[0].Length > 0 ? result2.Stdout : "");
+
+        // Verify both inbox items exist
+        var adeleInbox = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*.md");
+        var brianInbox = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*.md");
+        Assert.Single(adeleInbox);
+        Assert.Single(brianInbox);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> DispatchAsync(
@@ -291,6 +539,76 @@ public class DispatchCommandTests : IntegrationTestBase
             """;
 
         File.WriteAllText(Path.Combine(inboxPath, $"{id}-{task}.md"), content);
+    }
+
+    private void CreateInboxItemWithOrigin(string agentName, string fromAgent, string origin, string role, string task, string brief)
+    {
+        var inboxPath = Path.Combine(TestDir, "dydo", "agents", agentName, "inbox");
+        Directory.CreateDirectory(inboxPath);
+
+        var id = Guid.NewGuid().ToString("N")[..8];
+        var content = $"""
+            ---
+            id: {id}
+            from: {fromAgent}
+            origin: {origin}
+            role: {role}
+            task: {task}
+            received: {DateTime.UtcNow:o}
+            ---
+
+            # {role.ToUpperInvariant()} Request: {task}
+
+            ## From
+
+            {fromAgent}
+
+            ## Brief
+
+            {brief}
+            """;
+
+        File.WriteAllText(Path.Combine(inboxPath, $"{id}-{task}.md"), content);
+    }
+
+    private void SetTaskRoleHistory(string agentName, string task, string role)
+    {
+        var statePath = Path.Combine(TestDir, "dydo", "agents", agentName, "state.md");
+        if (File.Exists(statePath))
+        {
+            var content = File.ReadAllText(statePath);
+            // Replace the task-role-history line
+            content = System.Text.RegularExpressions.Regex.Replace(
+                content,
+                @"^task-role-history:.*$",
+                $"task-role-history: {{ \"{task}\": [\"{role}\"] }}",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+            File.WriteAllText(statePath, content);
+        }
+        else
+        {
+            // Create a minimal state file with task role history
+            var workspace = Path.Combine(TestDir, "dydo", "agents", agentName);
+            Directory.CreateDirectory(workspace);
+            var historyValue = $"{{ \"{task}\": [\"{role}\"] }}";
+            var content = $"""
+                ---
+                agent: {agentName}
+                role: null
+                task: null
+                status: free
+                assigned: testuser
+                started: null
+                writable-paths: []
+                readonly-paths: []
+                unread-must-reads: []
+                task-role-history: {historyValue}
+                ---
+
+                # {agentName} — Session State
+                """;
+            File.WriteAllText(statePath, content);
+        }
     }
 
     private void CreateEscalatedInboxItem(string agentName, string fromAgent, string role, string task, string brief)

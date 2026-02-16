@@ -89,7 +89,7 @@ dydo agent release
 Dispatch fixes back to the **original author** (they have context):
 
 ```bash
-dydo dispatch --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]" --to <original-author>
+dydo dispatch --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"
 ```
 
 If `--to` is omitted, it goes to the original author by default.

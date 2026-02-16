@@ -20,6 +20,12 @@ public interface IAgentRegistry
     string GetAgentWorkspace(string agentName);
 
     /// <summary>
+    /// Atomically reserves a free agent by setting its status to Dispatched.
+    /// Prevents double-dispatch race conditions.
+    /// </summary>
+    bool ReserveAgent(string agentName, out string error);
+
+    /// <summary>
     /// Claims an agent for the current session.
     /// Requires a pending session ID from the guard hook.
     /// </summary>

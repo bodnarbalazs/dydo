@@ -1141,4 +1141,201 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region ReserveAgent Tests
+
+    [Fact]
+    public void ReserveAgent_FreeAgent_SetsDispatched()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReserveAgent("Adele", out var error);
+
+        Assert.True(result, $"ReserveAgent failed: {error}");
+
+        var state = registry.GetAgentState("Adele");
+        Assert.NotNull(state);
+        Assert.Equal(AgentStatus.Dispatched, state.Status);
+        Assert.NotNull(state.Since);
+    }
+
+    [Fact]
+    public void ReserveAgent_AlreadyDispatched_Fails()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        // First reservation succeeds
+        var result1 = registry.ReserveAgent("Adele", out var error1);
+        Assert.True(result1, $"First ReserveAgent failed: {error1}");
+
+        // Second reservation fails (freshly dispatched, not stale)
+        var result2 = registry.ReserveAgent("Adele", out var error2);
+        Assert.False(result2);
+        Assert.Contains("not free", error2);
+    }
+
+    [Fact]
+    public void ReserveAgent_StaleDispatch_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Write a dispatched state with old timestamp (stale)
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        var staleTime = DateTime.UtcNow.AddMinutes(-5);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: Adele
+            status: dispatched
+            assigned: testuser
+            started: {{staleTime:o}}
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            task-role-history: {}
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReserveAgent("Adele", out var error);
+
+        Assert.True(result, $"ReserveAgent should succeed on stale dispatch: {error}");
+
+        var state = registry.GetAgentState("Adele");
+        Assert.Equal(AgentStatus.Dispatched, state!.Status);
+        // Since should be refreshed to now, not the old stale time
+        Assert.True((DateTime.UtcNow - state.Since!.Value).TotalSeconds < 10);
+    }
+
+    [Fact]
+    public void ReserveAgent_WorkingAgent_Fails()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Write a working state
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            started: null
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            task-role-history: {}
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReserveAgent("Adele", out var error);
+
+        Assert.False(result);
+        Assert.Contains("not free", error);
+    }
+
+    [Fact]
+    public async Task ReserveAgent_ConcurrentReservations_OnlyOneSucceeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Pre-create workspace to avoid directory creation race
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+
+        var successCount = 0;
+
+        var tasks = Enumerable.Range(0, 5).Select(_ => Task.Run(() =>
+        {
+            var registry = new AgentRegistry(_testDir);
+            if (registry.ReserveAgent("Adele", out string _))
+                Interlocked.Increment(ref successCount);
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(1, successCount);
+    }
+
+    [Fact]
+    public void ClaimAgent_DispatchedAgent_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        // Reserve first (sets Dispatched)
+        var reserved = registry.ReserveAgent("Adele", out var reserveError);
+        Assert.True(reserved, $"ReserveAgent failed: {reserveError}");
+
+        // Then claim (should succeed on Dispatched agent)
+        registry.StorePendingSessionId("Adele", "test-session-dispatch");
+        var claimed = registry.ClaimAgent("Adele", out var claimError);
+
+        Assert.True(claimed, $"ClaimAgent on dispatched agent failed: {claimError}");
+
+        var state = registry.GetAgentState("Adele");
+        Assert.Equal(AgentStatus.Working, state!.Status);
+
+        var session = registry.GetSession("Adele");
+        Assert.NotNull(session);
+        Assert.Equal("test-session-dispatch", session.SessionId);
+
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void GetFreeAgents_ExcludesFreshDispatched()
+    {
+        SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+        var registry = new AgentRegistry(_testDir);
+
+        // Reserve Adele
+        registry.ReserveAgent("Adele", out _);
+
+        var freeAgents = registry.GetFreeAgents();
+
+        Assert.DoesNotContain(freeAgents, a => a.Name == "Adele");
+        Assert.Contains(freeAgents, a => a.Name == "Brian");
+    }
+
+    [Fact]
+    public void GetFreeAgents_IncludesStaleDispatched()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Write a dispatched state with old timestamp (stale)
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        var staleTime = DateTime.UtcNow.AddMinutes(-5);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: Adele
+            status: dispatched
+            assigned: testuser
+            started: {{staleTime:o}}
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            task-role-history: {}
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var freeAgents = registry.GetFreeAgents();
+
+        Assert.Contains(freeAgents, a => a.Name == "Adele");
+    }
+
+    #endregion
 }

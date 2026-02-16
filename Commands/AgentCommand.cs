@@ -278,9 +278,10 @@ public static class AgentCommand
         }
 
         var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
+        var dispatchedCount = agents.Count(a => a.Status == AgentStatus.Dispatched);
         var workingCount = agents.Count(a => a.Status == AgentStatus.Working);
         Console.WriteLine();
-        Console.WriteLine($"Total: {agents.Count} agents ({freeCount} free, {workingCount} working)");
+        Console.WriteLine($"Total: {agents.Count} agents ({freeCount} free, {dispatchedCount} dispatched, {workingCount} working)");
 
         if (!string.IsNullOrEmpty(human))
         {

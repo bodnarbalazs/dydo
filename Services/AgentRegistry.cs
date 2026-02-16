@@ -20,6 +20,8 @@ public partial class AgentRegistry : IAgentRegistry
         ["tester"] = (["dydo/agents/{self}/**", "tests/**", "dydo/project/pitfalls/**"], ["src/**"])
     };
 
+    private const int StaleDispatchMinutes = 2;
+
     private readonly string _basePath;
     private readonly IConfigService _configService;
     private readonly IFolderScaffolder _folderScaffolder;
@@ -54,6 +56,57 @@ public partial class AgentRegistry : IAgentRegistry
 
     public List<string> GetAgentsForHuman(string human) =>
         _config?.Agents.GetAgentsForHuman(human) ?? new List<string>();
+
+    public bool ReserveAgent(string agentName, out string error)
+    {
+        error = string.Empty;
+
+        if (!IsValidAgentName(agentName))
+        {
+            error = $"Agent '{agentName}' does not exist.";
+            return false;
+        }
+
+        if (!TryAcquireLock(agentName, out error))
+            return false;
+
+        try
+        {
+            var state = GetAgentState(agentName);
+            if (state == null)
+            {
+                error = $"Agent '{agentName}' not found.";
+                return false;
+            }
+
+            if (!IsEffectivelyFree(state))
+            {
+                error = $"Agent '{agentName}' is not free (status: {state.Status.ToString().ToLowerInvariant()}).";
+                return false;
+            }
+
+            UpdateAgentState(agentName, s =>
+            {
+                s.Status = AgentStatus.Dispatched;
+                s.Since = DateTime.UtcNow;
+            });
+
+            return true;
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
+    }
+
+    private bool IsEffectivelyFree(AgentState state) =>
+        state.Status == AgentStatus.Free ||
+        (state.Status == AgentStatus.Dispatched && IsStaleDispatch(state));
+
+    private static bool IsStaleDispatch(AgentState state) =>
+        state.Status == AgentStatus.Dispatched &&
+        state.Since.HasValue &&
+        (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleDispatchMinutes;
 
     public bool ClaimAgent(string agentName, out string error)
     {
@@ -104,7 +157,7 @@ public partial class AgentRegistry : IAgentRegistry
             // Check if agent is already claimed by another session
             var state = GetAgentState(agentName);
             var existingSession = GetSession(agentName);
-            if (state?.Status != AgentStatus.Free && existingSession != null)
+            if (state?.Status != AgentStatus.Free && state?.Status != AgentStatus.Dispatched && existingSession != null)
             {
                 if (existingSession.SessionId == sessionId)
                 {
@@ -463,14 +516,14 @@ public partial class AgentRegistry : IAgentRegistry
 
     public List<AgentState> GetFreeAgents()
     {
-        return GetAllAgentStates().Where(a => a.Status == AgentStatus.Free).ToList();
+        return GetAllAgentStates().Where(a => IsEffectivelyFree(a)).ToList();
     }
 
     public List<AgentState> GetFreeAgentsForHuman(string human)
     {
         var assignedAgents = GetAgentsForHuman(human);
         return GetAllAgentStates()
-            .Where(a => a.Status == AgentStatus.Free &&
+            .Where(a => IsEffectivelyFree(a) &&
                        assignedAgents.Contains(a.Name, StringComparer.OrdinalIgnoreCase))
             .ToList();
     }
@@ -796,6 +849,7 @@ public partial class AgentRegistry : IAgentRegistry
                     case "status":
                         state.Status = value switch
                         {
+                            "dispatched" => AgentStatus.Dispatched,
                             "working" => AgentStatus.Working,
                             "reviewing" => AgentStatus.Reviewing,
                             _ => AgentStatus.Free
@@ -1042,10 +1096,10 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Check agent is not claimed
+        // Check agent is not claimed or dispatched
         var state = GetAgentState(existingName);
         var session = GetSession(existingName);
-        if (state?.Status != AgentStatus.Free && session != null)
+        if ((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched)
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
@@ -1129,10 +1183,10 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Check agent is not claimed
+        // Check agent is not claimed or dispatched
         var state = GetAgentState(existingName);
         var session = GetSession(existingName);
-        if (state?.Status != AgentStatus.Free && session != null)
+        if ((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched)
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
@@ -1199,10 +1253,10 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Check agent is not claimed
+        // Check agent is not claimed or dispatched
         var state = GetAgentState(existingName);
         var session = GetSession(existingName);
-        if (state?.Status != AgentStatus.Free && session != null)
+        if ((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched)
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;

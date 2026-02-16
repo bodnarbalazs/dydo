@@ -89,6 +89,9 @@ public static class DispatchCommand
         var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
 
+        // Determine origin: inherit from inbox item if this is a send-back, else sender is origin
+        var origin = GetOriginForTask(registry, sender, task) ?? senderName;
+
         // Determine target agent
         string targetAgentName;
 
@@ -109,11 +112,17 @@ public static class DispatchCommand
                 return ExitCodes.ToolError;
             }
 
-            // Must be free
-            var agentState = registry.GetAgentState(to);
-            if (agentState?.Status != AgentStatus.Free)
+            // Check role eligibility (e.g., prevent dispatching review to the code-writer)
+            if (!registry.CanTakeRole(to, role, task, out var roleError))
             {
-                ConsoleOutput.WriteError($"Agent '{to}' is not free (status: {agentState?.Status}).");
+                ConsoleOutput.WriteError(roleError);
+                return ExitCodes.ToolError;
+            }
+
+            // Atomically reserve the agent
+            if (!registry.ReserveAgent(to, out var reserveError))
+            {
+                ConsoleOutput.WriteError(reserveError);
                 return ExitCodes.ToolError;
             }
 
@@ -121,26 +130,67 @@ public static class DispatchCommand
         }
         else
         {
-            // Auto-select: Find first free agent assigned to the current human
-            var freeAgents = string.IsNullOrEmpty(currentHuman)
-                ? registry.GetFreeAgents()
-                : registry.GetFreeAgentsForHuman(currentHuman);
-
-            if (freeAgents.Count == 0)
+            // Try auto-return to origin agent first
+            string? reserved = null;
+            if (!string.IsNullOrEmpty(origin) && origin != senderName &&
+                registry.IsValidAgentName(origin) &&
+                registry.CanTakeRole(origin, role, task, out _))
             {
-                if (!string.IsNullOrEmpty(currentHuman))
+                var originHuman = registry.GetHumanForAgent(origin);
+                if (string.IsNullOrEmpty(currentHuman) || originHuman == currentHuman)
                 {
-                    ConsoleOutput.WriteError($"No free agents available for human '{currentHuman}'.");
+                    if (registry.ReserveAgent(origin, out _))
+                    {
+                        reserved = origin;
+                    }
                 }
-                else
-                {
-                    ConsoleOutput.WriteError("No free agents available.");
-                }
-                return ExitCodes.ToolError;
             }
 
-            // Pick first alphabetically
-            targetAgentName = freeAgents.OrderBy(a => a.Name).First().Name;
+            if (reserved == null)
+            {
+                // Auto-select: Find first free agent assigned to the current human
+                var freeAgents = string.IsNullOrEmpty(currentHuman)
+                    ? registry.GetFreeAgents()
+                    : registry.GetFreeAgentsForHuman(currentHuman);
+
+                // Filter by role eligibility
+                var eligible = freeAgents
+                    .Where(a => registry.CanTakeRole(a.Name, role, task, out _))
+                    .OrderBy(a => a.Name)
+                    .ToList();
+
+                if (eligible.Count == 0)
+                {
+                    if (!string.IsNullOrEmpty(currentHuman))
+                    {
+                        ConsoleOutput.WriteError($"No free agents available for human '{currentHuman}'.");
+                    }
+                    else
+                    {
+                        ConsoleOutput.WriteError("No free agents available.");
+                    }
+                    return ExitCodes.ToolError;
+                }
+
+                // Try to reserve each candidate in alphabetical order
+                // Another dispatch may grab a candidate between query and lock
+                foreach (var candidate in eligible)
+                {
+                    if (registry.ReserveAgent(candidate.Name, out _))
+                    {
+                        reserved = candidate.Name;
+                        break;
+                    }
+                }
+
+                if (reserved == null)
+                {
+                    ConsoleOutput.WriteError("No free agents could be reserved. All candidates were claimed concurrently.");
+                    return ExitCodes.ToolError;
+                }
+            }
+
+            targetAgentName = reserved;
         }
 
         // Create inbox item
@@ -148,6 +198,7 @@ public static class DispatchCommand
         {
             Id = Guid.NewGuid().ToString("N")[..8],
             From = senderName,
+            Origin = origin,
             Role = role,
             Task = task,
             Received = DateTime.UtcNow,
@@ -196,6 +247,10 @@ public static class DispatchCommand
             ? $"\n## Context\n\nSee: [{item.ContextFile}]({item.ContextFile})"
             : "";
 
+        var originYaml = !string.IsNullOrEmpty(item.Origin)
+            ? $"\norigin: {item.Origin}"
+            : "";
+
         var escalationYaml = item.Escalated
             ? $"\nescalated: true\nescalated_at: {item.EscalatedAt:o}"
             : "";
@@ -208,7 +263,7 @@ public static class DispatchCommand
             from: {item.From}
             role: {item.Role}
             task: {item.Task}
-            received: {item.Received:o}{escalationYaml}
+            received: {item.Received:o}{originYaml}{escalationYaml}
             ---
 
             # {escalationHeader}{item.Role.ToUpperInvariant()} Request: {item.Task}
@@ -225,5 +280,69 @@ public static class DispatchCommand
             """;
 
         File.WriteAllText(path, content);
+    }
+
+    /// <summary>
+    /// Determines the origin agent for a task by checking the sender's inbox/archive for a matching item.
+    /// Returns the origin from the inbox item, or the From field if no origin is set.
+    /// Returns null if no matching inbox item is found (sender is the origin).
+    /// </summary>
+    private static string? GetOriginForTask(AgentRegistry registry, AgentState? sender, string task)
+    {
+        if (sender == null) return null;
+        var workspace = registry.GetAgentWorkspace(sender.Name);
+        var inboxPath = Path.Combine(workspace, "inbox");
+        var archivePath = Path.Combine(workspace, "archive", "inbox");
+
+        foreach (var dir in new[] { inboxPath, archivePath })
+        {
+            if (!Directory.Exists(dir)) continue;
+            foreach (var file in Directory.GetFiles(dir, $"*-{task}.md"))
+            {
+                var (origin, from) = ParseInboxItemOrigin(file);
+                if (!string.IsNullOrEmpty(origin)) return origin;
+                if (!string.IsNullOrEmpty(from)) return from;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Lightweight parse of an inbox item file to extract only origin and from fields.
+    /// </summary>
+    private static (string? origin, string? from) ParseInboxItemOrigin(string filePath)
+    {
+        try
+        {
+            var content = File.ReadAllText(filePath);
+            if (!content.StartsWith("---")) return (null, null);
+
+            var endIndex = content.IndexOf("---", 3);
+            if (endIndex < 0) return (null, null);
+
+            var yaml = content[3..endIndex];
+            string? origin = null, from = null;
+
+            foreach (var line in yaml.Split('\n'))
+            {
+                var colonIndex = line.IndexOf(':');
+                if (colonIndex < 0) continue;
+
+                var key = line[..colonIndex].Trim();
+                var value = line[(colonIndex + 1)..].Trim();
+
+                switch (key)
+                {
+                    case "origin": origin = value; break;
+                    case "from": from = value; break;
+                }
+            }
+
+            return (origin, from);
+        }
+        catch
+        {
+            return (null, null);
+        }
     }
 }

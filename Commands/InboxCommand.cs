@@ -118,6 +118,8 @@ public static class InboxCommand
             var escalatedPrefix = item.Escalated ? "[ESCALATED] " : "";
             Console.WriteLine($"{escalatedPrefix}[{item.Id}] {item.Role.ToUpperInvariant()}: {item.Task}");
             Console.WriteLine($"  From: {item.From}");
+            if (!string.IsNullOrEmpty(item.Origin) && item.Origin != item.From)
+                Console.WriteLine($"  Origin: {item.Origin}");
             Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
             if (item.Escalated && item.EscalatedAt.HasValue)
                 Console.WriteLine($"  Escalated: {item.EscalatedAt:yyyy-MM-dd HH:mm} UTC");
@@ -224,7 +226,7 @@ public static class InboxCommand
 
             var yaml = content[3..endIndex].Trim();
 
-            string? id = null, from = null, role = null, task = null;
+            string? id = null, from = null, role = null, task = null, origin = null;
             DateTime received = DateTime.UtcNow;
             bool escalated = false;
             DateTime? escalatedAt = null;
@@ -241,6 +243,7 @@ public static class InboxCommand
                 {
                     case "id": id = value; break;
                     case "from": from = value; break;
+                    case "origin": origin = value; break;
                     case "role": role = value; break;
                     case "task": task = value; break;
                     case "received":
@@ -278,6 +281,7 @@ public static class InboxCommand
             {
                 Id = id,
                 From = from,
+                Origin = origin,
                 Role = role,
                 Task = task,
                 Received = received,

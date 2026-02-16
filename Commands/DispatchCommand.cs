@@ -42,6 +42,16 @@ public static class DispatchCommand
             Description = "Don't launch new terminal, just write to inbox"
         };
 
+        var tabOption = new Option<bool>("--tab")
+        {
+            Description = "Launch in a new tab (overrides config)"
+        };
+
+        var newWindowOption = new Option<bool>("--new-window")
+        {
+            Description = "Launch in a new window (overrides config)"
+        };
+
         var toOption = new Option<string?>("--to")
         {
             Description = "Send dispatch to specific agent (skips auto-selection)"
@@ -61,6 +71,8 @@ public static class DispatchCommand
         command.Options.Add(noLaunchOption);
         command.Options.Add(toOption);
         command.Options.Add(escalateOption);
+        command.Options.Add(tabOption);
+        command.Options.Add(newWindowOption);
 
         command.SetAction(parseResult =>
         {
@@ -72,15 +84,23 @@ public static class DispatchCommand
             var noLaunch = parseResult.GetValue(noLaunchOption);
             var to = parseResult.GetValue(toOption);
             var escalate = parseResult.GetValue(escalateOption);
+            var useTab = parseResult.GetValue(tabOption);
+            var useNewWindow = parseResult.GetValue(newWindowOption);
 
-            return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate);
+            return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate, useTab, useNewWindow);
         });
 
         return command;
     }
 
-    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate)
+    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow)
     {
+        if (useTab && useNewWindow)
+        {
+            ConsoleOutput.WriteError("Cannot specify both --tab and --new-window.");
+            return ExitCodes.ToolError;
+        }
+
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
         var currentHuman = registry.GetCurrentHuman();
@@ -229,8 +249,9 @@ public static class DispatchCommand
         // Launch new terminal if requested
         if (!noLaunch)
         {
+            var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
             var projectRoot = PathUtils.FindProjectRoot();
-            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot);
+            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab);
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 

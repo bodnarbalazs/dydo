@@ -237,6 +237,7 @@ Dispatch work to another agent.
 dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth"
 dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
 dydo dispatch --role reviewer --task auth-login --brief "Review PR" --no-launch
+dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --tab
 ```
 
 **Options:**
@@ -248,6 +249,8 @@ dydo dispatch --role reviewer --task auth-login --brief "Review PR" --no-launch
 - `--to <agent-name>` - Send to specific agent (skips auto-selection)
 - `--escalate` - Mark as escalated (after repeated failures)
 - `--no-launch` - Don't launch terminal, just write to inbox
+- `--tab` - Launch in a new tab instead of a new window (overrides config)
+- `--new-window` - Launch in a new window (overrides config)
 
 ### dydo inbox list
 

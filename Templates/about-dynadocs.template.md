@@ -266,7 +266,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 ### Workflow
 | Command | Description |
 |---------|-------------|
-| `dydo dispatch --role <role> --task <name>` | Hand off work |
+| `dydo dispatch --role <role> --task <name>` | Hand off work (`--tab`, `--new-window`) |
 | `dydo inbox list` | List agents with inbox items |
 | `dydo inbox show` | Show current agent's inbox |
 | `dydo inbox clear` | Clear processed items |
@@ -275,7 +275,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | Command | Description |
 |---------|-------------|
 | `dydo task create <name>` | Create a new task |
-| `dydo task ready-for-review <name>` | Mark task ready for review |
+| `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review |
 | `dydo task approve <name>` | Approve task (human only) |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |

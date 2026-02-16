@@ -14,6 +14,7 @@ using DynaDocs.Models;
 [JsonSerializable(typeof(DydoConfig))]
 [JsonSerializable(typeof(StructureConfig))]
 [JsonSerializable(typeof(AgentsConfig))]
+[JsonSerializable(typeof(DispatchConfig))]
 [JsonSerializable(typeof(Dictionary<string, bool>))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
 [JsonSerializable(typeof(List<string>))]

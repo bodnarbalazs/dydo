@@ -15,7 +15,10 @@ public class TerminalLauncher
 {
     private readonly IProcessStarter _processStarter;
 
-    public record TerminalConfig(string FileName, Func<string, string?, string> GetArguments);
+    public record TerminalConfig(
+        string FileName,
+        Func<string, string?, string> GetArguments,
+        Func<string, string?, string>? GetTabArguments = null);
 
     /// <summary>
     /// Create a TerminalLauncher with optional process starter for testing.
@@ -49,11 +52,17 @@ public class TerminalLauncher
         // Modern terminals (most common on current distros)
         // Prompt format: claude "AgentName --inbox"
         // When workingDirectory is provided, prefix with cd to ensure shell starts in the right place
-        new("gnome-terminal", (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
-        new("konsole", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
-        new("xfce4-terminal", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\""),
+        new("gnome-terminal",
+            (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\"",
+            (agentName, wd) => $"--tab -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("konsole",
+            (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\"",
+            (agentName, wd) => $"--new-tab -e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+        new("xfce4-terminal",
+            (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\"",
+            (agentName, wd) => $"--tab -e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\""),
 
-        // Popular third-party terminals
+        // Popular third-party terminals (no tab support via CLI)
         new("alacritty", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
         new("kitty", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
         new("wezterm", (agentName, wd) => $"start -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
@@ -100,10 +109,15 @@ public class TerminalLauncher
         return $"-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'\"";
     }
 
-    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null)
+    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false)
     {
         var config = LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
-        return config?.GetArguments(agentName, workingDirectory) ?? throw new ArgumentException($"Unknown terminal: {terminalName}");
+        if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
+
+        if (useTab && config.GetTabArguments != null)
+            return config.GetTabArguments(agentName, workingDirectory);
+
+        return config.GetArguments(agentName, workingDirectory);
     }
 
     public static string GetMacArguments(string agentName, string? workingDirectory = null)
@@ -114,29 +128,29 @@ public class TerminalLauncher
     /// <summary>
     /// Static convenience method for backward compatibility.
     /// </summary>
-    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null)
+    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false)
     {
-        new TerminalLauncher().Launch(agentName, workingDirectory);
+        new TerminalLauncher().Launch(agentName, workingDirectory, useTab);
     }
 
     /// <summary>
     /// Launch a new terminal for the specified agent.
     /// </summary>
-    public void Launch(string agentName, string? workingDirectory = null)
+    public void Launch(string agentName, string? workingDirectory = null, bool useTab = false)
     {
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                LaunchWindows(agentName, workingDirectory);
+                LaunchWindows(agentName, workingDirectory, useTab);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                LaunchMac(agentName, workingDirectory);
+                LaunchMac(agentName, workingDirectory, useTab);
             }
             else
             {
-                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory))
+                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory, useTab))
                 {
                     throw new InvalidOperationException("No terminal found");
                 }
@@ -153,11 +167,12 @@ public class TerminalLauncher
     /// <summary>
     /// Launch terminal on Windows. Tries Windows Terminal first, falls back to PowerShell.
     /// </summary>
-    public void LaunchWindows(string agentName, string? workingDirectory = null)
+    public void LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false)
     {
         // Try Windows Terminal first (modern)
         try
         {
+            var wtWindowArg = useTab ? "-w 0 " : "";
             var wtDirArg = workingDirectory != null
                 ? $"--startingDirectory \"{workingDirectory}\" "
                 : "";
@@ -165,7 +180,7 @@ public class TerminalLauncher
             {
                 FileName = "wt",
                 // wt uses ';' as its own subcommand separator, so escape it with '\;'
-                Arguments = $"new-tab {wtDirArg}powershell {GetWindowsArguments(agentName).Replace(";", "\\;")}",
+                Arguments = $"{wtWindowArg}new-tab {wtDirArg}powershell {GetWindowsArguments(agentName).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -178,7 +193,7 @@ public class TerminalLauncher
             // Windows Terminal not available, fall back to PowerShell
         }
 
-        // Fall back to PowerShell
+        // Fall back to PowerShell (no tab support)
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = "powershell",
@@ -196,12 +211,29 @@ public class TerminalLauncher
     /// and UseShellExecute = false to invoke osascript directly (UseShellExecute = true
     /// on macOS routes through the 'open' command, which cannot run CLI tools).
     /// </summary>
-    public void LaunchMac(string agentName, string? workingDirectory = null)
+    public void LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false)
     {
         var cdPrefix = CdPrefix(workingDirectory);
-        // AppleScript: escaped quotes \" become literal " inside the do-script string,
-        // so Terminal.app runs:  claude "AgentName --inbox"
-        var script = $"tell app \"Terminal\" to do script \"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"\"";
+        var shellCommand = $"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
+
+        string script;
+        if (useTab)
+        {
+            // Tab mode: run in the front window if one exists, otherwise create new
+            script = "tell app \"Terminal\"\n" +
+                     "  if (count of windows) > 0 then\n" +
+                     $"    do script \"{shellCommand}\" in front window\n" +
+                     "  else\n" +
+                     $"    do script \"{shellCommand}\"\n" +
+                     "  end if\n" +
+                     "  activate\n" +
+                     "end tell";
+        }
+        else
+        {
+            // Window mode: always open a new window
+            script = $"tell app \"Terminal\" to do script \"{shellCommand}\"";
+        }
 
         var psi = new ProcessStartInfo
         {
@@ -218,16 +250,20 @@ public class TerminalLauncher
     /// <summary>
     /// Try to launch one of the configured terminals.
     /// </summary>
-    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null)
+    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false)
     {
         foreach (var terminal in terminals)
         {
             try
             {
+                var arguments = useTab && terminal.GetTabArguments != null
+                    ? terminal.GetTabArguments(agentName, workingDirectory)
+                    : terminal.GetArguments(agentName, workingDirectory);
+
                 _processStarter.Start(new ProcessStartInfo
                 {
                     FileName = terminal.FileName,
-                    Arguments = terminal.GetArguments(agentName, workingDirectory),
+                    Arguments = arguments,
                     UseShellExecute = false
                 });
                 return true;

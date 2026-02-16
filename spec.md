@@ -144,6 +144,9 @@ The `dydo.json` file at project root configures DynaDocs:
   },
   "integrations": {
     "claude": true
+  },
+  "dispatch": {
+    "launchInTab": false
   }
 }
 ```
@@ -158,6 +161,7 @@ The `dydo.json` file at project root configures DynaDocs:
 | `agents.pool` | Yes | List of agent names in use |
 | `agents.assignments` | Yes | Map of human → assigned agents |
 | `integrations` | No | Which integrations are enabled |
+| `dispatch.launchInTab` | No | Launch dispatched agents in a tab instead of a new window (default: false) |
 
 ---
 
@@ -239,7 +243,7 @@ dydo agent reassign <name> <human>   # Reassign agent to different human
 ### Workflow Commands
 
 ```bash
-dydo dispatch --role <role> --task <name> --brief "..." [--to <human>]
+dydo dispatch --role <role> --task <name> --brief "..." [--to <agent>] [--tab | --new-window]
 dydo inbox list                      # Agents with pending items
 dydo inbox show                      # Show current agent's inbox
 dydo inbox clear                     # Clear processed items

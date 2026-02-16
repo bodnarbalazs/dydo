@@ -478,6 +478,41 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --tab / --new-window Tests
+
+    [Fact]
+    public async Task Dispatch_TabAndNewWindow_BothSpecified_Fails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", tab: true, newWindow: true);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Cannot specify both --tab and --new-window");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithTabOnly_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", tab: true);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_WithNewWindowOnly_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", newWindow: true);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> DispatchAsync(
@@ -487,7 +522,9 @@ public class DispatchCommandTests : IntegrationTestBase
         string? files = null,
         string? contextFile = null,
         string? to = null,
-        bool escalate = false)
+        bool escalate = false,
+        bool tab = false,
+        bool newWindow = false)
     {
         var command = DispatchCommand.Create();
         var args = new List<string>
@@ -502,6 +539,8 @@ public class DispatchCommandTests : IntegrationTestBase
         if (contextFile != null) { args.Add("--context-file"); args.Add(contextFile); }
         if (to != null) { args.Add("--to"); args.Add(to); }
         if (escalate) { args.Add("--escalate"); }
+        if (tab) { args.Add("--tab"); }
+        if (newWindow) { args.Add("--new-window"); }
 
         return await RunAsync(command, args.ToArray());
     }

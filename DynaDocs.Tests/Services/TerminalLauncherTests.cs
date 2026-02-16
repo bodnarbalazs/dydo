@@ -246,6 +246,38 @@ public class TerminalLauncherTests
 
     #endregion
 
+    #region Tab Mode Argument Tests
+
+    [Theory]
+    [InlineData("gnome-terminal", "--tab")]
+    [InlineData("konsole", "--new-tab")]
+    [InlineData("xfce4-terminal", "--tab")]
+    public void GetLinuxArguments_TabMode_ContainsTabFlag(string terminal, string expectedFlag)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", useTab: true);
+        Assert.Contains(expectedFlag, args);
+        Assert.Contains("Adele", args);
+        Assert.Contains("--inbox", args);
+    }
+
+    [Theory]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_TabMode_FallsBackToWindow_WhenNoTabSupport(string terminal)
+    {
+        var tabArgs = TerminalLauncher.GetLinuxArguments(terminal, "Adele", useTab: true);
+        var windowArgs = TerminalLauncher.GetLinuxArguments(terminal, "Adele", useTab: false);
+
+        // Without tab support, tab mode should produce the same args as window mode
+        Assert.Equal(windowArgs, tabArgs);
+    }
+
+    #endregion
+
     #region Behavior Tests with IProcessStarter
 
     [Fact]
@@ -582,6 +614,120 @@ public class TerminalLauncherTests
         launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
 
         Assert.DoesNotContain("cd ", recorder.Started[0].Arguments);
+    }
+
+    #endregion
+
+    #region Tab Mode Behavior Tests
+
+    [Fact]
+    public void LaunchWindows_TabMode_AddsWindowTarget()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: true);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.StartsWith("-w 0 ", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_WindowMode_NoWindowTarget()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: false);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.DoesNotContain("-w 0", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_UsesInFrontWindow()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("in front window", script);
+        Assert.Contains("count of windows", script);
+    }
+
+    [Fact]
+    public void LaunchMac_WindowMode_DoesNotUseInFrontWindow()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele", useTab: false);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.DoesNotContain("in front window", script);
+        Assert.DoesNotContain("count of windows", script);
+    }
+
+    [Fact]
+    public void TryLaunchTerminals_TabMode_UsesTabArguments_WhenAvailable()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        // gnome-terminal supports tabs
+        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", useTab: true);
+
+        Assert.Contains("--tab", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_TabMode_WithWorkingDirectory_CombinesWindowTargetAndStartingDirectory()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", "/home/user/project", useTab: true);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("-w 0", wtCall.Arguments);
+        Assert.Contains("--startingDirectory", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithWorkingDirectory_ContainsCdPrefix()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele", "/Users/dev/project", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("cd '/Users/dev/project' &&", script);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_ClearsClaudeCodeEnvVar()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("unset CLAUDECODE", script);
+        Assert.True(script.IndexOf("unset CLAUDECODE") < script.IndexOf("claude"));
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    public void GetLinuxArguments_TabMode_WithWorkingDirectory_ContainsCdPrefix(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", "/home/user/project", useTab: true);
+        Assert.Contains("cd '/home/user/project' &&", args);
     }
 
     #endregion

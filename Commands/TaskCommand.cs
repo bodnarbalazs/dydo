@@ -390,95 +390,55 @@ public static class TaskCommand
         File.Delete(taskPath);
 
         // Ensure hub files exist for changelog directory structure
-        EnsureChangelogHubs(changelogPath, DateTime.UtcNow, name);
+        EnsureChangelogHubs(changelogPath, configService);
 
         Console.WriteLine($"Task {name} approved.");
         var relativeChangelogPath = Path.Combine("project", "changelog", DateTime.UtcNow.ToString("yyyy"), today, $"{name}.md");
         Console.WriteLine($"Changelog entry created: {relativeChangelogPath}");
-        Console.WriteLine("Tip: Run 'dydo fix' to regenerate hub files.");
+        Console.WriteLine("Hub files updated.");
 
         return ExitCodes.Success;
     }
 
-    private static void EnsureChangelogHubs(string changelogPath, DateTime date, string taskName)
+    /// <summary>
+    /// Regenerate changelog hub files using HubGenerator so they match 'dydo fix' output.
+    /// Works bottom-up: date hub → year hub → top-level changelog hub.
+    /// </summary>
+    private static void EnsureChangelogHubs(string changelogPath, ConfigService configService)
     {
-        var yearStr = date.ToString("yyyy");
-        var dateStr = date.ToString("yyyy-MM-dd");
+        var basePath = configService.GetDocsPath();
 
-        // Top-level changelog _index.md
-        var topIndex = Path.Combine(changelogPath, "_index.md");
-        if (!File.Exists(topIndex))
+        // Scan all .md files under the changelog directory into lightweight DocFile objects.
+        // Content is not needed by HubGenerator (it uses Title/SummaryParagraph which require
+        // full parsing), so we pass empty strings to avoid unnecessary file reads.
+        var allDocs = new List<DocFile>();
+        foreach (var file in Directory.GetFiles(changelogPath, "*.md", SearchOption.AllDirectories))
         {
-            var topContent = """
-                ---
-                area: project
-                type: hub
-                ---
-
-                # Changelog
-
-                """;
-            File.WriteAllText(topIndex, topContent);
+            var fileName = Path.GetFileName(file);
+            var relativePath = PathUtils.NormalizePath(Path.GetRelativePath(basePath, file));
+            allDocs.Add(new DocFile
+            {
+                FilePath = file,
+                RelativePath = relativePath,
+                FileName = fileName,
+                Content = ""
+            });
         }
 
-        // Year folder _index.md
-        var yearPath = Path.Combine(changelogPath, yearStr);
-        Directory.CreateDirectory(yearPath);
-        var yearIndex = Path.Combine(yearPath, "_index.md");
-        if (!File.Exists(yearIndex))
+        // Use HubGenerator to regenerate changelog hubs from current folder contents.
+        // Only write hubs within the changelog directory — GenerateAllHubs walks up to
+        // the main folder root (project/), but we must not overwrite the project hub
+        // since we only scanned changelog docs.
+        var changelogRelPath = PathUtils.NormalizePath(Path.GetRelativePath(basePath, changelogPath));
+        var hubs = HubGenerator.GenerateAllHubs(basePath, allDocs);
+        foreach (var (hubRelPath, content) in hubs)
         {
-            var yearContent = $"""
-                ---
-                area: project
-                type: hub
-                ---
+            if (!hubRelPath.StartsWith(changelogRelPath + "/", StringComparison.OrdinalIgnoreCase))
+                continue;
 
-                # {yearStr}
-
-                """;
-            File.WriteAllText(yearIndex, yearContent);
-        }
-
-        // Date folder _index.md
-        var datePath = Path.Combine(yearPath, dateStr);
-        Directory.CreateDirectory(datePath);
-        var dateIndex = Path.Combine(datePath, "_index.md");
-        if (!File.Exists(dateIndex))
-        {
-            var dateContent = $"""
-                ---
-                area: project
-                type: hub
-                ---
-
-                # {dateStr}
-
-                """;
-            File.WriteAllText(dateIndex, dateContent);
-        }
-
-        // Append link to date _index.md if not already there
-        var dateIndexContent = File.ReadAllText(dateIndex);
-        var taskLink = $"- [{taskName}](./{taskName}.md)";
-        if (!dateIndexContent.Contains($"{taskName}.md"))
-        {
-            File.AppendAllText(dateIndex, taskLink + "\n");
-        }
-
-        // Append link to year _index.md if not already there
-        var yearIndexContent = File.ReadAllText(yearIndex);
-        var dateLink = $"- [{dateStr}](./{dateStr}/_index.md)";
-        if (!yearIndexContent.Contains($"{dateStr}/"))
-        {
-            File.AppendAllText(yearIndex, dateLink + "\n");
-        }
-
-        // Append link to top _index.md if not already there
-        var topIndexContent = File.ReadAllText(topIndex);
-        var yearLink = $"- [{yearStr}](./{yearStr}/_index.md)";
-        if (!topIndexContent.Contains($"{yearStr}/"))
-        {
-            File.AppendAllText(topIndex, yearLink + "\n");
+            var hubFullPath = Path.Combine(basePath, hubRelPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(hubFullPath)!);
+            File.WriteAllText(hubFullPath, content);
         }
     }
 

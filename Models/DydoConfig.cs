@@ -18,4 +18,7 @@ public class DydoConfig
 
     [JsonPropertyName("integrations")]
     public Dictionary<string, bool> Integrations { get; set; } = new();
+
+    [JsonPropertyName("dispatch")]
+    public DispatchConfig Dispatch { get; set; } = new();
 }

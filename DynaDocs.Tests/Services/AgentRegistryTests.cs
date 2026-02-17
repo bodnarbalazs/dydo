@@ -1338,4 +1338,46 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region Template Regeneration Path
+
+    [Fact]
+    public void ClaimAgent_RegeneratesTemplates_IntoDydoRoot()
+    {
+        // Setup config and pending session
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+
+        try
+        {
+            var scaffolder = new FolderScaffolder();
+            var registry = new AgentRegistry(_testDir, null, scaffolder);
+            registry.StorePendingSessionId("Adele", "test-session-tpl");
+
+            // Delete a template to force regeneration during claim
+            var templateDir = Path.Combine(_testDir, "dydo", "_system", "templates");
+            Directory.CreateDirectory(templateDir);
+            var templateFile = Path.Combine(templateDir, "agent-workflow.template.md");
+            if (File.Exists(templateFile))
+                File.Delete(templateFile);
+
+            var result = registry.ClaimAgent("Adele", out var error);
+            Assert.True(result, $"ClaimAgent failed: {error}");
+
+            // Template should be regenerated inside dydo/_system/templates/
+            Assert.True(File.Exists(templateFile),
+                "Template should be regenerated at dydo/_system/templates/agent-workflow.template.md");
+
+            // Template should NOT be written at project root
+            var wrongPath = Path.Combine(_testDir, "_system", "templates", "agent-workflow.template.md");
+            Assert.False(File.Exists(wrongPath),
+                "Template should NOT be regenerated at {projectRoot}/_system/templates/");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+        }
+    }
+
+    #endregion
 }

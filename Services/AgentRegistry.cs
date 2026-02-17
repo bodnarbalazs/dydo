@@ -191,7 +191,7 @@ public partial class AgentRegistry : IAgentRegistry
             }
 
             // Regenerate missing _system/templates/ from embedded defaults
-            _folderScaffolder.CopyBuiltInTemplates(_basePath);
+            _folderScaffolder.CopyBuiltInTemplates(_configService.GetDydoRoot(_basePath));
 
             // Regenerate mode files from templates (fresh start for each claim)
             _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName);

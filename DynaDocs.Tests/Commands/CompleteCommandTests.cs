@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Commands;
 using DynaDocs.Commands;
 using DynaDocs.Services;
 
+[Collection("Integration")]
 public class CompleteCommandTests : IDisposable
 {
     private readonly string _testDir;

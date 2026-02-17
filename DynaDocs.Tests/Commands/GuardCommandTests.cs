@@ -6,6 +6,7 @@ using DynaDocs.Services;
 /// Tests for GuardCommand integration with OffLimitsService and BashCommandAnalyzer.
 /// Since GuardCommand reads from stdin, we test the underlying services directly.
 /// </summary>
+[Collection("Integration")]
 public class GuardCommandTests : IDisposable
 {
     private readonly string _testDir;

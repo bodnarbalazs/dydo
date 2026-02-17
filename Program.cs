@@ -19,6 +19,8 @@ rootCommand.Subcommands.Add(CleanCommand.Create());
 rootCommand.Subcommands.Add(WorkspaceCommand.Create());
 rootCommand.Subcommands.Add(WhoamiCommand.Create());
 rootCommand.Subcommands.Add(AuditCommand.Create());
+rootCommand.Subcommands.Add(CompletionsCommand.Create());
+rootCommand.Subcommands.Add(CompleteCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>

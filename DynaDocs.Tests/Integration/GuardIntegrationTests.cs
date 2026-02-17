@@ -540,4 +540,98 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     #endregion
+
+    #region Indirect Dydo Invocation
+
+    [Theory]
+    [InlineData("npx dydo agent claim auto")]
+    [InlineData("npx -q dydo agent claim auto")]
+    [InlineData("npx --yes dydo agent claim auto")]
+    [InlineData("dotnet dydo agent claim auto")]
+    [InlineData("dotnet tool run dydo agent claim auto")]
+    public async Task Guard_IndirectDydo_IsBlocked(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Theory]
+    [InlineData("npx dydo agent claim auto", "npx")]
+    [InlineData("npx -q dydo agent claim auto", "npx")]
+    [InlineData("dotnet dydo agent claim auto", "dotnet")]
+    [InlineData("dotnet tool run dydo agent claim auto", "dotnet")]
+    public async Task Guard_IndirectDydo_ShowsInvokerName(string command, string expectedInvoker)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(expectedInvoker);
+    }
+
+    [Theory]
+    [InlineData("npx dydo agent claim auto", "dydo agent claim auto")]
+    [InlineData("npx --yes dydo agent role code-writer", "dydo agent role code-writer")]
+    [InlineData("dotnet dydo agent status", "dydo agent status")]
+    [InlineData("dotnet tool run dydo agent claim auto", "dydo agent claim auto")]
+    public async Task Guard_IndirectDydo_ShowsCorrectedCommand(string command, string expectedCorrected)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(expectedCorrected);
+    }
+
+    [Theory]
+    [InlineData("npx prettier --write .")]
+    [InlineData("dotnet build")]
+    [InlineData("dotnet tool run other-tool --flag")]
+    public async Task Guard_IndirectDydo_FalsePositiveSafety(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        // These commands should NOT be blocked as indirect dydo invocations
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_DirectDydo_StillWorks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo agent claim auto\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_ChainedIndirectDydo_StillCaught()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && npx dydo agent claim auto\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    #endregion
 }

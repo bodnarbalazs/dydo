@@ -26,7 +26,7 @@ using DynaDocs.Utils;
 /// - Exit code 0 = action allowed (silent stdout)
 /// - Exit code 2 = action blocked (error message to stderr)
 /// </summary>
-public static class GuardCommand
+public static partial class GuardCommand
 {
     public static Command Create()
     {
@@ -346,6 +346,36 @@ public static class GuardCommand
         AgentRegistry registry,
         IAuditService auditService)
     {
+        // ============================================================
+        // Block indirect dydo invocations (npx dydo, dotnet dydo)
+        // ============================================================
+        var (isIndirect, invoker, dydoArgs) = CheckIndirectDydoInvocation(command);
+        if (isIndirect)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked,
+                Tool = "bash",
+                Command = TruncateCommand(command),
+                BlockReason = $"Indirect dydo invocation via {invoker}"
+            });
+
+            var correctedCommand = string.IsNullOrEmpty(dydoArgs) ? "dydo" : $"dydo {dydoArgs}";
+
+            if (IsDydoOnPath())
+            {
+                Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH.");
+                Console.Error.WriteLine($"  Just use: {correctedCommand}");
+            }
+            else
+            {
+                Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — dydo is not on your PATH.");
+                Console.Error.WriteLine($"  Add it to your PATH, then use: {correctedCommand}");
+            }
+
+            return ExitCodes.ToolError;
+        }
+
         // ============================================================
         // Handle dydo commands - store session context for subprocess
         // ============================================================
@@ -702,6 +732,64 @@ public static class GuardCommand
         return Regex.IsMatch(command,
             @"(?:^|[;&|]\s*)(?:\./)?dydo\s",
             RegexOptions.IgnoreCase);
+    }
+
+    // Matches: npx [flags...] dydo [args...]
+    // Handles optional flags like -q, --yes, -y, --quiet, --package, etc.
+    [GeneratedRegex(@"(?:^|[;&|]\s*)npx\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*dydo\b(.*)", RegexOptions.IgnoreCase)]
+    private static partial Regex IndirectNpxDydoRegex();
+
+    // Matches: dotnet [tool run] dydo [args...]
+    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)", RegexOptions.IgnoreCase)]
+    private static partial Regex IndirectDotnetDydoRegex();
+
+    /// <summary>
+    /// Check if a command invokes dydo indirectly via npx or dotnet.
+    /// Returns the invoker name and the args that follow dydo.
+    /// </summary>
+    private static (bool isIndirect, string? invoker, string? dydoArgs) CheckIndirectDydoInvocation(string command)
+    {
+        var npxMatch = IndirectNpxDydoRegex().Match(command);
+        if (npxMatch.Success)
+            return (true, "npx", npxMatch.Groups[1].Value.Trim());
+
+        var dotnetMatch = IndirectDotnetDydoRegex().Match(command);
+        if (dotnetMatch.Success)
+            return (true, "dotnet", dotnetMatch.Groups[1].Value.Trim());
+
+        return (false, null, null);
+    }
+
+    /// <summary>
+    /// Check if dydo is available on the system PATH.
+    /// </summary>
+    private static bool IsDydoOnPath()
+    {
+        var pathVar = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathVar))
+            return false;
+
+        var separator = OperatingSystem.IsWindows() ? ';' : ':';
+        var dirs = pathVar.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+        var names = new[] { "dydo", "dydo.exe", "dydo.cmd" };
+
+        foreach (var dir in dirs)
+        {
+            foreach (var name in names)
+            {
+                try
+                {
+                    if (File.Exists(Path.Combine(dir, name)))
+                        return true;
+                }
+                catch
+                {
+                    // Skip inaccessible directories
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

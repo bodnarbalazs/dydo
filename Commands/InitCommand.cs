@@ -175,6 +175,10 @@ public static class InitCommand
             Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
             Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
 
+            var completionResult = ShellCompletionInstaller.Install();
+            if (completionResult != null)
+                Console.WriteLine($"  {completionResult}");
+
             return ExitCodes.Success;
         }
         catch (Exception ex)
@@ -281,6 +285,10 @@ public static class InitCommand
             Console.WriteLine("Next steps:");
             Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
             Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
+
+            var completionResult = ShellCompletionInstaller.Install();
+            if (completionResult != null)
+                Console.WriteLine($"  {completionResult}");
 
             return ExitCodes.Success;
         }

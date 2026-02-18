@@ -16,6 +16,8 @@ public static class HookInputExtensions
             "edit" => "edit",
             "bash" => "execute",
             "read" => "read",
+            "glob" => "read",
+            "grep" => "read",
             _ => "unknown"
         };
     }
@@ -26,6 +28,14 @@ public static class HookInputExtensions
     public static string? GetFilePath(this HookInput input)
     {
         return input.ToolInput?.FilePath;
+    }
+
+    /// <summary>
+    /// Get the search directory for Glob/Grep tools
+    /// </summary>
+    public static string? GetSearchPath(this HookInput input)
+    {
+        return input.ToolInput?.Path;
     }
 
     /// <summary>

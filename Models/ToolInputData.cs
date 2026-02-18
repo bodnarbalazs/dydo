@@ -22,4 +22,7 @@ public class ToolInputData
 
     [JsonPropertyName("command")]
     public string? Command { get; set; }
+
+    [JsonPropertyName("path")]
+    public string? Path { get; set; }
 }

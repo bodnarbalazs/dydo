@@ -68,6 +68,7 @@ public static partial class GuardCommand
         string? bashCommand = null;
         string? toolName = null;
         string? sessionId = null;
+        string? searchPath = null;
 
         // If CLI arguments are provided, use them directly (skip stdin reading)
         // This avoids blocking on stdin when run from IDEs/test runners
@@ -86,6 +87,7 @@ public static partial class GuardCommand
                     action = hookInput.GetAction();
                     toolName = hookInput.ToolName?.ToLowerInvariant();
                     bashCommand = hookInput.GetCommand();
+                    searchPath = hookInput.GetSearchPath();
                 }
             }
             catch (Exception ex)
@@ -177,6 +179,75 @@ public static partial class GuardCommand
         if (toolName == "bash" && !string.IsNullOrEmpty(bashCommand))
         {
             return HandleBashCommand(bashCommand, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+        }
+
+        // ============================================================
+        // SECURITY LAYER 2.5: Search tools (Glob/Grep)
+        // These are broad read operations that always require Stage 2 (identity + role).
+        // Unlike Read which targets a specific file, these scan across directories.
+        // ============================================================
+        if (toolName is "glob" or "grep")
+        {
+            var searchAgent = registry.GetCurrentAgent(sessionId);
+            if (searchAgent == null || string.IsNullOrEmpty(searchAgent.Role))
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked,
+                    Path = searchPath,
+                    Tool = toolName,
+                    BlockReason = searchAgent == null ? "No agent identity" : "No role set"
+                });
+
+                Console.Error.WriteLine("BLOCKED: Read access denied.");
+                if (searchAgent == null)
+                {
+                    Console.Error.WriteLine("  No agent identity assigned to this process.");
+                    Console.Error.WriteLine("  Read your workflow.md to learn how to onboard:");
+                    Console.Error.WriteLine("    dydo/agents/*/workflow.md");
+                    Console.Error.WriteLine("  Then run: dydo agent claim auto");
+                }
+                else
+                {
+                    Console.Error.WriteLine($"  Agent {searchAgent.Name} has no role set.");
+                    Console.Error.WriteLine("  Read your mode files to understand available roles:");
+                    Console.Error.WriteLine($"    dydo/agents/{searchAgent.Name}/modes/*.md");
+                    Console.Error.WriteLine("  Then run: dydo agent role <role>");
+                }
+                return ExitCodes.ToolError;
+            }
+
+            // Check off-limits on the search directory if provided
+            if (!string.IsNullOrEmpty(searchPath))
+            {
+                var offLimitsPattern = offLimitsService.IsPathOffLimits(searchPath);
+                if (offLimitsPattern != null)
+                {
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked,
+                        Path = searchPath,
+                        Tool = toolName,
+                        BlockReason = $"Off-limits: {offLimitsPattern}"
+                    });
+
+                    Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
+                    Console.Error.WriteLine($"  Path: {searchPath}");
+                    Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+                    Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+                    return ExitCodes.ToolError;
+                }
+            }
+
+            // Log allowed search
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Read,
+                Path = searchPath,
+                Tool = toolName
+            });
+
+            return ExitCodes.Success;
         }
 
         // ============================================================

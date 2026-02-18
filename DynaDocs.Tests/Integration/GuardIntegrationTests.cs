@@ -634,4 +634,119 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     #endregion
+
+    #region Search Tools (Glob/Grep) - Staged Access
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_NoIdentity_WithPath_Blocks(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        // Don't claim an agent
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_NoIdentity_NoPath_Blocks(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        // Don't claim an agent — no path means CWD, but should still require Stage 2
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_IdentityNoRole_Blocks(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Don't set a role
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_IdentityNoRole_NoPath_Blocks(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Don't set a role — no path should still be blocked without role
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_IdentityWithRole_WithPath_Allows(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_IdentityWithRole_NoPath_Allows(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // No path = search from CWD — should be allowed at Stage 2
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("Glob")]
+    [InlineData("Grep")]
+    public async Task Guard_SearchTool_OffLimitsPath_Blocks(string toolName)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // .env is off-limits by default — searching with it as the path should block
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\".env\",\"pattern\":\"*\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("off-limits");
+    }
+
+    #endregion
 }

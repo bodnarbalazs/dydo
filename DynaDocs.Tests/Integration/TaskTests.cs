@@ -493,6 +493,85 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_ApproveAll_ApprovesMultipleTasks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("task-a", area: "backend");
+        await TaskCreateAsync("task-b", area: "frontend");
+        await TaskCreateAsync("task-c", area: "general");
+        await TaskReadyForReviewAsync("task-a", "Done A");
+        await TaskReadyForReviewAsync("task-b", "Done B");
+        await TaskReadyForReviewAsync("task-c", "Done C");
+
+        var result = await TaskApproveAsync("*");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Approved 3 task(s).");
+
+        // Original task files should be gone
+        AssertFileNotExists("dydo/project/tasks/task-a.md");
+        AssertFileNotExists("dydo/project/tasks/task-b.md");
+        AssertFileNotExists("dydo/project/tasks/task-c.md");
+
+        // Changelog entries should exist
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var year = DateTime.UtcNow.ToString("yyyy");
+        AssertFileExists($"dydo/project/changelog/{year}/{today}/task-a.md");
+        AssertFileExists($"dydo/project/changelog/{year}/{today}/task-b.md");
+        AssertFileExists($"dydo/project/changelog/{year}/{today}/task-c.md");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_WithNotes()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("note-a", area: "backend");
+        await TaskCreateAsync("note-b", area: "frontend");
+        await TaskReadyForReviewAsync("note-a", "Done A");
+        await TaskReadyForReviewAsync("note-b", "Done B");
+
+        var result = await TaskApproveAsync("*", "Batch approved");
+
+        result.AssertSuccess();
+
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var year = DateTime.UtcNow.ToString("yyyy");
+        AssertFileContains($"dydo/project/changelog/{year}/{today}/note-a.md", "Batch approved");
+        AssertFileContains($"dydo/project/changelog/{year}/{today}/note-b.md", "Batch approved");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_NoTasks_Succeeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await TaskApproveAsync("*");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("No tasks to approve");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_SkipsUnderscorePrefixedFiles()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("real-task", area: "backend");
+        await TaskReadyForReviewAsync("real-task", "Done");
+
+        // Manually create an underscore-prefixed file in the tasks directory
+        var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
+        File.WriteAllText(Path.Combine(tasksPath, "_template.md"), "---\narea: general\n---\n\nTemplate content");
+
+        var result = await TaskApproveAsync("*");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Approved 1 task(s).");
+
+        // The underscore-prefixed file should still exist
+        Assert.True(File.Exists(Path.Combine(tasksPath, "_template.md")));
+    }
+
+    [Fact]
     public async Task Task_Reject_MarksForRework()
     {
         await InitProjectAsync("none", "balazs", 3);

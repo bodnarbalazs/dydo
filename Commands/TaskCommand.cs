@@ -101,6 +101,10 @@ public static class TaskCommand
         {
             var name = parseResult.GetValue(nameArgument)!;
             var notes = parseResult.GetValue(notesOption);
+
+            if (name == "*")
+                return ExecuteApproveAll(notes);
+
             return ExecuteApprove(name, notes);
         });
 
@@ -270,6 +274,45 @@ public static class TaskCommand
         Console.WriteLine($"Task {name} marked ready for review");
 
         return ExitCodes.Success;
+    }
+
+    private static int ExecuteApproveAll(string? notes)
+    {
+        var tasksPath = GetTasksPath();
+        if (!Directory.Exists(tasksPath))
+        {
+            Console.WriteLine("No tasks to approve.");
+            return ExitCodes.Success;
+        }
+
+        var taskFiles = Directory.GetFiles(tasksPath, "*.md")
+            .Where(f => !Path.GetFileName(f).StartsWith('_'))
+            .ToList();
+
+        if (taskFiles.Count == 0)
+        {
+            Console.WriteLine("No tasks to approve.");
+            return ExitCodes.Success;
+        }
+
+        var approved = 0;
+        var failed = 0;
+
+        foreach (var file in taskFiles)
+        {
+            var taskName = Path.GetFileNameWithoutExtension(file);
+            var result = ExecuteApprove(taskName, notes);
+            if (result == ExitCodes.Success)
+                approved++;
+            else
+                failed++;
+        }
+
+        Console.WriteLine($"Approved {approved} task(s).");
+        if (failed > 0)
+            ConsoleOutput.WriteError($"Failed to approve {failed} task(s).");
+
+        return failed > 0 ? ExitCodes.ToolError : ExitCodes.Success;
     }
 
     private static int ExecuteApprove(string name, string? notes)

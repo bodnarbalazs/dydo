@@ -255,6 +255,10 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ---
 
+### Use of sub agents
+
+Only use any sub-agent tool you have for discoveries, never let them write code. If you want to delegate code-writing always use `dydo dispatch`, never sub-agents.
+
 ## Related
 
 - [How to Use Docs](./how-to-use-docs.md) — Navigating the documentation

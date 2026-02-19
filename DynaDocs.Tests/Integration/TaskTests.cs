@@ -159,6 +159,7 @@ public class TaskTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("ready for review");
         AssertFileContains("dydo/project/tasks/feature-x.md", "status: review-pending");
+        AssertFileContains("dydo/project/tasks/feature-x.md", "Feature complete, tests pass");
     }
 
     [Fact]

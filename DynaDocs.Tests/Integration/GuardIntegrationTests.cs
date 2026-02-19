@@ -549,6 +549,10 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("npx --yes dydo agent claim auto")]
     [InlineData("dotnet dydo agent claim auto")]
     [InlineData("dotnet tool run dydo agent claim auto")]
+    [InlineData("bash dydo agent claim auto")]
+    [InlineData("sh dydo agent claim auto")]
+    [InlineData("bash -c \\\"dydo agent claim auto\\\"")]
+    [InlineData("sh -c 'dydo agent claim auto'")]
     public async Task Guard_IndirectDydo_IsBlocked(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -565,6 +569,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("npx -q dydo agent claim auto", "npx")]
     [InlineData("dotnet dydo agent claim auto", "dotnet")]
     [InlineData("dotnet tool run dydo agent claim auto", "dotnet")]
+    [InlineData("bash dydo agent claim auto", "bash")]
+    [InlineData("sh -c \\\"dydo agent claim auto\\\"", "sh")]
     public async Task Guard_IndirectDydo_ShowsInvokerName(string command, string expectedInvoker)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -581,6 +587,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("npx --yes dydo agent role code-writer", "dydo agent role code-writer")]
     [InlineData("dotnet dydo agent status", "dydo agent status")]
     [InlineData("dotnet tool run dydo agent claim auto", "dydo agent claim auto")]
+    [InlineData("bash dydo agent claim auto", "dydo agent claim auto")]
+    [InlineData("sh -c \\\"dydo agent claim auto\\\"", "dydo agent claim auto")]
     public async Task Guard_IndirectDydo_ShowsCorrectedCommand(string command, string expectedCorrected)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -596,6 +604,9 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("npx prettier --write .")]
     [InlineData("dotnet build")]
     [InlineData("dotnet tool run other-tool --flag")]
+    [InlineData("bash script.sh")]
+    [InlineData("sh -c \\\"echo hello\\\"")]
+    [InlineData("bash -c \\\"npm install\\\"")]
     public async Task Guard_IndirectDydo_FalsePositiveSafety(string command)
     {
         await InitProjectAsync("none", "balazs", 3);

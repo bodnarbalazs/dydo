@@ -814,6 +814,11 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectDotnetDydoRegex();
 
+    // Matches: bash/sh/zsh/cmd/powershell/pwsh [flags...] dydo [args...]
+    // Also matches: bash -c "dydo ...", sh -c 'dydo ...'
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
+    private static partial Regex IndirectShellDydoRegex();
+
     /// <summary>
     /// Check if a command invokes dydo indirectly via npx or dotnet.
     /// Returns the invoker name and the args that follow dydo.
@@ -827,6 +832,13 @@ public static partial class GuardCommand
         var dotnetMatch = IndirectDotnetDydoRegex().Match(command);
         if (dotnetMatch.Success)
             return (true, "dotnet", dotnetMatch.Groups[1].Value.Trim());
+
+        var shellMatch = IndirectShellDydoRegex().Match(command);
+        if (shellMatch.Success)
+        {
+            var shellName = Regex.Match(command, @"(?:bash|sh|zsh|cmd|powershell|pwsh)", RegexOptions.IgnoreCase).Value.ToLowerInvariant();
+            return (true, shellName, shellMatch.Groups[1].Value.Trim().TrimEnd('"', '\''));
+        }
 
         return (false, null, null);
     }

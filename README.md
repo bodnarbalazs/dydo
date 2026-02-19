@@ -267,14 +267,17 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo inbox clear` | Clear processed items |
 
 ### Tasks
+
+> **Workflow:** `task create` → `task ready-for-review --summary "..."` → `review complete --status pass|fail` → `task approve` (human)
+
 | Command | Description |
 |---------|-------------|
 | `dydo task create <name>` | Create a new task |
-| `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review |
+| `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review (**required before review**) |
 | `dydo task approve <name>` | Approve task (human only) |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |
-| `dydo review complete <task>` | Complete a code review |
+| `dydo review complete <task> --status pass\|fail` | Complete a code review (task must be in review state) |
 
 ### Workspace
 | Command | Description |

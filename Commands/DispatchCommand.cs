@@ -236,6 +236,15 @@ public static class DispatchCommand
         var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{task}.md");
         WriteInboxItem(itemPath, inboxItem);
 
+        // Auto-transition task to review-pending when dispatching to reviewer
+        if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(task))
+        {
+            if (TaskCommand.TransitionToReviewPending(task, brief))
+            {
+                Console.WriteLine($"  Task state: marked ready for review");
+            }
+        }
+
         var escalatedIndicator = escalate ? " [ESCALATED]" : "";
         Console.WriteLine($"Work dispatched to agent {targetAgentName}.{escalatedIndicator}");
         Console.WriteLine($"  Role: {role}");

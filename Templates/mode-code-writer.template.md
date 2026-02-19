@@ -91,6 +91,8 @@ When implementation is done and tests pass:
 dydo dispatch --role reviewer --task <task-name> --brief "..."
 ```
 
+This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
+
 The brief should include:
 - What you implemented (1-2 sentences)
 - Plan deviations and why (if any)

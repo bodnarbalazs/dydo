@@ -235,23 +235,18 @@ public static class TaskCommand
         return ExitCodes.Success;
     }
 
-    private static int ExecuteReadyForReview(string name, string? summary)
+    /// <summary>
+    /// Transition a task file to review-pending state with the given summary.
+    /// Returns true on success, false if the task file doesn't exist (non-fatal).
+    /// Idempotent: safe to call if the task is already review-pending.
+    /// </summary>
+    internal static bool TransitionToReviewPending(string taskName, string summary)
     {
-        if (string.IsNullOrWhiteSpace(summary))
-        {
-            ConsoleOutput.WriteError("--summary is required. Describe what you did:");
-            ConsoleOutput.WriteError("  dydo task ready-for-review <name> --summary \"Brief description of completed work\"");
-            return ExitCodes.ToolError;
-        }
-
         var tasksPath = GetTasksPath();
-        var taskPath = Path.Combine(tasksPath, $"{name}.md");
+        var taskPath = Path.Combine(tasksPath, $"{taskName}.md");
 
         if (!File.Exists(taskPath))
-        {
-            ConsoleOutput.WriteError($"Task not found: {name}");
-            return ExitCodes.ToolError;
-        }
+            return false;
 
         var content = File.ReadAllText(taskPath);
 
@@ -271,8 +266,25 @@ public static class TaskCommand
             $"## Review Summary\n\n{summary}");
 
         File.WriteAllText(taskPath, content);
-        Console.WriteLine($"Task {name} marked ready for review");
+        return true;
+    }
 
+    private static int ExecuteReadyForReview(string name, string? summary)
+    {
+        if (string.IsNullOrWhiteSpace(summary))
+        {
+            ConsoleOutput.WriteError("--summary is required. Describe what you did:");
+            ConsoleOutput.WriteError("  dydo task ready-for-review <name> --summary \"Brief description of completed work\"");
+            return ExitCodes.ToolError;
+        }
+
+        if (!TransitionToReviewPending(name, summary))
+        {
+            ConsoleOutput.WriteError($"Task not found: {name}");
+            return ExitCodes.ToolError;
+        }
+
+        Console.WriteLine($"Task {name} marked ready for review");
         return ExitCodes.Success;
     }
 

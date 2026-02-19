@@ -88,6 +88,8 @@ public static class ReviewCommand
         if (currentStatus != "review-pending" && currentStatus != "active")
         {
             ConsoleOutput.WriteError($"Task is not in review state (current: {currentStatus})");
+            ConsoleOutput.WriteError("You must mark the task ready for review first:");
+            ConsoleOutput.WriteError($"  dydo task ready-for-review {taskName} --summary \"Brief description of completed work\"");
             return ExitCodes.ToolError;
         }
 

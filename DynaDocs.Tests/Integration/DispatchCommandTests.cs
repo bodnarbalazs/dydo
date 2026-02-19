@@ -513,7 +513,94 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Reviewer Auto-Transition Tests
+
+    [Fact]
+    public async Task Dispatch_ToReviewer_TransitionsTaskToReviewPending()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await TaskCreateAsync("review-task", area: "backend");
+
+        var result = await DispatchAsync("reviewer", "review-task", "Implemented OAuth flow");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Task state: marked ready for review");
+
+        // Verify task file status changed to review-pending
+        var taskContent = ReadFile("dydo/project/tasks/review-task.md");
+        Assert.Contains("status: review-pending", taskContent);
+
+        // Verify brief became the review summary
+        Assert.Contains("## Review Summary", taskContent);
+        Assert.Contains("Implemented OAuth flow", taskContent);
+        Assert.DoesNotContain("(Pending)", taskContent);
+    }
+
+    [Fact]
+    public async Task Dispatch_ToNonReviewer_DoesNotTransitionTask()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await TaskCreateAsync("code-task", area: "backend");
+
+        var result = await DispatchAsync("code-writer", "code-task", "Implement feature");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Task state:", result.Stdout);
+
+        // Verify task file status remains pending
+        var taskContent = ReadFile("dydo/project/tasks/code-task.md");
+        Assert.Contains("status: pending", taskContent);
+    }
+
+    [Fact]
+    public async Task Dispatch_ToReviewer_WithoutTaskFile_StillSucceeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // No task file created — dispatch should still succeed
+        var result = await DispatchAsync("reviewer", "nonexistent-task", "Review this");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Task state:", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Dispatch_ToReviewer_ReviewFailedToReviewPending()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await TaskCreateAsync("failed-task", area: "backend");
+
+        // Manually set task status to review-failed (simulates a failed review)
+        var taskPath = Path.Combine(TestDir, "dydo/project/tasks/failed-task.md");
+        var content = File.ReadAllText(taskPath);
+        content = content.Replace("status: pending", "status: review-failed");
+        File.WriteAllText(taskPath, content);
+
+        var result = await DispatchAsync("reviewer", "failed-task", "Fixed issues, ready for re-review");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Task state: marked ready for review");
+
+        // Verify task transitions from review-failed to review-pending
+        var taskContent = ReadFile("dydo/project/tasks/failed-task.md");
+        Assert.Contains("status: review-pending", taskContent);
+    }
+
+    #endregion
+
     #region Helper Methods
+
+    private async Task<CommandResult> TaskCreateAsync(string name, string? description = null, string area = "general")
+    {
+        var command = TaskCommand.Create();
+        var args = new List<string> { "create", name, "--area", area };
+        if (description != null)
+        {
+            args.Add("--description");
+            args.Add(description);
+        }
+        return await RunAsync(command, args.ToArray());
+    }
 
     private async Task<CommandResult> DispatchAsync(
         string role,

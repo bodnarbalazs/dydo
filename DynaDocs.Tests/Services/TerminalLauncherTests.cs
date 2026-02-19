@@ -629,7 +629,7 @@ public class TerminalLauncherTests
         launcher.LaunchWindows("Adele", useTab: true);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
-        Assert.StartsWith("-w 0 ", wtCall.Arguments);
+        Assert.StartsWith("-w 0 new-tab", wtCall.Arguments);
     }
 
     [Fact]
@@ -642,6 +642,7 @@ public class TerminalLauncherTests
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.DoesNotContain("-w 0", wtCall.Arguments);
+        Assert.StartsWith("new-window ", wtCall.Arguments);
     }
 
     [Fact]
@@ -680,6 +681,58 @@ public class TerminalLauncherTests
         launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", useTab: true);
 
         Assert.Contains("--tab", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_TabMode_UsesNewTabSubcommand()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: true);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("new-tab", wtCall.Arguments);
+        Assert.DoesNotContain("new-window", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_WindowMode_UsesNewWindowSubcommand()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: false);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("new-window", wtCall.Arguments);
+        Assert.DoesNotContain("new-tab", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_DefaultMode_UsesNewWindowSubcommand()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele");
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("new-window", wtCall.Arguments);
+        Assert.DoesNotContain("new-tab", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_WindowMode_WithWorkingDirectory_UsesNewWindow()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", "/home/user/project", useTab: false);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("new-window", wtCall.Arguments);
+        Assert.Contains("--startingDirectory", wtCall.Arguments);
     }
 
     [Fact]

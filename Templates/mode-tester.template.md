@@ -126,6 +126,8 @@ dydo dispatch --role code-writer --task <task-name> --brief "Testing complete. F
 dydo dispatch --role reviewer --task <task-name> --brief "Manual testing passed. No issues found."
 ```
 
+This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
+
 Then release:
 
 ```bash

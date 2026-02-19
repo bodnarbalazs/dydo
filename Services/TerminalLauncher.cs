@@ -172,7 +172,7 @@ public class TerminalLauncher
         // Try Windows Terminal first (modern)
         try
         {
-            var wtWindowArg = useTab ? "-w 0 " : "";
+            var wtAction = useTab ? "-w 0 new-tab" : "new-window";
             var wtDirArg = workingDirectory != null
                 ? $"--startingDirectory \"{workingDirectory}\" "
                 : "";
@@ -180,7 +180,7 @@ public class TerminalLauncher
             {
                 FileName = "wt",
                 // wt uses ';' as its own subcommand separator, so escape it with '\;'
-                Arguments = $"{wtWindowArg}new-tab {wtDirArg}powershell {GetWindowsArguments(agentName).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}powershell {GetWindowsArguments(agentName).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)

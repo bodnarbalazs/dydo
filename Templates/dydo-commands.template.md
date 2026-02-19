@@ -236,7 +236,7 @@ Dispatch work to another agent.
 ```bash
 dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth"
 dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
-dydo dispatch --role reviewer --task auth-login --brief "Review PR" --no-launch
+dydo dispatch --role reviewer --task auth-login --brief "Review PR" --no-launch  # auto-transitions task to review-pending
 dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --tab
 ```
 
@@ -251,6 +251,8 @@ dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --t
 - `--no-launch` - Don't launch terminal, just write to inbox
 - `--tab` - Launch in a new tab instead of a new window (overrides config)
 - `--new-window` - Launch in a new window (overrides config)
+
+**Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
 
 ### dydo inbox list
 
@@ -362,7 +364,7 @@ dydo task create auth-login --description "Implement user authentication"
 
 ### dydo task ready-for-review
 
-Mark task ready for review.
+Mark task ready for review. **This must be called before `dydo review complete`.**
 
 ```bash
 dydo task ready-for-review auth-login --summary "Implemented OAuth flow"
@@ -372,7 +374,7 @@ dydo task ready-for-review auth-login --summary "Implemented OAuth flow"
 - `name` - Task name
 
 **Options:**
-- `--summary <text>` - Review summary (required)
+- `--summary <text>` - Review summary (**required** - describe what you did)
 
 ### dydo task approve
 
@@ -425,7 +427,11 @@ dydo task list --all            # Include closed tasks
 
 Complete a code review.
 
+**Prerequisite:** The task must be in `review-pending` state. This happens automatically when dispatching with `--role reviewer`. You can also run `dydo task ready-for-review <task> --summary "..."` manually.
+
 ```bash
+# Normal workflow (dispatch auto-transitions the task):
+dydo dispatch --role reviewer --task auth-login --brief "Implemented OAuth flow"
 dydo review complete auth-login --status pass
 dydo review complete auth-login --status fail --notes "Found security issue"
 ```

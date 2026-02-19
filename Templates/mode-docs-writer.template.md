@@ -95,6 +95,8 @@ When documentation is complete and `dydo check` passes:
 dydo dispatch --role reviewer --task <task-name> --brief "Documentation ready for review."
 ```
 
+This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
+
 ### If Done
 
 ```bash

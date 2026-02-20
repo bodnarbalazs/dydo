@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "structure": {
+    "root": "dydo",
+    "tasks": "project/tasks"
+  },
+  "agents": {
+    "pool": [
+      "Adele",
+      "Brian",
+      "Charlie",
+      "Dexter",
+      "Emma",
+      "Frank",
+      "Grace",
+      "Henry",
+      "Iris",
+      "Jack",
+      "Kate",
+      "Leo",
+      "Mia",
+      "Noah",
+      "Olivia",
+      "Paul",
+      "Quinn",
+      "Rose",
+      "Sam",
+      "Tara",
+      "Uma",
+      "Victor",
+      "Wendy",
+      "Xavier",
+      "Yara",
+      "Zelda"
+    ],
+    "assignments": {
+      "balazs": [
+        "Adele",
+        "Brian",
+        "Charlie",
+        "Dexter",
+        "Emma",
+        "Frank",
+        "Grace",
+        "Henry",
+        "Iris",
+        "Jack",
+        "Kate",
+        "Leo",
+        "Mia",
+        "Noah",
+        "Olivia",
+        "Paul",
+        "Quinn",
+        "Rose",
+        "Sam",
+        "Tara",
+        "Uma",
+        "Victor",
+        "Wendy",
+        "Xavier",
+        "Yara",
+        "Zelda"
+      ]
+    }
+  },
+  "integrations": {
+    "claude": true
+  },
+  "dispatch": {
+    "launchInTab": true
+  }
+}

@@ -56,6 +56,7 @@ public static class DispatchCommand
         {
             Description = "Send dispatch to specific agent (skips auto-selection)"
         };
+        toOption.Aliases.Add("--agent");
 
         var escalateOption = new Option<bool>("--escalate")
         {

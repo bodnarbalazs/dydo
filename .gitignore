@@ -8,3 +8,6 @@ riderModule.iml
 nul
 DynaDocs.sln.DotSettings.user
 .claude
+
+# DynaDocs agent workspaces (local state)
+dydo/agents/

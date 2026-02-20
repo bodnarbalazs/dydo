@@ -123,20 +123,7 @@ public static class TemplateGenerator
             # {projectName}
 
             This project uses **DynaDocs** for documentation and AI agent workflow management.
-
-            **Start here:** [dydo/index.md](dydo/index.md)
-
-            ---
-
-            ## Quick Reference
-
-            If you've worked on this project before:
-
-            - **Claim identity:** `dydo agent claim auto`
-            - **Check status:** `dydo whoami`
-            - **View inbox:** `dydo inbox show`
-
-            For first-time setup, read [dydo/index.md](dydo/index.md).
+            Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
             """;
     }
 

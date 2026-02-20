@@ -588,6 +588,62 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --agent Alias Tests
+
+    [Fact]
+    public async Task Dispatch_AgentAlias_DispatchesToSpecifiedAgent()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchWithAgentAliasAsync("code-writer", "my-task", "Implement feature", agent: "Brian");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian");
+
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*.md");
+        Assert.True(inboxFiles.Length > 0, "Inbox item should be created for Brian");
+    }
+
+    [Fact]
+    public async Task Dispatch_AgentAlias_NonExistentAgent_Fails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchWithAgentAliasAsync("code-writer", "my-task", "Brief", agent: "Zorro");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("does not exist");
+    }
+
+    [Fact]
+    public async Task Dispatch_AgentAlias_ProducesSameResultAsTo()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Dispatch with --agent to Brian
+        var agentResult = await DispatchWithAgentAliasAsync("code-writer", "task-a", "Brief A", agent: "Brian");
+        agentResult.AssertSuccess();
+
+        // Dispatch with --to to Charlie
+        var toResult = await DispatchAsync("code-writer", "task-b", "Brief B", to: "Charlie");
+        toResult.AssertSuccess();
+
+        // Both should have inbox items with same structure
+        var brianFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*.md");
+        var charlieFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Charlie/inbox"), "*.md");
+        Assert.Single(brianFiles);
+        Assert.Single(charlieFiles);
+
+        var brianContent = File.ReadAllText(brianFiles[0]);
+        var charlieContent = File.ReadAllText(charlieFiles[0]);
+
+        // Both should have same structure (role, from, brief section)
+        Assert.Contains("role: code-writer", brianContent);
+        Assert.Contains("role: code-writer", charlieContent);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> TaskCreateAsync(string name, string? description = null, string area = "general")
@@ -628,6 +684,26 @@ public class DispatchCommandTests : IntegrationTestBase
         if (escalate) { args.Add("--escalate"); }
         if (tab) { args.Add("--tab"); }
         if (newWindow) { args.Add("--new-window"); }
+
+        return await RunAsync(command, args.ToArray());
+    }
+
+    private async Task<CommandResult> DispatchWithAgentAliasAsync(
+        string role,
+        string task,
+        string brief,
+        string? agent = null)
+    {
+        var command = DispatchCommand.Create();
+        var args = new List<string>
+        {
+            "--role", role,
+            "--task", task,
+            "--brief", brief,
+            "--no-launch"
+        };
+
+        if (agent != null) { args.Add("--agent"); args.Add(agent); }
 
         return await RunAsync(command, args.ToArray());
     }

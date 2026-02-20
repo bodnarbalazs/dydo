@@ -5,8 +5,33 @@
       "Bash(dotnet test:*)",
       "Bash(find:*)",
       "Bash(dotnet run:*)",
-      "Bash(set \"PATH=%PATH%;C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\Installer\")",
-      "Bash(dotnet publish:*)"
+      "Bash(dotnet publish:*)",
+      "Bash(dydo agent claim:*)",
+      "Bash(dydo agent --help:*)",
+      "Bash(dydo whoami:*)",
+      "Bash(dydo agent:*)",
+      "Bash(dydo dispatch:*)",
+      "Bash(dydo --help:*)",
+      "Bash(find:*)",
+      "Bash(dydo task create:*)",
+      "Bash(dydo fix:*)",
+      "Bash(dydo check:*)",
+      "Bash(dydo inbox clear:*)",
+      "Bash(dydo inbox show:*)",
+      "Bash(dydo review:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard"
+          }
+        ]
+      }
     ]
   }
 }

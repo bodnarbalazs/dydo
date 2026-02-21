@@ -6,63 +6,54 @@ must-read: true
 
 # Architecture Overview
 
-> **Fill this in.** This document helps AI agents understand your codebase structure.
-> Keep things brief, provide a birds eye view, an overview of the key technologies used, and how they interact.
-> Link to details which not all agents need to know, example: Knowledge of a UI library which is used in one component is not useful for an agent working on a backend task unrelated to that frontend component. 
+DynaDocs (`dydo`) is a .NET 10 CLI tool for documentation-driven AI agent orchestration. It enforces agent identity, role-based file permissions, and workflow integrity by intercepting every file operation via Claude Code's `PreToolUse` hook.
 
 ---
 
-## Project Structure
+## How It Works
 
-<!-- Show your actual folder structure -->
-
-```
-project/
-├── src/                  # Source code
-├── tests/                # Test files
-├── dydo/                 # Documentation
-└── ...
-```
+1. `dydo init` scaffolds a `dydo/` documentation tree and installs a `PreToolUse` hook into `.claude/settings.local.json`
+2. Before every tool call (Read, Write, Edit, Bash, Glob, Grep), Claude Code pipes JSON to `dydo guard`
+3. The guard enforces staged onboarding (claim identity → set role → read must-reads → work), role-based write permissions, off-limits file patterns, and bash command safety checks
+4. Agents dispatch work to each other via inbox items; a task lifecycle tracks work through to approval
 
 ---
 
-## Key Components
+## Stack
 
-<!-- List the major components/modules and what they do -->
-
-### Component A
-
-*What this component does and its responsibilities.*
+- **.NET 10** with Native AOT — self-contained binary, no runtime needed
+- **System.CommandLine** — CLI framework
+- **Markdig** — Markdown/frontmatter parsing
+- **Filesystem as state store** — agent state, tasks, inbox, and audit logs are all files (Markdown + JSON). No database.
 
 ---
 
-## Data Flow
-
-<!-- Describe how data flows through the system -->
+## Project Layout
 
 ```
-Input → Processing → Output
+Commands/        CLI command handlers (static classes, factory pattern)
+Services/        Business logic (interfaces + implementations, no DI container)
+Models/          Data types and config (source-generated JSON for AOT)
+Rules/           Documentation validation rules (IRule implementations)
+Templates/       Embedded resource templates (overridable via dydo/_system/templates/)
+DynaDocs.Tests/  Unit, integration, and E2E tests
+npm/             npm wrapper — downloads native binary per platform
 ```
 
 ---
 
-## Where to Find Things
+## Key Design Choices
 
-<!-- Quick lookup table for common tasks -->
-
-| Looking for... | Location |
-|----------------|----------|
-| *[Type of code]* | `path/` |
-
----
-
-## Key Decisions
-
-*Link to decision records in `project/decisions/` for architectural choices.*
+- **Hook enforcement over trust** — every file operation is checked before execution, not after
+- **Markdown-as-database** — tasks, agent state, and changelogs are Markdown with YAML frontmatter (human-readable, git-diffable)
+- **No DI framework** — services instantiated directly; interfaces exist for testability
+- **Template overrides** — projects can customize any template at `dydo/_system/templates/` without forking
 
 ---
 
 ## Related
 
+- [Architecture Detail](./architecture-detail.md) — Services, models, rules, and data flows in depth
 - [Coding Standards](../guides/coding-standards.md) — Code conventions
 - [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating the documentation
+- [dydo Commands Reference](../reference/dydo-commands.md) — Full command documentation

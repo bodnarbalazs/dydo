@@ -1,3 +1,6 @@
+using System.Text.Json;
+using DynaDocs.Models;
+
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
@@ -274,6 +277,67 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("already a member");
+    }
+    
+    [Fact]
+    public async Task Init_Join_ExpandsPoolAcrossMultipleSets()
+    {
+        // Balazs takes all 26 base agents (Set1)
+        await InitProjectAsync("none", "balazs", 26);
+
+        // Alice joins — pool must expand into Set2
+        var aliceResult = await JoinProjectAsync("none", "alice", 10);
+        aliceResult.AssertSuccess();
+
+        // Bob joins — pool must expand further into Set2
+        var bobResult = await JoinProjectAsync("none", "bob", 10);
+        bobResult.AssertSuccess();
+
+        // Cecile joins — pool must cross the Set2/Set3 boundary
+        var cecileResult = await JoinProjectAsync("none", "cecile", 10);
+        cecileResult.AssertSuccess();
+
+        // Parse config
+        var json = ReadFile("dydo.json");
+        var config = JsonSerializer.Deserialize<DydoConfig>(json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(config);
+
+        // Pool: 26 (Set1) + 10 + 10 + 10 = 56
+        Assert.Equal(56, config.Agents.Pool.Count);
+        Assert.Equal(4, config.Agents.Assignments.Count);
+
+        // Balazs keeps all 26 Set1 agents
+        var balazs = config.Agents.Assignments["balazs"];
+        Assert.Equal(26, balazs.Count);
+        Assert.Equal("Adele", balazs[0]);
+        Assert.Equal("Zelda", balazs[25]);
+
+        // Alice gets Set2[0..9]
+        var alice = config.Agents.Assignments["alice"];
+        Assert.Equal(new[] { "Alfred", "Bella", "Carla", "Dylan", "Ethan",
+            "Fiona", "George", "Holly", "Ivan", "Julia" }, alice);
+
+        // Bob gets Set2[10..19]
+        var bob = config.Agents.Assignments["bob"];
+        Assert.Equal(new[] { "Kevin", "Luna", "Marcus", "Nadia", "Oscar",
+            "Penny", "Quentin", "Rita", "Steve", "Tina" }, bob);
+
+        // Cecile gets Set2[20..25] + Set3[0..3] — crosses the set boundary
+        var cecile = config.Agents.Assignments["cecile"];
+        Assert.Equal(new[] { "Ulrich", "Vera", "Walter", "Xena", "Yuri", "Zara",
+            "Amber", "Blake", "Cora", "Dante" }, cecile);
+
+        // No overlaps between any assignments
+        var all = config.Agents.Assignments.Values.SelectMany(a => a).ToList();
+        Assert.Equal(all.Count, all.Distinct().Count());
+
+        // Each joiner's agent folders were created
+        foreach (var name in alice.Concat(bob).Concat(cecile))
+            AssertDirectoryExists($"dydo/agents/{name}");
+
+        // Agents beyond the 56 allocated should not have folders
+        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Elena")));
     }
 
     #endregion

@@ -492,6 +492,27 @@ public static partial class GuardCommand
         }
 
         // ============================================================
+        // COACHING: Block needless cd+git compound commands
+        // ============================================================
+        var (isCdGit, cdPath, gitCmd) = bashAnalyzer.DetectNeedlessCdGit(command);
+        if (isCdGit)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked,
+                Tool = "bash",
+                Command = TruncateCommand(command),
+                BlockReason = "Needless cd+git compound"
+            });
+
+            Console.Error.WriteLine("BLOCKED: Don't combine cd with git commands — git is auto-approved but compound commands require manual approval.");
+            Console.Error.WriteLine($"  Instead of: cd {cdPath} && git {gitCmd}");
+            Console.Error.WriteLine($"  Just run: git {gitCmd}");
+            Console.Error.WriteLine("  (You're already in the working directory, or use absolute paths.)");
+            return ExitCodes.ToolError;
+        }
+
+        // ============================================================
         // Check must-read enforcement for non-dydo bash commands
         // ============================================================
         {

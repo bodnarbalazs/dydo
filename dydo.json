@@ -4,6 +4,10 @@
     "root": "dydo",
     "tasks": "project/tasks"
   },
+  "paths": {
+    "source": ["Commands/**", "Services/**", "Models/**", "Rules/**", "Utils/**", "Serialization/**"],
+    "tests": ["DynaDocs.Tests/**"]
+  },
   "agents": {
     "pool": [
       "Adele",

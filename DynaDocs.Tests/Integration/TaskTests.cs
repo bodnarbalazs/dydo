@@ -573,6 +573,67 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_ApproveAll_WithAllFlag_ApprovesMultipleTasks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("flag-a", area: "backend");
+        await TaskCreateAsync("flag-b", area: "frontend");
+        await TaskReadyForReviewAsync("flag-a", "Done A");
+        await TaskReadyForReviewAsync("flag-b", "Done B");
+
+        var result = await TaskApproveAsync(all: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Approved 2 task(s).");
+        AssertFileNotExists("dydo/project/tasks/flag-a.md");
+        AssertFileNotExists("dydo/project/tasks/flag-b.md");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_ShortAlias_Works()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("alias-task", area: "general");
+        await TaskReadyForReviewAsync("alias-task", "Done");
+
+        var command = TaskCommand.Create();
+        var result = await RunAsync(command, "approve", "-a");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Approved 1 task(s).");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_WithAllFlagAndNotes()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("noted-a", area: "backend");
+        await TaskCreateAsync("noted-b", area: "frontend");
+        await TaskReadyForReviewAsync("noted-a", "Done A");
+        await TaskReadyForReviewAsync("noted-b", "Done B");
+
+        var result = await TaskApproveAsync(all: true, notes: "Batch approved");
+
+        result.AssertSuccess();
+
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var year = DateTime.UtcNow.ToString("yyyy");
+        AssertFileContains($"dydo/project/changelog/{year}/{today}/noted-a.md", "Batch approved");
+        AssertFileContains($"dydo/project/changelog/{year}/{today}/noted-b.md", "Batch approved");
+    }
+
+    [Fact]
+    public async Task Task_Approve_NoArgsNoAll_GivesError()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await TaskApproveAsync();
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Specify a task name or use --all");
+    }
+
+    [Fact]
     public async Task Task_Reject_MarksForRework()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -618,13 +679,14 @@ public class TaskTests : IntegrationTestBase
         return await RunAsync(command, "ready-for-review", name, "--summary", summary);
     }
 
-    private async Task<CommandResult> TaskApproveAsync(string name, string? notes = null)
+    private async Task<CommandResult> TaskApproveAsync(string? name = null, string? notes = null, bool all = false)
     {
         var command = TaskCommand.Create();
-        var args = notes != null
-            ? new[] { "approve", name, "--notes", notes }
-            : new[] { "approve", name };
-        return await RunAsync(command, args);
+        var args = new List<string> { "approve" };
+        if (name != null) args.Add(name);
+        if (all) args.Add("--all");
+        if (notes != null) { args.Add("--notes"); args.Add(notes); }
+        return await RunAsync(command, args.ToArray());
     }
 
     private async Task<CommandResult> TaskRejectAsync(string name, string notes)

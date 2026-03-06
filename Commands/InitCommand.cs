@@ -174,6 +174,14 @@ public static class InitCommand
             Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
             Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
             Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
+            Console.WriteLine();
+            Console.WriteLine("Source and test paths default to src/** and tests/**.");
+            Console.WriteLine("If your project uses a different layout, update dydo.json:");
+            Console.WriteLine();
+            Console.WriteLine("  \"paths\": {");
+            Console.WriteLine("    \"source\": [\"Commands/**\", \"Services/**\", ...],");
+            Console.WriteLine("    \"tests\": [\"YourTests/**\"]");
+            Console.WriteLine("  }");
 
             var completionResult = ShellCompletionInstaller.Install();
             if (completionResult != null)

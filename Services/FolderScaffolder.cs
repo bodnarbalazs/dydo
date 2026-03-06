@@ -153,7 +153,8 @@ public class FolderScaffolder : IFolderScaffolder
     /// <summary>
     /// Regenerate workflow and mode files for an agent (used after rename).
     /// </summary>
-    public void RegenerateAgentFiles(string agentsPath, string agentName)
+    public void RegenerateAgentFiles(string agentsPath, string agentName,
+        List<string>? sourcePaths = null, List<string>? testPaths = null)
     {
         // Derive dydo basePath from agentsPath (agentsPath is dydo/agents/)
         var basePath = Path.GetDirectoryName(agentsPath);
@@ -163,7 +164,7 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Regenerate workflow.md
         var workflowPath = Path.Combine(agentPath, "workflow.md");
-        var workflowContent = TemplateGenerator.GenerateWorkflowFile(agentName, basePath);
+        var workflowContent = TemplateGenerator.GenerateWorkflowFile(agentName, basePath, sourcePaths, testPaths);
         File.WriteAllText(workflowPath, workflowContent);
 
         // Regenerate mode files
@@ -171,7 +172,7 @@ public class FolderScaffolder : IFolderScaffolder
         foreach (var modeName in TemplateGenerator.GetModeNames())
         {
             var modePath = Path.Combine(modesPath, $"{modeName}.md");
-            var modeContent = TemplateGenerator.GenerateModeFile(agentName, modeName, basePath);
+            var modeContent = TemplateGenerator.GenerateModeFile(agentName, modeName, basePath, sourcePaths, testPaths);
             File.WriteAllText(modePath, modeContent);
         }
     }

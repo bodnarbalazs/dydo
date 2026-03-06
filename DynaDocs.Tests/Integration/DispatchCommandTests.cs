@@ -644,6 +644,119 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Filename Sanitization Tests
+
+    [Fact]
+    public async Task Dispatch_TaskNameWithColon_CreatesInboxFileWithSanitizedName()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "Review Coordinator: Auth", "Implement feature");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Warning: Task name sanitized");
+
+        // Verify inbox file was created with sanitized filename
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*.md");
+        Assert.Single(inboxFiles);
+        Assert.Contains("Review Coordinator- Auth", Path.GetFileName(inboxFiles[0]));
+
+        // Verify original task name preserved in file content
+        var content = File.ReadAllText(inboxFiles[0]);
+        Assert.Contains("task: Review Coordinator: Auth", content);
+    }
+
+    [Fact]
+    public async Task Dispatch_TaskNameWithColon_InboxShowDisplaysCorrectly()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "Review Coordinator: Auth", "Implement feature", to: "Brian");
+        result.AssertSuccess();
+
+        // Claim Brian and check inbox
+        await ClaimAgentAsync("Brian");
+        var inboxResult = await InboxShowAsync();
+
+        inboxResult.AssertSuccess();
+        inboxResult.AssertStdoutContains("Review Coordinator: Auth");
+    }
+
+    #endregion
+
+    #region --brief-file Tests
+
+    [Fact]
+    public async Task Dispatch_WithBriefFile_ReadsBriefFromFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var briefPath = Path.Combine(TestDir, "brief.txt");
+        File.WriteAllText(briefPath, "This is a brief from a file.");
+
+        var result = await DispatchWithBriefFileAsync("code-writer", "my-task", briefPath);
+
+        result.AssertSuccess();
+
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*.md");
+        Assert.Single(inboxFiles);
+
+        var content = File.ReadAllText(inboxFiles[0]);
+        Assert.Contains("This is a brief from a file.", content);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithBriefFileNotFound_Fails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchWithBriefFileAsync("code-writer", "my-task", "/nonexistent/brief.txt");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Brief file not found");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithNeitherBriefNorBriefFile_Fails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "my-task", "--no-launch" };
+        var result = await RunAsync(command, args);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Provide --brief or --brief-file");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithBothBriefAndBriefFile_BriefFileWins()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var briefPath = Path.Combine(TestDir, "brief.txt");
+        File.WriteAllText(briefPath, "Brief from file.");
+
+        var command = DispatchCommand.Create();
+        var args = new[]
+        {
+            "--role", "code-writer",
+            "--task", "my-task",
+            "--brief", "Inline brief",
+            "--brief-file", briefPath,
+            "--no-launch"
+        };
+        var result = await RunAsync(command, args);
+
+        result.AssertSuccess();
+
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*.md");
+        var content = File.ReadAllText(inboxFiles[0]);
+        Assert.Contains("Brief from file.", content);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> TaskCreateAsync(string name, string? description = null, string area = "general")
@@ -704,6 +817,23 @@ public class DispatchCommandTests : IntegrationTestBase
         };
 
         if (agent != null) { args.Add("--agent"); args.Add(agent); }
+
+        return await RunAsync(command, args.ToArray());
+    }
+
+    private async Task<CommandResult> DispatchWithBriefFileAsync(
+        string role,
+        string task,
+        string briefFile)
+    {
+        var command = DispatchCommand.Create();
+        var args = new List<string>
+        {
+            "--role", role,
+            "--task", task,
+            "--brief-file", briefFile,
+            "--no-launch"
+        };
 
         return await RunAsync(command, args.ToArray());
     }

@@ -1,0 +1,74 @@
+{
+  "session": "205d6cac-6b28-4c6f-8929-a75ed8395eb3",
+  "human": "developer",
+  "started": "2026-02-18T15:03:47.6948514Z",
+  "git_head": "b2ebd15",
+  "events": [
+    {
+      "ts": "2026-02-18T15:03:47.693783Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "which uv 2\u003E/dev/null || where uv 2\u003E/dev/null || echo \u0022uv not found in this shell\u0027s PATH\u0022"
+    },
+    {
+      "ts": "2026-02-18T15:04:02.2547766Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "echo \u0022$PATH\u0022 | tr \u0027:\u0027 \u0027\\n\u0027 | head -30"
+    },
+    {
+      "ts": "2026-02-18T15:04:08.5594661Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd //c \u0022where uv\u0022 2\u003E/dev/null; echo \u0022---\u0022; powershell -Command \u0022Get-Command uv -ErrorAction Silentl..."
+    },
+    {
+      "ts": "2026-02-18T15:04:11.6588961Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027User\u0027)\u0022 2\u003E/dev/null | tr \u0027;\u0027 \u0027\\n..."
+    },
+    {
+      "ts": "2026-02-18T15:04:15.3221075Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027Machine\u0027)\u0022 2\u003E/dev/null | tr \u0027;\u0027 ..."
+    },
+    {
+      "ts": "2026-02-18T15:04:23.0474393Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027User\u0027)\u0022 2\u003E/dev/null | tr \u0027;\u0027 \u0027\\n..."
+    },
+    {
+      "ts": "2026-02-18T15:04:31.2796744Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027User\u0027)\u0022"
+    },
+    {
+      "ts": "2026-02-18T15:04:38.9851454Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027Machine\u0027)\u0022"
+    },
+    {
+      "ts": "2026-02-18T15:24:38.1250233Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027Machine\u0027)\u0022"
+    },
+    {
+      "ts": "2026-02-18T15:24:41.981923Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022[Environment]::GetEnvironmentVariable(\u0027PATH\u0027, \u0027User\u0027)\u0022"
+    },
+    {
+      "ts": "2026-02-18T15:53:11.7514583Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd //c \u0022where dydo\u0022 2\u003E/dev/null; powershell -Command \u0022Get-Command dydo -ErrorAction SilentlyContinu..."
+    }
+  ]
+}

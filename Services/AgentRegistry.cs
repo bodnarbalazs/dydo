@@ -9,17 +9,6 @@ using DynaDocs.Utils;
 
 public partial class AgentRegistry : IAgentRegistry
 {
-    private static readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> RolePermissions = new()
-    {
-        ["code-writer"] = (["src/**", "tests/**", "dydo/agents/{self}/**"], ["dydo/**", "project/**"]),
-        ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
-        ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], ["src/**", "tests/**"]),
-        ["docs-writer"] = (["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"], ["src/**", "tests/**"]),
-        ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
-        ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], ["src/**"]),
-        ["tester"] = (["dydo/agents/{self}/**", "tests/**", "dydo/project/pitfalls/**"], ["src/**"])
-    };
-
     private const int StaleDispatchMinutes = 2;
 
     private readonly string _basePath;
@@ -27,6 +16,7 @@ public partial class AgentRegistry : IAgentRegistry
     private readonly IFolderScaffolder _folderScaffolder;
     private readonly IAuditService _auditService;
     private readonly DydoConfig? _config;
+    private readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> _rolePermissions;
 
     public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
     {
@@ -35,6 +25,25 @@ public partial class AgentRegistry : IAgentRegistry
         _folderScaffolder = folderScaffolder ?? new FolderScaffolder();
         _auditService = auditService ?? new AuditService(_configService, _basePath);
         _config = _configService.LoadConfig(_basePath);
+
+        var sourcePaths = _config?.Paths.Source ?? ["src/**"];
+        var testPaths = _config?.Paths.Tests ?? ["tests/**"];
+        _rolePermissions = BuildRolePermissions(sourcePaths, testPaths);
+    }
+
+    public static Dictionary<string, (List<string> Writable, List<string> ReadOnly)> BuildRolePermissions(
+        List<string> sourcePaths, List<string> testPaths)
+    {
+        return new()
+        {
+            ["code-writer"] = ([..sourcePaths, ..testPaths, "dydo/agents/{self}/**"], ["dydo/**", "project/**"]),
+            ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
+            ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], [..sourcePaths, ..testPaths]),
+            ["docs-writer"] = (["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"], [..sourcePaths, ..testPaths]),
+            ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
+            ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], [..sourcePaths]),
+            ["tester"] = (["dydo/agents/{self}/**", ..testPaths, "dydo/project/pitfalls/**"], [..sourcePaths])
+        };
     }
 
     public DydoConfig? Config => _config;
@@ -194,7 +203,8 @@ public partial class AgentRegistry : IAgentRegistry
             _folderScaffolder.CopyBuiltInTemplates(_configService.GetDydoRoot(_basePath));
 
             // Regenerate mode files from templates (fresh start for each claim)
-            _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName);
+            _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName,
+                _config?.Paths.Source, _config?.Paths.Tests);
 
             var session = new AgentSession
             {
@@ -232,6 +242,9 @@ public partial class AgentRegistry : IAgentRegistry
                 EventType = AuditEventType.Claim,
                 AgentName = agentName
             }, agentName, human, snapshot);
+
+            // Write agent hint for fast GetCurrentAgent lookups
+            try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
 
             return true;
         }
@@ -320,6 +333,10 @@ public partial class AgentRegistry : IAgentRegistry
             if (File.Exists(sessionPath))
                 File.Delete(sessionPath);
 
+            // Clear agent hint
+            var hintPath = GetAgentHintPath();
+            try { if (File.Exists(hintPath)) File.Delete(hintPath); } catch { }
+
             // Log release event before clearing state
             var human = GetCurrentHuman();
             LogLifecycleEvent(sessionId, new AuditEvent
@@ -363,9 +380,9 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        if (!RolePermissions.ContainsKey(role))
+        if (!_rolePermissions.ContainsKey(role))
         {
-            error = $"Invalid role: {role}. Valid roles: {string.Join(", ", RolePermissions.Keys)}";
+            error = $"Invalid role: {role}. Valid roles: {string.Join(", ", _rolePermissions.Keys)}";
             return false;
         }
 
@@ -379,7 +396,7 @@ public partial class AgentRegistry : IAgentRegistry
             }
         }
 
-        var (writable, readOnly) = RolePermissions[role];
+        var (writable, readOnly) = _rolePermissions[role];
 
         // Replace {self} placeholder with agent name
         writable = writable.Select(p => p.Replace("{self}", agent.Name)).ToList();
@@ -533,18 +550,49 @@ public partial class AgentRegistry : IAgentRegistry
 
     /// <summary>
     /// Gets the current agent for a given session ID.
-    /// Returns null if no agent is claimed for this session.
+    /// Uses a hint file to avoid scanning all agents when possible.
     /// </summary>
     public AgentState? GetCurrentAgent(string? sessionId)
     {
         if (string.IsNullOrEmpty(sessionId))
             return null;
 
-        foreach (var name in AgentNames)
+        // Fast path: check agent hint file
+        var hintPath = GetAgentHintPath();
+        if (File.Exists(hintPath))
         {
-            var session = GetSession(name);
-            if (session?.SessionId == sessionId)
-                return GetAgentState(name);
+            try
+            {
+                var hint = FileReadWithRetry(hintPath)?.Trim();
+                if (!string.IsNullOrEmpty(hint) && IsValidAgentName(hint))
+                {
+                    var session = GetSession(hint);
+                    if (session?.SessionId == sessionId)
+                        return GetAgentState(hint);
+                }
+            }
+            catch { }
+        }
+
+        // Slow path: scan all agents with timeout guard
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try
+        {
+            foreach (var name in AgentNames)
+            {
+                cts.Token.ThrowIfCancellationRequested();
+                var session = GetSession(name);
+                if (session?.SessionId == sessionId)
+                {
+                    // Cache hint for next call
+                    try { File.WriteAllText(hintPath, name); } catch { }
+                    return GetAgentState(name);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.Error.WriteLine("dydo whoami timed out — likely filesystem contention from concurrent agents. Try again.");
         }
 
         return null;
@@ -558,6 +606,38 @@ public partial class AgentRegistry : IAgentRegistry
     private string GetSessionContextPath() =>
         Path.Combine(WorkspacePath, ".session-context");
 
+    private string GetAgentHintPath() =>
+        Path.Combine(WorkspacePath, ".session-agent");
+
+    /// <summary>
+    /// Reads a file with FileShare.ReadWrite and retry on IOException.
+    /// Prevents concurrent readers/writers from blocking each other.
+    /// </summary>
+    private static string? FileReadWithRetry(string path, int maxRetries = 3)
+    {
+        for (var attempt = 0; attempt < maxRetries; attempt++)
+        {
+            try
+            {
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var sr = new StreamReader(fs);
+                return sr.ReadToEnd();
+            }
+            catch (IOException)
+            {
+                if (attempt < maxRetries - 1)
+                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                if (attempt < maxRetries - 1)
+                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Gets and clears the pending session ID for an agent.
     /// Used during claim to retrieve the session ID stored by the guard hook.
@@ -569,7 +649,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         try
         {
-            var sessionId = File.ReadAllText(path).Trim();
+            var sessionId = FileReadWithRetry(path)?.Trim();
             File.Delete(path);  // Clean up after reading
             return sessionId;
         }
@@ -615,7 +695,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         try
         {
-            return File.ReadAllText(path).Trim();
+            return FileReadWithRetry(path)?.Trim();
         }
         catch
         {
@@ -645,7 +725,8 @@ public partial class AgentRegistry : IAgentRegistry
 
         try
         {
-            var json = File.ReadAllText(sessionPath);
+            var json = FileReadWithRetry(sessionPath);
+            if (json == null) return null;
             return JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AgentSession);
         }
         catch
@@ -712,7 +793,7 @@ public partial class AgentRegistry : IAgentRegistry
         return role switch
         {
             "reviewer" => "Reviewer role can only edit own workspace.",
-            "code-writer" => "Code-writer role can only edit src/**, tests/**, and own workspace.",
+            "code-writer" => "Code-writer role can only edit configured source/test paths and own workspace.",
             "co-thinker" => "Co-thinker role can edit own workspace and decisions.",
             "docs-writer" => "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace.",
             "interviewer" => "Interviewer role can only edit own workspace.",
@@ -822,7 +903,9 @@ public partial class AgentRegistry : IAgentRegistry
     {
         try
         {
-            var content = File.ReadAllText(statePath);
+            var content = FileReadWithRetry(statePath);
+            if (content == null)
+                return new AgentState { Name = agentName };
             if (!content.StartsWith("---"))
                 return new AgentState { Name = agentName };
 
@@ -1149,7 +1232,8 @@ public partial class AgentRegistry : IAgentRegistry
         }
 
         // Regenerate workflow and mode files with new name
-        _folderScaffolder.RegenerateAgentFiles(agentsPath, newName);
+        _folderScaffolder.RegenerateAgentFiles(agentsPath, newName,
+            _config?.Paths.Source, _config?.Paths.Tests);
 
         return true;
     }

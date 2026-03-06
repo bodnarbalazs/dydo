@@ -251,21 +251,28 @@ public static class TemplateGenerator
     /// Workflow file for a specific agent.
     /// Reads from agent-workflow.template.md and replaces {{AGENT_NAME}}.
     /// </summary>
-    public static string GenerateWorkflowFile(string agentName, string? basePath = null)
+    public static string GenerateWorkflowFile(string agentName, string? basePath = null,
+        List<string>? sourcePaths = null, List<string>? testPaths = null)
     {
+        sourcePaths ??= ["src/**"];
+        testPaths ??= ["tests/**"];
+
         try
         {
             var template = ReadTemplate("agent-workflow.template.md", basePath);
             var placeholders = new Dictionary<string, string>
             {
-                ["AGENT_NAME"] = agentName
+                ["AGENT_NAME"] = agentName,
+                ["SOURCE_PATHS"] = FormatPathsList(sourcePaths),
+                ["TEST_PATHS"] = FormatPathsList(testPaths),
+                ["SOURCE_AND_TEST_PATHS"] = FormatPathsList([..sourcePaths, ..testPaths])
             };
             return ReplacePlaceholders(template, placeholders);
         }
         catch (FileNotFoundException)
         {
             // Fall back to generated content if template not found
-            return GenerateFallbackWorkflowFile(agentName);
+            return GenerateFallbackWorkflowFile(agentName, sourcePaths, testPaths);
         }
     }
 
@@ -317,9 +324,13 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateFallbackWorkflowFile(string agentName)
+    private static string GenerateFallbackWorkflowFile(string agentName,
+        List<string> sourcePaths, List<string> testPaths)
     {
         var lowerName = agentName.ToLowerInvariant();
+        var formattedSource = FormatPathsList(sourcePaths);
+        var formattedTests = FormatPathsList(testPaths);
+        var formattedAll = FormatPathsList([..sourcePaths, ..testPaths]);
 
         return $"""
             ---
@@ -392,12 +403,12 @@ public static class TemplateGenerator
 
             | Role | Can Edit | Cannot Edit |
             |------|----------|-------------|
-            | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
+            | `code-writer` | {formattedSource}, {formattedTests} | `dydo/**`, `project/**` |
             | `reviewer` | `dydo/agents/{agentName}/**` | Everything else |
-            | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
-            | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**` |
+            | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | {formattedAll} |
+            | `docs-writer` | `dydo/**` | `dydo/agents/**`, {formattedSource} |
             | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
-            | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | `src/**` |
+            | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | {formattedSource} |
 
             The guard system enforces these permissions. If blocked, either:
             - Change to an appropriate role
@@ -762,27 +773,42 @@ public static class TemplateGenerator
     /// Generate a mode file for a specific agent.
     /// Mode files contain role-specific guidance with the agent name baked in.
     /// </summary>
-    public static string GenerateModeFile(string agentName, string modeName, string? basePath = null)
+    public static string GenerateModeFile(string agentName, string modeName, string? basePath = null,
+        List<string>? sourcePaths = null, List<string>? testPaths = null)
     {
+        sourcePaths ??= ["src/**"];
+        testPaths ??= ["tests/**"];
+
         var templateName = $"mode-{modeName}.template.md";
         try
         {
             var template = ReadTemplate(templateName, basePath);
             var placeholders = new Dictionary<string, string>
             {
-                ["AGENT_NAME"] = agentName
+                ["AGENT_NAME"] = agentName,
+                ["SOURCE_PATHS"] = FormatPathsList(sourcePaths),
+                ["TEST_PATHS"] = FormatPathsList(testPaths),
+                ["SOURCE_AND_TEST_PATHS"] = FormatPathsList([..sourcePaths, ..testPaths])
             };
             return ReplacePlaceholders(template, placeholders);
         }
         catch (FileNotFoundException)
         {
             // Fall back to a basic mode file
-            return GenerateFallbackModeFile(agentName, modeName);
+            return GenerateFallbackModeFile(agentName, modeName, sourcePaths, testPaths);
         }
     }
 
-    private static string GenerateFallbackModeFile(string agentName, string modeName)
+    public static string FormatPathsList(List<string> paths) =>
+        string.Join(", ", paths.Select(p => $"`{p}`"));
+
+    private static string GenerateFallbackModeFile(string agentName, string modeName,
+        List<string> sourcePaths, List<string> testPaths)
     {
+        var formattedSource = FormatPathsList(sourcePaths);
+        var formattedTests = FormatPathsList(testPaths);
+        var formattedAll = FormatPathsList([..sourcePaths, ..testPaths]);
+
         var roleDescription = modeName switch
         {
             "code-writer" => "implement code",
@@ -797,13 +823,13 @@ public static class TemplateGenerator
 
         var canEdit = modeName switch
         {
-            "code-writer" => "`src/**`, `tests/**`",
+            "code-writer" => $"{formattedSource}, {formattedTests}",
             "reviewer" => $"`dydo/agents/{agentName}/**` (workspace only)",
             "co-thinker" => $"`dydo/agents/{agentName}/**`, `dydo/project/decisions/**`",
             "interviewer" => $"`dydo/agents/{agentName}/**`",
             "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",
             "docs-writer" => "`dydo/**` (except agents/)",
-            "tester" => $"`dydo/agents/{agentName}/**`, `tests/**`, `dydo/project/pitfalls/**`",
+            "tester" => $"`dydo/agents/{agentName}/**`, {formattedTests}, `dydo/project/pitfalls/**`",
             _ => "(check with dydo agent status)"
         };
 
@@ -1173,10 +1199,10 @@ public static class TemplateGenerator
 
                 | Role | Can Edit | Purpose |
                 |------|----------|---------|
-                | `code-writer` | `src/**`, `tests/**` | Implement features |
+                | `code-writer` | source + test directories | Implement features |
                 | `reviewer` | agent workspace | Review code |
                 | `planner` | `tasks/**`, agent workspace | Design implementation |
-                | `tester` | `tests/**`, `pitfalls/**`, agent workspace | Write tests, report bugs |
+                | `tester` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
                 | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
                 | `co-thinker` | `decisions/**`, agent workspace | Explore ideas |
                 | `interviewer` | agent workspace | Gather requirements |

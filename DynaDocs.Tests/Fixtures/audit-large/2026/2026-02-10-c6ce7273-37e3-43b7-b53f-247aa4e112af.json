@@ -1,0 +1,32 @@
+{
+  "session": "c6ce7273-37e3-43b7-b53f-247aa4e112af",
+  "human": "developer",
+  "started": "2026-02-10T22:13:24.2073067Z",
+  "git_head": "962ed81",
+  "events": [
+    {
+      "ts": "2026-02-10T22:13:24.2063708Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet dev-certs https --check --trust 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-02-10T22:13:34.5195948Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet dev-certs https --clean 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-02-10T22:13:46.80724Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet dev-certs https --trust 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-02-10T22:13:59.1563319Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet dev-certs https --check --trust 2\u003E\u00261"
+    }
+  ]
+}

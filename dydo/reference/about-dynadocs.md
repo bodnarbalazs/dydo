@@ -276,7 +276,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 |---------|-------------|
 | `dydo task create <name>` | Create a new task |
 | `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review |
-| `dydo task approve <name>` | Approve task (human only) |
+| `dydo task approve <name>` / `--all` | Approve task(s) (human only) |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |
 | `dydo review complete <task>` | Complete a code review |

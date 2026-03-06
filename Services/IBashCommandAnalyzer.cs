@@ -15,6 +15,11 @@ public interface IBashCommandAnalyzer
     /// Check if a command contains dangerous patterns that should always be blocked.
     /// </summary>
     (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command);
+
+    /// <summary>
+    /// Detect needless cd+git compound commands (e.g. "cd /path && git diff").
+    /// </summary>
+    (bool IsMatch, string? CdPath, string? GitCommand) DetectNeedlessCdGit(string command);
 }
 
 /// <summary>

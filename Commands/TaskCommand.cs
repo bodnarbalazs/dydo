@@ -83,9 +83,15 @@ public static class TaskCommand
 
     private static Command CreateApproveCommand()
     {
-        var nameArgument = new Argument<string>("name")
+        var nameArgument = new Argument<string?>("name")
         {
-            Description = "Task name"
+            Description = "Task name (or use --all to approve all)",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+
+        var allOption = new Option<bool>("--all", "-a")
+        {
+            Description = "Approve all pending tasks"
         };
 
         var notesOption = new Option<string?>("--notes")
@@ -95,15 +101,23 @@ public static class TaskCommand
 
         var command = new Command("approve", "Approve a task (human only)");
         command.Arguments.Add(nameArgument);
+        command.Options.Add(allOption);
         command.Options.Add(notesOption);
 
         command.SetAction(parseResult =>
         {
-            var name = parseResult.GetValue(nameArgument)!;
+            var name = parseResult.GetValue(nameArgument);
+            var all = parseResult.GetValue(allOption);
             var notes = parseResult.GetValue(notesOption);
 
-            if (name == "*")
+            if (all || name == "*")
                 return ExecuteApproveAll(notes);
+
+            if (string.IsNullOrEmpty(name))
+            {
+                ConsoleOutput.WriteError("Specify a task name or use --all to approve all tasks.");
+                return ExitCodes.ToolError;
+            }
 
             return ExecuteApprove(name, notes);
         });
@@ -185,7 +199,15 @@ public static class TaskCommand
         var tasksPath = GetTasksPath();
         Directory.CreateDirectory(tasksPath);
 
-        var taskPath = Path.Combine(tasksPath, $"{name}.md");
+        var sanitizedName = PathUtils.SanitizeForFilename(name);
+        if (sanitizedName != name)
+        {
+            Console.WriteLine($"  Warning: Task name sanitized for filesystem safety.");
+            Console.WriteLine($"    Original: \"{name}\"");
+            Console.WriteLine($"    Filename: \"{sanitizedName}\"");
+        }
+
+        var taskPath = Path.Combine(tasksPath, $"{sanitizedName}.md");
         if (File.Exists(taskPath))
         {
             ConsoleOutput.WriteError($"Task already exists: {name}");
@@ -196,7 +218,7 @@ public static class TaskCommand
         var configService = new ConfigService();
         var todayChangelogDir = Path.Combine(configService.GetChangelogPath(),
             DateTime.UtcNow.ToString("yyyy"), DateTime.UtcNow.ToString("yyyy-MM-dd"));
-        if (File.Exists(Path.Combine(todayChangelogDir, $"{name}.md")))
+        if (File.Exists(Path.Combine(todayChangelogDir, $"{sanitizedName}.md")))
         {
             ConsoleOutput.WriteError($"A changelog entry named '{name}' already exists for today. Choose a different name.");
             return ExitCodes.ToolError;
@@ -243,7 +265,7 @@ public static class TaskCommand
     internal static bool TransitionToReviewPending(string taskName, string summary)
     {
         var tasksPath = GetTasksPath();
-        var taskPath = Path.Combine(tasksPath, $"{taskName}.md");
+        var taskPath = Path.Combine(tasksPath, $"{PathUtils.SanitizeForFilename(taskName)}.md");
 
         if (!File.Exists(taskPath))
             return false;
@@ -331,7 +353,8 @@ public static class TaskCommand
     {
         var configService = new ConfigService();
         var tasksPath = GetTasksPath();
-        var taskPath = Path.Combine(tasksPath, $"{name}.md");
+        var sanitizedName = PathUtils.SanitizeForFilename(name);
+        var taskPath = Path.Combine(tasksPath, $"{sanitizedName}.md");
 
         if (!File.Exists(taskPath))
         {
@@ -456,7 +479,7 @@ public static class TaskCommand
         var datePath = Path.Combine(changelogPath, DateTime.UtcNow.ToString("yyyy"), today);
         Directory.CreateDirectory(datePath);
 
-        var changelogFilePath = Path.Combine(datePath, $"{name}.md");
+        var changelogFilePath = Path.Combine(datePath, $"{sanitizedName}.md");
         if (File.Exists(changelogFilePath))
         {
             ConsoleOutput.WriteError($"A changelog entry named '{name}' already exists for today.");
@@ -470,7 +493,7 @@ public static class TaskCommand
         EnsureChangelogHubs(changelogPath, configService);
 
         Console.WriteLine($"Task {name} approved.");
-        var relativeChangelogPath = Path.Combine("project", "changelog", DateTime.UtcNow.ToString("yyyy"), today, $"{name}.md");
+        var relativeChangelogPath = Path.Combine("project", "changelog", DateTime.UtcNow.ToString("yyyy"), today, $"{sanitizedName}.md");
         Console.WriteLine($"Changelog entry created: {relativeChangelogPath}");
         Console.WriteLine("Hub files updated.");
 
@@ -522,7 +545,7 @@ public static class TaskCommand
     private static int ExecuteReject(string name, string notes)
     {
         var tasksPath = GetTasksPath();
-        var taskPath = Path.Combine(tasksPath, $"{name}.md");
+        var taskPath = Path.Combine(tasksPath, $"{PathUtils.SanitizeForFilename(name)}.md");
 
         if (!File.Exists(taskPath))
         {

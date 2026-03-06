@@ -10,18 +10,28 @@ public class ConfigService : IConfigService
     public const string HumanEnvVar = "DYDO_HUMAN";
     public const string DefaultRoot = "dydo";
 
+    // Cache keyed by startPath to avoid repeated directory walks within the same instance
+    private readonly Dictionary<string, string?> _configFileCache = new();
+
     /// <summary>
     /// Find dydo.json by walking up the directory tree
     /// </summary>
     public string? FindConfigFile(string? startPath = null)
     {
-        var dir = startPath ?? Environment.CurrentDirectory;
+        var cacheKey = startPath ?? Environment.CurrentDirectory;
+        if (_configFileCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        var dir = cacheKey;
 
         while (!string.IsNullOrEmpty(dir))
         {
             var configPath = Path.Combine(dir, ConfigFileName);
             if (File.Exists(configPath))
+            {
+                _configFileCache[cacheKey] = configPath;
                 return configPath;
+            }
 
             var parent = Directory.GetParent(dir);
             if (parent == null)
@@ -30,6 +40,7 @@ public class ConfigService : IConfigService
             dir = parent.FullName;
         }
 
+        _configFileCache[cacheKey] = null;
         return null;
     }
 

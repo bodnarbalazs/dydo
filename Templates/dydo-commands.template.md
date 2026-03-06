@@ -383,12 +383,15 @@ Approve a task (human only).
 ```bash
 dydo task approve auth-login
 dydo task approve auth-login --notes "Great work!"
+dydo task approve --all
+dydo task approve --all --notes "Batch approved"
 ```
 
 **Arguments:**
-- `name` - Task name
+- `name` - Task name (optional when using `--all`)
 
 **Options:**
+- `--all`, `-a` - Approve all pending tasks
 - `--notes <text>` - Approval notes
 
 ### dydo task reject

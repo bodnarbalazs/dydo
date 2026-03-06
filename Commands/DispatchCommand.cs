@@ -21,10 +21,14 @@ public static class DispatchCommand
             Required = true
         };
 
-        var briefOption = new Option<string>("--brief")
+        var briefOption = new Option<string?>("--brief")
         {
-            Description = "Brief description of the work",
-            Required = true
+            Description = "Brief description of the work"
+        };
+
+        var briefFileOption = new Option<string?>("--brief-file")
+        {
+            Description = "Path to a file containing the brief"
         };
 
         var filesOption = new Option<string?>("--files")
@@ -67,6 +71,7 @@ public static class DispatchCommand
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
         command.Options.Add(briefOption);
+        command.Options.Add(briefFileOption);
         command.Options.Add(filesOption);
         command.Options.Add(contextOption);
         command.Options.Add(noLaunchOption);
@@ -79,7 +84,8 @@ public static class DispatchCommand
         {
             var role = parseResult.GetValue(roleOption)!;
             var task = parseResult.GetValue(taskOption)!;
-            var brief = parseResult.GetValue(briefOption)!;
+            var brief = parseResult.GetValue(briefOption);
+            var briefFile = parseResult.GetValue(briefFileOption);
             var files = parseResult.GetValue(filesOption);
             var contextFile = parseResult.GetValue(contextOption);
             var noLaunch = parseResult.GetValue(noLaunchOption);
@@ -87,6 +93,22 @@ public static class DispatchCommand
             var escalate = parseResult.GetValue(escalateOption);
             var useTab = parseResult.GetValue(tabOption);
             var useNewWindow = parseResult.GetValue(newWindowOption);
+
+            if (!string.IsNullOrEmpty(briefFile))
+            {
+                if (!File.Exists(briefFile))
+                {
+                    ConsoleOutput.WriteError($"Brief file not found: {briefFile}");
+                    return ExitCodes.ToolError;
+                }
+                brief = File.ReadAllText(briefFile).Trim();
+            }
+
+            if (string.IsNullOrEmpty(brief))
+            {
+                ConsoleOutput.WriteError("Provide --brief or --brief-file.");
+                return ExitCodes.ToolError;
+            }
 
             return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate, useTab, useNewWindow);
         });
@@ -234,7 +256,15 @@ public static class DispatchCommand
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(targetAgentName), "inbox");
         Directory.CreateDirectory(inboxPath);
 
-        var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{task}.md");
+        var sanitizedTask = PathUtils.SanitizeForFilename(task);
+        if (sanitizedTask != task)
+        {
+            Console.WriteLine($"  Warning: Task name sanitized for filesystem safety.");
+            Console.WriteLine($"    Original: \"{task}\"");
+            Console.WriteLine($"    Filename: \"{sanitizedTask}\"");
+        }
+
+        var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{sanitizedTask}.md");
         WriteInboxItem(itemPath, inboxItem);
 
         // Auto-transition task to review-pending when dispatching to reviewer
@@ -328,7 +358,7 @@ public static class DispatchCommand
         foreach (var dir in new[] { inboxPath, archivePath })
         {
             if (!Directory.Exists(dir)) continue;
-            foreach (var file in Directory.GetFiles(dir, $"*-{task}.md"))
+            foreach (var file in Directory.GetFiles(dir, $"*-{PathUtils.SanitizeForFilename(task)}.md"))
             {
                 var (origin, from) = ParseInboxItemOrigin(file);
                 if (!string.IsNullOrEmpty(origin)) return origin;

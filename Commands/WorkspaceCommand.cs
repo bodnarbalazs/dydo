@@ -240,12 +240,12 @@ public static class WorkspaceCommand
 
             | Role | Can Edit | Cannot Edit |
             |------|----------|-------------|
-            | `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
+            | `code-writer` | source + test directories | `dydo/**`, `project/**` |
             | `reviewer` | (read-only) | (all files) |
-            | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
-            | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**`, `tests/**` |
+            | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | source + test directories |
+            | `docs-writer` | `dydo/**` | `dydo/agents/**`, source directories |
             | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
-            | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | `src/**` |
+            | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | source directories |
 
             The guard command enforces these permissions. If blocked, change role or dispatch to another agent.
 

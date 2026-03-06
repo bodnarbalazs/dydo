@@ -252,12 +252,33 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.Compiled)]
     private static partial Regex PasswdModifyRegex();
 
+    // Coaching: detect needless cd+git compound commands
+    [GeneratedRegex(@"^\s*cd\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*git\s+(.*)", RegexOptions.IgnoreCase)]
+    private static partial Regex CdThenGitRegex();
+
     // Redirection patterns
     [GeneratedRegex(@"(?<!\d)(>{1,2})\s*([^\s|;&><]+)", RegexOptions.Compiled)]
     private static partial Regex OutputRedirectRegex();
 
     [GeneratedRegex(@"<\s*([^\s|;&><]+)", RegexOptions.Compiled)]
     private static partial Regex InputRedirectRegex();
+
+    public (bool IsMatch, string? CdPath, string? GitCommand) DetectNeedlessCdGit(string command)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+            return (false, null, null);
+
+        var match = CdThenGitRegex().Match(command);
+        if (!match.Success)
+            return (false, null, null);
+
+        // Groups: 1=double-quoted path, 2=single-quoted path, 3=unquoted path, 4=git command
+        var cdPath = match.Groups[1].Success ? match.Groups[1].Value
+                   : match.Groups[2].Success ? match.Groups[2].Value
+                   : match.Groups[3].Value;
+
+        return (true, cdPath, match.Groups[4].Value.Trim());
+    }
 
     public BashAnalysisResult Analyze(string command)
     {

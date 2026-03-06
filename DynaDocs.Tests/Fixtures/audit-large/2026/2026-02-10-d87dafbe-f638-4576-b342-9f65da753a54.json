@@ -1,0 +1,27 @@
+{
+  "session": "d87dafbe-f638-4576-b342-9f65da753a54",
+  "human": "developer",
+  "started": "2026-02-10T22:57:02.3764824Z",
+  "git_head": "962ed81",
+  "events": [
+    {
+      "ts": "2026-02-10T22:57:02.3754962Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\SampleProject\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-02-10T22:57:18.8115392Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\SampleProject\\src\\frontend\\vite.config.ts",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-02-10T22:57:28.2718157Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline --grep=\u0022secure\\|certificate\\|https\\|ssl\u0022 -i --since=\u00222024-01-01\u0022"
+    }
+  ]
+}

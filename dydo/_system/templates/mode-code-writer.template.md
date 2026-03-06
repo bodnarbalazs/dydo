@@ -39,7 +39,7 @@ Replace `<task-name>` with a short identifier for your task (e.g., `jwt-auth`, `
 dydo agent status
 ```
 
-You can edit: `src/**`, `tests/**`, `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
+You can edit: {{SOURCE_PATHS}}, {{TEST_PATHS}}, `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
 
 If this doesn't match, you claimed wrong or role isn't set.
 

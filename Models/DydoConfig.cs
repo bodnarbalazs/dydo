@@ -13,6 +13,9 @@ public class DydoConfig
     [JsonPropertyName("structure")]
     public StructureConfig Structure { get; set; } = new();
 
+    [JsonPropertyName("paths")]
+    public PathsConfig Paths { get; set; } = new();
+
     [JsonPropertyName("agents")]
     public AgentsConfig Agents { get; set; } = new();
 

@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.0.31</Version>
+        <Version>1.1.0</Version>
         <Description>Documentation-driven context and agent orchestration for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -17,7 +17,7 @@
         <PackageTags>documentation;validation;cli;ai-agents;claude</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>Initial release - A platform-agnostic AI orchestration and context-management framework.</PackageReleaseNotes>
+        <PackageReleaseNotes>A platform-agnostic AI orchestration and context-management framework.</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>
@@ -39,6 +39,7 @@
 
     <ItemGroup>
         <Compile Remove="DynaDocs.Tests\**" />
+        <Compile Remove="dydo\**" />
         <Content Remove="DynaDocs.Tests\**" />
         <EmbeddedResource Remove="DynaDocs.Tests\**" />
         <None Remove="DynaDocs.Tests\**" />

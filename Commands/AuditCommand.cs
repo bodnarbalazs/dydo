@@ -56,6 +56,21 @@ public static class AuditCommand
             return ExecuteGenerateVisualization(path);
         });
 
+        // Add compact subcommand
+        var compactCommand = new Command("compact", "Compact audit snapshots using baseline+delta compression");
+        var compactYearArg = new Argument<string?>("year")
+        {
+            DefaultValueFactory = _ => null,
+            Description = "Year to compact (e.g., 2026). Defaults to current year."
+        };
+        compactCommand.Arguments.Add(compactYearArg);
+        compactCommand.SetAction(parseResult =>
+        {
+            var year = parseResult.GetValue(compactYearArg);
+            return ExecuteCompact(year);
+        });
+        command.Subcommands.Add(compactCommand);
+
         return command;
     }
 
@@ -142,6 +157,49 @@ public static class AuditCommand
             return ExitCodes.ToolError;
         }
     }
+
+    private static int ExecuteCompact(string? year)
+    {
+        try
+        {
+            var auditService = new AuditService();
+            var auditPath = auditService.GetAuditPath();
+
+            year ??= DateTime.UtcNow.Year.ToString();
+            var yearDir = Path.Combine(auditPath, year);
+
+            if (!Directory.Exists(yearDir))
+            {
+                Console.WriteLine($"No audit data found for year {year}.");
+                return ExitCodes.Success;
+            }
+
+            Console.WriteLine($"Compacting audit snapshots for {year}...");
+            var result = SnapshotCompactionService.Compact(yearDir, auditService);
+
+            Console.WriteLine($"Sessions processed: {result.SessionsProcessed}");
+            Console.WriteLine($"Old total size:     {FormatBytes(result.OldTotalSizeBytes)}");
+            Console.WriteLine($"New total size:     {FormatBytes(result.NewTotalSizeBytes)} (baseline: {FormatBytes(result.NewBaselineSizeBytes)})");
+            Console.WriteLine($"Compression:        {result.CompressionRatio:P1}");
+
+            if (result.OldBaselinesRemoved > 0)
+                Console.WriteLine($"Old baselines removed: {result.OldBaselinesRemoved}");
+
+            return ExitCodes.Success;
+        }
+        catch (Exception ex)
+        {
+            ConsoleOutput.WriteError($"Error during compaction: {ex.Message}");
+            return ExitCodes.ToolError;
+        }
+    }
+
+    private static string FormatBytes(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
+        _ => $"{bytes / (1024.0 * 1024.0):F1} MB"
+    };
 
     private static int ExecuteGenerateVisualization(string? yearFilter)
     {
@@ -369,22 +427,54 @@ public static class AuditCommand
 
     private static ProjectSnapshot BuildCombinedSnapshot(IReadOnlyList<AuditSession> sessions)
     {
-        var combined = new ProjectSnapshot
-        {
-            GitCommit = sessions.FirstOrDefault(s => s.Snapshot != null)?.Snapshot?.GitCommit ?? "unknown"
-        };
+        // Resolve all snapshots (inline or delta-referenced)
+        var resolveCache = new Dictionary<string, ProjectSnapshot>();
 
+        // Build lookup helpers for delta resolution
+        var baselineCache = new Dictionary<string, SnapshotBaseline>();
+        var sessionLookup = sessions.ToDictionary(s => s.SessionId);
+
+        SnapshotBaseline? LoadBaseline(string id) => baselineCache.GetValueOrDefault(id);
+        AuditSession? LoadSession(string id) => sessionLookup.GetValueOrDefault(id);
+
+        // Try to load baselines from the audit folder
+        try
+        {
+            var auditService = new AuditService();
+            var auditPath = auditService.GetAuditPath();
+            foreach (var yearDir in Directory.GetDirectories(auditPath))
+            {
+                foreach (var file in Directory.GetFiles(yearDir, "_baseline-*.json"))
+                {
+                    var baseline = JsonSerializer.Deserialize(
+                        File.ReadAllText(file),
+                        DydoDefaultJsonContext.Default.SnapshotBaseline);
+                    if (baseline != null)
+                        baselineCache[baseline.Id] = baseline;
+                }
+            }
+        }
+        catch { /* Baselines may not exist yet */ }
+
+        var combined = new ProjectSnapshot { GitCommit = "unknown" };
         var allFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var allLinks = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var session in sessions.Where(s => s.Snapshot != null))
+        foreach (var session in sessions)
         {
-            foreach (var file in session.Snapshot!.Files)
+            var snapshot = SnapshotCompactionService.ResolveSnapshot(
+                session, LoadBaseline, LoadSession, resolveCache);
+            if (snapshot == null) continue;
+
+            if (combined.GitCommit == "unknown")
+                combined.GitCommit = snapshot.GitCommit;
+
+            foreach (var file in snapshot.Files)
                 allFiles.Add(file);
-            foreach (var folder in session.Snapshot.Folders)
+            foreach (var folder in snapshot.Folders)
                 allFolders.Add(folder);
-            foreach (var (source, targets) in session.Snapshot.DocLinks)
+            foreach (var (source, targets) in snapshot.DocLinks)
             {
                 if (!allLinks.ContainsKey(source))
                     allLinks[source] = new List<string>();

@@ -1,0 +1,20 @@
+{
+  "session": "99ada1aa-6960-4f18-a4c2-c424767cbdd6",
+  "human": "developer",
+  "started": "2026-02-16T10:00:13.5665857Z",
+  "git_head": "484ef08",
+  "events": [
+    {
+      "ts": "2026-02-16T10:00:13.5656856Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\SampleProject\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-02-16T10:00:16.9740781Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\SampleProject\\dydo\\agents\\Charlie\\workflow.md",
+      "tool": "read"
+    }
+  ]
+}

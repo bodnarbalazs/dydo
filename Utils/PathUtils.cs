@@ -59,6 +59,25 @@ public static partial class PathUtils
         return result;
     }
 
+    /// <summary>
+    /// Replace characters illegal in Windows filenames with dashes.
+    /// Collapses runs of dashes, trims edges, and truncates to 100 chars.
+    /// </summary>
+    public static string SanitizeForFilename(string name)
+    {
+        var sanitized = name;
+        foreach (var c in new[] { ':', '<', '>', '"', '|', '?', '*', '\\', '/' })
+            sanitized = sanitized.Replace(c, '-');
+
+        sanitized = MultipleHyphensRegex().Replace(sanitized, "-");
+        sanitized = sanitized.Trim('-', ' ');
+
+        if (sanitized.Length > 100)
+            sanitized = sanitized[..100].TrimEnd('-');
+
+        return sanitized;
+    }
+
     public static string NormalizePath(string path)
     {
         return path.Replace('\\', '/');

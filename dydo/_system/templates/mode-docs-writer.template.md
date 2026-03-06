@@ -38,7 +38,7 @@ dydo agent status
 
 You can edit: `dydo/**` (except other agents' workspaces), `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
 
-You cannot edit: source code (`src/**`, `tests/**`)
+You cannot edit: source code ({{SOURCE_AND_TEST_PATHS}})
 
 ---
 

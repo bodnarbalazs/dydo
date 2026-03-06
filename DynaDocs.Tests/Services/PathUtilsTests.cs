@@ -61,6 +61,27 @@ public class PathUtilsTests
     }
 
     [Theory]
+    [InlineData("Review Coordinator: Auth & Email", "Review Coordinator- Auth & Email")]
+    [InlineData("task<name>with|pipes*and?questions", "task-name-with-pipes-and-questions")]
+    [InlineData("some/path\\task", "some-path-task")]
+    [InlineData("simple-task-name", "simple-task-name")]
+    [InlineData("already clean", "already clean")]
+    [InlineData(":::", "")]
+    public void SanitizeForFilename_ReplacesIllegalChars(string input, string expected)
+    {
+        var result = PathUtils.SanitizeForFilename(input);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void SanitizeForFilename_TruncatesLongNames()
+    {
+        var longName = new string('a', 200);
+        var result = PathUtils.SanitizeForFilename(longName);
+        Assert.True(result.Length <= 100);
+    }
+
+    [Theory]
     [InlineData("path/to/file.md", "path/to/file.md")]
     [InlineData("Path/To/File.md", "path/to/file.md")]  // lowercases
     [InlineData("./Path\\To/File.md", "path/to/file.md")]

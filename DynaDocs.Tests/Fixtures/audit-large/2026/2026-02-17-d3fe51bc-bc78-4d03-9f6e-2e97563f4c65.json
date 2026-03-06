@@ -1,0 +1,20 @@
+{
+  "session": "d3fe51bc-bc78-4d03-9f6e-2e97563f4c65",
+  "human": "developer",
+  "started": "2026-02-17T13:32:22.9480035Z",
+  "git_head": "b360545",
+  "events": [
+    {
+      "ts": "2026-02-17T13:32:22.9470447Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool update -g dydo 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-02-17T13:33:27.7600421Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "tasklist 2\u003E/dev/null | grep -i dydo"
+    }
+  ]
+}

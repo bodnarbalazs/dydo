@@ -13,6 +13,7 @@ using DynaDocs.Models;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(DydoConfig))]
 [JsonSerializable(typeof(StructureConfig))]
+[JsonSerializable(typeof(PathsConfig))]
 [JsonSerializable(typeof(AgentsConfig))]
 [JsonSerializable(typeof(DispatchConfig))]
 [JsonSerializable(typeof(Dictionary<string, bool>))]
@@ -36,4 +37,7 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(MergedEvent))]
 [JsonSerializable(typeof(List<MergedEvent>))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(SnapshotBaseline))]
+[JsonSerializable(typeof(SnapshotRef))]
+[JsonSerializable(typeof(SnapshotDelta))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }

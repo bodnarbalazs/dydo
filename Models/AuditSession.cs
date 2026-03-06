@@ -55,4 +55,12 @@ public class AuditSession
     [JsonPropertyName("snapshot")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ProjectSnapshot? Snapshot { get; set; }
+
+    /// <summary>
+    /// Delta reference to a baseline snapshot. Used after compaction instead of inline Snapshot.
+    /// When present, the full snapshot is resolved by loading the base and applying the delta.
+    /// </summary>
+    [JsonPropertyName("snapshot_ref")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public SnapshotRef? SnapshotRef { get; set; }
 }

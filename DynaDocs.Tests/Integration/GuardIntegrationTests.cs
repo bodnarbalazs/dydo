@@ -646,6 +646,41 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Coaching: cd+git Compound
+
+    [Fact]
+    public async Task Guard_CdGitCompound_BlocksWithCoachingMessage()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /c/Users/User/Desktop/Projects && git diff --name-only\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("Don't combine cd with git");
+        result.AssertStderrContains("Just run: git diff --name-only");
+    }
+
+    [Fact]
+    public async Task Guard_CdNonGitCompound_NotBlocked()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && ls\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region Search Tools (Glob/Grep) - Staged Access
 
     [Theory]

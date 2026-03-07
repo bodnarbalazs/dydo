@@ -252,7 +252,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo agent claim <name\|auto>` | Claim an agent identity |
 | `dydo agent release` | Release current agent |
 | `dydo agent status [name]` | Show agent status |
-| `dydo agent list [--free]` | List all agents |
+| `dydo agent list [--free] [--all]` | List agents (default: current human's) |
 | `dydo agent role <role> [--task X]` | Set role and permissions |
 
 ### Agent Management

@@ -79,13 +79,20 @@ public static class AgentCommand
             Description = "Show only free agents"
         };
 
-        var command = new Command("list", "List all agents");
+        var allOption = new Option<bool>("--all")
+        {
+            Description = "Show all agents across all humans"
+        };
+
+        var command = new Command("list", "List agents");
         command.Options.Add(freeOption);
+        command.Options.Add(allOption);
 
         command.SetAction(parseResult =>
         {
             var freeOnly = parseResult.GetValue(freeOption);
-            return ExecuteList(freeOnly);
+            var all = parseResult.GetValue(allOption);
+            return ExecuteList(freeOnly, all);
         });
 
         return command;
@@ -189,6 +196,17 @@ public static class AgentCommand
 
         Console.WriteLine($"Agent identity released: {current.Name}");
         Console.WriteLine("  Status: free");
+
+        // Check for auto-close marker
+        var workspace = registry.GetAgentWorkspace(current.Name);
+        var autoCloseMarker = Path.Combine(workspace, ".auto-close");
+        if (File.Exists(autoCloseMarker))
+        {
+            File.Delete(autoCloseMarker);
+            Console.WriteLine("  Auto-close: session will close shortly.");
+            TerminalCloser.ScheduleClaudeTermination();
+        }
+
         return ExitCodes.Success;
     }
 
@@ -252,43 +270,93 @@ public static class AgentCommand
         return ExitCodes.Success;
     }
 
-    private static int ExecuteList(bool freeOnly)
+    private static int ExecuteList(bool freeOnly, bool all)
     {
         var registry = new AgentRegistry();
         var human = registry.GetCurrentHuman();
 
-        var agents = freeOnly ? registry.GetFreeAgents() : registry.GetAllAgentStates();
+        if (all)
+        {
+            var agents = freeOnly ? registry.GetFreeAgents() : registry.GetAllAgentStates();
 
-        if (agents.Count == 0)
+            if (agents.Count == 0)
+            {
+                Console.WriteLine(freeOnly ? "No free agents in pool." : "No agents found in pool.");
+                return ExitCodes.Success;
+            }
+
+            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Role",-15}");
+            Console.WriteLine(new string('-', 52));
+
+            foreach (var agent in agents)
+            {
+                var status = agent.Status.ToString().ToLowerInvariant();
+                var assignedHuman = agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "-";
+                var role = agent.Role ?? "-";
+
+                Console.WriteLine($"{agent.Name,-10} {status,-10} {assignedHuman,-12} {role,-15}");
+            }
+
+            var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
+            var dispatchedCount = agents.Count(a => a.Status == AgentStatus.Dispatched);
+            var workingCount = agents.Count(a => a.Status == AgentStatus.Working);
+            Console.WriteLine();
+            Console.WriteLine($"Total: {agents.Count} agents ({freeCount} free, {dispatchedCount} dispatched, {workingCount} working)");
+
+            if (!string.IsNullOrEmpty(human))
+            {
+                var humanAgents = registry.GetAgentsForHuman(human);
+                var humanFree = registry.GetFreeAgentsForHuman(human);
+                Console.WriteLine($"Agents assigned to human '{human}': {humanAgents.Count} ({humanFree.Count} free)");
+            }
+
+            return ExitCodes.Success;
+        }
+
+        // Default: show only current human's agents with Task column
+        if (string.IsNullOrEmpty(human))
+        {
+            ConsoleOutput.WriteError("No human identity set. Run 'dydo init' to configure, or use 'dydo agent list --all' to see all agents.");
+            return ExitCodes.ToolError;
+        }
+
+        List<AgentState> filteredAgents;
+
+        if (freeOnly)
+        {
+            filteredAgents = registry.GetFreeAgentsForHuman(human);
+        }
+        else
+        {
+            var humanAgentNames = registry.GetAgentsForHuman(human);
+            filteredAgents = registry.GetAllAgentStates()
+                .Where(a => humanAgentNames.Contains(a.Name, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (filteredAgents.Count == 0)
         {
             Console.WriteLine(freeOnly ? "No free agents in pool." : "No agents found in pool.");
             return ExitCodes.Success;
         }
 
-        Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Role",-15}");
+        Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Role",-15} {"Task"}");
         Console.WriteLine(new string('-', 52));
 
-        foreach (var agent in agents)
+        foreach (var agent in filteredAgents)
         {
             var status = agent.Status.ToString().ToLowerInvariant();
-            var assignedHuman = agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "-";
             var role = agent.Role ?? "-";
+            var task = agent.Task ?? "-";
 
-            Console.WriteLine($"{agent.Name,-10} {status,-10} {assignedHuman,-12} {role,-15}");
+            Console.WriteLine($"{agent.Name,-10} {status,-10} {role,-15} {task}");
         }
 
-        var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
-        var dispatchedCount = agents.Count(a => a.Status == AgentStatus.Dispatched);
-        var workingCount = agents.Count(a => a.Status == AgentStatus.Working);
+        var freeCount2 = filteredAgents.Count(a => a.Status == AgentStatus.Free);
+        var dispatchedCount2 = filteredAgents.Count(a => a.Status == AgentStatus.Dispatched);
+        var workingCount2 = filteredAgents.Count(a => a.Status == AgentStatus.Working);
         Console.WriteLine();
-        Console.WriteLine($"Total: {agents.Count} agents ({freeCount} free, {dispatchedCount} dispatched, {workingCount} working)");
-
-        if (!string.IsNullOrEmpty(human))
-        {
-            var humanAgents = registry.GetAgentsForHuman(human);
-            var humanFree = registry.GetFreeAgentsForHuman(human);
-            Console.WriteLine($"Agents assigned to human '{human}': {humanAgents.Count} ({humanFree.Count} free)");
-        }
+        Console.WriteLine($"Total: {filteredAgents.Count} agents ({freeCount2} free, {dispatchedCount2} dispatched, {workingCount2} working)");
 
         return ExitCodes.Success;
     }

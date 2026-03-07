@@ -18,6 +18,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
 *Read coding-standards when you need to make implementation decisions.*
+{{include:extra-must-reads}}
 
 ---
 

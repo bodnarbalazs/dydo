@@ -646,29 +646,110 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void LaunchMac_TabMode_UsesInFrontWindow()
+    public void LaunchMac_TabMode_WithITerm_UsesITermTabCreation()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
 
         launcher.LaunchMac("Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
-        Assert.Contains("in front window", script);
+        Assert.Contains("tell application \"iTerm\"", script);
+        Assert.Contains("create tab with default profile", script);
+        Assert.Contains("write text", script);
+        Assert.Contains("Adele --inbox", script);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithITerm_CreatesWindowWhenNoneExist()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("create window with default profile", script);
         Assert.Contains("count of windows", script);
     }
 
     [Fact]
-    public void LaunchMac_WindowMode_DoesNotUseInFrontWindow()
+    public void LaunchMac_TabMode_WithoutITerm_FallsBackToNewWindow()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector(); // iTerm not available
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        // Falls back to Terminal.app new window (no "in front window", no iTerm)
+        Assert.Contains("tell app \"Terminal\" to do script", script);
+        Assert.DoesNotContain("in front window", script);
+        Assert.DoesNotContain("iTerm", script);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithoutITerm_PrintsInfoMessage()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        var output = new StringWriter();
+        Console.SetOut(output);
+        try
+        {
+            launcher.LaunchMac("Adele", useTab: true);
+        }
+        finally
+        {
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+        }
+
+        var message = output.ToString();
+        Assert.Contains("Terminal.app does not support tab creation via scripting", message);
+        Assert.Contains("iTerm2", message);
+    }
+
+    [Fact]
+    public void LaunchMac_WindowMode_DoesNotUseITerm_EvenWhenAvailable()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
 
         launcher.LaunchMac("Adele", useTab: false);
 
         var script = recorder.Started[0].ArgumentList[1];
-        Assert.DoesNotContain("in front window", script);
-        Assert.DoesNotContain("count of windows", script);
+        Assert.Contains("tell app \"Terminal\" to do script", script);
+        Assert.DoesNotContain("iTerm", script);
+    }
+
+    [Fact]
+    public void LaunchMac_WindowMode_DoesNotPrintInfoMessage()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        var output = new StringWriter();
+        Console.SetOut(output);
+        try
+        {
+            launcher.LaunchMac("Adele", useTab: false);
+        }
+        finally
+        {
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+        }
+
+        Assert.Empty(output.ToString());
     }
 
     [Fact]
@@ -749,10 +830,12 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void LaunchMac_TabMode_WithWorkingDirectory_ContainsCdPrefix()
+    public void LaunchMac_TabMode_WithITerm_WithWorkingDirectory_ContainsCdPrefix()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
 
         launcher.LaunchMac("Adele", "/Users/dev/project", useTab: true);
 
@@ -761,16 +844,74 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void LaunchMac_TabMode_ClearsClaudeCodeEnvVar()
+    public void LaunchMac_TabMode_WithoutITerm_WithWorkingDirectory_ContainsCdPrefix()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", "/Users/dev/project", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("cd '/Users/dev/project' &&", script);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithITerm_ClearsClaudeCodeEnvVar()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
 
         launcher.LaunchMac("Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("unset CLAUDECODE", script);
         Assert.True(script.IndexOf("unset CLAUDECODE") < script.IndexOf("claude"));
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithoutITerm_ClearsClaudeCodeEnvVar()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("unset CLAUDECODE", script);
+        Assert.True(script.IndexOf("unset CLAUDECODE") < script.IndexOf("claude"));
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithITerm_AutoClose_ContainsStatusCheck()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true, autoClose: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("dydo agent status Adele", script);
+        Assert.Contains("exit 0", script);
+    }
+
+    [Fact]
+    public void GetITermTabScript_ContainsExpectedStructure()
+    {
+        var script = TerminalLauncher.GetITermTabScript("unset CLAUDECODE; claude \\\"Adele --inbox\\\"", "");
+
+        Assert.Contains("tell application \"iTerm\"", script);
+        Assert.Contains("create tab with default profile", script);
+        Assert.Contains("create window with default profile", script);
+        Assert.Contains("tell current session", script);
+        Assert.Contains("write text", script);
+        Assert.Contains("activate", script);
+        Assert.Contains("end tell", script);
     }
 
     [Theory]
@@ -784,6 +925,123 @@ public class TerminalLauncherTests
     }
 
     #endregion
+
+    #region Auto-Close Argument Tests
+
+    [Fact]
+    public void GetWindowsArguments_AutoClose_ContainsStatusCheck()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
+        Assert.Contains("dydo agent status Adele", args);
+        Assert.Contains("-match 'free'", args);
+        Assert.Contains("exit 0", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_AutoClose_StillContainsNoExit()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
+        Assert.Contains("-NoExit", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_NoAutoClose_NoStatusCheck()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: false);
+        Assert.DoesNotContain("dydo agent status", args);
+        Assert.DoesNotContain("exit 0", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_AutoClose_ContainsStatusCheck(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", autoClose: true);
+        Assert.Contains("dydo agent status Adele", args);
+        Assert.Contains("exit 0", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_AutoClose_StillContainsExecBashFallback(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", autoClose: true);
+        Assert.Contains("exec bash", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    public void GetLinuxArguments_AutoClose_TabMode_ContainsStatusCheck(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", useTab: true, autoClose: true);
+        Assert.Contains("dydo agent status Adele", args);
+        Assert.Contains("exit 0", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_AutoClose_ContainsStatusCheck()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", autoClose: true);
+        Assert.Contains("dydo agent status Adele", args);
+        Assert.Contains("exit 0", args);
+    }
+
+    [Fact]
+    public void LaunchWindows_AutoClose_WtArgs_ContainStatusCheck()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", autoClose: true);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("dydo agent status Adele", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_AutoClose_PowerShellFallback_ContainStatusCheck()
+    {
+        var recorder = new RecordingProcessStarter();
+        recorder.FailOnFileName("wt");
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", autoClose: true);
+
+        var psCall = recorder.Started.First(p => p.FileName == "powershell");
+        Assert.Contains("dydo agent status Adele", psCall.Arguments);
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// Test helper that controls which terminal applications are reported as available.
+/// </summary>
+public class TestTerminalDetector : ITerminalDetector
+{
+    private readonly HashSet<string> _available = [];
+
+    public void SetAvailable(string appName) => _available.Add(appName);
+
+    public bool IsAvailable(string appName) => _available.Contains(appName);
 }
 
 /// <summary>

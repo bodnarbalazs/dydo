@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// Generates documentation files by reading templates from embedded resources
@@ -112,6 +113,37 @@ public static class TemplateGenerator
         return content;
     }
 
+    private static string? GetTemplateAdditionsPath(string? basePath = null)
+    {
+        basePath ??= Environment.CurrentDirectory;
+
+        var inside = Path.Combine(basePath, "_system", "template-additions");
+        if (Directory.Exists(inside))
+            return inside;
+
+        var fromRoot = Path.Combine(basePath, "dydo", "_system", "template-additions");
+        if (Directory.Exists(fromRoot))
+            return fromRoot;
+
+        return null;
+    }
+
+    internal static string ResolveIncludes(string content, string? basePath = null)
+    {
+        var additionsPath = GetTemplateAdditionsPath(basePath);
+
+        content = Regex.Replace(content, @"\{\{include:([a-zA-Z0-9_-]+)\}\}", match =>
+        {
+            var name = match.Groups[1].Value;
+            if (additionsPath == null) return "";
+
+            var filePath = Path.Combine(additionsPath, $"{name}.md");
+            return File.Exists(filePath) ? File.ReadAllText(filePath).TrimEnd() : "";
+        });
+
+        return Regex.Replace(content, @"\n{3,}", "\n\n");
+    }
+
     /// <summary>
     /// CLAUDE.md - The entry point. Brief, points to the documentation system.
     /// Located at project root.
@@ -211,7 +243,8 @@ public static class TemplateGenerator
             dydo init claude        # Initialize with Claude Code hooks
             dydo agent claim auto   # Claim first available agent
             dydo whoami             # Show current identity
-            dydo agent list         # List all agents
+            dydo agent list         # List agents (current human)
+            dydo agent list --all   # List all agents across humans
             ```
 
             See [guides/how-to-use-docs.md](guides/how-to-use-docs.md) for the complete command reference.
@@ -267,7 +300,8 @@ public static class TemplateGenerator
                 ["TEST_PATHS"] = FormatPathsList(testPaths),
                 ["SOURCE_AND_TEST_PATHS"] = FormatPathsList([..sourcePaths, ..testPaths])
             };
-            return ReplacePlaceholders(template, placeholders);
+            var result = ReplacePlaceholders(template, placeholders);
+            return ResolveIncludes(result, basePath);
         }
         catch (FileNotFoundException)
         {
@@ -318,7 +352,7 @@ public static class TemplateGenerator
 
                 <!--
                 This file is updated by dydo commands.
-                Check agent status: dydo agent list
+                Check agent status: dydo agent list [--all]
                 -->
                 """;
         }
@@ -790,7 +824,8 @@ public static class TemplateGenerator
                 ["TEST_PATHS"] = FormatPathsList(testPaths),
                 ["SOURCE_AND_TEST_PATHS"] = FormatPathsList([..sourcePaths, ..testPaths])
             };
-            return ReplacePlaceholders(template, placeholders);
+            var result = ReplacePlaceholders(template, placeholders);
+            return ResolveIncludes(result, basePath);
         }
         catch (FileNotFoundException)
         {
@@ -998,7 +1033,7 @@ public static class TemplateGenerator
                 | `dydo agent claim auto\|<name>` | Claim agent |
                 | `dydo agent release` | Release agent |
                 | `dydo agent status [name]` | Show status |
-                | `dydo agent list [--free]` | List agents |
+                | `dydo agent list [--free] [--all]` | List agents |
                 | `dydo agent role <role>` | Set role |
                 | `dydo agent new <name> <human>` | Create agent |
                 | `dydo agent rename <old> <new>` | Rename agent |

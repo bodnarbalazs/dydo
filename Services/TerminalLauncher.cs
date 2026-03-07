@@ -11,9 +11,18 @@ public interface IProcessStarter
     void Start(ProcessStartInfo psi);
 }
 
+/// <summary>
+/// Interface for detecting installed terminal applications. Enables testing without filesystem checks.
+/// </summary>
+public interface ITerminalDetector
+{
+    bool IsAvailable(string appName);
+}
+
 public class TerminalLauncher
 {
     private readonly IProcessStarter _processStarter;
+    private readonly ITerminalDetector _terminalDetector;
 
     public record TerminalConfig(
         string FileName,
@@ -21,11 +30,12 @@ public class TerminalLauncher
         Func<string, string?, string>? GetTabArguments = null);
 
     /// <summary>
-    /// Create a TerminalLauncher with optional process starter for testing.
+    /// Create a TerminalLauncher with optional process starter and terminal detector for testing.
     /// </summary>
-    public TerminalLauncher(IProcessStarter? processStarter = null)
+    public TerminalLauncher(IProcessStarter? processStarter = null, ITerminalDetector? terminalDetector = null)
     {
         _processStarter = processStarter ?? new DefaultProcessStarter();
+        _terminalDetector = terminalDetector ?? new DefaultTerminalDetector();
     }
 
     /// <summary>
@@ -75,6 +85,11 @@ public class TerminalLauncher
         new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
     ];
 
+    private static string BashPostClaudeCheck(string agentName)
+    {
+        return $"if dydo agent status {agentName} 2>/dev/null | grep -q 'free'; then exit 0; fi; exec bash";
+    }
+
     public static readonly TerminalConfig[] MacTerminals =
     [
         // Terminal.app is always present on macOS
@@ -98,7 +113,7 @@ public class TerminalLauncher
         return $"cd '{workingDirectory}' && ";
     }
 
-    public static string GetWindowsArguments(string agentName)
+    public static string GetWindowsArguments(string agentName, bool autoClose = false)
     {
         var prompt = GetClaudePrompt(agentName);
         // -NoExit keeps PowerShell open after the command completes
@@ -106,51 +121,63 @@ public class TerminalLauncher
         // prompt (including --inbox) is passed as one argument to claude.
         // Double-quote escaping ("") breaks when passing through wt → powershell layers.
         var escapedPrompt = prompt.Replace("'", "''");
-        return $"-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'\"";
+        var postClaudeCheck = autoClose
+            ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
+            : "";
+        return $"-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
     }
 
-    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false)
+    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
     {
         var config = LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
 
-        if (useTab && config.GetTabArguments != null)
-            return config.GetTabArguments(agentName, workingDirectory);
+        var args = (useTab && config.GetTabArguments != null)
+            ? config.GetTabArguments(agentName, workingDirectory)
+            : config.GetArguments(agentName, workingDirectory);
 
-        return config.GetArguments(agentName, workingDirectory);
+        if (autoClose)
+            args = args.Replace("exec bash", BashPostClaudeCheck(agentName));
+
+        return args;
     }
 
-    public static string GetMacArguments(string agentName, string? workingDirectory = null)
+    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false)
     {
+        if (autoClose)
+        {
+            var cdPrefix = CdPrefix(workingDirectory);
+            return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"; {BashPostClaudeCheck(agentName)}\"'";
+        }
         return MacTerminals[0].GetArguments(agentName, workingDirectory);
     }
 
     /// <summary>
     /// Static convenience method for backward compatibility.
     /// </summary>
-    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false)
+    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
     {
-        new TerminalLauncher().Launch(agentName, workingDirectory, useTab);
+        new TerminalLauncher().Launch(agentName, workingDirectory, useTab, autoClose);
     }
 
     /// <summary>
     /// Launch a new terminal for the specified agent.
     /// </summary>
-    public void Launch(string agentName, string? workingDirectory = null, bool useTab = false)
+    public void Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
     {
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                LaunchWindows(agentName, workingDirectory, useTab);
+                LaunchWindows(agentName, workingDirectory, useTab, autoClose);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                LaunchMac(agentName, workingDirectory, useTab);
+                LaunchMac(agentName, workingDirectory, useTab, autoClose);
             }
             else
             {
-                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory, useTab))
+                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory, useTab, autoClose))
                 {
                     throw new InvalidOperationException("No terminal found");
                 }
@@ -167,7 +194,7 @@ public class TerminalLauncher
     /// <summary>
     /// Launch terminal on Windows. Tries Windows Terminal first, falls back to PowerShell.
     /// </summary>
-    public void LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false)
+    public void LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
     {
         // Try Windows Terminal first (modern)
         try
@@ -180,7 +207,7 @@ public class TerminalLauncher
             {
                 FileName = "wt",
                 // wt uses ';' as its own subcommand separator, so escape it with '\;'
-                Arguments = $"{wtAction} {wtDirArg}powershell {GetWindowsArguments(agentName).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}powershell {GetWindowsArguments(agentName, autoClose).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -197,7 +224,7 @@ public class TerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = "powershell",
-            Arguments = GetWindowsArguments(agentName),
+            Arguments = GetWindowsArguments(agentName, autoClose),
             UseShellExecute = true
         };
         if (workingDirectory != null)
@@ -206,33 +233,30 @@ public class TerminalLauncher
     }
 
     /// <summary>
-    /// Launch terminal on macOS using osascript to open Terminal.app.
-    /// Uses ArgumentList instead of Arguments to bypass shell quoting issues,
-    /// and UseShellExecute = false to invoke osascript directly (UseShellExecute = true
-    /// on macOS routes through the 'open' command, which cannot run CLI tools).
+    /// Launch terminal on macOS. Detects iTerm2 for native tab support.
+    /// Terminal.app does not support tab creation via AppleScript, so tab mode
+    /// falls back to a new window with an informational message.
     /// </summary>
-    public void LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false)
+    public void LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
     {
         var cdPrefix = CdPrefix(workingDirectory);
         var shellCommand = $"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
+        var postCheck = autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "";
 
         string script;
-        if (useTab)
+        if (useTab && _terminalDetector.IsAvailable("iTerm"))
         {
-            // Tab mode: run in the front window if one exists, otherwise create new
-            script = "tell app \"Terminal\"\n" +
-                     "  if (count of windows) > 0 then\n" +
-                     $"    do script \"{shellCommand}\" in front window\n" +
-                     "  else\n" +
-                     $"    do script \"{shellCommand}\"\n" +
-                     "  end if\n" +
-                     "  activate\n" +
-                     "end tell";
+            // iTerm2 has native AppleScript tab support
+            script = GetITermTabScript(shellCommand, postCheck);
         }
         else
         {
-            // Window mode: always open a new window
-            script = $"tell app \"Terminal\" to do script \"{shellCommand}\"";
+            if (useTab)
+            {
+                Console.WriteLine("INFO: Terminal.app does not support tab creation via scripting. Launching new window instead. Install iTerm2 for tab support.");
+            }
+            // Window mode (or Terminal.app tab fallback): always open a new window
+            script = $"tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"";
         }
 
         var psi = new ProcessStartInfo
@@ -248,9 +272,34 @@ public class TerminalLauncher
     }
 
     /// <summary>
+    /// Generate AppleScript for creating a new tab in iTerm2 and running a command.
+    /// Creates a tab in the current window if one exists, otherwise creates a new window.
+    /// </summary>
+    public static string GetITermTabScript(string shellCommand, string postCheck)
+    {
+        var cmd = $"{shellCommand}{postCheck}";
+        return "tell application \"iTerm\"\n" +
+               "  if (count of windows) > 0 then\n" +
+               "    tell current window\n" +
+               "      create tab with default profile\n" +
+               "      tell current session\n" +
+               $"        write text \"{cmd}\"\n" +
+               "      end tell\n" +
+               "    end tell\n" +
+               "  else\n" +
+               "    create window with default profile\n" +
+               "    tell current session of current window\n" +
+               $"      write text \"{cmd}\"\n" +
+               "    end tell\n" +
+               "  end if\n" +
+               "  activate\n" +
+               "end tell";
+    }
+
+    /// <summary>
     /// Try to launch one of the configured terminals.
     /// </summary>
-    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false)
+    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
     {
         foreach (var terminal in terminals)
         {
@@ -259,6 +308,9 @@ public class TerminalLauncher
                 var arguments = useTab && terminal.GetTabArguments != null
                     ? terminal.GetTabArguments(agentName, workingDirectory)
                     : terminal.GetArguments(agentName, workingDirectory);
+
+                if (autoClose)
+                    arguments = arguments.Replace("exec bash", BashPostClaudeCheck(agentName));
 
                 _processStarter.Start(new ProcessStartInfo
                 {
@@ -287,5 +339,16 @@ public class TerminalLauncher
     private class DefaultProcessStarter : IProcessStarter
     {
         public void Start(ProcessStartInfo psi) => Process.Start(psi);
+    }
+
+    /// <summary>
+    /// Default implementation that checks for macOS .app bundles in /Applications.
+    /// </summary>
+    private class DefaultTerminalDetector : ITerminalDetector
+    {
+        public bool IsAvailable(string appName)
+        {
+            return Directory.Exists($"/Applications/{appName}.app");
+        }
     }
 }

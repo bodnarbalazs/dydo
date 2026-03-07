@@ -18,7 +18,8 @@
       "Bash(dydo check:*)",
       "Bash(dydo inbox clear:*)",
       "Bash(dydo inbox show:*)",
-      "Bash(dydo review:*)"
+      "Bash(dydo review:*)",
+      "Bash(dydo inbox:*)"
     ]
   },
   "hooks": {

@@ -134,6 +134,8 @@ public static class InitCommand
 
             var scaffolder = new FolderScaffolder();
             scaffolder.Scaffold(dydoRoot, config.Agents.Pool);
+            FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
+            configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
 
             // Create agents folder (gitignored)

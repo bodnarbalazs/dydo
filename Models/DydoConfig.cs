@@ -24,4 +24,7 @@ public class DydoConfig
 
     [JsonPropertyName("dispatch")]
     public DispatchConfig Dispatch { get; set; } = new();
+
+    [JsonPropertyName("frameworkHashes")]
+    public Dictionary<string, string> FrameworkHashes { get; set; } = new();
 }

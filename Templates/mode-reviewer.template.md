@@ -17,6 +17,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 1. [about.md](../../../understand/about.md) — What this project is
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 3. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
+{{include:extra-must-reads}}
 
 ---
 
@@ -65,6 +66,7 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 1. **Read the brief** — Understand what was implemented and why
 2. **Review the changes** — Check against coding standards, including stack specific standards if there are any
 3. **Run tests** — Verify they pass
+{{include:extra-review-steps}}
 4. **Document findings** — Note issues clearly
 
 **Review checklist:**
@@ -75,6 +77,7 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 - [ ] No security vulnerabilities introduced
 - [ ] No unnecessary complexity
 - [ ] Changes match the task requirements
+{{include:extra-review-checklist}}
 
 ---
 

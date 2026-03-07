@@ -148,11 +148,13 @@ dydo agent status Adele       # Show specific agent's status
 
 ### dydo agent list
 
-List all agents.
+List agents. By default, shows only agents assigned to the current human (with Task column). Use `--all` to show all agents across all humans (with Human column).
 
 ```bash
-dydo agent list               # List all agents
-dydo agent list --free        # List only free agents
+dydo agent list               # List current human's agents
+dydo agent list --free        # List only free agents for current human
+dydo agent list --all         # List all agents across all humans
+dydo agent list --all --free  # List all free agents across all humans
 ```
 
 ### dydo agent role

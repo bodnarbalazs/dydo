@@ -16,6 +16,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 
 1. [about.md](../../../understand/about.md) — What this project is
 2. [architecture.md](../../../understand/architecture.md) — How it's structured
+{{include:extra-must-reads}}
 
 ---
 

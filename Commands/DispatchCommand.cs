@@ -67,6 +67,11 @@ public static class DispatchCommand
             Description = "Mark dispatch as escalated after repeated failures"
         };
 
+        var autoCloseOption = new Option<bool>("--auto-close")
+        {
+            Description = "Auto-close the dispatched agent's terminal after release"
+        };
+
         var command = new Command("dispatch", "Dispatch work to another agent");
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
@@ -77,6 +82,7 @@ public static class DispatchCommand
         command.Options.Add(noLaunchOption);
         command.Options.Add(toOption);
         command.Options.Add(escalateOption);
+        command.Options.Add(autoCloseOption);
         command.Options.Add(tabOption);
         command.Options.Add(newWindowOption);
 
@@ -93,7 +99,9 @@ public static class DispatchCommand
             var escalate = parseResult.GetValue(escalateOption);
             var useTab = parseResult.GetValue(tabOption);
             var useNewWindow = parseResult.GetValue(newWindowOption);
+            var autoClose = parseResult.GetValue(autoCloseOption);
 
+            var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))
             {
                 if (!File.Exists(briefFile))
@@ -102,6 +110,7 @@ public static class DispatchCommand
                     return ExitCodes.ToolError;
                 }
                 brief = File.ReadAllText(briefFile).Trim();
+                briefFromFile = true;
             }
 
             if (string.IsNullOrEmpty(brief))
@@ -110,13 +119,23 @@ public static class DispatchCommand
                 return ExitCodes.ToolError;
             }
 
-            return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate, useTab, useNewWindow);
+            if (!briefFromFile)
+            {
+                var shellMetaError = DetectShellMetacharacters(brief);
+                if (shellMetaError != null)
+                {
+                    ConsoleOutput.WriteError(shellMetaError);
+                    return ExitCodes.ToolError;
+                }
+            }
+
+            return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate, useTab, useNewWindow, autoClose);
         });
 
         return command;
     }
 
-    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow)
+    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose)
     {
         if (useTab && useNewWindow)
         {
@@ -286,12 +305,22 @@ public static class DispatchCommand
             Console.WriteLine($"  Escalated: yes");
         }
 
+        // Resolve effective auto-close: CLI flag || config default
+        var effectiveAutoClose = autoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
+
+        // Create .auto-close marker in target agent workspace
+        if (effectiveAutoClose)
+        {
+            var autoCloseMarker = Path.Combine(registry.GetAgentWorkspace(targetAgentName), ".auto-close");
+            File.WriteAllText(autoCloseMarker, "");
+        }
+
         // Launch new terminal if requested
         if (!noLaunch)
         {
             var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
             var projectRoot = PathUtils.FindProjectRoot();
-            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab);
+            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose);
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 
@@ -341,6 +370,27 @@ public static class DispatchCommand
             """;
 
         File.WriteAllText(path, content);
+    }
+
+    /// <summary>
+    /// Checks a brief for shell metacharacters that indicate the Bash command was garbled
+    /// (e.g. unquoted &&, ||, $()). Returns an error message if detected, null if clean.
+    /// Briefs loaded via --brief-file skip this check since they bypass the shell.
+    /// </summary>
+    internal static string? DetectShellMetacharacters(string brief)
+    {
+        // Patterns that almost certainly indicate shell garbling, not intentional prose
+        string[] shellPatterns = ["&&", "||", "$(", "`"];
+
+        foreach (var pattern in shellPatterns)
+        {
+            if (brief.Contains(pattern))
+                return $"Brief contains shell metacharacter '{pattern}'. " +
+                       "This usually means the --brief value was not properly quoted in the shell. " +
+                       "Use --brief-file instead for complex content.";
+        }
+
+        return null;
     }
 
     /// <summary>

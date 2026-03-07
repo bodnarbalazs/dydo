@@ -671,7 +671,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Try to read JSON from stdin using a reliable detection method.
     /// Uses Console.KeyAvailable which throws InvalidOperationException when stdin is redirected.
-    /// This is more reliable than Console.IsInputRedirected on Windows.
+    /// Includes a timeout to prevent indefinite blocking if the pipe stays open.
     /// </summary>
     private static bool TryReadStdinJson(out string? json)
     {
@@ -679,15 +679,20 @@ public static partial class GuardCommand
         try
         {
             // KeyAvailable throws InvalidOperationException when stdin is redirected
-            // This is more reliable than Console.IsInputRedirected on Windows
             _ = Console.KeyAvailable;
             return false; // Not redirected, no stdin to read
         }
         catch (InvalidOperationException)
         {
-            // Stdin is redirected, read it
-            json = Console.In.ReadToEnd();
-            return !string.IsNullOrWhiteSpace(json);
+            // Stdin is redirected — read with a timeout to avoid blocking forever
+            // if the pipe is open but has no data (e.g., chained commands)
+            var readTask = Task.Run(() => Console.In.ReadToEnd());
+            if (readTask.Wait(TimeSpan.FromSeconds(2)))
+            {
+                json = readTask.Result;
+                return !string.IsNullOrWhiteSpace(json);
+            }
+            return false; // Timed out — no stdin data available
         }
     }
 
@@ -834,6 +839,11 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectDotnetDydoRegex();
 
+    // Matches: dotnet run [flags...] -- <dydo-subcommand> [args...]
+    // Only matches when args after -- start with a known dydo subcommand.
+    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help)\b.*)", RegexOptions.IgnoreCase)]
+    private static partial Regex IndirectDotnetRunRegex();
+
     // Matches: bash/sh/zsh/cmd/powershell/pwsh [flags...] dydo [args...]
     // Also matches: bash -c "dydo ...", sh -c 'dydo ...'
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
@@ -852,6 +862,10 @@ public static partial class GuardCommand
         var dotnetMatch = IndirectDotnetDydoRegex().Match(command);
         if (dotnetMatch.Success)
             return (true, "dotnet", dotnetMatch.Groups[1].Value.Trim());
+
+        var dotnetRunMatch = IndirectDotnetRunRegex().Match(command);
+        if (dotnetRunMatch.Success)
+            return (true, "dotnet run", dotnetRunMatch.Groups[1].Value.Trim());
 
         var shellMatch = IndirectShellDydoRegex().Match(command);
         if (shellMatch.Success)

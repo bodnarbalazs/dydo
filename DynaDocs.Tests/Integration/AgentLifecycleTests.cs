@@ -316,11 +316,70 @@ public class AgentLifecycleTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         await JoinProjectAsync("none", "alice", 2);
 
-        var result = await ListAgentsAsync();
+        var result = await ListAgentsAsync(all: true);
 
         result.AssertSuccess();
         result.AssertStdoutContains("balazs");
         result.AssertStdoutContains("alice");
+    }
+
+    [Fact]
+    public async Task List_Default_ShowsOnlyCurrentHumanAgents()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await JoinProjectAsync("none", "alice", 2);
+
+        SetHuman("balazs");
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("Brian");
+        result.AssertStdoutContains("Charlie");
+        // Alice's agents should not appear
+        Assert.DoesNotContain("Dexter", result.Stdout);
+        Assert.DoesNotContain("Emma", result.Stdout);
+    }
+
+    [Fact]
+    public async Task List_All_ShowsAllAgents()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await JoinProjectAsync("none", "alice", 2);
+
+        SetHuman("balazs");
+        var result = await ListAgentsAsync(all: true);
+
+        result.AssertSuccess();
+        // Both humans' agents should appear
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("Dexter");
+    }
+
+    [Fact]
+    public async Task List_Default_ShowsTaskColumn()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task");
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Task");
+        result.AssertStdoutContains("my-task");
+    }
+
+    [Fact]
+    public async Task List_Default_NoHumanSet_ShowsError()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        ClearHuman();
+        var result = await ListAgentsAsync();
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("No human identity set");
     }
 
     #endregion
@@ -515,6 +574,50 @@ public class AgentLifecycleTests : IntegrationTestBase
 
         // Modes should be removed after release
         Assert.False(Directory.Exists(modesPath), "Modes folder should be removed after release");
+    }
+
+    [Fact]
+    public async Task Release_WithAutoCloseMarker_DeletesMarker()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Create auto-close marker
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        File.WriteAllText(markerPath, "");
+        Assert.True(File.Exists(markerPath));
+
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+
+        Assert.False(File.Exists(markerPath), "Auto-close marker should be deleted after release");
+    }
+
+    [Fact]
+    public async Task Release_WithAutoCloseMarker_OutputsAutoCloseMessage()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Create auto-close marker
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        File.WriteAllText(markerPath, "");
+
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+        result.AssertStdoutContains("Auto-close:");
+    }
+
+    [Fact]
+    public async Task Release_WithoutAutoCloseMarker_NoAutoCloseMessage()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+
+        Assert.DoesNotContain("Auto-close:", result.Stdout);
     }
 
     private async Task<CommandResult> InboxClearAsync(bool all = false, string? id = null)

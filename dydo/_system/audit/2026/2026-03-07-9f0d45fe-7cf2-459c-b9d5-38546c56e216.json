@@ -1,0 +1,22 @@
+{
+  "session": "9f0d45fe-7cf2-459c-b9d5-38546c56e216",
+  "human": "balazs",
+  "started": "2026-03-07T21:32:10.3754598Z",
+  "git_head": "4365385",
+  "events": [
+    {
+      "ts": "2026-03-07T21:32:10.3743372Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-07T21:32:16.8332877Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "glob",
+      "reason": "No agent identity"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 2. [about.md](../../../understand/about.md) — What this project is
 3. [architecture.md](../../../understand/architecture.md) — Codebase structure
 4. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
+{{include:extra-must-reads}}
 
 ---
 
@@ -75,6 +76,7 @@ Never guess or assume.
 2. **Implement** — Write the minimal code that solves the problem
 3. **Test** — Add or update tests for your changes
 4. **Verify** — Run tests, ensure they pass
+{{include:extra-verify}}
 
 **If guard blocks you:**
 - Check your role: `dydo agent status`

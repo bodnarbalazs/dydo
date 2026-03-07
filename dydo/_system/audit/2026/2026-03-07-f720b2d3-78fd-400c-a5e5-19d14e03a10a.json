@@ -1,0 +1,50 @@
+{
+  "session": "f720b2d3-78fd-400c-a5e5-19d14e03a10a",
+  "human": "balazs",
+  "started": "2026-03-07T19:19:30.6923971Z",
+  "git_head": "4365385",
+  "events": [
+    {
+      "ts": "2026-03-07T19:19:30.6914835Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T19:19:35.5471288Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-07T19:19:42.0608709Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent claim auto"
+    },
+    {
+      "ts": "2026-03-07T19:19:57.9212782Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Henry\\workflow.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T19:20:02.6245906Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- inbox show"
+    },
+    {
+      "ts": "2026-03-07T19:20:09.3226786Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- whoami"
+    },
+    {
+      "ts": "2026-03-07T19:25:10.6741234Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent release"
+    }
+  ]
+}

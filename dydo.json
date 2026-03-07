@@ -5,7 +5,7 @@
     "tasks": "project/tasks"
   },
   "paths": {
-    "source": ["Commands/**", "Services/**", "Models/**", "Rules/**", "Utils/**", "Serialization/**"],
+    "source": ["Commands/**", "Services/**", "Models/**", "Rules/**", "Utils/**", "Serialization/**", "Program.cs", "Templates/**"],
     "tests": ["DynaDocs.Tests/**"]
   },
   "agents": {

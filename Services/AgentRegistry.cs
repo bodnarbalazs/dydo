@@ -712,7 +712,19 @@ public partial class AgentRegistry : IAgentRegistry
         var path = GetSessionContextPath();
         var dir = Path.GetDirectoryName(path);
         if (dir != null) Directory.CreateDirectory(dir);
-        File.WriteAllText(path, sessionId);
+
+        for (var i = 0; i < 3; i++)
+        {
+            try
+            {
+                File.WriteAllText(path, sessionId);
+                return;
+            }
+            catch (IOException) when (i < 2)
+            {
+                Thread.Sleep(10 * (i + 1));
+            }
+        }
     }
 
     #endregion

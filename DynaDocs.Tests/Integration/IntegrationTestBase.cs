@@ -1,7 +1,9 @@
 namespace DynaDocs.Tests.Integration;
 
 using System.CommandLine;
+using System.Diagnostics;
 using DynaDocs.Commands;
+using DynaDocs.Services;
 
 /// <summary>
 /// Base class for CLI integration tests.
@@ -20,6 +22,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
+    private readonly IProcessStarter? _originalTerminalCloserStarter;
 
     protected IntegrationTestBase()
     {
@@ -33,6 +36,10 @@ public abstract class IntegrationTestBase : IDisposable
         _originalOut = Console.Out;
         _originalErr = Console.Error;
         _originalIn = Console.In;
+        _originalTerminalCloserStarter = TerminalCloser.ProcessStarterOverride;
+
+        // Prevent tests from killing the real Claude process
+        TerminalCloser.ProcessStarterOverride = new NoOpProcessStarter();
 
         // Set working directory to test dir
         Environment.CurrentDirectory = TestDir;
@@ -46,6 +53,7 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
+        TerminalCloser.ProcessStarterOverride = _originalTerminalCloserStarter;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))
@@ -233,11 +241,13 @@ public abstract class IntegrationTestBase : IDisposable
     /// <summary>
     /// List agents.
     /// </summary>
-    protected async Task<CommandResult> ListAgentsAsync(bool freeOnly = false)
+    protected async Task<CommandResult> ListAgentsAsync(bool freeOnly = false, bool all = false)
     {
         var command = AgentCommand.Create();
-        var args = freeOnly ? new[] { "list", "--free" } : new[] { "list" };
-        return await RunAsync(command, args);
+        var args = new List<string> { "list" };
+        if (freeOnly) args.Add("--free");
+        if (all) args.Add("--all");
+        return await RunAsync(command, args.ToArray());
     }
 
     /// <summary>

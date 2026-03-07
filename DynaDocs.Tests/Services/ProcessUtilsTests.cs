@@ -35,4 +35,37 @@ public class ProcessUtilsTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void GetParentPid_ReturnsValidPid_ForCurrentProcess()
+    {
+        var ppid = ProcessUtils.GetParentPid(Environment.ProcessId);
+
+        Assert.NotNull(ppid);
+        Assert.True(ppid > 0);
+    }
+
+    [Fact]
+    public void GetParentPid_ReturnsNull_ForInvalidPid()
+    {
+        var ppid = ProcessUtils.GetParentPid(int.MaxValue);
+
+        Assert.Null(ppid);
+    }
+
+    [Fact]
+    public void FindAncestorProcess_ReturnsNull_WhenNotFound()
+    {
+        var pid = ProcessUtils.FindAncestorProcess("nonexistent-process-name-xyz");
+
+        Assert.Null(pid);
+    }
+
+    [Fact]
+    public void FindAncestorProcess_RespectsMaxDepth()
+    {
+        var pid = ProcessUtils.FindAncestorProcess("dotnet", maxDepth: 0);
+
+        Assert.Null(pid);
+    }
 }

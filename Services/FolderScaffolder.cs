@@ -1,5 +1,6 @@
 namespace DynaDocs.Services;
 
+using DynaDocs.Commands;
 using DynaDocs.Models;
 
 public class FolderScaffolder : IFolderScaffolder
@@ -41,6 +42,8 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Copy built-in templates to _system/templates/ for customization
         CopyBuiltInTemplates(basePath);
+
+        ScaffoldTemplateAdditions(basePath);
 
         // Copy built-in assets to _assets/
         CopyBuiltInAssets(basePath);
@@ -85,6 +88,8 @@ public class FolderScaffolder : IFolderScaffolder
 
         // Copy built-in templates to _system/templates/ for customization
         CopyBuiltInTemplates(basePath);
+
+        ScaffoldTemplateAdditions(basePath);
 
         // Copy built-in assets to _assets/
         CopyBuiltInAssets(basePath);
@@ -382,6 +387,30 @@ public class FolderScaffolder : IFolderScaffolder
                     File.WriteAllBytes(destFile, content);
                 }
             }
+        }
+    }
+
+    private void ScaffoldTemplateAdditions(string basePath)
+    {
+        var destPath = Path.Combine(basePath, "_system", "template-additions");
+        Directory.CreateDirectory(destPath);
+
+        var readmePath = Path.Combine(destPath, "_README.md");
+        if (!File.Exists(readmePath))
+            File.WriteAllText(readmePath, TemplateGenerator.ReadBuiltInTemplate("template-additions-readme.md"));
+
+        var examplePath = Path.Combine(destPath, "extra-verify.md.example");
+        if (!File.Exists(examplePath))
+            File.WriteAllText(examplePath, TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
+    }
+
+    public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
+    {
+        foreach (var relativePath in TemplateCommand.FrameworkTemplateFiles)
+        {
+            var fullPath = Path.Combine(basePath, relativePath);
+            if (File.Exists(fullPath))
+                config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
         }
     }
 

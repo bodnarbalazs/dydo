@@ -29,3 +29,13 @@ Lost context? Run `dydo whoami`. It shows your identity, role, and task.
 
 If claimed: check your workspace for notes, return to your mode file.
 If not claimed: follow the flow above.
+
+## Warning
+
+Guard audits all actions. Violations are logged and traceable.
+Agents that bypass guardrails — even to complete their task faster — will be immediately terminated and their work
+discarded.
+
+If a guardrail blocks your work, first re-read the relevant docs and usage — most issues stem from not using the
+system correctly.
+If you're still blocked after that, report the issue to the user. Never work around it.

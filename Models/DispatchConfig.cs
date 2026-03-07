@@ -6,4 +6,7 @@ public class DispatchConfig
 {
     [JsonPropertyName("launchInTab")]
     public bool LaunchInTab { get; set; } = true;
+
+    [JsonPropertyName("autoClose")]
+    public bool AutoClose { get; set; } = false;
 }

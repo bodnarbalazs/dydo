@@ -17,6 +17,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 1. [about.md](../../../understand/about.md) — What this project is
 2. [how-to-use-docs.md](../../../guides/how-to-use-docs.md) — How to navigate the docs
 3. [writing-docs.md](../../../reference/writing-docs.md) — Documentation conventions and rules
+{{include:extra-must-reads}}
 
 ---
 

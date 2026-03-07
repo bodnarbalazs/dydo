@@ -49,6 +49,8 @@ dydo agent role <role> --task <task-name>
 
 **After** setting your role, you can read any project files.
 
+**Note:** Roles are not permanent — suggest a role change when the work calls for it.
+
 ---
 
 ## 3. Handle Inbox

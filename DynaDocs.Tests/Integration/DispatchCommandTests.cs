@@ -757,6 +757,139 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --auto-close Tests
+
+    [Fact]
+    public async Task Dispatch_WithAutoClose_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", autoClose: true);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_WithAutoClose_CreatesMarkerFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", autoClose: true);
+
+        result.AssertSuccess();
+
+        // Find which agent was selected (first free = Adele)
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        Assert.True(File.Exists(markerPath), "Auto-close marker file should exist");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithoutAutoClose_NoMarkerFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief");
+
+        result.AssertSuccess();
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        Assert.False(File.Exists(markerPath), "Auto-close marker file should not exist");
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoClose_CombinesWithTab()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", tab: true, autoClose: true);
+
+        result.AssertSuccess();
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        Assert.True(File.Exists(markerPath));
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoClose_CombinesWithEscalate()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", escalate: true, autoClose: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("[ESCALATED]");
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        Assert.True(File.Exists(markerPath));
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoClose_CombinesWithTo()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", to: "Brian", autoClose: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian");
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Brian/.auto-close");
+        Assert.True(File.Exists(markerPath));
+    }
+
+    #endregion
+
+    #region Shell Metacharacter Rejection Tests
+
+    [Theory]
+    [InlineData("Fixed hang when chaining dydo whoami && dydo agent status", "&&")]
+    [InlineData("Check this || that condition", "||")]
+    [InlineData("Run $(whoami) to find user", "$(")]
+    [InlineData("Use `command` for output", "`")]
+    public async Task Dispatch_BriefWithShellMetacharacters_Fails(string brief, string expectedPattern)
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", brief);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(expectedPattern);
+        result.AssertStderrContains("--brief-file");
+    }
+
+    [Theory]
+    [InlineData("Simple brief without special chars")]
+    [InlineData("Fixed the login & signup flow")]
+    [InlineData("Added retry logic (3 attempts max)")]
+    [InlineData("Refactored auth module - see PR #42")]
+    public async Task Dispatch_BriefWithSafeContent_Succeeds(string brief)
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", brief);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_BriefFile_BypassesShellMetacharacterCheck()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var briefPath = Path.Combine(TestDir, "brief.txt");
+        File.WriteAllText(briefPath, "Fixed hang when chaining dydo whoami && dydo agent status");
+
+        var result = await DispatchWithBriefFileAsync("code-writer", "my-task", briefPath);
+
+        result.AssertSuccess();
+
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*.md");
+        var content = File.ReadAllText(inboxFiles[0]);
+        Assert.Contains("&&", content);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> TaskCreateAsync(string name, string? description = null, string area = "general")
@@ -780,7 +913,8 @@ public class DispatchCommandTests : IntegrationTestBase
         string? to = null,
         bool escalate = false,
         bool tab = false,
-        bool newWindow = false)
+        bool newWindow = false,
+        bool autoClose = false)
     {
         var command = DispatchCommand.Create();
         var args = new List<string>
@@ -797,6 +931,7 @@ public class DispatchCommandTests : IntegrationTestBase
         if (escalate) { args.Add("--escalate"); }
         if (tab) { args.Add("--tab"); }
         if (newWindow) { args.Add("--new-window"); }
+        if (autoClose) { args.Add("--auto-close"); }
 
         return await RunAsync(command, args.ToArray());
     }

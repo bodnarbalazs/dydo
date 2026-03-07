@@ -52,7 +52,7 @@ public class HelpCommandTests
         Console.WriteLine("  agent claim <name>     Claim a specific agent");
         Console.WriteLine("  agent release          Release current agent");
         Console.WriteLine("  agent status [name]    Show agent status");
-        Console.WriteLine("  agent list [--free]    List all agents");
+        Console.WriteLine("  agent list [--free] [--all]  List agents (default: current human's)");
         Console.WriteLine("  agent role <role>      Set current agent's role");
         Console.WriteLine();
         Console.WriteLine("Agent Management Commands:");

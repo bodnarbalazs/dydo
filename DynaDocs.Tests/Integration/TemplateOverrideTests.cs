@@ -163,6 +163,145 @@ public class TemplateOverrideTests : IntegrationTestBase
             TemplateGenerator.ReadBuiltInTemplate("nonexistent.template.md"));
     }
 
+    #region Template Additions
+
+    [Fact]
+    public async Task Init_CreatesTemplateAdditionsFolder()
+    {
+        await InitProjectAsync();
+
+        AssertDirectoryExists("dydo/_system/template-additions");
+    }
+
+    [Fact]
+    public async Task Init_CreatesReadmeInAdditions()
+    {
+        await InitProjectAsync();
+
+        AssertFileExists("dydo/_system/template-additions/_README.md");
+        var content = ReadFile("dydo/_system/template-additions/_README.md");
+        Assert.Contains("Template Additions", content);
+    }
+
+    [Fact]
+    public async Task Init_CreatesExampleFile()
+    {
+        await InitProjectAsync();
+
+        AssertFileExists("dydo/_system/template-additions/extra-verify.md.example");
+    }
+
+    [Fact]
+    public async Task Init_ExampleFile_NotResolvedByInclude()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        var result = await AgentNewAsync("Zara", "alice");
+        result.AssertSuccess();
+        SetHuman("alice");
+        var claimResult = await ClaimAgentAsync("Zara");
+        claimResult.AssertSuccess();
+
+        // The .example file should NOT be resolved
+        var modeContent = ReadFile("dydo/agents/Zara/modes/code-writer.md");
+        Assert.DoesNotContain("{{include:", modeContent);
+        Assert.DoesNotContain("Project-specific checks", modeContent);
+    }
+
+    [Fact]
+    public async Task Init_StoresFrameworkHashes()
+    {
+        await InitProjectAsync();
+
+        var configContent = ReadFile("dydo.json");
+        Assert.Contains("frameworkHashes", configContent);
+    }
+
+    [Fact]
+    public async Task AgentClaim_WithAdditionFile_IncludesInModeFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        // Create an active addition file
+        var additionsPath = Path.Combine(TestDir, "dydo/_system/template-additions");
+        File.WriteAllText(Path.Combine(additionsPath, "extra-verify.md"),
+            "5. Run gap_check.py — Project-specific verification");
+
+        var result = await AgentNewAsync("Zara", "alice");
+        result.AssertSuccess();
+        SetHuman("alice");
+        var claimResult = await ClaimAgentAsync("Zara");
+        claimResult.AssertSuccess();
+
+        var modeContent = ReadFile("dydo/agents/Zara/modes/code-writer.md");
+        Assert.Contains("5. Run gap_check.py", modeContent);
+        Assert.DoesNotContain("{{include:", modeContent);
+    }
+
+    [Fact]
+    public async Task AgentClaim_WithoutAdditionFile_CleanOutput()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        var result = await AgentNewAsync("Zara", "alice");
+        result.AssertSuccess();
+        SetHuman("alice");
+        var claimResult = await ClaimAgentAsync("Zara");
+        claimResult.AssertSuccess();
+
+        var modeContent = ReadFile("dydo/agents/Zara/modes/code-writer.md");
+        Assert.DoesNotContain("{{include:", modeContent);
+    }
+
+    [Fact]
+    public async Task AgentClaim_SharedAddition_AppearsInMultipleModes()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        // Create shared addition for must-reads (used by all modes)
+        var additionsPath = Path.Combine(TestDir, "dydo/_system/template-additions");
+        File.WriteAllText(Path.Combine(additionsPath, "extra-must-reads.md"),
+            "99. [security.md](security.md) — Security guidelines");
+
+        var result = await AgentNewAsync("Zara", "alice");
+        result.AssertSuccess();
+        SetHuman("alice");
+        var claimResult = await ClaimAgentAsync("Zara");
+        claimResult.AssertSuccess();
+
+        // Check code-writer mode
+        var codeWriterContent = ReadFile("dydo/agents/Zara/modes/code-writer.md");
+        Assert.Contains("99. [security.md](security.md)", codeWriterContent);
+
+        // Check reviewer mode
+        var reviewerContent = ReadFile("dydo/agents/Zara/modes/reviewer.md");
+        Assert.Contains("99. [security.md](security.md)", reviewerContent);
+    }
+
+    [Fact]
+    public async Task Join_DoesNotOverwriteExistingAdditions()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Create a custom addition
+        var additionsPath = Path.Combine(TestDir, "dydo/_system/template-additions");
+        File.WriteAllText(Path.Combine(additionsPath, "custom-step.md"), "Custom content");
+
+        // Join as another user
+        await JoinProjectAsync("none", "alice", 0);
+
+        // Verify custom addition was NOT deleted
+        Assert.True(File.Exists(Path.Combine(additionsPath, "custom-step.md")));
+        var content = File.ReadAllText(Path.Combine(additionsPath, "custom-step.md"));
+        Assert.Equal("Custom content", content);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> AgentNewAsync(string name, string human)

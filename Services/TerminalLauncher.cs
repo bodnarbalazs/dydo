@@ -3,22 +3,6 @@ namespace DynaDocs.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-/// <summary>
-/// Interface for starting processes. Enables testing without actually launching terminals.
-/// </summary>
-public interface IProcessStarter
-{
-    void Start(ProcessStartInfo psi);
-}
-
-/// <summary>
-/// Interface for detecting installed terminal applications. Enables testing without filesystem checks.
-/// </summary>
-public interface ITerminalDetector
-{
-    bool IsAvailable(string appName);
-}
-
 public class TerminalLauncher
 {
     private readonly IProcessStarter _processStarter;

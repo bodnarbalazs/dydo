@@ -353,8 +353,9 @@ public static class FixCommand
     {
         var normalized = PathUtils.NormalizePath(relativePath);
 
-        // Skip template files
-        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+        // Skip template files and template additions
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase) ||
+            normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
             return true;
 
         // Skip agent workspace files

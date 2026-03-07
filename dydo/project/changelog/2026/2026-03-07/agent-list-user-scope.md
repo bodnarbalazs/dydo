@@ -1,10 +1,7 @@
 ---
 area: general
-name: agent-list-user-scope
-status: human-reviewed
-created: 2026-03-07T19:41:13.5514529Z
-assigned: Iris
-updated: 2026-03-07T21:29:03.4502253Z
+type: changelog
+date: 2026-03-07
 ---
 
 # Task: agent-list-user-scope
@@ -21,8 +18,11 @@ updated: 2026-03-07T21:29:03.4502253Z
 
 ## Files Changed
 
-- `dydo/reference/dydo-commands.md` — Updated `agent list` docs to reflect user-scoped default, `--all` flag
-- `dydo/reference/about-dynadocs.md` — Updated agent list entry in command reference table
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentCommand.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Program.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Modified
+
 
 ## Review Summary
 
@@ -45,3 +45,7 @@ Awaiting human approval.
 - Notes: LGTM. Single-line fix in HelpCommandTests.cs:55 correctly syncs test help text with Program.cs:56. All 9 tests pass. Clean, minimal change.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-07 22:42

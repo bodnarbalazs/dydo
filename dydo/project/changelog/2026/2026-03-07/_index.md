@@ -11,15 +11,23 @@ Index of 2026-03-07 documentation.
 
 ## Contents
 
+- [Agent List User Scope](./agent-list-user-scope.md)
 - [Audit Snapshot Compaction](./audit-snapshot-compaction.md)
 - [Auto Close Dispatch Investigation](./auto-close-dispatch-investigation.md)
+- [Auto Close Dispatch](./auto-close-dispatch.md)
 - [Auto Close Swarm Feature](./auto-close-swarm-feature.md)
 - [Auto Compact On Approve](./auto-compact-on-approve.md)
 - [Cd Git Guard Rule](./cd-git-guard-rule.md)
 - [Configurable Source Paths](./configurable-source-paths.md)
+- [Dispatch Mac Tab Issue](./dispatch-mac-tab-issue.md)
 - [Dydo Improvements V2](./dydo-improvements-v2.md)
 - [Filename Sanitization Brief File](./filename-sanitization-brief-file.md)
+- [Fix Gaps](./fix-gaps.md)
 - [Guard Cd Check Improvement](./guard-cd-check-improvement.md)
+- [Help Meta Audit](./help-meta-audit.md)
+- [License Change](./license-change.md)
 - [Task Approve All Flag](./task-approve-all-flag.md)
+- [Template Update Design](./template-update-design.md)
+- [Template Update System](./template-update-system.md)
 - [Test Paths](./test-paths.md)
 - [Whoami Concurrency Resilience](./whoami-concurrency-resilience.md)

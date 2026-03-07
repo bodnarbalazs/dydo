@@ -128,7 +128,7 @@ public static class TemplateGenerator
         return null;
     }
 
-    internal static string ResolveIncludes(string content, string? basePath = null)
+    public static string ResolveIncludes(string content, string? basePath = null)
     {
         var additionsPath = GetTemplateAdditionsPath(basePath);
 

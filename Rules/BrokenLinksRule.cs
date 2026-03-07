@@ -20,8 +20,9 @@ public class BrokenLinksRule : RuleBase
     {
         var normalized = PathUtils.NormalizePath(doc.RelativePath);
 
-        // Skip template files - links are relative to deployment location, not storage
-        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+        // Skip template files and template additions
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase) ||
+            normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
             yield break;
 
         foreach (var link in doc.Links.Where(l => l.Type != LinkType.External))

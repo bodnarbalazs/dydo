@@ -281,7 +281,7 @@ public static class TemplateCommand
         return ComputeHash(onDisk) == storedHash ? onDisk : embeddedContent;
     }
 
-    internal static string ComputeHash(string content)
+    public static string ComputeHash(string content)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
         return Convert.ToHexStringLower(bytes);

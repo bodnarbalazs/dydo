@@ -1,0 +1,220 @@
+{
+  "session": "ff9aad3d-9a28-46e6-b8d8-15300936d17e",
+  "human": "balazs",
+  "started": "2026-03-07T22:37:51.3898281Z",
+  "git_head": "ad14e9f",
+  "events": [
+    {
+      "ts": "2026-03-07T22:37:51.3886742Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T22:37:52.3509118Z",
+      "event": "Blocked",
+      "tool": "grep",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-07T22:38:00.5598333Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-07T22:38:00.6907521Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\FixCommand.cs",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-07T22:38:05.8209513Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls C:/Users/User/Desktop/Projects/DynaDocs/Commands/*.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:00.0546055Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Commands/FixCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:00.9417731Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Services/TerminalLauncher.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:01.8695053Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Services/IProcessStarter.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:02.0814602Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Services/ITerminalDetector.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:10.0747707Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Commands/AgentCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:10.5428388Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:11.0051288Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Commands/TaskCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:11.4685761Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Program.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:21.9303713Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs | head -150"
+    },
+    {
+      "ts": "2026-03-07T22:41:22.5833728Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cd C:/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 git diff HEAD -- . | head -500",
+      "reason": "Needless cd compound"
+    },
+    {
+      "ts": "2026-03-07T22:41:25.4724289Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- . 2\u003E/dev/null | head -500"
+    },
+    {
+      "ts": "2026-03-07T22:41:25.7870509Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --cached -- . 2\u003E/dev/null | head -500"
+    },
+    {
+      "ts": "2026-03-07T22:41:32.6183182Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -10"
+    },
+    {
+      "ts": "2026-03-07T22:41:33.127163Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline -20"
+    },
+    {
+      "ts": "2026-03-07T22:41:35.1163722Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022TryReadStdinJson\\|stdin\\|Console\\.In\\|ReadLine\\|ReadToEnd\\|timeout\\|Timeout\\|CancellationTo..."
+    },
+    {
+      "ts": "2026-03-07T22:41:40.2368295Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -n \u0027670,710p\u0027 C:/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:40.7043751Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 3a49930 --stat"
+    },
+    {
+      "ts": "2026-03-07T22:41:49.8315099Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022Console\\.ReadLine\\|Console\\.In\\.\\|Console\\.Read(\u0022 C:/Users/User/Desktop/Projects/DynaDocs/..."
+    },
+    {
+      "ts": "2026-03-07T22:41:50.5129065Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline --diff-filter=M -- Commands/GuardCommand.cs | head -10"
+    },
+    {
+      "ts": "2026-03-07T22:41:53.6230562Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show c40dfab -- Commands/GuardCommand.cs | head -80"
+    },
+    {
+      "ts": "2026-03-07T22:41:54.258389Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff ad14e9f..HEAD -- Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:41:58.2087776Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all -p -S \u0022TryReadStdinJson\u0022 -- Commands/GuardCommand.cs | head -100"
+    },
+    {
+      "ts": "2026-03-07T22:42:01.5076756Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all -p -S \u0022TimeSpan.FromSeconds\u0022 -- Commands/GuardCommand.cs | head -60"
+    },
+    {
+      "ts": "2026-03-07T22:42:09.9783895Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Commands/WhoamiCommand.cs"
+    },
+    {
+      "ts": "2026-03-07T22:42:10.528471Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022Console\\.ReadLine\\|Console\\.In\\.\\|ReadToEnd\\|KeyAvailable\\|IsInputRedirected\\|timeout\\|Tim..."
+    },
+    {
+      "ts": "2026-03-07T22:42:16.647541Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -n \u0027570,640p\u0027 C:/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs"
+    },
+    {
+      "ts": "2026-03-07T22:42:18.1549315Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022Console\\.\\|stdin\\|ReadLine\\|ReadToEnd\\|Process\\.Start\\|WaitForExit\u0022 C:/Users/User/Desktop/P..."
+    },
+    {
+      "ts": "2026-03-07T22:42:21.9968582Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n C:/Users/User/Desktop/Projects/DynaDocs/Services/ProcessUtils.cs"
+    },
+    {
+      "ts": "2026-03-07T22:42:27.1010354Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -n \u0027225,245p\u0027 C:/Users/User/Desktop/Projects/DynaDocs/Services/AuditService.cs"
+    },
+    {
+      "ts": "2026-03-07T22:42:27.4631624Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -n \u002760,110p\u0027 C:/Users/User/Desktop/Projects/DynaDocs/Services/SnapshotService.cs"
+    }
+  ]
+}

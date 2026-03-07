@@ -13,8 +13,9 @@ public class NamingRule : RuleBase
     {
         var normalized = PathUtils.NormalizePath(doc.RelativePath);
 
-        // Skip template files - they use .template.md naming by design
-        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+        // Skip template files and template additions
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase) ||
+            normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
             yield break;
 
         // Skip agent workspace files - agent names are PascalCase identities by design

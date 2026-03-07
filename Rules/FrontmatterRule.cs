@@ -18,8 +18,9 @@ public class FrontmatterRule : RuleBase
             yield break;
         }
 
-        // Skip template files - they use a different frontmatter schema (agent/mode/type:workflow)
-        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase))
+        // Skip template files and template additions
+        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase) ||
+            normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
         {
             yield break;
         }

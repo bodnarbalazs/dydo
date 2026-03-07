@@ -184,7 +184,7 @@ public class SnapshotCompactionService
     /// Unrolls all snapshots, creates an optimal baseline, rebuilds all deltas.
     /// Returns stats about the compaction.
     /// </summary>
-    public static CompactionResult Compact(string yearDir, IAuditService auditService)
+    public static CompactionResult Compact(string yearDir)
     {
         var result = new CompactionResult();
 
@@ -332,7 +332,10 @@ public class SnapshotCompactionService
         // Deterministic ID from snapshot content
         var content = string.Join("\n", snapshot.Files) + "\n" +
                       string.Join("\n", snapshot.Folders) + "\n" +
-                      snapshot.GitCommit;
+                      snapshot.GitCommit + "\n" +
+                      string.Join("\n", snapshot.DocLinks
+                          .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                          .Select(kv => kv.Key + ":" + string.Join(",", kv.Value.OrderBy(v => v, StringComparer.OrdinalIgnoreCase))));
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(content));
         return Convert.ToHexString(hash).ToLowerInvariant()[..12];
     }

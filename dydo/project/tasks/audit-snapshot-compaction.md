@@ -1,7 +1,7 @@
 ---
 area: general
 name: audit-snapshot-compaction
-status: review-pending
+status: human-reviewed
 created: 2026-03-06T20:39:20.5783166Z
 assigned: Charlie
 ---
@@ -28,5 +28,14 @@ Implemented baseline+delta snapshot compaction for audit sessions. New models: S
 - Date: 2026-03-06 23:42
 - Result: PASSED
 - Notes: LGTM. Clean baseline+delta compaction implementation. Models are minimal and correct. Service has proper recursion depth protection, caching, case-insensitive path handling, and a clear 4-phase compaction approach. 22 meaningful tests cover delta computation, round-trips, chain resolution, full compaction cycles, backward compat, and fixture validation. All 1337 tests pass. No security issues, no unnecessary complexity.
+
+Awaiting human approval.
+
+## Code Review
+
+- Reviewed by: Emma
+- Date: 2026-03-07 00:04
+- Result: PASSED
+- Notes: Re-reviewed fixes: (1) Compact method signature correctly reduced to single yearDir parameter, all 10 call sites updated. (2) ComputeBaselineId now includes DocLinks with deterministic case-insensitive ordering for correct content-addressing. All 1337 tests pass. LGTM.
 
 Awaiting human approval.

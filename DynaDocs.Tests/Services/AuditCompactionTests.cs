@@ -359,8 +359,7 @@ public class AuditCompactionTests : IDisposable
             WriteSession(session);
         }
 
-        var auditService = new AuditService(basePath: _testDir);
-        var result = SnapshotCompactionService.Compact(_yearDir, auditService);
+        var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.Equal(5, result.SessionsProcessed);
         Assert.True(result.NewTotalSizeBytes < result.OldTotalSizeBytes,
@@ -401,8 +400,7 @@ public class AuditCompactionTests : IDisposable
             WriteSession(session);
         }
 
-        var auditService = new AuditService(basePath: _testDir);
-        SnapshotCompactionService.Compact(_yearDir, auditService);
+        SnapshotCompactionService.Compact(_yearDir);
 
         // Load baselines for resolution
         var baselines = new Dictionary<string, SnapshotBaseline>();
@@ -447,8 +445,7 @@ public class AuditCompactionTests : IDisposable
         WriteSession(withSnap);
         WriteSession(withoutSnap);
 
-        var auditService = new AuditService(basePath: _testDir);
-        var result = SnapshotCompactionService.Compact(_yearDir, auditService);
+        var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.Equal(2, result.SessionsProcessed);
 
@@ -477,8 +474,7 @@ public class AuditCompactionTests : IDisposable
         // Create a session with inline snapshot
         WriteSession(MakeSession("s1", MakeSnapshot(["a.cs"], ["src"])));
 
-        var auditService = new AuditService(basePath: _testDir);
-        var result = SnapshotCompactionService.Compact(_yearDir, auditService);
+        var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.Equal(1, result.OldBaselinesRemoved);
 
@@ -503,11 +499,10 @@ public class AuditCompactionTests : IDisposable
             WriteSession(s);
         }
 
-        var auditService = new AuditService(basePath: _testDir);
-        SnapshotCompactionService.Compact(_yearDir, auditService);
+        SnapshotCompactionService.Compact(_yearDir);
 
         // Second compaction should still work
-        var result = SnapshotCompactionService.Compact(_yearDir, auditService);
+        var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.Equal(3, result.SessionsProcessed);
 
@@ -570,8 +565,7 @@ public class AuditCompactionTests : IDisposable
         };
         WriteSession(compacted);
 
-        var auditService = new AuditService(basePath: _testDir);
-        var result = SnapshotCompactionService.Compact(_yearDir, auditService);
+        var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.Equal(2, result.SessionsProcessed);
 
@@ -603,8 +597,7 @@ public class AuditCompactionTests : IDisposable
 
         var originalSize = Directory.GetFiles(_yearDir, "*.json").Sum(f => new FileInfo(f).Length);
 
-        var auditService = new AuditService(basePath: _testDir);
-        var result = SnapshotCompactionService.Compact(_yearDir, auditService);
+        var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.True(result.SessionsProcessed > 100, $"Expected >100 sessions, got {result.SessionsProcessed}");
         Assert.True(result.CompressionRatio > 0.3, $"Expected >30% compression, got {result.CompressionRatio:P1}");
@@ -641,8 +634,7 @@ public class AuditCompactionTests : IDisposable
                 originals[session.SessionId] = CloneSnapshot(session.Snapshot);
         }
 
-        var auditService = new AuditService(basePath: _testDir);
-        SnapshotCompactionService.Compact(_yearDir, auditService);
+        SnapshotCompactionService.Compact(_yearDir);
 
         var baselines = LoadAllBaselines();
         var sessionFiles = Directory.GetFiles(_yearDir, "*.json")

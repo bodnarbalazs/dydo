@@ -175,7 +175,7 @@ public static class AuditCommand
             }
 
             Console.WriteLine($"Compacting audit snapshots for {year}...");
-            var result = SnapshotCompactionService.Compact(yearDir, auditService);
+            var result = SnapshotCompactionService.Compact(yearDir);
 
             Console.WriteLine($"Sessions processed: {result.SessionsProcessed}");
             Console.WriteLine($"Old total size:     {FormatBytes(result.OldTotalSizeBytes)}");

@@ -279,6 +279,48 @@ public class AuditCompactionTests : IDisposable
     }
 
     [Fact]
+    public void ResolveSnapshot_DeepSessionChain_ResolvesCorrectly()
+    {
+        // Build a chain deeper than MaxChainDepth: baseline → s1 → s2 → ... → s8
+        // Session chains resolve via caching, so deep chains work correctly.
+        var baselineSnapshot = MakeSnapshot(["a.cs"], ["src"], commit: "base");
+        var baseline = new SnapshotBaseline
+        {
+            Id = "bl-1",
+            Created = DateTime.UtcNow,
+            Snapshot = baselineSnapshot
+        };
+
+        var sessions = new Dictionary<string, AuditSession>();
+        var prevId = "bl-1";
+        for (var i = 1; i <= 8; i++)
+        {
+            var s = MakeSession($"s{i}");
+            s.SnapshotRef = new SnapshotRef
+            {
+                BaseId = prevId,
+                Depth = i,
+                Delta = new SnapshotDelta { FilesAdded = [$"file{i}.cs"] }
+            };
+            sessions[$"s{i}"] = s;
+            prevId = $"s{i}";
+        }
+
+        var cache = new Dictionary<string, ProjectSnapshot>();
+        var resolved = SnapshotCompactionService.ResolveSnapshot(
+            sessions["s8"],
+            id => id == "bl-1" ? baseline : null,
+            id => sessions.GetValueOrDefault(id),
+            cache);
+
+        Assert.NotNull(resolved);
+        // Should have original file + all 8 added files
+        Assert.Contains("a.cs", resolved.Files);
+        for (var i = 1; i <= 8; i++)
+            Assert.Contains($"file{i}.cs", resolved.Files);
+    }
+
+    [Fact]
     public void ResolveSnapshot_NoSnapshotOrRef_ReturnsNull()
     {
         var session = MakeSession("s1");

@@ -301,4 +301,8 @@ Currently it's tested to work with Claude Code (hooks setup), but the principle 
 
 ## License
 
-MIT — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
+AGPL-3.0 — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
+
+**Free to use, always.** You can use dydo as a tool on any project, including commercial ones. The AGPL obligations apply only if you modify or embed dydo's source code in your own software — for example, shipping dydo as part of a product you distribute or offer as a service.
+
+For commercial licensing without AGPL obligations, [open a GitHub issue](https://github.com/bodnarbalazs/dydo/issues).

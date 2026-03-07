@@ -497,6 +497,22 @@ public static class TaskCommand
         Console.WriteLine($"Changelog entry created: {relativeChangelogPath}");
         Console.WriteLine("Hub files updated.");
 
+        // Auto-compact audit snapshots for current year
+        try
+        {
+            var currentYearDir = Path.Combine(configService.GetAuditPath(), DateTime.UtcNow.ToString("yyyy"));
+            if (Directory.Exists(currentYearDir))
+            {
+                var compactionResult = SnapshotCompactionService.Compact(currentYearDir);
+                if (compactionResult.SessionsProcessed > 0)
+                    Console.WriteLine($"Audit snapshots compacted: {compactionResult.SessionsProcessed} sessions, {compactionResult.CompressionRatio:P0} reduction.");
+            }
+        }
+        catch
+        {
+            // Compaction failure should not block approval
+        }
+
         return ExitCodes.Success;
     }
 

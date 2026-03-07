@@ -646,7 +646,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Coaching: cd+git Compound
+    #region Coaching: cd Compound
 
     [Fact]
     public async Task Guard_CdGitCompound_BlocksWithCoachingMessage()
@@ -661,12 +661,12 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("Don't combine cd with git");
-        result.AssertStderrContains("Just run: git diff --name-only");
+        result.AssertStderrContains("Don't chain cd with other commands");
+        result.AssertStderrContains("just run: git diff --name-only");
     }
 
     [Fact]
-    public async Task Guard_CdNonGitCompound_NotBlocked()
+    public async Task Guard_CdNonGitCompound_Blocked()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -676,7 +676,9 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && ls\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("Don't chain cd with other commands");
     }
 
     #endregion

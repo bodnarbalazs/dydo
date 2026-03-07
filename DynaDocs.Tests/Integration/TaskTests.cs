@@ -48,6 +48,23 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_Create_WithSpecialChars_SanitizesFilename()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await TaskCreateAsync("Review: Auth & Email", area: "general");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("sanitized");
+
+        // File should use sanitized name
+        AssertFileExists("dydo/project/tasks/Review- Auth & Email.md");
+
+        // Original name preserved in content
+        AssertFileContains("dydo/project/tasks/Review- Auth & Email.md", "Review: Auth & Email");
+    }
+
+    [Fact]
     public async Task Task_Create_DuplicateFails()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -631,6 +648,81 @@ public class TaskTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("Specify a task name or use --all");
+    }
+
+    [Fact]
+    public async Task Task_Approve_CompactsAuditSnapshots()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("compact-task", area: "general");
+        await TaskReadyForReviewAsync("compact-task", "Done");
+
+        // Create audit files with inline snapshots (pre-compaction format)
+        var year = DateTime.UtcNow.ToString("yyyy");
+        var auditDir = Path.Combine(TestDir, "dydo", "_system", "audit", year);
+        Directory.CreateDirectory(auditDir);
+
+        var snapshot = new DynaDocs.Models.ProjectSnapshot
+        {
+            GitCommit = "abc123",
+            Files = ["src/file1.cs", "src/file2.cs", "src/file3.cs"],
+            Folders = ["src/"],
+            DocLinks = new() { ["a.md"] = ["b.md"] }
+        };
+
+        for (var i = 0; i < 3; i++)
+        {
+            var session = new DynaDocs.Models.AuditSession
+            {
+                SessionId = $"session-{i}",
+                AgentName = "Adele",
+                Started = DateTime.UtcNow.AddHours(-i),
+                Events = [],
+                Snapshot = snapshot
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(session, new System.Text.Json.JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
+            File.WriteAllText(
+                Path.Combine(auditDir, $"{year}-01-01-session-{i}.json"), json);
+        }
+
+        // Approve — should trigger compaction
+        var result = await TaskApproveAsync("compact-task");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("compacted");
+
+        // Verify baseline was created
+        var baselines = Directory.GetFiles(auditDir, "_baseline-*.json");
+        Assert.Single(baselines);
+
+        // Verify sessions now use snapshot_ref instead of inline snapshot
+        var sessionFiles = Directory.GetFiles(auditDir, "*.json")
+            .Where(f => !Path.GetFileName(f).StartsWith("_baseline-"))
+            .ToList();
+        foreach (var file in sessionFiles)
+        {
+            var content = File.ReadAllText(file);
+            Assert.Contains("snapshot_ref", content);
+            Assert.DoesNotContain("\"snapshot\"", content);
+        }
+    }
+
+    [Fact]
+    public async Task Task_Approve_CompactionFailure_DoesNotBlockApproval()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("no-audit-task", area: "general");
+        await TaskReadyForReviewAsync("no-audit-task", "Done");
+
+        // No audit directory exists — compaction should silently skip
+        var result = await TaskApproveAsync("no-audit-task");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("approved");
+        Assert.DoesNotContain("compacted", result.Stdout);
     }
 
     [Fact]

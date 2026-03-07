@@ -1,0 +1,57 @@
+{
+  "session": "03e433a9-8194-4d3d-8157-c744a955e88e",
+  "human": "balazs",
+  "started": "2026-03-06T22:58:22.650614Z",
+  "git_head": "b0a089a",
+  "events": [
+    {
+      "ts": "2026-03-06T22:58:22.6495956Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-06T22:58:26.1509978Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cd /c/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 dotnet run -- whoami"
+    },
+    {
+      "ts": "2026-03-06T22:58:31.5710364Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-06T22:58:35.3907151Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cd /c/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 find . -name \u0022BashCommandAnalyzer*\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-06T22:58:38.1604627Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\BashCommandAnalyzer.cs",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-06T22:58:41.3865761Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cd /c/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 cat -n Services/BashCommandAnalyzer.cs"
+    },
+    {
+      "ts": "2026-03-06T22:58:44.9088115Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cd /c/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 grep -n \u0022CheckDangerous\\|dangerous\\|DangerousPattern\u0022 ..."
+    },
+    {
+      "ts": "2026-03-06T22:58:47.9267784Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cd /c/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 sed -n \u0027130,310p\u0027 Services/BashCommandAnalyzer.cs"
+    }
+  ]
+}

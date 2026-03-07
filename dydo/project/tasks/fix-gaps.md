@@ -1,12 +1,12 @@
 ---
 area: general
-name: test-paths
+name: fix-gaps
 status: pending
-created: 2026-03-06T23:24:24.4515593Z
-assigned: Brian
+created: 2026-03-07T16:16:48.1775600Z
+assigned: Adele
 ---
 
-# Task: test-paths
+# Task: fix-gaps
 
 (No description)
 

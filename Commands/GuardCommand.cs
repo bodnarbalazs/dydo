@@ -492,23 +492,22 @@ public static partial class GuardCommand
         }
 
         // ============================================================
-        // COACHING: Block needless cd+git compound commands
+        // COACHING: Block needless cd+command compounds
         // ============================================================
-        var (isCdGit, cdPath, gitCmd) = bashAnalyzer.DetectNeedlessCdGit(command);
-        if (isCdGit)
+        var (isCdChain, cdPath, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
+        if (isCdChain)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
                 EventType = AuditEventType.Blocked,
                 Tool = "bash",
                 Command = TruncateCommand(command),
-                BlockReason = "Needless cd+git compound"
+                BlockReason = "Needless cd compound"
             });
 
-            Console.Error.WriteLine("BLOCKED: Don't combine cd with git commands — git is auto-approved but compound commands require manual approval.");
-            Console.Error.WriteLine($"  Instead of: cd {cdPath} && git {gitCmd}");
-            Console.Error.WriteLine($"  Just run: git {gitCmd}");
-            Console.Error.WriteLine("  (You're already in the working directory, or use absolute paths.)");
+            Console.Error.WriteLine("BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.");
+            Console.Error.WriteLine($"  If you need to change directory, run cd separately first.");
+            Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
             return ExitCodes.ToolError;
         }
 

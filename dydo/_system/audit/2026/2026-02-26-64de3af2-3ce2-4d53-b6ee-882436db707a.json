@@ -1,0 +1,14 @@
+{
+  "session": "64de3af2-3ce2-4d53-b6ee-882436db707a",
+  "agent": "Adele",
+  "human": "balazs",
+  "started": "2026-02-26T11:46:46.5647631Z",
+  "git_head": "b0a089a",
+  "events": [
+    {
+      "ts": "2026-02-26T11:46:46.5643029Z",
+      "event": "Release",
+      "agent": "Adele"
+    }
+  ]
+}

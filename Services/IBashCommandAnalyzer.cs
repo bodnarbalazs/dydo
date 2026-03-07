@@ -17,9 +17,9 @@ public interface IBashCommandAnalyzer
     (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command);
 
     /// <summary>
-    /// Detect needless cd+git compound commands (e.g. "cd /path && git diff").
+    /// Detect needless cd+command compounds (e.g. "cd /path && git diff", "cd /path && grep ...").
     /// </summary>
-    (bool IsMatch, string? CdPath, string? GitCommand) DetectNeedlessCdGit(string command);
+    (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command);
 }
 
 /// <summary>

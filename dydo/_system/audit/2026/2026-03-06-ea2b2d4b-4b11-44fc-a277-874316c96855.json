@@ -1,0 +1,949 @@
+{
+  "session": "ea2b2d4b-4b11-44fc-a277-874316c96855",
+  "agent": "Emma",
+  "human": "balazs",
+  "started": "2026-03-06T23:15:42.9047965Z",
+  "git_head": "b0a089a",
+  "events": [
+    {
+      "ts": "2026-03-06T23:15:42.903868Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-06T23:15:45.9692073Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workflow.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-06T23:15:52.721964Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:15:58.3046389Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\reviewer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-06T23:16:01.4141427Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "whoami-concurrency-resilience"
+    },
+    {
+      "ts": "2026-03-06T23:19:11.0539592Z",
+      "event": "Release",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:19:26.6647879Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:19:35.4676184Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "cd-git-guard-rule"
+    },
+    {
+      "ts": "2026-03-06T23:19:38.9034008Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:23:58.9712617Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:24:01.6766205Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:24:18.4426051Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:24:22.2420464Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "audit-snapshot-compaction"
+    },
+    {
+      "ts": "2026-03-06T23:24:24.4521957Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "test-paths"
+    },
+    {
+      "ts": "2026-03-06T23:26:28.8483521Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:26:38.5803317Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:26:41.1782928Z",
+      "event": "Release",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:26:51.8105048Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:27:03.4969758Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "whoami-concurrency-resilience"
+    },
+    {
+      "ts": "2026-03-06T23:30:37.0540463Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:30:52.951664Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:31:06.4967851Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "whoami-concurrency-resilience"
+    },
+    {
+      "ts": "2026-03-06T23:37:52.9335519Z",
+      "event": "Release",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:37:53.2149836Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:37:53.3617185Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "audit-snapshot-compaction"
+    },
+    {
+      "ts": "2026-03-06T23:38:27.5939145Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:38:30.4877985Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:38:38.3928372Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "audit-snapshot-compaction"
+    },
+    {
+      "ts": "2026-03-06T23:43:03.3336406Z",
+      "event": "Release",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:53:19.5634939Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:53:26.0017822Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "audit-snapshot-compaction"
+    },
+    {
+      "ts": "2026-03-06T23:54:43.0946675Z",
+      "event": "Release",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:58:05.5822726Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:58:09.3790547Z",
+      "event": "Release",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-06T23:58:28.5881013Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-06T23:58:43.3575354Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "audit-snapshot-compaction"
+    },
+    {
+      "ts": "2026-03-07T00:02:06.1577347Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-07T00:02:38.5758197Z",
+      "event": "Claim",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-07T00:02:38.8033161Z",
+      "event": "Release",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-07T00:02:47.2488298Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-07T00:02:57.958852Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "audit-snapshot-compaction"
+    },
+    {
+      "ts": "2026-03-07T00:04:41.8018035Z",
+      "event": "Release",
+      "agent": "Emma"
+    }
+  ],
+  "snapshot": {
+    "git_commit": "b0a089aaf0b0df8bc8a81518fd792429baf47225",
+    "files": [
+      ".claude/settings.local.json",
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml",
+      ".gitignore",
+      ".idea/.idea.DynaDocs/.idea/.gitignore",
+      ".idea/.idea.DynaDocs/.idea/encodings.xml",
+      ".idea/.idea.DynaDocs/.idea/indexLayout.xml",
+      ".idea/.idea.DynaDocs/.idea/vcs.xml",
+      "CLAUDE.md",
+      "Commands/AgentCommand.cs",
+      "Commands/AuditCommand.cs",
+      "Commands/CheckCommand.cs",
+      "Commands/CleanCommand.cs",
+      "Commands/CompleteCommand.cs",
+      "Commands/CompletionsCommand.cs",
+      "Commands/DispatchCommand.cs",
+      "Commands/FixCommand.cs",
+      "Commands/GraphCommand.cs",
+      "Commands/GuardCommand.cs",
+      "Commands/InboxCommand.cs",
+      "Commands/IndexCommand.cs",
+      "Commands/InitCommand.cs",
+      "Commands/ReviewCommand.cs",
+      "Commands/TaskCommand.cs",
+      "Commands/WhoamiCommand.cs",
+      "Commands/WorkspaceCommand.cs",
+      "dydo_diagram.excalidraw",
+      "dydo_diagram.svg",
+      "dydo.json",
+      "dydo/_assets/dydo-diagram.svg",
+      "dydo/_system/audit/_audit.md",
+      "dydo/_system/templates/agent-workflow.template.md",
+      "dydo/_system/templates/mode-co-thinker.template.md",
+      "dydo/_system/templates/mode-code-writer.template.md",
+      "dydo/_system/templates/mode-docs-writer.template.md",
+      "dydo/_system/templates/mode-interviewer.template.md",
+      "dydo/_system/templates/mode-planner.template.md",
+      "dydo/_system/templates/mode-reviewer.template.md",
+      "dydo/_system/templates/mode-tester.template.md",
+      "dydo/files-off-limits.md",
+      "dydo/glossary.md",
+      "dydo/guides/_guides.md",
+      "dydo/guides/_index.md",
+      "dydo/guides/coding-standards.md",
+      "dydo/guides/how-to-use-docs.md",
+      "dydo/index.md",
+      "dydo/project/_index.md",
+      "dydo/project/_project.md",
+      "dydo/project/changelog/_changelog.md",
+      "dydo/project/changelog/_index.md",
+      "dydo/project/decisions/_decisions.md",
+      "dydo/project/decisions/_index.md",
+      "dydo/project/pitfalls/_index.md",
+      "dydo/project/pitfalls/_pitfalls.md",
+      "dydo/project/tasks/_index.md",
+      "dydo/project/tasks/_tasks.md",
+      "dydo/reference/_index.md",
+      "dydo/reference/_reference.md",
+      "dydo/reference/about-dynadocs.md",
+      "dydo/reference/dydo-commands.md",
+      "dydo/reference/writing-docs.md",
+      "dydo/understand/_index.md",
+      "dydo/understand/_understand.md",
+      "dydo/understand/about.md",
+      "dydo/understand/architecture.md",
+      "dydo/welcome.md",
+      "DynaDocs.csproj",
+      "DynaDocs.sln",
+      "DynaDocs.Tests/Commands/CommandSmokeTests.cs",
+      "DynaDocs.Tests/Commands/CompleteCommandTests.cs",
+      "DynaDocs.Tests/Commands/CompletionsCommandTests.cs",
+      "DynaDocs.Tests/Commands/GuardCommandTests.cs",
+      "DynaDocs.Tests/Commands/HelpCommandTests.cs",
+      "DynaDocs.Tests/DynaDocs.Tests.csproj",
+      "DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs",
+      "DynaDocs.Tests/Integration/AgentLifecycleTests.cs",
+      "DynaDocs.Tests/Integration/AgentManagementTests.cs",
+      "DynaDocs.Tests/Integration/ChangelogStructureTests.cs",
+      "DynaDocs.Tests/Integration/DispatchCommandTests.cs",
+      "DynaDocs.Tests/Integration/DocumentationTests.cs",
+      "DynaDocs.Tests/Integration/FixCommandIntegrationTests.cs",
+      "DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
+      "DynaDocs.Tests/Integration/InitCheckIntegrationTests.cs",
+      "DynaDocs.Tests/Integration/InitCommandTests.cs",
+      "DynaDocs.Tests/Integration/IntegrationTestBase.cs",
+      "DynaDocs.Tests/Integration/IntegrationTestCollection.cs",
+      "DynaDocs.Tests/Integration/ProcessWorkflowTests.cs",
+      "DynaDocs.Tests/Integration/TaskTests.cs",
+      "DynaDocs.Tests/Integration/TemplateOverrideTests.cs",
+      "DynaDocs.Tests/Integration/WorkflowTests.cs",
+      "DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs",
+      "DynaDocs.Tests/Models/DocFileTests.cs",
+      "DynaDocs.Tests/Models/PresetAgentNamesTests.cs",
+      "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs",
+      "DynaDocs.Tests/Rules/FolderMetaFilesRuleTests.cs",
+      "DynaDocs.Tests/Rules/FrontmatterRuleTests.cs",
+      "DynaDocs.Tests/Rules/HubFilesRuleTests.cs",
+      "DynaDocs.Tests/Rules/NamingRuleTests.cs",
+      "DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs",
+      "DynaDocs.Tests/Rules/RelativeLinksRuleTests.cs",
+      "DynaDocs.Tests/Rules/SummaryRuleTests.cs",
+      "DynaDocs.Tests/Services/AgentRegistryTests.cs",
+      "DynaDocs.Tests/Services/AuditServiceTests.cs",
+      "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs",
+      "DynaDocs.Tests/Services/ConfigServiceTests.cs",
+      "DynaDocs.Tests/Services/DocGraphTests.cs",
+      "DynaDocs.Tests/Services/FolderScaffolderTests.cs",
+      "DynaDocs.Tests/Services/IndexGeneratorTests.cs",
+      "DynaDocs.Tests/Services/LinkResolverTests.cs",
+      "DynaDocs.Tests/Services/MarkdownParserTests.cs",
+      "DynaDocs.Tests/Services/OffLimitsServiceTests.cs",
+      "DynaDocs.Tests/Services/PathUtilsTests.cs",
+      "DynaDocs.Tests/Services/ProcessUtilsTests.cs",
+      "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs",
+      "DynaDocs.Tests/Services/SnapshotServiceTests.cs",
+      "DynaDocs.Tests/Services/TemplateGeneratorTests.cs",
+      "DynaDocs.Tests/Services/TerminalLauncherTests.cs",
+      "DynaDocs.Tests/Services/WorkspaceArchiveTests.cs",
+      "LICENSE",
+      "Models/AgentsConfig.cs",
+      "Models/AgentSession.cs",
+      "Models/AgentState.cs",
+      "Models/AgentStatus.cs",
+      "Models/AuditEvent.cs",
+      "Models/AuditSession.cs",
+      "Models/DispatchConfig.cs",
+      "Models/DocFile.cs",
+      "Models/DydoConfig.cs",
+      "Models/Frontmatter.cs",
+      "Models/HookInput.cs",
+      "Models/HookInputExtensions.cs",
+      "Models/InboxItem.cs",
+      "Models/LinkInfo.cs",
+      "Models/LinkType.cs",
+      "Models/PresetAgentNames.cs",
+      "Models/ProjectSnapshot.cs",
+      "Models/StructureConfig.cs",
+      "Models/TaskFile.cs",
+      "Models/TaskStatus.cs",
+      "Models/ToolInputData.cs",
+      "Models/ValidationResult.cs",
+      "Models/Violation.cs",
+      "Models/ViolationSeverity.cs",
+      "npm/bin/dydo",
+      "npm/install.js",
+      "npm/lib/download.js",
+      "npm/lib/paths.js",
+      "npm/lib/platform.js",
+      "npm/LICENSE",
+      "npm/package.json",
+      "npm/README.md",
+      "Program.cs",
+      "README.md",
+      "Rules/BrokenLinksRule.cs",
+      "Rules/FolderMetaFilesRule.cs",
+      "Rules/FrontmatterRule.cs",
+      "Rules/HubFilesRule.cs",
+      "Rules/IRule.cs",
+      "Rules/NamingRule.cs",
+      "Rules/OffLimitsRule.cs",
+      "Rules/OrphanDocsRule.cs",
+      "Rules/RelativeLinksRule.cs",
+      "Rules/RuleBase.cs",
+      "Rules/SummaryRule.cs",
+      "Rules/UncustomizedDocsRule.cs",
+      "Serialization/DydoJsonContext.cs",
+      "Services/AgentRegistry.cs",
+      "Services/AuditService.cs",
+      "Services/BashCommandAnalyzer.cs",
+      "Services/ConfigService.cs",
+      "Services/DocGraph.cs",
+      "Services/DocScanner.cs",
+      "Services/FolderScaffolder.cs",
+      "Services/HubGenerator.cs",
+      "Services/IAgentRegistry.cs",
+      "Services/IAuditService.cs",
+      "Services/IBashCommandAnalyzer.cs",
+      "Services/IConfigService.cs",
+      "Services/IDocGraph.cs",
+      "Services/IDocScanner.cs",
+      "Services/IFolderScaffolder.cs",
+      "Services/IIndexGenerator.cs",
+      "Services/ILinkResolver.cs",
+      "Services/IMarkdownParser.cs",
+      "Services/IndexGenerator.cs",
+      "Services/IOffLimitsService.cs",
+      "Services/ISnapshotService.cs",
+      "Services/LinkResolver.cs",
+      "Services/MarkdownParser.cs",
+      "Services/OffLimitsService.cs",
+      "Services/ProcessUtils.cs",
+      "Services/ShellCompletionInstaller.cs",
+      "Services/SnapshotService.cs",
+      "Services/TemplateGenerator.cs",
+      "Services/TerminalLauncher.cs",
+      "spec.md",
+      "temp/.gitkeep",
+      "Templates/_changelog.template.md",
+      "Templates/_decisions.template.md",
+      "Templates/_guides.template.md",
+      "Templates/_pitfalls.template.md",
+      "Templates/_project.template.md",
+      "Templates/_reference.template.md",
+      "Templates/_tasks.template.md",
+      "Templates/_understand.template.md",
+      "Templates/about-dynadocs.template.md",
+      "Templates/about.template.md",
+      "Templates/agent-states.template.md",
+      "Templates/agent-workflow.template.md",
+      "Templates/architecture.template.md",
+      "Templates/Assets/dydo-diagram.svg",
+      "Templates/changelog.template.md",
+      "Templates/coding-standards.template.md",
+      "Templates/decision.template.md",
+      "Templates/dydo-commands.template.md",
+      "Templates/files-off-limits.template.md",
+      "Templates/glossary.template.md",
+      "Templates/how-to-use-docs.template.md",
+      "Templates/index.template.md",
+      "Templates/mode-co-thinker.template.md",
+      "Templates/mode-code-writer.template.md",
+      "Templates/mode-docs-writer.template.md",
+      "Templates/mode-interviewer.template.md",
+      "Templates/mode-planner.template.md",
+      "Templates/mode-reviewer.template.md",
+      "Templates/mode-tester.template.md",
+      "Templates/pitfall.template.md",
+      "Templates/welcome.template.md",
+      "Templates/writing-docs.template.md",
+      "Utils/ConsoleOutput.cs",
+      "Utils/ExitCodes.cs",
+      "Utils/PathUtils.cs"
+    ],
+    "folders": [
+      ".claude",
+      ".github",
+      ".github/workflows",
+      ".idea",
+      ".idea/.idea.DynaDocs",
+      ".idea/.idea.DynaDocs/.idea",
+      "Commands",
+      "dydo",
+      "dydo/_assets",
+      "dydo/_system",
+      "dydo/_system/audit",
+      "dydo/_system/templates",
+      "dydo/guides",
+      "dydo/project",
+      "dydo/project/changelog",
+      "dydo/project/decisions",
+      "dydo/project/pitfalls",
+      "dydo/project/tasks",
+      "dydo/reference",
+      "dydo/understand",
+      "DynaDocs.Tests",
+      "DynaDocs.Tests/Commands",
+      "DynaDocs.Tests/EndToEnd",
+      "DynaDocs.Tests/Integration",
+      "DynaDocs.Tests/Models",
+      "DynaDocs.Tests/Rules",
+      "DynaDocs.Tests/Services",
+      "Models",
+      "npm",
+      "npm/bin",
+      "npm/lib",
+      "Rules",
+      "Serialization",
+      "Services",
+      "temp",
+      "Templates",
+      "Templates/Assets",
+      "Utils"
+    ],
+    "doc_links": {
+      "dydo/welcome.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md",
+        "dydo/glossary.md",
+        "dydo/understand/_index.md",
+        "dydo/guides/_index.md",
+        "dydo/reference/_index.md",
+        "dydo/project/_index.md",
+        "dydo/reference/about-dynadocs.md",
+        "dydo/index.md"
+      ],
+      "dydo/guides/coding-standards.md": [
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/guides/how-to-use-docs.md": [
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md",
+        "dydo/reference/dydo-commands.md"
+      ],
+      "dydo/guides/_guides.md": [
+        "dydo/reference/about-dynadocs.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md",
+        "dydo/understand/_index.md",
+        "dydo/reference/_index.md",
+        "dydo/project/_index.md"
+      ],
+      "dydo/guides/_index.md": [
+        "dydo/guides/coding-standards.md",
+        "dydo/guides/how-to-use-docs.md"
+      ],
+      "dydo/project/_index.md": [
+        "dydo/project/changelog/_index.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/project/pitfalls/_index.md",
+        "dydo/project/tasks/_index.md"
+      ],
+      "dydo/project/_project.md": [
+        "dydo/reference/about-dynadocs.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md",
+        "dydo/understand/_index.md",
+        "dydo/guides/_index.md",
+        "dydo/reference/_index.md"
+      ],
+      "dydo/reference/writing-docs.md": [
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/dydo-commands.md"
+      ],
+      "dydo/reference/_index.md": [
+        "dydo/reference/about-dynadocs.md",
+        "dydo/reference/dydo-commands.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/reference/_reference.md": [
+        "dydo/reference/about-dynadocs.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md",
+        "dydo/understand/_index.md",
+        "dydo/guides/_index.md",
+        "dydo/project/_index.md"
+      ],
+      "dydo/understand/about.md": [
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/understand/architecture.md": [
+        "dydo/guides/coding-standards.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/dydo-commands.md"
+      ],
+      "dydo/understand/_index.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/understand/_understand.md": [
+        "dydo/reference/about-dynadocs.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md",
+        "dydo/guides/_index.md",
+        "dydo/reference/_index.md",
+        "dydo/project/_index.md"
+      ],
+      "dydo/agents/adele/workflow.md": [
+        "dydo/agents/adele/modes/interviewer.md",
+        "dydo/agents/adele/modes/planner.md",
+        "dydo/agents/adele/modes/code-writer.md",
+        "dydo/agents/adele/modes/co-thinker.md",
+        "dydo/agents/adele/modes/reviewer.md",
+        "dydo/agents/adele/modes/docs-writer.md",
+        "dydo/agents/adele/modes/tester.md"
+      ],
+      "dydo/agents/brian/workflow.md": [
+        "dydo/agents/brian/modes/interviewer.md",
+        "dydo/agents/brian/modes/planner.md",
+        "dydo/agents/brian/modes/code-writer.md",
+        "dydo/agents/brian/modes/co-thinker.md",
+        "dydo/agents/brian/modes/reviewer.md",
+        "dydo/agents/brian/modes/docs-writer.md",
+        "dydo/agents/brian/modes/tester.md"
+      ],
+      "dydo/agents/charlie/workflow.md": [
+        "dydo/agents/charlie/modes/interviewer.md",
+        "dydo/agents/charlie/modes/planner.md",
+        "dydo/agents/charlie/modes/code-writer.md",
+        "dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/agents/charlie/modes/reviewer.md",
+        "dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/agents/charlie/modes/tester.md"
+      ],
+      "dydo/agents/dexter/workflow.md": [
+        "dydo/agents/dexter/modes/interviewer.md",
+        "dydo/agents/dexter/modes/planner.md",
+        "dydo/agents/dexter/modes/code-writer.md",
+        "dydo/agents/dexter/modes/co-thinker.md",
+        "dydo/agents/dexter/modes/reviewer.md",
+        "dydo/agents/dexter/modes/docs-writer.md",
+        "dydo/agents/dexter/modes/tester.md"
+      ],
+      "dydo/agents/emma/workflow.md": [
+        "dydo/agents/emma/modes/interviewer.md",
+        "dydo/agents/emma/modes/planner.md",
+        "dydo/agents/emma/modes/code-writer.md",
+        "dydo/agents/emma/modes/co-thinker.md",
+        "dydo/agents/emma/modes/reviewer.md",
+        "dydo/agents/emma/modes/docs-writer.md",
+        "dydo/agents/emma/modes/tester.md"
+      ],
+      "dydo/agents/frank/workflow.md": [
+        "dydo/agents/frank/modes/interviewer.md",
+        "dydo/agents/frank/modes/planner.md",
+        "dydo/agents/frank/modes/code-writer.md",
+        "dydo/agents/frank/modes/co-thinker.md",
+        "dydo/agents/frank/modes/reviewer.md",
+        "dydo/agents/frank/modes/docs-writer.md",
+        "dydo/agents/frank/modes/tester.md"
+      ],
+      "dydo/agents/grace/workflow.md": [
+        "dydo/agents/grace/modes/interviewer.md",
+        "dydo/agents/grace/modes/planner.md",
+        "dydo/agents/grace/modes/code-writer.md",
+        "dydo/agents/grace/modes/co-thinker.md",
+        "dydo/agents/grace/modes/reviewer.md",
+        "dydo/agents/grace/modes/docs-writer.md",
+        "dydo/agents/grace/modes/tester.md"
+      ],
+      "dydo/project/changelog/_changelog.md": [
+        "dydo/project/tasks/_index.md",
+        "dydo/project/decisions/_index.md"
+      ],
+      "dydo/project/decisions/_decisions.md": [
+        "dydo/project/pitfalls/_index.md"
+      ],
+      "dydo/project/pitfalls/_pitfalls.md": [
+        "dydo/project/decisions/_index.md"
+      ],
+      "dydo/project/tasks/_tasks.md": [
+        "dydo/project/changelog/_index.md"
+      ],
+      "dydo/_system/templates/mode-co-thinker.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md"
+      ],
+      "dydo/_system/templates/mode-code-writer.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/templates/mode-docs-writer.template.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/templates/mode-interviewer.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/_system/templates/mode-planner.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/_system/templates/mode-reviewer.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/templates/mode-tester.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/adele/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/adele/modes/code-writer.md"
+      ],
+      "dydo/agents/adele/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/adele/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/adele/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/adele/modes/planner.md"
+      ],
+      "dydo/agents/adele/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/adele/modes/code-writer.md"
+      ],
+      "dydo/agents/adele/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/adele/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/brian/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/brian/modes/code-writer.md"
+      ],
+      "dydo/agents/brian/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/brian/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/brian/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/brian/modes/planner.md"
+      ],
+      "dydo/agents/brian/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/brian/modes/code-writer.md"
+      ],
+      "dydo/agents/brian/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/brian/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/charlie/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/charlie/modes/code-writer.md"
+      ],
+      "dydo/agents/charlie/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/charlie/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/charlie/modes/planner.md"
+      ],
+      "dydo/agents/charlie/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/charlie/modes/code-writer.md"
+      ],
+      "dydo/agents/charlie/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/dexter/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/dexter/modes/code-writer.md"
+      ],
+      "dydo/agents/dexter/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/dexter/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/dexter/modes/planner.md"
+      ],
+      "dydo/agents/dexter/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/dexter/modes/code-writer.md"
+      ],
+      "dydo/agents/dexter/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/emma/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/emma/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/emma/modes/planner.md"
+      ],
+      "dydo/agents/emma/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/frank/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/frank/modes/code-writer.md"
+      ],
+      "dydo/agents/frank/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/frank/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/frank/modes/planner.md"
+      ],
+      "dydo/agents/frank/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/frank/modes/code-writer.md"
+      ],
+      "dydo/agents/frank/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/grace/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/grace/modes/code-writer.md"
+      ],
+      "dydo/agents/grace/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/grace/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/grace/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/grace/modes/planner.md"
+      ],
+      "dydo/agents/grace/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/grace/modes/code-writer.md"
+      ],
+      "dydo/agents/grace/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/grace/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ]
+    }
+  }
+}

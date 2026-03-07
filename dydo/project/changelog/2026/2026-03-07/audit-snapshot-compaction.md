@@ -1,9 +1,7 @@
 ---
 area: general
-name: audit-snapshot-compaction
-status: human-reviewed
-created: 2026-03-06T20:39:20.5783166Z
-assigned: Charlie
+type: changelog
+date: 2026-03-07
 ---
 
 # Task: audit-snapshot-compaction
@@ -39,3 +37,7 @@ Awaiting human approval.
 - Notes: Re-reviewed fixes: (1) Compact method signature correctly reduced to single yearDir parameter, all 10 call sites updated. (2) ComputeBaselineId now includes DocLinks with deterministic case-insensitive ordering for correct content-addressing. All 1337 tests pass. LGTM.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-07 15:00

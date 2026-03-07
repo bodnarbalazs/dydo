@@ -1,10 +1,7 @@
 ---
 area: general
-name: task-approve-all-flag
-status: human-reviewed
-created: 2026-03-06T20:39:24.5977066Z
-assigned: Dexter
-updated: 2026-03-06T22:59:39.3370341Z
+type: changelog
+date: 2026-03-07
 ---
 
 # Task: task-approve-all-flag
@@ -31,3 +28,7 @@ Added --all / -a flag to dydo task approve as cross-platform alternative to wild
 - Notes: LGTM. --all/-a flag is clean, backward compat with * preserved, filename sanitization is good cross-cutting hardening. 4 integration tests + 7 unit tests, all pass. Docs updated correctly.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-07 15:00

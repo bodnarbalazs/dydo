@@ -7,10 +7,10 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.1.0</Version>
+        <Version>1.1.1</Version>
         <Description>Documentation-driven context and agent orchestration for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/bodnarbalazs/dydo</PackageProjectUrl>
         <RepositoryUrl>https://github.com/bodnarbalazs/dydo</RepositoryUrl>
         <RepositoryType>git</RepositoryType>

@@ -569,27 +569,31 @@ public class BashCommandAnalyzerTests
 
     #endregion
 
-    #region DetectNeedlessCdGit
+    #region DetectNeedlessCd
 
     [Theory]
-    [InlineData("cd /c/Users/foo && git diff", "/c/Users/foo", "diff")]
-    [InlineData("cd /tmp && git status", "/tmp", "status")]
-    [InlineData("cd /foo && git diff --name-only", "/foo", "diff --name-only")]
-    public void DetectNeedlessCdGit_CdAndGit_ReturnsMatch(string command, string expectedPath, string expectedGitCmd)
+    [InlineData("cd /c/Users/foo && git diff", "/c/Users/foo", "git diff")]
+    [InlineData("cd /tmp && git status", "/tmp", "git status")]
+    [InlineData("cd /foo && git diff --name-only", "/foo", "git diff --name-only")]
+    [InlineData("cd /foo && ls", "/foo", "ls")]
+    [InlineData("cd /foo && grep -rn pattern src/", "/foo", "grep -rn pattern src/")]
+    [InlineData("cd /foo && dotnet build", "/foo", "dotnet build")]
+    public void DetectNeedlessCd_CdAndCommand_ReturnsMatch(string command, string expectedPath, string expectedRestCmd)
     {
-        var (isMatch, cdPath, gitCmd) = _analyzer.DetectNeedlessCdGit(command);
+        var (isMatch, cdPath, restCmd) = _analyzer.DetectNeedlessCd(command);
 
         Assert.True(isMatch);
         Assert.Equal(expectedPath, cdPath);
-        Assert.Equal(expectedGitCmd, gitCmd);
+        Assert.Equal(expectedRestCmd, restCmd);
     }
 
     [Theory]
     [InlineData("cd \"/path with spaces\" && git log")]
     [InlineData("cd '/path with spaces' && git log")]
-    public void DetectNeedlessCdGit_CdWithQuotedPath_ReturnsMatch(string command)
+    [InlineData("cd \"/path with spaces\" && grep pattern file.cs")]
+    public void DetectNeedlessCd_CdWithQuotedPath_ReturnsMatch(string command)
     {
-        var (isMatch, _, _) = _analyzer.DetectNeedlessCdGit(command);
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd(command);
 
         Assert.True(isMatch);
     }
@@ -597,41 +601,34 @@ public class BashCommandAnalyzerTests
     [Theory]
     [InlineData("cd /foo ; git push")]
     [InlineData("cd /foo ; git diff --name-only")]
-    public void DetectNeedlessCdGit_CdWithSemicolon_ReturnsMatch(string command)
+    [InlineData("cd /foo ; ls -la")]
+    public void DetectNeedlessCd_CdWithSemicolon_ReturnsMatch(string command)
     {
-        var (isMatch, _, _) = _analyzer.DetectNeedlessCdGit(command);
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd(command);
 
         Assert.True(isMatch);
     }
 
     [Fact]
-    public void DetectNeedlessCdGit_GitAlone_NoMatch()
+    public void DetectNeedlessCd_CommandAlone_NoMatch()
     {
-        var (isMatch, _, _) = _analyzer.DetectNeedlessCdGit("git diff");
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd("git diff");
 
         Assert.False(isMatch);
     }
 
     [Fact]
-    public void DetectNeedlessCdGit_CdWithNonGitCommand_NoMatch()
+    public void DetectNeedlessCd_CdAlone_NoMatch()
     {
-        var (isMatch, _, _) = _analyzer.DetectNeedlessCdGit("cd /foo && ls");
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd("cd /foo");
 
         Assert.False(isMatch);
     }
 
     [Fact]
-    public void DetectNeedlessCdGit_CdAlone_NoMatch()
+    public void DetectNeedlessCd_EmptyCommand_NoMatch()
     {
-        var (isMatch, _, _) = _analyzer.DetectNeedlessCdGit("cd /foo");
-
-        Assert.False(isMatch);
-    }
-
-    [Fact]
-    public void DetectNeedlessCdGit_EmptyCommand_NoMatch()
-    {
-        var (isMatch, _, _) = _analyzer.DetectNeedlessCdGit("");
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd("");
 
         Assert.False(isMatch);
     }

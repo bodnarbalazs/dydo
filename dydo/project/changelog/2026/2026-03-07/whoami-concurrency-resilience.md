@@ -1,10 +1,7 @@
 ---
 area: general
-name: whoami-concurrency-resilience
-status: human-reviewed
-created: 2026-03-06T20:39:22.9982214Z
-assigned: Brian
-updated: 2026-03-06T23:30:32.5124256Z
+type: changelog
+date: 2026-03-07
 ---
 
 # Task: whoami-concurrency-resilience
@@ -31,3 +28,7 @@ Implemented concurrency resilience for GetCurrentAgent: (1) short-circuit via .s
 - Notes: LGTM. FileReadWithRetry bug fix is correct — removing 'when' filter ensures final-attempt exceptions are caught gracefully. Hint file fast-path is well-integrated into claim/release lifecycle with proper fallback. ConfigService cache is appropriately instance-level. All 8 concurrency tests are meaningful and pass. No issues found.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-07 15:00

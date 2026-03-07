@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ""
+            "command": "dydo guard"
           }
         ]
       }

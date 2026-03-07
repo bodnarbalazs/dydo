@@ -1,9 +1,7 @@
 ---
 area: general
-name: cd-git-guard-rule
-status: human-reviewed
-created: 2026-03-06T22:58:03.1315104Z
-assigned: Frank
+type: changelog
+date: 2026-03-07
 ---
 
 # Task: cd-git-guard-rule
@@ -30,3 +28,7 @@ Implemented cd+git compound command coaching guard. Added DetectNeedlessCdGit to
 - Notes: LGTM. Clean implementation — regex correctly handles unquoted, double-quoted, and single-quoted paths with both && and ; separators. Guard placement is correct (after dydo passthrough, before must-read enforcement). 11 unit tests + 2 integration tests provide solid coverage. No security issues, no unnecessary complexity.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-07 15:00

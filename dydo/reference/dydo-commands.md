@@ -243,7 +243,8 @@ dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --t
 **Options:**
 - `--role <role>` - Role for the target agent (required)
 - `--task <name>` - Task name (required)
-- `--brief <text>` - Brief description (required)
+- `--brief <text>` - Brief description (required unless --brief-file used)
+- `--brief-file <path>` - Read brief from a file instead of inline
 - `--files <pattern>` - File pattern to include
 - `--context-file <path>` - Path to context file
 - `--to <agent-name>` - Send to specific agent (skips auto-selection)

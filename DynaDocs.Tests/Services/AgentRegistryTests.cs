@@ -754,6 +754,264 @@ public class AgentRegistryTests : IDisposable
 
     #endregion
 
+    #region Dispatch Role Guardrail Tests
+
+    private void CreateInboxItem(string agentName, string task, string role, string from = "Brian")
+    {
+        var inboxPath = Path.Combine(_testDir, "dydo", "agents", agentName, "inbox");
+        Directory.CreateDirectory(inboxPath);
+        var sanitizedTask = task.Replace(':', '-').Replace('<', '-').Replace('>', '-');
+        File.WriteAllText(Path.Combine(inboxPath, $"abcd1234-{sanitizedTask}.md"), $"""
+            ---
+            id: abcd1234
+            from: {from}
+            role: {role}
+            task: {task}
+            received: 2026-01-01T00:00:00Z
+            origin: {from}
+            ---
+
+            # {role.ToUpperInvariant()} Request: {task}
+            """);
+    }
+
+    [Fact]
+    public void SetRole_WithDifferentInboxRole_FailsOnFirstAttempt()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge1");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge1", "co-thinker", "my-task", out var error);
+
+        Assert.False(result);
+        Assert.Contains("dispatched as", error);
+        Assert.Contains("reviewer", error);
+    }
+
+    [Fact]
+    public void SetRole_WithDifferentInboxRole_SucceedsOnRetry()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge2");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // First attempt — fails with nudge
+        registry.SetRole("test-session-nudge2", "co-thinker", "my-task", out _);
+
+        // Second attempt — succeeds
+        var result = registry.SetRole("test-session-nudge2", "co-thinker", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed on retry: {error}");
+    }
+
+    [Fact]
+    public void SetRole_WithMatchingInboxRole_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge3");
+        CreateInboxItem("Adele", "my-task", "code-writer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge3", "code-writer", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed when roles match: {error}");
+    }
+
+    [Fact]
+    public void SetRole_WithNoInbox_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge4");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge4", "code-writer", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed with no inbox: {error}");
+    }
+
+    [Fact]
+    public void SetRole_WithInboxButNoTask_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge5");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge5", "code-writer", null, out var error);
+
+        Assert.True(result, $"SetRole should succeed when task is null: {error}");
+    }
+
+    [Fact]
+    public void SetRole_CaseInsensitiveRoleComparison()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge6");
+        CreateInboxItem("Adele", "my-task", "Reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge6", "reviewer", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed with case-insensitive match: {error}");
+    }
+
+    [Fact]
+    public void SetRole_InboxForDifferentTask_NoNudge()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge7");
+        CreateInboxItem("Adele", "other-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge7", "co-thinker", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed when inbox is for different task: {error}");
+    }
+
+    [Fact]
+    public void SetRole_WithMalformedInboxFile_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge8");
+
+        // Create inbox file without YAML frontmatter
+        var inboxPath = Path.Combine(_testDir, "dydo", "agents", "Adele", "inbox");
+        Directory.CreateDirectory(inboxPath);
+        File.WriteAllText(Path.Combine(inboxPath, "abcd1234-my-task.md"), "No frontmatter here");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge8", "co-thinker", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed with malformed inbox: {error}");
+    }
+
+    [Fact]
+    public void SetRole_WithInboxMissingRoleField_Succeeds()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge9");
+
+        var inboxPath = Path.Combine(_testDir, "dydo", "agents", "Adele", "inbox");
+        Directory.CreateDirectory(inboxPath);
+        File.WriteAllText(Path.Combine(inboxPath, "abcd1234-my-task.md"), """
+            ---
+            id: abcd1234
+            from: Brian
+            task: my-task
+            ---
+
+            # Request
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge9", "co-thinker", "my-task", out var error);
+
+        Assert.True(result, $"SetRole should succeed when inbox has no role field: {error}");
+    }
+
+    [Fact]
+    public void SetRole_RoleMismatchNudge_MustFail_NotSucceedWithWarning()
+    {
+        // Guards against the anti-pattern of returning success + warning side-channel.
+        // Role mismatch on first attempt MUST be a hard failure (return false, non-empty error).
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge10");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-nudge10", "co-thinker", "my-task", out var error);
+
+        Assert.False(result);
+        Assert.False(string.IsNullOrEmpty(error), "Error must be non-empty on role mismatch failure");
+
+        // Verify the role was NOT applied
+        var state = registry.GetAgentState("Adele");
+        Assert.NotEqual("co-thinker", state?.Role);
+    }
+
+    [Fact]
+    public void SetRole_NudgeDoesNotBlockMatchingRole()
+    {
+        // After a nudge failure, setting the dispatched role should work without retry
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge11");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // First: try wrong role — fails
+        registry.SetRole("test-session-nudge11", "co-thinker", "my-task", out _);
+
+        // Then: try the dispatched role — should succeed immediately
+        var result = registry.SetRole("test-session-nudge11", "reviewer", "my-task", out var error);
+
+        Assert.True(result, $"Setting the dispatched role should always succeed: {error}");
+
+        // Stale marker should be cleaned up
+        var markerPath = Path.Combine(_testDir, "dydo", "agents", "Adele", ".role-nudge-my-task");
+        Assert.False(File.Exists(markerPath), "Stale nudge marker should be deleted when matching role is set");
+    }
+
+    [Fact]
+    public void ReleaseAgent_CleansUpNudgeMarkers()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge12");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Trigger nudge to create marker
+        registry.SetRole("test-session-nudge12", "co-thinker", "my-task", out _);
+
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        var markerPath = Path.Combine(workspace, ".role-nudge-my-task");
+        Assert.True(File.Exists(markerPath), "Marker should exist after nudge");
+
+        // Clear inbox so release doesn't block
+        Directory.Delete(Path.Combine(workspace, "inbox"), true);
+
+        registry.ReleaseAgent("test-session-nudge12", out var error);
+
+        Assert.False(File.Exists(markerPath), $"Nudge marker should be deleted on release: {error}");
+    }
+
+    [Fact]
+    public void SetRole_StaleMarkerDoesNotBypassNudge_AfterRelease()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge13");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Trigger nudge to create marker
+        registry.SetRole("test-session-nudge13", "co-thinker", "my-task", out _);
+
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+
+        // Clear inbox and release
+        Directory.Delete(Path.Combine(workspace, "inbox"), true);
+        registry.ReleaseAgent("test-session-nudge13", out _);
+
+        // Re-claim and re-dispatch
+        CreateSessionFile("Adele", "test-session-nudge13b");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+        registry = new AgentRegistry(_testDir);
+
+        // Should nudge again — marker was cleaned on release
+        var result = registry.SetRole("test-session-nudge13b", "co-thinker", "my-task", out var error);
+
+        Assert.False(result, "Stale marker should not bypass nudge after release");
+        Assert.Contains("dispatched as", error);
+    }
+
+    #endregion
+
     #region Lock File Tests
 
     [Fact]

@@ -147,6 +147,8 @@ public interface IAgentRegistry
 
     void MarkMessageRead(string? sessionId, string messageId);
 
+    void ClearAllUnreadMessages(string agentName);
+
     /// <summary>
     /// Stores a pending session ID for an agent.
     /// Called by the guard hook when it intercepts a claim command.

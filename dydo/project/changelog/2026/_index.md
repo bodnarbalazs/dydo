@@ -16,3 +16,4 @@ Index of 2026 documentation.
 ## Subfolders
 
 - [2026-03-07](./2026-03-07/_index.md)
+- [2026-03-08](./2026-03-08/_index.md)

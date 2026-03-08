@@ -137,6 +137,9 @@ public static class InboxCommand
                     Console.WriteLine($"  Escalated: {item.EscalatedAt:yyyy-MM-dd HH:mm} UTC");
                 Console.WriteLine($"  Brief: {item.Brief}");
 
+                if (item.ReplyRequired)
+                    Console.WriteLine($"  Reply required: yes (message {item.From} about '{item.Task}' before releasing)");
+
                 if (item.Files.Count > 0)
                     Console.WriteLine($"  Files: {string.Join(", ", item.Files)}");
             }
@@ -182,9 +185,16 @@ public static class InboxCommand
             var files = Directory.GetFiles(inboxPath, "*.md");
             foreach (var file in files)
             {
+                var item = ParseInboxItem(file);
+                if (item != null && item.ReplyRequired && !string.IsNullOrEmpty(item.Task))
+                {
+                    registry.CreateReplyPendingMarker(agent.Name, item.Task, item.From);
+                    Console.WriteLine($"  Reply required: message {item.From} about '{item.Task}' before releasing.");
+                }
                 var destPath = Path.Combine(archivePath, Path.GetFileName(file));
                 File.Move(file, destPath, overwrite: true);
             }
+            registry.ClearAllUnreadMessages(agent.Name);
             Console.WriteLine($"Archived {files.Length} item(s) to archive/inbox/");
         }
         else
@@ -198,9 +208,16 @@ public static class InboxCommand
 
             foreach (var file in files)
             {
+                var item = ParseInboxItem(file);
+                if (item != null && item.ReplyRequired && !string.IsNullOrEmpty(item.Task))
+                {
+                    registry.CreateReplyPendingMarker(agent.Name, item.Task, item.From);
+                    Console.WriteLine($"  Reply required: message {item.From} about '{item.Task}' before releasing.");
+                }
                 var destPath = Path.Combine(archivePath, Path.GetFileName(file));
                 File.Move(file, destPath, overwrite: true);
             }
+            registry.MarkMessageRead(sessionId, id!);
             Console.WriteLine($"Archived item {id} to archive/inbox/");
         }
 
@@ -244,6 +261,7 @@ public static class InboxCommand
             DateTime received = DateTime.UtcNow;
             bool escalated = false;
             DateTime? escalatedAt = null;
+            bool replyRequired = false;
 
             foreach (var line in yaml.Split('\n'))
             {
@@ -272,6 +290,9 @@ public static class InboxCommand
                     case "escalated_at":
                         if (DateTime.TryParse(value, out var escDt))
                             escalatedAt = escDt;
+                        break;
+                    case "reply_required":
+                        replyRequired = value.Equals("true", StringComparison.OrdinalIgnoreCase);
                         break;
                 }
             }
@@ -315,7 +336,8 @@ public static class InboxCommand
                 Escalated = escalated,
                 EscalatedAt = escalatedAt,
                 Type = type,
-                Subject = subject
+                Subject = subject,
+                ReplyRequired = replyRequired
             };
         }
         catch

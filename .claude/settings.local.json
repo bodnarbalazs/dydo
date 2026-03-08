@@ -19,7 +19,9 @@
       "Bash(dydo inbox clear:*)",
       "Bash(dydo inbox show:*)",
       "Bash(dydo review:*)",
-      "Bash(dydo inbox:*)"
+      "Bash(dydo inbox:*)",
+      "Bash(dydo msg:*)",
+      "Bash(dydo wait:*)"
     ]
   },
   "hooks": {

@@ -25,4 +25,7 @@ public class ToolInputData
 
     [JsonPropertyName("path")]
     public string? Path { get; set; }
+
+    [JsonPropertyName("run_in_background")]
+    public bool? RunInBackground { get; set; }
 }

@@ -697,6 +697,68 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region dydo wait Background Enforcement
+
+    [Fact]
+    public async Task Guard_DydoWait_Foreground_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // dydo wait without run_in_background should be blocked
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo wait --task foo\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("must run in background");
+    }
+
+    [Fact]
+    public async Task Guard_DydoWait_RunInBackgroundFalse_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo wait --task foo\",\"run_in_background\":false}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("must run in background");
+    }
+
+    [Fact]
+    public async Task Guard_DydoWait_RunInBackgroundTrue_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo wait --task foo\",\"run_in_background\":true}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_DydoWaitCancel_Foreground_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // dydo wait --cancel should always be allowed regardless of background mode
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo wait --task foo --cancel\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region Search Tools (Glob/Grep) - Staged Access
 
     [Theory]

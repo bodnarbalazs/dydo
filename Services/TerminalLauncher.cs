@@ -100,7 +100,6 @@ public class TerminalLauncher
     public static string GetWindowsArguments(string agentName, bool autoClose = false)
     {
         var prompt = GetClaudePrompt(agentName);
-        // -NoExit keeps PowerShell open after the command completes
         // Single quotes in PowerShell create a literal string, ensuring the entire
         // prompt (including --inbox) is passed as one argument to claude.
         // Double-quote escaping ("") breaks when passing through wt → powershell layers.
@@ -108,7 +107,10 @@ public class TerminalLauncher
         var postClaudeCheck = autoClose
             ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
             : "";
-        return $"-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
+        // -NoExit keeps PowerShell open after the command completes.
+        // Omit it when auto-close is active so the shell exits naturally.
+        var noExitFlag = autoClose ? "" : "-NoExit ";
+        return $"{noExitFlag}-Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
     }
 
     public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)

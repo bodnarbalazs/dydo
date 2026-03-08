@@ -63,10 +63,10 @@ public class TerminalCloserTests : IDisposable
     }
 
     [Fact]
-    public void ScheduleClaudeTermination_DoesNotKillRealProcesses()
+    public void ScheduleClaudeTermination_UsesGrandparentPid()
     {
-        // In test context, this should either find an ancestor and use the mock,
-        // or not find one and print the fallback. Either way, no real kill happens.
+        // In test context, grandparent PID should exist (test runner → shell → dydo).
+        // The mock intercepts the kill so no real process is harmed.
         var stdout = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(stdout);
@@ -81,15 +81,25 @@ public class TerminalCloserTests : IDisposable
         }
 
         var output = stdout.ToString();
-        // Either the mock was used (ancestor found) or fallback was printed (no ancestor)
         if (_recorder.Started.Count == 0)
         {
-            Assert.Contains("Could not detect Claude process", output);
+            // No grandparent found — fallback message should mention parent or CLI
+            Assert.True(
+                output.Contains("Could not detect parent process") ||
+                output.Contains("Could not detect CLI process"),
+                $"Unexpected fallback message: {output}");
         }
         else
         {
-            // Mock intercepted the kill — no real process was harmed
+            // Mock intercepted the kill — verify the PID is the grandparent
             Assert.Single(_recorder.Started);
+            var psi = _recorder.Started[0];
+            var myPid = Environment.ProcessId;
+            var parentPid = ProcessUtils.GetParentPid(myPid);
+            Assert.NotNull(parentPid);
+            var grandparentPid = ProcessUtils.GetParentPid(parentPid!.Value);
+            Assert.NotNull(grandparentPid);
+            Assert.Contains(grandparentPid!.Value.ToString(), psi.Arguments);
         }
     }
 }

@@ -1,9 +1,7 @@
 ---
 area: general
-name: brief-file-embedding
-status: pending
-created: 2026-03-08T01:14:00.8055159Z
-assigned: Mia
+type: changelog
+date: 2026-03-08
 ---
 
 # Task: brief-file-embedding
@@ -21,3 +19,7 @@ assigned: Mia
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-03-08 20:25

@@ -12,21 +12,28 @@ public static class TerminalCloser
     public static IProcessStarter? ProcessStarterOverride { get; set; }
 
     /// <summary>
-    /// Spawns a delayed kill of the ancestor Claude process.
-    /// Gives Claude 3 seconds to render its final response before terminating.
+    /// Kills the grandparent process (parent of parent of current process).
+    /// Process tree: CLI tool → shell → dydo, so grandparent = CLI tool.
+    /// Gives the CLI 3 seconds to render its final response before terminating.
     /// </summary>
     public static void ScheduleClaudeTermination()
     {
-        var claudePid = ProcessUtils.FindAncestorProcess("claude")
-                     ?? ProcessUtils.FindAncestorProcess("node");
-
-        if (claudePid == null)
+        var myPid = Environment.ProcessId;
+        var parentPid = ProcessUtils.GetParentPid(myPid);
+        if (parentPid == null)
         {
-            Console.WriteLine("  Could not detect Claude process. Use Ctrl+C to close.");
+            Console.WriteLine("  Could not detect parent process. Use Ctrl+C to close.");
             return;
         }
 
-        SpawnDelayedKill(claudePid.Value);
+        var grandparentPid = ProcessUtils.GetParentPid(parentPid.Value);
+        if (grandparentPid == null)
+        {
+            Console.WriteLine("  Could not detect CLI process. Use Ctrl+C to close.");
+            return;
+        }
+
+        SpawnDelayedKill(grandparentPid.Value);
     }
 
     public static void SpawnDelayedKill(int pid)

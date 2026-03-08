@@ -285,16 +285,20 @@ public static class AgentCommand
                 return ExitCodes.Success;
             }
 
-            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Role",-15}");
-            Console.WriteLine(new string('-', 52));
+            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Waiting For",-14} {"Role",-15}");
+            Console.WriteLine(new string('-', 66));
 
             foreach (var agent in agents)
             {
                 var status = agent.Status.ToString().ToLowerInvariant();
                 var assignedHuman = agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "-";
                 var role = agent.Role ?? "-";
+                var waitTargets = registry.GetWaitMarkers(agent.Name);
+                var waitingFor = waitTargets.Count > 0
+                    ? string.Join(", ", waitTargets.Select(m => m.Target))
+                    : "-";
 
-                Console.WriteLine($"{agent.Name,-10} {status,-10} {assignedHuman,-12} {role,-15}");
+                Console.WriteLine($"{agent.Name,-10} {status,-10} {assignedHuman,-12} {waitingFor,-14} {role,-15}");
             }
 
             var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
@@ -340,16 +344,20 @@ public static class AgentCommand
             return ExitCodes.Success;
         }
 
-        Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Role",-15} {"Task"}");
-        Console.WriteLine(new string('-', 52));
+        Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Role",-15} {"Waiting For",-14} {"Task"}");
+        Console.WriteLine(new string('-', 66));
 
         foreach (var agent in filteredAgents)
         {
             var status = agent.Status.ToString().ToLowerInvariant();
             var role = agent.Role ?? "-";
             var task = agent.Task ?? "-";
+            var waitTargets = registry.GetWaitMarkers(agent.Name);
+            var waitingFor = waitTargets.Count > 0
+                ? string.Join(", ", waitTargets.Select(m => m.Target))
+                : "-";
 
-            Console.WriteLine($"{agent.Name,-10} {status,-10} {role,-15} {task}");
+            Console.WriteLine($"{agent.Name,-10} {status,-10} {role,-15} {waitingFor,-14} {task}");
         }
 
         var freeCount2 = filteredAgents.Count(a => a.Status == AgentStatus.Free);

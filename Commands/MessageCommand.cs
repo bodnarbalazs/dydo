@@ -155,6 +155,13 @@ public static class MessageCommand
 
         File.WriteAllText(filePath, content);
 
+        // Clear reply-pending marker if this message fulfills a reply obligation
+        if (!string.IsNullOrEmpty(subject))
+        {
+            if (registry.RemoveReplyPendingMarker(sender.Name, subject))
+                Console.WriteLine($"  Reply obligation fulfilled for '{subject}'.");
+        }
+
         if (targetState != null && targetState.Status == Models.AgentStatus.Working)
         {
             registry.AddUnreadMessage(to, messageId);

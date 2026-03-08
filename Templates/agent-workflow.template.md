@@ -153,14 +153,13 @@ dydo inbox show                          # Check dispatched work
 dydo inbox clear --all                   # Archive processed items
 
 # Dispatch
-dydo dispatch --wait --auto-close --role <r> --task <t> --brief "..."   # Expecting feedback
+dydo dispatch --wait --auto-close --role <r> --task <t> --brief "..."   # Returns immediately, registers wait
 dydo dispatch --no-wait --role <r> --task <t> --brief "..."             # Fire and forget
 
 # Messaging
 dydo msg --to <agent> --body "..."                   # Send message
 dydo msg --to <agent> --subject <task> --body "..."  # With task context
-dydo wait                                             # Wait for any message
-dydo wait --task <name>                               # Wait for task-specific message
+dydo wait --task <name>                               # Wait for task-specific message (must run in background)
 dydo wait --task <name> --cancel                      # Cancel an active wait
 ```
 

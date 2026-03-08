@@ -295,7 +295,8 @@ public static class DispatchCommand
             Brief = brief,
             Files = string.IsNullOrEmpty(files) ? [] : [files],
             Escalated = escalate,
-            EscalatedAt = escalate ? DateTime.UtcNow : null
+            EscalatedAt = escalate ? DateTime.UtcNow : null,
+            ReplyRequired = wait
         };
 
         // Write to target agent's inbox
@@ -351,35 +352,28 @@ public static class DispatchCommand
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 
-        // --wait: create marker and enter poll loop
+        // --wait: create marker and return immediately
         if (wait)
         {
             registry.CreateWaitMarker(senderName, task, targetAgentName);
-            Console.WriteLine($"Waiting for response on '{task}'...");
-            Console.WriteLine($"  If this times out, resume with: dydo wait --task {task}");
-
-            var senderInboxPath = Path.Combine(registry.GetAgentWorkspace(senderName), "inbox");
-            while (true)
-            {
-                var message = WaitCommand.FindMessage(senderInboxPath, task);
-                if (message != null)
-                {
-                    Console.WriteLine($"Message received from {message.From}:");
-                    Console.WriteLine($"  Subject: {message.Subject ?? "(none)"}");
-                    Console.WriteLine($"  Body: {message.Body}");
-                    registry.RemoveWaitMarker(senderName, task);
-                    return ExitCodes.Success;
-                }
-
-                Thread.Sleep(10_000);
-            }
+            Console.WriteLine($"Wait registered for '{task}'. Listen for the response with:");
+            Console.WriteLine($"  dydo wait --task {task}");
+            Console.WriteLine("  (run in background to avoid blocking)");
+            return ExitCodes.Success;
         }
 
-        // --no-wait: show release hint when appropriate
-        if (origin != senderName &&
-            !string.Equals(sender?.Role, "co-thinker", StringComparison.OrdinalIgnoreCase))
+        // --no-wait: show release hint when agent has no remaining work
+        if (sender != null &&
+            !string.Equals(sender.Role, "co-thinker", StringComparison.OrdinalIgnoreCase))
         {
-            Console.WriteLine("  Nothing left? Don't forget: dydo agent release");
+            var senderInbox = Path.Combine(registry.GetAgentWorkspace(senderName), "inbox");
+            var hasInboxItems = Directory.Exists(senderInbox) && Directory.GetFiles(senderInbox, "*.md").Length > 0;
+            var hasWaitMarkers = registry.GetWaitMarkers(senderName).Count > 0;
+
+            if (!hasInboxItems && !hasWaitMarkers)
+            {
+                Console.WriteLine("  Nothing left? Don't forget: dydo agent release");
+            }
         }
 
         return ExitCodes.Success;
@@ -431,6 +425,8 @@ public static class DispatchCommand
             ? $"\nescalated: true\nescalated_at: {item.EscalatedAt:o}"
             : "";
 
+        var replyRequiredYaml = item.ReplyRequired ? "\nreply_required: true" : "";
+
         var escalationHeader = item.Escalated ? "ESCALATED " : "";
 
         var content = $"""
@@ -439,7 +435,7 @@ public static class DispatchCommand
             from: {item.From}
             role: {item.Role}
             task: {item.Task}
-            received: {item.Received:o}{originYaml}{escalationYaml}
+            received: {item.Received:o}{originYaml}{escalationYaml}{replyRequiredYaml}
             ---
 
             # {escalationHeader}{item.Role.ToUpperInvariant()} Request: {item.Task}

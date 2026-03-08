@@ -69,6 +69,7 @@ public static partial class GuardCommand
         string? toolName = null;
         string? sessionId = null;
         string? searchPath = null;
+        bool? runInBackground = null;
 
         // If CLI arguments are provided, use them directly (skip stdin reading)
         // This avoids blocking on stdin when run from IDEs/test runners
@@ -88,6 +89,7 @@ public static partial class GuardCommand
                     toolName = hookInput.ToolName?.ToLowerInvariant();
                     bashCommand = hookInput.GetCommand();
                     searchPath = hookInput.GetSearchPath();
+                    runInBackground = hookInput.ToolInput?.RunInBackground;
                 }
             }
             catch (Exception ex)
@@ -178,7 +180,7 @@ public static partial class GuardCommand
         // ============================================================
         if (toolName == "bash" && !string.IsNullOrEmpty(bashCommand))
         {
-            return HandleBashCommand(bashCommand, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+            return HandleBashCommand(bashCommand, sessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground);
         }
 
         // ============================================================
@@ -484,7 +486,8 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry,
-        IAuditService auditService)
+        IAuditService auditService,
+        bool? runInBackground = null)
     {
         // ============================================================
         // Block indirect dydo invocations (npx dydo, dotnet dydo)
@@ -554,6 +557,21 @@ public static partial class GuardCommand
 
                 if (registry.IsValidAgentName(agentName))
                     registry.StorePendingSessionId(agentName, sessionId);
+            }
+
+            // Block 'dydo wait' in foreground — must run in background to avoid blocking
+            if (IsDydoWaitCommand(command) && runInBackground != true)
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked,
+                    Tool = "bash",
+                    Command = TruncateCommand(command),
+                    BlockReason = "dydo wait in foreground"
+                });
+
+                Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work.");
+                return ExitCodes.ToolError;
             }
 
             // Allow the dydo command to proceed
@@ -920,6 +938,18 @@ public static partial class GuardCommand
             RegexOptions.IgnoreCase);
 
         return match.Success ? (true, match.Groups[1].Value) : (false, null);
+    }
+
+    /// <summary>
+    /// Check if a command is 'dydo wait' (not --cancel).
+    /// </summary>
+    private static bool IsDydoWaitCommand(string command)
+    {
+        if (!Regex.IsMatch(command, @"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b", RegexOptions.IgnoreCase))
+            return false;
+
+        // Allow 'dydo wait --cancel' and 'dydo wait --task foo --cancel'
+        return !Regex.IsMatch(command, @"--cancel\b", RegexOptions.IgnoreCase);
     }
 
     /// <summary>

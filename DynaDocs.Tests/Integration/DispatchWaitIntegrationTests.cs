@@ -43,10 +43,12 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Brian was dispatched by Adele (origin != sender)
+        // Brian was dispatched by Adele — clear inbox first (real agents process before working)
         CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
         await ClaimAgentAsync("Brian");
         await SetRoleAsync("code-writer", "auth");
+        var inboxCmd = InboxCommand.Create();
+        await RunAsync(inboxCmd, "clear", "--all");
 
         var result = await DispatchAsync("reviewer", "auth", "Review this", noWait: true);
 
@@ -55,17 +57,17 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Dispatch_NoWait_NoHint_WhenOriginIsSelf()
+    public async Task Dispatch_NoWait_ShowsReleaseHint_WhenNoRemainingWork()
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Adele dispatches with no prior inbox item (origin == sender)
+        // Adele dispatches with no inbox items, no wait markers → hint shows
         await ClaimAgentAsync("Adele");
 
         var result = await DispatchAsync("code-writer", "my-task", "Implement feature", noWait: true);
 
         result.AssertSuccess();
-        Assert.DoesNotContain("Don't forget", result.Stdout);
+        result.AssertStdoutContains("Don't forget: dydo agent release");
     }
 
     [Fact]
@@ -73,10 +75,12 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Brian dispatched by Adele, but Brian is a co-thinker
+        // Brian dispatched by Adele, but Brian is a co-thinker — clear inbox first
         CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "co-thinker", "design", "Think about architecture");
         await ClaimAgentAsync("Brian");
         await SetRoleAsync("co-thinker", "design");
+        var inboxCmd = InboxCommand.Create();
+        await RunAsync(inboxCmd, "clear", "--all");
 
         var result = await DispatchAsync("planner", "design", "Task emerged from thinking", noWait: true);
 
@@ -85,26 +89,67 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Dispatch_Wait_NoReleaseHint()
+    public async Task Dispatch_NoWait_NoHint_WhenPendingInboxItems()
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Brian was dispatched by Adele — but with --wait, no hint should show
-        // (the wait loop takes over instead)
-        // We can't test the full wait loop easily since it blocks,
-        // but we can pre-place a message so it returns immediately
+        // Brian has an unprocessed inbox item → no nudge
         CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
         await ClaimAgentAsync("Brian");
         await SetRoleAsync("code-writer", "auth");
 
-        // Pre-place a response message in Brian's inbox so --wait returns immediately
-        CreateMessageFile("Brian", "Charlie", "auth", "Review done.");
+        var result = await DispatchAsync("reviewer", "auth", "Review this", noWait: true);
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Don't forget", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_NoHint_WhenActiveWaitMarkers()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "feature");
+
+        // Create a wait marker from a prior dispatch
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "other-task", "Brian");
+
+        var result = await DispatchAsync("reviewer", "feature", "Review this", noWait: true);
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Don't forget", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_NoHint_WhenNoAgent()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // No agent claimed — sender is null → no nudge
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", noWait: true);
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Don't forget", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Dispatch_Wait_ReturnsImmediately()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Brian was dispatched by Adele — with --wait, dispatch returns immediately
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        await ClaimAgentAsync("Brian");
+        await SetRoleAsync("code-writer", "auth");
 
         var result = await DispatchAsync("reviewer", "auth", "Review this", wait: true);
 
         result.AssertSuccess();
         Assert.DoesNotContain("Don't forget", result.Stdout);
-        result.AssertStdoutContains("Message received");
+        result.AssertStdoutContains("Wait registered");
+        result.AssertStdoutContains("dydo wait --task auth");
     }
 
     #endregion
@@ -249,6 +294,94 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Reply-Pending Guardrail
+
+    [Fact]
+    public async Task Release_BlockedByReplyPending()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches with --wait to Brian
+        await ClaimAgentAsync("Adele");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        // Brian claims in a separate session, clears inbox
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian tries to release — should be blocked
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.Contains("pending reply", releaseResult, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Release_SucceedsAfterReplyMessage()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches with --wait to Brian
+        await ClaimAgentAsync("Adele");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        // Brian claims, clears inbox (creates reply-pending marker)
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian sends reply message
+        SendMessageInSeparateSession("Brian", "Adele", "auth", "Done implementing.");
+
+        // Brian releases — should succeed
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("pending reply", releaseResult, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task NoReplyPending_ForNoWaitDispatch()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Dispatch with --no-wait
+        var result = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", noWait: true);
+        result.AssertSuccess();
+
+        // Brian claims, clears inbox
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // No .reply-pending directory should exist
+        var replyPendingDir = Path.Combine(TestDir, "dydo/agents/Brian/.reply-pending");
+        Assert.False(Directory.Exists(replyPendingDir), "No reply-pending marker should exist for --no-wait dispatch");
+
+        // Release should succeed
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("pending reply", releaseResult, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task InboxShow_DisplaysReplyRequired()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches with --wait to Brian
+        await ClaimAgentAsync("Adele");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        // Brian claims and shows inbox
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        var showResult = ShowInboxInSeparateSession("Brian");
+
+        Assert.Contains("Reply required", showResult);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> DispatchAsync(
@@ -339,6 +472,56 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Restore original session context
         StoreSessionContext();
+    }
+
+    private void ClearInboxInSeparateSession(string agentName)
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = $"other-session-{agentName}";
+        File.WriteAllText(contextPath, otherSession);
+
+        var inboxCmd = InboxCommand.Create();
+        RunAsync(inboxCmd, "clear", "--all").Wait();
+
+        StoreSessionContext();
+    }
+
+    private string ReleaseInSeparateSession(string agentName)
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = $"other-session-{agentName}";
+        File.WriteAllText(contextPath, otherSession);
+
+        var agentCmd = AgentCommand.Create();
+        var result = RunAsync(agentCmd, "release").Result;
+
+        StoreSessionContext();
+        return result.Stdout + result.Stderr;
+    }
+
+    private void SendMessageInSeparateSession(string fromAgent, string toAgent, string subject, string body)
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = $"other-session-{fromAgent}";
+        File.WriteAllText(contextPath, otherSession);
+
+        var msgCmd = MessageCommand.Create();
+        RunAsync(msgCmd, "--to", toAgent, "--subject", subject, "--body", body).Wait();
+
+        StoreSessionContext();
+    }
+
+    private string ShowInboxInSeparateSession(string agentName)
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = $"other-session-{agentName}";
+        File.WriteAllText(contextPath, otherSession);
+
+        var inboxCmd = InboxCommand.Create();
+        var result = RunAsync(inboxCmd, "show").Result;
+
+        StoreSessionContext();
+        return result.Stdout;
     }
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

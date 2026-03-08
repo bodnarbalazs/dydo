@@ -338,6 +338,16 @@ public partial class AgentRegistry : IAgentRegistry
                 return false;
             }
 
+            // Check for pending reply obligations
+            var replyMarkers = GetReplyPendingMarkers(agent.Name);
+            if (replyMarkers.Count > 0)
+            {
+                var pending = string.Join(", ", replyMarkers.Select(m => $"'{m.Task}' to {m.To}"));
+                error = $"Cannot release: pending reply on: {pending}.\n" +
+                        "Send a message first: dydo msg --to <agent> --subject <task> --body \"...\"";
+                return false;
+            }
+
             var sessionPath = Path.Combine(workspace, ".session");
 
             if (File.Exists(sessionPath))
@@ -375,12 +385,55 @@ public partial class AgentRegistry : IAgentRegistry
             // Clean up any orphaned wait markers
             ClearAllWaitMarkers(agent.Name);
 
+            // Clean up any orphaned reply-pending markers
+            ClearAllReplyPendingMarkers(agent.Name);
+
+            // Clean up role nudge markers
+            foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
+                File.Delete(marker);
+
             return true;
         }
         finally
         {
             ReleaseLock(agent.Name);
         }
+    }
+
+    private string? GetDispatchedRole(string agentName, string task)
+    {
+        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
+        if (!Directory.Exists(inboxPath)) return null;
+
+        var sanitizedTask = PathUtils.SanitizeForFilename(task);
+        var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
+        if (files.Length == 0) return null;
+
+        try
+        {
+            var content = File.ReadAllText(files[0]);
+            if (!content.StartsWith("---")) return null;
+
+            var endIndex = content.IndexOf("---", 3);
+            if (endIndex < 0) return null;
+
+            var yaml = content[3..endIndex];
+            foreach (var line in yaml.Split('\n'))
+            {
+                var colonIndex = line.IndexOf(':');
+                if (colonIndex < 0) continue;
+
+                var key = line[..colonIndex].Trim();
+                if (key == "role")
+                    return line[(colonIndex + 1)..].Trim();
+            }
+        }
+        catch
+        {
+            // Malformed inbox file — don't block role setting
+        }
+
+        return null;
     }
 
     public bool SetRole(string? sessionId, string role, string? task, out string error)
@@ -407,6 +460,28 @@ public partial class AgentRegistry : IAgentRegistry
             {
                 error = reason;
                 return false;
+            }
+        }
+
+        // Nudge when agent claims a different role than what the inbox item specifies
+        if (!string.IsNullOrEmpty(task))
+        {
+            var dispatchedRole = GetDispatchedRole(agent.Name, task);
+            var markerPath = Path.Combine(GetAgentWorkspace(agent.Name), $".role-nudge-{PathUtils.SanitizeForFilename(task)}");
+
+            if (dispatchedRole != null && !string.Equals(dispatchedRole, role, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!File.Exists(markerPath))
+                {
+                    File.WriteAllText(markerPath, role);
+                    error = $"You were dispatched as '{dispatchedRole}' for this task. If '{role}' fits better, run the command again.";
+                    return false;
+                }
+                File.Delete(markerPath);
+            }
+            else if (File.Exists(markerPath))
+            {
+                File.Delete(markerPath);
             }
         }
 
@@ -806,6 +881,75 @@ public partial class AgentRegistry : IAgentRegistry
     public void ClearAllWaitMarkers(string agentName)
     {
         var dir = GetWaitingDir(agentName);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
+    }
+
+    #endregion
+
+    #region Reply-Pending Markers
+
+    private string GetReplyPendingDir(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), ".reply-pending");
+
+    public void CreateReplyPendingMarker(string agentName, string task, string replyTo)
+    {
+        var dir = GetReplyPendingDir(agentName);
+        Directory.CreateDirectory(dir);
+
+        var marker = new ReplyPendingMarker
+        {
+            To = replyTo,
+            Task = task,
+            Since = DateTime.UtcNow
+        };
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.ReplyPendingMarker);
+        File.WriteAllText(path, json);
+    }
+
+    public List<ReplyPendingMarker> GetReplyPendingMarkers(string agentName)
+    {
+        var dir = GetReplyPendingDir(agentName);
+        if (!Directory.Exists(dir))
+            return [];
+
+        var markers = new List<ReplyPendingMarker>();
+        foreach (var file in Directory.GetFiles(dir, "*.json"))
+        {
+            try
+            {
+                var json = File.ReadAllText(file);
+                var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.ReplyPendingMarker);
+                if (marker != null)
+                    markers.Add(marker);
+            }
+            catch { }
+        }
+
+        return markers;
+    }
+
+    public bool RemoveReplyPendingMarker(string agentName, string task)
+    {
+        var dir = GetReplyPendingDir(agentName);
+        if (!Directory.Exists(dir))
+            return false;
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        if (!File.Exists(path))
+            return false;
+
+        File.Delete(path);
+        return true;
+    }
+
+    public void ClearAllReplyPendingMarkers(string agentName)
+    {
+        var dir = GetReplyPendingDir(agentName);
         if (Directory.Exists(dir))
             Directory.Delete(dir, true);
     }
@@ -1600,6 +1744,11 @@ public partial class AgentRegistry : IAgentRegistry
         {
             s.UnreadMessages.RemoveAll(id => id.Equals(messageId, StringComparison.OrdinalIgnoreCase));
         });
+    }
+
+    public void ClearAllUnreadMessages(string agentName)
+    {
+        UpdateAgentState(agentName, s => s.UnreadMessages.Clear());
     }
 
     private static string NormalizeMustReadPath(string path)

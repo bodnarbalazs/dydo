@@ -1,10 +1,7 @@
 ---
 area: general
-name: audit-compaction-v2
-status: human-reviewed
-created: 2026-03-08T01:11:09.1019163Z
-assigned: Mia
-updated: 2026-03-08T12:21:40.4567035Z
+type: changelog
+date: 2026-03-08
 ---
 
 # Task: audit-compaction-v2
@@ -31,3 +28,7 @@ Implemented audit compaction v2: (1) Added [JsonIgnore] to SnapshotDelta.IsEmpty
 - Notes: LGTM. Code is clean, correct, and well-tested. Delta caching by snapshot content hash is elegant. [JsonIgnore] fix prevents real serialization leak. All 26 compaction tests pass. 2 pre-existing test failures (HelpCommandTests, CompletionsCommandTests) are unrelated.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-08 20:25

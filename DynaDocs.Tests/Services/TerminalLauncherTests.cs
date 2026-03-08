@@ -938,9 +938,16 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetWindowsArguments_AutoClose_StillContainsNoExit()
+    public void GetWindowsArguments_AutoClose_OmitsNoExit()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
+        Assert.DoesNotContain("-NoExit", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_NoAutoClose_ContainsNoExit()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: false);
         Assert.Contains("-NoExit", args);
     }
 

@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for workflow commands:
@@ -284,6 +285,107 @@ public class WorkflowTests : IntegrationTestBase
         // Verify item was archived
         var archivePath = Path.Combine(TestDir, "dydo/agents/Adele/archive/inbox", "abc12345-test-task.md");
         Assert.True(File.Exists(archivePath), "Item should be archived");
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_All_ClearsUnreadMessages()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Add unread messages to agent state
+        var registry = new AgentRegistry(TestDir);
+        registry.AddUnreadMessage("Adele", "msg-001");
+        registry.AddUnreadMessage("Adele", "msg-002");
+
+        // Create inbox items
+        CreateInboxItem("Adele", "Brian", "reviewer", "task1", "Brief 1");
+
+        var result = await InboxClearAsync(all: true);
+
+        result.AssertSuccess();
+
+        // Verify unread messages cleared from state
+        var state = registry.GetAgentState("Adele");
+        Assert.Empty(state!.UnreadMessages);
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ById_ClearsSpecificUnreadMessage()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Add unread messages
+        var registry = new AgentRegistry(TestDir);
+        registry.AddUnreadMessage("Adele", "abc12345");
+        registry.AddUnreadMessage("Adele", "other-msg");
+
+        // Create inbox item with matching ID
+        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxPath);
+        File.WriteAllText(Path.Combine(inboxPath, "abc12345-test-task.md"), """
+            ---
+            id: abc12345
+            from: Brian
+            role: reviewer
+            task: test-task
+            received: 2024-01-01T00:00:00Z
+            ---
+
+            # Test
+
+            Brief
+            """);
+
+        var result = await InboxClearAsync(id: "abc12345");
+
+        result.AssertSuccess();
+
+        var state = registry.GetAgentState("Adele");
+        Assert.DoesNotContain("abc12345", state!.UnreadMessages);
+        Assert.Contains("other-msg", state.UnreadMessages);
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_All_EmptyInbox_NoError()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Ensure inbox exists but is empty
+        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxPath);
+
+        var result = await InboxClearAsync(all: true);
+
+        result.AssertSuccess();
+
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetAgentState("Adele");
+        Assert.Empty(state!.UnreadMessages);
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_All_GuardSeesNoUnread()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+        await ReadMustReadsAsync();
+
+        // Add unread messages and inbox items
+        var registry = new AgentRegistry(TestDir);
+        registry.AddUnreadMessage("Adele", "msg-001");
+        CreateInboxItem("Adele", "Brian", "reviewer", "task1", "Brief 1");
+
+        var result = await InboxClearAsync(all: true);
+        result.AssertSuccess();
+
+        // Guard should not report unread messages
+        var guardResult = await GuardAsync("Read", "Commands/InboxCommand.cs");
+        guardResult.AssertSuccess();
+        Assert.DoesNotContain("unread", guardResult.Stdout.ToLowerInvariant());
     }
 
     #endregion

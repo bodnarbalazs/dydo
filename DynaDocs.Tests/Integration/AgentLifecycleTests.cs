@@ -382,6 +382,123 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertStderrContains("No human identity set");
     }
 
+    [Fact]
+    public async Task List_Default_WaitingForColumn_AppearsBeforeTask()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        var header = result.Stdout.Split('\n').First(l => l.Contains("Agent"));
+        var waitIdx = header.IndexOf("Waiting For");
+        var taskIdx = header.IndexOf("Task");
+        Assert.True(waitIdx >= 0, "Header missing 'Waiting For' column");
+        Assert.True(waitIdx < taskIdx, "'Waiting For' column should appear before 'Task'");
+    }
+
+    [Fact]
+    public async Task List_Default_ShowsWaitTargetOnCorrectRow()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "my-task", "Brian");
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        var adeleLine = result.Stdout.Split('\n').First(l => l.Contains("Adele"));
+        Assert.Contains("Brian", adeleLine);
+
+        // Brian's own row should NOT show Brian as a wait target
+        var brianLine = result.Stdout.Split('\n').First(l => l.StartsWith("Brian"));
+        Assert.DoesNotContain("Brian", brianLine.Substring("Brian".Length));
+    }
+
+    [Fact]
+    public async Task List_Default_NoWaitMarkers_WaitColumnShowsDash()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task");
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        // Brian has a role of "-" and no wait markers.
+        // Extract the Waiting For column value from Brian's line using header offsets.
+        var header = result.Stdout.Split('\n').First(l => l.Contains("Agent"));
+        var waitCol = header.IndexOf("Waiting For");
+        var taskCol = header.IndexOf("Task");
+        var brianLine = result.Stdout.Split('\n').First(l => l.StartsWith("Brian"));
+        var waitValue = brianLine.Substring(waitCol, taskCol - waitCol).Trim();
+        Assert.Equal("-", waitValue);
+    }
+
+    [Fact]
+    public async Task List_Default_MultipleWaitTargets_ShowsCommaSeparated()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "task-a", "Brian");
+        registry.CreateWaitMarker("Adele", "task-b", "Charlie");
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        var adeleLine = result.Stdout.Split('\n').First(l => l.Contains("Adele"));
+        Assert.Contains("Brian", adeleLine);
+        Assert.Contains("Charlie", adeleLine);
+        Assert.Contains(",", adeleLine);
+    }
+
+    [Fact]
+    public async Task List_All_WaitingForColumn_AppearsBeforeRole()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await ListAgentsAsync(all: true);
+
+        result.AssertSuccess();
+        var header = result.Stdout.Split('\n').First(l => l.Contains("Agent"));
+        var waitIdx = header.IndexOf("Waiting For");
+        var roleIdx = header.IndexOf("Role");
+        Assert.True(waitIdx >= 0, "Header missing 'Waiting For' column");
+        Assert.True(waitIdx < roleIdx, "'Waiting For' column should appear before 'Role'");
+    }
+
+    [Fact]
+    public async Task List_All_ShowsWaitTargetOnCorrectRow()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Brian", "build-api", "Adele");
+
+        var result = await ListAgentsAsync(all: true);
+
+        result.AssertSuccess();
+        var brianLine = result.Stdout.Split('\n').First(l => l.StartsWith("Brian"));
+        Assert.Contains("Adele", brianLine);
+
+        // Adele's row should not show Adele as a wait target
+        var adeleLine = result.Stdout.Split('\n').First(l => l.StartsWith("Adele"));
+        Assert.DoesNotContain("Adele", adeleLine.Substring("Adele".Length));
+    }
+
+    [Fact]
+    public async Task List_Free_ShowsWaitingForColumn()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await ListAgentsAsync(freeOnly: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Waiting For");
+    }
+
     #endregion
 
     #region Role

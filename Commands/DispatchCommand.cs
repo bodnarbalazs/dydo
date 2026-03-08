@@ -36,11 +36,6 @@ public static class DispatchCommand
             Description = "File pattern to include (e.g., 'src/Auth/**')"
         };
 
-        var contextOption = new Option<string?>("--context-file")
-        {
-            Description = "Path to context file"
-        };
-
         var noLaunchOption = new Option<bool>("--no-launch")
         {
             Description = "Don't launch new terminal, just write to inbox"
@@ -72,19 +67,30 @@ public static class DispatchCommand
             Description = "Auto-close the dispatched agent's terminal after release"
         };
 
+        var waitOption = new Option<bool>("--wait")
+        {
+            Description = "Wait for a response from the dispatched agent"
+        };
+
+        var noWaitOption = new Option<bool>("--no-wait")
+        {
+            Description = "Dispatch and return immediately (fire and forget)"
+        };
+
         var command = new Command("dispatch", "Dispatch work to another agent");
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
         command.Options.Add(briefOption);
         command.Options.Add(briefFileOption);
         command.Options.Add(filesOption);
-        command.Options.Add(contextOption);
         command.Options.Add(noLaunchOption);
         command.Options.Add(toOption);
         command.Options.Add(escalateOption);
         command.Options.Add(autoCloseOption);
         command.Options.Add(tabOption);
         command.Options.Add(newWindowOption);
+        command.Options.Add(waitOption);
+        command.Options.Add(noWaitOption);
 
         command.SetAction(parseResult =>
         {
@@ -93,13 +99,27 @@ public static class DispatchCommand
             var brief = parseResult.GetValue(briefOption);
             var briefFile = parseResult.GetValue(briefFileOption);
             var files = parseResult.GetValue(filesOption);
-            var contextFile = parseResult.GetValue(contextOption);
             var noLaunch = parseResult.GetValue(noLaunchOption);
             var to = parseResult.GetValue(toOption);
             var escalate = parseResult.GetValue(escalateOption);
             var useTab = parseResult.GetValue(tabOption);
             var useNewWindow = parseResult.GetValue(newWindowOption);
             var autoClose = parseResult.GetValue(autoCloseOption);
+            var wait = parseResult.GetValue(waitOption);
+            var noWait = parseResult.GetValue(noWaitOption);
+
+            // Validate --wait / --no-wait
+            if (wait && noWait)
+            {
+                ConsoleOutput.WriteError("Cannot specify both --wait and --no-wait.");
+                return ExitCodes.ToolError;
+            }
+
+            if (!wait && !noWait)
+            {
+                ConsoleOutput.WriteError("Specify --wait or --no-wait to indicate whether you expect a response.");
+                return ExitCodes.ToolError;
+            }
 
             var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))
@@ -129,13 +149,13 @@ public static class DispatchCommand
                 }
             }
 
-            return Execute(role, task, brief, files, contextFile, noLaunch, to, escalate, useTab, useNewWindow, autoClose);
+            return Execute(role, task, brief, files, noLaunch, to, escalate, useTab, useNewWindow, autoClose, wait);
         });
 
         return command;
     }
 
-    private static int Execute(string role, string task, string brief, string? files, string? contextFile, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose)
+    private static int Execute(string role, string task, string brief, string? files, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose, bool wait)
     {
         if (useTab && useNewWindow)
         {
@@ -153,6 +173,14 @@ public static class DispatchCommand
 
         // Determine origin: inherit from inbox item if this is a send-back, else sender is origin
         var origin = GetOriginForTask(registry, sender, task) ?? senderName;
+
+        // Double-dispatch protection
+        var existing = FindAgentWorkingOnTask(registry, task, senderName);
+        if (existing != null)
+        {
+            ConsoleOutput.WriteError($"{existing} is already working on task '{task}'. If you need to re-dispatch, have them release first.");
+            return ExitCodes.ToolError;
+        }
 
         // Determine target agent
         string targetAgentName;
@@ -266,7 +294,6 @@ public static class DispatchCommand
             Received = DateTime.UtcNow,
             Brief = brief,
             Files = string.IsNullOrEmpty(files) ? [] : [files],
-            ContextFile = contextFile,
             Escalated = escalate,
             EscalatedAt = escalate ? DateTime.UtcNow : null
         };
@@ -324,17 +351,76 @@ public static class DispatchCommand
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 
+        // --wait: create marker and enter poll loop
+        if (wait)
+        {
+            registry.CreateWaitMarker(senderName, task, targetAgentName);
+            Console.WriteLine($"Waiting for response on '{task}'...");
+            Console.WriteLine($"  If this times out, resume with: dydo wait --task {task}");
+
+            var senderInboxPath = Path.Combine(registry.GetAgentWorkspace(senderName), "inbox");
+            while (true)
+            {
+                var message = WaitCommand.FindMessage(senderInboxPath, task);
+                if (message != null)
+                {
+                    Console.WriteLine($"Message received from {message.From}:");
+                    Console.WriteLine($"  Subject: {message.Subject ?? "(none)"}");
+                    Console.WriteLine($"  Body: {message.Body}");
+                    registry.RemoveWaitMarker(senderName, task);
+                    return ExitCodes.Success;
+                }
+
+                Thread.Sleep(10_000);
+            }
+        }
+
+        // --no-wait: show release hint when appropriate
+        if (origin != senderName &&
+            !string.Equals(sender?.Role, "co-thinker", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("  Nothing left? Don't forget: dydo agent release");
+        }
+
         return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// Checks if any non-free agent (other than the sender) is already working on the given task.
+    /// </summary>
+    private static string? FindAgentWorkingOnTask(AgentRegistry registry, string task, string senderName)
+    {
+        foreach (var agent in registry.GetAllAgentStates())
+        {
+            if (string.Equals(agent.Name, senderName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (agent.Status is AgentStatus.Working or AgentStatus.Reviewing)
+            {
+                if (string.Equals(agent.Task, task, StringComparison.OrdinalIgnoreCase))
+                    return agent.Name;
+            }
+
+            if (agent.Status == AgentStatus.Dispatched)
+            {
+                var agentInbox = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
+                if (Directory.Exists(agentInbox))
+                {
+                    var sanitized = PathUtils.SanitizeForFilename(task);
+                    var matching = Directory.GetFiles(agentInbox, $"*-{sanitized}.md");
+                    if (matching.Length > 0)
+                        return agent.Name;
+                }
+            }
+        }
+
+        return null;
     }
 
     private static void WriteInboxItem(string path, InboxItem item)
     {
         var filesSection = item.Files.Count > 0
             ? $"\n## Files\n\n{string.Join("\n", item.Files.Select(f => $"- {f}"))}"
-            : "";
-
-        var contextSection = !string.IsNullOrEmpty(item.ContextFile)
-            ? $"\n## Context\n\nSee: [{item.ContextFile}]({item.ContextFile})"
             : "";
 
         var originYaml = !string.IsNullOrEmpty(item.Origin)
@@ -366,7 +452,6 @@ public static class DispatchCommand
 
             {item.Brief}
             {filesSection}
-            {contextSection}
             """;
 
         File.WriteAllText(path, content);
@@ -380,7 +465,7 @@ public static class DispatchCommand
     internal static string? DetectShellMetacharacters(string brief)
     {
         // Patterns that almost certainly indicate shell garbling, not intentional prose
-        string[] shellPatterns = ["&&", "||", "$(", "`"];
+        string[] shellPatterns = ["&&", "||", "$(", "${", "`"];
 
         foreach (var pattern in shellPatterns)
         {

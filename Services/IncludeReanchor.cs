@@ -46,9 +46,7 @@ public static class IncludeReanchor
                 ? FindLineIndex(lines, include.LowerAnchor) : -1;
 
             int insertAt;
-            if (upperIdx >= 0 && lowerIdx >= 0)
-                insertAt = upperIdx + 1;
-            else if (upperIdx >= 0)
+            if (upperIdx >= 0)
                 insertAt = upperIdx + 1;
             else if (lowerIdx >= 0)
                 insertAt = lowerIdx;

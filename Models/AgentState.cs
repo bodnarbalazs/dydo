@@ -23,4 +23,5 @@ public class AgentState
     /// Populated on role set, cleared as agent reads each file.
     /// </summary>
     public List<string> UnreadMustReads { get; set; } = [];
+    public List<string> UnreadMessages { get; set; } = [];
 }

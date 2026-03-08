@@ -11,4 +11,8 @@ Index of tasks documentation.
 
 ## Contents
 
-*No documents in this folder yet.*
+- [Task: agent-messaging](./agent-messaging.md) - (No description)
+- [Task: audit-compaction-investigation](./audit-compaction-investigation.md) - (No description)
+- [Task: command-resiliency](./command-resiliency.md) - (No description)
+- [Task: help-meta-audit](./help-meta-audit.md) - (No description)
+- [Task: template-update-system](./template-update-system.md) - (No description)

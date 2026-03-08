@@ -74,7 +74,7 @@ Before planning, understand what exists:
 Create an implementation plan:
 
 ```bash
-dydo task create <task-name> --description "Brief description"
+dydo task create <task-name> --area <area> --description "Brief description"
 ```
 
 Then write the plan in your workspace:
@@ -126,7 +126,7 @@ When the plan is ready:
 ### Option A: Dispatch to Code-Writer
 
 ```bash
-dydo dispatch --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
+dydo dispatch --no-wait --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
 ```
 
 ### Option B: Transition Yourself to Code-Writer
@@ -138,5 +138,15 @@ dydo agent role code-writer --task <task-name>
 ```
 
 Then read [modes/code-writer.md](./code-writer.md) and implement.
+
+### Option C: Dispatch and Wait for Results
+
+For complex tasks where you need the implementation results:
+
+```bash
+dydo dispatch --wait --auto-close --role code-writer --task <task-name> --brief "..."
+```
+
+The code-writer will message you back when done. You'll wake up with their response.
 
 Decision principle for choosing: Did I explore many irrelevant files/avenues? What is my context's signal to noise ratio like? If it's better to start fresh go with option A, if the context is high quality go with option B.

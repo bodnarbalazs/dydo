@@ -110,7 +110,7 @@ When the brief is complete and the human confirms it's accurate:
 ### Option A: Dispatch to Planner
 
 ```bash
-dydo dispatch --role planner --task <task-name> --brief "Requirements gathered. See brief at agents/{{AGENT_NAME}}/brief-<task-name>.md"
+dydo dispatch --no-wait --role planner --task <task-name> --brief "Requirements gathered. See brief at agents/{{AGENT_NAME}}/brief-<task-name>.md"
 ```
 
 ### Option B: Transition Yourself to Planner

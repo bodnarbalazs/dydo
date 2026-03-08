@@ -233,28 +233,39 @@ dydo agent reassign Adele bob
 
 ### dydo dispatch
 
-Dispatch work to another agent.
+Dispatch work to another agent. Requires `--wait` or `--no-wait` to indicate intent.
 
 ```bash
-dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth"
-dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
-dydo dispatch --role reviewer --task auth-login --brief "Review PR" --no-launch  # auto-transitions task to review-pending
-dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --tab
+# Expecting feedback (creates wait marker, enters poll loop):
+dydo dispatch --wait --auto-close --role reviewer --task auth-login --brief "Review PR"
+
+# Fire and forget:
+dydo dispatch --no-wait --role code-writer --task auth-login --brief "Implement OAuth"
+dydo dispatch --no-wait --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
 ```
 
 **Options:**
 - `--role <role>` - Role for the target agent (required)
 - `--task <name>` - Task name (required)
-- `--brief <text>` - Brief description (required)
+- `--wait` - Wait for a response from the dispatched agent (required, mutually exclusive with --no-wait)
+- `--no-wait` - Dispatch and return immediately (required, mutually exclusive with --wait)
+- `--brief <text>` - Brief description (required unless --brief-file used)
+- `--brief-file <path>` - Read brief from a file instead of inline
 - `--files <pattern>` - File pattern to include
-- `--context-file <path>` - Path to context file
 - `--to <agent-name>` - Send to specific agent (skips auto-selection)
 - `--escalate` - Mark as escalated (after repeated failures)
+- `--auto-close` - Auto-close the dispatched agent's terminal after release
 - `--no-launch` - Don't launch terminal, just write to inbox
 - `--tab` - Launch in a new tab instead of a new window (overrides config)
 - `--new-window` - Launch in a new window (overrides config)
 
 **Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
+
+**Double-dispatch protection:** If another agent is already working on the same task, dispatch is blocked.
+
+**`--wait` behavior:** Creates a wait marker, then polls for a response. The marker blocks release until cancelled.
+
+**`--no-wait` behavior:** Returns immediately. Shows a release hint when appropriate.
 
 ### dydo inbox list
 
@@ -284,6 +295,48 @@ dydo inbox clear --id abc123  # Clear specific item
 **Options:**
 - `--all` - Clear all items
 - `--id <id>` - Clear specific item by ID
+
+---
+
+## Messaging Commands
+
+### dydo message
+
+Send a message to another agent. Alias: `dydo msg`.
+
+```bash
+dydo message --to Brian --body "Auth done. Tests pass."
+dydo msg --to Brian --body "Auth done."
+dydo msg --to Brian --subject "auth-login" --body "Done."
+dydo msg --to Brian --body-file ./summary.md
+dydo msg --to Brian --body "Important." --force
+```
+
+**Options:**
+- `--to <agent>` - Target agent (required)
+- `--body <text>` - Message content (required unless --body-file)
+- `--body-file <path>` - Read body from file
+- `--subject <name>` - Topic/task identifier
+- `--force` - Send to inactive agents
+
+**Restrictions:** No self-messaging. No cross-human messaging.
+
+### dydo wait
+
+Wait for an incoming message. Blocks until a message arrives in the agent's inbox.
+
+```bash
+dydo wait                          # Wait for any message
+dydo wait --task auth-login        # Wait for message with matching subject
+dydo wait --task auth-login --cancel  # Cancel an active wait (remove marker)
+dydo wait --cancel                 # Cancel all active waits
+```
+
+**Options:**
+- `--task <name>` - Only wake on messages with this subject
+- `--cancel` - Cancel an active wait (remove wait marker)
+
+**Behavior:** Polls every 10 seconds. No timeout. If killed by bash timeout, re-run the command. General wait skips messages claimed by active wait markers (channel isolation).
 
 ---
 
@@ -354,14 +407,15 @@ dydo workspace check
 Create a new task.
 
 ```bash
-dydo task create auth-login
-dydo task create auth-login --description "Implement user authentication"
+dydo task create auth-login --area backend
+dydo task create auth-login --area backend --description "Implement user authentication"
 ```
 
 **Arguments:**
 - `name` - Task name (kebab-case)
 
 **Options:**
+- `--area <area>` - Task area, e.g. backend, frontend, general (required)
 - `--description <text>` - Task description
 
 ### dydo task ready-for-review
@@ -436,7 +490,7 @@ Complete a code review.
 
 ```bash
 # Normal workflow (dispatch auto-transitions the task):
-dydo dispatch --role reviewer --task auth-login --brief "Implemented OAuth flow"
+dydo dispatch --wait --auto-close --role reviewer --task auth-login --brief "Implemented OAuth flow"
 dydo review complete auth-login --status pass
 dydo review complete auth-login --status fail --notes "Found security issue"
 ```
@@ -470,9 +524,61 @@ dydo audit --session <id>    # Show details for a session
 - `--list` - List available sessions
 - `--session <id>` - Show details for a specific session ID
 
+### dydo audit compact
+
+Compact audit snapshots using baseline+delta compression.
+
+```bash
+dydo audit compact           # Compact current year
+dydo audit compact 2025      # Compact specific year
+```
+
+**Arguments:**
+- `year` - Year to compact (e.g., 2025). Defaults to current year.
+
+---
+
+## Template Commands
+
+### dydo template update
+
+Update framework-owned templates and docs to the latest version.
+
+```bash
+dydo template update           # Apply updates, re-anchor user includes
+dydo template update --diff    # Preview changes without writing
+dydo template update --force   # Overwrite even if re-anchoring fails (backs up first)
+```
+
+**Options:**
+- `--diff` - Preview what would change without writing any files
+- `--force` - Overwrite files even when user-added include tags can't be re-anchored (creates `.backup` of original)
+
+**Behavior:**
+- Compares on-disk templates to embedded (latest) versions using SHA256 hashes
+- Clean files (hash matches) are overwritten with the new version
+- User-edited files: extracts user-added `{{include:...}}` tags, writes new template, re-anchors tags
+- Non-include edits are lost on update (only include tags are preserved)
+- Binary files (`_assets/dydo-diagram.svg`) use byte-level hash comparison
+
+**Exit codes:** 0 = success, 1 = warnings (unplaceable tags without `--force`).
+
 ---
 
 ## Utility Commands
+
+### dydo completions
+
+Generate shell completion scripts.
+
+```bash
+dydo completions bash        # Generate bash completions
+dydo completions zsh         # Generate zsh completions
+dydo completions powershell  # Generate PowerShell completions
+```
+
+**Arguments:**
+- `shell` - Shell type: `bash`, `zsh`, or `powershell`
 
 ### dydo version
 

@@ -18,6 +18,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
 *Skip coding-standards for now, you're exploring, not implementing.*
+{{include:extra-must-reads}}
 
 ---
 
@@ -96,7 +97,7 @@ When the thinking session is done, choose based on what emerged:
 ### Task Emerged → Dispatch to Planner
 
 ```bash
-dydo dispatch --role planner --task <task-name> --brief "Task emerged from thinking session. See decision at project/decisions/NNN-<name>.md"
+dydo dispatch --no-wait --role planner --task <task-name> --brief "Task emerged from thinking session. See decision at project/decisions/NNN-<name>.md"
 ```
 
 ### Ready to Implement → Switch Mode

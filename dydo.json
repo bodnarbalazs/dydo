@@ -5,8 +5,19 @@
     "tasks": "project/tasks"
   },
   "paths": {
-    "source": ["Commands/**", "Services/**", "Models/**", "Rules/**", "Utils/**", "Serialization/**", "Program.cs", "Templates/**"],
-    "tests": ["DynaDocs.Tests/**"]
+    "source": [
+      "Commands/**",
+      "Services/**",
+      "Models/**",
+      "Rules/**",
+      "Utils/**",
+      "Serialization/**",
+      "Program.cs",
+      "Templates/**"
+    ],
+    "tests": [
+      "DynaDocs.Tests/**"
+    ]
   },
   "agents": {
     "pool": [
@@ -72,6 +83,22 @@
     "claude": true
   },
   "dispatch": {
-    "launchInTab": true
+    "launchInTab": true,
+    "autoClose": false
+  },
+  "frameworkHashes": {
+    "_system/templates/agent-workflow.template.md": "32616899f1699357dd1dc23bdb0d5f06ee1421e04fe93c1c4a45c583ee506847",
+    "_system/templates/mode-code-writer.template.md": "4ee000a87177dad6da54ae27d4a97ee27884002040b219a5b50f13c4c99d6537",
+    "_system/templates/mode-reviewer.template.md": "2f1b084a0e4bda462869f95c7c78e86574ac692b1f769b3963d479ebe6156724",
+    "_system/templates/mode-co-thinker.template.md": "d0eb7cee4b433df6bf0846adf71b6d5e91c0340755b550022e7908284acad456",
+    "_system/templates/mode-interviewer.template.md": "fb1ef19d64d6c900b722bc3c5bbe227f2db01ffe6e09044f4cdcf0d9ed9e6c49",
+    "_system/templates/mode-planner.template.md": "9cb7cbccca62cf52d84af166d9b3c74f76c882a21f09b018364e01dc6eeaaf8c",
+    "_system/templates/mode-docs-writer.template.md": "b699295f3be5f18c60dba321baad7fa19f88ebb38c62de9565cd711888a92c42",
+    "_system/templates/mode-tester.template.md": "0370b0b975fc2dae812d45b87d1c361221e6b669072ffa792d017d08570683bf",
+    "reference/about-dynadocs.md": "5c07dc01beb36fd736ac87c89c0113200776baeb5d3771faefa781ab45c04d9e",
+    "reference/dydo-commands.md": "2c557532fef9728899f8532e260f4e158e177d291b226d498f8377b9aea909ed",
+    "reference/writing-docs.md": "facc06413e2fb92ee356a4579cfe7dec8012d20d4379b0a26323b4efedca7275",
+    "guides/how-to-use-docs.md": "7b8625467abd5da244c30a9833c7d8fadd629c0e0f2d3c2612f7217cc84626bc",
+    "_assets/dydo-diagram.svg": "6c23cbc1aa47fb016e3055243f56a346eedd554574a0265283c65b27233a5dfe"
   }
 }

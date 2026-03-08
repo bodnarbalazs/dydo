@@ -1,0 +1,26 @@
+{
+  "session": "1df9af5a-f1e2-4e4f-bc2d-68eeaec9bf75",
+  "human": "balazs",
+  "started": "2026-03-08T00:28:28.4264805Z",
+  "git_head": "6fe6670",
+  "events": [
+    {
+      "ts": "2026-03-08T00:28:28.4253898Z",
+      "event": "Blocked",
+      "tool": "grep",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-08T00:28:32.3770412Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-08T00:28:34.9177016Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent claim auto 2\u003E\u00261"
+    }
+  ]
+}

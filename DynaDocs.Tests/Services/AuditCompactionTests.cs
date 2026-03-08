@@ -642,7 +642,7 @@ public class AuditCompactionTests : IDisposable
         var result = SnapshotCompactionService.Compact(_yearDir);
 
         Assert.True(result.SessionsProcessed > 100, $"Expected >100 sessions, got {result.SessionsProcessed}");
-        Assert.True(result.CompressionRatio > 0.3, $"Expected >30% compression, got {result.CompressionRatio:P1}");
+        Assert.True(result.CompressionRatio > 0.5, $"Expected >50% compression, got {result.CompressionRatio:P1}");
 
         // Verify every session can be resolved
         var baselines = LoadAllBaselines();
@@ -702,6 +702,123 @@ public class AuditCompactionTests : IDisposable
                 original.Folders.OrderBy(f => f).ToList(),
                 resolved.Folders.OrderBy(f => f).ToList());
         }
+    }
+
+    #endregion
+
+    #region Git Head Deduplication
+
+    [Fact]
+    public void Compact_SessionsSameGitHead_ShareDelta()
+    {
+        var baseFiles = Enumerable.Range(1, 100).Select(i => $"src/file-{i:D3}.cs").ToList();
+
+        for (int i = 0; i < 5; i++)
+        {
+            var session = MakeSession($"session-{i}", MakeSnapshot(new List<string>(baseFiles), ["src"], commit: "same-commit"));
+            session.GitHead = "abc123";
+            session.Started = DateTime.UtcNow.AddHours(-5 + i);
+            WriteSession(session);
+        }
+
+        var result = SnapshotCompactionService.Compact(_yearDir);
+
+        Assert.Equal(5, result.SessionsProcessed);
+        Assert.Equal(1, result.UniqueCommits);
+
+        // All sessions should have identical snapshot_ref (same BaseId, null delta)
+        var sessionFiles = Directory.GetFiles(_yearDir, "*.json")
+            .Where(f => !Path.GetFileName(f).StartsWith("_baseline-")).ToList();
+
+        string? sharedBaseId = null;
+        foreach (var file in sessionFiles)
+        {
+            var session = JsonSerializer.Deserialize<AuditSession>(File.ReadAllText(file), JsonOpts)!;
+            Assert.Null(session.Snapshot);
+            Assert.NotNull(session.SnapshotRef);
+            Assert.Null(session.SnapshotRef.Delta);
+            sharedBaseId ??= session.SnapshotRef.BaseId;
+            Assert.Equal(sharedBaseId, session.SnapshotRef.BaseId);
+        }
+    }
+
+    [Fact]
+    public void Compact_MultipleGitHeads_OneDeltaPerCommit()
+    {
+        var baseFiles = Enumerable.Range(1, 50).Select(i => $"src/file-{i:D3}.cs").ToList();
+
+        // 3 sessions at commit A
+        for (int i = 0; i < 3; i++)
+        {
+            var session = MakeSession($"a-{i}", MakeSnapshot(new List<string>(baseFiles), ["src"], commit: "commit-a"));
+            session.GitHead = "commit-a";
+            session.Started = DateTime.UtcNow.AddHours(-6 + i);
+            WriteSession(session);
+        }
+
+        // 2 sessions at commit B (adds one file)
+        var filesB = new List<string>(baseFiles) { "src/new-b.cs" };
+        for (int i = 0; i < 2; i++)
+        {
+            var session = MakeSession($"b-{i}", MakeSnapshot(new List<string>(filesB), ["src"], commit: "commit-b"));
+            session.GitHead = "commit-b";
+            session.Started = DateTime.UtcNow.AddHours(-3 + i);
+            WriteSession(session);
+        }
+
+        // 1 session at commit C (adds two files)
+        var filesC = new List<string>(baseFiles) { "src/new-c1.cs", "src/new-c2.cs" };
+        var sessionC = MakeSession("c-0", MakeSnapshot(new List<string>(filesC), ["src"], commit: "commit-c"));
+        sessionC.GitHead = "commit-c";
+        sessionC.Started = DateTime.UtcNow.AddHours(-1);
+        WriteSession(sessionC);
+
+        var result = SnapshotCompactionService.Compact(_yearDir);
+
+        Assert.Equal(6, result.SessionsProcessed);
+        Assert.Equal(3, result.UniqueCommits);
+
+        // Verify sessions at same commit share identical snapshot_ref
+        var sessionFiles = Directory.GetFiles(_yearDir, "*.json")
+            .Where(f => !Path.GetFileName(f).StartsWith("_baseline-")).ToList();
+
+        var refsByGitHead = new Dictionary<string, SnapshotRef>();
+        foreach (var file in sessionFiles)
+        {
+            var session = JsonSerializer.Deserialize<AuditSession>(File.ReadAllText(file), JsonOpts)!;
+            Assert.NotNull(session.SnapshotRef);
+
+            if (refsByGitHead.TryGetValue(session.GitHead!, out var existingRef))
+            {
+                // Same base, same delta content
+                Assert.Equal(existingRef.BaseId, session.SnapshotRef.BaseId);
+                Assert.Equal(existingRef.Delta == null, session.SnapshotRef.Delta == null);
+            }
+            else
+            {
+                refsByGitHead[session.GitHead!] = session.SnapshotRef;
+            }
+        }
+
+        // Baseline commit (most common = commit-a) should have null delta
+        Assert.Null(refsByGitHead["commit-a"].Delta);
+        // Other commits should have non-null deltas
+        Assert.NotNull(refsByGitHead["commit-b"].Delta);
+        Assert.NotNull(refsByGitHead["commit-c"].Delta);
+    }
+
+    [Fact]
+    public void IsEmpty_NotSerialized()
+    {
+        var delta = new SnapshotDelta
+        {
+            FilesAdded = ["test.cs"]
+        };
+
+        var json = JsonSerializer.Serialize(delta, JsonOpts);
+
+        Assert.DoesNotContain("IsEmpty", json);
+        Assert.DoesNotContain("is_empty", json);
     }
 
     #endregion

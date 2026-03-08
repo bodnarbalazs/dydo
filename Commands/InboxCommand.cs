@@ -115,18 +115,31 @@ public static class InboxCommand
 
         foreach (var item in items.OrderBy(i => i.Received))
         {
-            var escalatedPrefix = item.Escalated ? "[ESCALATED] " : "";
-            Console.WriteLine($"{escalatedPrefix}[{item.Id}] {item.Role.ToUpperInvariant()}: {item.Task}");
-            Console.WriteLine($"  From: {item.From}");
-            if (!string.IsNullOrEmpty(item.Origin) && item.Origin != item.From)
-                Console.WriteLine($"  Origin: {item.Origin}");
-            Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
-            if (item.Escalated && item.EscalatedAt.HasValue)
-                Console.WriteLine($"  Escalated: {item.EscalatedAt:yyyy-MM-dd HH:mm} UTC");
-            Console.WriteLine($"  Brief: {item.Brief}");
+            if (item.Type == "message")
+            {
+                Console.WriteLine($"[{item.Id}] MESSAGE: {item.Subject ?? "(no subject)"}");
+                Console.WriteLine($"  From: {item.From}");
+                Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
+                var bodyPreview = item.Body ?? "";
+                if (bodyPreview.Length > 200)
+                    bodyPreview = bodyPreview[..200] + "...";
+                Console.WriteLine($"  Body: {bodyPreview}");
+            }
+            else
+            {
+                var escalatedPrefix = item.Escalated ? "[ESCALATED] " : "";
+                Console.WriteLine($"{escalatedPrefix}[{item.Id}] {item.Role.ToUpperInvariant()}: {item.Task}");
+                Console.WriteLine($"  From: {item.From}");
+                if (!string.IsNullOrEmpty(item.Origin) && item.Origin != item.From)
+                    Console.WriteLine($"  Origin: {item.Origin}");
+                Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
+                if (item.Escalated && item.EscalatedAt.HasValue)
+                    Console.WriteLine($"  Escalated: {item.EscalatedAt:yyyy-MM-dd HH:mm} UTC");
+                Console.WriteLine($"  Brief: {item.Brief}");
 
-            if (item.Files.Count > 0)
-                Console.WriteLine($"  Files: {string.Join(", ", item.Files)}");
+                if (item.Files.Count > 0)
+                    Console.WriteLine($"  Files: {string.Join(", ", item.Files)}");
+            }
 
             Console.WriteLine();
         }
@@ -227,6 +240,7 @@ public static class InboxCommand
             var yaml = content[3..endIndex].Trim();
 
             string? id = null, from = null, role = null, task = null, origin = null;
+            string? type = null, subject = null;
             DateTime received = DateTime.UtcNow;
             bool escalated = false;
             DateTime? escalatedAt = null;
@@ -246,6 +260,8 @@ public static class InboxCommand
                     case "origin": origin = value; break;
                     case "role": role = value; break;
                     case "task": task = value; break;
+                    case "type": type = value; break;
+                    case "subject": subject = value; break;
                     case "received":
                         if (DateTime.TryParse(value, out var dt))
                             received = dt;
@@ -260,12 +276,20 @@ public static class InboxCommand
                 }
             }
 
-            if (id == null || from == null || role == null || task == null)
+            if (id == null || from == null)
+                return null;
+
+            // Messages don't require role/task
+            if (type != "message" && (role == null || task == null))
                 return null;
 
             // Extract brief from content
             var briefMatch = Regex.Match(content, @"## Brief\s+(.+?)(?=\n#|$)", RegexOptions.Singleline);
             var brief = briefMatch.Success ? briefMatch.Groups[1].Value.Trim() : "";
+
+            // Extract body from content (for messages)
+            var bodyMatch = Regex.Match(content, @"## Body\s+(.+?)(?=\n#|$)", RegexOptions.Singleline);
+            var body = bodyMatch.Success ? bodyMatch.Groups[1].Value.Trim() : null;
 
             // Extract files from content
             var files = new List<string>();
@@ -282,13 +306,16 @@ public static class InboxCommand
                 Id = id,
                 From = from,
                 Origin = origin,
-                Role = role,
-                Task = task,
+                Role = role ?? "",
+                Task = task ?? "",
                 Received = received,
                 Brief = brief,
+                Body = body,
                 Files = files,
                 Escalated = escalated,
-                EscalatedAt = escalatedAt
+                EscalatedAt = escalatedAt,
+                Type = type,
+                Subject = subject
             };
         }
         catch

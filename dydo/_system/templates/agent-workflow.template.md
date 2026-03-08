@@ -49,6 +49,8 @@ dydo agent role <role> --task <task-name>
 
 **After** setting your role, you can read any project files.
 
+**Note:** Roles are not permanent — suggest a role change when the work calls for it.
+
 ---
 
 ## 3. Handle Inbox
@@ -112,8 +114,13 @@ Go to your mode file. It contains:
 Follow your mode's completion instructions. Generally:
 
 1. **Dispatch** to the next role if handing off work
-2. **Clear inbox** if you processed dispatched items: `dydo inbox clear --all`
-3. **Release** your identity: `dydo agent release`
+2. **Report back?** If you were dispatched by another agent and they need results, message them before releasing:
+   ```bash
+   dydo msg --to <origin-agent> --subject <task-name> --body "Results summary..."
+   ```
+   Check who dispatched you: the `From` or `Origin` field in your inbox item.
+3. **Clear inbox** if you processed dispatched items: `dydo inbox clear --all`
+4. **Release** your identity: `dydo agent release`
 
 **Note:** After dispatching, you may receive a response (e.g., reviewer feedback). Check your inbox if re-engaged.
 
@@ -146,7 +153,15 @@ dydo inbox show                          # Check dispatched work
 dydo inbox clear --all                   # Archive processed items
 
 # Dispatch
-dydo dispatch --role <r> --task <t> --brief "..."
+dydo dispatch --wait --auto-close --role <r> --task <t> --brief "..."   # Expecting feedback
+dydo dispatch --no-wait --role <r> --task <t> --brief "..."             # Fire and forget
+
+# Messaging
+dydo msg --to <agent> --body "..."                   # Send message
+dydo msg --to <agent> --subject <task> --body "..."  # With task context
+dydo wait                                             # Wait for any message
+dydo wait --task <name>                               # Wait for task-specific message
+dydo wait --task <name> --cancel                      # Cancel an active wait
 ```
 
 ---

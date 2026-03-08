@@ -142,7 +142,7 @@ The full workflow:
 1. **Claim identity** — `dydo agent claim <name>` before starting
 2. **Set role** — `dydo agent role code-writer --task <name>`
 3. **Do the work** — The guard enforces your role's permissions
-4. **Request review** — `dydo dispatch --role reviewer --task <name> --brief "..."`
+4. **Request review** — `dydo dispatch --wait --auto-close --role reviewer --task <name> --brief "..."`
 5. **Address feedback** — Same agent fixes issues (context continuity)
 6. **Human approval** — Task needs human review before closing
 7. **Release** — `dydo agent release` when done

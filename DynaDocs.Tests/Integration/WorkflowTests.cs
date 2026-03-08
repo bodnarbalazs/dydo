@@ -65,25 +65,6 @@ public class WorkflowTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Dispatch_WithContext_IncludesFile()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        // Create a context file
-        WriteFile("context.md", "# Context\n\nSome important context.");
-
-        var result = await DispatchAsync("reviewer", "my-task", "See context", contextFile: "context.md");
-
-        result.AssertSuccess();
-
-        // Check the inbox item references the context file
-        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*.md");
-        Assert.True(inboxFiles.Length > 0);
-        var content = File.ReadAllText(inboxFiles[0]);
-        Assert.Contains("context.md", content);
-    }
-
-    [Fact]
     public async Task Dispatch_SelectsAlphabeticallyFirst()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -390,12 +371,11 @@ public class WorkflowTests : IntegrationTestBase
 
     private async Task<CommandResult> DispatchAsync(
         string role, string task, string brief,
-        string? files = null, string? contextFile = null)
+        string? files = null)
     {
         var command = DispatchCommand.Create();
-        var args = new List<string> { "--role", role, "--task", task, "--brief", brief, "--no-launch" };
+        var args = new List<string> { "--role", role, "--task", task, "--brief", brief, "--no-launch", "--no-wait" };
         if (files != null) { args.Add("--files"); args.Add(files); }
-        if (contextFile != null) { args.Add("--context-file"); args.Add(contextFile); }
         return await RunAsync(command, args.ToArray());
     }
 

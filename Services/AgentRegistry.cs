@@ -328,6 +328,16 @@ public partial class AgentRegistry : IAgentRegistry
                 }
             }
 
+            // Check for active wait markers
+            var waitMarkers = GetWaitMarkers(agent.Name);
+            if (waitMarkers.Count > 0)
+            {
+                var tasks = string.Join(", ", waitMarkers.Select(m => m.Task));
+                error = $"Cannot release: waiting for response on: {tasks}.\n" +
+                        "Cancel with: dydo wait --task <name> --cancel";
+                return false;
+            }
+
             var sessionPath = Path.Combine(workspace, ".session");
 
             if (File.Exists(sessionPath))
@@ -354,12 +364,16 @@ public partial class AgentRegistry : IAgentRegistry
                 s.WritablePaths = [];
                 s.ReadOnlyPaths = [];
                 s.UnreadMustReads = [];
+                s.UnreadMessages = [];
             });
 
             // Remove modes/ directory (regenerated fresh on next claim)
             var modesPath = Path.Combine(workspace, "modes");
             if (Directory.Exists(modesPath))
                 Directory.Delete(modesPath, true);
+
+            // Clean up any orphaned wait markers
+            ClearAllWaitMarkers(agent.Name);
 
             return true;
         }
@@ -729,6 +743,75 @@ public partial class AgentRegistry : IAgentRegistry
 
     #endregion
 
+    #region Wait Markers
+
+    private string GetWaitingDir(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), ".waiting");
+
+    public void CreateWaitMarker(string agentName, string task, string targetAgent)
+    {
+        var dir = GetWaitingDir(agentName);
+        Directory.CreateDirectory(dir);
+
+        var marker = new WaitMarker
+        {
+            Target = targetAgent,
+            Task = task,
+            Since = DateTime.UtcNow
+        };
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.WaitMarker);
+        File.WriteAllText(path, json);
+    }
+
+    public List<WaitMarker> GetWaitMarkers(string agentName)
+    {
+        var dir = GetWaitingDir(agentName);
+        if (!Directory.Exists(dir))
+            return [];
+
+        var markers = new List<WaitMarker>();
+        foreach (var file in Directory.GetFiles(dir, "*.json"))
+        {
+            try
+            {
+                var json = File.ReadAllText(file);
+                var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.WaitMarker);
+                if (marker != null)
+                    markers.Add(marker);
+            }
+            catch { }
+        }
+
+        return markers;
+    }
+
+    public bool RemoveWaitMarker(string agentName, string task)
+    {
+        var dir = GetWaitingDir(agentName);
+        if (!Directory.Exists(dir))
+            return false;
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        if (!File.Exists(path))
+            return false;
+
+        File.Delete(path);
+        return true;
+    }
+
+    public void ClearAllWaitMarkers(string agentName)
+    {
+        var dir = GetWaitingDir(agentName);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
+    }
+
+    #endregion
+
     public AgentSession? GetSession(string agentName)
     {
         var sessionPath = Path.Combine(GetAgentWorkspace(agentName), ".session");
@@ -869,6 +952,7 @@ public partial class AgentRegistry : IAgentRegistry
             writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
             readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
             unread-must-reads: [{string.Join(", ", state.UnreadMustReads.Select(p => $"\"{p}\""))}]
+            unread-messages: [{string.Join(", ", state.UnreadMessages.Select(p => $"\"{p}\""))}]
             task-role-history: {historyYaml}
             ---
 
@@ -968,6 +1052,9 @@ public partial class AgentRegistry : IAgentRegistry
                         break;
                     case "unread-must-reads":
                         state.UnreadMustReads = ParsePathList(value);
+                        break;
+                    case "unread-messages":
+                        state.UnreadMessages = ParsePathList(value);
                         break;
                     case "task-role-history":
                         state.TaskRoleHistory = ParseTaskRoleHistory(value);
@@ -1493,6 +1580,25 @@ public partial class AgentRegistry : IAgentRegistry
         UpdateAgentState(agent.Name, s =>
         {
             s.UnreadMustReads.RemoveAll(p => p.Equals(relativePath, StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    public void AddUnreadMessage(string agentName, string messageId)
+    {
+        UpdateAgentState(agentName, s =>
+        {
+            if (!s.UnreadMessages.Contains(messageId))
+                s.UnreadMessages.Add(messageId);
+        });
+    }
+
+    public void MarkMessageRead(string? sessionId, string messageId)
+    {
+        var agent = GetCurrentAgent(sessionId);
+        if (agent == null) return;
+        UpdateAgentState(agent.Name, s =>
+        {
+            s.UnreadMessages.RemoveAll(id => id.Equals(messageId, StringComparison.OrdinalIgnoreCase));
         });
     }
 

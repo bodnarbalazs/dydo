@@ -143,6 +143,10 @@ public interface IAgentRegistry
     /// </summary>
     void MarkMustReadComplete(string? sessionId, string relativePath);
 
+    void AddUnreadMessage(string agentName, string messageId);
+
+    void MarkMessageRead(string? sessionId, string messageId);
+
     /// <summary>
     /// Stores a pending session ID for an agent.
     /// Called by the guard hook when it intercepts a claim command.
@@ -154,6 +158,14 @@ public interface IAgentRegistry
     /// Used during claim to retrieve the session ID stored by the guard hook.
     /// </summary>
     string? GetPendingSessionId(string agentName);
+
+    void CreateWaitMarker(string agentName, string task, string targetAgent);
+
+    List<Models.WaitMarker> GetWaitMarkers(string agentName);
+
+    bool RemoveWaitMarker(string agentName, string task);
+
+    void ClearAllWaitMarkers(string agentName);
 
     /// <summary>
     /// Gets the current session ID from context file.

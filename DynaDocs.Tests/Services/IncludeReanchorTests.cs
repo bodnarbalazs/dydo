@@ -265,4 +265,98 @@ public class IncludeReanchorTests
     }
 
     #endregion
+
+    #region Reanchor — tricky cases
+
+    [Fact]
+    public void Reanchor_BothAnchorsFound_PreservesBlankLineSeparation()
+    {
+        var newContent = "## Work\n\n1. Step one\n\n2. Step two\n";
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:my-hook}}", "1. Step one", "2. Step two")
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Single(result.Placed);
+        var lines = result.Content.Split('\n');
+        var hookIdx = Array.IndexOf(lines, "{{include:my-hook}}");
+        Assert.True(hookIdx > 0);
+        // Verify the tag is between the two anchors
+        var step1Idx = Array.FindIndex(lines, l => l.Trim() == "1. Step one");
+        var step2Idx = Array.FindIndex(lines, l => l.Trim() == "2. Step two");
+        Assert.True(hookIdx > step1Idx);
+        Assert.True(hookIdx < step2Idx);
+    }
+
+    [Fact]
+    public void Reanchor_UserTagAdjacentToShippedTag_BothSurvive()
+    {
+        var newContent = "## Work\n\n1. Step one\n{{include:extra-verify}}\n2. Step two\n";
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:my-custom}}", "{{include:extra-verify}}", "2. Step two")
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Single(result.Placed);
+        Assert.Contains("{{include:extra-verify}}", result.Content);
+        Assert.Contains("{{include:my-custom}}", result.Content);
+    }
+
+    [Fact]
+    public void Reanchor_NewTemplateHasNewSections_AnchorsStillMatch()
+    {
+        // New template has extra sections, but the anchor lines still exist
+        var newContent = "## Work\n\n1. Step one\n2. Step two\n\n## New Section\n\nNew content here.\n";
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:my-hook}}", "1. Step one", "2. Step two")
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Single(result.Placed);
+        Assert.Empty(result.Unplaced);
+        Assert.Contains("{{include:my-hook}}", result.Content);
+    }
+
+    [Fact]
+    public void Reanchor_AnchorContentReworded_AnchorNotFound()
+    {
+        // Framework changed the anchor line text — tag can't be placed
+        var newContent = "## Work\n\n1. Step alpha\n2. Step beta\n";
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:my-hook}}", "1. Step one", "2. Step two")
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Empty(result.Placed);
+        Assert.Single(result.Unplaced);
+        Assert.Equal("{{include:my-hook}}", result.Unplaced[0]);
+    }
+
+    [Fact]
+    public void Reanchor_MultipleTagsBetweenSameAnchors_AllInserted()
+    {
+        var newContent = "Line A\nLine B\n";
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:hook-1}}", "Line A", "Line B"),
+            new("{{include:hook-2}}", "Line A", "Line B")
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Equal(2, result.Placed.Count);
+        Assert.Empty(result.Unplaced);
+        Assert.Contains("{{include:hook-1}}", result.Content);
+        Assert.Contains("{{include:hook-2}}", result.Content);
+    }
+
+    #endregion
 }

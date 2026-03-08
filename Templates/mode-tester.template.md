@@ -118,13 +118,13 @@ When testing is done:
 Ensure all issues are filed in `dydo/project/pitfalls/`, then:
 
 ```bash
-dydo dispatch --role code-writer --task <task-name> --brief "Testing complete. Found N issues in pitfalls/. See: [list files]"
+dydo dispatch --no-wait --role code-writer --task <task-name> --brief "Testing complete. Found N issues in pitfalls/. See: [list files]"
 ```
 
 ### If No Issues
 
 ```bash
-dydo dispatch --role reviewer --task <task-name> --brief "Manual testing passed. No issues found."
+dydo dispatch --wait --auto-close --role reviewer --task <task-name> --brief "Manual testing passed. No issues found."
 ```
 
 This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.

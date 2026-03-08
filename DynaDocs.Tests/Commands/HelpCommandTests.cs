@@ -67,6 +67,10 @@ public class HelpCommandTests
         Console.WriteLine("  inbox show             Show current agent's inbox");
         Console.WriteLine("  inbox clear            Clear processed inbox items");
         Console.WriteLine();
+        Console.WriteLine("Messaging Commands:");
+        Console.WriteLine("  message --to <agent>   Send message to another agent (alias: msg)");
+        Console.WriteLine("  wait [--task <name>]   Wait for incoming message");
+        Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
         Console.WriteLine("  clean <agent>          Clean agent workspace");
@@ -78,6 +82,10 @@ public class HelpCommandTests
         Console.WriteLine("  audit /2025            Filter to specific year");
         Console.WriteLine("  audit --list           List available sessions");
         Console.WriteLine("  audit --session <id>   Show details for a session");
+        Console.WriteLine("  audit compact [year]   Compact audit snapshots (baseline+delta)");
+        Console.WriteLine();
+        Console.WriteLine("Template Commands:");
+        Console.WriteLine("  template update        Update framework templates and docs");
         Console.WriteLine();
         Console.WriteLine("Task Commands:");
         Console.WriteLine("  task create <name>     Create a new task");
@@ -89,6 +97,7 @@ public class HelpCommandTests
         Console.WriteLine("  review complete <task> Complete a code review");
         Console.WriteLine();
         Console.WriteLine("Utility:");
+        Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");
         Console.WriteLine("  version                Display version information");
         Console.WriteLine("  help                   Display this help");
         Console.WriteLine();

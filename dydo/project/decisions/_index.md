@@ -11,4 +11,6 @@ Index of decisions documentation.
 
 ## Contents
 
-*No documents in this folder yet.*
+- [001 — Auto-Close for Dispatched Agents](./001-auto-close-dispatch.md)
+- [002 — Template Update System](./002-template-update-system.md)
+- [003 — Agent Messaging](./003-agent-messaging.md)

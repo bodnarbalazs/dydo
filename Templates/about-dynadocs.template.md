@@ -113,6 +113,25 @@ Edit templates in `dydo/_system/templates/` to fit your project. Changes take ef
 
 Fill out the `about.md` and modify the `coding-standards.md` to your taste.
 
+#### Template Additions
+
+Templates ship with `{{include:name}}` tags at natural extension points. These resolve to markdown files in `dydo/_system/template-additions/`. This lets you inject project-specific steps into agent workflows without editing the templates directly.
+
+**The proper path:** Create a file like `extra-verify.md` in `template-additions/`. Any template with `{{include:extra-verify}}` will include its content. Templates stay stock, so `dydo template update` works seamlessly.
+
+**The quick path:** Edit the template directly — add `{{include:whatever}}` anywhere. On `dydo template update`, user-added tags are detected, anchored by surrounding content, and re-inserted into the new template automatically.
+
+**Shipped hooks:**
+
+| Tag | Template | Position |
+|-----|----------|----------|
+| `{{include:extra-must-reads}}` | All modes | After must-reads list |
+| `{{include:extra-verify}}` | code-writer | After verify step |
+| `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
+| `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
+
+Any `{{include:whatever}}` works — not limited to shipped hooks.
+
 You're ready to go. For best results, keep docs up to date and accurate to match your intent. Not everything needs documenting—just what you wouldn't know from reading the code.
 
 ---
@@ -266,7 +285,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 ### Workflow
 | Command | Description |
 |---------|-------------|
-| `dydo dispatch --role <role> --task <name>` | Hand off work (`--tab`, `--new-window`) |
+| `dydo dispatch --wait/--no-wait --role <role> --task <name>` | Hand off work (`--tab`, `--new-window`) |
 | `dydo inbox list` | List agents with inbox items |
 | `dydo inbox show` | Show current agent's inbox |
 | `dydo inbox clear` | Clear processed items |
@@ -295,6 +314,18 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo audit` | Generate activity replay visualization |
 | `dydo audit --list` | List available sessions |
 | `dydo audit --session <id>` | Show details for a session |
+| `dydo audit compact [year]` | Compact audit snapshots |
+
+### Template
+| Command | Description |
+|---------|-------------|
+| `dydo template update` | Update framework templates and docs |
+| `dydo template update --diff` | Preview changes without writing |
+
+### Utility
+| Command | Description |
+|---------|-------------|
+| `dydo completions <shell>` | Generate shell completions |
 
 ---
 
@@ -303,4 +334,8 @@ Currently it's tested to work with Claude Code (hooks setup), but the principle 
 
 ## License
 
-MIT — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
+AGPL-3.0 — [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
+
+**Free to use, always.** You can use dydo as a tool on any project, including commercial ones. The AGPL obligations apply only if you modify or embed dydo's source code in your own software — for example, shipping dydo as part of a product you distribute or offer as a service.
+
+For commercial licensing without AGPL obligations, [open a GitHub issue](https://github.com/bodnarbalazs/dydo/issues).

@@ -18,6 +18,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
 *Skip coding-standards for now—you're not writing code yet.*
+{{include:extra-must-reads}}
 
 ---
 
@@ -109,7 +110,7 @@ When the brief is complete and the human confirms it's accurate:
 ### Option A: Dispatch to Planner
 
 ```bash
-dydo dispatch --role planner --task <task-name> --brief "Requirements gathered. See brief at agents/{{AGENT_NAME}}/brief-<task-name>.md"
+dydo dispatch --no-wait --role planner --task <task-name> --brief "Requirements gathered. See brief at agents/{{AGENT_NAME}}/brief-<task-name>.md"
 ```
 
 ### Option B: Transition Yourself to Planner

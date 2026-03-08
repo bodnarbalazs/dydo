@@ -233,6 +233,25 @@ public class ResolveIncludesTests : IDisposable
     #region Integration with generation
 
     [Fact]
+    public void GenerateWorkflowFile_WithAddition_IncludesContent()
+    {
+        var additionsPath = CreateAdditionsFolder();
+        var templatesPath = Path.Combine(_tempDir, "_system", "templates");
+        Directory.CreateDirectory(templatesPath);
+        var templateContent = TemplateGenerator.ReadBuiltInTemplate("agent-workflow.template.md");
+        // Add an include tag to the workflow template (it doesn't ship with one)
+        templateContent += "\n{{include:extra-workflow}}\n";
+        File.WriteAllText(Path.Combine(templatesPath, "agent-workflow.template.md"), templateContent);
+
+        WriteAddition(additionsPath, "extra-workflow", "Custom workflow addition");
+
+        var result = TemplateGenerator.GenerateWorkflowFile("TestAgent", _tempDir);
+
+        Assert.Contains("Custom workflow addition", result);
+        Assert.DoesNotContain("{{include:", result);
+    }
+
+    [Fact]
     public void GenerateModeFile_WithAddition_IncludesContent()
     {
         var additionsPath = CreateAdditionsFolder();

@@ -722,7 +722,7 @@ public class DispatchCommandTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
 
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "my-task", "--no-launch" };
+        var args = new[] { "--role", "code-writer", "--task", "my-task", "--no-launch", "--no-wait" };
         var result = await RunAsync(command, args);
 
         result.AssertExitCode(2);
@@ -744,7 +744,8 @@ public class DispatchCommandTests : IntegrationTestBase
             "--task", "my-task",
             "--brief", "Inline brief",
             "--brief-file", briefPath,
-            "--no-launch"
+            "--no-launch",
+            "--no-wait"
         };
         var result = await RunAsync(command, args);
 
@@ -846,6 +847,7 @@ public class DispatchCommandTests : IntegrationTestBase
     [InlineData("Check this || that condition", "||")]
     [InlineData("Run $(whoami) to find user", "$(")]
     [InlineData("Use `command` for output", "`")]
+    [InlineData("Path is ${HOME}/projects", "${")]
     public async Task Dispatch_BriefWithShellMetacharacters_Fails(string brief, string expectedPattern)
     {
         await InitProjectAsync("none", "testuser", 3);
@@ -862,6 +864,10 @@ public class DispatchCommandTests : IntegrationTestBase
     [InlineData("Fixed the login & signup flow")]
     [InlineData("Added retry logic (3 attempts max)")]
     [InlineData("Refactored auth module - see PR #42")]
+    [InlineData("Fixed all 5 review issues: (1) Removed dead code ternary in TemplateCommand.cs:157. (2) Simplified logic.")]
+    [InlineData("Fixed all 5 review issues. 1 Removed dead code ternary in TemplateCommand.cs line 157. 2 Simplified.")]
+    [InlineData("Implemented OAuth flow; added token refresh")]
+    [InlineData("See file Services/Auth.cs for details")]
     public async Task Dispatch_BriefWithSafeContent_Succeeds(string brief)
     {
         await InitProjectAsync("none", "testuser", 3);
@@ -909,12 +915,13 @@ public class DispatchCommandTests : IntegrationTestBase
         string task,
         string brief,
         string? files = null,
-        string? contextFile = null,
         string? to = null,
         bool escalate = false,
         bool tab = false,
         bool newWindow = false,
-        bool autoClose = false)
+        bool autoClose = false,
+        bool noWait = true,
+        bool wait = false)
     {
         var command = DispatchCommand.Create();
         var args = new List<string>
@@ -926,12 +933,13 @@ public class DispatchCommandTests : IntegrationTestBase
         };
 
         if (files != null) { args.Add("--files"); args.Add(files); }
-        if (contextFile != null) { args.Add("--context-file"); args.Add(contextFile); }
         if (to != null) { args.Add("--to"); args.Add(to); }
         if (escalate) { args.Add("--escalate"); }
         if (tab) { args.Add("--tab"); }
         if (newWindow) { args.Add("--new-window"); }
         if (autoClose) { args.Add("--auto-close"); }
+        if (wait) { args.Add("--wait"); }
+        else if (noWait) { args.Add("--no-wait"); }
 
         return await RunAsync(command, args.ToArray());
     }
@@ -948,7 +956,8 @@ public class DispatchCommandTests : IntegrationTestBase
             "--role", role,
             "--task", task,
             "--brief", brief,
-            "--no-launch"
+            "--no-launch",
+            "--no-wait"
         };
 
         if (agent != null) { args.Add("--agent"); args.Add(agent); }
@@ -967,7 +976,8 @@ public class DispatchCommandTests : IntegrationTestBase
             "--role", role,
             "--task", task,
             "--brief-file", briefFile,
-            "--no-launch"
+            "--no-launch",
+            "--no-wait"
         };
 
         return await RunAsync(command, args.ToArray());

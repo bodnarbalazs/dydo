@@ -217,6 +217,35 @@ public static partial class GuardCommand
                 return ExitCodes.ToolError;
             }
 
+            // Check unread messages
+            if (searchAgent.UnreadMessages.Count > 0)
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked,
+                    Path = searchPath,
+                    Tool = toolName,
+                    BlockReason = "Unread messages"
+                });
+
+                Console.Error.WriteLine($"NOTICE: You have {searchAgent.UnreadMessages.Count} unread message(s).");
+                foreach (var msgId in searchAgent.UnreadMessages)
+                {
+                    var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(searchAgent.Name), msgId);
+                    if (msgInfo != null)
+                        Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
+                }
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
+                Console.Error.WriteLine("  Read your message(s) to continue:");
+                Console.Error.WriteLine("    1. Run: dydo inbox show");
+                Console.Error.WriteLine("    2. Read the message file(s) shown");
+                Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
+                return ExitCodes.ToolError;
+            }
+
             // Check off-limits on the search directory if provided
             if (!string.IsNullOrEmpty(searchPath))
             {
@@ -307,6 +336,16 @@ public static partial class GuardCommand
                 }
             }
 
+            // Track message reads (clear notification)
+            if (agent != null && agent.UnreadMessages.Count > 0 && !string.IsNullOrEmpty(filePath))
+            {
+                var messageId = ExtractMessageIdFromPath(filePath);
+                if (messageId != null && agent.UnreadMessages.Contains(messageId))
+                {
+                    registry.MarkMessageRead(sessionId, messageId);
+                }
+            }
+
             return ExitCodes.Success;
         }
 
@@ -347,6 +386,36 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
             Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
             Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
+            return ExitCodes.ToolError;
+        }
+
+        // Check for unread messages (notify agent)
+        agent = registry.GetCurrentAgent(sessionId);
+        if (agent != null && agent.UnreadMessages.Count > 0)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked,
+                Path = filePath,
+                Tool = toolName,
+                BlockReason = "Unread messages"
+            });
+
+            Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
+            foreach (var msgId in agent.UnreadMessages)
+            {
+                var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
+                if (msgInfo != null)
+                    Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
+            }
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
+            Console.Error.WriteLine("  Read your message(s) to continue:");
+            Console.Error.WriteLine("    1. Run: dydo inbox show");
+            Console.Error.WriteLine("    2. Read the message file(s) shown");
+            Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
             return ExitCodes.ToolError;
         }
 
@@ -509,6 +578,40 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"  If you need to change directory, run cd separately first.");
             Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
             return ExitCodes.ToolError;
+        }
+
+        // ============================================================
+        // Check unread messages for non-dydo bash commands
+        // ============================================================
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent != null && agent.UnreadMessages.Count > 0)
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked,
+                    Tool = "bash",
+                    Command = TruncateCommand(command),
+                    BlockReason = "Unread messages"
+                });
+
+                Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
+                foreach (var msgId in agent.UnreadMessages)
+                {
+                    var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
+                    if (msgInfo != null)
+                        Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
+                }
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
+                Console.Error.WriteLine("  Read your message(s) to continue:");
+                Console.Error.WriteLine("    1. Run: dydo inbox show");
+                Console.Error.WriteLine("    2. Read the message file(s) shown");
+                Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
+                return ExitCodes.ToolError;
+            }
         }
 
         // ============================================================
@@ -687,7 +790,7 @@ public static partial class GuardCommand
             // Stdin is redirected — read with a timeout to avoid blocking forever
             // if the pipe is open but has no data (e.g., chained commands)
             var readTask = Task.Run(() => Console.In.ReadToEnd());
-            if (readTask.Wait(TimeSpan.FromSeconds(2)))
+            if (readTask.Wait(TimeSpan.FromMilliseconds(500)))
             {
                 json = readTask.Result;
                 return !string.IsNullOrWhiteSpace(json);
@@ -841,7 +944,7 @@ public static partial class GuardCommand
 
     // Matches: dotnet run [flags...] -- <dydo-subcommand> [args...]
     // Only matches when args after -- start with a known dydo subcommand.
-    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help)\b.*)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help)\b.*)", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectDotnetRunRegex();
 
     // Matches: bash/sh/zsh/cmd/powershell/pwsh [flags...] dydo [args...]
@@ -918,6 +1021,60 @@ public static partial class GuardCommand
         var normalized = filePath.Replace('\\', '/');
         var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
         return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
+    }
+
+    /// <summary>
+    /// Extracts from/subject from a message file in an agent's inbox.
+    /// </summary>
+    private static (string From, string? Subject)? FindMessageInfo(string workspace, string messageId)
+    {
+        var inboxPath = Path.Combine(workspace, "inbox");
+        if (!Directory.Exists(inboxPath))
+            return null;
+
+        foreach (var file in Directory.GetFiles(inboxPath, $"{messageId}-msg-*.md"))
+        {
+            try
+            {
+                var content = File.ReadAllText(file);
+                if (!content.StartsWith("---")) continue;
+                var endIndex = content.IndexOf("---", 3);
+                if (endIndex < 0) continue;
+
+                var yaml = content[3..endIndex];
+                string? from = null, subject = null;
+
+                foreach (var line in yaml.Split('\n'))
+                {
+                    var colonIndex = line.IndexOf(':');
+                    if (colonIndex < 0) continue;
+                    var key = line[..colonIndex].Trim();
+                    var value = line[(colonIndex + 1)..].Trim();
+                    switch (key)
+                    {
+                        case "from": from = value; break;
+                        case "subject": subject = value; break;
+                    }
+                }
+
+                if (from != null)
+                    return (from, subject);
+            }
+            catch { }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extracts message ID from an inbox message file path.
+    /// Matches paths like */inbox/{id}-msg-*.md and returns the {id} portion.
+    /// </summary>
+    private static string? ExtractMessageIdFromPath(string filePath)
+    {
+        var normalized = filePath.Replace('\\', '/');
+        var match = Regex.Match(normalized, @"/inbox/([a-f0-9]+)-msg-[^/]+\.md$", RegexOptions.IgnoreCase);
+        return match.Success ? match.Groups[1].Value : null;
     }
 
     /// <summary>

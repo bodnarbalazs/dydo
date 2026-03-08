@@ -19,7 +19,7 @@ public class SnapshotRef
 
     /// <summary>
     /// How deep this chain is. 1 = references a baseline directly.
-    /// Max allowed: 5.
+    /// Max allowed: 50.
     /// </summary>
     [JsonPropertyName("depth")]
     public int Depth { get; set; }

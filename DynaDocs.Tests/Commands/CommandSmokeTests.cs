@@ -19,15 +19,20 @@ public class CommandSmokeTests
             AuditCommand.Create,
             CheckCommand.Create,
             CleanCommand.Create,
+            CompleteCommand.Create,
+            CompletionsCommand.Create,
             DispatchCommand.Create,
             FixCommand.Create,
             GraphCommand.Create,
             GuardCommand.Create,
             InboxCommand.Create,
             IndexCommand.Create,
+            MessageCommand.Create,
             InitCommand.Create,
             ReviewCommand.Create,
             TaskCommand.Create,
+            TemplateCommand.Create,
+            WaitCommand.Create,
             WhoamiCommand.Create,
             WorkspaceCommand.Create
         };
@@ -51,21 +56,26 @@ public class CommandSmokeTests
                 AuditCommand.Create(),
                 CheckCommand.Create(),
                 CleanCommand.Create(),
+                CompleteCommand.Create(),
+                CompletionsCommand.Create(),
                 DispatchCommand.Create(),
                 FixCommand.Create(),
                 GraphCommand.Create(),
                 GuardCommand.Create(),
                 InboxCommand.Create(),
                 IndexCommand.Create(),
+                MessageCommand.Create(),
                 InitCommand.Create(),
                 ReviewCommand.Create(),
                 TaskCommand.Create(),
+                TemplateCommand.Create(),
+                WaitCommand.Create(),
                 WhoamiCommand.Create(),
                 WorkspaceCommand.Create()
             };
 
             // Verify subcommands are present
-            Assert.True(rootCommand.Subcommands.Count >= 15);
+            Assert.True(rootCommand.Subcommands.Count >= 20);
         });
 
         Assert.Null(exception);

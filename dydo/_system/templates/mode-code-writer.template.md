@@ -18,6 +18,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 2. [about.md](../../../understand/about.md) — What this project is
 3. [architecture.md](../../../understand/architecture.md) — Codebase structure
 4. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
+{{include:extra-must-reads}}
 
 ---
 
@@ -75,6 +76,7 @@ Never guess or assume.
 2. **Implement** — Write the minimal code that solves the problem
 3. **Test** — Add or update tests for your changes
 4. **Verify** — Run tests, ensure they pass
+{{include:extra-verify}}
 
 **If guard blocks you:**
 - Check your role: `dydo agent status`
@@ -88,7 +90,7 @@ Never guess or assume.
 When implementation is done and tests pass:
 
 ```bash
-dydo dispatch --role reviewer --task <task-name> --brief "..."
+dydo dispatch --wait --auto-close --role reviewer --task <task-name> --brief "..."
 ```
 
 This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
@@ -97,6 +99,12 @@ The brief should include:
 - What you implemented (1-2 sentences)
 - Plan deviations and why (if any)
 - Key decisions made
+
+**Reporting back to origin?** If another agent dispatched you (check inbox `From`/`Origin`), send a summary:
+
+```bash
+dydo msg --to <origin> --subject <task-name> --body "Implementation complete. [key details]"
+```
 
 Then release:
 

@@ -1,9 +1,193 @@
 {
-  "type": "baseline",
-  "id": "2d869d3ddf41",
-  "created": "2026-03-07T22:42:11.3564064Z",
+  "session": "ee8faffd-61a3-4a36-b1a1-53c34f908fea",
+  "agent": "Quinn",
+  "human": "balazs",
+  "started": "2026-03-08T12:21:47.1270845Z",
+  "git_head": "6fe6670",
+  "events": [
+    {
+      "ts": "2026-03-08T12:21:47.1255902Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-08T12:21:50.2354836Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent claim auto 2\u003E\u00261 | head -20"
+    },
+    {
+      "ts": "2026-03-08T12:21:56.7160221Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent claim Quinn 2\u003E\u00261 | head -20"
+    },
+    {
+      "ts": "2026-03-08T12:22:01.1528551Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent release 2\u003E\u00261 \u0026\u0026 dotnet run -- agent claim Quinn 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:08.3433035Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\workflow.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-08T12:22:13.1640861Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- inbox show 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:20.205282Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent role code-writer --task agent-messaging 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:26.4764347Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\modes\\code-writer.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-08T12:22:29.8894744Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- whoami 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:34.4276481Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent claim Quinn 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:39.7327504Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent role code-writer --task agent-messaging 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:45.0220033Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\modes\\code-writer.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-08T12:22:50.0685558Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- whoami 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:54.1508387Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- agent status 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:22:59.3152771Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\modes\\code-writer.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-08T12:23:04.079658Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\modes\\code-writer.md\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:08.0273989Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:08.7952298Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:09.2614619Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:14.0992113Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-08T12:23:18.1847157Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet run -- whoami 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:25.3462884Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat -n \u0022DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:32.2194549Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "head -5 Commands/MessageCommand.cs Commands/WaitCommand.cs 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:23:41.3643241Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-08T12:23:50.2042021Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -i \u0027s/root.Subcommands.Add(TemplateCommand.Create());/root.Subcommands.Add(TemplateCommand.Creat..."
+    },
+    {
+      "ts": "2026-03-08T12:57:34.520224Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat dydo/agents/Quinn/state.json 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:57:37.7760407Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Quinn/ 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-08T12:57:40.6725837Z",
+      "event": "Blocked",
+      "path": "dydo/agents/Quinn/state.md",
+      "tool": "bash",
+      "cmd": "cat dydo/agents/Quinn/state.md 2\u003E\u00261",
+      "reason": "Off-limits: dydo/agents/*/state.md"
+    },
+    {
+      "ts": "2026-03-08T13:05:54.6574577Z",
+      "event": "Claim",
+      "agent": "Quinn"
+    }
+  ],
   "snapshot": {
-    "git_commit": "ad14e9fc60e05914dc5a411736d35b2e7c334987",
+    "git_commit": "6fe667029e8e00f2e58faf32badfa85c40732aa8",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -28,9 +212,11 @@
       "Commands/InboxCommand.cs",
       "Commands/IndexCommand.cs",
       "Commands/InitCommand.cs",
+      "Commands/MessageCommand.cs",
       "Commands/ReviewCommand.cs",
       "Commands/TaskCommand.cs",
       "Commands/TemplateCommand.cs",
+      "Commands/WaitCommand.cs",
       "Commands/WhoamiCommand.cs",
       "Commands/WorkspaceCommand.cs",
       "dydo_diagram.excalidraw",
@@ -38,6 +224,8 @@
       "dydo.json",
       "dydo/_assets/dydo-diagram.svg",
       "dydo/_system/audit/_audit.md",
+      "dydo/_system/audit/2026/_baseline-2d869d3ddf41.json",
+      "dydo/_system/audit/2026/_baseline-67956556a749.json",
       "dydo/_system/audit/2026/2026-02-26-64de3af2-3ce2-4d53-b6ee-882436db707a.json",
       "dydo/_system/audit/2026/2026-03-02-e18b8b67-46da-4ebb-ae0c-c537d7f9fd77.json",
       "dydo/_system/audit/2026/2026-03-06-03e433a9-8194-4d3d-8157-c744a955e88e.json",
@@ -56,10 +244,12 @@
       "dydo/_system/audit/2026/2026-03-07-11e8ef9a-dbaf-488f-a724-a5263777001c.json",
       "dydo/_system/audit/2026/2026-03-07-19cd5c42-d022-49d3-87f9-6e49f59563ef.json",
       "dydo/_system/audit/2026/2026-03-07-1a5e4a75-2bfb-48eb-aa96-17b77ec924bb.json",
+      "dydo/_system/audit/2026/2026-03-07-1fcfe7e2-6c0e-4603-a46c-22195cfed9ab.json",
       "dydo/_system/audit/2026/2026-03-07-229cba53-dfd3-4f92-81af-554b601e0c51.json",
       "dydo/_system/audit/2026/2026-03-07-2339dac5-340a-45de-b5a0-dac611a3db92.json",
       "dydo/_system/audit/2026/2026-03-07-2ff0abd6-e234-472c-aba0-a5c2673d3917.json",
       "dydo/_system/audit/2026/2026-03-07-36ce904f-fbd2-44cb-a1ea-edbdb956ba14.json",
+      "dydo/_system/audit/2026/2026-03-07-40946494-4704-4895-80ae-bf97b5ddb546.json",
       "dydo/_system/audit/2026/2026-03-07-40e2a5ed-10c3-41f4-b8bd-ca567ccc62fc.json",
       "dydo/_system/audit/2026/2026-03-07-417b6eca-fd8c-455f-ac2b-d4af64dec1b7.json",
       "dydo/_system/audit/2026/2026-03-07-475f5b50-0756-4c2b-a4d7-7f4f4e5c2894.json",
@@ -67,10 +257,13 @@
       "dydo/_system/audit/2026/2026-03-07-4de47c18-6b63-4398-bb14-2daea19946fe.json",
       "dydo/_system/audit/2026/2026-03-07-4f45bc3c-9b84-4219-8dea-d4027d04d955.json",
       "dydo/_system/audit/2026/2026-03-07-5e679451-7f11-45f4-964a-df20fa21c6e0.json",
+      "dydo/_system/audit/2026/2026-03-07-6577fee4-b2ee-49a6-8337-46b06512fc20.json",
+      "dydo/_system/audit/2026/2026-03-07-7be66343-94e0-4333-9d72-297e71110774.json",
       "dydo/_system/audit/2026/2026-03-07-7fcde319-de2f-4c04-b21d-803ec8a8d539.json",
       "dydo/_system/audit/2026/2026-03-07-86ef1fdb-0489-4d70-802e-f6cd73ae8a1f.json",
       "dydo/_system/audit/2026/2026-03-07-9302f828-efe0-4aca-8257-59190d0f2869.json",
       "dydo/_system/audit/2026/2026-03-07-9f0d45fe-7cf2-459c-b9d5-38546c56e216.json",
+      "dydo/_system/audit/2026/2026-03-07-a1c937e4-de42-41a0-b866-3f2f608a7a4e.json",
       "dydo/_system/audit/2026/2026-03-07-a934ce5f-8f82-4630-a9de-b451409f18a4.json",
       "dydo/_system/audit/2026/2026-03-07-b8d78ba5-252d-4f8f-a2f6-33ec64d039aa.json",
       "dydo/_system/audit/2026/2026-03-07-ba61dbbe-141a-4cc7-9c18-4e1193ff8aaf.json",
@@ -83,11 +276,16 @@
       "dydo/_system/audit/2026/2026-03-07-d1eed9b3-c4d8-4730-9285-e2aeadd93740.json",
       "dydo/_system/audit/2026/2026-03-07-d7686144-d89d-4dcb-ad4d-b229718232e1.json",
       "dydo/_system/audit/2026/2026-03-07-dd72ec10-3a36-44b1-983d-9ab6a0f94550.json",
+      "dydo/_system/audit/2026/2026-03-07-ec5bf32b-1ab8-4e89-aff4-76f4a07be1ad.json",
       "dydo/_system/audit/2026/2026-03-07-f0cdc090-9af0-4137-8b4d-e6d0274c06cd.json",
       "dydo/_system/audit/2026/2026-03-07-f4bfa759-d899-4eb6-95dc-8e96aa01d529.json",
+      "dydo/_system/audit/2026/2026-03-07-f5b2f019-bbe1-40f1-af59-4e5d7eb47c2d.json",
       "dydo/_system/audit/2026/2026-03-07-f720b2d3-78fd-400c-a5e5-19d14e03a10a.json",
       "dydo/_system/audit/2026/2026-03-07-fdfa720f-214b-4a23-b84f-f4260dfaf048.json",
+      "dydo/_system/audit/2026/2026-03-07-ff9aad3d-9a28-46e6-b8d8-15300936d17e.json",
       "dydo/_system/audit/2026/2026-03-07-ffe3e9e2-900a-4e63-b25f-3419645fb1d3.json",
+      "dydo/_system/audit/2026/2026-03-08-0e88b48b-ec8b-49ba-969b-116ea305f0e3.json",
+      "dydo/_system/audit/2026/2026-03-08-20e860ea-327a-4e69-a38c-663bbdc67424.json",
       "dydo/_system/templates/agent-workflow.template.md",
       "dydo/_system/templates/mode-co-thinker.template.md",
       "dydo/_system/templates/mode-code-writer.template.md",
@@ -109,33 +307,39 @@
       "dydo/project/changelog/_index.md",
       "dydo/project/changelog/2026/_index.md",
       "dydo/project/changelog/2026/2026-03-07/_index.md",
+      "dydo/project/changelog/2026/2026-03-07/agent-list-user-scope.md",
       "dydo/project/changelog/2026/2026-03-07/audit-snapshot-compaction.md",
       "dydo/project/changelog/2026/2026-03-07/auto-close-dispatch-investigation.md",
+      "dydo/project/changelog/2026/2026-03-07/auto-close-dispatch.md",
       "dydo/project/changelog/2026/2026-03-07/auto-close-swarm-feature.md",
       "dydo/project/changelog/2026/2026-03-07/auto-compact-on-approve.md",
       "dydo/project/changelog/2026/2026-03-07/cd-git-guard-rule.md",
       "dydo/project/changelog/2026/2026-03-07/configurable-source-paths.md",
+      "dydo/project/changelog/2026/2026-03-07/dispatch-mac-tab-issue.md",
       "dydo/project/changelog/2026/2026-03-07/dydo-improvements-v2.md",
       "dydo/project/changelog/2026/2026-03-07/filename-sanitization-brief-file.md",
+      "dydo/project/changelog/2026/2026-03-07/fix-gaps.md",
       "dydo/project/changelog/2026/2026-03-07/guard-cd-check-improvement.md",
+      "dydo/project/changelog/2026/2026-03-07/help-meta-audit.md",
+      "dydo/project/changelog/2026/2026-03-07/license-change.md",
       "dydo/project/changelog/2026/2026-03-07/task-approve-all-flag.md",
+      "dydo/project/changelog/2026/2026-03-07/template-update-design.md",
+      "dydo/project/changelog/2026/2026-03-07/template-update-system.md",
       "dydo/project/changelog/2026/2026-03-07/test-paths.md",
       "dydo/project/changelog/2026/2026-03-07/whoami-concurrency-resilience.md",
       "dydo/project/decisions/_decisions.md",
       "dydo/project/decisions/_index.md",
       "dydo/project/decisions/001-auto-close-dispatch.md",
       "dydo/project/decisions/002-template-update-system.md",
+      "dydo/project/decisions/003-agent-messaging.md",
       "dydo/project/pitfalls/_index.md",
       "dydo/project/pitfalls/_pitfalls.md",
       "dydo/project/tasks/_index.md",
       "dydo/project/tasks/_tasks.md",
-      "dydo/project/tasks/agent-list-user-scope.md",
-      "dydo/project/tasks/auto-close-dispatch.md",
-      "dydo/project/tasks/dispatch-mac-tab-issue.md",
-      "dydo/project/tasks/fix-gaps.md",
+      "dydo/project/tasks/agent-messaging.md",
+      "dydo/project/tasks/audit-compaction-investigation.md",
+      "dydo/project/tasks/command-resiliency.md",
       "dydo/project/tasks/help-meta-audit.md",
-      "dydo/project/tasks/license-change.md",
-      "dydo/project/tasks/template-update-design.md",
       "dydo/project/tasks/template-update-system.md",
       "dydo/reference/_index.md",
       "dydo/reference/_reference.md",
@@ -150,6 +354,7 @@
       "DynaDocs.csproj",
       "DynaDocs.sln",
       "DynaDocs.Tests/AuditFixtureGenerator.cs",
+      "DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs",
       "DynaDocs.Tests/Commands/CommandSmokeTests.cs",
       "DynaDocs.Tests/Commands/CompleteCommandTests.cs",
       "DynaDocs.Tests/Commands/CompletionsCommandTests.cs",
@@ -408,9 +613,11 @@
       "DynaDocs.Tests/Integration/InitCommandTests.cs",
       "DynaDocs.Tests/Integration/IntegrationTestBase.cs",
       "DynaDocs.Tests/Integration/IntegrationTestCollection.cs",
+      "DynaDocs.Tests/Integration/MessageIntegrationTests.cs",
       "DynaDocs.Tests/Integration/NoOpProcessStarter.cs",
       "DynaDocs.Tests/Integration/ProcessWorkflowTests.cs",
       "DynaDocs.Tests/Integration/TaskTests.cs",
+      "DynaDocs.Tests/Integration/TemplateCommandTests.cs",
       "DynaDocs.Tests/Integration/TemplateOverrideTests.cs",
       "DynaDocs.Tests/Integration/WorkflowTests.cs",
       "DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs",
@@ -432,15 +639,18 @@
       "DynaDocs.Tests/Services/ConfigurablePathsTests.cs",
       "DynaDocs.Tests/Services/DocGraphTests.cs",
       "DynaDocs.Tests/Services/FolderScaffolderTests.cs",
+      "DynaDocs.Tests/Services/IncludeReanchorTests.cs",
       "DynaDocs.Tests/Services/IndexGeneratorTests.cs",
       "DynaDocs.Tests/Services/LinkResolverTests.cs",
       "DynaDocs.Tests/Services/MarkdownParserTests.cs",
       "DynaDocs.Tests/Services/OffLimitsServiceTests.cs",
       "DynaDocs.Tests/Services/PathUtilsTests.cs",
       "DynaDocs.Tests/Services/ProcessUtilsTests.cs",
+      "DynaDocs.Tests/Services/ResolveIncludesTests.cs",
       "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs",
       "DynaDocs.Tests/Services/SnapshotServiceTests.cs",
       "DynaDocs.Tests/Services/TemplateGeneratorTests.cs",
+      "DynaDocs.Tests/Services/TemplateUpdateTests.cs",
       "DynaDocs.Tests/Services/TerminalCloserTests.cs",
       "DynaDocs.Tests/Services/TerminalLauncherTests.cs",
       "DynaDocs.Tests/Services/WhoamiConcurrencyTests.cs",
@@ -811,6 +1021,15 @@
         "dydo/agents/leo/modes/docs-writer.md",
         "dydo/agents/leo/modes/tester.md"
       ],
+      "dydo/agents/mia/workflow.md": [
+        "dydo/agents/mia/modes/interviewer.md",
+        "dydo/agents/mia/modes/planner.md",
+        "dydo/agents/mia/modes/code-writer.md",
+        "dydo/agents/mia/modes/co-thinker.md",
+        "dydo/agents/mia/modes/reviewer.md",
+        "dydo/agents/mia/modes/docs-writer.md",
+        "dydo/agents/mia/modes/tester.md"
+      ],
       "dydo/agents/noah/workflow.md": [
         "dydo/agents/noah/modes/interviewer.md",
         "dydo/agents/noah/modes/planner.md",
@@ -829,6 +1048,33 @@
         "dydo/agents/olivia/modes/docs-writer.md",
         "dydo/agents/olivia/modes/tester.md"
       ],
+      "dydo/agents/paul/workflow.md": [
+        "dydo/agents/paul/modes/interviewer.md",
+        "dydo/agents/paul/modes/planner.md",
+        "dydo/agents/paul/modes/code-writer.md",
+        "dydo/agents/paul/modes/co-thinker.md",
+        "dydo/agents/paul/modes/reviewer.md",
+        "dydo/agents/paul/modes/docs-writer.md",
+        "dydo/agents/paul/modes/tester.md"
+      ],
+      "dydo/agents/quinn/workflow.md": [
+        "dydo/agents/quinn/modes/interviewer.md",
+        "dydo/agents/quinn/modes/planner.md",
+        "dydo/agents/quinn/modes/code-writer.md",
+        "dydo/agents/quinn/modes/co-thinker.md",
+        "dydo/agents/quinn/modes/reviewer.md",
+        "dydo/agents/quinn/modes/docs-writer.md",
+        "dydo/agents/quinn/modes/tester.md"
+      ],
+      "dydo/agents/rose/workflow.md": [
+        "dydo/agents/rose/modes/interviewer.md",
+        "dydo/agents/rose/modes/planner.md",
+        "dydo/agents/rose/modes/code-writer.md",
+        "dydo/agents/rose/modes/co-thinker.md",
+        "dydo/agents/rose/modes/reviewer.md",
+        "dydo/agents/rose/modes/docs-writer.md",
+        "dydo/agents/rose/modes/tester.md"
+      ],
       "dydo/project/changelog/_changelog.md": [
         "dydo/project/tasks/_index.md",
         "dydo/project/decisions/_index.md"
@@ -839,8 +1085,20 @@
       "dydo/project/decisions/_decisions.md": [
         "dydo/project/pitfalls/_index.md"
       ],
+      "dydo/project/decisions/_index.md": [
+        "dydo/project/decisions/001-auto-close-dispatch.md",
+        "dydo/project/decisions/002-template-update-system.md",
+        "dydo/project/decisions/003-agent-messaging.md"
+      ],
       "dydo/project/pitfalls/_pitfalls.md": [
         "dydo/project/decisions/_index.md"
+      ],
+      "dydo/project/tasks/_index.md": [
+        "dydo/project/tasks/agent-messaging.md",
+        "dydo/project/tasks/audit-compaction-investigation.md",
+        "dydo/project/tasks/command-resiliency.md",
+        "dydo/project/tasks/help-meta-audit.md",
+        "dydo/project/tasks/template-update-system.md"
       ],
       "dydo/project/tasks/_tasks.md": [
         "dydo/project/changelog/_index.md"
@@ -1297,6 +1555,41 @@
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
+      "dydo/agents/mia/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/mia/modes/code-writer.md"
+      ],
+      "dydo/agents/mia/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/mia/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/mia/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/mia/modes/planner.md"
+      ],
+      "dydo/agents/mia/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/mia/modes/code-writer.md"
+      ],
+      "dydo/agents/mia/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/mia/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
       "dydo/agents/noah/modes/co-thinker.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
@@ -1367,20 +1660,133 @@
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
+      "dydo/agents/paul/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/paul/modes/code-writer.md"
+      ],
+      "dydo/agents/paul/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/paul/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/paul/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/paul/modes/planner.md"
+      ],
+      "dydo/agents/paul/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/paul/modes/code-writer.md"
+      ],
+      "dydo/agents/paul/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/paul/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/quinn/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/quinn/modes/code-writer.md"
+      ],
+      "dydo/agents/quinn/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/quinn/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/quinn/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/quinn/modes/planner.md"
+      ],
+      "dydo/agents/quinn/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/quinn/modes/code-writer.md"
+      ],
+      "dydo/agents/quinn/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/quinn/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/rose/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/rose/modes/code-writer.md"
+      ],
+      "dydo/agents/rose/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/rose/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/rose/modes/interviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/rose/modes/planner.md"
+      ],
+      "dydo/agents/rose/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/rose/modes/code-writer.md"
+      ],
+      "dydo/agents/rose/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/rose/modes/tester.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
       "dydo/project/changelog/2026/_index.md": [
         "dydo/project/changelog/2026/2026-03-07/_index.md"
       ],
       "dydo/project/changelog/2026/2026-03-07/_index.md": [
+        "dydo/project/changelog/2026/2026-03-07/agent-list-user-scope.md",
         "dydo/project/changelog/2026/2026-03-07/audit-snapshot-compaction.md",
         "dydo/project/changelog/2026/2026-03-07/auto-close-dispatch-investigation.md",
+        "dydo/project/changelog/2026/2026-03-07/auto-close-dispatch.md",
         "dydo/project/changelog/2026/2026-03-07/auto-close-swarm-feature.md",
         "dydo/project/changelog/2026/2026-03-07/auto-compact-on-approve.md",
         "dydo/project/changelog/2026/2026-03-07/cd-git-guard-rule.md",
         "dydo/project/changelog/2026/2026-03-07/configurable-source-paths.md",
+        "dydo/project/changelog/2026/2026-03-07/dispatch-mac-tab-issue.md",
         "dydo/project/changelog/2026/2026-03-07/dydo-improvements-v2.md",
         "dydo/project/changelog/2026/2026-03-07/filename-sanitization-brief-file.md",
+        "dydo/project/changelog/2026/2026-03-07/fix-gaps.md",
         "dydo/project/changelog/2026/2026-03-07/guard-cd-check-improvement.md",
+        "dydo/project/changelog/2026/2026-03-07/help-meta-audit.md",
+        "dydo/project/changelog/2026/2026-03-07/license-change.md",
         "dydo/project/changelog/2026/2026-03-07/task-approve-all-flag.md",
+        "dydo/project/changelog/2026/2026-03-07/template-update-design.md",
+        "dydo/project/changelog/2026/2026-03-07/template-update-system.md",
         "dydo/project/changelog/2026/2026-03-07/test-paths.md",
         "dydo/project/changelog/2026/2026-03-07/whoami-concurrency-resilience.md"
       ]

@@ -29,6 +29,11 @@ public static class TemplateCommand
         "guides/how-to-use-docs.md"
     ];
 
+    public static readonly string[] FrameworkBinaryFiles =
+    [
+        "_assets/dydo-diagram.svg"
+    ];
+
     public static Command Create()
     {
         var command = new Command("template", "Manage templates");
@@ -98,6 +103,19 @@ public static class TemplateCommand
             }
         }
 
+        foreach (var relativePath in FrameworkBinaryFiles)
+        {
+            var result = UpdateBinaryFile(relativePath, dydoRoot, config, diff);
+            switch (result)
+            {
+                case UpdateResult.Updated: updated++; break;
+                case UpdateResult.Skipped: skipped++; break;
+                case UpdateResult.Warning warning:
+                    warnings.Add(warning.Message);
+                    break;
+            }
+        }
+
         if (!diff)
         {
             configService.SaveConfig(config, configPath);
@@ -154,9 +172,7 @@ public static class TemplateCommand
         }
 
         // User edited — extract user-added includes and re-anchor
-        var oldStock = storedHash != null && storedHash == onDiskHash
-            ? onDisk
-            : GetOldStockContent(relativePath, config, onDisk, embeddedContent);
+        var oldStock = GetOldStockContent(relativePath, config, onDisk, embeddedContent);
 
         var userIncludes = IncludeReanchor.ExtractUserIncludes(oldStock, onDisk);
 
@@ -260,6 +276,54 @@ public static class TemplateCommand
         return new UpdateResult.Updated();
     }
 
+    private static UpdateResult UpdateBinaryFile(
+        string relativePath, string dydoRoot, DydoConfig config, bool diff)
+    {
+        var fullPath = Path.Combine(dydoRoot, relativePath);
+        var fileName = Path.GetFileName(relativePath);
+        var embeddedBytes = TemplateGenerator.ReadEmbeddedAsset(fileName);
+        if (embeddedBytes == null)
+            return new UpdateResult.Skipped();
+
+        if (!File.Exists(fullPath))
+        {
+            if (!diff)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+                File.WriteAllBytes(fullPath, embeddedBytes);
+                config.FrameworkHashes[relativePath] = ComputeHashBytes(embeddedBytes);
+            }
+            Console.WriteLine($"  Created: {relativePath}");
+            return new UpdateResult.Updated();
+        }
+
+        var onDiskBytes = File.ReadAllBytes(fullPath);
+        var embeddedHash = ComputeHashBytes(embeddedBytes);
+        var onDiskHash = ComputeHashBytes(onDiskBytes);
+
+        if (onDiskHash == embeddedHash)
+        {
+            config.FrameworkHashes[relativePath] = embeddedHash;
+            return new UpdateResult.Skipped();
+        }
+
+        var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
+
+        if (storedHash != null && storedHash != onDiskHash)
+        {
+            Console.Error.WriteLine($"  Skipped: {relativePath} — user-edited (hash mismatch)");
+            return new UpdateResult.Warning($"{relativePath}: user-edited, skipped");
+        }
+
+        if (!diff)
+        {
+            File.WriteAllBytes(fullPath, embeddedBytes);
+            config.FrameworkHashes[relativePath] = embeddedHash;
+        }
+        Console.WriteLine($"  Updated: {relativePath}");
+        return new UpdateResult.Updated();
+    }
+
     private static string? GetEmbeddedDocContent(string relativePath) => relativePath switch
     {
         "reference/about-dynadocs.md" => TemplateGenerator.GenerateAboutDynadocsMd(),
@@ -284,6 +348,12 @@ public static class TemplateCommand
     public static string ComputeHash(string content)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
+        return Convert.ToHexStringLower(bytes);
+    }
+
+    public static string ComputeHashBytes(byte[] content)
+    {
+        var bytes = SHA256.HashData(content);
         return Convert.ToHexStringLower(bytes);
     }
 

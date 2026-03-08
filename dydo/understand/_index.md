@@ -11,5 +11,5 @@ Index of understand documentation.
 
 ## Contents
 
-- [About This Project](./about.md) - > **Fill this in.
-- [Architecture Overview](./architecture.md) - > **Fill this in.
+- [About This Project](./about.md) - > This is the DyDo project.
+- [Architecture Overview](./architecture.md) - DynaDocs (`dydo`) is a .

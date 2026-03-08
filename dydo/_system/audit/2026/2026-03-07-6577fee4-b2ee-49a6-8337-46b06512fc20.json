@@ -1,0 +1,654 @@
+{
+  "session": "6577fee4-b2ee-49a6-8337-46b06512fc20",
+  "agent": "Rose",
+  "human": "balazs",
+  "started": "2026-03-07T23:05:01.2992253Z",
+  "git_head": "6fe6670",
+  "events": [
+    {
+      "ts": "2026-03-07T23:05:01.2982548Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:05:01.9948394Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-07T23:05:06.1913075Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Rose\\workflow.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:05:13.1856817Z",
+      "event": "Claim",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:05:27.4851309Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "No role set"
+    },
+    {
+      "ts": "2026-03-07T23:05:31.5922286Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Rose\\modes\\code-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:05:34.7391179Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "template-update-system"
+    },
+    {
+      "ts": "2026-03-07T23:05:38.6025121Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:05:39.1008729Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:05:39.6001412Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:05:39.9877345Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Olivia\\review-template-update-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:08:45.3445723Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:08:46.0028314Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\IncludeReanchor.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:08:51.4998707Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:08:51.9481752Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:08:52.3969505Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:08:52.8439762Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:08:53.2342905Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:08:57.8043664Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateUpdateTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:08:58.2412315Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\IncludeReanchorTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:08:58.6864645Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ResolveIncludesTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:08:58.9701512Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\002-template-update-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:10:07.0603328Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:35:43.5333439Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\IncludeReanchor.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:35:49.4277104Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:35:59.1968752Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:35:59.3057759Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:36:07.4555208Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:36:11.8136265Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:36:24.4575658Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:36:33.3570923Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:36:40.3952739Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:36:49.5264018Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:36:55.0443464Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:37:00.6697802Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cd \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 \u0026\u0026 dotnet build --no-restore 2\u003E\u00261 | tail -5",
+      "reason": "Needless cd compound"
+    },
+    {
+      "ts": "2026-03-07T23:37:04.795994Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-07T23:37:16.8529683Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~TemplateUpdateTests|FullyQualifiedName~Include..."
+    },
+    {
+      "ts": "2026-03-07T23:37:25.9386247Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:37:26.0005454Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:37:31.2639399Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:37:31.7065485Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\TemplateOverrideTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:37:31.986559Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\EndToEnd\\CliEndToEndTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:37:39.9914348Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:37:40.7177959Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\DydoConfig.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:37:45.5758804Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\DydoConfig.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:37:51.6122736Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:38:16.3908149Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\IncludeReanchorTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:39:09.9434836Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateUpdateTests.cs",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-07T23:39:20.6089308Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ResolveIncludesTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:39:53.4146339Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\TemplateCommandTests.cs",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-07T23:39:59.1566277Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\EndToEnd\\CliEndToEndTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:40:16.8075307Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\EndToEnd\\CliEndToEndTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:40:21.6531673Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-07T23:40:29.4413546Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~TemplateUpdateTests|FullyQualifiedName~Include..."
+    },
+    {
+      "ts": "2026-03-07T23:40:38.4598793Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:40:45.2530339Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\agent-workflow.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-07T23:40:57.2982396Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ResolveIncludesTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:41:03.0488032Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~TemplateUpdateTests|FullyQualifiedName~Include..."
+    },
+    {
+      "ts": "2026-03-07T23:41:12.272801Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~TemplateCommandTests\u0022 2\u003E\u00261 | tail -25"
+    },
+    {
+      "ts": "2026-03-07T23:41:19.7800644Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~CliEndToEndTests.TemplateUpdate\u0022 2\u003E\u00261 | tail -..."
+    },
+    {
+      "ts": "2026-03-07T23:42:06.6181804Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\EndToEnd\\CliEndToEndTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:42:11.7775589Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~CliEndToEndTests.TemplateUpdate\u0022 2\u003E\u00261 | tail -..."
+    },
+    {
+      "ts": "2026-03-07T23:42:49.0297247Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\EndToEnd\\CliEndToEndTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:42:54.9301059Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022FullyQualifiedName~CliEndToEndTests.TemplateUpdate\u0022 2\u003E\u00261 | tail -..."
+    },
+    {
+      "ts": "2026-03-07T23:43:07.1473922Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-07T23:43:55.3223025Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore 2\u003E\u00261 | tail -20"
+    },
+    {
+      "ts": "2026-03-07T23:44:48.8650472Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:44:58.8409095Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:45:03.59031Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:45:10.4147104Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:45:10.5319811Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-07T23:45:15.2317064Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:45:15.7470699Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:45:32.906079Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:45:45.8772361Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-07T23:45:51.9685809Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-07T23:47:13.9225063Z",
+      "event": "Release",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:49:19.2766191Z",
+      "event": "Claim",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:49:22.5541856Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "template-update-system"
+    },
+    {
+      "ts": "2026-03-07T23:49:36.1311025Z",
+      "event": "Release",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:52:09.2894664Z",
+      "event": "Claim",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:52:14.8157046Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "template-update-system"
+    },
+    {
+      "ts": "2026-03-07T23:52:19.798892Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Adele/inbox/ 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-07T23:52:23.5495778Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\47425d47-template-update-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:52:37.2518571Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\template-update-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-07T23:52:46.1904167Z",
+      "event": "Release",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:56:45.5700528Z",
+      "event": "Claim",
+      "agent": "Rose"
+    },
+    {
+      "ts": "2026-03-07T23:56:49.1381996Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "template-update-system"
+    },
+    {
+      "ts": "2026-03-07T23:56:54.0866852Z",
+      "event": "Blocked",
+      "path": "dydo/agents/Adele/inbox/47425d47-template-update-system.md",
+      "tool": "bash",
+      "cmd": "rm dydo/agents/Adele/inbox/47425d47-template-update-system.md dydo/agents/Adele/inbox/5ae08b3b-templ...",
+      "reason": "Agent Rose (code-writer) cannot delete dydo/agents/Adele/inbox/47425d47-template-update-system.md. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-07T23:57:09.2811546Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Rose\\review-response-template-update-system.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-08T00:01:06.5393081Z",
+      "event": "Release",
+      "agent": "Rose"
+    }
+  ],
+  "snapshot_ref": {
+    "type": "delta",
+    "base": "67956556a749",
+    "depth": 1,
+    "delta": {
+      "files_added": [],
+      "files_removed": [
+        "dydo/_system/audit/2026/2026-03-07-1fcfe7e2-6c0e-4603-a46c-22195cfed9ab.json",
+        "dydo/_system/audit/2026/2026-03-07-6577fee4-b2ee-49a6-8337-46b06512fc20.json",
+        "dydo/_system/audit/2026/2026-03-07-ec5bf32b-1ab8-4e89-aff4-76f4a07be1ad.json",
+        "dydo/_system/audit/2026/2026-03-07-f5b2f019-bbe1-40f1-af59-4e5d7eb47c2d.json",
+        "dydo/project/decisions/003-agent-messaging.md",
+        "dydo/project/tasks/audit-compaction-investigation.md",
+        "dydo/project/tasks/help-meta-audit.md",
+        "dydo/project/tasks/template-update-system.md",
+        "DynaDocs.Tests/Integration/TemplateCommandTests.cs"
+      ],
+      "folders_added": [],
+      "folders_removed": [],
+      "doc_links_added": {
+        "dydo/agents/rose/workflow.md": [
+          "dydo/agents/rose/modes/interviewer.md",
+          "dydo/agents/rose/modes/planner.md",
+          "dydo/agents/rose/modes/code-writer.md",
+          "dydo/agents/rose/modes/co-thinker.md",
+          "dydo/agents/rose/modes/reviewer.md",
+          "dydo/agents/rose/modes/docs-writer.md",
+          "dydo/agents/rose/modes/tester.md"
+        ],
+        "dydo/agents/rose/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/rose/modes/code-writer.md"
+        ],
+        "dydo/agents/rose/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/rose/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/rose/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/rose/modes/planner.md"
+        ],
+        "dydo/agents/rose/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/rose/modes/code-writer.md"
+        ],
+        "dydo/agents/rose/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/rose/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ]
+      },
+      "doc_links_removed": {
+        "dydo/agents/olivia/workflow.md": [
+          "dydo/agents/olivia/modes/interviewer.md",
+          "dydo/agents/olivia/modes/planner.md",
+          "dydo/agents/olivia/modes/code-writer.md",
+          "dydo/agents/olivia/modes/co-thinker.md",
+          "dydo/agents/olivia/modes/reviewer.md",
+          "dydo/agents/olivia/modes/docs-writer.md",
+          "dydo/agents/olivia/modes/tester.md"
+        ],
+        "dydo/agents/olivia/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/olivia/modes/code-writer.md"
+        ],
+        "dydo/agents/olivia/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/olivia/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/olivia/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/olivia/modes/planner.md"
+        ],
+        "dydo/agents/olivia/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/olivia/modes/code-writer.md"
+        ],
+        "dydo/agents/olivia/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/olivia/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ]
+      },
+      "IsEmpty": false
+    }
+  }
+}

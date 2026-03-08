@@ -12,7 +12,7 @@ using DynaDocs.Serialization;
 /// </summary>
 public class SnapshotCompactionService
 {
-    public const int MaxChainDepth = 5;
+    public const int MaxChainDepth = 50;
 
     /// <summary>
     /// Computes the delta between a snapshot and a base snapshot.
@@ -218,16 +218,22 @@ public class SnapshotCompactionService
             result.SessionsProcessed++;
         }
 
-        // Phase 2: Find optimal baseline — use the latest session with a snapshot
+        // Phase 2: Find optimal baseline — use the most common git_head's snapshot
         var sessionsWithSnapshots = resolved.Values
             .Where(r => r.Snapshot != null)
-            .OrderByDescending(r => r.Session.Started)
             .ToList();
 
         if (sessionsWithSnapshots.Count == 0)
             return result;
 
-        var baselineSnapshot = sessionsWithSnapshots[0].Snapshot!;
+        var gitHeadGroups = sessionsWithSnapshots
+            .GroupBy(r => r.Session.GitHead ?? r.Session.SessionId)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+
+        result.UniqueCommits = gitHeadGroups.Count;
+
+        var baselineSnapshot = gitHeadGroups[0].First().Snapshot!;
 
         // Create new baseline
         var baselineId = ComputeBaselineId(baselineSnapshot);
@@ -244,7 +250,8 @@ public class SnapshotCompactionService
         result.NewBaselineSizeBytes = Encoding.UTF8.GetByteCount(baselineJson);
         File.WriteAllText(baselinePath, baselineJson);
 
-        // Phase 3: Rebuild all sessions with delta references
+        // Phase 3: Rebuild sessions with delta references, caching deltas by snapshot content
+        var deltaCache = new Dictionary<string, SnapshotDelta?>();
         foreach (var (sessionId, (session, snapshot, filePath)) in resolved)
         {
             var originalSize = new FileInfo(filePath).Length;
@@ -257,8 +264,14 @@ public class SnapshotCompactionService
                 continue;
             }
 
-            // Compute delta from the new baseline
-            var delta = ComputeDelta(snapshot, baselineSnapshot);
+            // Cache delta by snapshot content hash — identical snapshots produce identical deltas
+            var snapshotHash = ComputeBaselineId(snapshot);
+            if (!deltaCache.TryGetValue(snapshotHash, out var delta))
+            {
+                var computed = ComputeDelta(snapshot, baselineSnapshot);
+                delta = computed.IsEmpty ? null : computed;
+                deltaCache[snapshotHash] = delta;
+            }
 
             // Replace inline snapshot with delta ref
             session.Snapshot = null;
@@ -266,7 +279,7 @@ public class SnapshotCompactionService
             {
                 BaseId = baselineId,
                 Depth = 1,
-                Delta = delta.IsEmpty ? null : delta
+                Delta = delta
             };
 
             // Write updated session

@@ -25,6 +25,7 @@ public class SnapshotDelta
     [JsonPropertyName("doc_links_removed")]
     public Dictionary<string, List<string>> DocLinksRemoved { get; set; } = new();
 
+    [JsonIgnore]
     public bool IsEmpty =>
         FilesAdded.Count == 0 && FilesRemoved.Count == 0 &&
         FoldersAdded.Count == 0 && FoldersRemoved.Count == 0 &&

@@ -182,6 +182,8 @@ public static class AuditCommand
             Console.WriteLine($"New total size:     {FormatBytes(result.NewTotalSizeBytes)} (baseline: {FormatBytes(result.NewBaselineSizeBytes)})");
             Console.WriteLine($"Compression:        {result.CompressionRatio:P1}");
 
+            if (result.UniqueCommits > 0)
+                Console.WriteLine($"Unique commits:     {result.UniqueCommits}");
             if (result.OldBaselinesRemoved > 0)
                 Console.WriteLine($"Old baselines removed: {result.OldBaselinesRemoved}");
 

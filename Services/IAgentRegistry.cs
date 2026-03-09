@@ -169,6 +169,12 @@ public interface IAgentRegistry
 
     void ClearAllWaitMarkers(string agentName);
 
+    bool UpdateWaitMarkerListening(string agentName, string task, int pid);
+
+    void ResetWaitMarkerListening(string agentName, string task);
+
+    List<Models.WaitMarker> GetNonListeningWaitMarkers(string agentName);
+
     /// <summary>
     /// Gets the current session ID from context file.
     /// Used by commands that run as subprocesses to identify the session.

@@ -77,6 +77,11 @@ public static class DispatchCommand
             Description = "Dispatch and return immediately (fire and forget)"
         };
 
+        var worktreeOption = new Option<bool>("--worktree")
+        {
+            Description = "Run dispatched agent in a git worktree for isolated work"
+        };
+
         var command = new Command("dispatch", "Dispatch work to another agent");
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
@@ -91,6 +96,7 @@ public static class DispatchCommand
         command.Options.Add(newWindowOption);
         command.Options.Add(waitOption);
         command.Options.Add(noWaitOption);
+        command.Options.Add(worktreeOption);
 
         command.SetAction(parseResult =>
         {
@@ -107,6 +113,14 @@ public static class DispatchCommand
             var autoClose = parseResult.GetValue(autoCloseOption);
             var wait = parseResult.GetValue(waitOption);
             var noWait = parseResult.GetValue(noWaitOption);
+            var worktree = parseResult.GetValue(worktreeOption);
+
+            // Validate --worktree / --no-launch
+            if (worktree && noLaunch)
+            {
+                ConsoleOutput.WriteError("Cannot specify both --worktree and --no-launch. Worktree lifecycle depends on terminal commands.");
+                return ExitCodes.ToolError;
+            }
 
             // Validate --wait / --no-wait
             if (wait && noWait)
@@ -149,13 +163,13 @@ public static class DispatchCommand
                 }
             }
 
-            return Execute(role, task, brief, files, noLaunch, to, escalate, useTab, useNewWindow, autoClose, wait);
+            return Execute(role, task, brief, files, noLaunch, to, escalate, useTab, useNewWindow, autoClose, wait, worktree);
         });
 
         return command;
     }
 
-    private static int Execute(string role, string task, string brief, string? files, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose, bool wait)
+    private static int Execute(string role, string task, string brief, string? files, bool noLaunch, string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree)
     {
         if (useTab && useNewWindow)
         {
@@ -343,12 +357,21 @@ public static class DispatchCommand
             File.WriteAllText(autoCloseMarker, "");
         }
 
+        // Create .worktree marker so cleanup can find orphans
+        string? worktreeId = null;
+        if (worktree)
+        {
+            worktreeId = TerminalLauncher.GenerateWorktreeId(targetAgentName);
+            var worktreeMarker = Path.Combine(registry.GetAgentWorkspace(targetAgentName), ".worktree");
+            File.WriteAllText(worktreeMarker, worktreeId);
+        }
+
         // Launch new terminal if requested
         if (!noLaunch)
         {
             var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
             var projectRoot = PathUtils.FindProjectRoot();
-            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose);
+            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId);
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
 

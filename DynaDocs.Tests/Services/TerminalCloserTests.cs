@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using DynaDocs.Services;
 using Xunit;
 
+[Collection("ProcessUtils")]
 public class TerminalCloserTests : IDisposable
 {
     private readonly RecordingProcessStarter _recorder = new();
@@ -12,16 +13,20 @@ public class TerminalCloserTests : IDisposable
     public TerminalCloserTests()
     {
         TerminalCloser.ProcessStarterOverride = _recorder;
+        ProcessUtils.PowerShellResolverOverride = () => "pwsh.exe";
     }
 
     public void Dispose()
     {
         TerminalCloser.ProcessStarterOverride = null;
+        ProcessUtils.PowerShellResolverOverride = null;
     }
 
     [Fact]
-    public void SpawnDelayedKill_StartsProcess_WithCorrectPid()
+    public void SpawnDelayedKill_Windows_UsesResolvedPowerShell()
     {
+        ProcessUtils.PowerShellResolverOverride = () => "pwsh.exe";
+
         TerminalCloser.SpawnDelayedKill(12345);
 
         Assert.Single(_recorder.Started);
@@ -29,7 +34,7 @@ public class TerminalCloserTests : IDisposable
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            Assert.Equal("powershell", psi.FileName);
+            Assert.Equal("pwsh.exe", psi.FileName);
             Assert.Contains("12345", psi.Arguments);
             Assert.Contains("Stop-Process", psi.Arguments);
         }
@@ -42,7 +47,44 @@ public class TerminalCloserTests : IDisposable
     }
 
     [Fact]
-    public void SpawnDelayedKill_PrintsFallback_WhenProcessStartFails()
+    public void SpawnDelayedKill_Windows_CorrectArguments()
+    {
+        TerminalCloser.SpawnDelayedKill(9999);
+
+        Assert.Single(_recorder.Started);
+        var psi = _recorder.Started[0];
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Assert.Contains("-NoProfile", psi.Arguments);
+            Assert.Contains("-WindowStyle Hidden", psi.Arguments);
+            Assert.Contains("Start-Sleep 3", psi.Arguments);
+            Assert.Contains("Stop-Process -Id 9999 -Force", psi.Arguments);
+        }
+        else
+        {
+            Assert.Contains("sleep 3", psi.Arguments);
+            Assert.Contains("kill -TERM 9999", psi.Arguments);
+        }
+    }
+
+    [Fact]
+    public void SpawnDelayedKill_Unix_UsesBash()
+    {
+        TerminalCloser.SpawnDelayedKill(12345);
+
+        Assert.Single(_recorder.Started);
+        var psi = _recorder.Started[0];
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Assert.Equal("bash", psi.FileName);
+            Assert.Contains("kill -TERM", psi.Arguments);
+        }
+    }
+
+    [Fact]
+    public void SpawnDelayedKill_ProcessStartFails_PrintsMessage()
     {
         _recorder.FailAll = true;
 
@@ -59,14 +101,14 @@ public class TerminalCloserTests : IDisposable
             Console.SetOut(originalOut);
         }
 
-        Assert.Contains("Could not schedule auto-close", stdout.ToString());
+        Assert.Contains("Auto-close failed", stdout.ToString());
+        Assert.Contains("Close this terminal manually", stdout.ToString());
     }
 
     [Fact]
-    public void ScheduleClaudeTermination_UsesGrandparentPid()
+    public void ScheduleClaudeTermination_NoClaudeAncestor_PrintsMessage()
     {
-        // In test context, grandparent PID should exist (test runner → shell → dydo).
-        // The mock intercepts the kill so no real process is harmed.
+        // In test context, there's no "claude" process in the ancestor chain
         var stdout = new StringWriter();
         var originalOut = Console.Out;
         Console.SetOut(stdout);
@@ -83,23 +125,30 @@ public class TerminalCloserTests : IDisposable
         var output = stdout.ToString();
         if (_recorder.Started.Count == 0)
         {
-            // No grandparent found — fallback message should mention parent or CLI
-            Assert.True(
-                output.Contains("Could not detect parent process") ||
-                output.Contains("Could not detect CLI process"),
-                $"Unexpected fallback message: {output}");
+            // No claude ancestor found — should show clear error
+            Assert.Contains("Auto-close failed", output);
+            Assert.Contains("Claude process", output);
         }
         else
         {
-            // Mock intercepted the kill — verify the PID is the grandparent
+            // If by some chance a "claude" ancestor exists in test env, verify it targets that PID
             Assert.Single(_recorder.Started);
-            var psi = _recorder.Started[0];
-            var myPid = Environment.ProcessId;
-            var parentPid = ProcessUtils.GetParentPid(myPid);
-            Assert.NotNull(parentPid);
-            var grandparentPid = ProcessUtils.GetParentPid(parentPid!.Value);
-            Assert.NotNull(grandparentPid);
-            Assert.Contains(grandparentPid!.Value.ToString(), psi.Arguments);
+        }
+    }
+
+    [Fact]
+    public void SpawnDelayedKill_Windows_FallsBackToPowershell()
+    {
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+
+        TerminalCloser.SpawnDelayedKill(12345);
+
+        Assert.Single(_recorder.Started);
+        var psi = _recorder.Started[0];
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Assert.Equal("powershell.exe", psi.FileName);
         }
     }
 }

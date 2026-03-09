@@ -12,4 +12,10 @@ public class WaitMarker
 
     [JsonPropertyName("since")]
     public required DateTime Since { get; init; }
+
+    [JsonPropertyName("listening")]
+    public bool Listening { get; set; }
+
+    [JsonPropertyName("pid")]
+    public int? Pid { get; set; }
 }

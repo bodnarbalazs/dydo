@@ -19,10 +19,9 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/mode-code-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-reviewer.template.md");
         AssertFileExists("dydo/_system/templates/mode-co-thinker.template.md");
-        AssertFileExists("dydo/_system/templates/mode-interviewer.template.md");
         AssertFileExists("dydo/_system/templates/mode-planner.template.md");
         AssertFileExists("dydo/_system/templates/mode-docs-writer.template.md");
-        AssertFileExists("dydo/_system/templates/mode-tester.template.md");
+        AssertFileExists("dydo/_system/templates/mode-test-writer.template.md");
     }
 
     [Fact]
@@ -143,8 +142,8 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
 
-        // Should have all expected templates (8 total: 1 workflow + 7 modes)
-        Assert.Equal(8, templateNames.Count);
+        // Should have all expected templates (7 total: 1 workflow + 6 modes)
+        Assert.Equal(7, templateNames.Count);
     }
 
     [Fact]

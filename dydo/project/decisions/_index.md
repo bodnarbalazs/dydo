@@ -14,3 +14,6 @@ Index of decisions documentation.
 - [001 — Auto-Close for Dispatched Agents](./001-auto-close-dispatch.md)
 - [002 — Template Update System](./002-template-update-system.md)
 - [003 — Agent Messaging](./003-agent-messaging.md)
+- [004 — Terminal Grouping Over Dashboard](./004-terminal-grouping-over-dashboard.md)
+- [005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
+- [006 — Drop Interviewer Role (Absorbed by Co-Thinker)](./006-drop-interviewer-role.md)

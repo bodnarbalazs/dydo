@@ -53,7 +53,6 @@ npm/             npm wrapper — downloads native binary per platform
 
 ## Related
 
-- [Architecture Detail](./architecture-detail.md) — Services, models, rules, and data flows in depth
 - [Coding Standards](../guides/coding-standards.md) — Code conventions
 - [How to Use These Docs](../guides/how-to-use-docs.md) — Navigating the documentation
 - [dydo Commands Reference](../reference/dydo-commands.md) — Full command documentation

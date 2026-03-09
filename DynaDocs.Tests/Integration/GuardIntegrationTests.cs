@@ -873,4 +873,46 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     #endregion
+
+    #region Agent Tool - Staged Access
+
+    [Fact]
+    public async Task Guard_AgentTool_NoIdentity_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_AgentTool_IdentityNoRole_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_AgentTool_IdentityWithRole_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
 }

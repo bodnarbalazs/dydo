@@ -11,7 +11,7 @@ Index of project documentation.
 
 ## Contents
 
-*No documents in this folder yet.*
+- [v1.3.0 Release Plan](./v1.3-release.md) - Stabilize v1.
 
 ## Subfolders
 

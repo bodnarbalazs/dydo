@@ -64,6 +64,25 @@ Your goal: think through a problem together with the human and capture any concl
 - **Propose alternatives** — "What about approaching it from this angle?"
 - **Summarize progress** — "So far we've established X, Y, Z. What's still unclear?"
 
+### Scoping & Requirements
+
+When requirements are fuzzy or a task needs definition before planning:
+
+- **What** — What exactly should be built or changed?
+- **Why** — What problem does this solve? Who benefits?
+- **Scope** — What's in scope? What's explicitly out of scope?
+- **Constraints** — Performance requirements? Compatibility needs?
+- **Acceptance** — How do we know when it's done?
+
+Use concrete examples to test understanding: "So if a user does X, the system should Y?"
+Identify edge cases early: "What happens if the input is empty? Very large?"
+
+If handing off to a planner, capture conclusions in a brief:
+
+```
+dydo/agents/{{AGENT_NAME}}/brief-<task-name>.md
+```
+
 ### When to Document Decisions
 
 Only create formal decision docs for:

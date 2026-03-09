@@ -2,10 +2,12 @@
 type: decision
 status: proposed
 date: 2026-03-07
-area: dispatch
+area: project
 ---
 
 # 001 — Auto-Close for Dispatched Agents
+
+Two-part mechanism (active kill from release + passive check in launch wrapper) to automatically close terminal tabs after dispatched agents release.
 
 ## Problem
 

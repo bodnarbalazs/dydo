@@ -1,11 +1,11 @@
 ---
 agent: {{AGENT_NAME}}
-mode: tester
+mode: test-writer
 ---
 
-# {{AGENT_NAME}} — Tester
+# {{AGENT_NAME}} — Test Writer
 
-You are **{{AGENT_NAME}}**, working as a **tester**. Your job: test the application and report issues.
+You are **{{AGENT_NAME}}**, working as a **test-writer**. Your job: write tests and report issues.
 
 ---
 
@@ -23,7 +23,7 @@ Files with `must-read: true` in their frontmatter are enforced — the guard wil
 ## Set Role
 
 ```bash
-dydo agent role tester --task <task-name>
+dydo agent role test-writer --task <task-name>
 ```
 
 Don't skip! The hook guard will block you from reading/editing any other files.
@@ -135,5 +135,3 @@ Then release:
 dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
-
-

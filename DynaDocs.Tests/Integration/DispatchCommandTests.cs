@@ -896,6 +896,94 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --worktree Tests
+
+    [Fact]
+    public async Task Dispatch_WithWorktreeAndNoLaunch_Fails()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "my-task", "--brief", "Brief", "--worktree", "--no-launch", "--no-wait" };
+        var result = await RunAsync(command, args);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Cannot specify both --worktree and --no-launch");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithWorktree_CreatesMarkerFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", worktree: true);
+
+        result.AssertSuccess();
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
+        Assert.True(File.Exists(markerPath), "Worktree marker file should exist");
+
+        var content = File.ReadAllText(markerPath);
+        Assert.StartsWith("Adele-", content);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithoutWorktree_NoWorktreeMarkerFile()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief");
+
+        result.AssertSuccess();
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
+        Assert.False(File.Exists(markerPath), "Worktree marker file should not exist");
+    }
+
+    [Fact]
+    public async Task Dispatch_WithWorktree_CombinesWithAutoClose()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", worktree: true, autoClose: true);
+
+        result.AssertSuccess();
+
+        var wtMarker = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
+        var acMarker = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
+        Assert.True(File.Exists(wtMarker));
+        Assert.True(File.Exists(acMarker));
+    }
+
+    [Fact]
+    public async Task Dispatch_WithWorktree_CombinesWithTab()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", worktree: true, tab: true);
+
+        result.AssertSuccess();
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
+        Assert.True(File.Exists(markerPath));
+    }
+
+    [Fact]
+    public async Task Dispatch_WithWorktree_CombinesWithTo()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", to: "Brian", worktree: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian");
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Brian/.worktree");
+        Assert.True(File.Exists(markerPath));
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> TaskCreateAsync(string name, string? description = null, string area = "general")
@@ -921,7 +1009,8 @@ public class DispatchCommandTests : IntegrationTestBase
         bool newWindow = false,
         bool autoClose = false,
         bool noWait = true,
-        bool wait = false)
+        bool wait = false,
+        bool worktree = false)
     {
         var command = DispatchCommand.Create();
         var args = new List<string>
@@ -929,8 +1018,10 @@ public class DispatchCommandTests : IntegrationTestBase
             "--role", role,
             "--task", task,
             "--brief", brief,
-            "--no-launch"
         };
+
+        // --worktree is incompatible with --no-launch, so omit --no-launch when worktree is set
+        if (!worktree) { args.Add("--no-launch"); }
 
         if (files != null) { args.Add("--files"); args.Add(files); }
         if (to != null) { args.Add("--to"); args.Add(to); }
@@ -938,6 +1029,7 @@ public class DispatchCommandTests : IntegrationTestBase
         if (tab) { args.Add("--tab"); }
         if (newWindow) { args.Add("--new-window"); }
         if (autoClose) { args.Add("--auto-close"); }
+        if (worktree) { args.Add("--worktree"); }
         if (wait) { args.Add("--wait"); }
         else if (noWait) { args.Add("--no-wait"); }
 

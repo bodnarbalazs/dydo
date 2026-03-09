@@ -92,7 +92,9 @@ public static class WaitCommand
         }
         else
         {
-            // Task-specific wait
+            // Task-specific wait — mark as listening so the guard knows this wait is active
+            registry.UpdateWaitMarkerListening(agent.Name, task, Environment.ProcessId);
+
             Console.WriteLine($"Waiting for message about '{task}'...");
 
             while (true)

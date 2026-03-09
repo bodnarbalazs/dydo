@@ -28,7 +28,7 @@ public static class CompleteCommand
     private static readonly string[] GraphSubcommands = ["stats"];
 
     private static readonly string[] Roles =
-        ["code-writer", "reviewer", "co-thinker", "docs-writer", "interviewer", "planner", "tester"];
+        ["code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer"];
 
     private static readonly string[] ReviewStatuses = ["pass", "fail"];
 

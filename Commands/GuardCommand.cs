@@ -184,11 +184,13 @@ public static partial class GuardCommand
         }
 
         // ============================================================
-        // SECURITY LAYER 2.5: Search tools (Glob/Grep)
-        // These are broad read operations that always require Stage 2 (identity + role).
-        // Unlike Read which targets a specific file, these scan across directories.
+        // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool
+        // These always require Stage 2 (identity + role).
+        // Search tools are broad read operations that scan across directories.
+        // Agent tool spawns sub-processes that inherit the session — blocking
+        // pre-claim prevents sub-agents from bypassing the onboarding flow.
         // ============================================================
-        if (toolName is "glob" or "grep")
+        if (toolName is "glob" or "grep" or "agent")
         {
             var searchAgent = registry.GetCurrentAgent(sessionId);
             if (searchAgent == null || string.IsNullOrEmpty(searchAgent.Role))
@@ -246,6 +248,24 @@ public static partial class GuardCommand
                 Console.Error.WriteLine();
                 Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
                 return ExitCodes.ToolError;
+            }
+
+            // Pending-state enforcement for search tools
+            {
+                var pendingMarkers = SelfHealAndGetPendingMarkers(registry, searchAgent.Name);
+                if (pendingMarkers.Count > 0)
+                {
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked,
+                        Path = searchPath,
+                        Tool = toolName,
+                        BlockReason = "Pending wait markers"
+                    });
+
+                    WritePendingStateBlock(pendingMarkers);
+                    return ExitCodes.ToolError;
+                }
             }
 
             // Check off-limits on the search directory if provided
@@ -318,6 +338,25 @@ public static partial class GuardCommand
                     Console.Error.WriteLine("  Then run: dydo agent role <role>");
                 }
                 return ExitCodes.ToolError;
+            }
+
+            // Pending-state enforcement for Read tool
+            if (agent != null)
+            {
+                var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
+                if (pendingMarkers.Count > 0)
+                {
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked,
+                        Path = filePath,
+                        Tool = toolName,
+                        BlockReason = "Pending wait markers"
+                    });
+
+                    WritePendingStateBlock(pendingMarkers);
+                    return ExitCodes.ToolError;
+                }
             }
 
             // Log allowed read
@@ -419,6 +458,25 @@ public static partial class GuardCommand
             Console.Error.WriteLine();
             Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
             return ExitCodes.ToolError;
+        }
+
+        // Pending-state enforcement for Read/Write/Edit tools
+        if (agent != null)
+        {
+            var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
+            if (pendingMarkers.Count > 0)
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked,
+                    Path = filePath,
+                    Tool = toolName,
+                    BlockReason = "Pending wait markers"
+                });
+
+                WritePendingStateBlock(pendingMarkers);
+                return ExitCodes.ToolError;
+            }
         }
 
         // Check must-read enforcement (re-fetch state after potential read tracking)
@@ -574,6 +632,29 @@ public static partial class GuardCommand
                 return ExitCodes.ToolError;
             }
 
+            // Pending-state enforcement: only allow dispatch/wait during pending state
+            if (!IsDydoDispatchCommand(command) && !IsDydoWaitAnyForm(command))
+            {
+                var agent = registry.GetCurrentAgent(sessionId);
+                if (agent != null)
+                {
+                    var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
+                    if (pendingMarkers.Count > 0)
+                    {
+                        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                        {
+                            EventType = AuditEventType.Blocked,
+                            Tool = "bash",
+                            Command = TruncateCommand(command),
+                            BlockReason = "Pending wait markers"
+                        });
+
+                        WritePendingStateBlock(pendingMarkers);
+                        return ExitCodes.ToolError;
+                    }
+                }
+            }
+
             // Allow the dydo command to proceed
             return ExitCodes.Success;
         }
@@ -629,6 +710,30 @@ public static partial class GuardCommand
                 Console.Error.WriteLine();
                 Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
                 return ExitCodes.ToolError;
+            }
+        }
+
+        // ============================================================
+        // Pending-state enforcement for non-dydo bash commands
+        // ============================================================
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent != null)
+            {
+                var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
+                if (pendingMarkers.Count > 0)
+                {
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked,
+                        Tool = "bash",
+                        Command = TruncateCommand(command),
+                        BlockReason = "Pending wait markers"
+                    });
+
+                    WritePendingStateBlock(pendingMarkers);
+                    return ExitCodes.ToolError;
+                }
             }
         }
 
@@ -961,6 +1066,57 @@ public static partial class GuardCommand
         return Regex.IsMatch(command,
             @"(?:^|[;&|]\s*)(?:\./)?dydo\s",
             RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Check if a command is 'dydo dispatch' (allowed during pending state).
+    /// </summary>
+    private static bool IsDydoDispatchCommand(string command)
+    {
+        return Regex.IsMatch(command,
+            @"(?:^|[;&|]\s*)(?:\./)?dydo\s+dispatch\b",
+            RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Check if a command is 'dydo wait' in any form (allowed during pending state).
+    /// </summary>
+    private static bool IsDydoWaitAnyForm(string command)
+    {
+        return Regex.IsMatch(command,
+            @"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b",
+            RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Self-heal wait markers with dead listener PIDs, then return non-listening markers.
+    /// Markers with listening=true but dead PID are flipped to listening=false.
+    /// </summary>
+    private static List<Models.WaitMarker> SelfHealAndGetPendingMarkers(AgentRegistry registry, string agentName)
+    {
+        var markers = registry.GetWaitMarkers(agentName);
+        foreach (var marker in markers)
+        {
+            if (!marker.Listening) continue;
+
+            // If PID is null (legacy) or dead, flip to non-listening
+            if (marker.Pid == null || !ProcessUtils.IsProcessRunning(marker.Pid.Value))
+            {
+                registry.ResetWaitMarkerListening(agentName, marker.Task);
+            }
+        }
+
+        return registry.GetNonListeningWaitMarkers(agentName);
+    }
+
+    /// <summary>
+    /// Emit the standard pending-state block message to stderr.
+    /// </summary>
+    private static void WritePendingStateBlock(List<Models.WaitMarker> pendingMarkers)
+    {
+        var taskNames = string.Join(", ", pendingMarkers.Select(m => m.Task));
+        Console.Error.WriteLine($"BLOCKED: Register waits before continuing. Pending: [{taskNames}].");
+        Console.Error.WriteLine("  Run: dydo wait --task <name> (in background)");
     }
 
     // Matches: npx [flags...] dydo [args...]

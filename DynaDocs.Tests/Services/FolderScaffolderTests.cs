@@ -133,7 +133,7 @@ public class FolderScaffolderTests : IDisposable
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
         Assert.False(Directory.Exists(modesPath), "Modes folder should NOT exist after scaffold");
 
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
         foreach (var mode in expectedModes)
         {
             var modePath = Path.Combine(modesPath, $"{mode}.md");
@@ -262,7 +262,7 @@ public class FolderScaffolderTests : IDisposable
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
         Assert.True(Directory.Exists(modesPath), "Modes folder should exist after regenerate");
 
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
         foreach (var mode in expectedModes)
         {
             var modePath = Path.Combine(modesPath, $"{mode}.md");
@@ -284,13 +284,12 @@ public class FolderScaffolderTests : IDisposable
         var workflowPath = Path.Combine(agentsPath, "TestAgent", "workflow.md");
         var content = File.ReadAllText(workflowPath);
 
-        Assert.Contains("modes/interviewer.md", content);
         Assert.Contains("modes/planner.md", content);
         Assert.Contains("modes/code-writer.md", content);
         Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
-        Assert.Contains("modes/tester.md", content);
+        Assert.Contains("modes/test-writer.md", content);
     }
 
     [Fact]

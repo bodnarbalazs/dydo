@@ -4,6 +4,7 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
       "Bash(find:*)",
+      "Bash(ls:*)",
       "Bash(dotnet run:*)",
       "Bash(dotnet publish:*)",
       "Bash(dydo agent claim:*)",
@@ -12,7 +13,6 @@
       "Bash(dydo agent:*)",
       "Bash(dydo dispatch:*)",
       "Bash(dydo --help:*)",
-      "Bash(find:*)",
       "Bash(dydo task create:*)",
       "Bash(dydo fix:*)",
       "Bash(dydo check:*)",
@@ -20,6 +20,7 @@
       "Bash(dydo inbox show:*)",
       "Bash(dydo review:*)",
       "Bash(dydo inbox:*)",
+      "Bash(dydo message:*)",
       "Bash(dydo msg:*)",
       "Bash(dydo wait:*)"
     ]
@@ -27,7 +28,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep",
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent",
         "hooks": [
           {
             "type": "command",

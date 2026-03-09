@@ -138,6 +138,50 @@ public class NamingRuleTests
 
     #endregion
 
+    #region Version-Numbered Filenames
+
+    [Fact]
+    public void Validate_AcceptsVersionNumberedFilename()
+    {
+        var doc = CreateDoc("v1.3-release.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsDotsInVersionSegments()
+    {
+        var doc = CreateDoc("v1.2-stabilization-and-v1.3-planning.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_RejectsLeadingDotNonSpecialFile()
+    {
+        var doc = CreateDoc(".something-weird.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsTrailingVersionNumber()
+    {
+        var doc = CreateDoc("v1.3-coverage-system-2.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
     #region Exclusions
 
     [Fact]

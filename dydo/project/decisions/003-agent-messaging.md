@@ -2,10 +2,12 @@
 type: decision
 status: proposed
 date: 2026-03-08
-area: messaging
+area: project
 ---
 
 # 003 — Agent Messaging
+
+Lightweight inter-agent messaging via inbox reuse, guard-enforced notification blocking, and indefinite `dydo wait` polling.
 
 ## Problem
 

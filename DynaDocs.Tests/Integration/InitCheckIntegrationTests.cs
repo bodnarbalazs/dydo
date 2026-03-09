@@ -240,10 +240,10 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         var claimResult = await ClaimAgentAsync("Adele");
         claimResult.AssertSuccess();
 
-        // Assert - Modes folder and all 7 mode files exist after claim
+        // Assert - Modes folder and all 6 mode files exist after claim
         Assert.True(Directory.Exists(modesPath), "Modes folder should exist after claim");
 
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
         foreach (var mode in expectedModes)
         {
             AssertFileExists($"dydo/agents/Adele/modes/{mode}.md");

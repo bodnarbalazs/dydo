@@ -181,7 +181,7 @@ public static partial class PathUtils
         return string.Join("/", relativeParts);
     }
 
-    [GeneratedRegex(@"^[a-z0-9]+(-[a-z0-9]+)*$")]
+    [GeneratedRegex(@"^[a-z0-9]+([.\-][a-z0-9]+)*$")]
     private static partial Regex KebabCaseRegex();
 
     [GeneratedRegex(@"([a-z])([A-Z])")]

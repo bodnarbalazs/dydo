@@ -102,7 +102,7 @@ public static class AgentCommand
     {
         var roleArgument = new Argument<string>("role")
         {
-            Description = "Role to set (code-writer, reviewer, co-thinker, docs-writer, interviewer, planner, tester)"
+            Description = "Role to set (code-writer, reviewer, co-thinker, docs-writer, planner, test-writer)"
         };
 
         var taskOption = new Option<string?>("--task")

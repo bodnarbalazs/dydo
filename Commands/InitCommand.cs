@@ -372,7 +372,7 @@ public static class InitCommand
 
         var guardEntry = new JsonObject
         {
-            ["matcher"] = "Edit|Write|Read|Bash|Glob|Grep",
+            ["matcher"] = "Edit|Write|Read|Bash|Glob|Grep|Agent",
             ["hooks"] = hooksArray
         };
         preToolUse.Add((JsonNode)guardEntry);

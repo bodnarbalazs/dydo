@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Services;
 
+[Collection("ProcessUtils")]
 public class ProcessUtilsTests
 {
     [Fact]
@@ -67,5 +68,44 @@ public class ProcessUtilsTests
         var pid = ProcessUtils.FindAncestorProcess("dotnet", maxDepth: 0);
 
         Assert.Null(pid);
+    }
+
+    [Fact]
+    public void ResolvePowerShell_PwshAvailable_ReturnsPwsh()
+    {
+        ProcessUtils.PowerShellResolverOverride = () => "pwsh.exe";
+        try
+        {
+            Assert.Equal("pwsh.exe", ProcessUtils.ResolvePowerShell());
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    [Fact]
+    public void ResolvePowerShell_PwshNotAvailable_ReturnsPowershell()
+    {
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            Assert.Equal("powershell.exe", ProcessUtils.ResolvePowerShell());
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    [Fact]
+    public void ResolvePowerShell_WithoutOverride_ReturnsPwshOrPowershell()
+    {
+        ProcessUtils.PowerShellResolverOverride = null;
+
+        var result = ProcessUtils.ResolvePowerShell();
+
+        Assert.True(result == "pwsh.exe" || result == "powershell.exe",
+            $"Expected 'pwsh.exe' or 'powershell.exe' but got '{result}'");
     }
 }

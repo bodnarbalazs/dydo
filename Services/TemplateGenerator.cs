@@ -94,10 +94,9 @@ public static class TemplateGenerator
             "mode-code-writer.template.md",
             "mode-reviewer.template.md",
             "mode-co-thinker.template.md",
-            "mode-interviewer.template.md",
             "mode-planner.template.md",
             "mode-docs-writer.template.md",
-            "mode-tester.template.md"
+            "mode-test-writer.template.md"
         };
     }
 
@@ -441,8 +440,8 @@ public static class TemplateGenerator
             | `reviewer` | `dydo/agents/{agentName}/**` | Everything else |
             | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | {formattedAll} |
             | `docs-writer` | `dydo/**` | `dydo/agents/**`, {formattedSource} |
-            | `interviewer` | `dydo/agents/{agentName}/**` | Everything else |
             | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | {formattedSource} |
+            | `test-writer` | `dydo/agents/{agentName}/**`, {formattedTests}, `dydo/project/pitfalls/**` | {formattedSource} |
 
             The guard system enforces these permissions. If blocked, either:
             - Change to an appropriate role
@@ -849,10 +848,9 @@ public static class TemplateGenerator
             "code-writer" => "implement code",
             "reviewer" => "review code and provide feedback",
             "co-thinker" => "think through problems collaboratively",
-            "interviewer" => "gather requirements",
             "planner" => "design implementation plans",
             "docs-writer" => "write documentation",
-            "tester" => "test the application and report issues",
+            "test-writer" => "write tests and report issues",
             _ => "complete your assigned work"
         };
 
@@ -861,10 +859,9 @@ public static class TemplateGenerator
             "code-writer" => $"{formattedSource}, {formattedTests}",
             "reviewer" => $"`dydo/agents/{agentName}/**` (workspace only)",
             "co-thinker" => $"`dydo/agents/{agentName}/**`, `dydo/project/decisions/**`",
-            "interviewer" => $"`dydo/agents/{agentName}/**`",
             "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",
             "docs-writer" => "`dydo/**` (except agents/)",
-            "tester" => $"`dydo/agents/{agentName}/**`, {formattedTests}, `dydo/project/pitfalls/**`",
+            "test-writer" => $"`dydo/agents/{agentName}/**`, {formattedTests}, `dydo/project/pitfalls/**`",
             _ => "(check with dydo agent status)"
         };
 
@@ -920,7 +917,7 @@ public static class TemplateGenerator
     /// </summary>
     public static IReadOnlyList<string> GetModeNames()
     {
-        return new[] { "code-writer", "reviewer", "co-thinker", "interviewer", "planner", "docs-writer", "tester" };
+        return new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
     }
 
     /// <summary>
@@ -1222,25 +1219,18 @@ public static class TemplateGenerator
 
                 | Flag | Workflow |
                 |------|----------|
-                | `--feature` | Interview → Plan → Code → Review |
-                | `--task` | Plan → Code → Review |
-                | `--quick` | Code only (simple changes) |
-                | `--think` | Co-thinker mode |
-                | `--review` | Reviewer mode |
-                | `--docs` | Docs-writer mode |
-                | `--test` | Tester mode |
+                | `--inbox` | Process dispatched work |
 
                 ## Agent Roles
 
                 | Role | Can Edit | Purpose |
                 |------|----------|---------|
-                | `code-writer` | source + test directories | Implement features |
-                | `reviewer` | agent workspace | Review code |
+                | `co-thinker` | `decisions/**`, agent workspace | Explore ideas, scope requirements |
                 | `planner` | `tasks/**`, agent workspace | Design implementation |
-                | `tester` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
+                | `code-writer` | source + test directories | Implement features |
+                | `test-writer` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
+                | `reviewer` | agent workspace | Review code |
                 | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
-                | `co-thinker` | `decisions/**`, agent workspace | Explore ideas |
-                | `interviewer` | agent workspace | Gather requirements |
 
                 ## More Information
 

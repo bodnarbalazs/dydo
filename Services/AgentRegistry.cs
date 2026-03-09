@@ -40,9 +40,8 @@ public partial class AgentRegistry : IAgentRegistry
             ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
             ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], [..sourcePaths, ..testPaths]),
             ["docs-writer"] = (["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"], [..sourcePaths, ..testPaths]),
-            ["interviewer"] = (["dydo/agents/{self}/**"], ["**"]),
             ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], [..sourcePaths]),
-            ["tester"] = (["dydo/agents/{self}/**", ..testPaths, "dydo/project/pitfalls/**"], [..sourcePaths])
+            ["test-writer"] = (["dydo/agents/{self}/**", ..testPaths, "dydo/project/pitfalls/**"], [..sourcePaths])
         };
     }
 
@@ -885,6 +884,64 @@ public partial class AgentRegistry : IAgentRegistry
             Directory.Delete(dir, true);
     }
 
+    public bool UpdateWaitMarkerListening(string agentName, string task, int pid)
+    {
+        var dir = GetWaitingDir(agentName);
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.WaitMarker);
+            if (marker == null)
+                return false;
+
+            marker.Listening = true;
+            marker.Pid = pid;
+
+            var updated = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.WaitMarker);
+            File.WriteAllText(path, updated);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public void ResetWaitMarkerListening(string agentName, string task)
+    {
+        var dir = GetWaitingDir(agentName);
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+
+        if (!File.Exists(path))
+            return;
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.WaitMarker);
+            if (marker == null) return;
+
+            marker.Listening = false;
+            marker.Pid = null;
+
+            var updated = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.WaitMarker);
+            File.WriteAllText(path, updated);
+        }
+        catch { }
+    }
+
+    public List<WaitMarker> GetNonListeningWaitMarkers(string agentName)
+    {
+        return GetWaitMarkers(agentName).Where(m => !m.Listening).ToList();
+    }
+
     #endregion
 
     #region Reply-Pending Markers
@@ -1035,9 +1092,8 @@ public partial class AgentRegistry : IAgentRegistry
             "code-writer" => "Code-writer role can only edit configured source/test paths and own workspace.",
             "co-thinker" => "Co-thinker role can edit own workspace and decisions.",
             "docs-writer" => "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace.",
-            "interviewer" => "Interviewer role can only edit own workspace.",
             "planner" => "Planner role can only edit own workspace and tasks.",
-            "tester" => "Tester role can edit own workspace, tests, and pitfalls.",
+            "test-writer" => "Test-writer role can edit own workspace, tests, and pitfalls.",
             _ => ""
         };
     }

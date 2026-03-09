@@ -12,4 +12,7 @@ public class StructureConfig
 
     [JsonPropertyName("tasks")]
     public string Tasks { get; set; } = "project/tasks";
+
+    [JsonPropertyName("issues")]
+    public string Issues { get; set; } = "project/issues";
 }

@@ -41,6 +41,13 @@ public class TerminalLauncher
         return $"claude \"{prompt}\"";
     }
 
+    /// <summary>
+    /// Generate a unique worktree identifier for an agent.
+    /// Used as both the directory name and branch suffix.
+    /// </summary>
+    public static string GenerateWorktreeId(string agentName) =>
+        $"{agentName}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+
     public static readonly TerminalConfig[] LinuxTerminals =
     [
         // Modern terminals (most common on current distros)
@@ -97,7 +104,7 @@ public class TerminalLauncher
         return $"cd '{workingDirectory}' && ";
     }
 
-    public static string GetWindowsArguments(string agentName, bool autoClose = false)
+    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null)
     {
         var prompt = GetClaudePrompt(agentName);
         // Single quotes in PowerShell create a literal string, ensuring the entire
@@ -110,10 +117,25 @@ public class TerminalLauncher
         // -NoExit keeps PowerShell open after the command completes.
         // Omit it when auto-close is active so the shell exits naturally.
         var noExitFlag = autoClose ? "" : "-NoExit ";
+
+        if (worktreeId != null)
+        {
+            var wtDir = $".dydo/worktrees/{worktreeId}";
+            var branch = $"worktree/{worktreeId}";
+            // try/finally ensures worktree cleanup even if claude crashes
+            return $"{noExitFlag}-Command \"$_wt_root = Get-Location; " +
+                   $"New-Item -ItemType Directory -Force -Path .dydo/worktrees | Out-Null; " +
+                   $"git worktree prune; " +
+                   $"git worktree add {wtDir} -b {branch}; " +
+                   $"Set-Location {wtDir}; " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+                   $"finally {{ Set-Location $_wt_root; git worktree remove {wtDir} --force }}\"";
+        }
+
         return $"{noExitFlag}-Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
     }
 
-    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
+    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null)
     {
         var config = LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
@@ -122,48 +144,70 @@ public class TerminalLauncher
             ? config.GetTabArguments(agentName, workingDirectory)
             : config.GetArguments(agentName, workingDirectory);
 
+        // Worktree wrapping must be applied before autoClose so cleanup runs before the exit check.
+        // cd ../../.. navigates back from .dydo/worktrees/{id} (always 3 levels deep).
+        if (worktreeId != null)
+        {
+            var wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
+            var wtCleanup = $"cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force; ";
+            args = args.Replace("unset CLAUDECODE", wtSetup + "unset CLAUDECODE");
+            args = args.Replace("exec bash", wtCleanup + "exec bash");
+        }
+
         if (autoClose)
             args = args.Replace("exec bash", BashPostClaudeCheck(agentName));
 
         return args;
     }
 
-    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false)
+    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null)
     {
-        if (autoClose)
+        var cdPrefix = CdPrefix(workingDirectory);
+
+        string wtSetup = "", wtCleanup = "";
+        if (worktreeId != null)
         {
-            var cdPrefix = CdPrefix(workingDirectory);
-            return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"; {BashPostClaudeCheck(agentName)}\"'";
+            wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
+            wtCleanup = $"; cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force";
         }
-        return MacTerminals[0].GetArguments(agentName, workingDirectory);
+
+        var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
+
+        return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{postClaude}\"'";
     }
+
+    /// <summary>
+    /// Override the process starter used by LaunchNewTerminal for testing.
+    /// Set to a NoOpProcessStarter to suppress real terminal launches in tests.
+    /// </summary>
+    public static IProcessStarter? ProcessStarterOverride { get; set; }
 
     /// <summary>
     /// Static convenience method for backward compatibility.
     /// </summary>
-    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
+    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null)
     {
-        new TerminalLauncher().Launch(agentName, workingDirectory, useTab, autoClose);
+        new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId);
     }
 
     /// <summary>
     /// Launch a new terminal for the specified agent.
     /// </summary>
-    public void Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
+    public void Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null)
     {
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                LaunchWindows(agentName, workingDirectory, useTab, autoClose);
+                LaunchWindows(agentName, workingDirectory, useTab, autoClose, worktreeId);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                LaunchMac(agentName, workingDirectory, useTab, autoClose);
+                LaunchMac(agentName, workingDirectory, useTab, autoClose, worktreeId);
             }
             else
             {
-                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory, useTab, autoClose))
+                if (!TryLaunchTerminals(LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId))
                 {
                     throw new InvalidOperationException("No terminal found");
                 }
@@ -180,8 +224,10 @@ public class TerminalLauncher
     /// <summary>
     /// Launch terminal on Windows. Tries Windows Terminal first, falls back to PowerShell.
     /// </summary>
-    public void LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
+    public void LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null)
     {
+        var shell = ProcessUtils.ResolvePowerShell();
+
         // Try Windows Terminal first (modern)
         try
         {
@@ -193,7 +239,7 @@ public class TerminalLauncher
             {
                 FileName = "wt",
                 // wt uses ';' as its own subcommand separator, so escape it with '\;'
-                Arguments = $"{wtAction} {wtDirArg}powershell {GetWindowsArguments(agentName, autoClose).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetWindowsArguments(agentName, autoClose, worktreeId).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -209,8 +255,8 @@ public class TerminalLauncher
         // Fall back to PowerShell (no tab support)
         var fallbackPsi = new ProcessStartInfo
         {
-            FileName = "powershell",
-            Arguments = GetWindowsArguments(agentName, autoClose),
+            FileName = shell,
+            Arguments = GetWindowsArguments(agentName, autoClose, worktreeId),
             UseShellExecute = true
         };
         if (workingDirectory != null)
@@ -223,11 +269,19 @@ public class TerminalLauncher
     /// Terminal.app does not support tab creation via AppleScript, so tab mode
     /// falls back to a new window with an informational message.
     /// </summary>
-    public void LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
+    public void LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null)
     {
         var cdPrefix = CdPrefix(workingDirectory);
-        var shellCommand = $"{cdPrefix}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
-        var postCheck = autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "";
+
+        string wtSetup = "", wtCleanup = "";
+        if (worktreeId != null)
+        {
+            wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
+            wtCleanup = $"; cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force";
+        }
+
+        var shellCommand = $"{cdPrefix}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
+        var postCheck = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
         string script;
         if (useTab && _terminalDetector.IsAvailable("iTerm"))
@@ -285,7 +339,7 @@ public class TerminalLauncher
     /// <summary>
     /// Try to launch one of the configured terminals.
     /// </summary>
-    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false)
+    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null)
     {
         foreach (var terminal in terminals)
         {
@@ -294,6 +348,14 @@ public class TerminalLauncher
                 var arguments = useTab && terminal.GetTabArguments != null
                     ? terminal.GetTabArguments(agentName, workingDirectory)
                     : terminal.GetArguments(agentName, workingDirectory);
+
+                if (worktreeId != null)
+                {
+                    var wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
+                    var wtCleanup = $"cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force; ";
+                    arguments = arguments.Replace("unset CLAUDECODE", wtSetup + "unset CLAUDECODE");
+                    arguments = arguments.Replace("exec bash", wtCleanup + "exec bash");
+                }
 
                 if (autoClose)
                     arguments = arguments.Replace("exec bash", BashPostClaudeCheck(agentName));

@@ -1,0 +1,225 @@
+{
+  "main": {
+    "id": "98ad8450aa1874be",
+    "type": "split",
+    "children": [
+      {
+        "id": "7f8364230cb89bbb",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ffff39c68fb85ae1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "glossary.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "glossary"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "8b15399e1c989930",
+    "type": "split",
+    "children": [
+      {
+        "id": "187092ed1f2c627f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "bf2c677e8837eeaa",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "d2604ff006fb70db",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "8533d176006b9ec3",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "f452adc7a57bb8b7",
+    "type": "split",
+    "children": [
+      {
+        "id": "55e14c5168cedf36",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "19fdf62125913ec4",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "glossary.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for glossary"
+            }
+          },
+          {
+            "id": "9e4a9f440ba47473",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "glossary.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from glossary"
+            }
+          },
+          {
+            "id": "107e4db70f77355b",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "bae2d9399a4b25ec",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "ba52de6324591d69",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "glossary.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of glossary"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "ffff39c68fb85ae1",
+  "lastOpenFiles": [
+    "agents/Brian/archive/inbox/ef437f6a-v1.3-dispatch-worktree.md",
+    "agents/Iris/inbox/41338aa3-msg-v1.3-dispatch-worktree.md",
+    "agents/Noah/inbox/457d5496-msg-v1.3-terminal-launcher-fixes-2.md",
+    "agents/Noah/archive/inbox/c2fe3390-v1.3-terminal-launcher-fixes-2.md",
+    "agents/Noah/archive/inbox/3231044b-msg-v1.3-terminal-launcher-fixes-2.md",
+    "agents/Frank/archive/inbox/8f4aa46c-v1.3-terminal-launcher-fixes-2.md",
+    "agents/Noah/inbox/3231044b-msg-v1.3-terminal-launcher-fixes-2.md",
+    "agents/Brian/archive/inbox/c3925947-msg-v1.3-dispatch-worktree.md",
+    "agents/Brian/archive/inbox/814c20a9-msg-v1.3-dispatch-worktree.md",
+    "agents/Brian/inbox/c3925947-msg-v1.3-dispatch-worktree.md",
+    "agents/Grace/archive/inbox/f0675de0-v1.3-dispatch-worktree.md",
+    "agents/Grace/archive/inbox/0dcfd5c7-msg-v1.3-issue-tracker.md",
+    "agents/Brian/inbox/814c20a9-msg-v1.3-dispatch-worktree.md",
+    "agents/Henry/modes/planner.md",
+    "agents/Henry/modes/tester.md",
+    "agents/Henry/modes/reviewer.md",
+    "agents/Henry/modes/docs-writer.md",
+    "agents/Henry/modes/code-writer.md",
+    "agents/Henry/modes/interviewer.md",
+    "agents/Henry/modes/co-thinker.md",
+    "agents/Henry/modes",
+    "agents/Henry/archive/20260309-203203",
+    "agents/Charlie/archive/inbox/dfe0dcfc-v1.3-issue-tracker.md",
+    "_system/audit/2026/2026-03-09-19371794-1488-40c0-9b3a-c41347b5ecbf.json",
+    "agents/Grace/inbox/0dcfd5c7-msg-v1.3-issue-tracker.md",
+    "agents/Henry/inbox/a8b4796e-v1.3-issue-tracker.md",
+    "agents/Frank/modes/tester.md",
+    "agents/Frank/modes/code-writer.md",
+    "agents/Frank/modes/reviewer.md",
+    "agents/Frank/modes",
+    "agents/Frank/archive/20260309-203046",
+    "_system/audit/2026/2026-03-09-8d113e6f-476b-40a5-a301-03fbd79464e9.json",
+    "agents/Noah/archive/inbox",
+    "agents/Grace/modes",
+    "agents/Grace/archive/20260309-202354",
+    "_system/audit/2026/2026-03-09-556263c6-3854-4680-a37a-81c1cf4b5969.json"
+  ]
+}

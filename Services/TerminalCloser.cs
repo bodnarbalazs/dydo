@@ -12,28 +12,19 @@ public static class TerminalCloser
     public static IProcessStarter? ProcessStarterOverride { get; set; }
 
     /// <summary>
-    /// Kills the grandparent process (parent of parent of current process).
-    /// Process tree: CLI tool → shell → dydo, so grandparent = CLI tool.
+    /// Walks the process tree to find the Claude CLI process and schedules its termination.
     /// Gives the CLI 3 seconds to render its final response before terminating.
     /// </summary>
     public static void ScheduleClaudeTermination()
     {
-        var myPid = Environment.ProcessId;
-        var parentPid = ProcessUtils.GetParentPid(myPid);
-        if (parentPid == null)
+        var claudePid = ProcessUtils.FindAncestorProcess("claude");
+        if (claudePid == null)
         {
-            Console.WriteLine("  Could not detect parent process. Use Ctrl+C to close.");
+            Console.WriteLine("  Auto-close failed: could not find Claude process in ancestor chain. Close this terminal manually.");
             return;
         }
 
-        var grandparentPid = ProcessUtils.GetParentPid(parentPid.Value);
-        if (grandparentPid == null)
-        {
-            Console.WriteLine("  Could not detect CLI process. Use Ctrl+C to close.");
-            return;
-        }
-
-        SpawnDelayedKill(grandparentPid.Value);
+        SpawnDelayedKill(claudePid.Value);
     }
 
     public static void SpawnDelayedKill(int pid)
@@ -42,7 +33,7 @@ public static class TerminalCloser
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            psi = new ProcessStartInfo("powershell")
+            psi = new ProcessStartInfo(ProcessUtils.ResolvePowerShell())
             {
                 Arguments = $"-NoProfile -WindowStyle Hidden -Command \"Start-Sleep 3; Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue\"",
                 UseShellExecute = false,
@@ -68,7 +59,7 @@ public static class TerminalCloser
         }
         catch
         {
-            Console.WriteLine("  Could not schedule auto-close. Use Ctrl+C to close.");
+            Console.WriteLine("  Auto-close failed: could not start termination process. Close this terminal manually.");
         }
     }
 }

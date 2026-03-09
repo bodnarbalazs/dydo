@@ -115,6 +115,34 @@ public static class ProcessUtils
         return null;
     }
 
+    /// <summary>
+    /// When set, ResolvePowerShell uses this instead of probing the system.
+    /// </summary>
+    public static Func<string>? PowerShellResolverOverride { get; set; }
+
+    /// <summary>
+    /// Resolves which PowerShell executable to use.
+    /// Prefers pwsh (PowerShell 7+), falls back to powershell (Windows PowerShell 5.1).
+    /// </summary>
+    public static string ResolvePowerShell()
+    {
+        if (PowerShellResolverOverride != null) return PowerShellResolverOverride();
+
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo("pwsh", "--version")
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            p?.WaitForExit(2000);
+            if (p is { ExitCode: 0 }) return "pwsh.exe";
+        }
+        catch { }
+        return "powershell.exe";
+    }
+
     private static int? GetParentPidWindows(Process process)
     {
         var pbi = new PROCESS_BASIC_INFORMATION();

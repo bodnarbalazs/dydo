@@ -94,8 +94,8 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Contains("src/**", perms["planner"].ReadOnly);
         Assert.DoesNotContain("tests/**", perms["planner"].ReadOnly);
 
-        Assert.Contains("tests/**", perms["tester"].Writable);
-        Assert.Contains("src/**", perms["tester"].ReadOnly);
+        Assert.Contains("tests/**", perms["test-writer"].Writable);
+        Assert.Contains("src/**", perms["test-writer"].ReadOnly);
     }
 
     [Fact]
@@ -124,10 +124,10 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Contains("Commands/**", perms["planner"].ReadOnly);
         Assert.DoesNotContain("DynaDocs.Tests/**", perms["planner"].ReadOnly);
 
-        // tester gets test paths as writable, source as read-only
-        Assert.Contains("DynaDocs.Tests/**", perms["tester"].Writable);
-        Assert.Contains("Commands/**", perms["tester"].ReadOnly);
-        Assert.DoesNotContain("Commands/**", perms["tester"].Writable);
+        // test-writer gets test paths as writable, source as read-only
+        Assert.Contains("DynaDocs.Tests/**", perms["test-writer"].Writable);
+        Assert.Contains("Commands/**", perms["test-writer"].ReadOnly);
+        Assert.DoesNotContain("Commands/**", perms["test-writer"].Writable);
     }
 
     [Fact]
@@ -190,9 +190,9 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void GenerateModeFile_TesterUsesConfiguredPaths()
+    public void GenerateModeFile_TestWriterUsesConfiguredPaths()
     {
-        var content = TemplateGenerator.GenerateModeFile("TestAgent", "tester",
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", "test-writer",
             sourcePaths: ["Commands/**"],
             testPaths: ["MyTests/**"]);
 

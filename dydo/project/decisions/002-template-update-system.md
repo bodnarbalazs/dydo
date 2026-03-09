@@ -2,10 +2,12 @@
 type: decision
 status: proposed
 date: 2026-03-07
-area: templates
+area: project
 ---
 
 # 002 — Template Update System
+
+Include tags for project additions plus hash tracking for safe framework template overwrites during updates.
 
 ## Problem
 

@@ -11,8 +11,19 @@ Index of tasks documentation.
 
 ## Contents
 
-- [Task: agent-messaging](./agent-messaging.md) - (No description)
-- [Task: audit-compaction-investigation](./audit-compaction-investigation.md) - (No description)
-- [Task: command-resiliency](./command-resiliency.md) - (No description)
-- [Task: help-meta-audit](./help-meta-audit.md) - (No description)
-- [Task: template-update-system](./template-update-system.md) - (No description)
+- [Task: auto-close-fix](./auto-close-fix.md) - Fix powershell resolution in TerminalCloser, improve PID detection, fix auto-close pipeline end-to-end
+- [Task: auto-close-test](./auto-close-test.md) - (No description)
+- [Task: clean-command-hardening](./clean-command-hardening.md) - Extend CleanWorkspace to remove .
+- [Task: dispatch-wait-state-machine](./dispatch-wait-state-machine.md) - Add listening/pid lifecycle to WaitMarker, guard pending-state enforcement, and self-healing PID checks
+- [Task: v1.2-stabilization-and-v1.3-planning](./v1.2-stabilization-and-v1.3-planning.md) - (No description)
+- [Task: v1.3-coverage-system-2](./v1.3-coverage-system-2.md) - (No description)
+- [Task: v1.3-custom-agent-modes-2](./v1.3-custom-agent-modes-2.md) - (No description)
+- [Task: v1.3-guard-hardening](./v1.3-guard-hardening.md) - (No description)
+- [Task: v1.3-messaging-fixes](./v1.3-messaging-fixes.md) - (No description)
+- [Task: v1.3-release-docs-2](./v1.3-release-docs-2.md) - (No description)
+- [Task: v1.3-release-plan-update](./v1.3-release-plan-update.md) - (No description)
+- [Task: v1.3-release-planning](./v1.3-release-planning.md) - (No description)
+- [Task: v1.3-terminal-grouping-2](./v1.3-terminal-grouping-2.md) - (No description)
+- [Task: v1.3-terminal-launcher-fixes-2](./v1.3-terminal-launcher-fixes-2.md) - (No description)
+- [Task: v1.3-workflow-role-revamp-2](./v1.3-workflow-role-revamp-2.md) - (No description)
+- [Task: v1.3-workflow-role-revamp](./v1.3-workflow-role-revamp.md) - (No description)

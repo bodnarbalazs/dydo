@@ -110,7 +110,7 @@ public class CompleteCommandTests : IDisposable
         Assert.Contains("co-thinker", completions);
         Assert.Contains("docs-writer", completions);
         Assert.Contains("planner", completions);
-        Assert.Contains("tester", completions);
+        Assert.Contains("test-writer", completions);
     }
 
     [Fact]

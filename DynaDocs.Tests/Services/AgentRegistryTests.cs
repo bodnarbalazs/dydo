@@ -117,8 +117,8 @@ public class AgentRegistryTests : IDisposable
     public void KnownRoles_AreDocumented()
     {
         // Verify the expected roles are documented
-        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "interviewer", "planner", "tester" };
-        Assert.Equal(7, knownRoles.Length);
+        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer" };
+        Assert.Equal(6, knownRoles.Length);
     }
 
     [Theory]
@@ -126,9 +126,8 @@ public class AgentRegistryTests : IDisposable
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
     [InlineData("docs-writer")]
-    [InlineData("interviewer")]
     [InlineData("planner")]
-    [InlineData("tester")]
+    [InlineData("test-writer")]
     public void SetRole_AcceptsAllKnownRoles(string role)
     {
         // This test verifies the role is in RolePermissions dictionary
@@ -609,9 +608,9 @@ public class AgentRegistryTests : IDisposable
 
         var registry = new AgentRegistry(_testDir);
 
-        // Should allow planner, tester, etc. on same task
+        // Should allow planner, test-writer, etc. on same task
         var canTakePlanner = registry.CanTakeRole("Adele", "planner", "my-task", out var reason1);
-        var canTakeTester = registry.CanTakeRole("Adele", "tester", "my-task", out var reason2);
+        var canTakeTester = registry.CanTakeRole("Adele", "test-writer", "my-task", out var reason2);
 
         Assert.True(canTakePlanner, reason1);
         Assert.True(canTakeTester, reason2);
@@ -712,9 +711,8 @@ public class AgentRegistryTests : IDisposable
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
     [InlineData("docs-writer")]
-    [InlineData("interviewer")]
     [InlineData("planner")]
-    [InlineData("tester")]
+    [InlineData("test-writer")]
     public void SetRole_RejectsInvalidRole_ButAcceptsValidRole(string role)
     {
         // Valid roles should fail with "No agent identity assigned", not "Invalid role"
@@ -738,10 +736,10 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
-    public void AllSevenRoles_AreRecognized()
+    public void AllSixRoles_AreRecognized()
     {
-        // This test ensures we have exactly 7 valid roles
-        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "interviewer", "planner", "tester" };
+        // This test ensures we have exactly 6 valid roles
+        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer" };
 
         foreach (var role in knownRoles)
         {

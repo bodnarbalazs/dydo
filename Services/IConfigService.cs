@@ -15,5 +15,6 @@ public interface IConfigService
     string GetTasksPath(string? startPath = null);
     string GetAuditPath(string? startPath = null);
     string GetChangelogPath(string? startPath = null);
+    string GetIssuesPath(string? startPath = null);
     (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config);
 }

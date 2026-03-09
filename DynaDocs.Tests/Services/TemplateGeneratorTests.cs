@@ -31,10 +31,9 @@ public class TemplateGeneratorTests
     [InlineData("mode-code-writer.template.md")]
     [InlineData("mode-reviewer.template.md")]
     [InlineData("mode-co-thinker.template.md")]
-    [InlineData("mode-interviewer.template.md")]
     [InlineData("mode-planner.template.md")]
     [InlineData("mode-docs-writer.template.md")]
-    [InlineData("mode-tester.template.md")]
+    [InlineData("mode-test-writer.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
         var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
@@ -83,18 +82,17 @@ public class TemplateGeneratorTests
     #endregion
 
     [Fact]
-    public void GetModeNames_ReturnsSevenModes()
+    public void GetModeNames_ReturnsSixModes()
     {
         var modes = TemplateGenerator.GetModeNames();
 
-        Assert.Equal(7, modes.Count);
+        Assert.Equal(6, modes.Count);
         Assert.Contains("code-writer", modes);
         Assert.Contains("reviewer", modes);
         Assert.Contains("co-thinker", modes);
-        Assert.Contains("interviewer", modes);
         Assert.Contains("planner", modes);
         Assert.Contains("docs-writer", modes);
-        Assert.Contains("tester", modes);
+        Assert.Contains("test-writer", modes);
     }
 
     [Fact]
@@ -127,17 +125,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateModeFile_Interviewer_SkipsCodingStandards()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "interviewer");
-
-        Assert.Contains("about.md", content);
-        Assert.Contains("architecture.md", content);
-        // Interviewer doesn't need coding standards yet
-        Assert.DoesNotContain("coding-standards.md", content);
-    }
-
-    [Fact]
     public void GenerateModeFile_Planner_SkipsCodingStandards()
     {
         var content = TemplateGenerator.GenerateModeFile("Adele", "planner");
@@ -149,13 +136,13 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateModeFile_Tester_SkipsCodingStandards()
+    public void GenerateModeFile_TestWriter_SkipsCodingStandards()
     {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "tester");
+        var content = TemplateGenerator.GenerateModeFile("Adele", "test-writer");
 
         Assert.Contains("about.md", content);
         Assert.Contains("architecture.md", content);
-        // Tester doesn't need coding standards - focuses on behavior, not code
+        // Test-writer doesn't need coding standards - focuses on behavior, not code
         Assert.DoesNotContain("coding-standards.md", content);
     }
 
@@ -212,13 +199,12 @@ public class TemplateGeneratorTests
     {
         var content = TemplateGenerator.GenerateWorkflowFile("Adele");
 
-        Assert.Contains("modes/interviewer.md", content);
         Assert.Contains("modes/planner.md", content);
         Assert.Contains("modes/code-writer.md", content);
         Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
-        Assert.Contains("modes/tester.md", content);
+        Assert.Contains("modes/test-writer.md", content);
     }
 
     [Fact]
@@ -226,13 +212,6 @@ public class TemplateGeneratorTests
     {
         var content = TemplateGenerator.GenerateWorkflowFile("Adele");
 
-        Assert.Contains("--feature", content);
-        Assert.Contains("--task", content);
-        Assert.Contains("--quick", content);
-        Assert.Contains("--think", content);
-        Assert.Contains("--review", content);
-        Assert.Contains("--docs", content);
-        Assert.Contains("--test", content);
         Assert.Contains("--inbox", content);
     }
 
@@ -308,10 +287,9 @@ public class TemplateGeneratorTests
     [InlineData("code-writer")]
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
-    [InlineData("interviewer")]
     [InlineData("planner")]
     [InlineData("docs-writer")]
-    [InlineData("tester")]
+    [InlineData("test-writer")]
     public void GenerateModeFile_AllModes_HaveValidFrontmatter(string mode)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
@@ -325,10 +303,9 @@ public class TemplateGeneratorTests
     [InlineData("code-writer", "Set Role")]
     [InlineData("reviewer", "Set Role")]
     [InlineData("co-thinker", "Set Role")]
-    [InlineData("interviewer", "Set Role")]
     [InlineData("planner", "Set Role")]
     [InlineData("docs-writer", "Set Role")]
-    [InlineData("tester", "Set Role")]
+    [InlineData("test-writer", "Set Role")]
     public void GenerateModeFile_AllModes_HaveSetRoleSection(string mode, string expectedSection)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);

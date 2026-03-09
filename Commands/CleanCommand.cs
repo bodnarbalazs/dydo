@@ -106,8 +106,11 @@ public static class CleanCommand
             return ExitCodes.Success;
         }
 
+        var markersBefore = CountWaitMarkersInWorkspace(workspace);
         CleanWorkspace(workspace);
         Console.WriteLine($"Cleaned workspace for {name}");
+        if (markersBefore > 0)
+            Console.WriteLine($"Audit: found {markersBefore} stale wait marker(s), cleaned {markersBefore}");
 
         return ExitCodes.Success;
     }
@@ -133,6 +136,8 @@ public static class CleanCommand
             }
         }
 
+        var markersBefore = CountWaitMarkers(registry);
+
         var cleaned = 0;
         foreach (var name in registry.AgentNames)
         {
@@ -145,6 +150,7 @@ public static class CleanCommand
         }
 
         Console.WriteLine($"Cleaned {cleaned} workspace(s)");
+        ReportWaitMarkerAudit(registry, markersBefore);
         return ExitCodes.Success;
     }
 
@@ -214,5 +220,46 @@ public static class CleanCommand
         var modesPath = Path.Combine(workspace, "modes");
         if (Directory.Exists(modesPath))
             Directory.Delete(modesPath, true);
+
+        var waitingPath = Path.Combine(workspace, ".waiting");
+        if (Directory.Exists(waitingPath))
+            Directory.Delete(waitingPath, true);
+
+        var replyPendingPath = Path.Combine(workspace, ".reply-pending");
+        if (Directory.Exists(replyPendingPath))
+            Directory.Delete(replyPendingPath, true);
+
+        var autoClosePath = Path.Combine(workspace, ".auto-close");
+        if (File.Exists(autoClosePath))
+            File.Delete(autoClosePath);
+    }
+
+    private static int CountWaitMarkersInWorkspace(string workspace)
+    {
+        var waitingDir = Path.Combine(workspace, ".waiting");
+        if (!Directory.Exists(waitingDir))
+            return 0;
+        return Directory.GetFiles(waitingDir, "*.json").Length;
+    }
+
+    private static int CountWaitMarkers(AgentRegistry registry)
+    {
+        var count = 0;
+        foreach (var name in registry.AgentNames)
+        {
+            var waitingDir = Path.Combine(registry.GetAgentWorkspace(name), ".waiting");
+            if (Directory.Exists(waitingDir))
+                count += Directory.GetFiles(waitingDir, "*.json").Length;
+        }
+        return count;
+    }
+
+    private static void ReportWaitMarkerAudit(AgentRegistry registry, int beforeCount)
+    {
+        if (beforeCount == 0) return;
+
+        var afterCount = CountWaitMarkers(registry);
+        var cleaned = beforeCount - afterCount;
+        Console.WriteLine($"Audit: found {beforeCount} stale wait marker(s), cleaned {cleaned}");
     }
 }

@@ -146,6 +146,17 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
+    /// Get the issues folder path
+    /// </summary>
+    public string GetIssuesPath(string? startPath = null)
+    {
+        var dydoRoot = GetDydoRoot(startPath);
+        var config = LoadConfig(startPath);
+        var issuesPath = config?.Structure.Issues ?? "project/issues";
+        return Path.Combine(dydoRoot, issuesPath);
+    }
+
+    /// <summary>
     /// Get the changelog folder path (dydo/project/changelog/)
     /// </summary>
     public string GetChangelogPath(string? startPath = null)

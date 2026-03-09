@@ -5,6 +5,7 @@ using System.Diagnostics;
 using DynaDocs.Services;
 using Xunit;
 
+[Collection("ProcessUtils")]
 public class TerminalLauncherTests
 {
     #region Argument Generation Tests
@@ -296,43 +297,67 @@ public class TerminalLauncherTests
     [Fact]
     public void LaunchWindows_FallsBackToPowerShell_WhenWtFails()
     {
-        var recorder = new RecordingProcessStarter();
-        recorder.FailOnFileName("wt"); // Simulate wt not found
-        var launcher = new TerminalLauncher(recorder);
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt"); // Simulate wt not found
+            var launcher = new TerminalLauncher(recorder);
 
-        launcher.LaunchWindows("Adele");
+            launcher.LaunchWindows("Adele");
 
-        // Should have tried wt first, then fallen back to powershell
-        Assert.Equal(2, recorder.Started.Count);
-        Assert.Equal("wt", recorder.Started[0].FileName);
-        Assert.Equal("powershell", recorder.Started[1].FileName);
+            // Should have tried wt first, then fallen back to powershell
+            Assert.Equal(2, recorder.Started.Count);
+            Assert.Equal("wt", recorder.Started[0].FileName);
+            Assert.Equal("powershell.exe", recorder.Started[1].FileName);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
     }
 
     [Fact]
     public void LaunchWindows_PowerShellArgs_ContainNoExit()
     {
-        var recorder = new RecordingProcessStarter();
-        recorder.FailOnFileName("wt"); // Force fallback to PowerShell
-        var launcher = new TerminalLauncher(recorder);
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt"); // Force fallback to PowerShell
+            var launcher = new TerminalLauncher(recorder);
 
-        launcher.LaunchWindows("Adele");
+            launcher.LaunchWindows("Adele");
 
-        var psCall = recorder.Started.First(p => p.FileName == "powershell");
-        Assert.Contains("-NoExit", psCall.Arguments);
+            var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
+            Assert.Contains("-NoExit", psCall.Arguments);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
     }
 
     [Fact]
     public void LaunchWindows_PowerShellArgs_ContainAgentName()
     {
-        var recorder = new RecordingProcessStarter();
-        recorder.FailOnFileName("wt");
-        var launcher = new TerminalLauncher(recorder);
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt");
+            var launcher = new TerminalLauncher(recorder);
 
-        launcher.LaunchWindows("Adele");
+            launcher.LaunchWindows("Adele");
 
-        var psCall = recorder.Started.First(p => p.FileName == "powershell");
-        Assert.Contains("Adele", psCall.Arguments);
-        Assert.Contains("--inbox", psCall.Arguments);
+            var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
+            Assert.Contains("Adele", psCall.Arguments);
+            Assert.Contains("--inbox", psCall.Arguments);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
     }
 
     [Fact]
@@ -363,15 +388,23 @@ public class TerminalLauncherTests
     [Fact]
     public void LaunchWindows_PowerShellFallback_SetsWorkingDirectory()
     {
-        var recorder = new RecordingProcessStarter();
-        recorder.FailOnFileName("wt");
-        var launcher = new TerminalLauncher(recorder);
-        var projectRoot = "/home/user/my-project";
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt");
+            var launcher = new TerminalLauncher(recorder);
+            var projectRoot = "/home/user/my-project";
 
-        launcher.LaunchWindows("Adele", projectRoot);
+            launcher.LaunchWindows("Adele", projectRoot);
 
-        var psCall = recorder.Started.First(p => p.FileName == "powershell");
-        Assert.Equal(projectRoot, psCall.WorkingDirectory);
+            var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
+            Assert.Equal(projectRoot, psCall.WorkingDirectory);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
     }
 
     [Fact]
@@ -1026,14 +1059,324 @@ public class TerminalLauncherTests
     [Fact]
     public void LaunchWindows_AutoClose_PowerShellFallback_ContainStatusCheck()
     {
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt");
+            var launcher = new TerminalLauncher(recorder);
+
+            launcher.LaunchWindows("Adele", autoClose: true);
+
+            var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
+            Assert.Contains("dydo agent status Adele", psCall.Arguments);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    [Fact]
+    public void LaunchWindows_WtArgs_UsesResolvedPowerShell()
+    {
+        ProcessUtils.PowerShellResolverOverride = () => "pwsh.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            var launcher = new TerminalLauncher(recorder);
+
+            launcher.LaunchWindows("Adele");
+
+            var wtCall = recorder.Started.First(p => p.FileName == "wt");
+            Assert.Contains("pwsh.exe ", wtCall.Arguments);
+            Assert.DoesNotContain("powershell", wtCall.Arguments);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    [Fact]
+    public void LaunchWindows_Fallback_UsesResolvedPowerShell()
+    {
+        ProcessUtils.PowerShellResolverOverride = () => "pwsh.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt");
+            var launcher = new TerminalLauncher(recorder);
+
+            launcher.LaunchWindows("Adele");
+
+            var psCall = recorder.Started.First(p => p.FileName != "wt");
+            Assert.Equal("pwsh.exe", psCall.FileName);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    #endregion
+
+    #region Worktree Argument Tests
+
+    private const string TestWorktreeId = "Adele-20260309120000";
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_ContainsWorktreeAdd()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"git worktree add .dydo/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_ContainsTryFinally()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("try {", args);
+        Assert.Contains("finally {", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_ContainsWorktreeRemove()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"git worktree remove .dydo/worktrees/{TestWorktreeId} --force", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_ContainsPrune()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("git worktree prune", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_ContainsMkdir()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("New-Item -ItemType Directory -Force -Path .dydo/worktrees", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_SavesAndRestoresRoot()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("$_wt_root = Get-Location", args);
+        Assert.Contains("Set-Location $_wt_root", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_CombinesWithAutoClose()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true, worktreeId: TestWorktreeId);
+        Assert.Contains("git worktree add", args);
+        Assert.Contains("git worktree remove", args);
+        Assert.Contains("dydo agent status Adele", args);
+        Assert.DoesNotContain("-NoExit", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_NoAutoClose_ContainsNoExit()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: false, worktreeId: TestWorktreeId);
+        Assert.Contains("-NoExit", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_Worktree_ContainsWorktreeAdd(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"git worktree add .dydo/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("alacritty")]
+    public void GetLinuxArguments_Worktree_ContainsWorktreeRemove(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"git worktree remove .dydo/worktrees/{TestWorktreeId} --force", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_Worktree_ContainsMkdirP(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("mkdir -p .dydo/worktrees", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_Worktree_CdBackToRoot(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("cd ../../..", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_Worktree_CombinesWithAutoClose(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", autoClose: true, worktreeId: TestWorktreeId);
+        Assert.Contains("git worktree add", args);
+        Assert.Contains("git worktree remove", args);
+        Assert.Contains("dydo agent status Adele", args);
+        // Cleanup before status check: remove appears before dydo agent status
+        Assert.True(args.IndexOf("git worktree remove") < args.IndexOf("dydo agent status"));
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_Worktree_WithWorkingDirectory(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", "/home/user/project", worktreeId: TestWorktreeId);
+        Assert.Contains("cd '/home/user/project'", args);
+        Assert.Contains("git worktree add", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Worktree_ContainsWorktreeAdd()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"git worktree add .dydo/worktrees/{TestWorktreeId}", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Worktree_ContainsWorktreeRemove()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"git worktree remove .dydo/worktrees/{TestWorktreeId} --force", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Worktree_CombinesWithAutoClose()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", autoClose: true, worktreeId: TestWorktreeId);
+        Assert.Contains("git worktree add", args);
+        Assert.Contains("git worktree remove", args);
+        Assert.Contains("dydo agent status Adele", args);
+        Assert.True(args.IndexOf("git worktree remove") < args.IndexOf("dydo agent status"));
+    }
+
+    [Fact]
+    public void GetMacArguments_Worktree_WithWorkingDirectory()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", "/Users/dev/project", worktreeId: TestWorktreeId);
+        Assert.Contains("cd '/Users/dev/project'", args);
+        Assert.Contains("git worktree add", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_NonWorktree_Unchanged(string terminal)
+    {
+        var withoutWorktree = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+        var withNull = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: null);
+        Assert.Equal(withoutWorktree, withNull);
+        Assert.DoesNotContain("worktree", withoutWorktree);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_NonWorktree_Unchanged()
+    {
+        var withoutWorktree = TerminalLauncher.GetWindowsArguments("Adele");
+        var withNull = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: null);
+        Assert.Equal(withoutWorktree, withNull);
+        Assert.DoesNotContain("worktree", withoutWorktree);
+    }
+
+    [Fact]
+    public void GetMacArguments_NonWorktree_Unchanged()
+    {
+        var withoutWorktree = TerminalLauncher.GetMacArguments("Adele");
+        var withNull = TerminalLauncher.GetMacArguments("Adele", worktreeId: null);
+        Assert.Equal(withoutWorktree, withNull);
+        Assert.DoesNotContain("worktree", withoutWorktree);
+    }
+
+    [Fact]
+    public void GenerateWorktreeId_ContainsAgentName()
+    {
+        var id = TerminalLauncher.GenerateWorktreeId("Adele");
+        Assert.StartsWith("Adele-", id);
+    }
+
+    [Fact]
+    public void GenerateWorktreeId_ContainsTimestamp()
+    {
+        var before = DateTime.UtcNow;
+        var id = TerminalLauncher.GenerateWorktreeId("Adele");
+        // Format: Adele-yyyyMMddHHmmss (20 chars for "Adele-" + 14 timestamp)
+        Assert.Equal(20, id.Length);
+    }
+
+    [Fact]
+    public void LaunchWindows_Worktree_WtArgs_ContainWorktreeAdd()
+    {
         var recorder = new RecordingProcessStarter();
-        recorder.FailOnFileName("wt");
         var launcher = new TerminalLauncher(recorder);
 
-        launcher.LaunchWindows("Adele", autoClose: true);
+        launcher.LaunchWindows("Adele", worktreeId: TestWorktreeId);
 
-        var psCall = recorder.Started.First(p => p.FileName == "powershell");
-        Assert.Contains("dydo agent status Adele", psCall.Arguments);
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.Contains("git worktree add", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchMac_Worktree_ScriptContainsWorktreeSetup()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchMac("Adele", worktreeId: TestWorktreeId);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("git worktree add", script);
+        Assert.Contains("git worktree remove", script);
+    }
+
+    [Fact]
+    public void LaunchMac_Worktree_WithITerm_ContainsWorktreeSetup()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true, worktreeId: TestWorktreeId);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("git worktree add", script);
+        Assert.Contains("git worktree remove", script);
+    }
+
+    [Fact]
+    public void TryLaunchTerminals_Worktree_ArgumentsContainWorktreeAdd()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", worktreeId: TestWorktreeId);
+
+        Assert.Contains("git worktree add", recorder.Started[0].Arguments);
+        Assert.Contains("git worktree remove", recorder.Started[0].Arguments);
     }
 
     #endregion

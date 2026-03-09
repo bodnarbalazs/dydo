@@ -15,10 +15,9 @@ public static class TemplateCommand
         "_system/templates/mode-code-writer.template.md",
         "_system/templates/mode-reviewer.template.md",
         "_system/templates/mode-co-thinker.template.md",
-        "_system/templates/mode-interviewer.template.md",
         "_system/templates/mode-planner.template.md",
         "_system/templates/mode-docs-writer.template.md",
-        "_system/templates/mode-tester.template.md"
+        "_system/templates/mode-test-writer.template.md"
     ];
 
     public static readonly string[] FrameworkDocFiles =

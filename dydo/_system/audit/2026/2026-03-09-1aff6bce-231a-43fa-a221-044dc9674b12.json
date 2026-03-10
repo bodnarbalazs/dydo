@@ -299,6 +299,294 @@
       "event": "Read",
       "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T14:15:58.0458956Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T14:16:00.2031606Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T14:16:07.9560249Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\agent-workflow.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:35:48.5783046Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T15:35:48.6221987Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:35:51.0107535Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\007-oversight-roles.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:36:20.2136073Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-data-driven-roles.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-10T15:38:28.0329427Z",
+      "event": "Role",
+      "role": "planner",
+      "task": "v1.3-custom-agent-modes-2"
+    },
+    {
+      "ts": "2026-03-10T15:38:30.53199Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Jack\\modes\\planner.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:38:47.1818543Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*Tests*\u0022 -o -type d -name \u0022*Tests*\u0022 | he..."
+    },
+    {
+      "ts": "2026-03-10T15:38:48.5192505Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/"
+    },
+    {
+      "ts": "2026-03-10T15:38:49.9509031Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/DynaDocs.Tests.csproj",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:38:51.5488995Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T15:38:53.2351828Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T15:38:56.7367749Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T15:38:59.0667637Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:00.3398668Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022AgentRegistry.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-10T15:39:02.0623373Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:03.9416433Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs"
+    },
+    {
+      "ts": "2026-03-10T15:39:06.0561183Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T15:39:07.8795871Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:10.3154631Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:12.2655424Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:14.1940614Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:15.9373069Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022GuardCommand.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-10T15:39:17.3831514Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:19.9339078Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T15:39:21.4107746Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:24.0998732Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:26.7999533Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:28.7484163Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022AgentState.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-10T15:39:30.3538775Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models/AgentState.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:32.0345349Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022OffLimitsService.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-10T15:39:33.6866387Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/OffLimitsService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:36.4959664Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AgentRegistryTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:38.2634228Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/GuardCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:40.4151461Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:42.2725919Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Fixtures/"
+    },
+    {
+      "ts": "2026-03-10T15:39:45.7162233Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration -name \u0022*.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-10T15:39:47.3861488Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:39:49.4261235Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022CanTakeRole\\|SetRole\\|IsPathAllowed\u0022 /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests..."
+    },
+    {
+      "ts": "2026-03-10T15:39:51.6554963Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -name \u0022*.cs\u0022 -type f | xargs grep -l \u0022se..."
+    },
+    {
+      "ts": "2026-03-10T15:40:26.6583488Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AgentRegistryTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T15:40:28.3667291Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/EndToEnd/"
+    },
+    {
+      "ts": "2026-03-10T15:40:31.0132089Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T15:40:33.8203665Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -A 20 \u0022BuildRolePermissions\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs ..."
+    },
+    {
+      "ts": "2026-03-10T15:40:36.2153395Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T15:42:19.6097155Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Jack\\plan-role-behavioral-tests.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-10T15:42:48.7587593Z",
+      "event": "Release",
+      "agent": "Jack"
     }
   ],
   "snapshot": {

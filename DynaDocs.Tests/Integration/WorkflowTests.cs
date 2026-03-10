@@ -477,6 +477,7 @@ public class WorkflowTests : IntegrationTestBase
     {
         var command = DispatchCommand.Create();
         var args = new List<string> { "--role", role, "--task", task, "--brief", brief, "--no-launch", "--no-wait" };
+        BypassNoLaunchNudge(task);
         if (files != null) { args.Add("--files"); args.Add(files); }
         return await RunAsync(command, args.ToArray());
     }

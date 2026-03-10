@@ -41,7 +41,10 @@ public partial class AgentRegistry : IAgentRegistry
             ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], [..sourcePaths, ..testPaths]),
             ["docs-writer"] = (["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"], [..sourcePaths, ..testPaths]),
             ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], [..sourcePaths]),
-            ["test-writer"] = (["dydo/agents/{self}/**", ..testPaths, "dydo/project/pitfalls/**"], [..sourcePaths])
+            ["test-writer"] = (["dydo/agents/{self}/**", ..testPaths, "dydo/project/pitfalls/**"], [..sourcePaths]),
+            ["orchestrator"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**"], ["**"]),
+            ["inquisitor"] = (["dydo/agents/{self}/**", "dydo/project/inquisitions/**"], [..sourcePaths, ..testPaths]),
+            ["judge"] = (["dydo/agents/{self}/**"], [..sourcePaths, ..testPaths])
         };
     }
 
@@ -55,6 +58,12 @@ public partial class AgentRegistry : IAgentRegistry
 
     public string GetAgentWorkspace(string agentName) =>
         Path.Combine(WorkspacePath, agentName);
+
+    public bool HasPendingInbox(string agentName)
+    {
+        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
+        return Directory.Exists(inboxPath) && Directory.GetFiles(inboxPath, "*.md").Length > 0;
+    }
 
     public string? GetCurrentHuman() =>
         _configService.GetHumanFromEnv();
@@ -391,6 +400,10 @@ public partial class AgentRegistry : IAgentRegistry
             foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
                 File.Delete(marker);
 
+            // Clean up no-launch nudge markers
+            foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
+                File.Delete(marker);
+
             return true;
         }
         finally
@@ -435,6 +448,42 @@ public partial class AgentRegistry : IAgentRegistry
         return null;
     }
 
+    private string? GetDispatchedFrom(string agentName, string task)
+    {
+        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
+        if (!Directory.Exists(inboxPath)) return null;
+
+        var sanitizedTask = PathUtils.SanitizeForFilename(task);
+        var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
+        if (files.Length == 0) return null;
+
+        try
+        {
+            var content = File.ReadAllText(files[0]);
+            if (!content.StartsWith("---")) return null;
+
+            var endIndex = content.IndexOf("---", 3);
+            if (endIndex < 0) return null;
+
+            var yaml = content[3..endIndex];
+            foreach (var line in yaml.Split('\n'))
+            {
+                var colonIndex = line.IndexOf(':');
+                if (colonIndex < 0) continue;
+
+                var key = line[..colonIndex].Trim();
+                if (key == "from")
+                    return line[(colonIndex + 1)..].Trim();
+            }
+        }
+        catch
+        {
+            // Malformed inbox file — don't block role setting
+        }
+
+        return null;
+    }
+
     public bool SetRole(string? sessionId, string role, string? task, out string error)
     {
         error = string.Empty;
@@ -452,8 +501,8 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Check for self-review violation
-        if (role == "reviewer" && !string.IsNullOrEmpty(task))
+        // Check role-specific restrictions (self-review, orchestrator graduation, judge panel limit)
+        if (!string.IsNullOrEmpty(task))
         {
             if (!CanTakeRole(agent.Name, role, task, out var reason))
             {
@@ -470,13 +519,26 @@ public partial class AgentRegistry : IAgentRegistry
 
             if (dispatchedRole != null && !string.Equals(dispatchedRole, role, StringComparison.OrdinalIgnoreCase))
             {
-                if (!File.Exists(markerPath))
+                // Skip nudge if agent already fulfilled the dispatched role and is switching intentionally
+                var state = GetAgentState(agent.Name);
+                var alreadyFulfilled = state != null
+                    && state.TaskRoleHistory.TryGetValue(task, out var history)
+                    && history.Contains(dispatchedRole, StringComparer.OrdinalIgnoreCase);
+
+                if (!alreadyFulfilled)
                 {
-                    File.WriteAllText(markerPath, role);
-                    error = $"You were dispatched as '{dispatchedRole}' for this task. If '{role}' fits better, run the command again.";
-                    return false;
+                    if (!File.Exists(markerPath))
+                    {
+                        File.WriteAllText(markerPath, role);
+                        error = $"You were dispatched as '{dispatchedRole}' for this task. If '{role}' fits better, run the command again.";
+                        return false;
+                    }
+                    File.Delete(markerPath);
                 }
-                File.Delete(markerPath);
+                else if (File.Exists(markerPath))
+                {
+                    File.Delete(markerPath);
+                }
             }
             else if (File.Exists(markerPath))
             {
@@ -492,6 +554,8 @@ public partial class AgentRegistry : IAgentRegistry
 
         var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId);
 
+        var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
+
         UpdateAgentState(agent.Name, s =>
         {
             s.Role = role;
@@ -499,6 +563,7 @@ public partial class AgentRegistry : IAgentRegistry
             s.WritablePaths = writable;
             s.ReadOnlyPaths = readOnly;
             s.UnreadMustReads = mustReads;
+            s.DispatchedBy = dispatchedFrom;
 
             // Track role in task history
             if (!string.IsNullOrEmpty(task))
@@ -591,6 +656,37 @@ public partial class AgentRegistry : IAgentRegistry
             if (previousRoles.Contains("code-writer"))
             {
                 reason = $"Agent {agentName} was code-writer on task '{task}' and cannot be reviewer on the same task. Dispatch to a different agent for review.";
+                return false;
+            }
+        }
+
+        // Orchestrator graduation: must have been co-thinker or planner on this task
+        if (role == "orchestrator")
+        {
+            if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
+                (!taskRoles.Contains("co-thinker") && !taskRoles.Contains("planner")))
+            {
+                reason = $"You are a {state.Role ?? "unknown role"}. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification.";
+                return false;
+            }
+        }
+
+        // Judge panel limit: max 3 judges per task
+        if (role == "judge")
+        {
+            int activeJudges = 0;
+            foreach (var name in AgentNames)
+            {
+                var s = GetAgentState(name);
+                if (s != null && s.Role == "judge" && s.Task == task &&
+                    s.Status != AgentStatus.Free)
+                {
+                    activeJudges++;
+                }
+            }
+            if (activeJudges >= 3)
+            {
+                reason = $"Maximum 3 judges already active on task '{task}'. Escalate to the human.";
                 return false;
             }
         }
@@ -1060,7 +1156,7 @@ public partial class AgentRegistry : IAgentRegistry
                 var isAllowed = agent.WritablePaths.Any(ap => MatchesGlob(relativePath, ap));
                 if (!isAllowed)
                 {
-                    error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role)}";
+                    error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role, relativePath)}";
                     return false;
                 }
             }
@@ -1077,15 +1173,19 @@ public partial class AgentRegistry : IAgentRegistry
         var allowed = agent.WritablePaths.Any(pattern => MatchesGlob(relativePath, pattern));
         if (!allowed)
         {
-            error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role)}";
+            error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role, relativePath)}";
             return false;
         }
 
         return true;
     }
 
-    private static string GetRoleRestrictionMessage(string role)
+    private static string GetRoleRestrictionMessage(string role, string? relativePath = null)
     {
+        var pathNudge = relativePath != null ? GetPathSpecificNudge(relativePath) : null;
+        if (pathNudge != null)
+            return pathNudge;
+
         return role switch
         {
             "reviewer" => "Reviewer role can only edit own workspace.",
@@ -1096,6 +1196,22 @@ public partial class AgentRegistry : IAgentRegistry
             "test-writer" => "Test-writer role can edit own workspace, tests, and pitfalls.",
             _ => ""
         };
+    }
+
+    /// <summary>
+    /// Returns a targeted nudge for known "wrong destination" paths, or null if no special case applies.
+    /// </summary>
+    private static string? GetPathSpecificNudge(string relativePath)
+    {
+        if (relativePath.StartsWith(".claude/plans/", StringComparison.OrdinalIgnoreCase) ||
+            relativePath.StartsWith(".claude\\plans\\", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Dydo agents don't use Claude Code's built-in plans. "
+                 + "Switch to planner mode ('dydo agent role planner --task <name>') "
+                 + "and write your plan to your workspace (dydo/agents/<you>/plan-<task>.md).";
+        }
+
+        return null;
     }
 
     public bool IsValidAgentName(string name) =>
@@ -1148,6 +1264,7 @@ public partial class AgentRegistry : IAgentRegistry
             task: {state.Task ?? "null"}
             status: {state.Status.ToString().ToLowerInvariant()}
             assigned: {state.AssignedHuman ?? GetHumanForAgent(agentName) ?? "unassigned"}
+            dispatched-by: {state.DispatchedBy ?? "null"}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
             readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
@@ -1240,6 +1357,9 @@ public partial class AgentRegistry : IAgentRegistry
                     case "assigned":
                         state.AssignedHuman = value == "unassigned" || value == "null" ? null : value;
                         break;
+                    case "dispatched-by":
+                        state.DispatchedBy = value == "null" ? null : value;
+                        break;
                     case "started":
                         if (value != "null" && DateTime.TryParse(value, out var dt))
                             state.Since = dt;
@@ -1325,6 +1445,12 @@ public partial class AgentRegistry : IAgentRegistry
         if (!Regex.IsMatch(name, @"^[A-Za-z][A-Za-z0-9-]*$"))
         {
             error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
+            return false;
+        }
+
+        if (name.Length > 9)
+        {
+            error = "Agent name cannot exceed 9 characters.";
             return false;
         }
 
@@ -1440,6 +1566,12 @@ public partial class AgentRegistry : IAgentRegistry
         if (!Regex.IsMatch(newName, @"^[A-Za-z][A-Za-z0-9-]*$"))
         {
             error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
+            return false;
+        }
+
+        if (newName.Length > 9)
+        {
+            error = "Agent name cannot exceed 9 characters.";
             return false;
         }
 

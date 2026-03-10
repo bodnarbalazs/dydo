@@ -24,4 +24,9 @@ public class AgentState
     /// </summary>
     public List<string> UnreadMustReads { get; set; } = [];
     public List<string> UnreadMessages { get; set; } = [];
+
+    /// <summary>
+    /// Name of the agent that dispatched this agent. Null for human-initiated agents (tree roots).
+    /// </summary>
+    public string? DispatchedBy { get; set; }
 }

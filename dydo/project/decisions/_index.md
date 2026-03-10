@@ -11,9 +11,10 @@ Index of decisions documentation.
 
 ## Contents
 
-- [001 — Auto-Close for Dispatched Agents](./001-auto-close-dispatch.md)
-- [002 — Template Update System](./002-template-update-system.md)
-- [003 — Agent Messaging](./003-agent-messaging.md)
-- [004 — Terminal Grouping Over Dashboard](./004-terminal-grouping-over-dashboard.md)
-- [005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
-- [006 — Drop Interviewer Role (Absorbed by Co-Thinker)](./006-drop-interviewer-role.md)
+- [001 — Auto-Close for Dispatched Agents](./001-auto-close-dispatch.md) - Two-part mechanism (active kill from release + passive check in launch wrapper) to automatically close terminal tabs after dispatched agents release.
+- [002 — Template Update System](./002-template-update-system.md) - Include tags for project additions plus hash tracking for safe framework template overwrites during updates.
+- [003 — Agent Messaging](./003-agent-messaging.md) - Lightweight inter-agent messaging via inbox reuse, guard-enforced notification blocking, and indefinite `dydo wait` polling.
+- [004 — Terminal Grouping Over Dashboard](./004-terminal-grouping-over-dashboard.md) - Same-window tab spawning and an agent tree command instead of a React GUI dashboard for managing multi-agent terminal chaos.
+- [005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md) - Use fresh agent sessions for review feedback loops; reserve `dispatch --wait` for oversight roles (orchestrators, inquisitors).
+- [006 — Drop Interviewer Role (Absorbed by Co-Thinker)](./006-drop-interviewer-role.md) - Remove the interviewer role since the co-thinker already covers all its responsibilities plus deeper exploration.
+- [007 — Oversight Roles: Orchestrator, Inquisitor, Judge](./007-oversight-roles.md) - Three new roles that enable swarm coordination, adversarial QA, and dispute resolution.

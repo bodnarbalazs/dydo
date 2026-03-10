@@ -20,6 +20,11 @@ public interface IAgentRegistry
     string GetAgentWorkspace(string agentName);
 
     /// <summary>
+    /// Checks if an agent has pending (unprocessed) inbox items.
+    /// </summary>
+    bool HasPendingInbox(string agentName);
+
+    /// <summary>
     /// Atomically reserves a free agent by setting its status to Dispatched.
     /// Prevents double-dispatch race conditions.
     /// </summary>

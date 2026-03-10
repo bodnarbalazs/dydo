@@ -61,6 +61,30 @@ public class AgentManagementTests : IntegrationTestBase
         result.AssertStdoutContains("Assigned to: alice");
     }
 
+    [Fact]
+    public async Task New_NameExceeds9Chars_Fails()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        var result = await AgentNewAsync("Alessandra", "alice");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("9 characters");
+    }
+
+    [Fact]
+    public async Task New_NameExactly9Chars_Succeeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        var result = await AgentNewAsync("Alejandro", "alice");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Agent created");
+    }
+
     #endregion
 
     #region Agent Rename
@@ -135,6 +159,17 @@ public class AgentManagementTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("already exists");
+    }
+
+    [Fact]
+    public async Task Rename_NameExceeds9Chars_Fails()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await AgentRenameAsync("Adele", "Alessandra");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("9 characters");
     }
 
     #endregion

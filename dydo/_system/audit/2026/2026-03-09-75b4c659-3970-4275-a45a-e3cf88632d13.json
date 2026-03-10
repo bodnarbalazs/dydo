@@ -687,6 +687,99 @@
       "event": "Edit",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\v1.3-release.md",
       "tool": "edit"
+    },
+    {
+      "ts": "2026-03-10T18:39:50.7737926Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\v1.3-release.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:39:51.1206035Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-10T18:40:06.1860085Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-10T18:40:11.1914952Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox/\u0022",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-10T18:40:15.9062549Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\aaf06fdc-msg-v1.3-guard-hardening.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:40:21.1516315Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8811671a-msg-v1.3-workflow-role-revamp-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:40:21.9026752Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\cadcc6b1-msg-v1.3-terminal-grouping-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:40:22.8857536Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6ca6f310-msg-v1.3-terminal-grouping-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:40:23.6766141Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9ed9675e-msg-v1.3-coverage-system-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:40:24.9613585Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a16f9be3-msg-v1.3-custom-agent-modes-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T18:40:36.2389802Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T18:40:36.7294911Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T18:40:37.1801111Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T18:40:37.7249355Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T18:46:56.7065604Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\tests\\coverage\\\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls \u0022C:\\Users\\U..."
+    },
+    {
+      "ts": "2026-03-10T18:47:00.7253597Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/tests/coverage/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls \u0022C:/Users/U..."
     }
   ],
   "snapshot": {

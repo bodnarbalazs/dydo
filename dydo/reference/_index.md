@@ -14,3 +14,7 @@ Index of reference documentation.
 - [DynaDocs (dydo)](./about-dynadocs.md) - Documentation-driven context and agent orchestration for AI coding assistants.
 - [CLI Commands Reference](./dydo-commands.md) - Complete reference for all `dydo` commands.
 - [Writing Documentation](./writing-docs.md) - Reference for documentation conventions, structure, and validation rules.
+
+## Subfolders
+
+- [Roles](./roles/_index.md) - Reference pages for each agent role — purpose, permissions, and relationships.

@@ -170,17 +170,18 @@ public static partial class IssueCommand
             return ExitCodes.ToolError;
         }
 
-        var severityLower = severity.ToLowerInvariant();
-        if (severityLower is not ("low" or "medium" or "high" or "critical"))
+        if (!Enum.TryParse<IssueSeverity>(severity, ignoreCase: true, out var parsedSeverity))
         {
-            ConsoleOutput.WriteError($"Invalid severity '{severity}'. Must be one of: low, medium, high, critical");
+            var valid = string.Join(", ", Enum.GetNames<IssueSeverity>().Select(n => n.ToLowerInvariant()));
+            ConsoleOutput.WriteError($"Invalid severity '{severity}'. Must be one of: {valid}");
             return ExitCodes.ToolError;
         }
 
-        var foundByLower = (foundBy ?? "manual").ToLowerInvariant();
-        if (foundByLower is not ("inquisition" or "review" or "manual"))
+        var foundByInput = foundBy ?? "manual";
+        if (!Enum.TryParse<IssueFoundBy>(foundByInput, ignoreCase: true, out var parsedFoundBy))
         {
-            ConsoleOutput.WriteError($"Invalid found-by '{foundBy}'. Must be one of: inquisition, review, manual");
+            var valid = string.Join(", ", Enum.GetNames<IssueFoundBy>().Select(n => n.ToLowerInvariant()));
+            ConsoleOutput.WriteError($"Invalid found-by '{foundBy}'. Must be one of: {valid}");
             return ExitCodes.ToolError;
         }
 
@@ -197,9 +198,9 @@ public static partial class IssueCommand
             id: {newId}
             area: {area}
             type: issue
-            severity: {severityLower}
-            status: open
-            found-by: {foundByLower}
+            severity: {parsedSeverity.ToString().ToLowerInvariant()}
+            status: {IssueStatus.Open.ToString().ToLowerInvariant()}
+            found-by: {parsedFoundBy.ToString().ToLowerInvariant()}
             date: {DateTime.UtcNow:yyyy-MM-dd}
             ---
 

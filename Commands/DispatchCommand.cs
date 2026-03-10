@@ -181,9 +181,44 @@ public static class DispatchCommand
         var sessionId = registry.GetSessionContext();
         var currentHuman = registry.GetCurrentHuman();
 
+        // --no-launch nudge: catch accidental use of --no-launch
+        if (noLaunch)
+        {
+            var nudgeSender = registry.GetCurrentAgent(sessionId);
+            if (nudgeSender != null)
+            {
+                var senderWorkspace = registry.GetAgentWorkspace(nudgeSender.Name);
+                var nudgeKey = PathUtils.SanitizeForFilename(task);
+                var markerPath = Path.Combine(senderWorkspace, $".no-launch-nudge-{nudgeKey}");
+
+                if (!File.Exists(markerPath))
+                {
+                    Directory.CreateDirectory(senderWorkspace);
+                    File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+                    ConsoleOutput.WriteError(
+                        "You dispatched with the --no-launch flag, it means that the agent you dispatched to will not be activated " +
+                        "and the user will have to call them manually. Unless the user was explicit about using no-launch or there is a " +
+                        "good reason for it you shouldn't use this flag. If you insist you may run it again and it will pass.");
+                    return ExitCodes.ToolError;
+                }
+                File.Delete(markerPath);
+            }
+        }
+
         // Get sender info
         var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
+
+        // --wait privilege: only orchestrator, inquisitor, judge may use --wait
+        if (wait && sender != null)
+        {
+            var waitPrivilegedRoles = new[] { "orchestrator", "inquisitor", "judge" };
+            if (!waitPrivilegedRoles.Contains(sender.Role, StringComparer.OrdinalIgnoreCase))
+            {
+                ConsoleOutput.WriteError($"The --wait flag is reserved for oversight roles (orchestrator, inquisitor, judge). Your role '{sender.Role}' should use --no-wait. See decision 005.");
+                return ExitCodes.ToolError;
+            }
+        }
 
         // Determine origin: inherit from inbox item if this is a send-back, else sender is origin
         var origin = GetOriginForTask(registry, sender, task) ?? senderName;
@@ -260,7 +295,8 @@ public static class DispatchCommand
                 // Filter by role eligibility
                 var eligible = freeAgents
                     .Where(a => registry.CanTakeRole(a.Name, role, task, out _))
-                    .OrderBy(a => a.Name)
+                    .OrderBy(a => registry.HasPendingInbox(a.Name) ? 1 : 0)
+                    .ThenBy(a => a.Name)
                     .ToList();
 
                 if (eligible.Count == 0)

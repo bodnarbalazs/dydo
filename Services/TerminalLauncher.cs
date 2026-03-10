@@ -89,6 +89,20 @@ public class TerminalLauncher
     ];
 
     /// <summary>
+    /// Shell commands to create a git worktree and cd into it.
+    /// Trailing " && " lets the caller chain the next command.
+    /// </summary>
+    internal static string WorktreeSetupScript(string worktreeId) =>
+        $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
+
+    /// <summary>
+    /// Shell commands to navigate back to the repo root and remove the worktree.
+    /// Callers add their own separator: Linux suffixes "; ", macOS prefixes "; ".
+    /// </summary>
+    internal static string WorktreeCleanupScript(string worktreeId) =>
+        $"cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force";
+
+    /// <summary>
     /// Returns "cd '/path' && " when a working directory is provided, empty string otherwise.
     /// Used to prefix shell commands in Linux terminals.
     /// </summary>
@@ -148,10 +162,8 @@ public class TerminalLauncher
         // cd ../../.. navigates back from .dydo/worktrees/{id} (always 3 levels deep).
         if (worktreeId != null)
         {
-            var wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
-            var wtCleanup = $"cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force; ";
-            args = args.Replace("unset CLAUDECODE", wtSetup + "unset CLAUDECODE");
-            args = args.Replace("exec bash", wtCleanup + "exec bash");
+            args = args.Replace("unset CLAUDECODE", WorktreeSetupScript(worktreeId) + "unset CLAUDECODE");
+            args = args.Replace("exec bash", WorktreeCleanupScript(worktreeId) + "; exec bash");
         }
 
         if (autoClose)
@@ -167,8 +179,8 @@ public class TerminalLauncher
         string wtSetup = "", wtCleanup = "";
         if (worktreeId != null)
         {
-            wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
-            wtCleanup = $"; cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force";
+            wtSetup = WorktreeSetupScript(worktreeId);
+            wtCleanup = "; " + WorktreeCleanupScript(worktreeId);
         }
 
         var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
@@ -276,8 +288,8 @@ public class TerminalLauncher
         string wtSetup = "", wtCleanup = "";
         if (worktreeId != null)
         {
-            wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
-            wtCleanup = $"; cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force";
+            wtSetup = WorktreeSetupScript(worktreeId);
+            wtCleanup = "; " + WorktreeCleanupScript(worktreeId);
         }
 
         var shellCommand = $"{cdPrefix}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
@@ -351,10 +363,8 @@ public class TerminalLauncher
 
                 if (worktreeId != null)
                 {
-                    var wtSetup = $"mkdir -p .dydo/worktrees && git worktree prune && git worktree add .dydo/worktrees/{worktreeId} -b worktree/{worktreeId} && cd .dydo/worktrees/{worktreeId} && ";
-                    var wtCleanup = $"cd ../../.. && git worktree remove .dydo/worktrees/{worktreeId} --force; ";
-                    arguments = arguments.Replace("unset CLAUDECODE", wtSetup + "unset CLAUDECODE");
-                    arguments = arguments.Replace("exec bash", wtCleanup + "exec bash");
+                    arguments = arguments.Replace("unset CLAUDECODE", WorktreeSetupScript(worktreeId) + "unset CLAUDECODE");
+                    arguments = arguments.Replace("exec bash", WorktreeCleanupScript(worktreeId) + "; exec bash");
                 }
 
                 if (autoClose)

@@ -499,6 +499,80 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertStdoutContains("Waiting For");
     }
 
+    [Fact]
+    public async Task List_AgentWithInbox_ShowsAsterisk()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        PlantInboxItem("Adele", "test-task");
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele*");
+    }
+
+    [Fact]
+    public async Task List_AgentWithoutInbox_NoAsterisk()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await ListAgentsAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        Assert.DoesNotContain("Adele*", result.Stdout);
+    }
+
+    [Fact]
+    public async Task List_All_AgentWithInbox_ShowsAsterisk()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        PlantInboxItem("Brian", "test-task");
+
+        var result = await ListAgentsAsync(all: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian*");
+    }
+
+    [Fact]
+    public async Task List_9CharNameWithInbox_AsteriskFitsColumn()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await JoinProjectAsync("none", "alice", 0);
+        await AgentNewAsync("Alejandro", "alice");
+        PlantInboxItem("Alejandro", "test-task");
+
+        var result = await ListAgentsAsync(all: true);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Alejandro*");
+    }
+
+    private void PlantInboxItem(string agentName, string task, string from = "Test")
+    {
+        var inboxDir = Path.Combine("dydo", "agents", agentName, "inbox");
+        Directory.CreateDirectory(Path.Combine(TestDir, inboxDir));
+        WriteFile(Path.Combine(inboxDir, $"deadbeef-{task}.md"), $"""
+            ---
+            id: deadbeef
+            from: {from}
+            role: code-writer
+            task: {task}
+            received: 2026-01-01T00:00:00Z
+            ---
+            # CODE-WRITER Request: {task}
+            ## Brief
+            Test brief
+            """);
+    }
+
+    private async Task<CommandResult> AgentNewAsync(string name, string human)
+    {
+        var command = AgentCommand.Create();
+        return await RunAsync(command, "new", name, human);
+    }
+
     #endregion
 
     #region Role
@@ -902,6 +976,149 @@ public class AgentLifecycleTests : IntegrationTestBase
         var stateAfter = registry.GetAgentState("Adele");
         Assert.NotNull(stateAfter);
         Assert.Empty(stateAfter.UnreadMustReads);
+    }
+
+    #endregion
+
+    #region Tree
+
+    [Fact]
+    public async Task Tree_NoActiveAgents_PrintsMessage()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("No active agents.");
+    }
+
+    [Fact]
+    public async Task Tree_SingleRootAgent()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "code-writer", "my-task");
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("[code-writer]");
+        result.AssertStdoutContains("my-task");
+    }
+
+    [Fact]
+    public async Task Tree_ParentChildRelationship()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "orchestrator", "release-task");
+        WriteAgentState("Brian", "working", "code-writer", "release-subtask", dispatchedBy: "Adele");
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("Brian");
+        var lines = result.Stdout.Split('\n');
+        var adeleLine = Array.FindIndex(lines, l => l.Contains("Adele"));
+        var brianLine = Array.FindIndex(lines, l => l.Contains("Brian"));
+        Assert.True(brianLine > adeleLine, "Brian should appear after Adele in tree output");
+    }
+
+    [Fact]
+    public async Task Tree_BranchingTree()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "orchestrator", "release");
+        WriteAgentState("Brian", "working", "code-writer", "feature-a", dispatchedBy: "Adele");
+        WriteAgentState("Charlie", "working", "reviewer", "feature-b", dispatchedBy: "Adele");
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("Brian");
+        result.AssertStdoutContains("Charlie");
+    }
+
+    [Fact]
+    public async Task Tree_AgentWithWaitMarker()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "orchestrator", "my-task");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "my-task", "Brian");
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("waiting");
+        result.AssertStdoutContains("Brian");
+    }
+
+    [Fact]
+    public async Task Tree_MultipleRoots()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "code-writer", "task-a");
+        WriteAgentState("Brian", "working", "reviewer", "task-b");
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("Brian");
+        result.AssertStdoutContains("[code-writer]");
+        result.AssertStdoutContains("[reviewer]");
+    }
+
+    [Fact]
+    public async Task Tree_LinearChain()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "orchestrator", "release");
+        WriteAgentState("Brian", "working", "code-writer", "impl", dispatchedBy: "Adele");
+        WriteAgentState("Charlie", "working", "reviewer", "impl-review", dispatchedBy: "Brian");
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        var lines = result.Stdout.Split('\n');
+        var adeleLine = Array.FindIndex(lines, l => l.Contains("Adele"));
+        var brianLine = Array.FindIndex(lines, l => l.Contains("Brian"));
+        var charlieLine = Array.FindIndex(lines, l => l.Contains("Charlie"));
+        Assert.True(brianLine > adeleLine, "Brian should appear after Adele");
+        Assert.True(charlieLine > brianLine, "Charlie should appear after Brian");
+    }
+
+    private async Task<CommandResult> TreeAsync()
+    {
+        var command = AgentCommand.Create();
+        return await RunAsync(command, "tree");
+    }
+
+    private void WriteAgentState(string name, string status, string role, string task, string? dispatchedBy = null)
+    {
+        var statePath = Path.Combine("dydo", "agents", name, "state.md");
+        var emptyObj = "{}";
+        WriteFile(statePath, $"""
+            ---
+            agent: {name}
+            role: {role}
+            task: {task}
+            status: {status}
+            assigned: balazs
+            dispatched-by: {dispatchedBy ?? "null"}
+            started: 2026-01-01T00:00:00Z
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            unread-messages: []
+            task-role-history: {emptyObj}
+            ---
+            # {name} — Session State
+            """);
     }
 
     #endregion

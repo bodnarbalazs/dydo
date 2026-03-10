@@ -139,10 +139,10 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Brian was dispatched by Adele — with --wait, dispatch returns immediately
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        // Brian needs oversight role for --wait; set planner history for orchestrator graduation
         await ClaimAgentAsync("Brian");
-        await SetRoleAsync("code-writer", "auth");
+        SetTaskRoleHistory("Brian", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
 
         var result = await DispatchAsync("reviewer", "auth", "Review this", wait: true);
 
@@ -161,6 +161,8 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
 
         // Pre-place a response message so --wait returns immediately
         CreateMessageFile("Adele", "Brian", "my-task", "Done.");
@@ -301,8 +303,10 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Adele dispatches with --wait to Brian
+        // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
 
@@ -321,8 +325,10 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Adele dispatches with --wait to Brian
+        // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
 
@@ -367,8 +373,10 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Adele dispatches with --wait to Brian
+        // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
 
@@ -401,6 +409,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
             "--no-launch"
         };
 
+        BypassNoLaunchNudge(task);
         if (to != null) { args.Add("--to"); args.Add(to); }
         if (wait) args.Add("--wait");
         else if (noWait) args.Add("--no-wait");
@@ -522,6 +531,35 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         StoreSessionContext();
         return result.Stdout;
+    }
+
+    private void SetTaskRoleHistory(string agentName, string task, string role)
+    {
+        var statePath = Path.Combine(TestDir, "dydo", "agents", agentName, "state.md");
+        if (File.Exists(statePath))
+        {
+            var content = File.ReadAllText(statePath);
+            content = System.Text.RegularExpressions.Regex.Replace(
+                content,
+                @"^task-role-history:.*$",
+                $"task-role-history: {{ \"{task}\": [\"{role}\"] }}",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+            File.WriteAllText(statePath, content);
+        }
+        else
+        {
+            var workspace = Path.Combine(TestDir, "dydo", "agents", agentName);
+            Directory.CreateDirectory(workspace);
+            File.WriteAllText(statePath, $$"""
+                ---
+                agent: {{agentName}}
+                status: free
+                assigned: testuser
+                task-role-history: { "{{task}}": ["{{role}}"] }
+                ---
+                # {{agentName}} — Session State
+                """);
+        }
     }
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

@@ -354,6 +354,269 @@
       "tool": "bash",
       "cmd": "ls \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\inbox\\\u0022",
       "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-10T13:28:48.3131941Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/v1.3-release.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:49.2191353Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-10T13:28:49.2808567Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/agent-workflow.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:55.0262665Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/v1.3-release.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:55.4453942Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/agent-workflow.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:55.6749115Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022DispatchCommand.cs\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:28:55.8073552Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022TerminalLauncher.cs\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:28:57.7293478Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:58.4421867Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/TerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:58.6289819Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -name \u0022*Frank*\u0022 -type d 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:28:58.8157196Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -name \u0022*Grace*\u0022 -type d 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:28:58.8968827Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -name \u0022*Emma*\u0022 -type d 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:29:00.7670928Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank -type f 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-10T13:29:00.9777981Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Grace -type f 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-10T13:29:01.1895086Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma -type f 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-10T13:29:01.6256915Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022--worktree\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:29:08.2194304Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:29:08.6390768Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/archive/20260309-201936/plan-v1.3-dispatch-worktree.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:09.0822049Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Grace/archive/20260309-202354/plan-v1.3-issue-tracker.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:09.4426345Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/20260309-230904/draft-mode-orchestrator.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:12.4664899Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/20260309-230904/draft-mode-inquisitor.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:12.646684Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/20260309-230904/draft-mode-judge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:13.0925115Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022^##\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/agent-workflow.template..."
+    },
+    {
+      "ts": "2026-03-10T13:29:13.371181Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates -type f -name \u0022*.md\u0022 2\u003E/dev/null..."
+    },
+    {
+      "ts": "2026-03-10T13:29:15.9690431Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates -name \u0022mode-*.template.md\u0022 2\u003E/de..."
+    },
+    {
+      "ts": "2026-03-10T13:29:16.2756851Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-*.template.md 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-10T13:29:16.6245865Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-interviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:18.9724511Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:19.3884972Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/TerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:19.6616798Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all -20 | grep -i \u0022worktree\\|workflow\\|issue\\|orchestrator\u0022"
+    },
+    {
+      "ts": "2026-03-10T13:29:21.3120026Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -1 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-10T13:29:22.7987285Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status | head -40"
+    },
+    {
+      "ts": "2026-03-10T13:29:23.2172389Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --name-only HEAD~5 HEAD 2\u003E/dev/null | head -40"
+    },
+    {
+      "ts": "2026-03-10T13:29:24.054505Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/20260309-230904/draft-roles-reference.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:25.9051527Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/IssueCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:26.3308952Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/mode-orchestrator.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:26.6366096Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/mode-inquisitor.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:26.7709569Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/mode-judge.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:29.3155998Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/007-oversight-roles.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:29:29.8156923Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022worktree\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs | head -10"
+    },
+    {
+      "ts": "2026-03-10T13:29:30.091933Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -A 2 \u0022^## C1\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/project/v1.3-release.md"
+    },
+    {
+      "ts": "2026-03-10T13:29:33.0421633Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "head -70 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/agent-workflow.template.md |..."
+    },
+    {
+      "ts": "2026-03-10T13:29:33.5150533Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -c \u0022^## [0-9]\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/agent-workflow.te..."
+    },
+    {
+      "ts": "2026-03-10T13:32:02.9821192Z",
+      "event": "Release",
+      "agent": "Iris"
     }
   ],
   "snapshot": {

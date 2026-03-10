@@ -616,6 +616,144 @@ public class AgentRegistryTests : IDisposable
         Assert.True(canTakeTester, reason2);
     }
 
+    [Fact]
+    public void CanTakeRole_BlocksOrchestratorWithoutPlannerHistory()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: Adele
+            status: free
+            assigned: testuser
+            task-role-history: { "my-task": ["code-writer"] }
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
+
+        Assert.False(canTake);
+        Assert.Contains("Orchestrator requires prior co-thinker or planner experience", reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_AllowsOrchestratorWithPlannerHistory()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(Path.Combine(workspacePath, "state.md"), """
+            ---
+            agent: Adele
+            status: free
+            assigned: testuser
+            task-role-history: { "my-task": ["planner"] }
+            ---
+            # Adele — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
+
+        Assert.True(canTake);
+        Assert.Empty(reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_BlocksJudgeWhenThreeAlreadyActive()
+    {
+        SetupConfig(
+            new[] { "Adele", "Brian", "Claire", "David" },
+            new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian", "Claire", "David" } });
+
+        // Create 3 active judges on the same task
+        foreach (var name in new[] { "Adele", "Brian", "Claire" })
+        {
+            var workspace = Path.Combine(_testDir, "dydo", "agents", name);
+            Directory.CreateDirectory(workspace);
+            File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+                ---
+                agent: {{name}}
+                status: working
+                assigned: testuser
+                role: judge
+                task: dispute-1
+                task-role-history: {}
+                ---
+                # {{name}} — Session State
+                """);
+        }
+
+        // David wants to become the 4th judge
+        var davidWorkspace = Path.Combine(_testDir, "dydo", "agents", "David");
+        Directory.CreateDirectory(davidWorkspace);
+        File.WriteAllText(Path.Combine(davidWorkspace, "state.md"), """
+            ---
+            agent: David
+            status: free
+            assigned: testuser
+            task-role-history: {}
+            ---
+            # David — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var canTake = registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
+
+        Assert.False(canTake);
+        Assert.Contains("Maximum 3 judges", reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_AllowsJudgeWhenFewerThanThreeActive()
+    {
+        SetupConfig(
+            new[] { "Adele", "Brian", "Claire" },
+            new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian", "Claire" } });
+
+        // Only 1 active judge
+        var adeleWorkspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(adeleWorkspace);
+        File.WriteAllText(Path.Combine(adeleWorkspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            role: judge
+            task: dispute-1
+            task-role-history: {}
+            ---
+            # Adele — Session State
+            """);
+
+        var clairePath = Path.Combine(_testDir, "dydo", "agents", "Claire");
+        Directory.CreateDirectory(clairePath);
+        File.WriteAllText(Path.Combine(clairePath, "state.md"), """
+            ---
+            agent: Claire
+            status: free
+            assigned: testuser
+            task-role-history: {}
+            ---
+            # Claire — Session State
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var canTake = registry.CanTakeRole("Claire", "judge", "dispute-1", out var reason);
+
+        Assert.True(canTake);
+        Assert.Empty(reason);
+    }
+
     #endregion
 
     #region Task File Auto-Creation Tests
@@ -1006,6 +1144,45 @@ public class AgentRegistryTests : IDisposable
 
         Assert.False(result, "Stale marker should not bypass nudge after release");
         Assert.Contains("dispatched as", error);
+    }
+
+    [Fact]
+    public void SetRole_SkipsNudge_WhenAgentAlreadyFulfilledDispatchedRole()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-nudge14");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // First: claim the dispatched role — succeeds
+        var result1 = registry.SetRole("test-session-nudge14", "reviewer", "my-task", out var err1);
+        Assert.True(result1, $"Setting dispatched role should succeed: {err1}");
+
+        // Now switch to a different role — should succeed without nudge
+        var result2 = registry.SetRole("test-session-nudge14", "code-writer", "my-task", out var err2);
+        Assert.True(result2, $"Switching after fulfilling dispatched role should succeed without nudge: {err2}");
+
+        // Switch again — should still succeed (TaskRoleHistory persists, not just current role)
+        var result3 = registry.SetRole("test-session-nudge14", "planner", "my-task", out var err3);
+        Assert.True(result3, $"Second switch after fulfilling dispatched role should also succeed: {err3}");
+    }
+
+    [Fact]
+    public void IsPathAllowed_NudgesToPlannerMode_WhenWritingToClaudePlans()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-plans");
+
+        var registry = new AgentRegistry(_testDir);
+        registry.SetRole("test-session-plans", "reviewer", "some-task", out _);
+
+        var result = registry.IsPathAllowed("test-session-plans", ".claude/plans/toasty-stirring-allen.md", "write", out var error);
+
+        Assert.False(result);
+        Assert.Contains("planner mode", error);
+        Assert.Contains("workspace", error);
+        Assert.DoesNotContain("Reviewer role can only edit own workspace", error);
     }
 
     #endregion
@@ -1591,6 +1768,81 @@ public class AgentRegistryTests : IDisposable
         var freeAgents = registry.GetFreeAgents();
 
         Assert.Contains(freeAgents, a => a.Name == "Adele");
+    }
+
+    #endregion
+
+    #region DispatchedBy Persistence
+
+    [Fact]
+    public void DispatchedBy_RoundTrips_ThroughStateFile()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+
+        try
+        {
+            var scaffolder = new FolderScaffolder();
+            var registry = new AgentRegistry(_testDir, null, scaffolder);
+            registry.StorePendingSessionId("Adele", "test-session-db");
+            registry.ClaimAgent("Adele", out _);
+            registry.StoreSessionContext("test-session-db");
+
+            // Plant inbox item with from field
+            var inboxPath = Path.Combine(_testDir, "dydo", "agents", "Adele", "inbox");
+            Directory.CreateDirectory(inboxPath);
+            File.WriteAllText(Path.Combine(inboxPath, "deadbeef-my-task.md"), """
+                ---
+                id: deadbeef
+                from: Brian
+                role: code-writer
+                task: my-task
+                received: 2026-01-01T00:00:00Z
+                ---
+                # CODE-WRITER Request: my-task
+                ## Brief
+                Test brief
+                """);
+
+            registry.SetRole("test-session-db", "code-writer", "my-task", out _);
+
+            var state = registry.GetAgentState("Adele");
+            Assert.Equal("Brian", state?.DispatchedBy);
+
+            // Verify roundtrip: create a fresh registry and re-read the state
+            var registry2 = new AgentRegistry(_testDir);
+            var state2 = registry2.GetAgentState("Adele");
+            Assert.Equal("Brian", state2?.DispatchedBy);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+        }
+    }
+
+    [Fact]
+    public void DispatchedBy_NullWhenNoInboxItem()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+
+        try
+        {
+            var scaffolder = new FolderScaffolder();
+            var registry = new AgentRegistry(_testDir, null, scaffolder);
+            registry.StorePendingSessionId("Adele", "test-session-db2");
+            registry.ClaimAgent("Adele", out _);
+            registry.StoreSessionContext("test-session-db2");
+
+            registry.SetRole("test-session-db2", "code-writer", "my-task", out _);
+
+            var state = registry.GetAgentState("Adele");
+            Assert.Null(state?.DispatchedBy);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+        }
     }
 
     #endregion

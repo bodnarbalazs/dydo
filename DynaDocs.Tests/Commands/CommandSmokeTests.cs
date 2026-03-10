@@ -27,6 +27,7 @@ public class CommandSmokeTests
             GuardCommand.Create,
             InboxCommand.Create,
             IndexCommand.Create,
+            InquisitionCommand.Create,
             IssueCommand.Create,
             MessageCommand.Create,
             InitCommand.Create,
@@ -65,6 +66,7 @@ public class CommandSmokeTests
                 GuardCommand.Create(),
                 InboxCommand.Create(),
                 IndexCommand.Create(),
+                InquisitionCommand.Create(),
                 IssueCommand.Create(),
                 MessageCommand.Create(),
                 InitCommand.Create(),
@@ -77,7 +79,7 @@ public class CommandSmokeTests
             };
 
             // Verify subcommands are present
-            Assert.True(rootCommand.Subcommands.Count >= 21);
+            Assert.True(rootCommand.Subcommands.Count >= 22);
         });
 
         Assert.Null(exception);

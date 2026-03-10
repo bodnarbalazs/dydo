@@ -1,3 +1,3 @@
 namespace DynaDocs.Models;
 
-public enum IssueStatus { Open, InProgress, Resolved, WontFix }
+public enum IssueStatus { Open, Resolved }

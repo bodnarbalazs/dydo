@@ -131,6 +131,41 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
+    public void BuildRolePermissions_Returns9Entries()
+    {
+        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+
+        Assert.Equal(9, perms.Count);
+        Assert.True(perms.ContainsKey("orchestrator"));
+        Assert.True(perms.ContainsKey("inquisitor"));
+        Assert.True(perms.ContainsKey("judge"));
+    }
+
+    [Fact]
+    public void BuildRolePermissions_OversightRoles_HaveCorrectPermissions()
+    {
+        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+
+        // Orchestrator: writes workspace + tasks + decisions; reads everything
+        Assert.Contains("dydo/agents/{self}/**", perms["orchestrator"].Writable);
+        Assert.Contains("dydo/project/tasks/**", perms["orchestrator"].Writable);
+        Assert.Contains("dydo/project/decisions/**", perms["orchestrator"].Writable);
+        Assert.Contains("**", perms["orchestrator"].ReadOnly);
+
+        // Inquisitor: writes workspace + inquisitions; reads source + tests
+        Assert.Contains("dydo/agents/{self}/**", perms["inquisitor"].Writable);
+        Assert.Contains("dydo/project/inquisitions/**", perms["inquisitor"].Writable);
+        Assert.Contains("src/**", perms["inquisitor"].ReadOnly);
+        Assert.Contains("tests/**", perms["inquisitor"].ReadOnly);
+
+        // Judge: writes workspace only; reads source + tests
+        Assert.Contains("dydo/agents/{self}/**", perms["judge"].Writable);
+        Assert.Single(perms["judge"].Writable);
+        Assert.Contains("src/**", perms["judge"].ReadOnly);
+        Assert.Contains("tests/**", perms["judge"].ReadOnly);
+    }
+
+    [Fact]
     public void AgentRegistry_BuildsPermissionsFromConfig()
     {
         WriteConfig("""

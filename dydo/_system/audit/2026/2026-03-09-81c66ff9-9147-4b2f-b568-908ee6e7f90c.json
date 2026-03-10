@@ -81,6 +81,286 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\code-writer.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:05.1673985Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:05.3804506Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:05.5918707Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/IAgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:05.7177763Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T20:45:08.9027798Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l \u0022/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs\u0022"
+    },
+    {
+      "ts": "2026-03-09T20:45:09.1587494Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l \u0022/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs\u0022"
+    },
+    {
+      "ts": "2026-03-09T20:45:11.3194621Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:11.5431498Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:11.7700801Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:13.5480721Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:13.7976727Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:19.8882039Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:20.3180199Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:20.4259665Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models/WaitMarker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:22.1944032Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models/AgentState.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:22.5086961Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:24.7811667Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:25.3243863Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:27.5341071Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:29.00286Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022ParseStateFile\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs\u0022 | head ..."
+    },
+    {
+      "ts": "2026-03-09T20:45:30.48642Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:34.5168963Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022role\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/Commands/AgentCommand.cs\u0022 | grep -i \u0022command..."
+    },
+    {
+      "ts": "2026-03-09T20:45:36.1517489Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/AgentCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:38.2462535Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022ExecuteRole\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/Commands/AgentCommand.cs\u0022"
+    },
+    {
+      "ts": "2026-03-09T20:45:39.9456881Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/AgentCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:41.7612649Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022CanTakeRole\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AgentRegistry..."
+    },
+    {
+      "ts": "2026-03-09T20:45:43.4909372Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AgentRegistryTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:45.645494Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022role-nudge\\|nudge\\|dispatched.*role\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Test..."
+    },
+    {
+      "ts": "2026-03-09T20:45:47.4566187Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AgentRegistryTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:49.9082212Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:51.9050929Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:53.7376086Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T20:45:56.0674002Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/changelog/2026/2026-03-08/dispatch-role-guardrail.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:57.8499182Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T20:45:59.7835113Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T21:36:29.895864Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/understand/\u0022 \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls \u0022C:/Users/User/Des..."
+    },
+    {
+      "ts": "2026-03-09T21:36:34.6068837Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T21:36:39.0636247Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\_reference.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T21:36:39.1815653Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\_index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T21:36:42.7486451Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T21:37:44.982091Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\007-oversight-roles.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-09T21:42:40.0393497Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\co-thinker.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T21:43:26.6119295Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\draft-mode-orchestrator.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-09T21:43:49.2880373Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\draft-mode-inquisitor.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-09T21:44:04.5010487Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\draft-mode-judge.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-09T21:44:54.9482584Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\draft-roles-reference.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-09T21:45:38.4407031Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot": {

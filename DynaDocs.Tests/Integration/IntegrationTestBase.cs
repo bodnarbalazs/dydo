@@ -329,6 +329,23 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
+    /// Pre-create the no-launch nudge marker so tests using --no-launch bypass the nudge.
+    /// </summary>
+    protected void BypassNoLaunchNudge(string task)
+    {
+        var registry = new AgentRegistry(TestDir);
+        var sender = registry.GetCurrentAgent(TestSessionId);
+        if (sender != null)
+        {
+            var workspace = registry.GetAgentWorkspace(sender.Name);
+            var sanitized = DynaDocs.Utils.PathUtils.SanitizeForFilename(task);
+            var marker = Path.Combine(workspace, $".no-launch-nudge-{sanitized}");
+            Directory.CreateDirectory(workspace);
+            File.WriteAllText(marker, "test-bypass");
+        }
+    }
+
+    /// <summary>
     /// Assert file exists in test directory.
     /// </summary>
     protected void AssertFileExists(string relativePath)

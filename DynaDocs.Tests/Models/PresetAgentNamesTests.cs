@@ -36,4 +36,19 @@ public class PresetAgentNamesTests
         Assert.Equal(80, names.Count);
         Assert.Equal(names.Distinct().Count(), names.Count); // No duplicates
     }
+
+    [Fact]
+    public void AllPresetNames_DoNotExceed9Characters()
+    {
+        var allNames = PresetAgentNames.Set1
+            .Concat(PresetAgentNames.Set2)
+            .Concat(PresetAgentNames.Set3)
+            .Concat(PresetAgentNames.Set4)
+            .ToList();
+
+        foreach (var name in allNames)
+        {
+            Assert.True(name.Length <= 9, $"Preset name '{name}' is {name.Length} chars, exceeds 9-char limit.");
+        }
+    }
 }

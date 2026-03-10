@@ -896,6 +896,80 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --no-launch Nudge Tests
+
+    [Fact]
+    public async Task Dispatch_NoLaunch_FirstAttempt_FailsWithNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "nudge-test");
+
+        // Dispatch WITHOUT bypassing the nudge (call command directly)
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var result = await RunAsync(command, args);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--no-launch flag");
+        result.AssertStderrContains("run it again");
+    }
+
+    [Fact]
+    public async Task Dispatch_NoLaunch_SecondAttempt_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "nudge-test");
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+
+        // First attempt: fails with nudge
+        var result1 = await RunAsync(command, args);
+        result1.AssertExitCode(2);
+
+        // Second attempt: passes
+        var result2 = await RunAsync(command, args);
+        result2.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_NoLaunch_WithoutSender_SkipsNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        // No agent claimed — no sender context
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var result = await RunAsync(command, args);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_NoLaunch_MarkerCleanedOnRelease()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "nudge-test");
+
+        // First attempt creates marker
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        await RunAsync(command, args);
+
+        // Marker should exist
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.no-launch-nudge-nudge-test");
+        Assert.True(File.Exists(markerPath));
+
+        // Release cleans up markers
+        await ReleaseAgentAsync();
+        Assert.False(File.Exists(markerPath));
+    }
+
+    #endregion
+
     #region --worktree Tests
 
     [Fact]
@@ -984,6 +1058,84 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --wait Privilege Tests
+
+    [Fact]
+    public async Task Dispatch_WaitBlockedForCodeWriter()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task");
+
+        var result = await DispatchAsync("reviewer", "my-task", "Review this", wait: true, noWait: false);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--wait flag is reserved for oversight roles");
+    }
+
+    [Fact]
+    public async Task Dispatch_WaitAllowedForOrchestrator()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Orchestrator requires planner history — create it
+        SetTaskRoleHistory("Adele", "my-task", "planner");
+        await SetRoleAsync("orchestrator", "my-task");
+
+        var result = await DispatchAsync("code-writer", "my-task", "Implement feature", wait: true, noWait: false);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
+    #region Inbox Prioritization
+
+    [Fact]
+    public async Task Dispatch_AutoSelect_PrefersAgentWithEmptyInbox()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        // Give Adele an inbox item — Brian should be selected instead
+        CreateInboxItem("Adele", "Test", "code-writer", "old-task", "Stale task");
+
+        var result = await DispatchAsync("code-writer", "new-task", "Implement feature");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian");
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoSelect_AllWithInbox_FallsBackToAlphabetical()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        // Give all agents inbox items
+        CreateInboxItem("Adele", "Test", "code-writer", "task-a", "Task A");
+        CreateInboxItem("Brian", "Test", "code-writer", "task-b", "Task B");
+        CreateInboxItem("Charlie", "Test", "code-writer", "task-c", "Task C");
+
+        var result = await DispatchAsync("code-writer", "new-task", "Implement feature");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele"); // All have inbox, falls back to alphabetical
+    }
+
+    [Fact]
+    public async Task Dispatch_AutoSelect_EmptyInboxBeatsAlphabeticOrder()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        // Adele and Brian have inbox items, Charlie does not
+        CreateInboxItem("Adele", "Test", "code-writer", "task-a", "Task A");
+        CreateInboxItem("Brian", "Test", "code-writer", "task-b", "Task B");
+
+        var result = await DispatchAsync("code-writer", "new-task", "Implement feature");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Charlie"); // Only one without inbox
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> TaskCreateAsync(string name, string? description = null, string area = "general")
@@ -1021,7 +1173,11 @@ public class DispatchCommandTests : IntegrationTestBase
         };
 
         // --worktree is incompatible with --no-launch, so omit --no-launch when worktree is set
-        if (!worktree) { args.Add("--no-launch"); }
+        if (!worktree)
+        {
+            args.Add("--no-launch");
+            BypassNoLaunchNudge(task);
+        }
 
         if (files != null) { args.Add("--files"); args.Add(files); }
         if (to != null) { args.Add("--to"); args.Add(to); }
@@ -1052,6 +1208,7 @@ public class DispatchCommandTests : IntegrationTestBase
             "--no-wait"
         };
 
+        BypassNoLaunchNudge(task);
         if (agent != null) { args.Add("--agent"); args.Add(agent); }
 
         return await RunAsync(command, args.ToArray());
@@ -1072,6 +1229,7 @@ public class DispatchCommandTests : IntegrationTestBase
             "--no-wait"
         };
 
+        BypassNoLaunchNudge(task);
         return await RunAsync(command, args.ToArray());
     }
 

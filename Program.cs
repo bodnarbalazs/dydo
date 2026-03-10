@@ -18,6 +18,7 @@ rootCommand.Subcommands.Add(WaitCommand.Create());
 rootCommand.Subcommands.Add(TaskCommand.Create());
 rootCommand.Subcommands.Add(IssueCommand.Create());
 rootCommand.Subcommands.Add(ReviewCommand.Create());
+rootCommand.Subcommands.Add(InquisitionCommand.Create());
 rootCommand.Subcommands.Add(CleanCommand.Create());
 rootCommand.Subcommands.Add(WorkspaceCommand.Create());
 rootCommand.Subcommands.Add(WhoamiCommand.Create());
@@ -58,6 +59,7 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  agent release          Release current agent");
     Console.WriteLine("  agent status [name]    Show agent status");
     Console.WriteLine("  agent list [--free] [--all]  List agents (default: current human's)");
+    Console.WriteLine("  agent tree               Show dispatch hierarchy");
     Console.WriteLine("  agent role <role>      Set current agent's role");
     Console.WriteLine();
     Console.WriteLine("Agent Management Commands:");
@@ -105,6 +107,9 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  issue create             Create a new issue");
     Console.WriteLine("  issue list               List issues");
     Console.WriteLine("  issue resolve <id>       Resolve an issue");
+    Console.WriteLine();
+    Console.WriteLine("Inquisition Commands:");
+    Console.WriteLine("  inquisition coverage     Show inquisition coverage across areas");
     Console.WriteLine();
     Console.WriteLine("Utility:");
     Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

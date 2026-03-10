@@ -109,6 +109,495 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "ls DynaDocs.Tests/"
+    },
+    {
+      "ts": "2026-03-09T23:08:33.618456Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\tests\\coverage\\coverage.runsettings",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:35.2608737Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:08:35.5827653Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo -type f -name \u0022*.md\u0022 | head -50"
+    },
+    {
+      "ts": "2026-03-09T23:08:37.6238045Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T23:08:40.2301042Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T23:08:40.8605439Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T23:08:41.1325851Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T23:08:42.9945466Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates -name \u0022*.md\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-09T23:08:43.4234494Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -name \u0022*reviewer*\u0022 -o -name \u0022*code-writer*\u0022..."
+    },
+    {
+      "ts": "2026-03-09T23:08:45.1675688Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/agent-workflow.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:45.374732Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:45.67031Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:47.799784Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:47.9070597Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Adele/modes/reviewer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:48.1451151Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Adele/modes/code-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:50.1896078Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/v1.3-coverage-system-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:50.4165864Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/007-oversight-roles.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:50.6812002Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/v1.3-release.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:53.2848742Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/reference/roles/test-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:54.2409068Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022gap_check\\|coverage\\|tier\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo --include=\u0022*.md\u0022 -A..."
+    },
+    {
+      "ts": "2026-03-09T23:08:56.4394467Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\2dc9cf84-15e1-44d7-b08a-6c0276bfe198\\tool-results\\btqndrnji.txt",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:56.7008153Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Adele/v1.3-release-plan.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:08:59.0568157Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates -type f -name \u0022*.md\u0022"
+    },
+    {
+      "ts": "2026-03-09T23:08:59.2512048Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/"
+    },
+    {
+      "ts": "2026-03-09T23:09:01.0533785Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022{{include:\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/*.md"
+    },
+    {
+      "ts": "2026-03-09T23:12:28.9930899Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:12:29.2448412Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates/mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:12:31.5355734Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*extra-*\u0022 -o -type f -name \u0022*addition*\u0022 ..."
+    },
+    {
+      "ts": "2026-03-09T23:12:32.2841779Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022extra-verify\\|extra-review-steps\\|extra-review-checklist\\|extra-must-reads\u0022 /c/Users/User/D..."
+    },
+    {
+      "ts": "2026-03-09T23:12:34.0643176Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/extra-verify.example.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:12:34.2178361Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/template-additions-readme.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:12:34.3003512Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/reference/about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:12:36.3047283Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/002-template-update-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:03.9526175Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls DynaDocs.Tests/ -la \u0026\u0026 cat DynaDocs.Tests/DynaDocs.Tests.csproj"
+    },
+    {
+      "ts": "2026-03-09T23:13:04.2713419Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:04.5162605Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:04.7494206Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:04.7817961Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:06.0474883Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:06.2672834Z",
+      "event": "Read",
+      "path": "dydo",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:08.2733896Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:08.478262Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:08.6931076Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\reviewer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:08.9001425Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\code-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:09.2676717Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\v1.3-coverage-system-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:11.3980386Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo -type f -name \u0022*extra*\u0022 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-09T23:13:11.483989Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo -type f -name \u0022*coverage*\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-09T23:13:11.6282203Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo -type f -name \u0022*strategy*\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-09T23:13:13.4448816Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022extra-verify\\|extra-review\\|extra-must-reads\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo ..."
+    },
+    {
+      "ts": "2026-03-09T23:13:13.7372703Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Kate\\inbox\\972f9b99-v1.3-coverage-system-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:16.1748065Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:16.7359417Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\002-template-update-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:16.7834461Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:19.0917442Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/template-additions/ 2\u003E/dev/null || echo ..."
+    },
+    {
+      "ts": "2026-03-09T23:13:21.3850378Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\v1.3-release.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:21.6912699Z",
+      "event": "Read",
+      "path": "dydo",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-09T23:13:24.0592995Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\test-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:24.2748181Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\inquisitor.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:24.4012026Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:27.0720826Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-09T23:13:27.5869724Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates -name \u0022*.template.md\u0022 2\u003E/dev/nul..."
+    },
+    {
+      "ts": "2026-03-09T23:13:29.6405339Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-tester.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-09T23:13:48.9418083Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T12:49:22.2846628Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/LC/dydo/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls \u0022C:/Users/User/Desktop/LC/dydo/_syst..."
+    },
+    {
+      "ts": "2026-03-10T13:06:08.8869706Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/LC/dydo/_system/templates/\u0022"
+    },
+    {
+      "ts": "2026-03-10T13:10:06.4330469Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/_system/templates/mode-reviewer.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:10:06.8798247Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/_system/templates/mode-code-writer.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:17:57.0756743Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\_system\\templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:17:57.40251Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\_system\\templates\\mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:25:22.7118095Z",
+      "event": "Role",
+      "role": "planner",
+      "task": "v1.3-coverage-system-2"
+    },
+    {
+      "ts": "2026-03-10T13:25:25.6152707Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Kate\\modes\\planner.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:25:31.5817872Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:25:40.3499959Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/TemplateGenerator.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:25:44.0639667Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022dydo/_system/template-additions/\u0022 2\u003E/dev/null || echo \u0022FOLDER DOES NOT EXIST\u0022"
+    },
+    {
+      "ts": "2026-03-10T13:25:48.0107855Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/FolderScaffolder.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:25:53.5345086Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T13:26:00.8305395Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:26:02.4562508Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:26:09.1527846Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-10T13:27:03.2516309Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Kate\\plan-v1.3-coverage-system-2.md",
+      "tool": "write",
+      "reason": "Must-read files not yet read"
+    },
+    {
+      "ts": "2026-03-10T13:27:08.7589218Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-10T13:28:09.3048904Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Kate\\plan-v1.3-coverage-system-2.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-10T13:29:08.4521762Z",
+      "event": "Release",
+      "agent": "Kate"
     }
   ],
   "snapshot": {

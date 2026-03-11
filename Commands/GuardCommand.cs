@@ -61,21 +61,28 @@ public static partial class GuardCommand
         return command;
     }
 
-    private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
+    // Data-driven lookups to reduce cyclomatic complexity
+    private static readonly HashSet<string> SearchTools = new(StringComparer.OrdinalIgnoreCase) { "glob", "grep", "agent" };
+    private static readonly HashSet<string> WriteActions = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
+    private static readonly Dictionary<string, AuditEventType> ActionAuditMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        string? filePath = null;
-        string? action = null;
-        string? bashCommand = null;
-        string? toolName = null;
-        string? sessionId = null;
-        string? searchPath = null;
+        ["write"] = AuditEventType.Write,
+        ["edit"] = AuditEventType.Edit,
+        ["delete"] = AuditEventType.Delete,
+    };
+
+    private record struct GuardContext(
+        string? FilePath, string? Action, string? BashCommand,
+        string? ToolName, string? SessionId, string? SearchPath,
+        bool? RunInBackground, bool HasCliArgs);
+
+    private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
+    {
+        var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
+        string? filePath = null, action = null, bashCommand = null;
+        string? toolName = null, sessionId = null, searchPath = null;
         bool? runInBackground = null;
 
-        // If CLI arguments are provided, use them directly (skip stdin reading)
-        // This avoids blocking on stdin when run from IDEs/test runners
-        var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
-
-        // Try to read stdin JSON (hook mode) only if no CLI args provided
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
         {
             try
@@ -94,37 +101,44 @@ public static partial class GuardCommand
             }
             catch (Exception ex)
             {
-                // Log the error for debugging - silent failures are dangerous
                 Console.Error.WriteLine($"WARNING: Failed to parse hook input: {ex.Message}");
             }
         }
 
-        // Session ID is required for hook mode (non-CLI)
-        if (!hasCliArgs && string.IsNullOrEmpty(sessionId))
+        return new GuardContext(
+            filePath ?? cliPath,
+            action ?? cliAction ?? "edit",
+            bashCommand ?? cliCommand,
+            toolName, sessionId, searchPath, runInBackground, hasCliArgs);
+    }
+
+    private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
+    {
+        var ctx = ParseInput(cliAction, cliPath, cliCommand);
+
+        if (!ctx.HasCliArgs && string.IsNullOrEmpty(ctx.SessionId))
         {
             Console.Error.WriteLine("BLOCKED: No session_id in hook input.");
             return ExitCodes.ToolError;
         }
 
-        // Initialize services (need registry early for session context lookup)
         var offLimitsService = new OffLimitsService();
         var bashAnalyzer = new BashCommandAnalyzer();
         var registry = new AgentRegistry();
         var auditService = new AuditService();
 
-        // Daily validation: warn about config issues on first guard call per day
         RunDailyValidationIfDue();
 
-        // For CLI mode, fall back to session context file (set by guard for subprocess commands)
-        if (hasCliArgs && string.IsNullOrEmpty(sessionId))
-        {
+        var sessionId = ctx.SessionId;
+        if (ctx.HasCliArgs && string.IsNullOrEmpty(sessionId))
             sessionId = registry.GetSessionContext();
-        }
 
-        // Use CLI arguments (or defaults)
-        filePath ??= cliPath;
-        action ??= cliAction ?? "edit";
-        bashCommand ??= cliCommand;
+        var filePath = ctx.FilePath;
+        var action = ctx.Action;
+        var bashCommand = ctx.BashCommand;
+        var toolName = ctx.ToolName;
+        var searchPath = ctx.SearchPath;
+        var runInBackground = ctx.RunInBackground;
 
         // Load off-limits patterns
         offLimitsService.LoadPatterns();
@@ -156,7 +170,7 @@ public static partial class GuardCommand
         // Agent tool spawns sub-processes that inherit the session — blocking
         // pre-claim prevents sub-agents from bypassing the onboarding flow.
         // ============================================================
-        if (toolName is "glob" or "grep" or "agent")
+        if (toolName != null && SearchTools.Contains(toolName))
         {
             return HandleSearchTool(searchPath, toolName, sessionId, offLimitsService, registry, auditService);
         }
@@ -185,32 +199,9 @@ public static partial class GuardCommand
         if (string.IsNullOrEmpty(filePath))
             return ExitCodes.Success;
 
-        if (agent == null)
-        {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-                BlockReason = "No agent identity"
-            });
-            Console.Error.WriteLine("BLOCKED: No agent identity assigned to this process.");
-            Console.Error.WriteLine("  Run 'dydo agent claim auto' to claim an agent identity.");
-            return ExitCodes.ToolError;
-        }
+        var identityBlock = RequireWriteIdentity(agent, filePath, toolName, auditService, sessionId, registry);
+        if (identityBlock != null) return identityBlock.Value;
 
-        if (string.IsNullOrEmpty(agent.Role))
-        {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-                BlockReason = "No role set"
-            });
-            Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
-            Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
-            Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
-            return ExitCodes.ToolError;
-        }
-
-        // Check unread messages
         agent = registry.GetCurrentAgent(sessionId);
         if (agent != null)
         {
@@ -221,7 +212,6 @@ public static partial class GuardCommand
             if (blocked != null) return blocked.Value;
         }
 
-        // Check must-read enforcement
         agent = registry.GetCurrentAgent(sessionId);
         if (agent != null && agent.UnreadMustReads.Count > 0)
         {
@@ -235,7 +225,7 @@ public static partial class GuardCommand
         }
 
         // Check role permissions
-        if (action is "write" or "edit" or "delete")
+        if (action != null && WriteActions.Contains(action))
         {
             if (!registry.IsPathAllowed(sessionId, filePath, action, out var error))
             {
@@ -249,13 +239,7 @@ public static partial class GuardCommand
             }
         }
 
-        var eventType = action switch
-        {
-            "write" => AuditEventType.Write,
-            "edit" => AuditEventType.Edit,
-            "delete" => AuditEventType.Delete,
-            _ => AuditEventType.Edit
-        };
+        var eventType = ActionAuditMap.GetValueOrDefault(action ?? "", AuditEventType.Edit);
         LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
             EventType = eventType, Path = filePath, Tool = toolName
@@ -326,8 +310,18 @@ public static partial class GuardCommand
             EventType = AuditEventType.Read, Path = filePath, Tool = toolName
         });
 
+        TrackReadCompletion(agent, filePath, sessionId, registry);
+
+        return ExitCodes.Success;
+    }
+
+    private static void TrackReadCompletion(AgentState? agent, string? filePath, string? sessionId, AgentRegistry registry)
+    {
+        if (agent == null || string.IsNullOrEmpty(filePath))
+            return;
+
         // Track must-read completion
-        if (agent != null && agent.UnreadMustReads.Count > 0 && !string.IsNullOrEmpty(filePath))
+        if (agent.UnreadMustReads.Count > 0)
         {
             var relPath = NormalizeForMustReadComparison(filePath);
             if (agent.UnreadMustReads.Any(p => p.Equals(relPath, StringComparison.OrdinalIgnoreCase)))
@@ -335,14 +329,12 @@ public static partial class GuardCommand
         }
 
         // Track message reads
-        if (agent != null && agent.UnreadMessages.Count > 0 && !string.IsNullOrEmpty(filePath))
+        if (agent.UnreadMessages.Count > 0)
         {
             var messageId = ExtractMessageIdFromPath(filePath);
             if (messageId != null && agent.UnreadMessages.Contains(messageId))
                 registry.MarkMessageRead(sessionId, messageId);
         }
-
-        return ExitCodes.Success;
     }
 
     private static int HandleSearchTool(
@@ -664,6 +656,36 @@ public static partial class GuardCommand
                 BlockReason = "No role set"
             });
             WriteAccessDeniedError(agent.Name, null);
+            return ExitCodes.ToolError;
+        }
+        return null;
+    }
+
+    private static int? RequireWriteIdentity(
+        AgentState? agent, string? filePath, string? toolName,
+        IAuditService auditService, string? sessionId, IAgentRegistry registry)
+    {
+        if (agent == null)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
+                BlockReason = "No agent identity"
+            });
+            Console.Error.WriteLine("BLOCKED: No agent identity assigned to this process.");
+            Console.Error.WriteLine("  Run 'dydo agent claim auto' to claim an agent identity.");
+            return ExitCodes.ToolError;
+        }
+        if (string.IsNullOrEmpty(agent.Role))
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
+                BlockReason = "No role set"
+            });
+            Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
+            Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
+            Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
             return ExitCodes.ToolError;
         }
         return null;

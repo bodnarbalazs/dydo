@@ -337,6 +337,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
     }
 
+    private static int CheckCommandSeparator(string command, int i)
+    {
+        var c = command[i];
+        if (c == ';' || c == '\n')
+            return 1;
+        if (c == '&' && i + 1 < command.Length && command[i + 1] == '&')
+            return 2;
+        if (c == '|' && i + 1 < command.Length && command[i + 1] == '|')
+            return 2;
+        return 0;
+    }
+
     private static IEnumerable<string> SplitCommand(string command)
     {
         var parts = new List<string>();
@@ -379,40 +391,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
             if (!inSingleQuote && !inDoubleQuote)
             {
-                if (c == ';' || c == '\n')
+                var sepLen = CheckCommandSeparator(command, i);
+                if (sepLen > 0)
                 {
                     if (current.Length > 0)
                     {
                         parts.Add(current.ToString());
                         current.Clear();
                     }
+                    i += sepLen - 1;
                     continue;
                 }
-
-                if (c == '&' && i + 1 < command.Length && command[i + 1] == '&')
-                {
-                    if (current.Length > 0)
-                    {
-                        parts.Add(current.ToString());
-                        current.Clear();
-                    }
-                    i++; // Skip second &
-                    continue;
-                }
-
-                if (c == '|' && i + 1 < command.Length && command[i + 1] == '|')
-                {
-                    if (current.Length > 0)
-                    {
-                        parts.Add(current.ToString());
-                        current.Clear();
-                    }
-                    i++; // Skip second |
-                    continue;
-                }
-
-                // Single & (background) - still part of this command but note it
-                // Single | (pipe) - keep as part of command, will analyze for redirections
             }
 
             current.Append(c);
@@ -657,38 +646,36 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return false;
     }
 
+    private static bool IsNotPathPrefix(string value)
+    {
+        if (value.StartsWith('-') || value.StartsWith("&") || value.StartsWith("2>"))
+            return true;
+        if (int.TryParse(value, out _))
+            return true;
+        if (value.StartsWith("-") && value.Contains(":"))
+            return true;
+        return false;
+    }
+
+    private static bool HasPathIndicators(string value)
+    {
+        return value.Contains('/') || value.Contains('\\') || (value.Contains('.') && !value.StartsWith("."));
+    }
+
     private static bool LooksLikePath(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return false;
 
-        if (value.StartsWith('-') || value.StartsWith("&") || value.StartsWith("2>"))
+        if (IsNotPathPrefix(value))
             return false;
 
-        if (int.TryParse(value, out _))
-            return false;
-
-        if (value.StartsWith("-") && value.Contains(":"))
-            return false;
-
-        if (value.Contains('/') || value.Contains('\\') || (value.Contains('.') && !value.StartsWith(".")))
+        if (HasPathIndicators(value) || HasKnownExtension(value) || HasSensitiveName(value))
             return true;
 
-        if (HasKnownExtension(value))
-            return true;
-
-        if (HasSensitiveName(value))
-            return true;
-
-        if (value.AsSpan().IndexOfAny("[]{}") >= 0)
+        if (value.AsSpan().IndexOfAny("[]{}") >= 0 || IsDigitColonPattern(value))
             return false;
 
-        if (IsDigitColonPattern(value))
-            return false;
-
-        if (!value.Contains(' ') && value.Length < 100)
-            return true;
-
-        return false;
+        return !value.Contains(' ') && value.Length < 100;
     }
 }

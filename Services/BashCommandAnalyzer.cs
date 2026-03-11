@@ -319,35 +319,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return (false, null);
     }
 
+    private static readonly (Func<string, bool> Check, string Warning)[] BypassChecks =
+    [
+        (cmd => CommandSubstitutionRegex().IsMatch(cmd), "Command contains command substitution - paths may be dynamic"),
+        (cmd => Base64DecodeRegex().IsMatch(cmd), "Command contains base64 decode - potential obfuscation"),
+        (cmd => HexDecodeRegex().IsMatch(cmd), "Command contains hex decode - potential obfuscation"),
+        (cmd => VariableExpansionRegex().IsMatch(cmd), "Command contains variable expansion - paths may be dynamic"),
+        (cmd => cmd.Contains('\n') || cmd.Contains("$'\\n'") || cmd.Contains("%0a"), "Command contains embedded newlines"),
+    ];
+
     private static void CheckBypassAttempts(string command, BashAnalysisResult result)
     {
-        // Check for command substitution
-        if (CommandSubstitutionRegex().IsMatch(command))
+        foreach (var (check, warning) in BypassChecks)
         {
-            result.Warnings.Add("Command contains command substitution - paths may be dynamic");
-        }
-
-        // Check for base64/hex encoding (potential obfuscation)
-        if (Base64DecodeRegex().IsMatch(command))
-        {
-            result.Warnings.Add("Command contains base64 decode - potential obfuscation");
-        }
-
-        if (HexDecodeRegex().IsMatch(command))
-        {
-            result.Warnings.Add("Command contains hex decode - potential obfuscation");
-        }
-
-        // Check for variable expansion
-        if (VariableExpansionRegex().IsMatch(command))
-        {
-            result.Warnings.Add("Command contains variable expansion - paths may be dynamic");
-        }
-
-        // Check for newline injection
-        if (command.Contains('\n') || command.Contains("$'\\n'") || command.Contains("%0a"))
-        {
-            result.Warnings.Add("Command contains embedded newlines");
+            if (check(command))
+                result.Warnings.Add(warning);
         }
     }
 
@@ -503,75 +489,36 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Check redirection operators (applies to all commands)
         AnalyzeRedirection(command, result);
 
-        // Check known commands
-        if (ReadCommands.TryGetValue(cmdName, out var readType))
+        // Check all known command dictionaries with single unified lookup
+        if (AllCommands.TryGetValue(cmdName, out var opType))
         {
-            var paths = ExtractPaths(tokens.Skip(1));
-            foreach (var path in paths)
-            {
-                result.Operations.Add(new FileOperation
-                {
-                    Type = readType,
-                    Path = path,
-                    Command = cmdName
-                });
-            }
+            AddPathOperations(result, tokens.Skip(1), opType, cmdName);
         }
+    }
 
-        if (WriteCommands.TryGetValue(cmdName, out var writeType))
-        {
-            var paths = ExtractPaths(tokens.Skip(1));
-            foreach (var path in paths)
-            {
-                result.Operations.Add(new FileOperation
-                {
-                    Type = writeType,
-                    Path = path,
-                    Command = cmdName
-                });
-            }
-        }
+    private static readonly Dictionary<string, FileOperationType> AllCommands = BuildAllCommands();
 
-        if (DeleteCommands.TryGetValue(cmdName, out var deleteType))
-        {
-            var paths = ExtractPaths(tokens.Skip(1));
-            foreach (var path in paths)
-            {
-                result.Operations.Add(new FileOperation
-                {
-                    Type = deleteType,
-                    Path = path,
-                    Command = cmdName
-                });
-            }
-        }
+    private static Dictionary<string, FileOperationType> BuildAllCommands()
+    {
+        var all = new Dictionary<string, FileOperationType>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (k, v) in ReadCommands) all.TryAdd(k, v);
+        foreach (var (k, v) in WriteCommands) all.TryAdd(k, v);
+        foreach (var (k, v) in DeleteCommands) all.TryAdd(k, v);
+        foreach (var (k, v) in PermissionCommands) all.TryAdd(k, v);
+        foreach (var (k, v) in CopyMoveCommands) all.TryAdd(k, v);
+        return all;
+    }
 
-        if (PermissionCommands.TryGetValue(cmdName, out var permType))
+    private static void AddPathOperations(BashAnalysisResult result, IEnumerable<string> tokens, FileOperationType type, string cmdName)
+    {
+        foreach (var path in ExtractPaths(tokens))
         {
-            var paths = ExtractPaths(tokens.Skip(1));
-            foreach (var path in paths)
+            result.Operations.Add(new FileOperation
             {
-                result.Operations.Add(new FileOperation
-                {
-                    Type = permType,
-                    Path = path,
-                    Command = cmdName
-                });
-            }
-        }
-
-        if (CopyMoveCommands.TryGetValue(cmdName, out var copyMoveType))
-        {
-            var paths = ExtractPaths(tokens.Skip(1));
-            foreach (var path in paths)
-            {
-                result.Operations.Add(new FileOperation
-                {
-                    Type = copyMoveType,
-                    Path = path,
-                    Command = cmdName
-                });
-            }
+                Type = type,
+                Path = path,
+                Command = cmdName
+            });
         }
     }
 
@@ -678,46 +625,57 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return token is "|" or ">" or ">>" or "<" or "<<" or "&&" or "||" or ";" or "&" or "2>" or "2>>" or "&>" or "|&";
     }
 
+    private static readonly HashSet<string> KnownExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".txt", ".json", ".yaml", ".yml", ".xml", ".md", ".env", ".sh", ".ps1", ".py", ".cs", ".js", ".ts" };
+
+    private static readonly HashSet<string> SensitiveNames = new(StringComparer.OrdinalIgnoreCase)
+        { ".env", ".npmrc", ".pypirc", "secrets", "credentials", "config", "passwd", "shadow" };
+
+    private static bool HasKnownExtension(string value)
+    {
+        var dot = value.LastIndexOf('.');
+        return dot >= 0 && KnownExtensions.Contains(value[dot..]);
+    }
+
+    private static bool HasSensitiveName(string value)
+    {
+        foreach (var name in SensitiveNames)
+        {
+            if (value.Contains(name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
     private static bool LooksLikePath(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return false;
 
-        // Skip flags and shell operators
         if (value.StartsWith('-') || value.StartsWith("&") || value.StartsWith("2>"))
             return false;
 
-        // Skip numbers (file descriptors)
         if (int.TryParse(value, out _))
             return false;
 
-        // Skip PowerShell parameters
         if (value.StartsWith("-") && value.Contains(":"))
             return false;
 
-        // Has path separators or file extension - likely a path
         if (value.Contains('/') || value.Contains('\\') || (value.Contains('.') && !value.StartsWith(".")))
             return true;
 
-        // Known extensions
-        var extensions = new[] { ".txt", ".json", ".yaml", ".yml", ".xml", ".md", ".env", ".sh", ".ps1", ".py", ".cs", ".js", ".ts" };
-        if (extensions.Any(ext => value.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+        if (HasKnownExtension(value))
             return true;
 
-        // Common sensitive filenames
-        var sensitiveNames = new[] { ".env", ".npmrc", ".pypirc", "secrets", "credentials", "config", "passwd", "shadow" };
-        if (sensitiveNames.Any(n => value.Contains(n, StringComparison.OrdinalIgnoreCase)))
+        if (HasSensitiveName(value))
             return true;
 
-        // Skip tokens that look like code expressions (array slicing, indexing, etc.)
         if (value.Contains('[') || value.Contains(']') || value.Contains('{') || value.Contains('}'))
             return false;
 
-        // Skip tokens that are just digits with colons (Python slicing: 0:, :20, etc.)
         if (Regex.IsMatch(value, @"^\d*:\d*$"))
             return false;
 
-        // Single word without special chars could be a filename
         if (!value.Contains(' ') && value.Length < 100)
             return true;
 

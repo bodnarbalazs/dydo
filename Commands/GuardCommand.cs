@@ -137,45 +137,8 @@ public static partial class GuardCommand
         // ============================================================
         if (!string.IsNullOrEmpty(filePath))
         {
-            // Get agent early for staged access checks
-            var agentForOffLimits = registry.GetCurrentAgent(sessionId);
-
-            // Check if this read bypasses off-limits due to staged access
-            var bypassOffLimits = false;
-            if (action == "read")
-            {
-                // Bootstrap files always bypass off-limits (Stage 0+)
-                if (IsBootstrapFile(filePath))
-                    bypassOffLimits = true;
-                // Mode files for own agent bypass off-limits (Stage 1+)
-                else if (agentForOffLimits != null && IsModeFile(filePath, agentForOffLimits.Name))
-                    bypassOffLimits = true;
-                // With a role set, all mode files bypass off-limits (Stage 2)
-                else if (agentForOffLimits != null && !string.IsNullOrEmpty(agentForOffLimits.Role) && IsAnyModeFile(filePath))
-                    bypassOffLimits = true;
-            }
-
-            if (!bypassOffLimits)
-            {
-                var offLimitsPattern = offLimitsService.IsPathOffLimits(filePath);
-                if (offLimitsPattern != null)
-                {
-                    // Log blocked event
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked,
-                        Path = filePath,
-                        Tool = toolName,
-                        BlockReason = $"Off-limits: {offLimitsPattern}"
-                    });
-
-                    Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-                    Console.Error.WriteLine($"  Path: {filePath}");
-                    Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                    Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
-                    return ExitCodes.ToolError;
-                }
-            }
+            var blocked = CheckDirectFileOffLimits(filePath, action, toolName, sessionId, offLimitsService, registry, auditService);
+            if (blocked != null) return blocked.Value;
         }
 
         // ============================================================
@@ -195,113 +158,7 @@ public static partial class GuardCommand
         // ============================================================
         if (toolName is "glob" or "grep" or "agent")
         {
-            var searchAgent = registry.GetCurrentAgent(sessionId);
-            if (searchAgent == null || string.IsNullOrEmpty(searchAgent.Role))
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Path = searchPath,
-                    Tool = toolName,
-                    BlockReason = searchAgent == null ? "No agent identity" : "No role set"
-                });
-
-                Console.Error.WriteLine("BLOCKED: Read access denied.");
-                if (searchAgent == null)
-                {
-                    Console.Error.WriteLine("  No agent identity assigned to this process.");
-                    Console.Error.WriteLine("  Read your workflow.md to learn how to onboard:");
-                    Console.Error.WriteLine("    dydo/agents/*/workflow.md");
-                    Console.Error.WriteLine("  Then run: dydo agent claim auto");
-                }
-                else
-                {
-                    Console.Error.WriteLine($"  Agent {searchAgent.Name} has no role set.");
-                    Console.Error.WriteLine("  Read your mode files to understand available roles:");
-                    Console.Error.WriteLine($"    dydo/agents/{searchAgent.Name}/modes/*.md");
-                    Console.Error.WriteLine("  Then run: dydo agent role <role>");
-                }
-                return ExitCodes.ToolError;
-            }
-
-            // Check unread messages
-            if (searchAgent.UnreadMessages.Count > 0)
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Path = searchPath,
-                    Tool = toolName,
-                    BlockReason = "Unread messages"
-                });
-
-                Console.Error.WriteLine($"NOTICE: You have {searchAgent.UnreadMessages.Count} unread message(s).");
-                foreach (var msgId in searchAgent.UnreadMessages)
-                {
-                    var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(searchAgent.Name), msgId);
-                    if (msgInfo != null)
-                        Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
-                }
-                Console.Error.WriteLine();
-                Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
-                Console.Error.WriteLine("  Read your message(s) to continue:");
-                Console.Error.WriteLine("    1. Run: dydo inbox show");
-                Console.Error.WriteLine("    2. Read the message file(s) shown");
-                Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
-                Console.Error.WriteLine();
-                Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
-                return ExitCodes.ToolError;
-            }
-
-            // Pending-state enforcement for search tools
-            {
-                var pendingMarkers = SelfHealAndGetPendingMarkers(registry, searchAgent.Name);
-                if (pendingMarkers.Count > 0)
-                {
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked,
-                        Path = searchPath,
-                        Tool = toolName,
-                        BlockReason = "Pending wait markers"
-                    });
-
-                    WritePendingStateBlock(pendingMarkers);
-                    return ExitCodes.ToolError;
-                }
-            }
-
-            // Check off-limits on the search directory if provided
-            if (!string.IsNullOrEmpty(searchPath))
-            {
-                var offLimitsPattern = offLimitsService.IsPathOffLimits(searchPath);
-                if (offLimitsPattern != null)
-                {
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked,
-                        Path = searchPath,
-                        Tool = toolName,
-                        BlockReason = $"Off-limits: {offLimitsPattern}"
-                    });
-
-                    Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-                    Console.Error.WriteLine($"  Path: {searchPath}");
-                    Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                    Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
-                    return ExitCodes.ToolError;
-                }
-            }
-
-            // Log allowed search
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Read,
-                Path = searchPath,
-                Tool = toolName
-            });
-
-            return ExitCodes.Success;
+            return HandleSearchTool(searchPath, toolName, sessionId, offLimitsService, registry, auditService);
         }
 
         // ============================================================
@@ -314,212 +171,84 @@ public static partial class GuardCommand
         // For Read operations, apply staged access control
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
         {
-            if (!IsReadAllowed(filePath, agent))
-            {
-                // Log blocked read
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Path = filePath,
-                    Tool = toolName,
-                    BlockReason = agent == null ? "No agent identity" : "No role set"
-                });
-
-                Console.Error.WriteLine("BLOCKED: Read access denied.");
-                if (agent == null)
-                {
-                    Console.Error.WriteLine("  No agent identity assigned to this process.");
-                    Console.Error.WriteLine("  Read your workflow.md to learn how to onboard:");
-                    Console.Error.WriteLine("    dydo/agents/*/workflow.md");
-                    Console.Error.WriteLine("  Then run: dydo agent claim auto");
-                }
-                else if (string.IsNullOrEmpty(agent.Role))
-                {
-                    Console.Error.WriteLine($"  Agent {agent.Name} has no role set.");
-                    Console.Error.WriteLine("  Read your mode files to understand available roles:");
-                    Console.Error.WriteLine($"    dydo/agents/{agent.Name}/modes/*.md");
-                    Console.Error.WriteLine("  Then run: dydo agent role <role>");
-                }
-                return ExitCodes.ToolError;
-            }
-
-            // Pending-state enforcement for Read tool
-            if (agent != null)
-            {
-                var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-                if (pendingMarkers.Count > 0)
-                {
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked,
-                        Path = filePath,
-                        Tool = toolName,
-                        BlockReason = "Pending wait markers"
-                    });
-
-                    WritePendingStateBlock(pendingMarkers);
-                    return ExitCodes.ToolError;
-                }
-            }
-
-            // Log allowed read
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Read,
-                Path = filePath,
-                Tool = toolName
-            });
-
-            // Track must-read completion
-            if (agent != null && agent.UnreadMustReads.Count > 0 && !string.IsNullOrEmpty(filePath))
-            {
-                var relPath = NormalizeForMustReadComparison(filePath);
-                if (agent.UnreadMustReads.Any(p => p.Equals(relPath, StringComparison.OrdinalIgnoreCase)))
-                {
-                    registry.MarkMustReadComplete(sessionId, relPath);
-                }
-            }
-
-            // Track message reads (clear notification)
-            if (agent != null && agent.UnreadMessages.Count > 0 && !string.IsNullOrEmpty(filePath))
-            {
-                var messageId = ExtractMessageIdFromPath(filePath);
-                if (messageId != null && agent.UnreadMessages.Contains(messageId))
-                {
-                    registry.MarkMessageRead(sessionId, messageId);
-                }
-            }
-
-            return ExitCodes.Success;
+            return HandleReadOperation(filePath, toolName, agent, sessionId, registry, auditService);
         }
 
-        // For write/edit operations, check role permissions
+        // For write/edit operations
+        return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry, auditService);
+    }
+
+    private static int HandleWriteOperation(
+        string? filePath, string? action, string? toolName, AgentState? agent,
+        string? sessionId, AgentRegistry registry, IAuditService auditService)
+    {
         if (string.IsNullOrEmpty(filePath))
-        {
-            // No file path to check - allow (might be a non-file operation)
             return ExitCodes.Success;
-        }
 
-        // Check if there's an agent claimed (required for writes)
         if (agent == null)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                EventType = AuditEventType.Blocked,
-                Path = filePath,
-                Tool = toolName,
+                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
                 BlockReason = "No agent identity"
             });
-
             Console.Error.WriteLine("BLOCKED: No agent identity assigned to this process.");
             Console.Error.WriteLine("  Run 'dydo agent claim auto' to claim an agent identity.");
             return ExitCodes.ToolError;
         }
 
-        // Check if agent has a role (required for writes)
         if (string.IsNullOrEmpty(agent.Role))
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                EventType = AuditEventType.Blocked,
-                Path = filePath,
-                Tool = toolName,
+                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
                 BlockReason = "No role set"
             });
-
             Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
             Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
             Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
             return ExitCodes.ToolError;
         }
 
-        // Check for unread messages (notify agent)
+        // Check unread messages
         agent = registry.GetCurrentAgent(sessionId);
-        if (agent != null && agent.UnreadMessages.Count > 0)
-        {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked,
-                Path = filePath,
-                Tool = toolName,
-                BlockReason = "Unread messages"
-            });
-
-            Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
-            foreach (var msgId in agent.UnreadMessages)
-            {
-                var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
-                if (msgInfo != null)
-                    Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
-            }
-            Console.Error.WriteLine();
-            Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
-            Console.Error.WriteLine("  Read your message(s) to continue:");
-            Console.Error.WriteLine("    1. Run: dydo inbox show");
-            Console.Error.WriteLine("    2. Read the message file(s) shown");
-            Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
-            Console.Error.WriteLine();
-            Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
-            return ExitCodes.ToolError;
-        }
-
-        // Pending-state enforcement for Read/Write/Edit tools
         if (agent != null)
         {
-            var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-            if (pendingMarkers.Count > 0)
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Path = filePath,
-                    Tool = toolName,
-                    BlockReason = "Pending wait markers"
-                });
+            var blocked = NotifyUnreadMessages(agent, filePath, toolName, null, auditService, sessionId, registry);
+            if (blocked != null) return blocked.Value;
 
-                WritePendingStateBlock(pendingMarkers);
-                return ExitCodes.ToolError;
-            }
+            blocked = CheckPendingState(agent, filePath, toolName, null, auditService, sessionId, registry);
+            if (blocked != null) return blocked.Value;
         }
 
-        // Check must-read enforcement (re-fetch state after potential read tracking)
+        // Check must-read enforcement
         agent = registry.GetCurrentAgent(sessionId);
         if (agent != null && agent.UnreadMustReads.Count > 0)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                EventType = AuditEventType.Blocked,
-                Path = filePath,
-                Tool = toolName,
+                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
                 BlockReason = "Must-read files not yet read"
             });
-
-            Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
-            foreach (var unread in agent.UnreadMustReads)
-                Console.Error.WriteLine($"  - {unread}");
-            Console.Error.WriteLine("Read these files before performing other operations.");
+            WriteMustReadError(agent);
             return ExitCodes.ToolError;
         }
 
-        // Check role permissions for write operations
+        // Check role permissions
         if (action is "write" or "edit" or "delete")
         {
             if (!registry.IsPathAllowed(sessionId, filePath, action, out var error))
             {
                 LogAuditEvent(auditService, sessionId, registry, new AuditEvent
                 {
-                    EventType = AuditEventType.Blocked,
-                    Path = filePath,
-                    Tool = toolName,
+                    EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
                     BlockReason = error
                 });
-
                 Console.Error.WriteLine($"BLOCKED: {error}");
                 return ExitCodes.ToolError;
             }
         }
 
-        // Log allowed write/edit/delete
         var eventType = action switch
         {
             "write" => AuditEventType.Write,
@@ -529,12 +258,129 @@ public static partial class GuardCommand
         };
         LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
-            EventType = eventType,
-            Path = filePath,
-            Tool = toolName
+            EventType = eventType, Path = filePath, Tool = toolName
         });
 
-        // ALLOWED
+        return ExitCodes.Success;
+    }
+
+    private static int? CheckDirectFileOffLimits(
+        string filePath, string? action, string? toolName, string? sessionId,
+        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+    {
+        var agentForOffLimits = registry.GetCurrentAgent(sessionId);
+
+        if (action == "read" && ShouldBypassOffLimits(filePath, agentForOffLimits))
+            return null;
+
+        var offLimitsPattern = offLimitsService.IsPathOffLimits(filePath);
+        if (offLimitsPattern == null)
+            return null;
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
+            BlockReason = $"Off-limits: {offLimitsPattern}"
+        });
+        Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
+        Console.Error.WriteLine($"  Path: {filePath}");
+        Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+        Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+        return ExitCodes.ToolError;
+    }
+
+    private static bool ShouldBypassOffLimits(string filePath, AgentState? agent)
+    {
+        if (IsBootstrapFile(filePath))
+            return true;
+        if (agent != null && IsModeFile(filePath, agent.Name))
+            return true;
+        if (agent != null && !string.IsNullOrEmpty(agent.Role) && IsAnyModeFile(filePath))
+            return true;
+        return false;
+    }
+
+    private static int HandleReadOperation(
+        string? filePath, string? toolName, AgentState? agent, string? sessionId,
+        AgentRegistry registry, IAuditService auditService)
+    {
+        if (!IsReadAllowed(filePath, agent))
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
+                BlockReason = agent == null ? "No agent identity" : "No role set"
+            });
+            WriteAccessDeniedError(agent?.Name, null);
+            return ExitCodes.ToolError;
+        }
+
+        if (agent != null)
+        {
+            var blocked = CheckPendingState(agent, filePath, toolName, null, auditService, sessionId, registry);
+            if (blocked != null) return blocked.Value;
+        }
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Read, Path = filePath, Tool = toolName
+        });
+
+        // Track must-read completion
+        if (agent != null && agent.UnreadMustReads.Count > 0 && !string.IsNullOrEmpty(filePath))
+        {
+            var relPath = NormalizeForMustReadComparison(filePath);
+            if (agent.UnreadMustReads.Any(p => p.Equals(relPath, StringComparison.OrdinalIgnoreCase)))
+                registry.MarkMustReadComplete(sessionId, relPath);
+        }
+
+        // Track message reads
+        if (agent != null && agent.UnreadMessages.Count > 0 && !string.IsNullOrEmpty(filePath))
+        {
+            var messageId = ExtractMessageIdFromPath(filePath);
+            if (messageId != null && agent.UnreadMessages.Contains(messageId))
+                registry.MarkMessageRead(sessionId, messageId);
+        }
+
+        return ExitCodes.Success;
+    }
+
+    private static int HandleSearchTool(
+        string? searchPath, string? toolName, string? sessionId,
+        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+    {
+        var searchAgent = registry.GetCurrentAgent(sessionId);
+        var blocked = RequireIdentityAndRole(searchAgent, searchPath, toolName, auditService, sessionId, registry);
+        if (blocked != null) return blocked.Value;
+
+        blocked = NotifyUnreadMessages(searchAgent!, searchPath, toolName, null, auditService, sessionId, registry);
+        if (blocked != null) return blocked.Value;
+
+        blocked = CheckPendingState(searchAgent!, searchPath, toolName, null, auditService, sessionId, registry);
+        if (blocked != null) return blocked.Value;
+
+        if (!string.IsNullOrEmpty(searchPath))
+        {
+            var offLimitsPattern = offLimitsService.IsPathOffLimits(searchPath);
+            if (offLimitsPattern != null)
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked, Path = searchPath, Tool = toolName,
+                    BlockReason = $"Off-limits: {offLimitsPattern}"
+                });
+                Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
+                Console.Error.WriteLine($"  Path: {searchPath}");
+                Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+                Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+                return ExitCodes.ToolError;
+            }
+        }
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Read, Path = searchPath, Tool = toolName
+        });
         return ExitCodes.Success;
     }
 
@@ -550,204 +396,133 @@ public static partial class GuardCommand
         IAuditService auditService,
         bool? runInBackground = null)
     {
-        // ============================================================
         // Block indirect dydo invocations (npx dydo, dotnet dydo)
-        // ============================================================
-        var (isIndirect, invoker, dydoArgs) = CheckIndirectDydoInvocation(command);
-        if (isIndirect)
-        {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked,
-                Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = $"Indirect dydo invocation via {invoker}"
-            });
+        var blocked = CheckIndirectDydoBlock(command, sessionId, registry, auditService);
+        if (blocked != null) return blocked.Value;
 
-            var correctedCommand = string.IsNullOrEmpty(dydoArgs) ? "dydo" : $"dydo {dydoArgs}";
-
-            if (IsDydoOnPath())
-            {
-                Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH.");
-                Console.Error.WriteLine($"  Just use: {correctedCommand}");
-            }
-            else
-            {
-                Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — dydo is not on your PATH.");
-                Console.Error.WriteLine($"  Add it to your PATH, then use: {correctedCommand}");
-            }
-
-            return ExitCodes.ToolError;
-        }
-
-        // ============================================================
-        // Handle dydo commands - store session context for subprocess
-        // ============================================================
+        // Handle dydo commands
         if (IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId))
-        {
-            // Store session context so dydo subcommands can identify the session
-            registry.StoreSessionContext(sessionId);
+            return HandleDydoBashCommand(command, sessionId, registry, auditService, runInBackground);
 
-            // Special handling for claim commands - also store pending session
-            var (isClaim, agentName) = ParseClaimCommand(command);
-            if (isClaim && !string.IsNullOrEmpty(agentName))
-            {
-                // Resolve "auto" to actual agent name
-                if (agentName.Equals("auto", StringComparison.OrdinalIgnoreCase))
-                {
-                    var human = registry.GetCurrentHuman();
-                    if (!string.IsNullOrEmpty(human))
-                    {
-                        var freeAgents = registry.GetFreeAgentsForHuman(human);
-                        if (freeAgents.Count > 0)
-                            agentName = freeAgents[0].Name;
-                        else
-                        {
-                            // No free agents - let claim command report proper error
-                            return ExitCodes.Success;
-                        }
-                    }
-                }
-                // Resolve single letter to agent name (e.g., "A" -> "Adele")
-                else if (agentName.Length == 1 && char.IsLetter(agentName[0]))
-                {
-                    var resolved = registry.GetAgentNameFromLetter(agentName[0]);
-                    if (resolved != null)
-                        agentName = resolved;
-                }
-
-                if (registry.IsValidAgentName(agentName))
-                    registry.StorePendingSessionId(agentName, sessionId);
-            }
-
-            // Block 'dydo wait' in foreground — must run in background to avoid blocking
-            if (IsDydoWaitCommand(command) && runInBackground != true)
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Tool = "bash",
-                    Command = TruncateCommand(command),
-                    BlockReason = "dydo wait in foreground"
-                });
-
-                Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work.");
-                return ExitCodes.ToolError;
-            }
-
-            // Pending-state enforcement: only allow dispatch/wait during pending state
-            if (!IsDydoDispatchCommand(command) && !IsDydoWaitAnyForm(command))
-            {
-                var agent = registry.GetCurrentAgent(sessionId);
-                if (agent != null)
-                {
-                    var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-                    if (pendingMarkers.Count > 0)
-                    {
-                        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                        {
-                            EventType = AuditEventType.Blocked,
-                            Tool = "bash",
-                            Command = TruncateCommand(command),
-                            BlockReason = "Pending wait markers"
-                        });
-
-                        WritePendingStateBlock(pendingMarkers);
-                        return ExitCodes.ToolError;
-                    }
-                }
-            }
-
-            // Allow the dydo command to proceed
-            return ExitCodes.Success;
-        }
-
-        // ============================================================
         // COACHING: Block needless cd+command compounds
-        // ============================================================
         var (isCdChain, cdPath, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
         if (isCdChain)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                EventType = AuditEventType.Blocked,
-                Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = "Needless cd compound"
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command), BlockReason = "Needless cd compound"
             });
-
             Console.Error.WriteLine("BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.");
             Console.Error.WriteLine($"  If you need to change directory, run cd separately first.");
             Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
             return ExitCodes.ToolError;
         }
 
-        // ============================================================
-        // Check unread messages for non-dydo bash commands
-        // ============================================================
-        {
-            var agent = registry.GetCurrentAgent(sessionId);
-            if (agent != null && agent.UnreadMessages.Count > 0)
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Tool = "bash",
-                    Command = TruncateCommand(command),
-                    BlockReason = "Unread messages"
-                });
+        // Non-dydo bash: check agent state, then analyze command
+        return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+    }
 
-                Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
-                foreach (var msgId in agent.UnreadMessages)
-                {
-                    var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
-                    if (msgInfo != null)
-                        Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
-                }
-                Console.Error.WriteLine();
-                Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
-                Console.Error.WriteLine("  Read your message(s) to continue:");
-                Console.Error.WriteLine("    1. Run: dydo inbox show");
-                Console.Error.WriteLine("    2. Read the message file(s) shown");
-                Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
-                Console.Error.WriteLine();
-                Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
-                return ExitCodes.ToolError;
-            }
+    private static int? CheckIndirectDydoBlock(string command, string? sessionId, AgentRegistry registry, IAuditService auditService)
+    {
+        var (isIndirect, invoker, dydoArgs) = CheckIndirectDydoInvocation(command);
+        if (!isIndirect) return null;
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Blocked, Tool = "bash",
+            Command = TruncateCommand(command), BlockReason = $"Indirect dydo invocation via {invoker}"
+        });
+
+        var correctedCommand = string.IsNullOrEmpty(dydoArgs) ? "dydo" : $"dydo {dydoArgs}";
+        if (IsDydoOnPath())
+        {
+            Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH.");
+            Console.Error.WriteLine($"  Just use: {correctedCommand}");
+        }
+        else
+        {
+            Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — dydo is not on your PATH.");
+            Console.Error.WriteLine($"  Add it to your PATH, then use: {correctedCommand}");
+        }
+        return ExitCodes.ToolError;
+    }
+
+    private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, IAuditService auditService, bool? runInBackground)
+    {
+        registry.StoreSessionContext(sessionId);
+
+        HandleClaimSessionStorage(command, sessionId, registry);
+
+        if (IsDydoWaitCommand(command) && runInBackground != true)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command), BlockReason = "dydo wait in foreground"
+            });
+            Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work.");
+            return ExitCodes.ToolError;
         }
 
-        // ============================================================
-        // Pending-state enforcement for non-dydo bash commands
-        // ============================================================
+        if (!IsDydoDispatchCommand(command) && !IsDydoWaitAnyForm(command))
         {
             var agent = registry.GetCurrentAgent(sessionId);
             if (agent != null)
             {
-                var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-                if (pendingMarkers.Count > 0)
-                {
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked,
-                        Tool = "bash",
-                        Command = TruncateCommand(command),
-                        BlockReason = "Pending wait markers"
-                    });
-
-                    WritePendingStateBlock(pendingMarkers);
-                    return ExitCodes.ToolError;
-                }
+                var blocked = CheckPendingState(agent, null, "bash", TruncateCommand(command), auditService, sessionId, registry);
+                if (blocked != null) return blocked.Value;
             }
         }
 
-        // ============================================================
-        // Check must-read enforcement for non-dydo bash commands
-        // ============================================================
+        return ExitCodes.Success;
+    }
+
+    private static void HandleClaimSessionStorage(string command, string sessionId, AgentRegistry registry)
+    {
+        var (isClaim, agentName) = ParseClaimCommand(command);
+        if (!isClaim || string.IsNullOrEmpty(agentName)) return;
+
+        if (agentName.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {
-            var agent = registry.GetCurrentAgent(sessionId);
-            if (agent != null && agent.UnreadMustReads.Count > 0)
+            var human = registry.GetCurrentHuman();
+            if (!string.IsNullOrEmpty(human))
             {
-                // Check if the command has any write-like operations
+                var freeAgents = registry.GetFreeAgentsForHuman(human);
+                if (freeAgents.Count > 0)
+                    agentName = freeAgents[0].Name;
+                else
+                    return;
+            }
+        }
+        else if (agentName.Length == 1 && char.IsLetter(agentName[0]))
+        {
+            var resolved = registry.GetAgentNameFromLetter(agentName[0]);
+            if (resolved != null)
+                agentName = resolved;
+        }
+
+        if (registry.IsValidAgentName(agentName))
+            registry.StorePendingSessionId(agentName, sessionId);
+    }
+
+    private static int HandleNonDydoBash(
+        string command, string? sessionId,
+        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        AgentRegistry registry, IAuditService auditService)
+    {
+        var agent = registry.GetCurrentAgent(sessionId);
+        if (agent != null)
+        {
+            var blocked = NotifyUnreadMessages(agent, null, "bash", command, auditService, sessionId, registry);
+            if (blocked != null) return blocked.Value;
+
+            blocked = CheckPendingState(agent, null, "bash", command, auditService, sessionId, registry);
+            if (blocked != null) return blocked.Value;
+
+            // Must-read enforcement for write-like operations
+            if (agent.UnreadMustReads.Count > 0)
+            {
                 var preAnalysis = bashAnalyzer.Analyze(command);
                 var hasWriteOps = preAnalysis.Operations.Any(op =>
                     op.Type is FileOperationType.Write or FileOperationType.Delete
@@ -758,132 +533,224 @@ public static partial class GuardCommand
                 {
                     LogAuditEvent(auditService, sessionId, registry, new AuditEvent
                     {
-                        EventType = AuditEventType.Blocked,
-                        Tool = "bash",
-                        Command = TruncateCommand(command),
-                        BlockReason = "Must-read files not yet read"
+                        EventType = AuditEventType.Blocked, Tool = "bash",
+                        Command = TruncateCommand(command), BlockReason = "Must-read files not yet read"
                     });
-
-                    Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
-                    foreach (var unread in agent.UnreadMustReads)
-                        Console.Error.WriteLine($"  - {unread}");
-                    Console.Error.WriteLine("Read these files before performing other operations.");
+                    WriteMustReadError(agent);
                     return ExitCodes.ToolError;
                 }
             }
         }
 
-        // ============================================================
-        // Check dangerous patterns first (always block)
-        // ============================================================
+        return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+    }
+
+    private static int AnalyzeAndCheckBashOperations(
+        string command, string? sessionId,
+        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        AgentRegistry registry, IAuditService auditService)
+    {
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                EventType = AuditEventType.Blocked,
-                Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = $"Dangerous pattern: {dangerReason}"
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {dangerReason}"
             });
-
             Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
             Console.Error.WriteLine($"  Reason: {dangerReason}");
             Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
             return ExitCodes.ToolError;
         }
 
-        // ============================================================
-        // Analyze command for file operations
-        // ============================================================
         var analysis = bashAnalyzer.Analyze(command);
 
-        // Log warnings (don't block, but inform)
         foreach (var warning in analysis.Warnings)
-        {
             Console.Error.WriteLine($"WARNING: {warning}");
-        }
 
-        // If analysis found dangerous pattern (shouldn't happen, but just in case)
         if (analysis.HasDangerousPattern)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                EventType = AuditEventType.Blocked,
-                Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = $"Dangerous pattern: {analysis.DangerousPatternReason}"
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {analysis.DangerousPatternReason}"
             });
-
             Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
             Console.Error.WriteLine($"  Reason: {analysis.DangerousPatternReason}");
             return ExitCodes.ToolError;
         }
 
-        // ============================================================
-        // Check each detected operation
-        // ============================================================
         foreach (var op in analysis.Operations)
         {
-            // Check off-limits for ALL operations (read, write, delete)
-            var offLimitsPattern = offLimitsService.IsPathOffLimits(op.Path);
-            if (offLimitsPattern != null)
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked,
-                    Tool = "bash",
-                    Path = op.Path,
-                    Command = TruncateCommand(command),
-                    BlockReason = $"Off-limits: {offLimitsPattern}"
-                });
+            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService);
+            if (blocked != null) return blocked.Value;
+        }
 
-                Console.Error.WriteLine("BLOCKED: Command references off-limits path.");
-                Console.Error.WriteLine($"  Path: {op.Path}");
-                Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                Console.Error.WriteLine($"  Detected: {op.Type} via {op.Command}");
-                return ExitCodes.ToolError;
-            }
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Bash, Tool = "bash", Command = TruncateCommand(command)
+        });
+        return ExitCodes.Success;
+    }
 
-            // Check role permissions for write/delete operations
-            if (op.Type is FileOperationType.Write or FileOperationType.Delete
-                or FileOperationType.Move or FileOperationType.Copy
-                or FileOperationType.PermissionChange)
+    private static int? CheckBashFileOperation(
+        FileOperation op, string command, string? sessionId,
+        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+    {
+        var offLimitsPattern = offLimitsService.IsPathOffLimits(op.Path);
+        if (offLimitsPattern != null)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
             {
-                var agent = registry.GetCurrentAgent(sessionId);
-                if (agent != null && !string.IsNullOrEmpty(agent.Role))
+                EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
+                Command = TruncateCommand(command), BlockReason = $"Off-limits: {offLimitsPattern}"
+            });
+            Console.Error.WriteLine("BLOCKED: Command references off-limits path.");
+            Console.Error.WriteLine($"  Path: {op.Path}");
+            Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+            Console.Error.WriteLine($"  Detected: {op.Type} via {op.Command}");
+            return ExitCodes.ToolError;
+        }
+
+        if (op.Type is FileOperationType.Write or FileOperationType.Delete
+            or FileOperationType.Move or FileOperationType.Copy
+            or FileOperationType.PermissionChange)
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent != null && !string.IsNullOrEmpty(agent.Role))
+            {
+                var actionName = op.Type.ToString().ToLowerInvariant();
+                if (!registry.IsPathAllowed(sessionId, op.Path, actionName, out var error))
                 {
-                    var actionName = op.Type.ToString().ToLowerInvariant();
-                    if (!registry.IsPathAllowed(sessionId, op.Path, actionName, out var error))
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
                     {
-                        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                        {
-                            EventType = AuditEventType.Blocked,
-                            Tool = "bash",
-                            Path = op.Path,
-                            Command = TruncateCommand(command),
-                            BlockReason = error
-                        });
-
-                        Console.Error.WriteLine($"BLOCKED: {error}");
-                        Console.Error.WriteLine($"  Detected {op.Type} operation on: {op.Path}");
-                        Console.Error.WriteLine($"  Via command: {op.Command}");
-                        return ExitCodes.ToolError;
-                    }
+                        EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
+                        Command = TruncateCommand(command), BlockReason = error
+                    });
+                    Console.Error.WriteLine($"BLOCKED: {error}");
+                    Console.Error.WriteLine($"  Detected {op.Type} operation on: {op.Path}");
+                    Console.Error.WriteLine($"  Via command: {op.Command}");
+                    return ExitCodes.ToolError;
                 }
             }
         }
 
-        // Log allowed bash command
+        return null;
+    }
+
+    /// <summary>
+    /// Check if agent has identity and role. Returns exit code if blocked, null if OK.
+    /// </summary>
+    private static int? RequireIdentityAndRole(
+        AgentState? agent, string? path, string? toolName,
+        IAuditService auditService, string? sessionId, IAgentRegistry registry)
+    {
+        if (agent == null)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
+                BlockReason = "No agent identity"
+            });
+            WriteAccessDeniedError(null, null);
+            return ExitCodes.ToolError;
+        }
+        if (string.IsNullOrEmpty(agent.Role))
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
+                BlockReason = "No role set"
+            });
+            WriteAccessDeniedError(agent.Name, null);
+            return ExitCodes.ToolError;
+        }
+        return null;
+    }
+
+    private static void WriteAccessDeniedError(string? agentName, string? extra)
+    {
+        Console.Error.WriteLine("BLOCKED: Read access denied.");
+        if (agentName == null)
+        {
+            Console.Error.WriteLine("  No agent identity assigned to this process.");
+            Console.Error.WriteLine("  Read your workflow.md to learn how to onboard:");
+            Console.Error.WriteLine("    dydo/agents/*/workflow.md");
+            Console.Error.WriteLine("  Then run: dydo agent claim auto");
+        }
+        else
+        {
+            Console.Error.WriteLine($"  Agent {agentName} has no role set.");
+            Console.Error.WriteLine("  Read your mode files to understand available roles:");
+            Console.Error.WriteLine($"    dydo/agents/{agentName}/modes/*.md");
+            Console.Error.WriteLine("  Then run: dydo agent role <role>");
+        }
+    }
+
+    /// <summary>
+    /// Notify about unread messages. Returns exit code if blocked, null if OK.
+    /// </summary>
+    private static int? NotifyUnreadMessages(
+        AgentState agent, string? path, string? toolName, string? command,
+        IAuditService auditService, string? sessionId, IAgentRegistry registry)
+    {
+        if (agent.UnreadMessages.Count == 0)
+            return null;
+
         LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
-            EventType = AuditEventType.Bash,
-            Tool = "bash",
-            Command = TruncateCommand(command)
+            EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
+            Command = command != null ? TruncateCommand(command) : null,
+            BlockReason = "Unread messages"
         });
 
-        // ALLOWED
-        return ExitCodes.Success;
+        Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
+        foreach (var msgId in agent.UnreadMessages)
+        {
+            var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
+            if (msgInfo != null)
+                Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
+        }
+        Console.Error.WriteLine();
+        Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
+        Console.Error.WriteLine("  Read your message(s) to continue:");
+        Console.Error.WriteLine("    1. Run: dydo inbox show");
+        Console.Error.WriteLine("    2. Read the message file(s) shown");
+        Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
+        Console.Error.WriteLine();
+        Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
+        return ExitCodes.ToolError;
+    }
+
+    /// <summary>
+    /// Check for pending wait markers. Returns exit code if blocked, null if OK.
+    /// </summary>
+    private static int? CheckPendingState(
+        AgentState agent, string? path, string? toolName, string? command,
+        IAuditService auditService, string? sessionId, AgentRegistry registry)
+    {
+        var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
+        if (pendingMarkers.Count == 0)
+            return null;
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
+            Command = command != null ? TruncateCommand(command) : null,
+            BlockReason = "Pending wait markers"
+        });
+
+        WritePendingStateBlock(pendingMarkers);
+        return ExitCodes.ToolError;
+    }
+
+    private static void WriteMustReadError(AgentState agent)
+    {
+        Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
+        foreach (var unread in agent.UnreadMustReads)
+            Console.Error.WriteLine($"  - {unread}");
+        Console.Error.WriteLine("Read these files before performing other operations.");
     }
 
     /// <summary>

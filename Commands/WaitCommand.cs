@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.Text.RegularExpressions;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -45,168 +44,83 @@ public static class WaitCommand
             return ExitCodes.ToolError;
         }
 
-        // Handle --cancel
         if (cancel)
-        {
-            if (task != null)
-            {
-                registry.RemoveWaitMarker(agent.Name, task);
-                Console.WriteLine($"Wait cancelled for task '{task}'.");
-            }
-            else
-            {
-                registry.ClearAllWaitMarkers(agent.Name);
-                Console.WriteLine("All wait markers cleared.");
-            }
-            return ExitCodes.Success;
-        }
+            return HandleCancel(registry, agent.Name, task);
 
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
 
-        if (string.IsNullOrEmpty(task))
+        return string.IsNullOrEmpty(task)
+            ? WaitGeneral(registry, agent.Name, inboxPath)
+            : WaitForTask(registry, agent.Name, inboxPath, task);
+    }
+
+    private static int HandleCancel(AgentRegistry registry, string agentName, string? task)
+    {
+        if (task != null)
         {
-            // General wait: skip messages whose subject matches an active wait marker
-            var markers = registry.GetWaitMarkers(agent.Name);
-            var claimedTasks = new HashSet<string>(
-                markers.Select(m => m.Task),
-                StringComparer.OrdinalIgnoreCase);
-
-            Console.WriteLine("Waiting for message...");
-
-            while (true)
-            {
-                var message = FindMessage(inboxPath, null, claimedTasks);
-                if (message != null)
-                {
-                    Console.WriteLine($"Message received from {message.From}:");
-                    Console.WriteLine($"  Subject: {message.Subject ?? "(none)"}");
-                    Console.WriteLine($"  Body: {message.Body}");
-                    Console.WriteLine();
-                    Console.WriteLine($"  Message file: {message.FilePath}");
-                    Console.WriteLine("  Run 'dydo inbox show' for full details.");
-                    return ExitCodes.Success;
-                }
-
-                Thread.Sleep(10_000);
-            }
+            registry.RemoveWaitMarker(agentName, task);
+            Console.WriteLine($"Wait cancelled for task '{task}'.");
         }
         else
         {
-            // Task-specific wait — mark as listening so the guard knows this wait is active
-            registry.UpdateWaitMarkerListening(agent.Name, task, Environment.ProcessId);
-
-            Console.WriteLine($"Waiting for message about '{task}'...");
-
-            while (true)
-            {
-                var message = FindMessage(inboxPath, task);
-                if (message != null)
-                {
-                    Console.WriteLine($"Message received from {message.From}:");
-                    Console.WriteLine($"  Subject: {message.Subject ?? "(none)"}");
-                    Console.WriteLine($"  Body: {message.Body}");
-                    Console.WriteLine();
-                    Console.WriteLine($"  Message file: {message.FilePath}");
-                    Console.WriteLine("  Run 'dydo inbox show' for full details.");
-
-                    // Clean up wait marker if one exists for this task
-                    registry.RemoveWaitMarker(agent.Name, task);
-
-                    return ExitCodes.Success;
-                }
-
-                Thread.Sleep(10_000);
-            }
+            registry.ClearAllWaitMarkers(agentName);
+            Console.WriteLine("All wait markers cleared.");
         }
+        return ExitCodes.Success;
     }
 
-    internal static MessageInfo? FindMessage(string inboxPath, string? taskFilter, HashSet<string>? excludeSubjects = null)
+    private static int WaitGeneral(AgentRegistry registry, string agentName, string inboxPath)
     {
-        if (!Directory.Exists(inboxPath))
-            return null;
+        var markers = registry.GetWaitMarkers(agentName);
+        var claimedTasks = new HashSet<string>(
+            markers.Select(m => m.Task),
+            StringComparer.OrdinalIgnoreCase);
 
-        var files = Directory.GetFiles(inboxPath, "*-msg-*.md")
-            .OrderBy(f => File.GetCreationTimeUtc(f))
-            .ToArray();
+        Console.WriteLine("Waiting for message...");
 
-        foreach (var file in files)
+        while (true)
         {
-            var info = ParseMessageFile(file);
-            if (info == null) continue;
-
-            if (!string.IsNullOrEmpty(taskFilter) &&
-                !string.Equals(info.Subject, taskFilter, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            // Channel isolation: skip messages whose subject is claimed by a wait marker
-            if (excludeSubjects != null &&
-                !string.IsNullOrEmpty(info.Subject) &&
-                excludeSubjects.Contains(info.Subject))
-                continue;
-
-            return info;
-        }
-
-        return null;
-    }
-
-    private static MessageInfo? ParseMessageFile(string filePath)
-    {
-        try
-        {
-            var content = File.ReadAllText(filePath);
-            if (!content.StartsWith("---"))
-                return null;
-
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0)
-                return null;
-
-            var yaml = content[3..endIndex].Trim();
-            string? from = null, subject = null, type = null;
-
-            foreach (var line in yaml.Split('\n'))
+            var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks);
+            if (message != null)
             {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                var value = line[(colonIndex + 1)..].Trim();
-
-                switch (key)
-                {
-                    case "type": type = value; break;
-                    case "from": from = value; break;
-                    case "subject": subject = value; break;
-                }
+                PrintMessage(message);
+                return ExitCodes.Success;
             }
 
-            if (type != "message" || from == null)
-                return null;
-
-            // Extract body from ## Body section
-            var bodyMatch = Regex.Match(content, @"## Body\s+(.+?)(?=\n#|$)", RegexOptions.Singleline);
-            var body = bodyMatch.Success ? bodyMatch.Groups[1].Value.Trim() : "";
-
-            return new MessageInfo
-            {
-                From = from,
-                Subject = subject,
-                Body = body,
-                FilePath = filePath
-            };
-        }
-        catch
-        {
-            return null;
+            Thread.Sleep(10_000);
         }
     }
 
-    internal sealed class MessageInfo
+    private static int WaitForTask(AgentRegistry registry, string agentName, string inboxPath, string task)
     {
-        public required string From { get; init; }
-        public string? Subject { get; init; }
-        public required string Body { get; init; }
-        public required string FilePath { get; init; }
+        registry.UpdateWaitMarkerListening(agentName, task, Environment.ProcessId);
+
+        Console.WriteLine($"Waiting for message about '{task}'...");
+
+        while (true)
+        {
+            var message = MessageFinder.FindMessage(inboxPath, task);
+            if (message != null)
+            {
+                PrintMessage(message);
+                registry.RemoveWaitMarker(agentName, task);
+                return ExitCodes.Success;
+            }
+
+            Thread.Sleep(10_000);
+        }
     }
+
+    private static void PrintMessage(MessageFinder.MessageInfo message)
+    {
+        Console.WriteLine($"Message received from {message.From}:");
+        Console.WriteLine($"  Subject: {message.Subject ?? "(none)"}");
+        Console.WriteLine($"  Body: {message.Body}");
+        Console.WriteLine();
+        Console.WriteLine($"  Message file: {message.FilePath}");
+        Console.WriteLine("  Run 'dydo inbox show' for full details.");
+    }
+
+    internal static MessageFinder.MessageInfo? FindMessage(string inboxPath, string? taskFilter, HashSet<string>? excludeSubjects = null)
+        => MessageFinder.FindMessage(inboxPath, taskFilter, excludeSubjects);
 }

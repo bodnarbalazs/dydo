@@ -46,7 +46,8 @@ internal static class FixHubHandler
             var hubPath = Path.Combine(folder, "_index.md");
             var newContent = HubGenerator.GenerateHub(relativeFolderPath, contentDocs, subfolderHubs, docs);
 
-            generatedHubs[relativeFolderPath] = newContent;
+            var hubRelativePath = PathUtils.NormalizePath(Path.Combine(relativeFolderPath, "_index.md"));
+            generatedHubs[hubRelativePath] = newContent;
 
             if (existingHub == null || existingHub.Content != newContent)
             {

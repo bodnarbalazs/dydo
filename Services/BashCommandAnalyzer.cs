@@ -620,16 +620,26 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             .Where(LooksLikePath);
     }
 
-    private static bool IsShellOperator(string token)
-    {
-        return token is "|" or ">" or ">>" or "<" or "<<" or "&&" or "||" or ";" or "&" or "2>" or "2>>" or "&>" or "|&";
-    }
+    private static readonly HashSet<string> ShellOperators =
+        ["|", ">", ">>", "<", "<<", "&&", "||", ";", "&", "2>", "2>>", "&>", "|&"];
+
+    private static bool IsShellOperator(string token) => ShellOperators.Contains(token);
 
     private static readonly HashSet<string> KnownExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".txt", ".json", ".yaml", ".yml", ".xml", ".md", ".env", ".sh", ".ps1", ".py", ".cs", ".js", ".ts" };
 
     private static readonly HashSet<string> SensitiveNames = new(StringComparer.OrdinalIgnoreCase)
         { ".env", ".npmrc", ".pypirc", "secrets", "credentials", "config", "passwd", "shadow" };
+
+    private static bool IsDigitColonPattern(string value)
+    {
+        foreach (var c in value)
+        {
+            if (c != ':' && !char.IsDigit(c))
+                return false;
+        }
+        return value.Contains(':');
+    }
 
     private static bool HasKnownExtension(string value)
     {
@@ -670,10 +680,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (HasSensitiveName(value))
             return true;
 
-        if (value.Contains('[') || value.Contains(']') || value.Contains('{') || value.Contains('}'))
+        if (value.AsSpan().IndexOfAny("[]{}") >= 0)
             return false;
 
-        if (Regex.IsMatch(value, @"^\d*:\d*$"))
+        if (IsDigitColonPattern(value))
             return false;
 
         if (!value.Contains(' ') && value.Length < 100)

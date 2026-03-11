@@ -5,79 +5,59 @@ namespace DynaDocs.Models;
 /// </summary>
 public static class HookInputExtensions
 {
-    /// <summary>
-    /// Get the action type from the tool name
-    /// </summary>
+    private static readonly Dictionary<string, string> ActionMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["write"] = "write",
+        ["edit"] = "edit",
+        ["bash"] = "execute",
+        ["read"] = "read",
+        ["glob"] = "read",
+        ["grep"] = "read",
+    };
+
+    private static readonly HashSet<string> WriteTools = new(StringComparer.OrdinalIgnoreCase) { "write", "edit" };
+    private static readonly HashSet<string> ReadTools = new(StringComparer.OrdinalIgnoreCase) { "read", "glob", "grep" };
+    private static readonly HashSet<string> FileTools = new(StringComparer.OrdinalIgnoreCase) { "edit", "write", "read", "bash", "glob", "grep" };
+
     public static string GetAction(this HookInput input)
     {
-        return input.ToolName?.ToLowerInvariant() switch
-        {
-            "write" => "write",
-            "edit" => "edit",
-            "bash" => "execute",
-            "read" => "read",
-            "glob" => "read",
-            "grep" => "read",
-            _ => "unknown"
-        };
+        if (input.ToolName != null && ActionMap.TryGetValue(input.ToolName, out var action))
+            return action;
+        return "unknown";
     }
 
-    /// <summary>
-    /// Get the file path being operated on
-    /// </summary>
     public static string? GetFilePath(this HookInput input)
     {
         return input.ToolInput?.FilePath;
     }
 
-    /// <summary>
-    /// Get the search directory for Glob/Grep tools
-    /// </summary>
     public static string? GetSearchPath(this HookInput input)
     {
         return input.ToolInput?.Path;
     }
 
-    /// <summary>
-    /// Check if this is a write operation (Write or Edit tool)
-    /// </summary>
     public static bool IsWriteOperation(this HookInput input)
     {
-        var toolName = input.ToolName?.ToLowerInvariant();
-        return toolName == "write" || toolName == "edit";
+        return input.ToolName != null && WriteTools.Contains(input.ToolName);
     }
 
-    /// <summary>
-    /// Check if this is a read operation (Read tool)
-    /// </summary>
     public static bool IsReadOperation(this HookInput input)
     {
-        var toolName = input.ToolName?.ToLowerInvariant();
-        return toolName == "read" || toolName == "glob" || toolName == "grep";
+        return input.ToolName != null && ReadTools.Contains(input.ToolName);
     }
 
-    /// <summary>
-    /// Check if this is a Bash command
-    /// </summary>
     public static bool IsBashTool(this HookInput input)
     {
         return input.ToolName?.Equals("bash", StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
-    /// <summary>
-    /// Get the command string for Bash tool
-    /// </summary>
     public static string? GetCommand(this HookInput input)
     {
         return input.ToolInput?.Command;
     }
 
-    /// <summary>
-    /// Check if this tool operates on files (Edit, Write, Read, Bash)
-    /// </summary>
     public static bool IsFileOperation(this HookInput input)
     {
-        var toolName = input.ToolName?.ToLowerInvariant();
-        return toolName is "edit" or "write" or "read" or "bash" or "glob" or "grep";
+        return input.ToolName != null && FileTools.Contains(input.ToolName);
     }
 }

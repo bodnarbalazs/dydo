@@ -110,6 +110,12 @@ public class HubFilesRuleTests
         Assert.True(_rule.CanAutoFix);
     }
 
+    [Fact]
+    public void Properties_AreSet()
+    {
+        Assert.False(string.IsNullOrEmpty(_rule.Description));
+    }
+
     #region Exclusions
 
     [Fact]

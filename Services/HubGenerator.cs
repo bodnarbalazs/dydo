@@ -117,7 +117,7 @@ public static class HubGenerator
         return generatedHubs;
     }
 
-    private static IEnumerable<DocFile> GetSubfolderHubs(
+    internal static IEnumerable<DocFile> GetSubfolderHubs(
         string folder,
         List<DocFile> allDocs,
         Dictionary<string, string> generatedHubs)
@@ -245,7 +245,7 @@ public static class HubGenerator
         return text.Length > 150 ? text[..147] + "..." : text;
     }
 
-    private static string ToTitleCase(string name)
+    internal static string ToTitleCase(string name)
     {
         if (string.IsNullOrEmpty(name)) return name;
         return char.ToUpper(name[0]) + name[1..];

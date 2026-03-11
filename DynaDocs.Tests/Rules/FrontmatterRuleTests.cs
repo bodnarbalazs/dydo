@@ -9,6 +9,12 @@ public class FrontmatterRuleTests
     private readonly FrontmatterRule _rule = new();
 
     [Fact]
+    public void Properties_AreSet()
+    {
+        Assert.False(string.IsNullOrEmpty(_rule.Description));
+    }
+
+    [Fact]
     public void Validate_AcceptsValidFrontmatter()
     {
         var doc = CreateDocWithFrontmatter(new Frontmatter

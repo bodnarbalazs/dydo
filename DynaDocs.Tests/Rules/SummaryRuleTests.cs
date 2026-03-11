@@ -9,6 +9,12 @@ public class SummaryRuleTests
     private readonly SummaryRule _rule = new();
 
     [Fact]
+    public void Properties_AreSet()
+    {
+        Assert.False(string.IsNullOrEmpty(_rule.Description));
+    }
+
+    [Fact]
     public void Validate_AcceptsDocWithTitleAndSummary()
     {
         var doc = CreateDoc(title: "My Document", summary: "This is the summary paragraph.");

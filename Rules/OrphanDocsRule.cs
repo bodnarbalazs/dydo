@@ -18,14 +18,14 @@ public class OrphanDocsRule : RuleBase
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
         // Skip index and hub files
-        if (doc.IsIndexFile || doc.IsHubFile) yield break;
+        if (doc.IsIndexFile || doc.IsHubFile) return [];
 
         // Skip folder meta files (_foldername.md)
-        if (IsFolderMetaFile(doc)) yield break;
+        if (IsFolderMetaFile(doc)) return [];
 
         // Only check files in the four main documentation folders
         var mainFolder = GetMainFolder(doc.RelativePath);
-        if (mainFolder == null) yield break;
+        if (mainFolder == null) return [];
 
         // Find the hub file for this main folder
         var hubPath = mainFolder + "/_index.md";
@@ -33,14 +33,16 @@ public class OrphanDocsRule : RuleBase
             PathUtils.NormalizePath(d.RelativePath).Equals(hubPath, StringComparison.OrdinalIgnoreCase));
 
         // No hub file = can't validate (HubFilesRule will catch this)
-        if (hubDoc == null) yield break;
+        if (hubDoc == null) return [];
 
         var reachableDocs = GetCachedReachableDocsForFolder(mainFolder, hubDoc, allDocs, basePath);
 
         if (!reachableDocs.Contains(doc.RelativePath, StringComparer.OrdinalIgnoreCase))
         {
-            yield return CreateWarning(doc, $"Orphan doc: not reachable from {hubPath}");
+            return [CreateWarning(doc, $"Orphan doc: not reachable from {hubPath}")];
         }
+
+        return [];
     }
 
     /// <summary>

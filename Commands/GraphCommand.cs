@@ -80,71 +80,19 @@ public static class GraphCommand
 
             if (incoming)
             {
-                var incomingLinks = graph.GetIncoming(targetPath);
-                Console.WriteLine($"Incoming links to {Path.GetFileName(file)} ({incomingLinks.Count} docs link here):");
-
-                if (incomingLinks.Count == 0)
-                {
-                    Console.WriteLine("  (none)");
-                }
-                else
-                {
-                    foreach (var (doc, lineNumber) in incomingLinks.OrderBy(x => x.Doc))
-                    {
-                        Console.WriteLine($"  {doc}:{lineNumber}");
-                    }
-                }
-
+                GraphDisplayHandler.ShowIncoming(graph, targetPath, file);
                 hasOutput = true;
             }
 
             if (degree > 0 && !incoming)
             {
-                var withinDegree = graph.GetWithinDegree(targetPath, degree);
-                Console.WriteLine($"{Path.GetFileName(file)}");
-
-                if (withinDegree.Count == 0)
-                {
-                    Console.WriteLine("  (no outgoing links)");
-                }
-                else
-                {
-                    var grouped = withinDegree.GroupBy(x => x.Degree).OrderBy(g => g.Key);
-                    foreach (var group in grouped)
-                    {
-                        foreach (var (doc, deg) in group.OrderBy(x => x.Doc))
-                        {
-                            var indent = new string(' ', deg * 2);
-                            Console.WriteLine($"{indent}[degree {deg}] {doc}");
-                        }
-                    }
-                }
-
-                Console.WriteLine();
-                Console.WriteLine($"Found {withinDegree.Count} docs within {degree} hops of {Path.GetFileName(file)}");
+                GraphDisplayHandler.ShowDegree(graph, targetPath, file, degree);
                 hasOutput = true;
             }
 
             if (incoming && degree > 0)
             {
-                Console.WriteLine();
-                var withinDegree = graph.GetWithinDegree(targetPath, degree);
-
-                Console.WriteLine($"Outgoing within {degree} hops ({withinDegree.Count} docs):");
-
-                if (withinDegree.Count == 0)
-                {
-                    Console.WriteLine("  (none)");
-                }
-                else
-                {
-                    var grouped = withinDegree.GroupBy(x => x.Degree).OrderBy(g => g.Key);
-                    foreach (var group in grouped)
-                    {
-                        var docList = string.Join(", ", group.OrderBy(x => x.Doc).Select(x => Path.GetFileName(x.Doc)));
-                        Console.WriteLine($"  [degree {group.Key}] {docList}");
-                    }
-                }
+                GraphDisplayHandler.ShowCombined(graph, targetPath, degree);
             }
 
             if (!hasOutput)
@@ -226,22 +174,7 @@ public static class GraphCommand
             var graph = new DocGraph();
             graph.Build(docs, basePath);
 
-            var stats = graph.GetStats();
-            var totalLinks = stats.Sum(s => s.IncomingCount);
-
-            Console.WriteLine($"Document Link Statistics (Top {Math.Min(top, stats.Count)})");
-            Console.WriteLine(new string('─', 50));
-            Console.WriteLine($"{"#",3}  {"In",4}  Document");
-
-            var rank = 1;
-            foreach (var (doc, incomingCount) in stats.Take(top))
-            {
-                Console.WriteLine($"{rank,3}  {incomingCount,4}  {doc}");
-                rank++;
-            }
-
-            Console.WriteLine();
-            Console.WriteLine($"Total: {stats.Count} documents, {totalLinks} internal links");
+            GraphDisplayHandler.ShowStats(graph, top);
 
             return ExitCodes.Success;
         }

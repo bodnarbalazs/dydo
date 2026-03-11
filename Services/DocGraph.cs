@@ -30,7 +30,7 @@ public class DocGraph : IDocGraph
             {
                 if (link.Type == LinkType.External) continue;
 
-                var resolvedPath = ResolveLink(doc, link, basePath);
+                var resolvedPath = DocLinkResolver.Resolve(doc, link, basePath);
                 if (resolvedPath == null) continue;
 
                 var targetPath = PathUtils.NormalizeForKey(resolvedPath);
@@ -38,9 +38,7 @@ public class DocGraph : IDocGraph
 
                 _outgoing[sourcePath].Add((targetPath, link.LineNumber));
 
-                if (!_incoming.ContainsKey(targetPath))
-                    _incoming[targetPath] = [];
-
+                _incoming.TryAdd(targetPath, []);
                 _incoming[targetPath].Add((sourcePath, link.LineNumber));
             }
         }
@@ -98,55 +96,5 @@ public class DocGraph : IDocGraph
             .OrderByDescending(x => x.Item2)
             .ThenBy(x => x.Item1)
             .ToList();
-    }
-
-    private static string? ResolveLink(DocFile sourceDoc, LinkInfo link, string basePath)
-    {
-        var target = link.Target;
-
-        // Remove anchor if present
-        var anchorIndex = target.IndexOf('#');
-        if (anchorIndex >= 0)
-            target = target[..anchorIndex];
-
-        if (string.IsNullOrEmpty(target))
-            return null;
-
-        // Get the directory of the source doc relative to base
-        var sourceRelativeDir = Path.GetDirectoryName(sourceDoc.RelativePath) ?? "";
-
-        // Resolve the target relative to the source directory
-        string resolved;
-        if (target.StartsWith("./"))
-        {
-            resolved = Path.Combine(sourceRelativeDir, target[2..]);
-        }
-        else if (target.StartsWith("../"))
-        {
-            resolved = Path.Combine(sourceRelativeDir, target);
-        }
-        else
-        {
-            resolved = Path.Combine(sourceRelativeDir, target);
-        }
-
-        // Normalize the path (handle .. segments)
-        var parts = PathUtils.NormalizePath(resolved).Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
-        var normalized = new List<string>();
-
-        foreach (var part in parts)
-        {
-            if (part == "..")
-            {
-                if (normalized.Count > 0)
-                    normalized.RemoveAt(normalized.Count - 1);
-            }
-            else if (part != ".")
-            {
-                normalized.Add(part);
-            }
-        }
-
-        return string.Join("/", normalized);
     }
 }

@@ -9,6 +9,12 @@ public class NamingRuleTests
     private readonly NamingRule _rule = new();
 
     [Fact]
+    public void Properties_AreSet()
+    {
+        Assert.False(string.IsNullOrEmpty(_rule.Description));
+    }
+
+    [Fact]
     public void Validate_AcceptsKebabCaseFilename()
     {
         var doc = CreateDoc("my-document.md");
@@ -188,6 +194,16 @@ public class NamingRuleTests
     public void Validate_SkipsTemplateFiles()
     {
         var doc = CreateDoc("agent-workflow.template.md", "_system/templates/agent-workflow.template.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsTemplateAdditions()
+    {
+        var doc = CreateDoc("NOTES.md", "_system/template-additions/NOTES.md");
 
         var violations = _rule.Validate(doc, [], "/base").ToList();
 

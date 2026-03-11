@@ -58,57 +58,34 @@ public class OffLimitsService : IOffLimitsService
         var normalizedPath = PathUtils.NormalizeForPattern(path);
 
         // Check whitelist first - if whitelisted, allow
-        if (IsWhitelisted(normalizedPath))
+        if (FindMatchingPattern(normalizedPath, _whitelistPatterns, _whitelistCompiled) != null)
             return null;
 
-        for (int i = 0; i < _patterns.Count; i++)
+        return FindMatchingPattern(normalizedPath, _patterns, _compiledPatterns);
+    }
+
+    private static string? FindMatchingPattern(string normalizedPath, List<string> patterns, List<Regex> compiled)
+    {
+        for (int i = 0; i < patterns.Count; i++)
         {
-            if (_compiledPatterns[i].IsMatch(normalizedPath))
-                return _patterns[i];
+            if (compiled[i].IsMatch(normalizedPath))
+                return patterns[i];
         }
 
-        // Also check the filename alone for patterns like ".env"
         var fileName = Path.GetFileName(normalizedPath);
         if (!string.IsNullOrEmpty(fileName) && fileName != normalizedPath)
         {
-            for (int i = 0; i < _patterns.Count; i++)
+            for (int i = 0; i < patterns.Count; i++)
             {
-                // Only match simple patterns (no path separators) against filename
-                if (!_patterns[i].Contains('/') && !_patterns[i].Contains("**"))
+                if (!patterns[i].Contains('/') && !patterns[i].Contains("**"))
                 {
-                    if (_compiledPatterns[i].IsMatch(fileName))
-                        return _patterns[i];
+                    if (compiled[i].IsMatch(fileName))
+                        return patterns[i];
                 }
             }
         }
 
         return null;
-    }
-
-    private bool IsWhitelisted(string normalizedPath)
-    {
-        // Check full path
-        foreach (var regex in _whitelistCompiled)
-        {
-            if (regex.IsMatch(normalizedPath))
-                return true;
-        }
-
-        // Check filename for simple patterns
-        var fileName = Path.GetFileName(normalizedPath);
-        if (!string.IsNullOrEmpty(fileName) && fileName != normalizedPath)
-        {
-            for (int i = 0; i < _whitelistPatterns.Count; i++)
-            {
-                if (!_whitelistPatterns[i].Contains('/') && !_whitelistPatterns[i].Contains("**"))
-                {
-                    if (_whitelistCompiled[i].IsMatch(fileName))
-                        return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     public (bool IsBlocked, string? MatchedPath, string? MatchedPattern) CheckCommand(string command)
@@ -160,68 +137,70 @@ public class OffLimitsService : IOffLimitsService
         var whitelist = new List<string>();
         var lines = content.Split('\n');
         var inCodeBlock = false;
-        var currentSection = "off-limits"; // Default section
+        var currentSection = "off-limits";
 
         foreach (var rawLine in lines)
         {
             var line = rawLine.Trim();
 
-            // Detect section headers
             if (line.StartsWith("## ") || line.StartsWith("# "))
             {
-                var headerLower = line.ToLowerInvariant();
-                if (headerLower.Contains("whitelist") || headerLower.Contains("exception"))
-                    currentSection = "whitelist";
-                else if (headerLower.Contains("off-limits") || headerLower.Contains("off limits"))
-                    currentSection = "off-limits";
+                currentSection = ClassifySection(line, currentSection);
                 continue;
             }
 
-            // Track code block state
             if (line.StartsWith("```"))
             {
                 inCodeBlock = !inCodeBlock;
                 continue;
             }
 
-            string? patternCandidate = null;
-
-            if (inCodeBlock)
-            {
-                patternCandidate = line;
-            }
-            else if (line.StartsWith("- ") || line.StartsWith("* "))
-            {
-                patternCandidate = line.TrimStart('-', '*', ' ');
-            }
-
-            if (patternCandidate == null)
+            var candidate = ExtractPatternCandidate(line, inCodeBlock);
+            if (candidate == null)
                 continue;
 
-            // Skip comments and empty lines
-            if (string.IsNullOrWhiteSpace(patternCandidate) || patternCandidate.StartsWith('#'))
-                continue;
-
-            // Skip list items that don't look like file patterns (descriptive text)
-            // Only applies to list items outside code blocks
-            if (!inCodeBlock && !LooksLikePattern(patternCandidate))
-                continue;
-
-            // Handle inline comments
-            var commentIndex = patternCandidate.IndexOf(" #", StringComparison.Ordinal);
-            if (commentIndex > 0)
-                patternCandidate = patternCandidate[..commentIndex].Trim();
-
-            if (!string.IsNullOrWhiteSpace(patternCandidate))
-            {
-                if (currentSection == "whitelist")
-                    whitelist.Add(patternCandidate);
-                else
-                    patterns.Add(patternCandidate);
-            }
+            if (currentSection == "whitelist")
+                whitelist.Add(candidate);
+            else
+                patterns.Add(candidate);
         }
 
         return (patterns, whitelist);
+    }
+
+    private static string ClassifySection(string headerLine, string currentSection)
+    {
+        var lower = headerLine.ToLowerInvariant();
+        if (lower.Contains("whitelist") || lower.Contains("exception"))
+            return "whitelist";
+        if (lower.Contains("off-limits") || lower.Contains("off limits"))
+            return "off-limits";
+        return currentSection;
+    }
+
+    private static string? ExtractPatternCandidate(string line, bool inCodeBlock)
+    {
+        string? candidate = null;
+
+        if (inCodeBlock)
+            candidate = line;
+        else if (line.StartsWith("- ") || line.StartsWith("* "))
+            candidate = line.TrimStart('-', '*', ' ');
+
+        if (candidate == null)
+            return null;
+
+        if (string.IsNullOrWhiteSpace(candidate) || candidate.StartsWith('#'))
+            return null;
+
+        if (!inCodeBlock && !LooksLikePattern(candidate))
+            return null;
+
+        var commentIndex = candidate.IndexOf(" #", StringComparison.Ordinal);
+        if (commentIndex > 0)
+            candidate = candidate[..commentIndex].Trim();
+
+        return string.IsNullOrWhiteSpace(candidate) ? null : candidate;
     }
 
     /// <summary>
@@ -274,40 +253,28 @@ public class OffLimitsService : IOffLimitsService
     /// Extract potential file paths from a shell command.
     /// This is a simplified extraction for quick checking.
     /// </summary>
+    private static readonly string[] CommandPathPatterns =
+    [
+        @"['""]([^'""]+)['""]",
+        @"(?:cat|head|tail|less|more|type|Get-Content|gc)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
+        @"(?:>|>>)\s*([^\s|;&]+)",
+        @"(?:<)\s*([^\s|;&]+)",
+        @"(?:rm|del|Remove-Item|ri)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
+        @"(?:cp|mv|copy|move|Copy-Item|Move-Item)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
+        @"(?:chmod|chown|icacls)\s+(?:[^\s]+\s+)*([^\s|;&>]+)",
+        @"(?:touch|truncate|tee)\s+([^\s|;&>]+)",
+        @"echo\s+[^>]*>>\s*([^\s|;&]+)",
+        @"echo\s+[^>]*>\s*([^\s|;&]+)",
+    ];
+
     private static IEnumerable<string> ExtractPathsFromCommand(string command)
     {
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Match quoted strings
-        var quotedMatches = Regex.Matches(command, @"['""]([^'""]+)['""]");
-        foreach (Match m in quotedMatches)
+        foreach (var pattern in CommandPathPatterns)
         {
-            var path = m.Groups[1].Value;
-            if (LooksLikePath(path))
-                paths.Add(path);
-        }
-
-        // Match paths after common read/write commands
-        // Handle commands with flags (e.g., tail -f file.txt)
-        var commandPatterns = new[]
-        {
-            @"(?:cat|head|tail|less|more|type|Get-Content|gc)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
-            @"(?:>|>>)\s*([^\s|;&]+)",
-            @"(?:<)\s*([^\s|;&]+)",
-            @"(?:rm|del|Remove-Item|ri)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
-            @"(?:cp|mv|copy|move|Copy-Item|Move-Item)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
-            @"(?:chmod|chown|icacls)\s+(?:[^\s]+\s+)*([^\s|;&>]+)",
-            @"(?:touch|truncate|tee)\s+([^\s|;&>]+)",
-            @"echo\s+[^>]*>>\s*([^\s|;&]+)",  // echo with append
-            @"echo\s+[^>]*>\s*([^\s|;&]+)",   // echo with write
-        };
-
-        foreach (var pattern in commandPatterns)
-        {
-            var matches = Regex.Matches(command, pattern, RegexOptions.IgnoreCase);
-            foreach (Match m in matches)
+            foreach (var path in GetFirstMatchedGroup(command, pattern))
             {
-                var path = m.Groups[1].Value.Trim('"', '\'');
                 if (LooksLikePath(path))
                     paths.Add(path);
             }
@@ -316,28 +283,43 @@ public class OffLimitsService : IOffLimitsService
         return paths;
     }
 
+    private static IEnumerable<string> GetFirstMatchedGroup(string input, string pattern)
+    {
+        var matches = Regex.Matches(input, pattern, RegexOptions.IgnoreCase);
+        foreach (Match m in matches)
+        {
+            // Find the first captured group that has a value
+            for (int g = 1; g < m.Groups.Count; g++)
+            {
+                if (m.Groups[g].Success)
+                {
+                    yield return m.Groups[g].Value.Trim('"', '\'');
+                    break;
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Heuristic to determine if a string looks like a file path.
     /// </summary>
+    private static readonly HashSet<string> ShellBuiltins = new(StringComparer.OrdinalIgnoreCase)
+        { "echo", "printf", "true", "false", "exit", "return" };
+
     private static bool LooksLikePath(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return false;
 
-        // Skip flags and shell operators
         if (value.StartsWith('-') || value.StartsWith("&"))
             return false;
 
-        // Skip common shell builtins/commands
-        var builtins = new[] { "echo", "printf", "true", "false", "exit", "return" };
-        if (builtins.Contains(value.ToLowerInvariant()))
+        if (ShellBuiltins.Contains(value))
             return false;
 
-        // Has file extension or path separator - likely a path
         if (value.Contains('.') || value.Contains('/') || value.Contains('\\'))
             return true;
 
-        // Single word that could be a filename
         if (!value.Contains(' '))
             return true;
 
@@ -355,59 +337,48 @@ public class OffLimitsService : IOffLimitsService
             yield break;
 
         var content = File.ReadAllText(path);
-        var lines = content.Split('\n');
-        var codeBlockCount = 0;
 
-        foreach (var rawLine in lines)
-        {
-            var line = rawLine.Trim();
-            if (line.StartsWith("```"))
-                codeBlockCount++;
-        }
+        foreach (var issue in ValidateCodeBlocks(content))
+            yield return issue;
+        foreach (var issue in ValidatePatternPresence())
+            yield return issue;
+        foreach (var issue in ValidateDuplicates())
+            yield return issue;
+        foreach (var issue in ValidateWhitelistBreadth())
+            yield return issue;
+    }
 
-        // Check for unclosed code blocks
+    private static IEnumerable<FormatValidationIssue> ValidateCodeBlocks(string content)
+    {
+        var codeBlockCount = content.Split('\n').Count(l => l.Trim().StartsWith("```"));
         if (codeBlockCount % 2 != 0)
-        {
-            yield return new FormatValidationIssue(
-                "Unclosed code block (``` without closing ```)",
-                IsError: true
-            );
-        }
+            yield return new FormatValidationIssue("Unclosed code block (``` without closing ```)", IsError: true);
+    }
 
-        // Check for no patterns
+    private IEnumerable<FormatValidationIssue> ValidatePatternPresence()
+    {
         if (_patterns.Count == 0 && _whitelistPatterns.Count == 0)
-        {
-            yield return new FormatValidationIssue(
-                "No off-limits patterns defined",
-                IsError: false
-            );
-        }
+            yield return new FormatValidationIssue("No off-limits patterns defined", IsError: false);
+    }
 
-        // Check for duplicate patterns
-        var seenPatterns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    private IEnumerable<FormatValidationIssue> ValidateDuplicates()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var pattern in _patterns.Concat(_whitelistPatterns))
         {
-            if (!seenPatterns.Add(pattern))
-            {
-                yield return new FormatValidationIssue(
-                    $"Duplicate pattern: {pattern}",
-                    IsError: false
-                );
-            }
+            if (!seen.Add(pattern))
+                yield return new FormatValidationIssue($"Duplicate pattern: {pattern}", IsError: false);
         }
+    }
 
-        // Check for overly broad whitelist patterns
-        // Note: **/.*  is NOT included because it specifically matches dotfiles (reasonably scoped)
-        var broadPatterns = new[] { "*", "**", "**/*" };
+    private static readonly string[] BroadPatternLiterals = ["*", "**", "**/*"];
+
+    private IEnumerable<FormatValidationIssue> ValidateWhitelistBreadth()
+    {
         foreach (var pattern in _whitelistPatterns)
         {
-            if (broadPatterns.Contains(pattern) || IsBroadWhitelistPattern(pattern))
-            {
-                yield return new FormatValidationIssue(
-                    $"Whitelist pattern '{pattern}' is too broad and may defeat security",
-                    IsError: false
-                );
-            }
+            if (BroadPatternLiterals.Contains(pattern) || IsBroadWhitelistPattern(pattern))
+                yield return new FormatValidationIssue($"Whitelist pattern '{pattern}' is too broad and may defeat security", IsError: false);
         }
     }
 

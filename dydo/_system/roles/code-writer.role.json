@@ -1,0 +1,17 @@
+{
+  "name": "code-writer",
+  "description": "Implements features and fixes bugs in source code.",
+  "base": true,
+  "writablePaths": [
+    "{source}",
+    "{tests}",
+    "dydo/agents/{self}/**"
+  ],
+  "readOnlyPaths": [
+    "dydo/**",
+    "project/**"
+  ],
+  "templateFile": "mode-code-writer.template.md",
+  "denialHint": "Code-writer role can only edit configured source/test paths and own workspace.",
+  "constraints": []
+}

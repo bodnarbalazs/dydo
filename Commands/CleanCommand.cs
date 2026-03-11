@@ -229,6 +229,7 @@ public static class CleanCommand
         if (Directory.Exists(replyPendingPath))
             Directory.Delete(replyPendingPath, true);
 
+        // Pre-v1.3 used a marker file; auto-close is now in state.md. Clean up old markers.
         var autoClosePath = Path.Combine(workspace, ".auto-close");
         if (File.Exists(autoClosePath))
             File.Delete(autoClosePath);

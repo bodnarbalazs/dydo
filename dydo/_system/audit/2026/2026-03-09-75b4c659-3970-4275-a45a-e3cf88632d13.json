@@ -780,6 +780,60 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/tests/coverage/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls \u0022C:/Users/U..."
+    },
+    {
+      "ts": "2026-03-10T18:54:27.4586941Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python \u0022C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/coverage/gap_check.py\u0022 --help 2\u003E\u00261 | ..."
+    },
+    {
+      "ts": "2026-03-10T18:54:34.0652679Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -20"
+    },
+    {
+      "ts": "2026-03-10T18:54:40.5662424Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff 1d404b0..HEAD --stat -- Commands/WaitCommand.cs Commands/MessageCommand.cs Commands/Dispatc..."
+    },
+    {
+      "ts": "2026-03-10T18:54:47.4534872Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log 1d404b0..HEAD --oneline -- Commands/WaitCommand.cs Commands/MessageCommand.cs Commands/Dispa..."
+    },
+    {
+      "ts": "2026-03-10T18:54:51.5512629Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff 1d404b0..HEAD -- Commands/InboxCommand.cs 2\u003E/dev/null | head -5"
+    },
+    {
+      "ts": "2026-03-10T18:54:56.8385262Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff 1d404b0..HEAD -- Commands/DispatchCommand.cs 2\u003E/dev/null | head -80"
+    },
+    {
+      "ts": "2026-03-10T18:55:03.7038635Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T18:55:04.3759976Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-10T18:55:11.4245039Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.waiting/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls..."
     }
   ],
   "snapshot": {

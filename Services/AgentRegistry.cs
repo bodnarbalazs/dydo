@@ -17,6 +17,7 @@ public partial class AgentRegistry : IAgentRegistry
     private readonly IAuditService _auditService;
     private readonly DydoConfig? _config;
     private readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> _rolePermissions;
+    private readonly Dictionary<string, RoleDefinition> _roleDefinitions;
 
     public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
     {
@@ -26,26 +27,24 @@ public partial class AgentRegistry : IAgentRegistry
         _auditService = auditService ?? new AuditService(_configService, _basePath);
         _config = _configService.LoadConfig(_basePath);
 
-        var sourcePaths = _config?.Paths.Source ?? ["src/**"];
-        var testPaths = _config?.Paths.Tests ?? ["tests/**"];
-        _rolePermissions = BuildRolePermissions(sourcePaths, testPaths);
-    }
+        var roleDefService = new RoleDefinitionService();
+        var roles = roleDefService.LoadRoleDefinitions(_basePath);
 
-    public static Dictionary<string, (List<string> Writable, List<string> ReadOnly)> BuildRolePermissions(
-        List<string> sourcePaths, List<string> testPaths)
-    {
-        return new()
+        if (roles.Count > 0)
         {
-            ["code-writer"] = ([..sourcePaths, ..testPaths, "dydo/agents/{self}/**"], ["dydo/**", "project/**"]),
-            ["reviewer"] = (["dydo/agents/{self}/**"], ["**"]),
-            ["co-thinker"] = (["dydo/agents/{self}/**", "dydo/project/decisions/**"], [..sourcePaths, ..testPaths]),
-            ["docs-writer"] = (["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"], [..sourcePaths, ..testPaths]),
-            ["planner"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**"], [..sourcePaths]),
-            ["test-writer"] = (["dydo/agents/{self}/**", ..testPaths, "dydo/project/pitfalls/**"], [..sourcePaths]),
-            ["orchestrator"] = (["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**"], ["**"]),
-            ["inquisitor"] = (["dydo/agents/{self}/**", "dydo/project/inquisitions/**"], [..sourcePaths, ..testPaths]),
-            ["judge"] = (["dydo/agents/{self}/**"], [..sourcePaths, ..testPaths])
-        };
+            var pathSets = roleDefService.ResolvePathSets(_config);
+            _rolePermissions = roleDefService.BuildPermissionMap(roles, pathSets);
+            _roleDefinitions = roles.ToDictionary(r => r.Name);
+        }
+        else
+        {
+            // No role files on disk — use built-in base definitions with a warning
+            Console.Error.WriteLine("[dydo] WARNING: No role files found at dydo/_system/roles/. Run 'dydo roles reset' to generate them. Using built-in defaults.");
+            var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
+            var pathSets = roleDefService.ResolvePathSets(_config);
+            _rolePermissions = roleDefService.BuildPermissionMap(baseRoles, pathSets);
+            _roleDefinitions = baseRoles.ToDictionary(r => r.Name);
+        }
     }
 
     public DydoConfig? Config => _config;
@@ -230,6 +229,8 @@ public partial class AgentRegistry : IAgentRegistry
                 s.Status = AgentStatus.Working;
                 s.Since = DateTime.UtcNow;
                 s.AssignedHuman = human;
+                s.WindowId = null;
+                s.AutoClose = false;
             });
 
             // Capture project snapshot for audit visualization
@@ -637,7 +638,7 @@ public partial class AgentRegistry : IAgentRegistry
 
     /// <summary>
     /// Checks if an agent can take a specific role on a task.
-    /// Returns false if the agent was code-writer and is trying to become reviewer (no self-review).
+    /// Evaluates constraints from role definitions (data-driven).
     /// </summary>
     public bool CanTakeRole(string agentName, string role, string task, out string reason)
     {
@@ -650,49 +651,75 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Prevent self-review: code-writer cannot become reviewer on same task
-        if (role == "reviewer" && state.TaskRoleHistory.TryGetValue(task, out var previousRoles))
+        if (_roleDefinitions.TryGetValue(role, out var roleDef))
         {
-            if (previousRoles.Contains("code-writer"))
+            foreach (var constraint in roleDef.Constraints)
             {
-                reason = $"Agent {agentName} was code-writer on task '{task}' and cannot be reviewer on the same task. Dispatch to a different agent for review.";
-                return false;
-            }
-        }
-
-        // Orchestrator graduation: must have been co-thinker or planner on this task
-        if (role == "orchestrator")
-        {
-            if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
-                (!taskRoles.Contains("co-thinker") && !taskRoles.Contains("planner")))
-            {
-                reason = $"You are a {state.Role ?? "unknown role"}. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification.";
-                return false;
-            }
-        }
-
-        // Judge panel limit: max 3 judges per task
-        if (role == "judge")
-        {
-            int activeJudges = 0;
-            foreach (var name in AgentNames)
-            {
-                var s = GetAgentState(name);
-                if (s != null && s.Role == "judge" && s.Task == task &&
-                    s.Status != AgentStatus.Free)
-                {
-                    activeJudges++;
-                }
-            }
-            if (activeJudges >= 3)
-            {
-                reason = $"Maximum 3 judges already active on task '{task}'. Escalate to the human.";
-                return false;
+                if (!EvaluateConstraint(constraint, agentName, role, task, state, out reason))
+                    return false;
             }
         }
 
         return true;
     }
+
+    private bool EvaluateConstraint(RoleConstraint constraint, string agentName, string role,
+        string task, AgentState state, out string reason)
+    {
+        reason = string.Empty;
+
+        switch (constraint.Type)
+        {
+            case "role-transition":
+                if (state.TaskRoleHistory.TryGetValue(task, out var previousRoles) &&
+                    previousRoles.Contains(constraint.FromRole!))
+                {
+                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
+                    return false;
+                }
+                return true;
+
+            case "requires-prior":
+                if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
+                    !constraint.RequiredRoles!.Any(r => taskRoles.Contains(r)))
+                {
+                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
+                    return false;
+                }
+                return true;
+
+            case "panel-limit":
+                int activeCount = 0;
+                foreach (var name in AgentNames)
+                {
+                    var s = GetAgentState(name);
+                    if (s != null && s.Role == role && s.Task == task &&
+                        s.Status != AgentStatus.Free)
+                    {
+                        activeCount++;
+                    }
+                }
+                if (activeCount >= constraint.MaxCount!.Value)
+                {
+                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
+                    return false;
+                }
+                return true;
+
+            default:
+                reason = $"Unknown constraint type: '{constraint.Type}'.";
+                return false;
+        }
+    }
+
+    private static string SubstituteConstraintVars(string message, string agentName, string task, string? currentRole)
+    {
+        return message
+            .Replace("{agent}", agentName)
+            .Replace("{task}", task)
+            .Replace("{current_role}", currentRole ?? "unknown role");
+    }
+
 
     public AgentState? GetAgentState(string agentName)
     {
@@ -1180,22 +1207,13 @@ public partial class AgentRegistry : IAgentRegistry
         return true;
     }
 
-    private static string GetRoleRestrictionMessage(string role, string? relativePath = null)
+    private string GetRoleRestrictionMessage(string role, string? relativePath = null)
     {
         var pathNudge = relativePath != null ? GetPathSpecificNudge(relativePath) : null;
         if (pathNudge != null)
             return pathNudge;
 
-        return role switch
-        {
-            "reviewer" => "Reviewer role can only edit own workspace.",
-            "code-writer" => "Code-writer role can only edit configured source/test paths and own workspace.",
-            "co-thinker" => "Co-thinker role can edit own workspace and decisions.",
-            "docs-writer" => "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace.",
-            "planner" => "Planner role can only edit own workspace and tasks.",
-            "test-writer" => "Test-writer role can edit own workspace, tests, and pitfalls.",
-            _ => ""
-        };
+        return _roleDefinitions.TryGetValue(role, out var def) ? def.DenialHint ?? "" : "";
     }
 
     /// <summary>
@@ -1241,6 +1259,15 @@ public partial class AgentRegistry : IAgentRegistry
         return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
     }
 
+    public void SetDispatchMetadata(string agentName, string? windowId, bool autoClose)
+    {
+        UpdateAgentState(agentName, s =>
+        {
+            s.WindowId = windowId;
+            s.AutoClose = autoClose;
+        });
+    }
+
     private void UpdateAgentState(string agentName, Action<AgentState> update)
     {
         var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
@@ -1265,6 +1292,8 @@ public partial class AgentRegistry : IAgentRegistry
             status: {state.Status.ToString().ToLowerInvariant()}
             assigned: {state.AssignedHuman ?? GetHumanForAgent(agentName) ?? "unassigned"}
             dispatched-by: {state.DispatchedBy ?? "null"}
+            window-id: {state.WindowId ?? "null"}
+            auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
             readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
@@ -1359,6 +1388,12 @@ public partial class AgentRegistry : IAgentRegistry
                         break;
                     case "dispatched-by":
                         state.DispatchedBy = value == "null" ? null : value;
+                        break;
+                    case "window-id":
+                        state.WindowId = value == "null" ? null : value;
+                        break;
+                    case "auto-close":
+                        state.AutoClose = value == "true";
                         break;
                     case "started":
                         if (value != "null" && DateTime.TryParse(value, out var dt))

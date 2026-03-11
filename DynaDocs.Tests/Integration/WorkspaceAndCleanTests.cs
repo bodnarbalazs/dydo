@@ -217,6 +217,7 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     [Fact]
     public async Task Clean_Agent_RemovesAutoCloseMarker()
     {
+        // Tests backward-compat cleanup of pre-v1.3 marker files (now stored in state.md)
         await InitProjectAsync("none", "balazs", 3);
 
         WriteFile("dydo/agents/Adele/.auto-close", "Charlie");
@@ -260,7 +261,7 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "balazs", 3);
 
-        // Create markers alongside workflow.md
+        // Create markers alongside workflow.md (.auto-close is pre-v1.3 backward compat)
         WriteFile("dydo/agents/Adele/.waiting/task.json", """{"target":"Brian","task":"task","since":"2026-03-09T00:00:00Z"}""");
         WriteFile("dydo/agents/Adele/.auto-close", "Charlie");
 
@@ -294,7 +295,7 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "balazs", 3);
 
-        // Create markers in multiple agent workspaces
+        // Create markers in multiple agent workspaces (.auto-close is pre-v1.3 backward compat)
         WriteFile("dydo/agents/Adele/.waiting/task.json", """{"target":"Brian","task":"task","since":"2026-03-09T00:00:00Z"}""");
         WriteFile("dydo/agents/Adele/.auto-close", "Charlie");
         WriteFile("dydo/agents/Brian/.reply-pending/task.json", """{"to":"Adele","task":"task","since":"2026-03-09T00:00:00Z"}""");
@@ -350,7 +351,7 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
             """);
         WriteFile("dydo/agents/Adele/.waiting/feature-auth.json", """{"target":"Brian","task":"feature-auth","since":"2026-03-09T00:00:00Z"}""");
         WriteFile("dydo/agents/Adele/.reply-pending/feature-auth.json", """{"to":"Brian","task":"feature-auth","since":"2026-03-09T00:00:00Z"}""");
-        WriteFile("dydo/agents/Adele/.auto-close", "Brian");
+        WriteFile("dydo/agents/Adele/.auto-close", "Brian"); // pre-v1.3 backward compat
 
         var result = await CleanByTaskAsync("feature-auth");
 

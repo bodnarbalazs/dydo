@@ -272,6 +272,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo agent release` | Release current agent |
 | `dydo agent status [name]` | Show agent status |
 | `dydo agent list [--free] [--all]` | List agents (default: current human's) |
+| `dydo agent tree` | Show dispatch hierarchy of active agents |
 | `dydo agent role <role> [--task X]` | Set role and permissions |
 
 ### Agent Management

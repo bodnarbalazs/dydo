@@ -1,0 +1,22 @@
+{
+  "name": "reviewer",
+  "description": "Reviews code changes for quality and correctness.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**"
+  ],
+  "readOnlyPaths": [
+    "**"
+  ],
+  "templateFile": "mode-reviewer.template.md",
+  "denialHint": "Reviewer role can only edit own workspace.",
+  "constraints": [
+    {
+      "type": "role-transition",
+      "fromRole": "code-writer",
+      "requiredRoles": null,
+      "maxCount": null,
+      "message": "Agent {agent} was code-writer on task \u0027{task}\u0027 and cannot be reviewer on the same task. Dispatch to a different agent for review."
+    }
+  ]
+}

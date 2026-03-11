@@ -1,0 +1,22 @@
+{
+  "name": "docs-writer",
+  "description": "Creates and maintains documentation.",
+  "base": true,
+  "writablePaths": [
+    "dydo/understand/**",
+    "dydo/guides/**",
+    "dydo/reference/**",
+    "dydo/project/**",
+    "dydo/_system/**",
+    "dydo/_assets/**",
+    "dydo/*.md",
+    "dydo/agents/{self}/**"
+  ],
+  "readOnlyPaths": [
+    "{source}",
+    "{tests}"
+  ],
+  "templateFile": "mode-docs-writer.template.md",
+  "denialHint": "Docs-writer role can only edit dydo/** (except other agents\u0027 workspaces) and own workspace.",
+  "constraints": []
+}

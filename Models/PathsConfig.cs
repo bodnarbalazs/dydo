@@ -9,4 +9,7 @@ public class PathsConfig
 
     [JsonPropertyName("tests")]
     public List<string> Tests { get; set; } = ["tests/**"];
+
+    [JsonPropertyName("pathSets")]
+    public Dictionary<string, List<string>>? PathSets { get; set; }
 }

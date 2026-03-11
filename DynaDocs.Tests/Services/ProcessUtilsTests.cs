@@ -108,4 +108,16 @@ public class ProcessUtilsTests
         Assert.True(result == "pwsh.exe" || result == "powershell.exe",
             $"Expected 'pwsh.exe' or 'powershell.exe' but got '{result}'");
     }
+
+    [Theory]
+    [InlineData("simple", "simple")]
+    [InlineData("it's", "it''s")]
+    [InlineData("say \"hi\"", "say \"hi\"")]
+    [InlineData("$var", "$var")]
+    [InlineData("back`tick", "back`tick")]
+    [InlineData("a'b\"c$d`e", "a''b\"c$d`e")]
+    public void EscapeForPowerShellLike_EscapesDangerousCharacters(string input, string expected)
+    {
+        Assert.Equal(expected, ProcessUtils.EscapeForPowerShellLike(input));
+    }
 }

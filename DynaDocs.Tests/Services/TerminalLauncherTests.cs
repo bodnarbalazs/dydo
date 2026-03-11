@@ -675,7 +675,9 @@ public class TerminalLauncherTests
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.DoesNotContain("-w 0", wtCall.Arguments);
-        Assert.StartsWith("new-window ", wtCall.Arguments);
+        // New window mode uses --window {guid} new-tab
+        Assert.StartsWith("--window ", wtCall.Arguments);
+        Assert.Contains("new-tab", wtCall.Arguments);
     }
 
     [Fact]
@@ -811,7 +813,7 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void LaunchWindows_WindowMode_UsesNewWindowSubcommand()
+    public void LaunchWindows_WindowMode_UsesGuidBasedWindow()
     {
         var recorder = new RecordingProcessStarter();
         var launcher = new TerminalLauncher(recorder);
@@ -819,12 +821,13 @@ public class TerminalLauncherTests
         launcher.LaunchWindows("Adele", useTab: false);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
-        Assert.Contains("new-window", wtCall.Arguments);
-        Assert.DoesNotContain("new-tab", wtCall.Arguments);
+        // New window mode uses --window {guid} new-tab
+        Assert.StartsWith("--window ", wtCall.Arguments);
+        Assert.Contains("new-tab", wtCall.Arguments);
     }
 
     [Fact]
-    public void LaunchWindows_DefaultMode_UsesNewWindowSubcommand()
+    public void LaunchWindows_DefaultMode_UsesGuidBasedWindow()
     {
         var recorder = new RecordingProcessStarter();
         var launcher = new TerminalLauncher(recorder);
@@ -832,12 +835,13 @@ public class TerminalLauncherTests
         launcher.LaunchWindows("Adele");
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
-        Assert.Contains("new-window", wtCall.Arguments);
-        Assert.DoesNotContain("new-tab", wtCall.Arguments);
+        // Default (non-tab) mode uses --window {guid} new-tab
+        Assert.StartsWith("--window ", wtCall.Arguments);
+        Assert.Contains("new-tab", wtCall.Arguments);
     }
 
     [Fact]
-    public void LaunchWindows_WindowMode_WithWorkingDirectory_UsesNewWindow()
+    public void LaunchWindows_WindowMode_WithWorkingDirectory_UsesGuidBasedWindow()
     {
         var recorder = new RecordingProcessStarter();
         var launcher = new TerminalLauncher(recorder);
@@ -845,7 +849,7 @@ public class TerminalLauncherTests
         launcher.LaunchWindows("Adele", "/home/user/project", useTab: false);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
-        Assert.Contains("new-window", wtCall.Arguments);
+        Assert.StartsWith("--window ", wtCall.Arguments);
         Assert.Contains("--startingDirectory", wtCall.Arguments);
     }
 
@@ -1117,6 +1121,115 @@ public class TerminalLauncherTests
         {
             ProcessUtils.PowerShellResolverOverride = null;
         }
+    }
+
+    #endregion
+
+    #region Window Routing Tests
+
+    [Fact]
+    public void GetWindowsArguments_WithWindowName_InjectsDydoWindowEnvVar()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", windowName: "abcd1234");
+
+        Assert.Contains("$env:DYDO_WINDOW='abcd1234'", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_WithoutWindowName_NoDydoWindowEnvVar()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+
+        Assert.DoesNotContain("DYDO_WINDOW", args);
+    }
+
+    [Fact]
+    public void LaunchWindows_TabMode_WithWindowName_UsesWindowRouting()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: true, windowName: "abcd1234");
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.StartsWith("-w abcd1234 new-tab", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_TabMode_WithoutWindowName_FallsBackToW0()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: true, windowName: null);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.StartsWith("-w 0 new-tab", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_NewWindow_GeneratesGuidAndUsesWindowFlag()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: false);
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        // Should use --window {guid} new-tab format
+        Assert.StartsWith("--window ", wtCall.Arguments);
+        Assert.Contains("new-tab", wtCall.Arguments);
+        Assert.Contains("DYDO_WINDOW", wtCall.Arguments);
+    }
+
+    [Fact]
+    public void LaunchWindows_NewWindow_WithProvidedWindowName_UsesProvidedName()
+    {
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        launcher.LaunchWindows("Adele", useTab: false, windowName: "custom123");
+
+        var wtCall = recorder.Started.First(p => p.FileName == "wt");
+        Assert.StartsWith("--window custom123 new-tab", wtCall.Arguments);
+        Assert.Contains("$env:DYDO_WINDOW='custom123'", wtCall.Arguments);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    public void GetLinuxArguments_WithWindowName_InjectsDydoWindowExport(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", windowName: "abcd1234");
+
+        Assert.Contains("export DYDO_WINDOW='abcd1234'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_WithoutWindowName_NoDydoWindowExport(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+
+        Assert.DoesNotContain("DYDO_WINDOW", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_WithWindowName_InjectsDydoWindowExport()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", windowName: "abcd1234");
+
+        Assert.Contains("export DYDO_WINDOW=abcd1234", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_WithoutWindowName_NoDydoWindowExport()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+
+        Assert.DoesNotContain("DYDO_WINDOW", args);
     }
 
     #endregion

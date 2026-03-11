@@ -1888,4 +1888,90 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region Dispatch Metadata Tests
+
+    [Fact]
+    public void SetDispatchMetadata_WritesWindowIdAndAutoClose()
+    {
+        SetupAgentState("Adele");
+
+        _registry.SetDispatchMetadata("Adele", "abcd1234", true);
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.Equal("abcd1234", state.WindowId);
+        Assert.True(state.AutoClose);
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_RoundTrips_NullWindowId()
+    {
+        SetupAgentState("Adele");
+
+        _registry.SetDispatchMetadata("Adele", null, false);
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.Null(state.WindowId);
+        Assert.False(state.AutoClose);
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_PersistsAcrossStateUpdates()
+    {
+        SetupAgentState("Adele");
+        _registry.SetDispatchMetadata("Adele", "abcd1234", true);
+
+        // Verify the metadata persists when read back
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.Equal("abcd1234", state.WindowId);
+        Assert.True(state.AutoClose);
+
+        // Simulate what release does: clear role/task but NOT windowId/autoClose
+        // (The integration test Release_WithAutoCloseState_PreservesAutoCloseForWatchdog
+        // covers the full release flow)
+        state.Status = AgentStatus.Free;
+        state.Role = null;
+        state.Task = null;
+
+        // Re-read from disk to confirm persistence
+        var reread = _registry.GetAgentState("Adele")!;
+        Assert.Equal("abcd1234", reread.WindowId);
+        Assert.True(reread.AutoClose);
+    }
+
+    private void SetupAgentState(string agentName)
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: {{agentName}}
+            role: null
+            task: null
+            status: free
+            assigned: testuser
+            dispatched-by: null
+            window-id: null
+            auto-close: false
+            started: null
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            unread-messages: []
+            task-role-history: {}
+            ---
+            """);
+    }
+
+    private string ClaimAgent(string agentName)
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
+        var sessionId = Guid.NewGuid().ToString();
+        File.WriteAllText(Path.Combine(workspace, ".session"), sessionId);
+        // Mark as working so release can proceed
+        _registry.SetRole(sessionId, "code-writer", "test-task", out _);
+        return sessionId;
+    }
+
+    #endregion
 }

@@ -1,0 +1,16 @@
+{
+  "name": "inquisitor",
+  "description": "Conducts documentation and knowledge audits.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**",
+    "dydo/project/inquisitions/**"
+  ],
+  "readOnlyPaths": [
+    "{source}",
+    "{tests}"
+  ],
+  "templateFile": "mode-inquisitor.template.md",
+  "denialHint": null,
+  "constraints": []
+}

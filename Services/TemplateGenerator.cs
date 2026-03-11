@@ -1,7 +1,9 @@
 namespace DynaDocs.Services;
 
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using DynaDocs.Models;
 
 /// <summary>
 /// Generates documentation files by reading templates from embedded resources
@@ -297,7 +299,8 @@ public static class TemplateGenerator
                 ["AGENT_NAME"] = agentName,
                 ["SOURCE_PATHS"] = FormatPathsList(sourcePaths),
                 ["TEST_PATHS"] = FormatPathsList(testPaths),
-                ["SOURCE_AND_TEST_PATHS"] = FormatPathsList([..sourcePaths, ..testPaths])
+                ["SOURCE_AND_TEST_PATHS"] = FormatPathsList([..sourcePaths, ..testPaths]),
+                ["ROLE_TABLE"] = GenerateRoleTable(basePath)
             };
             var result = ReplacePlaceholders(template, placeholders);
             return ResolveIncludes(result, basePath);
@@ -307,6 +310,70 @@ public static class TemplateGenerator
             // Fall back to generated content if template not found
             return GenerateFallbackWorkflowFile(agentName, sourcePaths, testPaths);
         }
+    }
+
+    /// <summary>
+    /// Generates a markdown role table from role definition files.
+    /// Falls back to base role definitions if no role files exist on disk.
+    /// basePath is the dydo folder (not project root).
+    /// </summary>
+    public static string GenerateRoleTable(string? basePath = null)
+    {
+        var roles = LoadRolesForTemplate(basePath);
+        if (roles.Count == 0)
+            roles = RoleDefinitionService.GetBaseRoleDefinitions();
+
+        roles.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+
+        var lines = new List<string>
+        {
+            "| Role | Purpose | Mode File |",
+            "|------|---------|-----------|"
+        };
+
+        foreach (var role in roles)
+        {
+            var modeFile = $"modes/{role.Name}.md";
+            lines.Add($"| {role.Name} | {role.Description} | [{modeFile}]({modeFile}) |");
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// Loads role definitions from disk for template generation.
+    /// basePath may be the dydo folder or the project root.
+    /// </summary>
+    private static List<RoleDefinition> LoadRolesForTemplate(string? basePath)
+    {
+        if (basePath == null)
+            return [];
+
+        // basePath might be the dydo folder itself (from FolderScaffolder)
+        var rolesDir = Path.Combine(basePath, "_system", "roles");
+        if (!Directory.Exists(rolesDir))
+        {
+            // Or it might be the project root
+            rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
+            if (!Directory.Exists(rolesDir))
+                return [];
+        }
+
+        var files = Directory.GetFiles(rolesDir, "*.role.json");
+        if (files.Length == 0)
+            return [];
+
+        var roles = new List<RoleDefinition>();
+        foreach (var file in files)
+        {
+            var json = File.ReadAllText(file);
+            var role = JsonSerializer.Deserialize(json,
+                Serialization.DydoConfigJsonContext.Default.RoleDefinition);
+            if (role != null)
+                roles.Add(role);
+        }
+
+        return roles;
     }
 
     /// <summary>

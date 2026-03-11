@@ -771,7 +771,7 @@ public class DispatchCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Dispatch_WithAutoClose_CreatesMarkerFile()
+    public async Task Dispatch_WithAutoClose_SetsStateFlag()
     {
         await InitProjectAsync("none", "testuser", 3);
 
@@ -779,22 +779,10 @@ public class DispatchCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
 
-        // Find which agent was selected (first free = Adele)
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
-        Assert.True(File.Exists(markerPath), "Auto-close marker file should exist");
-    }
-
-    [Fact]
-    public async Task Dispatch_WithoutAutoClose_NoMarkerFile()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Brief");
-
-        result.AssertSuccess();
-
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
-        Assert.False(File.Exists(markerPath), "Auto-close marker file should not exist");
+        // Auto-close is now stored in the agent's state.md, not a marker file
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
     }
 
     [Fact]
@@ -806,8 +794,9 @@ public class DispatchCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
 
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
-        Assert.True(File.Exists(markerPath));
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
     }
 
     [Fact]
@@ -820,8 +809,9 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("[ESCALATED]");
 
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
-        Assert.True(File.Exists(markerPath));
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
     }
 
     [Fact]
@@ -834,8 +824,9 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("Brian");
 
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Brian/.auto-close");
-        Assert.True(File.Exists(markerPath));
+        var statePath = Path.Combine(TestDir, "dydo/agents/Brian/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
     }
 
     #endregion
@@ -1024,9 +1015,11 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertSuccess();
 
         var wtMarker = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
-        var acMarker = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
         Assert.True(File.Exists(wtMarker));
-        Assert.True(File.Exists(acMarker));
+
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
     }
 
     [Fact]

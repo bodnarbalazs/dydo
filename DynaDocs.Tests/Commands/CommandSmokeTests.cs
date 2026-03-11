@@ -32,9 +32,12 @@ public class CommandSmokeTests
             MessageCommand.Create,
             InitCommand.Create,
             ReviewCommand.Create,
+            RolesCommand.Create,
             TaskCommand.Create,
             TemplateCommand.Create,
             WaitCommand.Create,
+            ValidateCommand.Create,
+            WatchdogCommand.Create,
             WhoamiCommand.Create,
             WorkspaceCommand.Create
         };
@@ -71,15 +74,18 @@ public class CommandSmokeTests
                 MessageCommand.Create(),
                 InitCommand.Create(),
                 ReviewCommand.Create(),
+                RolesCommand.Create(),
                 TaskCommand.Create(),
                 TemplateCommand.Create(),
+                ValidateCommand.Create(),
                 WaitCommand.Create(),
+                WatchdogCommand.Create(),
                 WhoamiCommand.Create(),
                 WorkspaceCommand.Create()
             };
 
             // Verify subcommands are present
-            Assert.True(rootCommand.Subcommands.Count >= 22);
+            Assert.True(rootCommand.Subcommands.Count >= 25);
         });
 
         Assert.Null(exception);

@@ -22,7 +22,6 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
-    private readonly IProcessStarter? _originalTerminalCloserStarter;
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
 
     protected IntegrationTestBase()
@@ -37,11 +36,9 @@ public abstract class IntegrationTestBase : IDisposable
         _originalOut = Console.Out;
         _originalErr = Console.Error;
         _originalIn = Console.In;
-        _originalTerminalCloserStarter = TerminalCloser.ProcessStarterOverride;
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
 
-        // Prevent tests from killing the real Claude process or launching real terminals
-        TerminalCloser.ProcessStarterOverride = new NoOpProcessStarter();
+        // Prevent tests from launching real terminals
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
 
         // Set working directory to test dir
@@ -56,7 +53,6 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
-        TerminalCloser.ProcessStarterOverride = _originalTerminalCloserStarter;
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
 
         // Clean up test directory

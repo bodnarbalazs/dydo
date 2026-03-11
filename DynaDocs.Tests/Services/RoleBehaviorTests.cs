@@ -109,12 +109,24 @@ public class RoleBehaviorTests : IDisposable
         return $"{{ {string.Join(", ", entries)} }}";
     }
 
-    #region BuildRolePermissions — Permission Mapping
+    #region Permission Mapping via RoleDefinitionService
+
+    private static Dictionary<string, (List<string> Writable, List<string> ReadOnly)> BuildPerms(
+        List<string> sourcePaths, List<string> testPaths)
+    {
+        var svc = new RoleDefinitionService();
+        var pathSets = new Dictionary<string, List<string>>
+        {
+            ["source"] = sourcePaths,
+            ["tests"] = testPaths
+        };
+        return svc.BuildPermissionMap(RoleDefinitionService.GetBaseRoleDefinitions(), pathSets);
+    }
 
     [Fact]
-    public void BuildRolePermissions_ReturnsAllNineRoles()
+    public void PermissionMap_ReturnsAllNineRoles()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
 
         Assert.Equal(9, perms.Count);
         Assert.Contains("code-writer", perms.Keys);
@@ -129,9 +141,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_CodeWriter_IncludesSourceTestsAndSelfWorkspace()
+    public void PermissionMap_CodeWriter_IncludesSourceTestsAndSelfWorkspace()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["Commands/**", "Services/**"], ["DynaDocs.Tests/**"]);
+        var perms = BuildPerms(["Commands/**", "Services/**"], ["DynaDocs.Tests/**"]);
         var (writable, readOnly) = perms["code-writer"];
 
         Assert.Contains("Commands/**", writable);
@@ -143,9 +155,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_Reviewer_OnlyWritesSelfWorkspace()
+    public void PermissionMap_Reviewer_OnlyWritesSelfWorkspace()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["reviewer"];
 
         Assert.Single(writable);
@@ -154,9 +166,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_CoThinker_WritesDecisionsAndSelf()
+    public void PermissionMap_CoThinker_WritesDecisionsAndSelf()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["co-thinker"];
 
         Assert.Contains("dydo/agents/{self}/**", writable);
@@ -167,9 +179,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_DocsWriter_WritesDydoSubdirs()
+    public void PermissionMap_DocsWriter_WritesDydoSubdirs()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["docs-writer"];
 
         Assert.Contains("dydo/understand/**", writable);
@@ -185,9 +197,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_Planner_WritesTasksAndSelf()
+    public void PermissionMap_Planner_WritesTasksAndSelf()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["planner"];
 
         Assert.Contains("dydo/agents/{self}/**", writable);
@@ -197,9 +209,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_TestWriter_WritesTestsAndPitfalls()
+    public void PermissionMap_TestWriter_WritesTestsAndPitfalls()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["test-writer"];
 
         Assert.Contains("dydo/agents/{self}/**", writable);
@@ -209,9 +221,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_Orchestrator_WritesTasksDecisionsAndSelf()
+    public void PermissionMap_Orchestrator_WritesTasksDecisionsAndSelf()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["orchestrator"];
 
         Assert.Contains("dydo/agents/{self}/**", writable);
@@ -222,9 +234,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_Inquisitor_WritesInquisitionsAndSelf()
+    public void PermissionMap_Inquisitor_WritesInquisitionsAndSelf()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["inquisitor"];
 
         Assert.Contains("dydo/agents/{self}/**", writable);
@@ -235,9 +247,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_Judge_OnlyWritesSelfWorkspace()
+    public void PermissionMap_Judge_OnlyWritesSelfWorkspace()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["judge"];
 
         Assert.Single(writable);
@@ -247,9 +259,9 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_UsesConfiguredSourceAndTestPaths()
+    public void PermissionMap_UsesConfiguredSourceAndTestPaths()
     {
-        var perms = AgentRegistry.BuildRolePermissions(
+        var perms = BuildPerms(
             ["Commands/**", "Services/**", "Models/**"],
             ["DynaDocs.Tests/**"]);
 
@@ -746,7 +758,7 @@ public class RoleBehaviorTests : IDisposable
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
             sourcePaths: ["src/**"], testPaths: ["tests/**"]);
 
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms[role];
         writable = writable.Select(p => p.Replace("{self}", "Adele")).ToList();
         readOnly = readOnly.Select(p => p.Replace("{self}", "Adele")).ToList();

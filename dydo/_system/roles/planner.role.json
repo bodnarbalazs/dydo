@@ -1,0 +1,15 @@
+{
+  "name": "planner",
+  "description": "Creates implementation plans and task breakdowns.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**",
+    "dydo/project/tasks/**"
+  ],
+  "readOnlyPaths": [
+    "{source}"
+  ],
+  "templateFile": "mode-planner.template.md",
+  "denialHint": "Planner role can only edit own workspace and tasks.",
+  "constraints": []
+}

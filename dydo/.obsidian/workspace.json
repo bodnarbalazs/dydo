@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "glossary.md",
+                "file": "project/v1.3-release.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "glossary"
+              "title": "v1.3-release"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "glossary.md",
+                "file": "project/v1.3-release.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for glossary"
+              "title": "Backlinks for v1.3-release"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "glossary.md",
+                "file": "project/v1.3-release.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from glossary"
+              "title": "Outgoing links from v1.3-release"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "glossary.md",
+                "file": "project/v1.3-release.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of glossary"
+              "title": "Outline of v1.3-release"
             }
           }
         ]
@@ -185,41 +185,40 @@
   },
   "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
-    "agents/Brian/inbox/97f31de8-msg-role-behavioral-tests.md",
-    "agents/Brian/archive/inbox/976b32a3-role-behavioral-tests.md",
-    "agents/Brian/archive/inbox/2f1d0d09-msg-role-behavioral-tests.md",
-    "agents/Jack/archive/inbox/31815d65-role-behavioral-tests.md",
-    "agents/Brian/inbox/2f1d0d09-msg-role-behavioral-tests.md",
-    "agents/Jack/modes/tester.md",
-    "agents/Jack/modes/reviewer.md",
+    "agents/Jack/modes/test-writer.md",
     "agents/Jack/modes/planner.md",
-    "agents/Jack/modes/interviewer.md",
+    "agents/Jack/modes/reviewer.md",
     "agents/Jack/modes/docs-writer.md",
     "agents/Jack/modes/code-writer.md",
     "agents/Jack/modes/co-thinker.md",
     "agents/Jack/modes",
-    "agents/Jack/archive/20260310-184432/plan-role-behavioral-tests.md",
-    "agents/Jack/archive/20260310-184432",
-    "_system/audit/2026/2026-03-10-5aeb48bb-d13c-472a-be54-5828b756c4ad.json",
-    "agents/Jack/inbox/31815d65-role-behavioral-tests.md",
-    "agents/Adele/archive/inbox/cadcc6b1-msg-v1.3-terminal-grouping-2.md",
-    "agents/Adele/archive/inbox/aaf06fdc-msg-v1.3-guard-hardening.md",
-    "agents/Adele/archive/inbox/a16f9be3-msg-v1.3-custom-agent-modes-2.md",
-    "agents/Adele/archive/inbox/9ed9675e-msg-v1.3-coverage-system-2.md",
-    "agents/Adele/archive/inbox/8811671a-msg-v1.3-workflow-role-revamp-2.md",
-    "agents/Adele/archive/inbox/6ca6f310-msg-v1.3-terminal-grouping-2.md",
-    "project/tasks/role-behavioral-tests.md",
-    "agents/Brian/modes/tester.md",
-    "agents/Brian/modes/reviewer.md",
-    "agents/Brian/modes/planner.md",
-    "agents/Brian/modes/interviewer.md",
-    "agents/Brian/modes/docs-writer.md",
-    "agents/Brian/modes",
-    "agents/Brian/archive/20260310-154246",
-    "_system/audit/2026/2026-03-10-6fcb3bdb-e396-4023-9591-25bbcb3cb52f.json",
-    "project/decisions/008-data-driven-roles.md.tmp.34900.1773157036051",
-    "agents/Brian/archive/20260310-152722/review-brief.txt",
-    "agents/Brian/archive/20260310-152722",
-    "_system/audit/2026/2026-03-10-13b8c835-0b19-49f5-8c95-9d64b7ea2a78.json"
+    "agents/Emma/archive/inbox/be1bdacb-v1.3-terminal-dispatch-bugs.md",
+    "agents/Charlie/archive/inbox/caaa30e2-v1.3-terminal-dispatch-bugs.md",
+    "agents/Frank/archive/inbox/ad20a184-msg-custom-role-ux.md",
+    "agents/Emma/modes/test-writer.md",
+    "agents/Emma/modes/reviewer.md",
+    "agents/Emma/modes/planner.md",
+    "agents/Emma/modes/docs-writer.md",
+    "agents/Emma/modes/code-writer.md",
+    "agents/Emma/modes/co-thinker.md",
+    "agents/Emma/modes",
+    "_system/audit/2026/2026-03-11-cc5082a2-f688-4072-8b81-e44bc08e367c.json",
+    "agents/Emma/inbox/be1bdacb-v1.3-terminal-dispatch-bugs.md",
+    "agents/Jack/archive/inbox/4b7f2502-composable-constraints.md",
+    "agents/Jack/archive/20260311-151851",
+    "_system/audit/2026/2026-03-11-2ec2ae87-247d-44c1-a8de-b1421619c9bd.json",
+    "agents/Emma/archive/inbox/64c27ce1-composable-constraints.md",
+    "agents/Jack/inbox/4b7f2502-composable-constraints.md",
+    "agents/Dexter/archive/inbox/b59acea0-custom-role-ux.md",
+    "agents/Frank/inbox/ad20a184-msg-custom-role-ux.md",
+    "_system/audit/2026/2026-03-11-f99bd105-6e79-4029-b451-fc935925f17b.json",
+    "_system/audit/2026/2026-03-11-dbb6cbae-669c-4cb4-a63e-a5775d6d4fd6.json",
+    "agents/Jack/archive/inbox/026faa90-composable-constraints.md",
+    "agents/Emma/inbox/64c27ce1-composable-constraints.md",
+    "agents/Frank/modes/test-writer.md",
+    "agents/Frank/modes/reviewer.md",
+    "agents/Frank/modes",
+    "agents/Dexter/modes",
+    "_system/audit/2026/2026-03-11-9de48e49-ed06-47d8-bfde-ea37103539b0.json"
   ]
 }

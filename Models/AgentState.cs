@@ -29,4 +29,16 @@ public class AgentState
     /// Name of the agent that dispatched this agent. Null for human-initiated agents (tree roots).
     /// </summary>
     public string? DispatchedBy { get; set; }
+
+    /// <summary>
+    /// GUID-based window identifier for Windows Terminal routing.
+    /// Survives release so the watchdog can correlate processes to windows.
+    /// </summary>
+    public string? WindowId { get; set; }
+
+    /// <summary>
+    /// Whether the watchdog should auto-close this agent's terminal after release.
+    /// Survives release so the watchdog can act on it.
+    /// </summary>
+    public bool AutoClose { get; set; }
 }

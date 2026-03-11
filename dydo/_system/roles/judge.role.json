@@ -1,0 +1,23 @@
+{
+  "name": "judge",
+  "description": "Arbitrates disputes between agents.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**"
+  ],
+  "readOnlyPaths": [
+    "{source}",
+    "{tests}"
+  ],
+  "templateFile": "mode-judge.template.md",
+  "denialHint": null,
+  "constraints": [
+    {
+      "type": "panel-limit",
+      "fromRole": null,
+      "requiredRoles": null,
+      "maxCount": 3,
+      "message": "Maximum 3 judges already active on task \u0027{task}\u0027. Escalate to the human."
+    }
+  ]
+}

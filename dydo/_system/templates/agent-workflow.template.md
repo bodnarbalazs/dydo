@@ -7,11 +7,11 @@ type: workflow
 
 You are **{{AGENT_NAME}}**. Follow these steps accurately. Don't skip ahead to be "helpful".
 
-The best thing you can do is follow the instructions and run the commands diligently. It will be enforced by guard hooks. 
+The best thing you can do is follow the instructions and run the commands diligently. It will be enforced by guard hooks.
 
 ---
 
-## 1. Claim Your Identity
+## 1. Claim
 
 ```bash
 dydo agent claim {{AGENT_NAME}}
@@ -24,40 +24,11 @@ dydo agent claim {{AGENT_NAME}}
 
 ---
 
-## 2. Set Your Role
+## 2. Orient
 
-Your prompt contains your task. It may include a workflow flag which determines your starting mode.
+Determine your role and set it.
 
-Read your mode file for the appropriate role, then run the role command:
-
-```bash
-dydo agent role <role> --task <task-name>
-```
-
-| Flag | Role | Mode File |
-|------|------|-----------|
-| `--feature` | interviewer | [modes/interviewer.md](modes/interviewer.md) |
-| `--task` | planner | [modes/planner.md](modes/planner.md) |
-| `--quick` | code-writer | [modes/code-writer.md](modes/code-writer.md) |
-| `--think` | co-thinker | [modes/co-thinker.md](modes/co-thinker.md) |
-| `--review` | reviewer | [modes/reviewer.md](modes/reviewer.md) |
-| `--docs` | docs-writer | [modes/docs-writer.md](modes/docs-writer.md) |
-| `--test` | tester | [modes/tester.md](modes/tester.md) |
-| `--inbox` | (see step 3) | — |
-
-**No flag?** Infer the mode from intent. If ambiguous, ask.
-
-**After** setting your role, you can read any project files.
-
-**Note:** Roles are not permanent — suggest a role change when the work calls for it.
-
----
-
-## 3. Handle Inbox
-
-**No `--inbox` flag?** Skip to step 4.
-
-If you have dispatched work:
+### If `--inbox` flag is present:
 
 ```bash
 dydo inbox show
@@ -66,63 +37,55 @@ dydo inbox show
 For each inbox item:
 1. Read the brief to understand the task
 2. Set your role: `dydo agent role <role> --task <task-name>`
-3. Go to the appropriate mode file
+3. Go to the appropriate mode file (step 3)
 
 **Important:** You cannot release while inbox has unprocessed items. Archived items are kept in `archive/inbox/`.
 
----
+### If no `--inbox` flag:
 
-## 4. Confirm Your Interpretation
+Read your prompt. Infer the appropriate role from context:
 
-If you inferred the mode, state your interpretation:
+| Role | Purpose | Mode File |
+|------|---------|-----------|
+| co-thinker | Explore ideas, scope requirements, think through problems | [modes/co-thinker.md](modes/co-thinker.md) |
+| planner | Design implementation plans | [modes/planner.md](modes/planner.md) |
+| code-writer | Implement features, fix bugs | [modes/code-writer.md](modes/code-writer.md) |
+| test-writer | Write tests, report issues | [modes/test-writer.md](modes/test-writer.md) |
+| reviewer | Review code quality | [modes/reviewer.md](modes/reviewer.md) |
+| docs-writer | Write and maintain documentation | [modes/docs-writer.md](modes/docs-writer.md) |
+| orchestrator | Coordinate parallel agent work | [modes/orchestrator.md](modes/orchestrator.md) |
+| inquisitor | Adversarial QA, find what reviewers missed | [modes/inquisitor.md](modes/inquisitor.md) |
+| judge | Evaluate claims, resolve disputes | [modes/judge.md](modes/judge.md) |
 
-> "I understand you want [X]. Proceeding as [mode] on [task]. Correct me if I'm wrong."
+If ambiguous, ask the human.
 
-If the request seems unrelated to your current task:
+```bash
+dydo agent role <role> --task <task-name>
+```
 
-> "This seems separate from [current-task]. Should I continue here or start fresh?"
+State your interpretation briefly:
 
-Maintain good context hygiene. If the previous task is largely disjunct, it's better to start fresh.
+> "I understand you want [X]. Proceeding as [role] on [task]. Correct me if I'm wrong."
 
----
-
-## 5. Checkpoint
-
-Before making any edits, verify your setup:
+**Verify your setup:**
 
 ```bash
 dydo whoami          # Confirm: {{AGENT_NAME}}
 dydo agent status    # Confirm: role and permissions set
 ```
 
-If either command shows an error, fix it before proceeding.
+**Note:** Roles are not permanent — suggest a role change when the work calls for it.
 
 ---
 
-## 6. Follow Your Mode
+## 3. Work
 
 Go to your mode file. It contains:
 - **Must-reads** specific to your role
-- **Role setup** command
 - **Work guidance** for that role
-- **Completion** instructions
+- **Completion** instructions (dispatch, release, etc.)
 
----
-
-## 7. Complete
-
-Follow your mode's completion instructions. Generally:
-
-1. **Dispatch** to the next role if handing off work
-2. **Report back?** If you were dispatched by another agent and they need results, message them before releasing:
-   ```bash
-   dydo msg --to <origin-agent> --subject <task-name> --body "Results summary..."
-   ```
-   Check who dispatched you: the `From` or `Origin` field in your inbox item.
-3. **Clear inbox** if you processed dispatched items: `dydo inbox clear --all`
-4. **Release** your identity: `dydo agent release`
-
-**Note:** After dispatching, you may receive a response (e.g., reviewer feedback). Check your inbox if re-engaged.
+Follow it through to completion.
 
 ---
 
@@ -153,14 +116,13 @@ dydo inbox show                          # Check dispatched work
 dydo inbox clear --all                   # Archive processed items
 
 # Dispatch
-dydo dispatch --wait --auto-close --role <r> --task <t> --brief "..."   # Expecting feedback
+dydo dispatch --wait --auto-close --role <r> --task <t> --brief "..."   # Returns immediately, registers wait
 dydo dispatch --no-wait --role <r> --task <t> --brief "..."             # Fire and forget
 
 # Messaging
 dydo msg --to <agent> --body "..."                   # Send message
 dydo msg --to <agent> --subject <task> --body "..."  # With task context
-dydo wait                                             # Wait for any message
-dydo wait --task <name>                               # Wait for task-specific message
+dydo wait --task <name>                               # Wait for task-specific message (must run in background)
 dydo wait --task <name> --cancel                      # Cancel an active wait
 ```
 

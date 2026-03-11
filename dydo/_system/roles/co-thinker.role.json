@@ -1,0 +1,16 @@
+{
+  "name": "co-thinker",
+  "description": "Collaborates on design decisions and architecture.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**",
+    "dydo/project/decisions/**"
+  ],
+  "readOnlyPaths": [
+    "{source}",
+    "{tests}"
+  ],
+  "templateFile": "mode-co-thinker.template.md",
+  "denialHint": "Co-thinker role can edit own workspace and decisions.",
+  "constraints": []
+}

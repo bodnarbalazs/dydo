@@ -1,0 +1,16 @@
+{
+  "name": "test-writer",
+  "description": "Writes and maintains test suites.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**",
+    "{tests}",
+    "dydo/project/pitfalls/**"
+  ],
+  "readOnlyPaths": [
+    "{source}"
+  ],
+  "templateFile": "mode-test-writer.template.md",
+  "denialHint": "Test-writer role can edit own workspace, tests, and pitfalls.",
+  "constraints": []
+}

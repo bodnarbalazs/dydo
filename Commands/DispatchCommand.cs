@@ -386,13 +386,6 @@ public static class DispatchCommand
         // Resolve effective auto-close: CLI flag || config default
         var effectiveAutoClose = autoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
 
-        // Create .auto-close marker in target agent workspace
-        if (effectiveAutoClose)
-        {
-            var autoCloseMarker = Path.Combine(registry.GetAgentWorkspace(targetAgentName), ".auto-close");
-            File.WriteAllText(autoCloseMarker, "");
-        }
-
         // Create .worktree marker so cleanup can find orphans
         string? worktreeId = null;
         if (worktree)
@@ -402,14 +395,31 @@ public static class DispatchCommand
             File.WriteAllText(worktreeMarker, worktreeId);
         }
 
+        // Determine window routing context
+        string? windowName = Environment.GetEnvironmentVariable("DYDO_WINDOW");
+        var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
+
+        if (!launchInTab)
+        {
+            // New window: always generate a fresh GUID for routing
+            windowName = Guid.NewGuid().ToString("N")[..8];
+        }
+        // For tabs: windowName inherits from DYDO_WINDOW (may be null — falls back to -w 0)
+
+        // Store dispatch metadata in target agent state (survives release for watchdog)
+        registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
+
         // Launch new terminal if requested
         if (!noLaunch)
         {
-            var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
             var projectRoot = PathUtils.FindProjectRoot();
-            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId);
+            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName);
             Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         }
+
+        // Start watchdog if auto-close is enabled
+        if (effectiveAutoClose)
+            WatchdogService.EnsureRunning();
 
         // --wait: create marker and return immediately
         if (wait)

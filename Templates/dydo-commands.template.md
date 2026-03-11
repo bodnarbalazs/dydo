@@ -258,6 +258,7 @@ dydo dispatch --no-wait --role code-writer --task auth-login --brief "Implement 
 - `--no-launch` - Don't launch terminal, just write to inbox
 - `--tab` - Launch in a new tab instead of a new window (overrides config)
 - `--new-window` - Launch in a new window (overrides config)
+- `--worktree` - Run dispatched agent in a git worktree for isolated work
 
 **Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
 

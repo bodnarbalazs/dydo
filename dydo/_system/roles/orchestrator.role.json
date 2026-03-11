@@ -1,0 +1,27 @@
+{
+  "name": "orchestrator",
+  "description": "Coordinates multi-agent workflows and task dispatch.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**",
+    "dydo/project/tasks/**",
+    "dydo/project/decisions/**"
+  ],
+  "readOnlyPaths": [
+    "**"
+  ],
+  "templateFile": "mode-orchestrator.template.md",
+  "denialHint": null,
+  "constraints": [
+    {
+      "type": "requires-prior",
+      "fromRole": null,
+      "requiredRoles": [
+        "co-thinker",
+        "planner"
+      ],
+      "maxCount": null,
+      "message": "You are a {current_role}. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification."
+    }
+  ]
+}

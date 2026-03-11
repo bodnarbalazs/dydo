@@ -589,4 +589,122 @@ public class TemplateGeneratorTests
     }
 
     #endregion
+
+    #region Role Table Tests
+
+    [Fact]
+    public void GenerateRoleTable_WithNullBasePath_FallsBackToBaseDefinitions()
+    {
+        var table = TemplateGenerator.GenerateRoleTable(null);
+
+        Assert.Contains("| Role | Purpose | Mode File |", table);
+        Assert.Contains("|------|---------|-----------|", table);
+        Assert.Contains("code-writer", table);
+        Assert.Contains("reviewer", table);
+        Assert.Contains("co-thinker", table);
+        Assert.Contains("planner", table);
+        Assert.Contains("docs-writer", table);
+        Assert.Contains("test-writer", table);
+        Assert.Contains("orchestrator", table);
+        Assert.Contains("inquisitor", table);
+        Assert.Contains("judge", table);
+    }
+
+    [Fact]
+    public void GenerateRoleTable_FallbackTable_HasModeFileLinks()
+    {
+        var table = TemplateGenerator.GenerateRoleTable(null);
+
+        Assert.Contains("[modes/code-writer.md](modes/code-writer.md)", table);
+        Assert.Contains("[modes/reviewer.md](modes/reviewer.md)", table);
+        Assert.Contains("[modes/planner.md](modes/planner.md)", table);
+    }
+
+    [Fact]
+    public void GenerateRoleTable_FallbackTable_IncludesDescriptions()
+    {
+        var table = TemplateGenerator.GenerateRoleTable(null);
+
+        Assert.Contains("Implements features and fixes bugs", table);
+        Assert.Contains("Reviews code changes", table);
+    }
+
+    [Fact]
+    public void GenerateRoleTable_FallbackTable_IsSortedAlphabetically()
+    {
+        var table = TemplateGenerator.GenerateRoleTable(null);
+        var lines = table.Split('\n').Skip(2).ToList(); // Skip header rows
+
+        var roleNames = lines.Select(l => l.Split('|')[1].Trim()).ToList();
+        var sorted = roleNames.OrderBy(n => n, StringComparer.Ordinal).ToList();
+
+        Assert.Equal(sorted, roleNames);
+    }
+
+    [Fact]
+    public void GenerateRoleTable_WithRoleFiles_LoadsFromDisk()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        var rolesDir = Path.Combine(tempDir, "_system", "roles");
+        Directory.CreateDirectory(rolesDir);
+
+        try
+        {
+            var roleJson = """
+                {
+                    "name": "custom-role",
+                    "description": "A custom test role.",
+                    "base": false,
+                    "writablePaths": ["src/**"],
+                    "readOnlyPaths": [],
+                    "templateFile": "mode-custom-role.template.md",
+                    "constraints": []
+                }
+                """;
+            File.WriteAllText(Path.Combine(rolesDir, "custom-role.role.json"), roleJson);
+
+            var table = TemplateGenerator.GenerateRoleTable(tempDir);
+
+            Assert.Contains("custom-role", table);
+            Assert.Contains("A custom test role.", table);
+            Assert.Contains("[modes/custom-role.md](modes/custom-role.md)", table);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void GenerateRoleTable_WithEmptyRolesDir_FallsBackToBaseDefinitions()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        var rolesDir = Path.Combine(tempDir, "_system", "roles");
+        Directory.CreateDirectory(rolesDir);
+
+        try
+        {
+            var table = TemplateGenerator.GenerateRoleTable(tempDir);
+
+            // Falls back to base definitions
+            Assert.Contains("code-writer", table);
+            Assert.Contains("reviewer", table);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void GenerateWorkflowFile_ContainsRoleTableNotPlaceholder()
+    {
+        var content = TemplateGenerator.GenerateWorkflowFile("Adele");
+
+        Assert.DoesNotContain("{{ROLE_TABLE}}", content);
+        Assert.Contains("| Role | Purpose | Mode File |", content);
+        Assert.Contains("code-writer", content);
+    }
+
+    #endregion
 }

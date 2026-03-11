@@ -768,35 +768,38 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Release_WithAutoCloseMarker_DeletesMarker()
+    public async Task Release_WithAutoCloseState_PreservesAutoCloseForWatchdog()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
 
-        // Create auto-close marker
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
-        File.WriteAllText(markerPath, "");
-        Assert.True(File.Exists(markerPath));
+        // Set auto-close in state file (simulating what DispatchCommand does)
+        var registry = new AgentRegistry(TestDir);
+        registry.SetDispatchMetadata("Adele", "abcd1234", true);
 
         var result = await ReleaseAgentAsync();
         result.AssertSuccess();
 
-        Assert.False(File.Exists(markerPath), "Auto-close marker should be deleted after release");
+        // Auto-close and window-id should survive release for the watchdog
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
+        Assert.Contains("window-id: abcd1234", stateContent);
+        Assert.Contains("status: free", stateContent);
     }
 
     [Fact]
-    public async Task Release_WithAutoCloseMarker_OutputsAutoCloseMessage()
+    public async Task Release_WithoutAutoClose_StateShowsFalse()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
 
-        // Create auto-close marker
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close");
-        File.WriteAllText(markerPath, "");
-
         var result = await ReleaseAgentAsync();
         result.AssertSuccess();
-        result.AssertStdoutContains("Auto-close:");
+
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: false", stateContent);
     }
 
     [Fact]

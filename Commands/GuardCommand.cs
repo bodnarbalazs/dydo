@@ -112,6 +112,9 @@ public static partial class GuardCommand
         var registry = new AgentRegistry();
         var auditService = new AuditService();
 
+        // Daily validation: warn about config issues on first guard call per day
+        RunDailyValidationIfDue();
+
         // For CLI mode, fall back to session context file (set by guard for subprocess commands)
         if (hasCliArgs && string.IsNullOrEmpty(sessionId))
         {
@@ -1130,7 +1133,7 @@ public static partial class GuardCommand
 
     // Matches: dotnet run [flags...] -- <dydo-subcommand> [args...]
     // Only matches when args after -- start with a known dydo subcommand.
-    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help)\b.*)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\b.*)", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectDotnetRunRegex();
 
     // Matches: bash/sh/zsh/cmd/powershell/pwsh [flags...] dydo [args...]
@@ -1287,6 +1290,47 @@ public static partial class GuardCommand
         {
             // Audit logging should never break the guard
             // Silently ignore errors
+        }
+    }
+
+    /// <summary>
+    /// Non-blocking daily validation. Runs on first guard call per 24h period.
+    /// Warns about config issues via stderr but never blocks enforcement.
+    /// </summary>
+    private static void RunDailyValidationIfDue()
+    {
+        try
+        {
+            var basePath = Environment.CurrentDirectory;
+            var timestampPath = Path.Combine(basePath, "dydo", "_system", ".last-validation");
+
+            if (File.Exists(timestampPath))
+            {
+                var lastRun = File.GetLastWriteTimeUtc(timestampPath);
+                if ((DateTime.UtcNow - lastRun).TotalHours < 24)
+                    return;
+            }
+
+            var validator = new ValidationService();
+            var issues = validator.ValidateSystem(basePath);
+
+            if (issues.Count > 0)
+            {
+                Console.Error.WriteLine("Daily validation found issues:");
+                foreach (var issue in issues)
+                    Console.Error.WriteLine($"  [{issue.Severity}] {issue.File}: {issue.Message}");
+                Console.Error.WriteLine("Run 'dydo validate' for full report.");
+                Console.Error.WriteLine();
+            }
+
+            // Update timestamp (create parent dir if needed)
+            var dir = Path.GetDirectoryName(timestampPath);
+            if (dir != null) Directory.CreateDirectory(dir);
+            File.WriteAllText(timestampPath, DateTime.UtcNow.ToString("O"));
+        }
+        catch
+        {
+            // Daily validation must never break the guard
         }
     }
 }

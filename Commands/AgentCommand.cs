@@ -198,16 +198,6 @@ public static class AgentCommand
         Console.WriteLine($"Agent identity released: {current.Name}");
         Console.WriteLine("  Status: free");
 
-        // Check for auto-close marker
-        var workspace = registry.GetAgentWorkspace(current.Name);
-        var autoCloseMarker = Path.Combine(workspace, ".auto-close");
-        if (File.Exists(autoCloseMarker))
-        {
-            File.Delete(autoCloseMarker);
-            Console.WriteLine("  Auto-close: session will close shortly.");
-            TerminalCloser.ScheduleClaudeTermination();
-        }
-
         return ExitCodes.Success;
     }
 

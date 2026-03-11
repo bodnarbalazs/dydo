@@ -26,6 +26,9 @@ rootCommand.Subcommands.Add(AuditCommand.Create());
 rootCommand.Subcommands.Add(CompletionsCommand.Create());
 rootCommand.Subcommands.Add(CompleteCommand.Create());
 rootCommand.Subcommands.Add(TemplateCommand.Create());
+rootCommand.Subcommands.Add(RolesCommand.Create());
+rootCommand.Subcommands.Add(ValidateCommand.Create());
+rootCommand.Subcommands.Add(WatchdogCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>
@@ -90,6 +93,15 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  audit --list           List available sessions");
     Console.WriteLine("  audit --session <id>   Show details for a session");
     Console.WriteLine("  audit compact [year]   Compact audit snapshots (baseline+delta)");
+    Console.WriteLine();
+    Console.WriteLine("Role Commands:");
+    Console.WriteLine("  roles list             List loaded role definitions");
+    Console.WriteLine("  roles create <name>    Scaffold a new custom role definition");
+    Console.WriteLine("  roles reset            Regenerate base role files (human only)");
+    Console.WriteLine("  roles reset --all      Remove all roles and regenerate base (human only)");
+    Console.WriteLine();
+    Console.WriteLine("Validation Commands:");
+    Console.WriteLine("  validate               Validate config, roles, templates, agent state");
     Console.WriteLine();
     Console.WriteLine("Template Commands:");
     Console.WriteLine("  template update        Update framework templates and docs");

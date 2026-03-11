@@ -11,3 +11,5 @@ DynaDocs.sln.DotSettings.user
 
 # DynaDocs agent workspaces (local state)
 dydo/agents/
+
+/DynaDocs.Tests/coverage/report

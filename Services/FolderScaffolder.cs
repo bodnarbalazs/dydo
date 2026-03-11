@@ -18,6 +18,7 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
         new("_system", "System configuration (committed)", "_system"),
+        new("_system/roles", "Role definition files", "_system"),
         new("_system/templates", "Project-local template overrides", "_system"),
         new("_system/audit", "Agent activity audit logs", "_system"),
         new("_system/audit/reports", "Generated audit visualizations", "_system"),
@@ -44,6 +45,9 @@ public class FolderScaffolder : IFolderScaffolder
         CopyBuiltInTemplates(basePath);
 
         ScaffoldTemplateAdditions(basePath);
+
+        // Scaffold base role definition files
+        new RoleDefinitionService().WriteBaseRoleDefinitions(basePath);
 
         // Copy built-in assets to _assets/
         CopyBuiltInAssets(basePath);
@@ -90,6 +94,9 @@ public class FolderScaffolder : IFolderScaffolder
         CopyBuiltInTemplates(basePath);
 
         ScaffoldTemplateAdditions(basePath);
+
+        // Scaffold base role definition files
+        new RoleDefinitionService().WriteBaseRoleDefinitions(basePath);
 
         // Copy built-in assets to _assets/
         CopyBuiltInAssets(basePath);

@@ -1,0 +1,75 @@
+{
+  "session": "f99bd105-6e79-4029-b451-fc935925f17b",
+  "human": "balazs",
+  "started": "2026-03-11T15:16:16.4912384Z",
+  "git_head": "f709b82",
+  "events": [
+    {
+      "ts": "2026-03-11T15:16:16.4905225Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T15:16:16.9919487Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-11T15:16:24.7254343Z",
+      "event": "Blocked",
+      "tool": "agent",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-11T15:16:28.5939406Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands/\u0022 \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls \u0022C:\\Users\\User\\Desktop\\Pr..."
+    },
+    {
+      "ts": "2026-03-11T15:22:44.7880311Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\u0022 -name \u0022*.md\u0022 -not -path \u0022*/.obsidian/*\u0022 | head -..."
+    },
+    {
+      "ts": "2026-03-11T15:22:52.6082221Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models/\u0022 \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls \u0022C:\\Users\\User\\Desktop\\Proj..."
+    },
+    {
+      "ts": "2026-03-11T15:25:20.3108188Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DocGraph.cs\u0022"
+    },
+    {
+      "ts": "2026-03-11T15:25:21.1492349Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DocScanner.cs\u0022"
+    },
+    {
+      "ts": "2026-03-11T15:25:21.378164Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GraphCommand.cs\u0022"
+    },
+    {
+      "ts": "2026-03-11T15:25:27.33199Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\DocFile.cs\u0022"
+    },
+    {
+      "ts": "2026-03-11T15:25:27.570122Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ValidationService.cs\u0022"
+    }
+  ]
+}

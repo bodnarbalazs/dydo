@@ -79,10 +79,22 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Equal(["DynaDocs.Tests/**"], config.Paths.Tests);
     }
 
-    [Fact]
-    public void BuildRolePermissions_DefaultPaths_MatchesOriginalBehavior()
+    private static Dictionary<string, (List<string> Writable, List<string> ReadOnly)> BuildPerms(
+        List<string> sourcePaths, List<string> testPaths)
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var svc = new RoleDefinitionService();
+        var pathSets = new Dictionary<string, List<string>>
+        {
+            ["source"] = sourcePaths,
+            ["tests"] = testPaths
+        };
+        return svc.BuildPermissionMap(RoleDefinitionService.GetBaseRoleDefinitions(), pathSets);
+    }
+
+    [Fact]
+    public void PermissionMap_DefaultPaths_MatchesOriginalBehavior()
+    {
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
 
         Assert.Contains("src/**", perms["code-writer"].Writable);
         Assert.Contains("tests/**", perms["code-writer"].Writable);
@@ -99,11 +111,11 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_CustomPaths_AppliedToAllRoles()
+    public void PermissionMap_CustomPaths_AppliedToAllRoles()
     {
         var source = new List<string> { "Commands/**", "Services/**", "Models/**" };
         var tests = new List<string> { "DynaDocs.Tests/**" };
-        var perms = AgentRegistry.BuildRolePermissions(source, tests);
+        var perms = BuildPerms(source, tests);
 
         // code-writer gets all source + test paths as writable
         Assert.Contains("Commands/**", perms["code-writer"].Writable);
@@ -131,9 +143,9 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_Returns9Entries()
+    public void PermissionMap_Returns9Entries()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
 
         Assert.Equal(9, perms.Count);
         Assert.True(perms.ContainsKey("orchestrator"));
@@ -142,9 +154,9 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void BuildRolePermissions_OversightRoles_HaveCorrectPermissions()
+    public void PermissionMap_OversightRoles_HaveCorrectPermissions()
     {
-        var perms = AgentRegistry.BuildRolePermissions(["src/**"], ["tests/**"]);
+        var perms = BuildPerms(["src/**"], ["tests/**"]);
 
         // Orchestrator: writes workspace + tasks + decisions; reads everything
         Assert.Contains("dydo/agents/{self}/**", perms["orchestrator"].Writable);

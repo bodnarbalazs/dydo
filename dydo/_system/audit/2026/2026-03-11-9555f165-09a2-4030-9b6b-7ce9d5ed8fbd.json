@@ -1,0 +1,15 @@
+{
+  "session": "9555f165-09a2-4030-9b6b-7ce9d5ed8fbd",
+  "human": "balazs",
+  "started": "2026-03-11T16:41:01.6792395Z",
+  "git_head": "c0b82b3",
+  "events": [
+    {
+      "ts": "2026-03-11T16:41:01.6787247Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj",
+      "tool": "read",
+      "reason": "No agent identity"
+    }
+  ]
+}

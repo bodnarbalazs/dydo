@@ -1242,7 +1242,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_Worktree_ContainsWorktreeAdd()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree add .dydo/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
+        Assert.Contains($"git worktree add _system/.local/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
     }
 
     [Fact]
@@ -1257,7 +1257,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_Worktree_ContainsWorktreeRemove()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree remove .dydo/worktrees/{TestWorktreeId} --force", args);
+        Assert.Contains($"git worktree remove _system/.local/worktrees/{TestWorktreeId} --force", args);
     }
 
     [Fact]
@@ -1271,7 +1271,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_Worktree_ContainsMkdir()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("New-Item -ItemType Directory -Force -Path .dydo/worktrees", args);
+        Assert.Contains("New-Item -ItemType Directory -Force -Path _system/.local/worktrees", args);
     }
 
     [Fact]
@@ -1309,7 +1309,7 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_Worktree_ContainsWorktreeAdd(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree add .dydo/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
+        Assert.Contains($"git worktree add _system/.local/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
     }
 
     [Theory]
@@ -1319,7 +1319,7 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_Worktree_ContainsWorktreeRemove(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree remove .dydo/worktrees/{TestWorktreeId} --force", args);
+        Assert.Contains($"git worktree remove _system/.local/worktrees/{TestWorktreeId} --force", args);
     }
 
     [Theory]
@@ -1328,7 +1328,7 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_Worktree_ContainsMkdirP(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("mkdir -p .dydo/worktrees", args);
+        Assert.Contains("mkdir -p _system/.local/worktrees", args);
     }
 
     [Theory]
@@ -1337,7 +1337,7 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_Worktree_CdBackToRoot(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("cd ../../..", args);
+        Assert.Contains("cd ../../../..", args);
     }
 
     [Theory]
@@ -1367,14 +1367,14 @@ public class TerminalLauncherTests
     public void GetMacArguments_Worktree_ContainsWorktreeAdd()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree add .dydo/worktrees/{TestWorktreeId}", args);
+        Assert.Contains($"git worktree add _system/.local/worktrees/{TestWorktreeId}", args);
     }
 
     [Fact]
     public void GetMacArguments_Worktree_ContainsWorktreeRemove()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree remove .dydo/worktrees/{TestWorktreeId} --force", args);
+        Assert.Contains($"git worktree remove _system/.local/worktrees/{TestWorktreeId} --force", args);
     }
 
     [Fact]

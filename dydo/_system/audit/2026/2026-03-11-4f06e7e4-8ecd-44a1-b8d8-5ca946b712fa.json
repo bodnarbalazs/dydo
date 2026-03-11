@@ -263,6 +263,290 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-11T18:24:35.8124439Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\sprint-ground-rules.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-11T18:28:57.175012Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\b82vew4h1.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T18:29:09.8278641Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep -E \u0022error CS\u0022 | sort -u",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T18:29:16.3028145Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep -E \u0022error CS\u0022 | sort -u"
+    },
+    {
+      "ts": "2026-03-11T18:29:22.9260652Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short -- Services/ Utils/ Commands/ Models/ Rules/ DynaDocs.Tests/ 2\u003E\u00261 | head -40"
+    },
+    {
+      "ts": "2026-03-11T18:29:26.7126917Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short -- Services/ Utils/ Commands/ Models/ Rules/ DynaDocs.Tests/ 2\u003E\u00261 | grep \u0022^??\u0022 | ..."
+    },
+    {
+      "ts": "2026-03-11T18:29:29.9144986Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short -- Services/ Utils/ Commands/ Models/ Rules/ DynaDocs.Tests/ 2\u003E\u00261 | grep \u0022^??\u0022"
+    },
+    {
+      "ts": "2026-03-11T18:29:36.8537386Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git diff --stat -- Services/ProcessUtils.cs 2\u003E\u00261 | tail -3",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T18:29:45.063574Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep \u0022error CS\u0022 | sort -u | wc -l"
+    },
+    {
+      "ts": "2026-03-11T18:29:50.6128246Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep \u0022error CS\u0022 | sort -u"
+    },
+    {
+      "ts": "2026-03-11T18:30:00.1910436Z",
+      "event": "Blocked",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T18:30:01.1754705Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils\\PathUtils.cs",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T18:30:09.4939889Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T18:30:10.2866334Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils\\PathUtils.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T18:30:19.0110892Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep \u0022error CS\u0022"
+    },
+    {
+      "ts": "2026-03-11T18:30:33.0065139Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for agent in Frank Grace Iris Kate Mia Olivia Quinn; do dydo msg --to $agent --subject t1-coverage-s..."
+    },
+    {
+      "ts": "2026-03-11T18:33:29.3285951Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\bh92evj0j.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T18:33:29.3720161Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\bwofq1iqn.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T18:33:34.28793Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep \u0022error CS\u0022 | sort -u | wc -l"
+    },
+    {
+      "ts": "2026-03-11T18:33:40.6848168Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | grep \u0022error CS\u0022 | sort -u"
+    },
+    {
+      "ts": "2026-03-11T18:33:46.8352918Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore DynaDocs.csproj 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-11T18:34:00.4178122Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for agent in Frank Grace Iris Kate Mia Olivia Quinn; do dydo msg --to $agent --subject t1-coverage-s..."
+    },
+    {
+      "ts": "2026-03-11T19:29:27.8573048Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\bzkqn05pz.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T19:40:29.7246393Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-11T19:40:30.0817581Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-11T19:40:33.4097276Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\tests\\coverage\\gap_check.py",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T19:42:47.5354729Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-11T19:42:51.340231Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\project\\decisions\\005-testing-tier-metric-revision.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T19:43:06.8459238Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python -c \u0022\nimport xml.etree.ElementTree as ET\nfrom pathlib import Path\nxmls = sorted(Path(\u0027.\u0027).glob..."
+    },
+    {
+      "ts": "2026-03-11T19:45:02.9161605Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-gap-check-crap-metric.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-11T19:45:23.8048649Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\t1-coverage-sprint.md",
+      "tool": "write",
+      "reason": "Agent Brian (co-thinker) cannot write ../../../.claude/projects/C--Users-User-Desktop-Projects-DynaDocs/memory/t1-coverage-sprint.md. Co-thinker role can edit own workspace and decisions."
+    },
+    {
+      "ts": "2026-03-11T19:45:31.463644Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\notes-t1-sprint-status.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-11T19:50:23.8803807Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cd C:/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 git log --oneline -10",
+      "reason": "Needless cd compound"
+    },
+    {
+      "ts": "2026-03-11T19:50:29.5796255Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git log --oneline -10",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T19:50:36.9771532Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\208e8a4c-msg-fix-gap-check-crap-metric.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T19:50:37.0659061Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -10"
+    },
+    {
+      "ts": "2026-03-11T20:09:55.034575Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261 | head -80"
+    },
+    {
+      "ts": "2026-03-11T20:11:31.792529Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-guard-security.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:11:34.7400212Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261 | tail -40"
+    },
+    {
+      "ts": "2026-03-11T20:11:41.5172134Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Guard 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-11T20:14:37.1105201Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-agent-lifecycle.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:14:37.5833959Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-dispatch-messaging.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:14:38.0784469Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-doc-validation.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:14:38.5648648Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-setup-templates.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:14:38.8506652Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-audit-snapshots.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:14:39.2987248Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-task-review.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T20:14:39.627306Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-platform-utils.md",
+      "tool": "read"
     }
   ],
   "snapshot": {

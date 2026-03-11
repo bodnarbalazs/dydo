@@ -45,17 +45,7 @@ For each inbox item:
 
 Read your prompt. Infer the appropriate role from context:
 
-| Role | Purpose | Mode File |
-|------|---------|-----------|
-| co-thinker | Explore ideas, scope requirements, think through problems | [modes/co-thinker.md](modes/co-thinker.md) |
-| planner | Design implementation plans | [modes/planner.md](modes/planner.md) |
-| code-writer | Implement features, fix bugs | [modes/code-writer.md](modes/code-writer.md) |
-| test-writer | Write tests, report issues | [modes/test-writer.md](modes/test-writer.md) |
-| reviewer | Review code quality | [modes/reviewer.md](modes/reviewer.md) |
-| docs-writer | Write and maintain documentation | [modes/docs-writer.md](modes/docs-writer.md) |
-| orchestrator | Coordinate parallel agent work | [modes/orchestrator.md](modes/orchestrator.md) |
-| inquisitor | Adversarial QA, find what reviewers missed | [modes/inquisitor.md](modes/inquisitor.md) |
-| judge | Evaluate claims, resolve disputes | [modes/judge.md](modes/judge.md) |
+{{ROLE_TABLE}}
 
 If ambiguous, ask the human.
 

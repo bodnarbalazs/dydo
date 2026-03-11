@@ -52,7 +52,7 @@ public static class ShellCompletionInstaller
         }
     }
 
-    internal static (string? Shell, string? ProfilePath) DetectShell()
+    public static (string? Shell, string? ProfilePath) DetectShell()
     {
         // Check $SHELL env var on all platforms first (handles Git Bash on Windows)
         var shellEnv = Environment.GetEnvironmentVariable("SHELL");

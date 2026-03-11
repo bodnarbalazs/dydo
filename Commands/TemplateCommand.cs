@@ -8,17 +8,11 @@ using DynaDocs.Services;
 
 public static class TemplateCommand
 {
-    // Framework-owned files relative to the dydo root
+    // Framework-owned files relative to the dydo root — derived from role definitions
     public static readonly string[] FrameworkTemplateFiles =
-    [
-        "_system/templates/agent-workflow.template.md",
-        "_system/templates/mode-code-writer.template.md",
-        "_system/templates/mode-reviewer.template.md",
-        "_system/templates/mode-co-thinker.template.md",
-        "_system/templates/mode-planner.template.md",
-        "_system/templates/mode-docs-writer.template.md",
-        "_system/templates/mode-test-writer.template.md"
-    ];
+        TemplateGenerator.GetAllTemplateNames()
+            .Select(name => $"_system/templates/{name}")
+            .ToArray();
 
     public static readonly string[] FrameworkDocFiles =
     [
@@ -112,6 +106,53 @@ public static class TemplateCommand
                 case UpdateResult.Warning warning:
                     warnings.Add(warning.Message);
                     break;
+            }
+        }
+
+        // Clean up stale template files not in the current framework set
+        var validTemplateSet = new HashSet<string>(FrameworkTemplateFiles);
+        var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
+        if (Directory.Exists(templatesDir))
+        {
+            foreach (var file in Directory.GetFiles(templatesDir, "*.template.md"))
+            {
+                var relative = "_system/templates/" + Path.GetFileName(file);
+                if (validTemplateSet.Contains(relative)) continue;
+
+                if (!diff)
+                    File.Delete(file);
+                Console.WriteLine($"  Removed stale: {relative}");
+                updated++;
+            }
+        }
+
+        // Prune stale hash entries for templates no longer in the framework set
+        var validHashKeys = new HashSet<string>(FrameworkTemplateFiles
+            .Concat(FrameworkDocFiles)
+            .Concat(FrameworkBinaryFiles));
+        var staleKeys = config.FrameworkHashes.Keys
+            .Where(k => !validHashKeys.Contains(k))
+            .ToList();
+        foreach (var key in staleKeys)
+        {
+            if (!diff)
+                config.FrameworkHashes.Remove(key);
+            Console.WriteLine($"  Pruned stale hash: {key}");
+        }
+
+        // Regenerate agent workspace files (workflow.md + mode files)
+        var scaffolder = new FolderScaffolder();
+        var agentsPath = Path.Combine(dydoRoot, "agents");
+        if (Directory.Exists(agentsPath))
+        {
+            var sourcePaths = config.Paths.Source;
+            var testPaths = config.Paths.Tests;
+            foreach (var agentDir in Directory.GetDirectories(agentsPath))
+            {
+                var agentName = Path.GetFileName(agentDir);
+                if (!diff)
+                    scaffolder.RegenerateAgentFiles(agentsPath, agentName, sourcePaths, testPaths);
+                Console.WriteLine($"  Regenerated: agents/{agentName}");
             }
         }
 

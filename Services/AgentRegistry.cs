@@ -1988,7 +1988,7 @@ public partial class AgentRegistry : IAgentRegistry
     private record ClaimLock(int Pid, DateTime Acquired);
 
     [JsonSerializable(typeof(ClaimLock))]
-    private partial class ClaimLockJsonContext : JsonSerializerContext { }
+    private partial class RegistryLockJsonContext : JsonSerializerContext { }
 
     private string GetLockFilePath(string agentName) =>
         Path.Combine(GetAgentWorkspace(agentName), ".claim.lock");
@@ -2017,7 +2017,7 @@ public partial class AgentRegistry : IAgentRegistry
 
             // Write our PID and timestamp
             var lockInfo = new ClaimLock(Environment.ProcessId, DateTime.UtcNow);
-            var json = JsonSerializer.Serialize(lockInfo, ClaimLockJsonContext.Default.ClaimLock);
+            var json = JsonSerializer.Serialize(lockInfo, RegistryLockJsonContext.Default.ClaimLock);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             stream.Write(bytes, 0, bytes.Length);
 
@@ -2035,7 +2035,7 @@ public partial class AgentRegistry : IAgentRegistry
             try
             {
                 var existingJson = File.ReadAllText(lockPath);
-                var existingLock = JsonSerializer.Deserialize(existingJson, ClaimLockJsonContext.Default.ClaimLock);
+                var existingLock = JsonSerializer.Deserialize(existingJson, RegistryLockJsonContext.Default.ClaimLock);
 
                 if (existingLock != null && ProcessUtils.IsProcessRunning(existingLock.Pid))
                 {

@@ -834,6 +834,44 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.waiting/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls..."
+    },
+    {
+      "ts": "2026-03-11T18:23:00.5676415Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T18:23:10.0790507Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5e08544b-msg-t1-coverage-sprint.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T18:23:21.4068526Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T18:23:21.7108707Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T21:32:57.6650171Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "for agent in Grace Iris Kate Mia Olivia Paul Quinn; do echo \u0022=== $agent ===\u0022; ls \u0022C:/Users/User/Desk...",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T21:33:05.2910574Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d2a6095b-msg-t1-coverage-sprint.md",
+      "tool": "read"
     }
   ],
   "snapshot": {

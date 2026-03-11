@@ -19,10 +19,10 @@ public static class WindowsTerminalLauncher
 
         if (worktreeId != null)
         {
-            var wtDir = $".dydo/worktrees/{worktreeId}";
+            var wtDir = $"_system/.local/worktrees/{worktreeId}";
             var branch = $"worktree/{worktreeId}";
             return $"{noExitFlag}-Command \"{windowEnv}$_wt_root = Get-Location; " +
-                   $"New-Item -ItemType Directory -Force -Path .dydo/worktrees | Out-Null; " +
+                   $"New-Item -ItemType Directory -Force -Path _system/.local/worktrees | Out-Null; " +
                    $"git worktree prune; " +
                    $"git worktree add {wtDir} -b {branch}; " +
                    $"Set-Location {wtDir}; " +

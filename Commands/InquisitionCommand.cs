@@ -8,6 +8,9 @@ using DynaDocs.Utils;
 
 public static partial class InquisitionCommand
 {
+    // Test seam: override to avoid spawning git in test host
+    public static Func<DateTime, string, bool?>? HasChangesSinceOverride;
+
     public static Command Create()
     {
         var command = new Command("inquisition", "Manage inquisitions");
@@ -102,6 +105,9 @@ public static partial class InquisitionCommand
     /// </summary>
     private static bool? HasChangesSince(DateTime since, string workingDir)
     {
+        if (HasChangesSinceOverride != null)
+            return HasChangesSinceOverride(since, workingDir);
+
         try
         {
             var psi = new ProcessStartInfo

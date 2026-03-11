@@ -90,16 +90,13 @@ public static class TemplateGenerator
     /// </summary>
     public static IReadOnlyList<string> GetAllTemplateNames()
     {
-        return new[]
+        var names = new List<string> { "agent-workflow.template.md" };
+        foreach (var role in RoleDefinitionService.GetBaseRoleDefinitions())
         {
-            "agent-workflow.template.md",
-            "mode-code-writer.template.md",
-            "mode-reviewer.template.md",
-            "mode-co-thinker.template.md",
-            "mode-planner.template.md",
-            "mode-docs-writer.template.md",
-            "mode-test-writer.template.md"
-        };
+            if (!string.IsNullOrEmpty(role.TemplateFile))
+                names.Add(role.TemplateFile);
+        }
+        return names;
     }
 
     /// <summary>
@@ -984,7 +981,9 @@ public static class TemplateGenerator
     /// </summary>
     public static IReadOnlyList<string> GetModeNames()
     {
-        return new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
+        return RoleDefinitionService.GetBaseRoleDefinitions()
+            .Select(r => r.Name)
+            .ToList();
     }
 
     /// <summary>
@@ -1391,6 +1390,14 @@ public static class TemplateGenerator
     public static string GeneratePitfallsMetaMd()
     {
         return ReadTemplateOrThrow("_pitfalls.template.md");
+    }
+
+    /// <summary>
+    /// Generate the _issues.md meta file describing the issues folder.
+    /// </summary>
+    public static string GenerateIssuesMetaMd()
+    {
+        return ReadTemplateOrThrow("_issues.template.md");
     }
 
     /// <summary>

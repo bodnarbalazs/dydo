@@ -142,8 +142,8 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
 
-        // Should have all expected templates (7 total: 1 workflow + 6 modes)
-        Assert.Equal(7, templateNames.Count);
+        // Should have all expected templates (10 total: 1 workflow + 9 modes)
+        Assert.Equal(10, templateNames.Count);
     }
 
     [Fact]

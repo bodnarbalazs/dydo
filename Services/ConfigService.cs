@@ -22,26 +22,9 @@ public class ConfigService : IConfigService
         if (_configFileCache.TryGetValue(cacheKey, out var cached))
             return cached;
 
-        var dir = cacheKey;
-
-        while (!string.IsNullOrEmpty(dir))
-        {
-            var configPath = Path.Combine(dir, ConfigFileName);
-            if (File.Exists(configPath))
-            {
-                _configFileCache[cacheKey] = configPath;
-                return configPath;
-            }
-
-            var parent = Directory.GetParent(dir);
-            if (parent == null)
-                break;
-
-            dir = parent.FullName;
-        }
-
-        _configFileCache[cacheKey] = null;
-        return null;
+        var result = ConfigFileLocator.WalkUpForFile(cacheKey, ConfigFileName);
+        _configFileCache[cacheKey] = result;
+        return result;
     }
 
     /// <summary>
@@ -98,15 +81,9 @@ public class ConfigService : IConfigService
     /// </summary>
     public string GetDydoRoot(string? startPath = null)
     {
-        var projectRoot = GetProjectRoot(startPath);
-        var config = LoadConfig(startPath);
-        var rootFolder = config?.Structure.Root ?? DefaultRoot;
-
-        if (projectRoot != null)
-            return Path.Combine(projectRoot, rootFolder);
-
-        // Fall back to current directory
-        return Path.Combine(startPath ?? Environment.CurrentDirectory, rootFolder);
+        var baseDir = GetProjectRoot(startPath) ?? startPath ?? Environment.CurrentDirectory;
+        var rootFolder = LoadConfig(startPath)?.Structure.Root ?? DefaultRoot;
+        return Path.Combine(baseDir, rootFolder);
     }
 
     /// <summary>
@@ -164,118 +141,9 @@ public class ConfigService : IConfigService
         return Path.Combine(GetDydoRoot(startPath), "project", "changelog");
     }
 
-    /// <summary>
-    /// Create a default configuration for a new project
-    /// </summary>
-    public static DydoConfig CreateDefault(string humanName, int agentCount = 26)
-    {
-        var agentNames = PresetAgentNames.GetNames(agentCount);
-
-        return new DydoConfig
-        {
-            Version = 1,
-            Structure = new StructureConfig
-            {
-                Root = DefaultRoot,
-                Tasks = "project/tasks"
-            },
-            Agents = new AgentsConfig
-            {
-                Pool = agentNames,
-                Assignments = new Dictionary<string, List<string>>
-                {
-                    [humanName] = agentNames
-                }
-            },
-            Integrations = new Dictionary<string, bool>()
-        };
-    }
-
-    /// <summary>
-    /// Add a new human to an existing configuration
-    /// </summary>
-    public static void AddHuman(DydoConfig config, string humanName, int agentCount)
-    {
-        // Find unassigned agents
-        var assignedAgents = config.Agents.Assignments.Values
-            .SelectMany(a => a)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var availableAgents = config.Agents.Pool
-            .Where(a => !assignedAgents.Contains(a))
-            .ToList();
-
-        if (availableAgents.Count < agentCount)
-        {
-            // Need to add more agents to the pool
-            var currentCount = config.Agents.Pool.Count;
-            var newAgents = PresetAgentNames.GetNames(currentCount + agentCount)
-                .Skip(currentCount)
-                .ToList();
-
-            config.Agents.Pool.AddRange(newAgents);
-            availableAgents.AddRange(newAgents);
-        }
-
-        // Assign agents to the new human
-        var toAssign = availableAgents.Take(agentCount).ToList();
-        config.Agents.Assignments[humanName] = toAssign;
-    }
-
-    /// <summary>
-    /// Validate that an agent can be claimed by a human
-    /// </summary>
     public (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config)
-    {
-        if (string.IsNullOrEmpty(humanName))
-        {
-            return (false, $"DYDO_HUMAN environment variable not set.\nSet it to identify which human is operating this terminal:\n  export DYDO_HUMAN=your_name");
-        }
+        => AgentClaimValidator.Validate(agentName, humanName, config);
 
-        if (config == null)
-        {
-            // No config - allow any claim (unconfigured project)
-            return (true, null);
-        }
-
-        if (!config.Agents.Pool.Contains(agentName, StringComparer.OrdinalIgnoreCase))
-        {
-            return (false, $"Agent '{agentName}' is not in the configured agent pool.");
-        }
-
-        var assignedHuman = config.Agents.GetHumanForAgent(agentName);
-        if (assignedHuman == null)
-        {
-            // Agent not assigned to anyone - allow claim
-            return (true, null);
-        }
-
-        if (!assignedHuman.Equals(humanName, StringComparison.OrdinalIgnoreCase))
-        {
-            var claimableAgents = config.Agents.GetAgentsForHuman(humanName);
-            var agentList = claimableAgents.Count > 0
-                ? string.Join(", ", claimableAgents)
-                : "(none assigned)";
-
-            return (false, $"Agent {agentName} is assigned to human '{assignedHuman}', not '{humanName}'.\nClaimable agents for human '{humanName}': {agentList}\nUse 'dydo agent claim auto' to claim the first available.");
-        }
-
-        return (true, null);
-    }
-
-    /// <summary>
-    /// Get the first available agent for a human
-    /// </summary>
     public string? GetFirstFreeAgent(string humanName, DydoConfig config, Func<string, bool> isAgentFree)
-    {
-        var assignedAgents = config.Agents.GetAgentsForHuman(humanName);
-
-        foreach (var agent in assignedAgents)
-        {
-            if (isAgentFree(agent))
-                return agent;
-        }
-
-        return null;
-    }
+        => AgentClaimValidator.FindFirstFree(humanName, config, isAgentFree);
 }

@@ -83,6 +83,16 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertSuccess();
         AssertFileExists(".gitignore");
         AssertFileContains(".gitignore", "dydo/agents/");
+        AssertFileContains(".gitignore", "dydo/_system/.local/");
+    }
+
+    [Fact]
+    public async Task Init_None_ScaffoldsSystemLocalDir()
+    {
+        var result = await InitProjectAsync("none", "balazs", 3);
+
+        result.AssertSuccess();
+        AssertDirectoryExists("dydo/_system/.local");
     }
 
     [Fact]

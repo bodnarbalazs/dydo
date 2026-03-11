@@ -17,325 +17,111 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/decisions", "Decision records", "project"),
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
+        new("project/issues", "Actionable work items with lifecycle", "project"),
         new("_system", "System configuration (committed)", "_system"),
         new("_system/roles", "Role definition files", "_system"),
         new("_system/templates", "Project-local template overrides", "_system"),
+        new("_system/.local", "Machine-local runtime state (not committed)", "_system"),
         new("_system/audit", "Agent activity audit logs", "_system"),
         new("_system/audit/reports", "Generated audit visualizations", "_system"),
         new("_assets", "Documentation assets (images, diagrams)", "_assets")
     ];
 
-    /// <summary>
-    /// Scaffold the complete DynaDocs structure with JITI documentation funnel.
-    /// </summary>
-    public void Scaffold(string basePath)
-    {
-        // Create folder structure (without hubs - they'll be generated at the end)
-        foreach (var folder in Folders)
-        {
-            var folderPath = Path.Combine(basePath, folder.Path);
-            Directory.CreateDirectory(folderPath);
-        }
+    private static readonly (string RelativePath, Func<string> Generate)[] DocFiles =
+    [
+        ("welcome.md", TemplateGenerator.GenerateWelcomeMd),
+        ("glossary.md", TemplateGenerator.GenerateGlossaryMd),
+        ("understand/about.md", TemplateGenerator.GenerateAboutMd),
+        ("understand/architecture.md", TemplateGenerator.GenerateArchitectureMd),
+        ("guides/coding-standards.md", TemplateGenerator.GenerateCodingStandardsMd),
+        ("guides/how-to-use-docs.md", TemplateGenerator.GenerateHowToUseDocsMd),
+        ("reference/dydo-commands.md", TemplateGenerator.GenerateDydoCommandsMd),
+        ("reference/writing-docs.md", TemplateGenerator.GenerateWritingDocsMd),
+        ("reference/about-dynadocs.md", TemplateGenerator.GenerateAboutDynadocsMd),
+        ("files-off-limits.md", TemplateGenerator.GenerateFilesOffLimitsMd),
+        ("_system/audit/_audit.md", GenerateAuditMetaMd),
+        ("understand/_understand.md", TemplateGenerator.GenerateUnderstandMetaMd),
+        ("guides/_guides.md", TemplateGenerator.GenerateGuidesMetaMd),
+        ("reference/_reference.md", TemplateGenerator.GenerateReferenceMetaMd),
+        ("project/_project.md", TemplateGenerator.GenerateProjectMetaMd),
+        ("project/tasks/_tasks.md", TemplateGenerator.GenerateTasksMetaMd),
+        ("project/decisions/_decisions.md", TemplateGenerator.GenerateDecisionsMetaMd),
+        ("project/changelog/_changelog.md", TemplateGenerator.GenerateChangelogMetaMd),
+        ("project/pitfalls/_pitfalls.md", TemplateGenerator.GeneratePitfallsMetaMd),
+        ("project/issues/_issues.md", TemplateGenerator.GenerateIssuesMetaMd),
+    ];
 
-        // Create agents folder (will be gitignored)
-        var agentsPath = Path.Combine(basePath, "agents");
-        Directory.CreateDirectory(agentsPath);
+    public void Scaffold(string basePath) =>
+        Scaffold(basePath, PresetAgentNames.Set1.ToList());
 
-        // Copy built-in templates to _system/templates/ for customization
-        CopyBuiltInTemplates(basePath);
-
-        ScaffoldTemplateAdditions(basePath);
-
-        // Scaffold base role definition files
-        new RoleDefinitionService().WriteBaseRoleDefinitions(basePath);
-
-        // Copy built-in assets to _assets/
-        CopyBuiltInAssets(basePath);
-
-        // Create root index.md with JITI entry point
-        var rootIndexPath = Path.Combine(basePath, "index.md");
-        if (!File.Exists(rootIndexPath))
-        {
-            var agentNames = PresetAgentNames.Set1.ToList();
-            var indexContent = TemplateGenerator.GenerateIndexMd(agentNames);
-            File.WriteAllText(rootIndexPath, indexContent);
-        }
-
-        // Create agent workspaces
-        ScaffoldAgentWorkspaces(basePath);
-
-        // Create foundation documentation (must-reads)
-        ScaffoldFoundationDocs(basePath);
-
-        // Create project subfolder documentation (meta files only, hubs generated below)
-        ScaffoldProjectSubfolderMetaFiles(basePath);
-
-        // Generate all hub files now that docs exist
-        GenerateHubFiles(basePath);
-    }
-
-    /// <summary>
-    /// Scaffold with custom agent names (from config).
-    /// </summary>
     public void Scaffold(string basePath, List<string> agentNames)
     {
-        // Create folder structure (without hubs - they'll be generated at the end)
         foreach (var folder in Folders)
-        {
-            var folderPath = Path.Combine(basePath, folder.Path);
-            Directory.CreateDirectory(folderPath);
-        }
+            Directory.CreateDirectory(Path.Combine(basePath, folder.Path));
 
-        // Create agents folder
-        var agentsPath = Path.Combine(basePath, "agents");
-        Directory.CreateDirectory(agentsPath);
+        Directory.CreateDirectory(Path.Combine(basePath, "agents"));
 
-        // Copy built-in templates to _system/templates/ for customization
         CopyBuiltInTemplates(basePath);
-
         ScaffoldTemplateAdditions(basePath);
-
-        // Scaffold base role definition files
         new RoleDefinitionService().WriteBaseRoleDefinitions(basePath);
-
-        // Copy built-in assets to _assets/
         CopyBuiltInAssets(basePath);
 
-        // Create root index.md
-        var rootIndexPath = Path.Combine(basePath, "index.md");
-        if (!File.Exists(rootIndexPath))
-        {
-            var indexContent = TemplateGenerator.GenerateIndexMd(agentNames);
-            File.WriteAllText(rootIndexPath, indexContent);
-        }
+        WriteIfNotExists(
+            Path.Combine(basePath, "index.md"),
+            TemplateGenerator.GenerateIndexMd(agentNames));
 
-        // Create agent workspaces
         ScaffoldAgentWorkspaces(basePath, agentNames);
-
-        // Create foundation documentation
-        ScaffoldFoundationDocs(basePath);
-
-        // Create project subfolder documentation (meta files only, hubs generated below)
-        ScaffoldProjectSubfolderMetaFiles(basePath);
-
-        // Generate all hub files now that docs exist
+        ScaffoldDocFiles(basePath);
         GenerateHubFiles(basePath);
     }
 
-    /// <summary>
-    /// Create agent workspaces with workflow.md and inbox for each agent.
-    /// </summary>
-    private void ScaffoldAgentWorkspaces(string basePath, List<string>? agentNames = null)
+    private void ScaffoldAgentWorkspaces(string basePath, List<string> agentNames)
     {
-        agentNames ??= PresetAgentNames.Set1.ToList();
-
         var agentsPath = Path.Combine(basePath, "agents");
         Directory.CreateDirectory(agentsPath);
 
         foreach (var agentName in agentNames)
-        {
             ScaffoldAgentWorkspace(agentsPath, agentName);
-        }
     }
 
-    /// <summary>
-    /// Create a single agent's workspace with workflow.md and inbox.
-    /// </summary>
     public void ScaffoldAgentWorkspace(string agentsPath, string agentName)
     {
-        // Derive dydo basePath from agentsPath (agentsPath is dydo/agents/)
         var basePath = Path.GetDirectoryName(agentsPath);
 
         var agentPath = Path.Combine(agentsPath, agentName);
         Directory.CreateDirectory(agentPath);
+        Directory.CreateDirectory(Path.Combine(agentPath, "inbox"));
 
-        // Create inbox folder
-        var inboxPath = Path.Combine(agentPath, "inbox");
-        Directory.CreateDirectory(inboxPath);
-
-        // Create workflow.md
-        var workflowPath = Path.Combine(agentPath, "workflow.md");
-        if (!File.Exists(workflowPath))
-        {
-            var content = TemplateGenerator.GenerateWorkflowFile(agentName, basePath);
-            File.WriteAllText(workflowPath, content);
-        }
+        WriteIfNotExists(
+            Path.Combine(agentPath, "workflow.md"),
+            TemplateGenerator.GenerateWorkflowFile(agentName, basePath));
     }
 
-    /// <summary>
-    /// Regenerate workflow and mode files for an agent (used after rename).
-    /// </summary>
     public void RegenerateAgentFiles(string agentsPath, string agentName,
         List<string>? sourcePaths = null, List<string>? testPaths = null)
     {
-        // Derive dydo basePath from agentsPath (agentsPath is dydo/agents/)
         var basePath = Path.GetDirectoryName(agentsPath);
 
         var agentPath = Path.Combine(agentsPath, agentName);
         var modesPath = Path.Combine(agentPath, "modes");
 
-        // Regenerate workflow.md
-        var workflowPath = Path.Combine(agentPath, "workflow.md");
-        var workflowContent = TemplateGenerator.GenerateWorkflowFile(agentName, basePath, sourcePaths, testPaths);
-        File.WriteAllText(workflowPath, workflowContent);
+        File.WriteAllText(
+            Path.Combine(agentPath, "workflow.md"),
+            TemplateGenerator.GenerateWorkflowFile(agentName, basePath, sourcePaths, testPaths));
 
-        // Regenerate mode files
         Directory.CreateDirectory(modesPath);
         foreach (var modeName in TemplateGenerator.GetModeNames())
-        {
-            var modePath = Path.Combine(modesPath, $"{modeName}.md");
-            var modeContent = TemplateGenerator.GenerateModeFile(agentName, modeName, basePath, sourcePaths, testPaths);
-            File.WriteAllText(modePath, modeContent);
-        }
+            File.WriteAllText(
+                Path.Combine(modesPath, $"{modeName}.md"),
+                TemplateGenerator.GenerateModeFile(agentName, modeName, basePath, sourcePaths, testPaths));
     }
 
-    /// <summary>
-    /// Create the foundation documentation files (must-reads).
-    /// </summary>
-    private void ScaffoldFoundationDocs(string basePath)
+    private void ScaffoldDocFiles(string basePath)
     {
-        // welcome.md (human entry point, alongside index.md)
-        var welcomePath = Path.Combine(basePath, "welcome.md");
-        if (!File.Exists(welcomePath))
-        {
-            File.WriteAllText(welcomePath, TemplateGenerator.GenerateWelcomeMd());
-        }
-
-        // glossary.md (project glossary, referenced by welcome.md)
-        var glossaryPath = Path.Combine(basePath, "glossary.md");
-        if (!File.Exists(glossaryPath))
-        {
-            File.WriteAllText(glossaryPath, TemplateGenerator.GenerateGlossaryMd());
-        }
-
-        // understand/about.md (project context)
-        var aboutPath = Path.Combine(basePath, "understand", "about.md");
-        if (!File.Exists(aboutPath))
-        {
-            File.WriteAllText(aboutPath, TemplateGenerator.GenerateAboutMd());
-        }
-
-        // understand/architecture.md
-        var architecturePath = Path.Combine(basePath, "understand", "architecture.md");
-        if (!File.Exists(architecturePath))
-        {
-            File.WriteAllText(architecturePath, TemplateGenerator.GenerateArchitectureMd());
-        }
-
-        // guides/coding-standards.md
-        var codingStandardsPath = Path.Combine(basePath, "guides", "coding-standards.md");
-        if (!File.Exists(codingStandardsPath))
-        {
-            File.WriteAllText(codingStandardsPath, TemplateGenerator.GenerateCodingStandardsMd());
-        }
-
-        // guides/how-to-use-docs.md
-        var howToPath = Path.Combine(basePath, "guides", "how-to-use-docs.md");
-        if (!File.Exists(howToPath))
-        {
-            File.WriteAllText(howToPath, TemplateGenerator.GenerateHowToUseDocsMd());
-        }
-
-        // reference/dydo-commands.md
-        var dydoCommandsPath = Path.Combine(basePath, "reference", "dydo-commands.md");
-        if (!File.Exists(dydoCommandsPath))
-        {
-            File.WriteAllText(dydoCommandsPath, TemplateGenerator.GenerateDydoCommandsMd());
-        }
-
-        // reference/writing-docs.md
-        var writingDocsPath = Path.Combine(basePath, "reference", "writing-docs.md");
-        if (!File.Exists(writingDocsPath))
-        {
-            File.WriteAllText(writingDocsPath, TemplateGenerator.GenerateWritingDocsMd());
-        }
-
-        // reference/about-dynadocs.md
-        var aboutDynadocsPath = Path.Combine(basePath, "reference", "about-dynadocs.md");
-        if (!File.Exists(aboutDynadocsPath))
-        {
-            File.WriteAllText(aboutDynadocsPath, TemplateGenerator.GenerateAboutDynadocsMd());
-        }
-
-        // files-off-limits.md (security config)
-        var offLimitsPath = Path.Combine(basePath, "files-off-limits.md");
-        if (!File.Exists(offLimitsPath))
-        {
-            File.WriteAllText(offLimitsPath, TemplateGenerator.GenerateFilesOffLimitsMd());
-        }
-
-        // _system/audit/_audit.md (audit system documentation)
-        var auditMetaPath = Path.Combine(basePath, "_system", "audit", "_audit.md");
-        if (!File.Exists(auditMetaPath))
-        {
-            File.WriteAllText(auditMetaPath, GenerateAuditMetaMd());
-        }
-
-        // Main folder meta files
-        var understandMetaPath = Path.Combine(basePath, "understand", "_understand.md");
-        if (!File.Exists(understandMetaPath))
-        {
-            File.WriteAllText(understandMetaPath, TemplateGenerator.GenerateUnderstandMetaMd());
-        }
-
-        var guidesMetaPath = Path.Combine(basePath, "guides", "_guides.md");
-        if (!File.Exists(guidesMetaPath))
-        {
-            File.WriteAllText(guidesMetaPath, TemplateGenerator.GenerateGuidesMetaMd());
-        }
-
-        var referenceMetaPath = Path.Combine(basePath, "reference", "_reference.md");
-        if (!File.Exists(referenceMetaPath))
-        {
-            File.WriteAllText(referenceMetaPath, TemplateGenerator.GenerateReferenceMetaMd());
-        }
-
-        var projectMetaPath = Path.Combine(basePath, "project", "_project.md");
-        if (!File.Exists(projectMetaPath))
-        {
-            File.WriteAllText(projectMetaPath, TemplateGenerator.GenerateProjectMetaMd());
-        }
+        foreach (var (relativePath, generate) in DocFiles)
+            WriteIfNotExists(Path.Combine(basePath, relativePath), generate());
     }
 
-    /// <summary>
-    /// Create meta files for project subfolders (tasks, decisions, changelog, pitfalls).
-    /// Hub files are generated separately by GenerateHubFiles().
-    /// </summary>
-    private void ScaffoldProjectSubfolderMetaFiles(string basePath)
-    {
-        // Tasks folder meta
-        var tasksMetaPath = Path.Combine(basePath, "project", "tasks", "_tasks.md");
-        if (!File.Exists(tasksMetaPath))
-        {
-            File.WriteAllText(tasksMetaPath, TemplateGenerator.GenerateTasksMetaMd());
-        }
-
-        // Decisions folder meta
-        var decisionsMetaPath = Path.Combine(basePath, "project", "decisions", "_decisions.md");
-        if (!File.Exists(decisionsMetaPath))
-        {
-            File.WriteAllText(decisionsMetaPath, TemplateGenerator.GenerateDecisionsMetaMd());
-        }
-
-        // Changelog folder meta
-        var changelogMetaPath = Path.Combine(basePath, "project", "changelog", "_changelog.md");
-        if (!File.Exists(changelogMetaPath))
-        {
-            File.WriteAllText(changelogMetaPath, TemplateGenerator.GenerateChangelogMetaMd());
-        }
-
-        // Pitfalls folder meta
-        var pitfallsMetaPath = Path.Combine(basePath, "project", "pitfalls", "_pitfalls.md");
-        if (!File.Exists(pitfallsMetaPath))
-        {
-            File.WriteAllText(pitfallsMetaPath, TemplateGenerator.GeneratePitfallsMetaMd());
-        }
-    }
-
-    /// <summary>
-    /// Generate hub files (_index.md) for all documentation folders.
-    /// Uses DocScanner to scan existing docs and HubGenerator for consistent output.
-    /// </summary>
     private void GenerateHubFiles(string basePath)
     {
         var parser = new MarkdownParser();
@@ -347,37 +133,22 @@ public class FolderScaffolder : IFolderScaffolder
         foreach (var (relativePath, content) in hubs)
         {
             var fullPath = Path.Combine(basePath, relativePath);
-            var directory = Path.GetDirectoryName(fullPath);
-            if (directory != null)
-            {
-                Directory.CreateDirectory(directory);
-            }
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             File.WriteAllText(fullPath, content);
         }
     }
 
-    /// <summary>
-    /// Copy all built-in templates to _system/templates/ for project-local customization.
-    /// </summary>
     public void CopyBuiltInTemplates(string basePath)
     {
         var destPath = Path.Combine(basePath, "_system", "templates");
         Directory.CreateDirectory(destPath);
 
         foreach (var templateName in TemplateGenerator.GetAllTemplateNames())
-        {
-            var destFile = Path.Combine(destPath, templateName);
-            if (!File.Exists(destFile))
-            {
-                var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
-                File.WriteAllText(destFile, content);
-            }
-        }
+            WriteIfNotExists(
+                Path.Combine(destPath, templateName),
+                TemplateGenerator.ReadBuiltInTemplate(templateName));
     }
 
-    /// <summary>
-    /// Copy all built-in assets to _assets/ folder.
-    /// </summary>
     private void CopyBuiltInAssets(string basePath)
     {
         var destPath = Path.Combine(basePath, "_assets");
@@ -390,9 +161,7 @@ public class FolderScaffolder : IFolderScaffolder
             {
                 var content = TemplateGenerator.ReadEmbeddedAsset(assetName);
                 if (content != null)
-                {
                     File.WriteAllBytes(destFile, content);
-                }
             }
         }
     }
@@ -402,13 +171,13 @@ public class FolderScaffolder : IFolderScaffolder
         var destPath = Path.Combine(basePath, "_system", "template-additions");
         Directory.CreateDirectory(destPath);
 
-        var readmePath = Path.Combine(destPath, "_README.md");
-        if (!File.Exists(readmePath))
-            File.WriteAllText(readmePath, TemplateGenerator.ReadBuiltInTemplate("template-additions-readme.md"));
+        WriteIfNotExists(
+            Path.Combine(destPath, "_README.md"),
+            TemplateGenerator.ReadBuiltInTemplate("template-additions-readme.md"));
 
-        var examplePath = Path.Combine(destPath, "extra-verify.md.example");
-        if (!File.Exists(examplePath))
-            File.WriteAllText(examplePath, TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
+        WriteIfNotExists(
+            Path.Combine(destPath, "extra-verify.md.example"),
+            TemplateGenerator.ReadBuiltInTemplate("extra-verify.example.md"));
     }
 
     public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
@@ -421,9 +190,12 @@ public class FolderScaffolder : IFolderScaffolder
         }
     }
 
-    /// <summary>
-    /// Generate the audit system meta file content.
-    /// </summary>
+    private static void WriteIfNotExists(string path, string content)
+    {
+        if (!File.Exists(path))
+            File.WriteAllText(path, content);
+    }
+
     private static string GenerateAuditMetaMd() => """
         ---
         title: Audit System
@@ -495,4 +267,3 @@ public class FolderScaffolder : IFolderScaffolder
         Run `dydo audit` to generate an interactive HTML replay. Open `reports/replay.html` in your browser to visualize agent activity as a graph.
         """;
 }
-

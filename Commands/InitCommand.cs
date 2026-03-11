@@ -64,14 +64,9 @@ public static class InitCommand
 
     private static int ExecuteInit(string integration, string? providedName, int? providedAgentCount)
     {
-        // Validate integration
         if (!IsValidIntegration(integration))
-        {
-            ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, none");
-            return ExitCodes.ToolError;
-        }
+            return IntegrationError(integration);
 
-        // Check if already initialized
         var configService = new ConfigService();
         var existingConfig = configService.FindConfigFile();
         if (existingConfig != null)
@@ -86,22 +81,11 @@ public static class InitCommand
         Console.WriteLine(new string('─', 14));
         Console.WriteLine();
 
-        // Get human name
-        var humanName = providedName ?? PromptForInput("Your name: ");
-        if (string.IsNullOrWhiteSpace(humanName))
-        {
-            ConsoleOutput.WriteError("Name is required.");
-            return ExitCodes.ToolError;
-        }
-        humanName = humanName.Trim().ToLowerInvariant();
+        var humanName = ResolveHumanName(providedName);
+        if (humanName == null) return ExitCodes.ToolError;
 
-        // Get agent count
-        var agentCount = providedAgentCount ?? PromptForInt("Number of agents [26]: ", 26);
-        if (agentCount < 1 || agentCount > PresetAgentNames.MaxAgentCount)
-        {
-            ConsoleOutput.WriteError($"Agent count must be between 1 and {PresetAgentNames.MaxAgentCount}.");
-            return ExitCodes.ToolError;
-        }
+        var agentCount = ResolveAgentCount(providedAgentCount, 26);
+        if (agentCount < 0) return ExitCodes.ToolError;
 
         Console.WriteLine();
         Console.WriteLine("Creating...");
@@ -109,85 +93,15 @@ public static class InitCommand
         try
         {
             var projectRoot = Environment.CurrentDirectory;
-            var projectName = Path.GetFileName(projectRoot);
-
-            // Create dydo.json
-            var config = ConfigService.CreateDefault(humanName, agentCount);
+            var config = ConfigFactory.CreateDefault(humanName, agentCount);
             config.Integrations[integration] = true;
 
             var configPath = Path.Combine(projectRoot, ConfigService.ConfigFileName);
             configService.SaveConfig(config, configPath);
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
-            // Create CLAUDE.md at project root (entry point)
-            var claudeMdPath = Path.Combine(projectRoot, "CLAUDE.md");
-            if (!File.Exists(claudeMdPath))
-            {
-                var claudeMdContent = TemplateGenerator.GenerateClaudeMd(projectName);
-                File.WriteAllText(claudeMdPath, claudeMdContent);
-                Console.WriteLine("  ✓ CLAUDE.md (entry point)");
-            }
-
-            // Create dydo/ folder structure with agent workflow files
-            var dydoRoot = Path.Combine(projectRoot, config.Structure.Root);
-            Directory.CreateDirectory(dydoRoot);
-
-            var scaffolder = new FolderScaffolder();
-            scaffolder.Scaffold(dydoRoot, config.Agents.Pool);
-            FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
-            configService.SaveConfig(config, configPath);
-            Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
-
-            // Create agents folder (gitignored)
-            var agentsPath = Path.Combine(dydoRoot, "agents");
-            Directory.CreateDirectory(agentsPath);
-
-            // Create files-off-limits.md (security config)
-            var offLimitsPath = Path.Combine(dydoRoot, "files-off-limits.md");
-            if (!File.Exists(offLimitsPath))
-            {
-                var offLimitsContent = TemplateGenerator.GenerateFilesOffLimitsMd();
-                File.WriteAllText(offLimitsPath, offLimitsContent);
-                Console.WriteLine("  ✓ files-off-limits.md (security config)");
-            }
-
-            // Update .gitignore
-            UpdateGitignore(projectRoot, config.Structure.Root);
-            Console.WriteLine($"  ✓ Added {config.Structure.Root}/agents/ to .gitignore");
-
-            // Configure integration
-            if (integration == "claude")
-            {
-                ConfigureClaudeHooks(projectRoot);
-                Console.WriteLine("  ✓ Claude Code hooks configured");
-            }
-
-            Console.WriteLine();
-            var agentNamesList = string.Join(", ", config.Agents.Pool.Take(5));
-            if (config.Agents.Pool.Count > 5)
-                agentNamesList += $" ... ({config.Agents.Pool.Count} total)";
-
-            Console.WriteLine($"Agents assigned to {humanName}: {agentNamesList}");
-            Console.WriteLine();
-            Console.WriteLine("Documentation funnel created:");
-            Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
-            Console.WriteLine();
-            Console.WriteLine("Next steps:");
-            Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
-            Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
-            Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
-            Console.WriteLine();
-            Console.WriteLine("Source and test paths default to src/** and tests/**.");
-            Console.WriteLine("If your project uses a different layout, update dydo.json:");
-            Console.WriteLine();
-            Console.WriteLine("  \"paths\": {");
-            Console.WriteLine("    \"source\": [\"Commands/**\", \"Services/**\", ...],");
-            Console.WriteLine("    \"tests\": [\"YourTests/**\"]");
-            Console.WriteLine("  }");
-
-            var completionResult = ShellCompletionInstaller.Install();
-            if (completionResult != null)
-                Console.WriteLine($"  {completionResult}");
+            ScaffoldProject(configService, config, configPath, projectRoot, integration);
+            PrintInitSummary(config, humanName);
 
             return ExitCodes.Success;
         }
@@ -198,16 +112,77 @@ public static class InitCommand
         }
     }
 
+    private static void ScaffoldProject(ConfigService configService, DydoConfig config,
+        string configPath, string projectRoot, string integration)
+    {
+        var projectName = Path.GetFileName(projectRoot);
+
+        WriteIfNotExists(
+            Path.Combine(projectRoot, "CLAUDE.md"),
+            () => TemplateGenerator.GenerateClaudeMd(projectName),
+            "CLAUDE.md (entry point)");
+
+        var dydoRoot = Path.Combine(projectRoot, config.Structure.Root);
+        Directory.CreateDirectory(dydoRoot);
+
+        var scaffolder = new FolderScaffolder();
+        scaffolder.Scaffold(dydoRoot, config.Agents.Pool);
+        FolderScaffolder.StoreInitialFrameworkHashes(dydoRoot, config);
+        configService.SaveConfig(config, configPath);
+        Console.WriteLine($"  ✓ {config.Structure.Root}/ structure with workflows");
+
+        Directory.CreateDirectory(Path.Combine(dydoRoot, "agents"));
+
+        WriteIfNotExists(
+            Path.Combine(dydoRoot, "files-off-limits.md"),
+            TemplateGenerator.GenerateFilesOffLimitsMd,
+            "files-off-limits.md (security config)");
+
+        UpdateGitignore(projectRoot, config.Structure.Root);
+        Console.WriteLine($"  ✓ Updated .gitignore (agents/, local state)");
+
+        if (integration == "claude")
+        {
+            ConfigureClaudeHooks(projectRoot);
+            Console.WriteLine("  ✓ Claude Code hooks configured");
+        }
+    }
+
+    private static void PrintInitSummary(DydoConfig config, string humanName)
+    {
+        Console.WriteLine();
+        var agentNamesList = string.Join(", ", config.Agents.Pool.Take(5));
+        if (config.Agents.Pool.Count > 5)
+            agentNamesList += $" ... ({config.Agents.Pool.Count} total)";
+
+        Console.WriteLine($"Agents assigned to {humanName}: {agentNamesList}");
+        Console.WriteLine();
+        Console.WriteLine("Documentation funnel created:");
+        Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
+        Console.WriteLine();
+        Console.WriteLine("Next steps:");
+        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
+        Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
+        Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
+        Console.WriteLine();
+        Console.WriteLine("Source and test paths default to src/** and tests/**.");
+        Console.WriteLine("If your project uses a different layout, update dydo.json:");
+        Console.WriteLine();
+        Console.WriteLine("  \"paths\": {");
+        Console.WriteLine("    \"source\": [\"Commands/**\", \"Services/**\", ...],");
+        Console.WriteLine("    \"tests\": [\"YourTests/**\"]");
+        Console.WriteLine("  }");
+
+        var completionResult = ShellCompletionInstaller.Install();
+        if (completionResult != null)
+            Console.WriteLine($"  {completionResult}");
+    }
+
     private static int ExecuteJoin(string integration, string? providedName, int? providedAgentCount)
     {
-        // Validate integration
         if (!IsValidIntegration(integration))
-        {
-            ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, none");
-            return ExitCodes.ToolError;
-        }
+            return IntegrationError(integration);
 
-        // Find existing config
         var configService = new ConfigService();
         var configPath = configService.FindConfigFile();
         if (configPath == null)
@@ -227,16 +202,9 @@ public static class InitCommand
         Console.WriteLine("Joining DynaDocs project...");
         Console.WriteLine();
 
-        // Get human name
-        var humanName = providedName ?? PromptForInput("Your name: ");
-        if (string.IsNullOrWhiteSpace(humanName))
-        {
-            ConsoleOutput.WriteError("Name is required.");
-            return ExitCodes.ToolError;
-        }
-        humanName = humanName.Trim().ToLowerInvariant();
+        var humanName = ResolveHumanName(providedName);
+        if (humanName == null) return ExitCodes.ToolError;
 
-        // Check if already a member
         if (config.Agents.Assignments.ContainsKey(humanName))
         {
             var existingAgents = config.Agents.GetAgentsForHuman(humanName);
@@ -244,62 +212,13 @@ public static class InitCommand
             return ExitCodes.Success;
         }
 
-        // Get agent count
         var defaultCount = Math.Min(5, PresetAgentNames.MaxAgentCount - config.Agents.Pool.Count);
-        var agentCount = providedAgentCount ?? PromptForInt($"Number of agents [{defaultCount}]: ", defaultCount);
-        if (agentCount < 1)
-        {
-            ConsoleOutput.WriteError("Agent count must be at least 1.");
-            return ExitCodes.ToolError;
-        }
+        var agentCount = ResolveAgentCount(providedAgentCount, defaultCount);
+        if (agentCount < 0) return ExitCodes.ToolError;
 
         try
         {
-            // Add human to config
-            ConfigService.AddHuman(config, humanName, agentCount);
-
-            // Enable integration if not already
-            if (!config.Integrations.ContainsKey(integration) || !config.Integrations[integration])
-            {
-                config.Integrations[integration] = true;
-            }
-
-            // Save updated config
-            configService.SaveConfig(config, configPath);
-
-            var projectRoot = Path.GetDirectoryName(configPath)!;
-            var assignedAgents = config.Agents.GetAgentsForHuman(humanName);
-
-            Console.WriteLine($"  ✓ Assigned {assignedAgents.Count} agents to {humanName}");
-            Console.WriteLine($"  ✓ Updated {ConfigService.ConfigFileName}");
-
-            // Configure local workspace
-            var agentsPath = configService.GetAgentsPath();
-            foreach (var agent in assignedAgents)
-            {
-                var agentWorkspace = Path.Combine(agentsPath, agent);
-                Directory.CreateDirectory(agentWorkspace);
-            }
-            Console.WriteLine("  ✓ Created local workspaces");
-
-            // Configure integration
-            if (integration == "claude")
-            {
-                ConfigureClaudeHooks(projectRoot);
-                Console.WriteLine("  ✓ Claude Code hooks configured");
-            }
-
-            Console.WriteLine();
-            Console.WriteLine($"Agents assigned to {humanName}: {string.Join(", ", assignedAgents)}");
-            Console.WriteLine();
-            Console.WriteLine("Next steps:");
-            Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
-            Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
-
-            var completionResult = ShellCompletionInstaller.Install();
-            if (completionResult != null)
-                Console.WriteLine($"  {completionResult}");
-
+            PerformJoin(configService, config, configPath, integration, humanName, agentCount);
             return ExitCodes.Success;
         }
         catch (Exception ex)
@@ -307,6 +226,73 @@ public static class InitCommand
             ConsoleOutput.WriteError($"Error: {ex.Message}");
             return ExitCodes.ToolError;
         }
+    }
+
+    private static void PerformJoin(ConfigService configService, DydoConfig config,
+        string configPath, string integration, string humanName, int agentCount)
+    {
+        ConfigFactory.AddHuman(config, humanName, agentCount);
+
+        if (!config.Integrations.ContainsKey(integration) || !config.Integrations[integration])
+            config.Integrations[integration] = true;
+
+        configService.SaveConfig(config, configPath);
+
+        var projectRoot = Path.GetDirectoryName(configPath)!;
+        var assignedAgents = config.Agents.GetAgentsForHuman(humanName);
+
+        Console.WriteLine($"  ✓ Assigned {assignedAgents.Count} agents to {humanName}");
+        Console.WriteLine($"  ✓ Updated {ConfigService.ConfigFileName}");
+
+        var agentsPath = configService.GetAgentsPath();
+        foreach (var agent in assignedAgents)
+            Directory.CreateDirectory(Path.Combine(agentsPath, agent));
+        Console.WriteLine("  ✓ Created local workspaces");
+
+        if (integration == "claude")
+        {
+            ConfigureClaudeHooks(projectRoot);
+            Console.WriteLine("  ✓ Claude Code hooks configured");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"Agents assigned to {humanName}: {string.Join(", ", assignedAgents)}");
+        Console.WriteLine();
+        Console.WriteLine("Next steps:");
+        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
+        Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
+
+        var completionResult = ShellCompletionInstaller.Install();
+        if (completionResult != null)
+            Console.WriteLine($"  {completionResult}");
+    }
+
+    private static string? ResolveHumanName(string? providedName)
+    {
+        var name = providedName ?? PromptForInput("Your name: ");
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            ConsoleOutput.WriteError("Name is required.");
+            return null;
+        }
+        return name.Trim().ToLowerInvariant();
+    }
+
+    private static int ResolveAgentCount(int? providedCount, int defaultValue)
+    {
+        var agentCount = providedCount ?? PromptForInt($"Number of agents [{defaultValue}]: ", defaultValue);
+        if (agentCount < 1 || agentCount > PresetAgentNames.MaxAgentCount)
+        {
+            ConsoleOutput.WriteError($"Agent count must be between 1 and {PresetAgentNames.MaxAgentCount}.");
+            return -1;
+        }
+        return agentCount;
+    }
+
+    private static int IntegrationError(string integration)
+    {
+        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, none");
+        return ExitCodes.ToolError;
     }
 
     private static bool IsValidIntegration(string integration)
@@ -325,43 +311,16 @@ public static class InitCommand
         Directory.CreateDirectory(claudeDir);
 
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
+        var settings = LoadJsonSettings(settingsPath);
 
-        // Load existing settings or create new
-        JsonNode? settings = null;
-        if (File.Exists(settingsPath))
-        {
-            try
-            {
-                var existingJson = File.ReadAllText(settingsPath);
-                settings = JsonNode.Parse(existingJson);
-            }
-            catch
-            {
-                // Invalid JSON - start fresh
-            }
-        }
-        settings ??= new JsonObject();
-
-        // Get or create hooks object
         var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
         settings["hooks"] = hooks;
 
-        // Get or create PreToolUse array
         var preToolUse = hooks["PreToolUse"]?.AsArray() ?? new JsonArray();
         hooks["PreToolUse"] = preToolUse;
 
-        // Remove any existing dydo guard entry (to avoid duplicates on re-init)
-        for (int i = preToolUse.Count - 1; i >= 0; i--)
-        {
-            var entry = preToolUse[i];
-            var entryHooks = entry?["hooks"];
-            if (entryHooks != null && entryHooks.ToJsonString().Contains("dydo guard"))
-            {
-                preToolUse.RemoveAt(i);
-            }
-        }
+        RemoveExistingGuardEntries(preToolUse);
 
-        // Add dydo guard entry
         var hookCommand = new JsonObject
         {
             ["type"] = "command",
@@ -381,29 +340,78 @@ public static class InitCommand
         File.WriteAllText(settingsPath, json);
     }
 
+    private static JsonNode LoadJsonSettings(string settingsPath)
+    {
+        if (File.Exists(settingsPath))
+        {
+            try
+            {
+                return JsonNode.Parse(File.ReadAllText(settingsPath)) ?? new JsonObject();
+            }
+            catch
+            {
+                // Invalid JSON — start fresh
+            }
+        }
+        return new JsonObject();
+    }
+
+    private static void RemoveExistingGuardEntries(JsonArray preToolUse)
+    {
+        for (int i = preToolUse.Count - 1; i >= 0; i--)
+        {
+            var entryHooks = preToolUse[i]?["hooks"];
+            if (entryHooks != null && entryHooks.ToJsonString().Contains("dydo guard"))
+                preToolUse.RemoveAt(i);
+        }
+    }
+
     private static void UpdateGitignore(string projectRoot, string dydoRoot)
     {
         var gitignorePath = Path.Combine(projectRoot, ".gitignore");
         var agentsEntry = $"{dydoRoot}/agents/";
+        var localStateEntry = $"{dydoRoot}/_system/.local/";
 
         if (File.Exists(gitignorePath))
         {
             var content = File.ReadAllText(gitignorePath);
+            var modified = false;
+
             if (!content.Contains(agentsEntry))
             {
-                // Add entry
                 if (!content.EndsWith('\n'))
                     content += '\n';
 
                 content += $"\n# DynaDocs agent workspaces (local state)\n{agentsEntry}\n";
-                File.WriteAllText(gitignorePath, content);
+                modified = true;
             }
+
+            if (!content.Contains(localStateEntry))
+            {
+                if (!content.EndsWith('\n'))
+                    content += '\n';
+
+                content += $"\n# DynaDocs runtime state\n{localStateEntry}\n";
+                modified = true;
+            }
+
+            if (modified)
+                File.WriteAllText(gitignorePath, content);
         }
         else
         {
-            // Create new .gitignore
-            var content = $"# DynaDocs agent workspaces (local state)\n{agentsEntry}\n";
+            var content = $"# DynaDocs agent workspaces (local state)\n{agentsEntry}\n"
+                        + $"\n# DynaDocs runtime state\n{localStateEntry}\n";
             File.WriteAllText(gitignorePath, content);
+        }
+    }
+
+    private static void WriteIfNotExists(string path, Func<string> contentFactory, string label)
+    {
+        if (!File.Exists(path))
+        {
+            File.WriteAllText(path, contentFactory());
+            Console.WriteLine($"  ✓ {label}");
         }
     }
 

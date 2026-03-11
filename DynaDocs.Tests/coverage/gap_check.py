@@ -246,7 +246,14 @@ def parse_cobertura_xml(xml_path: str) -> List[Tuple[str, str, Dict[int, int], D
                 continue
 
             resolved = resolve_filename(source_dir, raw_fname)
-            complexity = float(cls.get("complexity", 0))
+
+            # Per-method max CC (CRAP is a per-method metric)
+            methods_el = cls.find("methods")
+            if methods_el is not None:
+                method_ccs = [float(m.get("complexity", 0)) for m in methods_el.findall("method")]
+                complexity = max(method_ccs) if method_ccs else 0.0
+            else:
+                complexity = float(cls.get("complexity", 0))
 
             line_hits: Dict[int, int] = {}
             branch_conds: Dict[int, Tuple[int, int]] = {}

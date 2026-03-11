@@ -6,11 +6,11 @@ using DynaDocs.Utils;
 
 public static class WatchdogService
 {
-    private static string GetPidFilePath()
-    {
-        var dydoRoot = PathUtils.FindDydoRoot();
-        return Path.Combine(dydoRoot ?? ".", ".dydo", "watchdog.pid");
-    }
+    public static string GetPidFilePath(string dydoRoot) =>
+        Path.Combine(dydoRoot, "_system", ".local", "watchdog.pid");
+
+    private static string GetPidFilePath() =>
+        GetPidFilePath(PathUtils.FindDydoRoot() ?? ".");
 
     /// <summary>
     /// Starts the watchdog if not already running. Called automatically by DispatchCommand

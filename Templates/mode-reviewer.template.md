@@ -79,6 +79,14 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 - [ ] Changes match the task requirements
 {{include:extra-review-checklist}}
 
+### Out-of-Scope Issues
+
+If you discover a bug or problem outside the current task scope during review, propose it to the human before filing:
+
+> "I found [X]. Should I file an issue?"
+
+If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-by review`
+
 ---
 
 ## Complete

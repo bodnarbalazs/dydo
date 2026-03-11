@@ -19,6 +19,14 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
+    public void PidFilePath_ResolvesUnderSystemLocal()
+    {
+        var path = WatchdogService.GetPidFilePath(_testDir);
+        var expected = Path.Combine(_testDir, "_system", ".local", "watchdog.pid");
+        Assert.Equal(expected, path);
+    }
+
+    [Fact]
     public void PollAndCleanup_SkipsAgentsWithAutoCloseFalse()
     {
         WriteAgentState("Adele", status: "free", autoClose: false);

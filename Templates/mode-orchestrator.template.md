@@ -101,7 +101,15 @@ If two agents' work collides or an agent reports a problem:
 - Decide: reassign, re-slice, or have one agent redo their work
 - Propagate: message affected agents with updated instructions
 
-### 6. Report
+### 6. Out-of-Scope Issues
+
+If you discover a bug or problem outside the current task scope, propose it to the human before filing:
+
+> "I found [X]. Should I file an issue?"
+
+If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-by manual`
+
+### 7. Report
 
 The user will ask questions. Common ones:
 - "Who's working on what?" → `dydo agent list`, check your dispatch notes

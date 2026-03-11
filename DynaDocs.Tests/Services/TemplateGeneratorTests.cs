@@ -82,17 +82,20 @@ public class TemplateGeneratorTests
     #endregion
 
     [Fact]
-    public void GetModeNames_ReturnsSixModes()
+    public void GetModeNames_ReturnsAllBaseModes()
     {
         var modes = TemplateGenerator.GetModeNames();
 
-        Assert.Equal(6, modes.Count);
+        Assert.Equal(9, modes.Count);
         Assert.Contains("code-writer", modes);
         Assert.Contains("reviewer", modes);
         Assert.Contains("co-thinker", modes);
         Assert.Contains("planner", modes);
         Assert.Contains("docs-writer", modes);
         Assert.Contains("test-writer", modes);
+        Assert.Contains("orchestrator", modes);
+        Assert.Contains("inquisitor", modes);
+        Assert.Contains("judge", modes);
     }
 
     [Fact]

@@ -117,7 +117,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 Name = "judge",
                 Description = "Arbitrates disputes between agents.",
                 Base = true,
-                WritablePaths = ["dydo/agents/{self}/**"],
+                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/issues/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-judge.template.md",
                 Constraints =

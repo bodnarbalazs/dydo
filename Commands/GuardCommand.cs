@@ -1191,7 +1191,7 @@ public static partial class GuardCommand
         try
         {
             var basePath = Environment.CurrentDirectory;
-            var timestampPath = Path.Combine(basePath, "dydo", "_system", ".last-validation");
+            var timestampPath = Path.Combine(basePath, "dydo", "_system", ".local", ".last-validation");
 
             if (File.Exists(timestampPath))
             {

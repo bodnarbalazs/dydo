@@ -17,6 +17,7 @@ This folder answers "What happened and why?" — the living record of project ev
 - **decisions/** - Decision records
 - **changelog/** - History of completed work
 - **pitfalls/** - Known gotchas and issues
+- **issues/** - Actionable work items (open → resolved)
 
 ## When to Add Docs Here
 

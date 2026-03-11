@@ -52,36 +52,60 @@ public static class CompletionProvider
         return GetSubcommandCompletions(words[1].ToLowerInvariant(), position, words);
     }
 
+    private static readonly Dictionary<string, Func<int, string[], IEnumerable<string>>> SubcommandHandlers = new()
+    {
+        ["task"] = (pos, words) => GetTaskCompletions(pos, words),
+        ["agent"] = (pos, words) => GetAgentCompletions(pos, words),
+        ["review"] = (pos, words) => GetReviewCompletions(pos, words),
+        ["dispatch"] = (_, _) => [],
+        ["clean"] = (pos, _) => GetCleanCompletions(pos),
+        ["init"] = (pos, _) => GetInitCompletions(pos),
+        ["completions"] = (pos, _) => GetCompletionsShellCompletions(pos),
+        ["inbox"] = (pos, _) => GetInboxCompletions(pos),
+        ["workspace"] = (pos, _) => GetWorkspaceCompletions(pos),
+        ["graph"] = (pos, _) => GetGraphCompletions(pos),
+    };
+
     public static IEnumerable<string> GetSubcommandCompletions(string command, int position, string[] words)
     {
-        return command switch
-        {
-            "task" => GetTaskCompletions(position, words),
-            "agent" => GetAgentCompletions(position, words),
-            "review" => GetReviewCompletions(position, words),
-            "dispatch" => [],
-            "clean" => position == 2 ? GetAgentNames() : [],
-            "init" => position == 2 ? Integrations : [],
-            "completions" => position == 2 ? Shells : [],
-            "inbox" => position == 2 ? InboxSubcommands : [],
-            "workspace" => position == 2 ? WorkspaceSubcommands : [],
-            "graph" => position == 2 ? GraphSubcommands : [],
-            _ => []
-        };
+        return SubcommandHandlers.TryGetValue(command, out var handler)
+            ? handler(position, words)
+            : [];
     }
+
+    private static IEnumerable<string> GetCleanCompletions(int position)
+        => position == 2 ? GetAgentNames() : [];
+
+    private static IEnumerable<string> GetInitCompletions(int position)
+        => position == 2 ? Integrations : [];
+
+    private static IEnumerable<string> GetCompletionsShellCompletions(int position)
+        => position == 2 ? Shells : [];
+
+    private static IEnumerable<string> GetInboxCompletions(int position)
+        => position == 2 ? InboxSubcommands : [];
+
+    private static IEnumerable<string> GetWorkspaceCompletions(int position)
+        => position == 2 ? WorkspaceSubcommands : [];
+
+    private static IEnumerable<string> GetGraphCompletions(int position)
+        => position == 2 ? GraphSubcommands : [];
+
+    private static readonly Dictionary<string, Func<IEnumerable<string>>> OptionValueHandlers = new()
+    {
+        ["--role"] = () => Roles,
+        ["--task"] = GetTaskNames,
+        ["--area"] = () => Frontmatter.ValidAreas,
+        ["--status"] = () => ReviewStatuses,
+        ["--action"] = () => GuardActions,
+        ["--to"] = GetAgentNames,
+    };
 
     public static IEnumerable<string>? GetOptionValueCompletions(string option)
     {
-        return option switch
-        {
-            "--role" => Roles,
-            "--task" => GetTaskNames(),
-            "--area" => Frontmatter.ValidAreas,
-            "--status" => ReviewStatuses,
-            "--action" => GuardActions,
-            "--to" => GetAgentNames(),
-            _ => null
-        };
+        return OptionValueHandlers.TryGetValue(option, out var handler)
+            ? handler()
+            : null;
     }
 
     private static IEnumerable<string> GetTaskCompletions(int position, string[] words)

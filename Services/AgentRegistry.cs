@@ -223,14 +223,20 @@ public partial class AgentRegistry : IAgentRegistry
             var sessionPath = Path.Combine(workspace, ".session");
             File.WriteAllText(sessionPath, JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
 
-            // Update state
+            // Preserve dispatch metadata (WindowId, AutoClose) when claiming a dispatched
+            // agent — they were set by the dispatch that launched this terminal and the
+            // watchdog needs them after release.
+            var wasDispatched = state?.Status == AgentStatus.Dispatched;
             UpdateAgentState(agentName, s =>
             {
                 s.Status = AgentStatus.Working;
                 s.Since = DateTime.UtcNow;
                 s.AssignedHuman = human;
-                s.WindowId = null;
-                s.AutoClose = false;
+                if (!wasDispatched)
+                {
+                    s.WindowId = null;
+                    s.AutoClose = false;
+                }
             });
 
             // Capture project snapshot for audit visualization

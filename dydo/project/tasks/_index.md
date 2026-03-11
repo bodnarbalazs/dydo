@@ -15,6 +15,7 @@ Index of tasks documentation.
 - [Task: auto-close-test](./auto-close-test.md) - (No description)
 - [Task: clean-command-hardening](./clean-command-hardening.md) - Extend CleanWorkspace to remove .
 - [Task: composable-constraints](./composable-constraints.md) - (No description)
+- [Task: consolidate-local-runtime-state](./consolidate-local-runtime-state.md) - (No description)
 - [Task: custom-role-ux](./custom-role-ux.md) - (No description)
 - [Task: data-driven-roles](./data-driven-roles.md) - (No description)
 - [Task: dispatch-and-autoclose-debug](./dispatch-and-autoclose-debug.md) - (No description)
@@ -32,6 +33,7 @@ Index of tasks documentation.
 - [Task: inbox-indicator](./inbox-indicator.md) - (No description)
 - [Task: no-launch-nudge](./no-launch-nudge.md) - (No description)
 - [Task: project-issues-design](./project-issues-design.md) - (No description)
+- [Task: project-issues-integration](./project-issues-integration.md) - (No description)
 - [Task: release-test](./release-test.md) - (No description)
 - [Task: role-behavioral-tests](./role-behavioral-tests.md) - (No description)
 - [Task: role-nudge-tweak](./role-nudge-tweak.md) - (No description)
@@ -47,6 +49,7 @@ Index of tasks documentation.
 - [Task: t1-setup-templates](./t1-setup-templates.md) - (No description)
 - [Task: t1-task-review](./t1-task-review.md) - (No description)
 - [Task: test-auto-close](./test-auto-close.md) - (No description)
+- [Task: test-autoclose-fix](./test-autoclose-fix.md) - (No description)
 - [Task: v1.2-stabilization-and-v1.3-planning](./v1.2-stabilization-and-v1.3-planning.md) - (No description)
 - [Task: v1.3-coverage-system-2](./v1.3-coverage-system-2.md) - (No description)
 - [Task: v1.3-custom-agent-modes-2](./v1.3-custom-agent-modes-2.md) - (No description)

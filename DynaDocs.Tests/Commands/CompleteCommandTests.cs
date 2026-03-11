@@ -218,6 +218,27 @@ public class CompleteCommandTests : IDisposable
         Assert.Equal(0, result);
     }
 
+    [Fact]
+    public void Command_WritesCompletionsToStdout()
+    {
+        var stdout = new StringWriter();
+        Console.SetOut(stdout);
+        try
+        {
+            var command = CompleteCommand.Create();
+            var result = command.Parse("1 dydo").Invoke();
+            Assert.Equal(0, result);
+
+            var output = stdout.ToString();
+            Assert.Contains("task", output);
+            Assert.Contains("agent", output);
+        }
+        finally
+        {
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+        }
+    }
+
     private void SetupProject(List<string> agents)
     {
         var config = new

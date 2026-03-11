@@ -11,4 +11,5 @@ Index of future-features documentation.
 
 ## Contents
 
+- [Coverage.Py Update](./coverage.py-update.md)
 - [Documentation Coverage Estimation](./doc-coverage.md) - Static analysis that estimates how well the documentation workspace covers the concepts that matter in the codebase.

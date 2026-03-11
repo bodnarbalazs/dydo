@@ -25,7 +25,7 @@ public static class CompleteCommand
         command.SetAction(parseResult =>
         {
             var position = parseResult.GetValue(positionArgument);
-            var words = parseResult.GetValue(wordsArgument) ?? [];
+            var words = parseResult.GetValue(wordsArgument)!;
             return Execute(position, words);
         });
 
@@ -34,17 +34,8 @@ public static class CompleteCommand
 
     private static int Execute(int position, string[] words)
     {
-        try
-        {
-            var completions = GetCompletions(position, words);
-            foreach (var c in completions)
-                Console.WriteLine(c);
-        }
-        catch
-        {
-            // Silent on errors — always exit 0
-        }
-
+        foreach (var c in GetCompletions(position, words))
+            Console.WriteLine(c);
         return 0;
     }
 

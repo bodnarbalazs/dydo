@@ -11,14 +11,10 @@
             "id": "ffff39c68fb85ae1",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "project/v1.3-release.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "v1.3-release"
+              "title": "New tab"
             }
           }
         ]
@@ -94,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "project/v1.3-release.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for v1.3-release"
+              "title": "Backlinks"
             }
           },
           {
@@ -113,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "project/v1.3-release.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from v1.3-release"
+              "title": "Outgoing links"
             }
           },
           {
@@ -156,13 +150,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "project/v1.3-release.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of v1.3-release"
+              "title": "Outline"
             }
           }
         ]
@@ -183,43 +176,43 @@
       "bases:Create new base": false
     }
   },
-  "active": "bf2c677e8837eeaa",
+  "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
-    "agents/Adele/archive/inbox/d2a6095b-msg-t1-coverage-sprint.md",
-    "agents/Leo/archive/inbox/c7081ddc-consolidate-local-runtime-state.md",
-    "agents/Emma/inbox/7871940f-msg-consolidate-local-runtime-state.md",
-    "agents/Brian/inbox/326ff83f-msg-general.md",
+    "agents/Frank/archive/inbox/1a165296-test-autoclose-v3.md",
+    "project/tasks/test-autoclose-v3.md",
+    "agents/Frank/modes/test-writer.md",
+    "agents/Frank/modes/reviewer.md",
+    "agents/Frank/modes/planner.md",
+    "agents/Frank/modes/orchestrator.md",
+    "agents/Frank/modes/judge.md",
+    "agents/Frank/modes/code-writer.md",
+    "agents/Frank/modes/docs-writer.md",
+    "agents/Frank/modes/inquisitor.md",
+    "agents/Frank/modes/co-thinker.md",
+    "agents/Frank/modes",
+    "_system/audit/2026/2026-03-11-6a093673-1c8c-48f2-9110-02d5dc526bcf.json",
+    "agents/Frank/inbox/1a165296-test-autoclose-v3.md",
+    "agents/Frank/archive/inbox/c4c6f303-test-autoclose-v2.md",
+    "project/tasks/test-autoclose-v2.md",
+    "project/future-features/coverage.py update.md",
+    "project/future-features/coverage.py-update.md",
+    "_system/audit/2026/2026-03-11-3785c17e-2336-42fc-a379-c07bbd327a4f.json",
+    "agents/Frank/inbox/c4c6f303-test-autoclose-v2.md",
+    "project/future-features/coverage.py updates.md",
+    "project/future-features/doc-coverage.md",
+    "project/v1.3-release.md",
+    "agents/Frank/archive/inbox/0f635382-test-autoclose-fix.md",
+    "project/tasks/test-autoclose-fix.md",
+    "_system/audit/2026/2026-03-11-470fbbb7-ea85-4b6f-8d80-eb945f5df9c2.json",
+    "agents/Frank/inbox/0f635382-test-autoclose-fix.md",
+    "agents/Grace/archive/inbox/c719aed3-msg-t1-dispatch-messaging.md",
+    "agents/Quinn/inbox/cad27cb8-msg-t1-agent-lifecycle.md",
+    "agents/Paul/inbox/f636a21c-msg-t1-platform-utils.md",
     "_system/audit/2026/2026-03-11-8a1e60a6-c570-4db8-a2ab-4aaa4be25a53.json",
-    "agents/Leo/inbox/c7081ddc-consolidate-local-runtime-state.md",
-    "agents/Emma/plan-consolidate-local-runtime-state.md",
-    "project/tasks/consolidate-local-runtime-state.md",
-    "agents/Emma/modes/test-writer.md",
-    "agents/Emma/modes/reviewer.md",
-    "agents/Emma/modes/planner.md",
-    "agents/Emma/modes/docs-writer.md",
-    "agents/Emma/modes/code-writer.md",
-    "agents/Emma/modes/co-thinker.md",
     "agents/Emma/modes",
-    "agents/Emma/archive/20260311-211441/plan-project-issues-integration.md",
     "agents/Emma/archive/20260311-211441",
     "_system/audit/2026/2026-03-11-2f0d2ea9-88e3-4686-a9d6-87822dbbc1ff.json",
-    "agents/Paul/inbox/66ae4170-msg-t1-coverage-sprint.md",
-    "agents/Olivia/inbox/0773c869-msg-t1-coverage-sprint.md",
-    "agents/Mia/inbox/4b0fc197-msg-t1-coverage-sprint.md",
-    "agents/Kate/inbox/d4834bca-msg-t1-coverage-sprint.md",
-    "agents/Iris/inbox/3f99385c-msg-t1-coverage-sprint.md",
-    "agents/Grace/inbox/1e4d6a60-msg-t1-coverage-sprint.md",
-    "agents/Quinn/inbox/6381b11b-msg-t1-coverage-sprint.md",
-    "agents/Frank/archive/inbox/8df14833-msg-t1-coverage-sprint.md",
-    "agents/Yara/modes/orchestrator.md",
-    "agents/Xavier/modes/orchestrator.md",
-    "agents/Xavier/modes/judge.md",
-    "agents/Xavier/modes/inquisitor.md",
     "agents/Jack/modes",
-    "_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json",
-    "agents/Frank/modes",
-    "_system/audit/2026/2026-03-11-e87c500b-3931-4dcf-a5ef-27053d8be771.json",
-    "agents/Rose/lc-gap-check-fix.patch",
-    "agents/Rose/modes"
+    "_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json"
   ]
 }

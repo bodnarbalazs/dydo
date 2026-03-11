@@ -115,7 +115,10 @@ public static class WatchdogService
             var (autoClose, isFree, agentName) = ParseStateForWatchdog(statePath);
             if (!autoClose || !isFree || agentName == null) continue;
 
-            // Find and kill claude processes for this agent
+            // Find and kill only the claude process for this agent, not the shell
+            // wrapper (powershell/bash). The pattern matches both — killing the shell
+            // prevents its post-claude status check from running `exit 0`, so WT
+            // sees a non-zero exit and keeps the tab open.
             var pattern = $"{agentName} --inbox";
             var pids = ProcessUtils.FindProcessesByCommandLine(pattern);
 
@@ -124,6 +127,9 @@ public static class WatchdogService
                 try
                 {
                     using var proc = Process.GetProcessById(pid);
+                    var name = proc.ProcessName.ToLowerInvariant();
+                    if (name is "powershell" or "pwsh" or "bash" or "sh" or "cmd" or "zsh")
+                        continue;
                     proc.Kill();
                 }
                 catch { }

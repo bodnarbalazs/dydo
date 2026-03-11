@@ -16,6 +16,7 @@ Index of project documentation.
 ## Subfolders
 
 - [Changelog](./changelog/_index.md) - Chronological record of completed work.
+- [Changelog](./changelog/_index.md) - Chronological record of completed work.
 - [Decisions](./decisions/_index.md) - Decision Records documenting choices that required deliberation.
 - [Future-features](./future-features/_index.md) - Speculative feature ideas that are worth capturing but not yet committed to a release.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.

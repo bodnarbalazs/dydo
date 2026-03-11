@@ -80,6 +80,25 @@ public static class DispatchService
         string origin, string role, string task, string brief, string? files, bool escalate,
         bool noLaunch, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree)
     {
+        var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin, role, task, brief, files, escalate, wait);
+
+        HandleReviewerTransition(role, task, brief);
+        PrintDispatchSummary(targetAgentName, role, task, itemPath, escalate);
+
+        var effectiveAutoClose = autoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
+        var worktreeId = SetupWorktree(registry, targetAgentName, worktree);
+        var (windowName, launchInTab) = ConfigureWindowSettings(registry, useTab, useNewWindow);
+
+        registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
+        LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose, worktreeId, windowName);
+
+        if (effectiveAutoClose)
+            WatchdogService.EnsureRunning();
+    }
+
+    private static string WriteInboxItemToAgent(AgentRegistry registry, string targetAgentName, string senderName,
+        string origin, string role, string task, string brief, string? files, bool escalate, bool wait)
+    {
         var inboxItem = new InboxItem
         {
             Id = Guid.NewGuid().ToString("N")[..8],
@@ -108,13 +127,20 @@ public static class DispatchService
 
         var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{sanitizedTask}.md");
         WriteInboxItem(itemPath, inboxItem);
+        return itemPath;
+    }
 
+    private static void HandleReviewerTransition(string role, string task, string brief)
+    {
         if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(task))
         {
             if (Commands.TaskCommand.TransitionToReviewPending(task, brief))
                 Console.WriteLine($"  Task state: marked ready for review");
         }
+    }
 
+    private static void PrintDispatchSummary(string targetAgentName, string role, string task, string itemPath, bool escalate)
+    {
         var escalatedIndicator = escalate ? " [ESCALATED]" : "";
         Console.WriteLine($"Work dispatched to agent {targetAgentName}.{escalatedIndicator}");
         Console.WriteLine($"  Role: {role}");
@@ -122,34 +148,39 @@ public static class DispatchService
         Console.WriteLine($"  Inbox: {itemPath}");
         if (escalate)
             Console.WriteLine($"  Escalated: yes");
+    }
 
-        var effectiveAutoClose = autoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
+    private static string? SetupWorktree(AgentRegistry registry, string targetAgentName, bool worktree)
+    {
+        if (!worktree)
+            return null;
 
-        string? worktreeId = null;
-        if (worktree)
-        {
-            worktreeId = TerminalLauncher.GenerateWorktreeId(targetAgentName);
-            var worktreeMarker = Path.Combine(registry.GetAgentWorkspace(targetAgentName), ".worktree");
-            File.WriteAllText(worktreeMarker, worktreeId);
-        }
+        var worktreeId = TerminalLauncher.GenerateWorktreeId(targetAgentName);
+        var worktreeMarker = Path.Combine(registry.GetAgentWorkspace(targetAgentName), ".worktree");
+        File.WriteAllText(worktreeMarker, worktreeId);
+        return worktreeId;
+    }
 
+    private static (string? windowName, bool launchInTab) ConfigureWindowSettings(AgentRegistry registry, bool useTab, bool useNewWindow)
+    {
         string? windowName = Environment.GetEnvironmentVariable("DYDO_WINDOW");
         var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
 
         if (!launchInTab)
             windowName = Guid.NewGuid().ToString("N")[..8];
 
-        registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
+        return (windowName, launchInTab);
+    }
 
-        if (!noLaunch)
-        {
-            var projectRoot = PathUtils.FindProjectRoot();
-            TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName);
-            Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
-        }
+    private static void LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
+        bool effectiveAutoClose, string? worktreeId, string? windowName)
+    {
+        if (noLaunch)
+            return;
 
-        if (effectiveAutoClose)
-            WatchdogService.EnsureRunning();
+        var projectRoot = PathUtils.FindProjectRoot();
+        TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName);
+        Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
     }
 
     private static string? CheckNoLaunchNudge(AgentRegistry registry, string sessionId, string task)

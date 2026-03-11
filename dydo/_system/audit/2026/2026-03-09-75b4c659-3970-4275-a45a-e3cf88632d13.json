@@ -872,6 +872,480 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d2a6095b-msg-t1-coverage-sprint.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T21:39:14.6485255Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\gap_check.py",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T21:57:00.4927998Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show f709b82:DynaDocs.csproj | grep -i version | head -3"
+    },
+    {
+      "ts": "2026-03-11T21:57:00.9283175Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 2a4dbe0:DynaDocs.csproj | grep -i version | head -3"
+    },
+    {
+      "ts": "2026-03-11T21:57:54.875161Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git reflog --no-decorate -40"
+    },
+    {
+      "ts": "2026-03-11T21:58:02.9995834Z",
+      "event": "Blocked",
+      "path": "//",
+      "tool": "bash",
+      "cmd": "for commit in e12da5a 18d5194 f423a4d 15862d1 220194b 2ef0d7d 3caac29 c4210d0 de3b199 17b8e3e bf862a...",
+      "reason": "Agent Adele (docs-writer) cannot write //. Docs-writer role can only edit dydo/** (except other agents\u0027 workspaces) and own workspace."
+    },
+    {
+      "ts": "2026-03-11T21:58:08.7570621Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all -- DynaDocs.csproj"
+    },
+    {
+      "ts": "2026-03-11T21:58:13.6566097Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show fd17059:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:14.0774692Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 247ddd8:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:14.5418916Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show c715789:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:15.0010229Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 16ec4eb:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:15.8506332Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 2f47f34:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:16.318367Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show e2af0e1:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:16.8025062Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 1a47d44:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:17.6640104Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 7e87e24:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:18.2125938Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show f976b54:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:18.5706514Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show c40dfab:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:19.1157216Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 4365385:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:19.8526078Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 31e3827:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:20.3542602Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 1d404b0:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:21.5414876Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 2a4dbe0:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:21.6449128Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show f709b82:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:22.52441Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show c0b82b3:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:22.9811713Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show e12da5a:DynaDocs.csproj | grep \u0027\u003CVersion\u003E\u0027"
+    },
+    {
+      "ts": "2026-03-11T21:58:48.012961Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u0027\u0022version\u0022\u0027 npm/package.json"
+    },
+    {
+      "ts": "2026-03-11T21:58:53.838124Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git stash show -p stash@{1} -- DynaDocs.csproj 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-11T21:58:59.96995Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/\u0022 | head -30"
+    },
+    {
+      "ts": "2026-03-11T21:59:05.5653108Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rl \u0022Version\\|version\\|1\\.2\\.1[4-9]\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audi..."
+    },
+    {
+      "ts": "2026-03-11T21:59:11.9233048Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u00221\\.2\\.1[4-9]\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-09-368f..."
+    },
+    {
+      "ts": "2026-03-11T21:59:12.8581669Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u00221\\.2\\.1[4-9]\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-10-f0cc..."
+    },
+    {
+      "ts": "2026-03-11T21:59:13.775491Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u00221\\.2\\.1[4-9]\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a6..."
+    },
+    {
+      "ts": "2026-03-11T21:59:22.9006035Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u00221\\.2\\.1[4-9]\\|Version.*1\\.2\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/20..."
+    },
+    {
+      "ts": "2026-03-11T21:59:27.7711535Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rl \u0022csproj\\|DynaDocs.csproj\\|Version\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/au..."
+    },
+    {
+      "ts": "2026-03-11T21:59:38.6429907Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u0022DynaDocs.csproj\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1..."
+    },
+    {
+      "ts": "2026-03-11T21:59:52.6473822Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u00221\\.2\\.1[0-6].*Version\\|Version.*1\\.2\\.1[0-6]\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo..."
+    },
+    {
+      "ts": "2026-03-11T21:59:59.5675246Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rl \u0022git.*reset\\|git.*checkout.*csproj\\|git.*stash\\|git.*restore\u0022 \u0022C:/Users/User/Desktop/Projec..."
+    },
+    {
+      "ts": "2026-03-11T22:00:46.4879469Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -o \u0027\u0022agent\u0022:\u0022[^\u0022]*\u0022\u0027 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1..."
+    },
+    {
+      "ts": "2026-03-11T22:01:02.6074259Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u0022git.*reset\\|git.*checkout\\|git.*stash\\|git.*restore\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/..."
+    },
+    {
+      "ts": "2026-03-11T22:01:10.1253214Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-\u0022*.json; do age..."
+    },
+    {
+      "ts": "2026-03-11T22:01:28.1191353Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-11T22:01:30.0711264Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026\u0022 -type f -name \u0022*.md\u0022 2\u003E/dev/n..."
+    },
+    {
+      "ts": "2026-03-11T22:01:32.0879201Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-11T22:01:33.475146Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026\\\u0022 2\u003E\u00261 | head -30"
+    },
+    {
+      "ts": "2026-03-11T22:01:35.0396968Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/ 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-11T22:01:38.3017621Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:38.9130816Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:41.0275491Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:01:41.4602066Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-10-889c74a3-2796-4a52-83a8-924f8b9d65f8.json",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:01:44.0112651Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:44.687205Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-10-889c74a3-2796-4a52-83a8-924f8b9d65f8.json",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:45.2058447Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-d611e7ad-d28a-4e0a-8b7b-ea35093cac32.json",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:48.491385Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:48.9552838Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:01:51.3130514Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u0022git reset\\|git checkout\\|git stash\\|git restore\\|git clean\u0022 /c/Users/User/Desktop/Projects/..."
+    },
+    {
+      "ts": "2026-03-11T22:01:58.2876179Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for file in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1{0,1}*.json; do..."
+    },
+    {
+      "ts": "2026-03-11T22:02:05.1469849Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -E \u00221\\.2\\.1[3-6]\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50..."
+    },
+    {
+      "ts": "2026-03-11T22:02:08.0909967Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81..."
+    },
+    {
+      "ts": "2026-03-11T22:02:22.4295649Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -A 5 \u0027\u0022event\u0022: \u0022Edit\u0022\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-..."
+    },
+    {
+      "ts": "2026-03-11T22:02:29.6971615Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "tail -500 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4..."
+    },
+    {
+      "ts": "2026-03-11T22:02:33.4759344Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-{10,11}*.json; do\n ..."
+    },
+    {
+      "ts": "2026-03-11T22:03:23.7385871Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for file in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-{10,11}*.json; d..."
+    },
+    {
+      "ts": "2026-03-11T22:03:50.9256991Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python3 \u003C\u003C \u0027EOFPYTHON\u0027\nimport json\nimport glob\n\n# Search for version changes\nfor f in sorted(glob.gl..."
+    },
+    {
+      "ts": "2026-03-11T22:03:58.5262255Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022git reset\\|git checkout\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2..."
+    },
+    {
+      "ts": "2026-03-11T22:04:04.5568179Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u0022DynaDocs\\.csproj\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1..."
+    },
+    {
+      "ts": "2026-03-11T22:04:10.2605384Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022git checkout.*DynaDocs.csproj\\|git reset.*DynaDocs.csproj\\|git clean.*DynaDocs.csproj\u0022 /c/U..."
+    },
+    {
+      "ts": "2026-03-11T22:04:21.7599783Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -E \u0022\u003CVersion\u003E|\\\u0022version\\\u0022\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026..."
+    },
+    {
+      "ts": "2026-03-11T22:04:31.6906376Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "head -100 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-10-889c74a3-2796-4..."
+    },
+    {
+      "ts": "2026-03-11T22:04:35.4323419Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -E \u0027\u0022cmd\u0022.*\u0022git (reset|checkout).*(DynaDocs\\.csproj|package\\.json)\u0027 /c/Users/User/Desktop/Proje..."
+    },
+    {
+      "ts": "2026-03-11T22:04:46.2422387Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline --since=\u00222026-03-10\u0022 --until=\u00222026-03-12\u0022 | head -50"
+    },
+    {
+      "ts": "2026-03-11T22:04:48.7381515Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline --since=\u00222026-03-08\u0022 --until=\u00222026-03-12\u0022 -- DynaDocs.csproj npm/package.jso..."
+    },
+    {
+      "ts": "2026-03-11T22:04:51.2751882Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show c0b82b3:DynaDocs.csproj | grep -A 2 \u0022\u003CVersion\u003E\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:04:53.7933516Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show f709b82:DynaDocs.csproj | grep -A 2 \u0022\u003CVersion\u003E\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:04:56.739658Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --pretty=format:\u0022%h %s\u0022 -- DynaDocs.csproj npm/package.json | head -40"
+    },
+    {
+      "ts": "2026-03-11T22:04:59.9211316Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 31e3827:DynaDocs.csproj | grep -A 2 \u0022\u003CVersion\u003E\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:05:02.5431817Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status"
+    },
+    {
+      "ts": "2026-03-11T22:05:05.7609696Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u0022\u003CVersion\u003E\u0022 DynaDocs.csproj \u0026\u0026 grep \u0027\u0022version\u0022\u0027 npm/package.json"
+    },
+    {
+      "ts": "2026-03-11T22:05:55.9935025Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff DynaDocs.csproj | head -30"
+    },
+    {
+      "ts": "2026-03-11T22:06:00.3847093Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1[01]*.json; do\n  f..."
+    },
+    {
+      "ts": "2026-03-11T22:06:15.2245026Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1[01]*.json; do\n  f..."
+    },
+    {
+      "ts": "2026-03-11T22:06:28.1959808Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u0027\u003CVersion\u003E\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1[01]*.j..."
     }
   ],
   "snapshot": {

@@ -166,6 +166,70 @@ public class WaitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region No Agent Tests
+
+    [Fact]
+    public async Task Wait_WithoutClaimedAgent_ReturnsError()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        // Do NOT claim an agent — session context exists but no agent claimed
+        StoreSessionContext();
+
+        var command = WaitCommand.Create();
+        var result = await RunAsync(command);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("No agent identity");
+    }
+
+    #endregion
+
+    #region Wait With Message Tests
+
+    [Fact]
+    public async Task Wait_General_FindsExistingMessage()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Pre-populate inbox with a message
+        CreateMessageFile("Adele", "Brian", "test-subject", "Hello from Brian");
+
+        StoreSessionContext();
+        var command = WaitCommand.Create();
+        var result = await RunAsync(command);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Message received from Brian");
+        result.AssertStdoutContains("test-subject");
+    }
+
+    [Fact]
+    public async Task Wait_ForTask_FindsExistingMessage()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Pre-populate inbox with a message matching the task filter
+        CreateMessageFile("Adele", "Charlie", "my-task", "Task results ready");
+
+        StoreSessionContext();
+        var command = WaitCommand.Create();
+        var result = await RunAsync(command, "--task", "my-task");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Message received from Charlie");
+    }
+
+    [Fact]
+    public void MessageFinder_FindMessage_NonexistentPath_ReturnsNull()
+    {
+        var result = MessageFinder.FindMessage("/nonexistent/inbox", null);
+        Assert.Null(result);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

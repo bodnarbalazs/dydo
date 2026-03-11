@@ -97,12 +97,7 @@ public static class InboxItemParser
 
     private static YamlFields ParseYamlFields(string yaml)
     {
-        string? id = null, from = null, role = null, task = null, origin = null;
-        string? type = null, subject = null;
-        DateTime received = DateTime.UtcNow;
-        bool escalated = false;
-        DateTime? escalatedAt = null;
-        bool replyRequired = false;
+        var state = new YamlParseState();
 
         foreach (var line in yaml.Split('\n'))
         {
@@ -112,38 +107,83 @@ public static class InboxItemParser
             var key = line[..colonIndex].Trim();
             var value = line[(colonIndex + 1)..].Trim();
 
-            switch (key)
-            {
-                case "id": id = value; break;
-                case "from": from = value; break;
-                case "origin": origin = value; break;
-                case "role": role = value; break;
-                case "task": task = value; break;
-                case "type": type = value; break;
-                case "subject": subject = value; break;
-                case "received":
-                    if (DateTime.TryParse(value, out var dt))
-                        received = dt;
-                    break;
-                case "escalated":
-                    escalated = value.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    break;
-                case "escalated_at":
-                    if (DateTime.TryParse(value, out var escDt))
-                        escalatedAt = escDt;
-                    break;
-                case "reply_required":
-                    replyRequired = value.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    break;
-            }
+            ApplyYamlField(state, key, value);
         }
 
         return new YamlFields
         {
-            Id = id, From = from, Origin = origin, Role = role, Task = task,
-            Type = type, Subject = subject, Received = received,
-            Escalated = escalated, EscalatedAt = escalatedAt, ReplyRequired = replyRequired
+            Id = state.Id, From = state.From, Origin = state.Origin, Role = state.Role, Task = state.Task,
+            Type = state.Type, Subject = state.Subject, Received = state.Received,
+            Escalated = state.Escalated, EscalatedAt = state.EscalatedAt, ReplyRequired = state.ReplyRequired
         };
+    }
+
+    private static void ApplyYamlField(YamlParseState state, string key, string value)
+    {
+        if (StringFieldSetters.TryGetValue(key, out var setter))
+            setter(state, value);
+        else
+            ApplyDateOrBoolField(state, key, value);
+    }
+
+    private static readonly Dictionary<string, Action<YamlParseState, string>> StringFieldSetters = new()
+    {
+        ["id"] = (s, v) => s.Id = v,
+        ["from"] = (s, v) => s.From = v,
+        ["origin"] = (s, v) => s.Origin = v,
+        ["role"] = (s, v) => s.Role = v,
+        ["task"] = (s, v) => s.Task = v,
+        ["type"] = (s, v) => s.Type = v,
+        ["subject"] = (s, v) => s.Subject = v,
+    };
+
+    private static void ApplyDateOrBoolField(YamlParseState state, string key, string value)
+    {
+        ApplyDateField(state, key, value);
+        ApplyBoolField(state, key, value);
+    }
+
+    private static void ApplyDateField(YamlParseState state, string key, string value)
+    {
+        switch (key)
+        {
+            case "received":
+                if (DateTime.TryParse(value, out var dt))
+                    state.Received = dt;
+                break;
+            case "escalated_at":
+                if (DateTime.TryParse(value, out var escDt))
+                    state.EscalatedAt = escDt;
+                break;
+        }
+    }
+
+    private static void ApplyBoolField(YamlParseState state, string key, string value)
+    {
+        switch (key)
+        {
+            case "escalated":
+                state.Escalated = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                break;
+            case "reply_required":
+                state.ReplyRequired = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                break;
+        }
+    }
+
+    private sealed class YamlParseState
+    {
+        public string? Id { get; set; }
+        public string? From { get; set; }
+        public string? Origin { get; set; }
+        public string? Role { get; set; }
+        public string? Task { get; set; }
+        public string? Type { get; set; }
+        public string? Subject { get; set; }
+        public DateTime Received { get; set; } = DateTime.UtcNow;
+        public bool Escalated { get; set; }
+        public DateTime? EscalatedAt { get; set; }
+        public bool ReplyRequired { get; set; }
     }
 
     private static List<string> ExtractFiles(string content)

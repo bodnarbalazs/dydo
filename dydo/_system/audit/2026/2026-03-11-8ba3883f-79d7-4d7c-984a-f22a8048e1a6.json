@@ -751,6 +751,109 @@
       "event": "Write",
       "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Dexter/brief-project-issues-integration.md",
       "tool": "write"
+    },
+    {
+      "ts": "2026-03-12T13:30:06.3735756Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/inbox/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls..."
+    },
+    {
+      "ts": "2026-03-12T13:30:39.7311357Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/project-issues-integration.md\u0022 2\u003E..."
+    },
+    {
+      "ts": "2026-03-12T13:30:49.0066929Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/project-issues-integration.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:30:49.4727689Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/inbox/\u0022 2\u003E/dev/null; echo \u0022---\u0022..."
+    },
+    {
+      "ts": "2026-03-12T13:30:52.2932743Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/20260311-211441/\u0022 2\u003E/dev/nu..."
+    },
+    {
+      "ts": "2026-03-12T13:31:00.8392471Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/archive/20260311-211441/plan-project-issues-integration.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:31:01.8046115Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cd \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 \u0026\u0026 git log --all --oneline --since=\u00222026-03-11 20:00\u0022 2...",
+      "reason": "Needless cd compound"
+    },
+    {
+      "ts": "2026-03-12T13:31:07.3225038Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 log --all --oneline --since=\u00222026-03-11 20:00\u0022 2\u003E/d..."
+    },
+    {
+      "ts": "2026-03-12T13:31:27.6574565Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 diff --name-only HEAD 2\u003E/dev/null | grep -iE \u0022issue..."
+    },
+    {
+      "ts": "2026-03-12T13:31:33.8829936Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 status -u -- \u0022Templates/_issues*\u0022 \u0022Services/FolderS..."
+    },
+    {
+      "ts": "2026-03-12T13:31:44.155168Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 diff --stat HEAD 2\u003E/dev/null | tail -5"
+    },
+    {
+      "ts": "2026-03-12T13:33:09.1058176Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 stash list 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-12T13:33:10.2193236Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 branch -a 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-12T13:33:16.8207778Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 diff --name-only HEAD 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-12T13:33:18.1292371Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 status --short 2\u003E/dev/null | grep -iE \u0022issue|scaffo..."
+    },
+    {
+      "ts": "2026-03-12T13:33:33.2827514Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 worktree list 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-12T13:34:03.9524668Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/.worktrees/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls \u0022C:/Users/User/..."
     }
   ],
   "snapshot": {

@@ -11,10 +11,14 @@
             "id": "ffff39c68fb85ae1",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "project/pitfalls/_pitfalls.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "_pitfalls"
             }
           }
         ]
@@ -90,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "project/pitfalls/_pitfalls.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks"
+              "title": "Backlinks for _pitfalls"
             }
           },
           {
@@ -108,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "project/pitfalls/_pitfalls.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from _pitfalls"
             }
           },
           {
@@ -150,12 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "project/pitfalls/_pitfalls.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of _pitfalls"
             }
           }
         ]
@@ -178,6 +185,26 @@
   },
   "active": "bf2c677e8837eeaa",
   "lastOpenFiles": [
+    "agents/Charlie/modes/test-writer.md",
+    "agents/Charlie/modes/reviewer.md",
+    "agents/Charlie/modes/planner.md",
+    "agents/Charlie/modes/orchestrator.md",
+    "agents/Charlie/modes/judge.md",
+    "agents/Charlie/modes/inquisitor.md",
+    "agents/Charlie/modes/docs-writer.md",
+    "agents/Charlie/modes/code-writer.md",
+    "agents/Charlie/modes/co-thinker.md",
+    "agents/Charlie/modes",
+    "agents/Charlie/archive/20260312-133346/brief-test-guid-routing.md",
+    "agents/Charlie/archive/20260312-133346",
+    "_system/audit/2026/2026-03-12-3b6ec7af-3dc7-461a-87ed-2b762bce1d17.json",
+    "agents/Charlie/inbox/69bc052a-t1-setup-templates.md",
+    "agents/Brian/inbox/9aa1c501-msg-t1-setup-templates.md",
+    "agents/Grace/archive/inbox/d673c2cf-msg-test-guid-sub.md",
+    "project/pitfalls/_index.md",
+    "project/future-features/_future-features.md",
+    "_system/audit/2026/2026-03-12-eef1a7d2-5a03-466c-923a-698117faab87.json",
+    "agents/Emma/archive/inbox/bcb83468-msg-project-issues-integration.md",
     "project/tasks/gitignore-review.md",
     "agents/Grace/modes/test-writer.md",
     "agents/Grace/modes/reviewer.md",
@@ -189,30 +216,10 @@
     "agents/Grace/modes/code-writer.md",
     "agents/Grace/modes/co-thinker.md",
     "agents/Grace/modes",
-    "agents/Grace/archive/20260312-114457/brief-test-guid-sub.md",
     "agents/Grace/archive/20260312-114457",
     "_system/audit/2026/2026-03-12-29a54162-73c1-47cf-89ae-a84bdcfd8584.json",
-    "agents/Kate/archive/inbox/44ede1b5-msg-t1-setup-templates.md",
-    "agents/Kate/archive/inbox/d4834bca-msg-t1-coverage-sprint.md",
-    "agents/Brian/archive/inbox/ecfa33a9-msg-t1-coverage-sprint.md",
-    "agents/Brian/archive/inbox/70f03f42-msg-t1-dispatch-messaging.md",
-    "agents/Brian/archive/inbox/326ff83f-msg-general.md",
-    "agents/Frank/modes/test-writer.md",
-    "agents/Frank/modes/reviewer.md",
-    "agents/Frank/modes/orchestrator.md",
-    "agents/Frank/modes/planner.md",
-    "agents/Frank/modes/inquisitor.md",
-    "agents/Frank/modes/judge.md",
-    "agents/Frank/modes/docs-writer.md",
-    "agents/Frank/modes/code-writer.md",
-    "agents/Frank/modes/co-thinker.md",
     "agents/Frank/modes",
     "_system/audit/2026/2026-03-12-6db84609-ef3f-4837-98ff-a1acc6b1f5fe.json",
-    "agents/Frank/inbox/d1e7dcab-t1-doc-validation.md",
-    "agents/Frank/archive/20260312-105357",
-    "_system/audit/2026/2026-03-12-cc54c3a1-4546-41f3-a274-5554aabea1d0.json",
-    "_system/audit/2026/2026-03-12-d0cb8833-b315-44f8-ba09-d10262463c95.json",
-    "_system/audit/2026/2026-03-12-8e1c1cd0-0183-4424-a61c-40409c2057c1.json",
-    "_system/audit/2026/2026-03-12-b9344dd6-d58d-47c0-a627-7e2ae93bf627.json"
+    "agents/Frank/archive/20260312-105357"
   ]
 }

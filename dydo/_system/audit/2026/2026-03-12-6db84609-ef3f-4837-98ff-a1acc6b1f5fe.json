@@ -333,6 +333,72 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "dotnet test DynaDocs.sln --collect:\u0022XPlat Code Coverage\u0022 --settings:DynaDocs.Tests/coverage/coverage..."
+    },
+    {
+      "ts": "2026-03-12T12:28:19.4203463Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E\u00261; taskkill //F //IM dotnet.exe 2\u003E\u00261 | head -5"
+    },
+    {
+      "ts": "2026-03-12T12:28:32.2903175Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022Fix|Check|Graph|MarkdownParser|DocGraph|Orpha..."
+    },
+    {
+      "ts": "2026-03-12T12:28:59.2378284Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E\u00261; taskkill //F //IM dotnet.exe 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T12:29:52.073629Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build DynaDocs.sln --no-restore -q 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-12T12:29:56.9515427Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "tasklist | grep -i testhost 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:24:24.6014355Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //PID 57512 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:32:08.4870187Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "tasklist | grep -i testhost 2\u003E\u00261; tasklist | grep -i dotnet 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:32:20.2549749Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build DynaDocs.sln --no-restore -q 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-12T13:32:38.4287077Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.sln --no-build --collect:\u0022XPlat Code Coverage\u0022 --settings:DynaDocs.Tests/covera..."
+    },
+    {
+      "ts": "2026-03-12T13:34:21.5774369Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:34:54.4562182Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect \u0022FixCommand\\|FixFileHandler\\|FixH..."
     }
   ],
   "snapshot": {

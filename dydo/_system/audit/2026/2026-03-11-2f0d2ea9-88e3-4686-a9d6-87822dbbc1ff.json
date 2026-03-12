@@ -424,6 +424,62 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "dotnet test \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 --no-restore --verbosity quiet 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-12T12:15:12.8029342Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/.gitignore",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T12:15:23.5226942Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Commands/InitCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T12:15:29.518701Z",
+      "event": "Blocked",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/.gitignore",
+      "tool": "edit",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-12T12:15:55.661829Z",
+      "event": "Blocked",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/.gitignore",
+      "tool": "edit",
+      "reason": "Agent Emma (planner) cannot edit .gitignore. Planner role can only edit own workspace and tasks."
+    },
+    {
+      "ts": "2026-03-12T12:16:00.5335232Z",
+      "event": "Role",
+      "role": "code-writer",
+      "task": "consolidate-local-runtime-state"
+    },
+    {
+      "ts": "2026-03-12T12:16:04.7174592Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/modes/code-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T12:16:09.4275763Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/guides/coding-standards.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T12:16:15.1600169Z",
+      "event": "Blocked",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/.gitignore",
+      "tool": "edit",
+      "reason": "Agent Emma (code-writer) cannot edit .gitignore. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-12T12:16:21.8313935Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot": {

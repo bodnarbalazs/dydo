@@ -18,22 +18,10 @@ internal static class TaskListHandler
 
         foreach (var file in Directory.GetFiles(tasksPath, "*.md"))
         {
-            var fileName = Path.GetFileName(file);
-            if (fileName.StartsWith('_')) continue;
+            var parsed = ParseTaskFile(file);
+            if (parsed == null) continue;
 
-            var content = File.ReadAllText(file);
-            var name = Path.GetFileNameWithoutExtension(file);
-
-            var statusMatch = Regex.Match(content, @"status: ([\w-]+)");
-            var status = statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
-
-            var assignedMatch = Regex.Match(content, @"assigned: (\w+)");
-            var assigned = assignedMatch.Success ? assignedMatch.Groups[1].Value : null;
-
-            var createdMatch = Regex.Match(content, @"created: (.+)");
-            var created = DateTime.UtcNow;
-            if (createdMatch.Success && DateTime.TryParse(createdMatch.Groups[1].Value, out var dt))
-                created = dt;
+            var (name, status, assigned, created) = parsed.Value;
 
             if (!all && status == "closed") continue;
             if (needsReview && status != "review-pending") continue;
@@ -52,10 +40,37 @@ internal static class TaskListHandler
 
         foreach (var (name, status, assigned, created) in tasks.OrderByDescending(t => t.Created))
         {
-            var displayName = name.Length > 23 ? name[..23] + ".." : name;
-            Console.WriteLine($"{displayName,-25} {status,-15} {assigned ?? "-",-10} {created:yyyy-MM-dd}");
+            PrintTaskRow(name, status, assigned, created);
         }
 
         return ExitCodes.Success;
+    }
+
+    private static (string Name, string Status, string? Assigned, DateTime Created)? ParseTaskFile(string file)
+    {
+        var fileName = Path.GetFileName(file);
+        if (fileName.StartsWith('_')) return null;
+
+        var content = File.ReadAllText(file);
+        var name = Path.GetFileNameWithoutExtension(file);
+
+        var statusMatch = Regex.Match(content, @"status: ([\w-]+)");
+        var status = statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
+
+        var assignedMatch = Regex.Match(content, @"assigned: (\w+)");
+        var assigned = assignedMatch.Success ? assignedMatch.Groups[1].Value : null;
+
+        var createdMatch = Regex.Match(content, @"created: (.+)");
+        var created = DateTime.UtcNow;
+        if (createdMatch.Success && DateTime.TryParse(createdMatch.Groups[1].Value, out var dt))
+            created = dt;
+
+        return (name, status, assigned, created);
+    }
+
+    private static void PrintTaskRow(string name, string status, string? assigned, DateTime created)
+    {
+        var displayName = name.Length > 23 ? name[..23] + ".." : name;
+        Console.WriteLine($"{displayName,-25} {status,-15} {assigned ?? "-",-10} {created:yyyy-MM-dd}");
     }
 }

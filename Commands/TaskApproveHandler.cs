@@ -136,23 +136,7 @@ internal static class TaskApproveHandler
                     var normalizedPath = evt.Path.Replace('\\', '/');
                     if (normalizedPath.Contains("dydo/", StringComparison.OrdinalIgnoreCase)) continue;
 
-                    switch (evt.EventType)
-                    {
-                        case AuditEventType.Write:
-                            if (!created.Contains(evt.Path) && !modified.Contains(evt.Path))
-                                created.Add(evt.Path);
-                            break;
-                        case AuditEventType.Edit:
-                            if (!modified.Contains(evt.Path) && !created.Contains(evt.Path))
-                                modified.Add(evt.Path);
-                            break;
-                        case AuditEventType.Delete:
-                            created.Remove(evt.Path);
-                            modified.Remove(evt.Path);
-                            if (!deleted.Contains(evt.Path))
-                                deleted.Add(evt.Path);
-                            break;
-                    }
+                    ClassifyEvent(evt, created, modified, deleted);
                 }
             }
         }
@@ -162,6 +146,27 @@ internal static class TaskApproveHandler
         }
 
         return (created, modified, deleted);
+    }
+
+    private static void ClassifyEvent(AuditEvent evt, List<string> created, List<string> modified, List<string> deleted)
+    {
+        switch (evt.EventType)
+        {
+            case AuditEventType.Write:
+                if (!created.Contains(evt.Path) && !modified.Contains(evt.Path))
+                    created.Add(evt.Path);
+                break;
+            case AuditEventType.Edit:
+                if (!modified.Contains(evt.Path) && !created.Contains(evt.Path))
+                    modified.Add(evt.Path);
+                break;
+            case AuditEventType.Delete:
+                created.Remove(evt.Path);
+                modified.Remove(evt.Path);
+                if (!deleted.Contains(evt.Path))
+                    deleted.Add(evt.Path);
+                break;
+        }
     }
 
     private static void PrintFileChanges(List<string> created, List<string> modified, List<string> deleted)

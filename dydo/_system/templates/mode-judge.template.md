@@ -106,16 +106,27 @@ Please review independently and rule."
 
 If two judges disagree, a third is dispatched to break the tie. The system caps at three judges per claim. If three judges can't agree, escalate to the human.
 
+### 5. File Issues
+
+For **confirmed** findings, file the issue directly:
+
+```bash
+dydo issue create --title "..." --area <a> --severity <s> --found-by inquisition
+```
+
+You have authority from the inquisition pipeline — file first, then inform the user. Only file for confirmed rulings, not false positives or inconclusive results.
+
 ---
 
 ## Complete
 
-Report your ruling to the agent who dispatched you:
+Report your ruling to the agent who dispatched you. Include any issues filed:
 
 ```bash
 dydo msg --to <origin> --subject <task> --body "
 Ruling: [CONFIRMED / FALSE POSITIVE / INCONCLUSIVE]
-Reasoning: [2-3 sentences]"
+Reasoning: [2-3 sentences]
+Issues filed: [issue IDs, if any]"
 dydo inbox clear --all
 dydo agent release
 ```

@@ -1489,6 +1489,211 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; python DynaDocs.Tests/coverage/gap_check.py --inspect Co..."
+    },
+    {
+      "ts": "2026-03-11T22:16:40.3467598Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect Commands/WaitCommand.cs --skip-tests 2\u003E\u00261 | gr..."
+    },
+    {
+      "ts": "2026-03-11T22:17:01.681687Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect Commands/CompleteCommand.cs --skip-tests 2\u003E\u00261 ..."
+    },
+    {
+      "ts": "2026-03-11T22:17:12.2385271Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status -s"
+    },
+    {
+      "ts": "2026-03-11T22:17:19.1928288Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --name-only HEAD"
+    },
+    {
+      "ts": "2026-03-11T22:17:22.656638Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-11T22:17:26.0713474Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all | head -10"
+    },
+    {
+      "ts": "2026-03-11T22:17:30.2114698Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- Commands/CompleteCommand.cs"
+    },
+    {
+      "ts": "2026-03-11T22:17:33.7813177Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show HEAD:Commands/CompleteCommand.cs | head -50"
+    },
+    {
+      "ts": "2026-03-11T22:17:41.053764Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- Services/CompletionProvider.cs Services/InboxItemParser.cs Commands/WaitCommand.cs ..."
+    },
+    {
+      "ts": "2026-03-11T22:17:47.1255046Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD --name-only -- Services/ Commands/ DynaDocs.Tests/"
+    },
+    {
+      "ts": "2026-03-11T22:17:52.8852362Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status -s DynaDocs.Tests/"
+    },
+    {
+      "ts": "2026-03-11T22:17:58.891706Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show HEAD:DynaDocs.Tests/Services/AgentSelectorTests.cs 2\u003E\u00261 | head -5"
+    },
+    {
+      "ts": "2026-03-11T22:18:04.7539957Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- DynaDocs.Tests/Services/AgentSelectorTests.cs DynaDocs.Tests/Commands/CompleteComma..."
+    },
+    {
+      "ts": "2026-03-11T22:18:09.216613Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- Services/DispatchService.cs"
+    },
+    {
+      "ts": "2026-03-11T22:18:22.7691089Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; python DynaDocs.Tests/coverage/gap_check.py --inspect Co..."
+    },
+    {
+      "ts": "2026-03-11T22:20:39.5722173Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Commands/DispatchCommand.cs 2\u003E\u00261 ..."
+    },
+    {
+      "ts": "2026-03-11T22:24:00.195219Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Commands/WaitCommand.cs 2\u003E\u00261 | gr..."
+    },
+    {
+      "ts": "2026-03-11T22:24:02.7469645Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Commands/CompleteCommand.cs 2\u003E\u00261 ..."
+    },
+    {
+      "ts": "2026-03-11T22:24:05.2285146Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Commands/InboxCommand.cs 2\u003E\u00261 | g..."
+    },
+    {
+      "ts": "2026-03-11T22:24:11.1247868Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Commands/MessageCommand.cs 2\u003E\u00261 |..."
+    },
+    {
+      "ts": "2026-03-11T22:24:39.2557448Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/DispatchService.cs 2\u003E\u00261 ..."
+    },
+    {
+      "ts": "2026-03-11T22:24:59.1500992Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/AgentSelector.cs 2\u003E\u00261 | ..."
+    },
+    {
+      "ts": "2026-03-11T22:25:08.3140106Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/MessageService.cs 2\u003E\u00261 |..."
+    },
+    {
+      "ts": "2026-03-11T22:25:13.5931271Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/MessageFinder.cs 2\u003E\u00261 | ..."
+    },
+    {
+      "ts": "2026-03-11T22:25:16.9062408Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/InboxService.cs 2\u003E\u00261 | g..."
+    },
+    {
+      "ts": "2026-03-11T22:25:20.0530303Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/InboxItemParser.cs 2\u003E\u00261 ..."
+    },
+    {
+      "ts": "2026-03-11T22:25:21.6799609Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/CompletionProvider.cs 2\u003E..."
+    },
+    {
+      "ts": "2026-03-11T22:25:23.7407078Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/TerminalLauncher.cs 2\u003E\u00261..."
+    },
+    {
+      "ts": "2026-03-11T22:25:25.1918389Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/WindowsTerminalLauncher...."
+    },
+    {
+      "ts": "2026-03-11T22:25:27.1686531Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/MacTerminalLauncher.cs 2..."
+    },
+    {
+      "ts": "2026-03-11T22:25:28.8351476Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Services/LinuxTerminalLauncher.cs..."
+    },
+    {
+      "ts": "2026-03-11T22:25:51.611877Z",
+      "event": "Blocked",
+      "path": "/tmp/grace-msg-body.md",
+      "tool": "bash",
+      "cmd": "cat \u003E /tmp/grace-msg-body.md \u003C\u003C \u0027MSGEOF\u0027\nTask t1-dispatch-messaging is complete. All 16 modules in t...",
+      "reason": "Agent Grace (code-writer) cannot write ../../../../../tmp/grace-msg-body.md. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-11T22:26:11.761706Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\bht7zrw1e.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:28:38.1197519Z",
+      "event": "Release",
+      "agent": "Grace"
     }
   ],
   "snapshot": {

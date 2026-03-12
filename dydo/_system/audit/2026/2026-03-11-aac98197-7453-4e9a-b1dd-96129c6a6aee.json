@@ -1165,6 +1165,187 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "dotnet test DynaDocs.Tests --collect:\u0022XPlat Code Coverage\u0022 --settings:DynaDocs.Tests/coverage/covera..."
+    },
+    {
+      "ts": "2026-03-11T22:29:34.7737213Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect FixCommand --xml \u0022DynaDocs.Tests/TestResults/b...",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T22:29:47.2148384Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --xml \u0022DynaDocs.Tests/TestResults/bc5b9314-49ee-4d67-843..."
+    },
+    {
+      "ts": "2026-03-11T22:30:01.9603043Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect FixCommand 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-11T22:32:53.9666349Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\FixHubHandler.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:32:58.982137Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\FixHubHandler.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-11T22:33:04.0315439Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build DynaDocs.csproj 2\u003E\u00261 | tail -5 \u0026\u0026 dotnet test --no-restore --filter \u0022FixCommandIntegrat..."
+    },
+    {
+      "ts": "2026-03-11T22:33:15.7331167Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-restore --filter \u0022NamingRuleTests|FrontmatterRuleTests|SummaryRuleTests|HubFilesRul..."
+    },
+    {
+      "ts": "2026-03-11T22:33:25.5142324Z",
+      "event": "Blocked",
+      "path": "EOF",
+      "tool": "bash",
+      "cmd": "git add Commands/FixHubHandler.cs \u0026\u0026 git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nt1: Fix FixHubHandler generatedHub...",
+      "reason": "Agent Iris (code-writer) cannot write EOF. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-11T22:33:29.0584894Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add Commands/FixHubHandler.cs \u0026\u0026 git commit -m \u0022t1: Fix FixHubHandler generatedHubs key format f..."
+    },
+    {
+      "ts": "2026-03-11T22:34:09.604282Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect FixCommand 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-11T22:36:13.053248Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022CheckCommand|GraphCommand|MarkdownParser|HubG..."
+    },
+    {
+      "ts": "2026-03-12T00:03:52.9869112Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022CheckCommand\u0022 2\u003E\u00261 | grep -A3 \u0022INSPECT\u0022"
+    },
+    {
+      "ts": "2026-03-12T00:05:26.0506347Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for m in GraphCommand MarkdownParser HubGenerator DocGraph OrphanDocsRule HubFilesRule NamingRule Fr..."
+    },
+    {
+      "ts": "2026-03-12T10:07:55.5739101Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022SummaryRule\u0022 2\u003E\u00261 | grep -A3 \u0022INSPECT\u0022"
+    },
+    {
+      "ts": "2026-03-12T10:13:07.7273235Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022UncustomizedDocsRule\u0022 2\u003E\u00261 | grep -A5 \u0022INSPEC..."
+    },
+    {
+      "ts": "2026-03-12T10:25:32.8378195Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Rules\\UncustomizedDocsRule.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T10:25:37.9803831Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Rules\\UncustomizedDocsRuleTests.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T10:25:43.8366026Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Rules\\UncustomizedDocsRuleTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T10:25:50.2062962Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Rules\\UncustomizedDocsRuleTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T10:25:56.9927978Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for m in CheckAgentValidator CheckDocValidator FixFileHandler FixHubHandler GraphDisplayHandler HubC..."
+    },
+    {
+      "ts": "2026-03-12T10:49:49.9147809Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T10:49:56.3210004Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git rm Services/HubContentFormatter.cs 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T10:50:26.2016174Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022GraphDisplayHandler\u0022 2\u003E\u00261 | grep -A8 \u0022INSPECT..."
+    },
+    {
+      "ts": "2026-03-12T10:52:26.8564657Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GraphCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T10:52:44.3039055Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022FixFileHandler\u0022 2\u003E\u00261 | grep -A8 \u0022INSPECT\u0022"
+    },
+    {
+      "ts": "2026-03-12T10:54:33.2732873Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add DynaDocs.Tests/Rules/UncustomizedDocsRuleTests.cs \u0026\u0026 git rm Services/HubContentFormatter.cs ..."
+    },
+    {
+      "ts": "2026-03-12T10:55:43.9215563Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status Services/HubContentFormatter.cs 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T10:55:50.0547145Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add DynaDocs.Tests/Rules/UncustomizedDocsRuleTests.cs \u0026\u0026 git commit -m \u0022t1: UncustomizedDocsRule..."
+    },
+    {
+      "ts": "2026-03-12T10:56:32.0223814Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022UncustomizedDocsRule\u0022 2\u003E\u00261 | grep -A5 \u0022INSPEC..."
+    },
+    {
+      "ts": "2026-03-12T11:00:23.9063358Z",
+      "event": "Release",
+      "agent": "Iris"
     }
   ],
   "snapshot": {

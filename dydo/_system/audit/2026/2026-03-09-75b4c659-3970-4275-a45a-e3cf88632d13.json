@@ -1346,6 +1346,116 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "grep -l \u0027\u003CVersion\u003E\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1[01]*.j..."
+    },
+    {
+      "ts": "2026-03-11T22:26:16.2575596Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -Eo \u0027\u0022[^\u0022]*Version[^\u0022]*\u0022\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-..."
+    },
+    {
+      "ts": "2026-03-11T22:35:53.5819004Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u00221\\.2\\.\\(14\\|15\\|16\\|20\\)\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/*..."
+    },
+    {
+      "ts": "2026-03-11T22:36:10.9400391Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep \u00221\\.2\\.\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-50a675f8-9c..."
+    },
+    {
+      "ts": "2026-03-11T22:36:14.6463985Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git stash list"
+    },
+    {
+      "ts": "2026-03-11T22:36:16.6150981Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git stash show -p stash@{0} | grep -A 5 -B 5 \u0022Version\\|version\u0022 | head -40"
+    },
+    {
+      "ts": "2026-03-11T22:36:18.8508585Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git stash show -p stash@{0} | grep -B 3 -A 3 \u00221\\.2\\.\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:36:21.1171406Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git reflog | head -20"
+    },
+    {
+      "ts": "2026-03-11T22:36:23.5295225Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show HEAD:DynaDocs.csproj | grep -A 2 \u0022\u003CVersion\u003E\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:36:26.2028464Z",
+      "event": "Blocked",
+      "path": "\\([^",
+      "tool": "bash",
+      "cmd": "for commit in $(git log --all --pretty=format:\u0022%h\u0022 -- DynaDocs.csproj | head -20); do\n  version=$(gi...",
+      "reason": "Agent Adele (docs-writer) cannot write ../../../../../([^. Docs-writer role can only edit dydo/** (except other agents\u0027 workspaces) and own workspace."
+    },
+    {
+      "ts": "2026-03-11T22:36:28.1298072Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --pretty=format:\u0022%h\u0022 -- DynaDocs.csproj | head -5 | while read commit; do\n  echo \u0022=== ..."
+    },
+    {
+      "ts": "2026-03-12T00:02:23.9036491Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log 2fbe7a1 -1 --format=\u0022%H %ai %an %ae %s\u0022"
+    },
+    {
+      "ts": "2026-03-12T00:02:26.9981957Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log c0b82b3..2fbe7a1 --pretty=format:\u0022%h %ai %s\u0022 -- DynaDocs.csproj"
+    },
+    {
+      "ts": "2026-03-12T00:02:29.6876247Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log c0b82b3..2fbe7a1 --pretty=format:\u0022%h %ai %an %s\u0022 | head -20"
+    },
+    {
+      "ts": "2026-03-12T00:02:34.5180716Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u0027\u0022event\u0022: \u0022Edit\u0022\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1[..."
+    },
+    {
+      "ts": "2026-03-12T00:05:54.6219332Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-10-889c74a3-2796-4a..."
+    },
+    {
+      "ts": "2026-03-12T00:08:42.3691744Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0027git reset\\|git checkout\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/20..."
+    },
+    {
+      "ts": "2026-03-12T10:24:07.1845229Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -A 20 \u0027\u0022event\u0022: \u0022Edit\u0022\u0027 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03..."
+    },
+    {
+      "ts": "2026-03-12T10:25:15.9565147Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-1[01]*.json; do\n  f..."
     }
   ],
   "snapshot": {

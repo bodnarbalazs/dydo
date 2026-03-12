@@ -90,19 +90,19 @@
   },
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "b3df5ee0a4e47b02bf4c9af2c80d4169b557cadfe9cc61d9b6f6721d7ee94d57",
-    "_system/templates/mode-code-writer.template.md": "4ee000a87177dad6da54ae27d4a97ee27884002040b219a5b50f13c4c99d6537",
-    "_system/templates/mode-reviewer.template.md": "2f1b084a0e4bda462869f95c7c78e86574ac692b1f769b3963d479ebe6156724",
+    "_system/templates/mode-code-writer.template.md": "eb5285c950657f82bc00f2fcbe2f0c351b0cce8d3cd87ffeb3b1f4fd420784ce",
+    "_system/templates/mode-reviewer.template.md": "9ec267bf0670c9475335606794b9a599f8be93e42e5a46e572bcfc85eb61d176",
     "_system/templates/mode-co-thinker.template.md": "093452964afcd5cb5f82d7725124e6c68a789c9352d443133423d5b7805e3510",
     "_system/templates/mode-planner.template.md": "bf49d14629710efb36db929659f4061f68a31e83edf3c835801c4bd785df8a20",
     "_system/templates/mode-docs-writer.template.md": "b699295f3be5f18c60dba321baad7fa19f88ebb38c62de9565cd711888a92c42",
     "reference/about-dynadocs.md": "692d5ac8cb8911b72ac7bae40437539b98cf72b341626e445392a406a83a7af6",
-    "reference/dydo-commands.md": "2627474cf4d9bd635d7cfb1b37edfc2626bbd87fe90b5c9857887b36b668b48f",
+    "reference/dydo-commands.md": "31e7f2e00ff41ad3daf397accd776d98701ca604c42adfe87dcd7d1b3d0e196c",
     "reference/writing-docs.md": "facc06413e2fb92ee356a4579cfe7dec8012d20d4379b0a26323b4efedca7275",
     "guides/how-to-use-docs.md": "7b8625467abd5da244c30a9833c7d8fadd629c0e0f2d3c2612f7217cc84626bc",
     "_assets/dydo-diagram.svg": "6c23cbc1aa47fb016e3055243f56a346eedd554574a0265283c65b27233a5dfe",
-    "_system/templates/mode-test-writer.template.md": "1e1cc8109ce1016c0ab081d034e1929210aedb7a89df63acb5690ad20e130aa0",
-    "_system/templates/mode-orchestrator.template.md": "9a0a8ab13bf689c9bfbdc6cf003f8525579533c2b56029fb2efc0cca6a0e901c",
+    "_system/templates/mode-test-writer.template.md": "41c301b58750b1b5ab912979da115e5f09918f9e5e36ee367295532af1d59075",
+    "_system/templates/mode-orchestrator.template.md": "b0384c312a16b054f353c8e51e9e7ab42987609896a90b9ca315f007a0f27c08",
     "_system/templates/mode-inquisitor.template.md": "a7a8c36d91fa3c110156782641e33ee42e862752ebe2e2eb5b52fbaca42d9e8e",
-    "_system/templates/mode-judge.template.md": "e4fd3fbcaa879d5f6ae03094626087a116967760ba32815a015796bbb0cf91a0"
+    "_system/templates/mode-judge.template.md": "9fa591ae7164b4e7efd73dbd68aff66172874aaf38a2c0abfdbec9d6502f1544"
   }
 }

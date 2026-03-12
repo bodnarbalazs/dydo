@@ -78,6 +78,14 @@ Never guess or assume.
 4. **Verify** — Run tests, ensure they pass
 {{include:extra-verify}}
 
+### Out-of-Scope Issues
+
+If you encounter a bug or problem outside your current task scope, propose it to the human before filing:
+
+> "I found [X]. Should I file an issue?"
+
+If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-by manual`
+
 **If guard blocks you:**
 - Check your role: `dydo agent status`
 - Need to edit docs? Dispatch to docs-writer

@@ -166,7 +166,7 @@ dydo agent role code-writer                    # Set role
 dydo agent role code-writer --task auth-login  # Set role with task
 ```
 
-**Roles:** `code-writer`, `reviewer`, `co-thinker`, `docs-writer`, `interviewer`, `planner`, `tester`
+**Roles:** `code-writer`, `reviewer`, `co-thinker`, `docs-writer`, `planner`, `test-writer`, `orchestrator`, `inquisitor`, `judge`
 
 ---
 
@@ -481,6 +481,55 @@ dydo task list --all            # Include closed tasks
 
 ---
 
+## Issue Commands
+
+### dydo issue create
+
+Create a new issue.
+
+```bash
+dydo issue create --title "Null ref in AuthService" --area backend --severity high
+dydo issue create --title "Missing validation" --area backend --severity medium --found-by inquisition
+```
+
+**Options:**
+- `--title <text>` - Issue title (required)
+- `--area <area>` - Affected area, e.g. backend, frontend, general (required)
+- `--severity <level>` - Severity: `low`, `medium`, `high`, `critical` (required)
+- `--found-by <source>` - How it was found: `manual`, `inquisition`, `review` (optional)
+
+### dydo issue list
+
+List issues.
+
+```bash
+dydo issue list                  # List open issues
+dydo issue list --area backend   # Filter by area
+dydo issue list --status resolved  # Filter by status
+dydo issue list --all            # Include resolved issues
+```
+
+**Options:**
+- `--area <area>` - Filter by area
+- `--status <status>` - Filter by status
+- `--all` - Show all issues including resolved
+
+### dydo issue resolve
+
+Resolve an issue.
+
+```bash
+dydo issue resolve 0001 --summary "Fixed in commit abc123"
+```
+
+**Arguments:**
+- `id` - Issue ID (e.g., 0001)
+
+**Options:**
+- `--summary <text>` - Resolution summary (required)
+
+---
+
 ## Review Commands
 
 ### dydo review complete
@@ -566,6 +615,55 @@ dydo template update --force   # Overwrite even if re-anchoring fails (backs up 
 
 ---
 
+## Role Commands
+
+### dydo roles list
+
+List all loaded role definitions.
+
+```bash
+dydo roles list
+```
+
+**Output:** Lists all roles (base and custom) with their descriptions.
+
+### dydo roles reset
+
+Regenerate base role definition files.
+
+```bash
+dydo roles reset              # Regenerate base role files only
+dydo roles reset --all        # Remove all role files (including custom) before regenerating
+```
+
+**Options:**
+- `--all` - Remove all role files (including custom) before regenerating base roles
+
+### dydo roles create
+
+Scaffold a new custom role definition file.
+
+```bash
+dydo roles create my-role
+```
+
+**Arguments:**
+- `name` - Name for the new role
+
+**Creates:** A new `.role.json` file in `dydo/_system/roles/`.
+
+### dydo validate
+
+Validate dydo configuration, role files, and agent state.
+
+```bash
+dydo validate
+```
+
+**Validates:** `dydo.json` configuration, role definition files, agent assignments, and overall system integrity.
+
+---
+
 ## Utility Commands
 
 ### dydo completions
@@ -635,6 +733,8 @@ $env:DYDO_HUMAN = "your_name"
 | `reviewer` | (read-only) | (all files) |
 | `co-thinker` | `dydo/agents/{agent}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
 | `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**`, `tests/**` |
-| `interviewer` | `dydo/agents/{agent}/**` | Everything else |
 | `planner` | `dydo/agents/{agent}/**`, `dydo/project/tasks/**` | `src/**` |
-| `tester` | `dydo/agents/{agent}/**`, `tests/**`, `dydo/project/pitfalls/**` | `src/**` |
+| `test-writer` | `dydo/agents/{agent}/**`, `tests/**`, `dydo/project/pitfalls/**` | `src/**` |
+| `orchestrator` | `dydo/agents/{agent}/**`, `dydo/project/tasks/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
+| `inquisitor` | `dydo/agents/{agent}/**`, `dydo/project/inquisitions/**` | `src/**`, `tests/**` |
+| `judge` | `dydo/agents/{agent}/**`, `dydo/project/issues/**` | `src/**`, `tests/**` |

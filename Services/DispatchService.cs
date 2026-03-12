@@ -163,11 +163,14 @@ public static class DispatchService
 
     private static (string? windowName, bool launchInTab) ConfigureWindowSettings(AgentRegistry registry, bool useTab, bool useNewWindow)
     {
-        string? windowName = Environment.GetEnvironmentVariable("DYDO_WINDOW");
-        var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? false));
-
-        if (!launchInTab)
+        // Inherit window GUID from parent, or generate a fresh one.
+        // First dispatch (no DYDO_WINDOW): creates a named window via wt -w {guid}.
+        // Child dispatches: inherit DYDO_WINDOW, targeting the parent's window.
+        var windowName = Environment.GetEnvironmentVariable("DYDO_WINDOW");
+        if (string.IsNullOrEmpty(windowName))
             windowName = Guid.NewGuid().ToString("N")[..8];
+
+        var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? true));
 
         return (windowName, launchInTab);
     }

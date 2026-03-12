@@ -61,77 +61,22 @@ Your goal: find bugs, edge cases, and usability issues.
 3. **Try edge cases** — Empty inputs, large data, rapid actions
 4. **Document findings** — Write clear, reproducible bug reports
 
-### Filing Issues
+### Reporting Results
 
-Create issue files in `dydo/project/pitfalls/`:
-
-```
-dydo/project/pitfalls/<issue-name>.md
-```
-
-Issue format:
-```markdown
----
-area: <affected-area>
-type: pitfall
-severity: low | medium | high | critical
-status: open
----
-
-# <Brief Title>
-
-## Summary
-
-One sentence describing the issue.
-
-## Steps to Reproduce
-
-1. Step one
-2. Step two
-3. Step three
-
-## Expected Behavior
-
-What should happen.
-
-## Actual Behavior
-
-What actually happens.
-
-## Environment
-
-- Browser/OS/version if relevant
-
-## Screenshots
-
-(if applicable)
-```
+Report your findings back to the agent who dispatched you. Do **not** file issues or pitfalls directly — the dispatching agent (inquisitor, reviewer, etc.) decides what happens next.
 
 ---
 
 ## Complete
 
-When testing is done:
-
-### If Issues Found
-
-Ensure all issues are filed in `dydo/project/pitfalls/`, then:
+When testing is done, report results to the origin agent:
 
 ```bash
-dydo dispatch --no-wait --role code-writer --task <task-name> --brief "Testing complete. Found N issues in pitfalls/. See: [list files]"
-```
-
-### If No Issues
-
-```bash
-dydo dispatch --wait --auto-close --role reviewer --task <task-name> --brief "Manual testing passed. No issues found."
-```
-
-This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
-
-Then release:
-
-```bash
-dydo inbox clear --all    # Archive any inbox messages
+dydo msg --to <origin> --subject <task-name> --body "
+Testing complete.
+Results: [PASS / FAIL]
+Findings: [list specific findings, if any]
+Tests written: [list test files]"
+dydo inbox clear --all
 dydo agent release
 ```

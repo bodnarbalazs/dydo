@@ -440,6 +440,232 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "wmic process where \u0022CommandLine like \u0027%--inbox%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev/null ..."
+    },
+    {
+      "ts": "2026-03-11T22:14:59.0020282Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "echo \u0022DYDO_WINDOW=$DYDO_WINDOW\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:15:16.6000498Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:15:20.0785369Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:15:24.9738418Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:15:29.538155Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:15:32.3866931Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:15:37.8823591Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:15:40.6042648Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:15:45.5312205Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-11T22:15:48.8197016Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:15:54.743524Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wt --help 2\u003E\u00261 | head -30"
+    },
+    {
+      "ts": "2026-03-11T22:16:18.1903782Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wt -? 2\u003E\u00261 | head -30"
+    },
+    {
+      "ts": "2026-03-11T22:16:23.2624431Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wt --version 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-11T22:17:13.2090946Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-11T22:20:59.076513Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -3 \u0026\u0026 dotnet tool update --global dydo --add-source ./nupkg 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-11T22:21:28.4278161Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
+    },
+    {
+      "ts": "2026-03-11T22:24:19.9619547Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:24:21.2064258Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-11T22:24:24.9924711Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\004-terminal-grouping-over-dashboard.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:24:45.3350281Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wt --window testguid123 new-tab powershell -Command \u0022echo \u0027WINDOW NAME TEST\u0027; Start-Sleep 10\u0022 2\u003E\u00261; ..."
+    },
+    {
+      "ts": "2026-03-11T22:27:01.4488621Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wt -w testguid123 new-tab powershell -Command \u0022echo \u0027SECOND TAB IN SAME WINDOW\u0027; Start-Sleep 10\u0022 2\u003E\u0026..."
+    },
+    {
+      "ts": "2026-03-11T22:27:15.782834Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wmic process where \u0022CommandLine like \u0027%Frank --inbox%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev..."
+    },
+    {
+      "ts": "2026-03-11T22:27:40.8027385Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-11T22:28:19.1698658Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-11T22:28:53.4952556Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -3 \u0026\u0026 dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool insta..."
+    },
+    {
+      "ts": "2026-03-11T22:29:15.6908052Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat dydo/.dydo/watchdog.pid 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-11T22:29:19.3090119Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wmic process where \u0022CommandLine like \u0027%watchdog%\u0027\u0022 get ProcessId /format:csv 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-11T22:29:25.9138357Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wmic process where \u0022CommandLine like \u0027%watchdog run%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev/..."
+    },
+    {
+      "ts": "2026-03-11T22:29:34.0753469Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wmic process where \u0022CommandLine like \u0027%dydo%\u0027 AND NOT CommandLine like \u0027%wmic%\u0027\u0022 get ProcessId,Name ..."
+    },
+    {
+      "ts": "2026-03-12T00:02:46.7515221Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
+    },
+    {
+      "ts": "2026-03-12T10:38:17.9154229Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
+    },
+    {
+      "ts": "2026-03-12T10:38:37.1770939Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wmic process where \u0022CommandLine like \u0027%dydo%\u0027 AND NOT CommandLine like \u0027%wmic%\u0027 AND NOT CommandLine ..."
+    },
+    {
+      "ts": "2026-03-12T10:38:45.2192418Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //PID 114720 //F 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T10:38:59.7345603Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
+    },
+    {
+      "ts": "2026-03-12T10:42:38.5214916Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wmic process where \u0022CommandLine like \u0027%Frank --inbox%\u0027\u0022 get CommandLine /format:csv 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-12T10:44:29.1141928Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\state.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T10:48:38.5142262Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\brief-test-guid-routing.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-12T10:49:18.1620037Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\brief-test-guid-routing.md",
+      "tool": "write"
     }
   ],
   "snapshot": {

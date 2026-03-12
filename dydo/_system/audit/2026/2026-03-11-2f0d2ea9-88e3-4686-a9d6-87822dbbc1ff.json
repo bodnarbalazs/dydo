@@ -362,6 +362,68 @@
       "event": "Write",
       "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/plan-consolidate-local-runtime-state.md",
       "tool": "write"
+    },
+    {
+      "ts": "2026-03-11T22:20:40.7399082Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "grep -n \u0022\\.dydo\u0022 --include=\u0022*.cs\u0022 -r \u0022C:/Users/User/Desktop/Projects/DynaDocs/Services/\u0022 \u0022C:/Users/U...",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T22:20:47.5845225Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cat \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Emma/inbox/7871940f\u0022*",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T22:20:49.3995509Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-11T22:20:55.1842767Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022\\.dydo\u0022 --include=\u0022*.cs\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/Services/\u0022 \u0022C:/Users/Use..."
+    },
+    {
+      "ts": "2026-03-11T22:20:56.0775802Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022\\.dydo\u0022 --include=\u0022*.cs\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:20:56.997977Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022_system/.local\u0022 --include=\u0022*.cs\u0022 -r \u0022C:/Users/User/Desktop/Projects/DynaDocs/\u0022"
+    },
+    {
+      "ts": "2026-03-11T22:21:01.9022478Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022last-validation\\|\\.local\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs..."
+    },
+    {
+      "ts": "2026-03-11T22:21:02.8696498Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022last-validation\\|\\.local\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/Services/WatchdogService..."
+    },
+    {
+      "ts": "2026-03-11T22:21:04.6479372Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls -l..."
+    },
+    {
+      "ts": "2026-03-11T22:25:49.7091129Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 --no-restore --verbosity quiet 2\u003E\u00261 | tail -10"
     }
   ],
   "snapshot": {

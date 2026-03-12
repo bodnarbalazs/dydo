@@ -710,4 +710,358 @@ public class TemplateGeneratorTests
     }
 
     #endregion
+
+    #region Fallback and Uncovered Method Tests
+
+    [Fact]
+    public void GenerateAgentStatesMd_ReturnsValidContent()
+    {
+        var agents = new List<string> { "Alpha", "Beta", "Gamma" };
+        var content = TemplateGenerator.GenerateAgentStatesMd(agents);
+
+        Assert.NotEmpty(content);
+        Assert.Contains("Alpha", content);
+        Assert.Contains("Beta", content);
+        Assert.Contains("Gamma", content);
+    }
+
+    [Fact]
+    public void GenerateHubIndex_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateHubIndex("guides", "How-to guides for development", "guides");
+
+        Assert.Contains("# Guides", content);
+        Assert.Contains("How-to guides for development", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: hub", content);
+    }
+
+    [Fact]
+    public void GenerateHubIndex_CapitalizesFirstLetter()
+    {
+        var content = TemplateGenerator.GenerateHubIndex("reference", "API reference", "reference");
+
+        Assert.Contains("# Reference", content);
+    }
+
+    [Fact]
+    public void GenerateProjectSubfolderHub_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateProjectSubfolderHub("tasks", "Task tracking");
+
+        Assert.Contains("# Tasks", content);
+        Assert.Contains("Task tracking", content);
+        Assert.Contains("area: project", content);
+        Assert.Contains("type: hub", content);
+    }
+
+    [Fact]
+    public void GenerateProjectSubfolderHub_CapitalizesFirstLetter()
+    {
+        var content = TemplateGenerator.GenerateProjectSubfolderHub("changelog", "Change history");
+
+        Assert.Contains("# Changelog", content);
+    }
+
+    [Fact]
+    public void GenerateJitiIndexMd_ReturnsValidContent()
+    {
+        var agents = new List<string> { "Alpha", "Beta" };
+        var workflowLinks = "- [Alpha](agents/Alpha/workflow.md)\n- [Beta](agents/Beta/workflow.md)";
+        var content = TemplateGenerator.GenerateJitiIndexMd(agents, workflowLinks);
+
+        Assert.Contains("# DynaDocs", content);
+        Assert.Contains("Alpha", content);
+        Assert.Contains("Beta", content);
+        Assert.Contains("agents/Alpha/workflow.md", content);
+        Assert.Contains("area: general", content);
+        Assert.Contains("type: hub", content);
+        Assert.Contains("dydo agent claim", content);
+        Assert.Contains("dydo check", content);
+    }
+
+    [Fact]
+    public void GenerateJitiIndexMd_HasDocumentationStructure()
+    {
+        var agents = new List<string> { "TestAgent" };
+        var links = "- [TestAgent](agents/TestAgent/workflow.md)";
+        var content = TemplateGenerator.GenerateJitiIndexMd(agents, links);
+
+        Assert.Contains("## Documentation Structure", content);
+        Assert.Contains("understand/", content);
+        Assert.Contains("guides/", content);
+        Assert.Contains("reference/", content);
+        Assert.Contains("project/", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackWorkflowFile_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackWorkflowFile(
+            "TestAgent", ["src/**"], ["tests/**"]);
+
+        Assert.Contains("# Workflow — TestAgent", content);
+        Assert.Contains("agent: TestAgent", content);
+        Assert.Contains("dydo agent claim TestAgent", content);
+        Assert.Contains("`src/**`", content);
+        Assert.Contains("`tests/**`", content);
+        Assert.Contains("## Must-Read Documents", content);
+        Assert.Contains("## Setting Your Role", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackWorkflowFile_IncludesAllRoles()
+    {
+        var content = TemplateGenerator.GenerateFallbackWorkflowFile(
+            "Alpha", ["Commands/**"], ["DynaDocs.Tests/**"]);
+
+        Assert.Contains("code-writer", content);
+        Assert.Contains("reviewer", content);
+        Assert.Contains("co-thinker", content);
+        Assert.Contains("docs-writer", content);
+        Assert.Contains("planner", content);
+        Assert.Contains("test-writer", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackWorkflowFile_HasQuickReference()
+    {
+        var content = TemplateGenerator.GenerateFallbackWorkflowFile(
+            "Bravo", ["src/**"], ["tests/**"]);
+
+        Assert.Contains("## Quick Reference", content);
+        Assert.Contains("dydo whoami", content);
+        Assert.Contains("dydo agent release", content);
+        Assert.Contains("dydo inbox show", content);
+        Assert.Contains("dydo dispatch", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackArchitectureMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackArchitectureMd();
+
+        Assert.Contains("# Architecture Overview", content);
+        Assert.Contains("area: understand", content);
+        Assert.Contains("type: concept", content);
+        Assert.Contains("## Project Structure", content);
+        Assert.Contains("## Key Components", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackWelcomeMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackWelcomeMd();
+
+        Assert.Contains("# Welcome", content);
+        Assert.Contains("area: general", content);
+        Assert.Contains("type: hub", content);
+        Assert.Contains("## Getting Started", content);
+        Assert.Contains("about.md", content);
+        Assert.Contains("architecture.md", content);
+        Assert.Contains("coding-standards.md", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackCodingStandardsMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackCodingStandardsMd();
+
+        Assert.Contains("# Coding Standards", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: guide", content);
+        Assert.Contains("## General Principles", content);
+        Assert.Contains("## Naming Conventions", content);
+        Assert.Contains("PascalCase", content);
+        Assert.Contains("camelCase", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackHowToUseDocsMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackHowToUseDocsMd();
+
+        Assert.Contains("# How to Use These Docs", content);
+        Assert.Contains("area: guides", content);
+        Assert.Contains("type: guide", content);
+        Assert.Contains("## Documentation Structure", content);
+        Assert.Contains("understand/", content);
+        Assert.Contains("guides/", content);
+        Assert.Contains("reference/", content);
+        Assert.Contains("project/", content);
+        Assert.Contains("## Document Types", content);
+        Assert.Contains("## Navigation", content);
+        Assert.Contains("dydo graph", content);
+        Assert.Contains("## Key Reference Documents", content);
+    }
+
+    [Theory]
+    [InlineData("code-writer", "implement code")]
+    [InlineData("reviewer", "review code and provide feedback")]
+    [InlineData("co-thinker", "think through problems collaboratively")]
+    [InlineData("planner", "design implementation plans")]
+    [InlineData("docs-writer", "write documentation")]
+    [InlineData("test-writer", "write tests and report issues")]
+    public void GenerateFallbackModeFile_KnownModes_HaveCorrectDescription(string modeName, string expectedDesc)
+    {
+        var content = TemplateGenerator.GenerateFallbackModeFile(
+            "TestAgent", modeName, ["src/**"], ["tests/**"]);
+
+        Assert.Contains(expectedDesc, content);
+        Assert.Contains($"agent: TestAgent", content);
+        Assert.Contains($"mode: {modeName}", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackModeFile_UnknownMode_UsesGenericDescription()
+    {
+        var content = TemplateGenerator.GenerateFallbackModeFile(
+            "Alpha", "unknown-mode", ["src/**"], ["tests/**"]);
+
+        Assert.Contains("complete your assigned work", content);
+        Assert.Contains("(check with dydo agent status)", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackModeFile_HasMustReadsAndSetRole()
+    {
+        var content = TemplateGenerator.GenerateFallbackModeFile(
+            "Alpha", "code-writer", ["Commands/**"], ["Tests/**"]);
+
+        Assert.Contains("## Must-Reads", content);
+        Assert.Contains("about.md", content);
+        Assert.Contains("architecture.md", content);
+        Assert.Contains("## Set Role", content);
+        Assert.Contains("dydo agent role code-writer", content);
+        Assert.Contains("## Verify", content);
+        Assert.Contains("dydo agent status", content);
+    }
+
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("reviewer")]
+    [InlineData("co-thinker")]
+    [InlineData("planner")]
+    [InlineData("docs-writer")]
+    [InlineData("test-writer")]
+    public void GenerateFallbackModeFile_AllKnownModes_HaveEditPermissions(string modeName)
+    {
+        var content = TemplateGenerator.GenerateFallbackModeFile(
+            "TestAgent", modeName, ["src/**"], ["tests/**"]);
+
+        Assert.Contains("You can edit:", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackFilesOffLimitsMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackFilesOffLimitsMd();
+
+        Assert.Contains("# Files Off-Limits", content);
+        Assert.Contains("type: config", content);
+        Assert.Contains(".env", content);
+        Assert.Contains("secrets.json", content);
+        Assert.Contains("*.pem", content);
+        Assert.Contains("*.key", content);
+        Assert.Contains(".aws", content);
+    }
+
+    [Fact]
+    public void GenerateIssuesMetaMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateIssuesMetaMd();
+        Assert.NotEmpty(content);
+    }
+
+    [Fact]
+    public void GenerateFallbackAboutMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackAboutMd();
+
+        Assert.Contains("# About This Project", content);
+        Assert.Contains("area: understand", content);
+        Assert.Contains("type: context", content);
+        Assert.Contains("architecture.md", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackDydoCommandsMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackDydoCommandsMd();
+
+        Assert.Contains("# CLI Commands Reference", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: reference", content);
+        Assert.Contains("## Setup Commands", content);
+        Assert.Contains("## Documentation Commands", content);
+        Assert.Contains("## Agent Commands", content);
+        Assert.Contains("## Task Commands", content);
+        Assert.Contains("## Workflow Commands", content);
+        Assert.Contains("## Audit Commands", content);
+        Assert.Contains("dydo init", content);
+        Assert.Contains("dydo check", content);
+        Assert.Contains("dydo agent claim", content);
+        Assert.Contains("dydo task create", content);
+        Assert.Contains("dydo dispatch", content);
+        Assert.Contains("dydo audit", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackWritingDocsMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackWritingDocsMd();
+
+        Assert.Contains("# Writing Documentation", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: reference", content);
+        Assert.Contains("## Frontmatter", content);
+        Assert.Contains("## Naming Conventions", content);
+        Assert.Contains("kebab-case", content);
+        Assert.Contains("## Validation", content);
+        Assert.Contains("dydo check", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackGlossaryMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackGlossaryMd();
+
+        Assert.Contains("# Glossary", content);
+        Assert.Contains("area: general", content);
+        Assert.Contains("type: reference", content);
+        Assert.Contains("## Project Terms", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackAboutDynadocsMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFallbackAboutDynadocsMd();
+
+        Assert.Contains("# DynaDocs (dydo)", content);
+        Assert.Contains("area: reference", content);
+        Assert.Contains("type: reference", content);
+        Assert.Contains("## The Problem", content);
+        Assert.Contains("## The Solution", content);
+        Assert.Contains("dydo-diagram.svg", content);
+        Assert.Contains("## Workflow Flags", content);
+        Assert.Contains("## Agent Roles", content);
+        Assert.Contains("code-writer", content);
+        Assert.Contains("reviewer", content);
+        Assert.Contains("github.com/bodnarbalazs/dydo", content);
+    }
+
+    [Fact]
+    public void GenerateFallbackAgentStatesMd_ReturnsValidContent()
+    {
+        var rows = "| Alpha | free | - | - | - |\n| Beta | free | - | - | - |";
+        var content = TemplateGenerator.GenerateFallbackAgentStatesMd(rows);
+
+        Assert.Contains("# Agent States", content);
+        Assert.Contains("Alpha", content);
+        Assert.Contains("Beta", content);
+        Assert.Contains("## Pending Inbox", content);
+        Assert.Contains("last-updated:", content);
+    }
+
+    #endregion
 }

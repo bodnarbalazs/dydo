@@ -163,12 +163,13 @@ public static class DispatchService
 
     private static (string? windowName, bool launchInTab) ConfigureWindowSettings(AgentRegistry registry, bool useTab, bool useNewWindow)
     {
-        // Inherit window GUID from parent, or generate a fresh one.
-        // First dispatch (no DYDO_WINDOW): creates a named window via wt -w {guid}.
-        // Child dispatches: inherit DYDO_WINDOW, targeting the parent's window.
+        // Two-tier window targeting:
+        // Root dispatches (no DYDO_WINDOW, no --new-window): null → launcher uses -w 0 (MRU)
+        // Child dispatches: inherit DYDO_WINDOW → launcher uses -w {guid}
+        // --new-window dispatches: fresh GUID → launcher uses --window {guid}
         var windowName = Environment.GetEnvironmentVariable("DYDO_WINDOW");
         if (string.IsNullOrEmpty(windowName))
-            windowName = Guid.NewGuid().ToString("N")[..8];
+            windowName = useNewWindow ? Guid.NewGuid().ToString("N")[..8] : null;
 
         var launchInTab = useTab || (!useNewWindow && (registry.Config?.Dispatch?.LaunchInTab ?? true));
 
@@ -213,7 +214,7 @@ public static class DispatchService
 
         var waitPrivilegedRoles = new[] { "orchestrator", "inquisitor", "judge" };
         if (!waitPrivilegedRoles.Contains(sender.Role, StringComparer.OrdinalIgnoreCase))
-            return $"The --wait flag is reserved for oversight roles (orchestrator, inquisitor, judge). Your role '{sender.Role}' should use --no-wait. See decision 005.";
+            return $"The --wait flag is reserved for oversight roles (orchestrator, inquisitor, judge). Your role '{sender.Role}' should use --no-wait.";
 
         return null;
     }

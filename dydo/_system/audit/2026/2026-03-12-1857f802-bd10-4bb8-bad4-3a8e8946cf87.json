@@ -1,977 +1,48 @@
 {
-  "session": "387f3329-2af1-49ac-8041-18443c0c51d4",
-  "agent": "Charlie",
+  "session": "1857f802-bd10-4bb8-bad4-3a8e8946cf87",
+  "agent": "Frank",
   "human": "balazs",
-  "started": "2026-03-11T17:30:40.0188304Z",
-  "git_head": "c0b82b3",
+  "started": "2026-03-12T10:39:25.3405704Z",
+  "git_head": "3823b54",
   "events": [
     {
-      "ts": "2026-03-11T17:30:40.0182709Z",
+      "ts": "2026-03-12T10:39:25.3397368Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-11T17:30:45.4452299Z",
+      "ts": "2026-03-12T10:39:26.1187972Z",
       "event": "Blocked",
-      "tool": "agent",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md",
+      "tool": "read",
       "reason": "No agent identity"
     },
     {
-      "ts": "2026-03-11T17:30:48.8974894Z",
-      "event": "Blocked",
-      "tool": "glob",
-      "reason": "No agent identity"
+      "ts": "2026-03-12T10:39:28.2419913Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\workflow.md",
+      "tool": "read"
     },
     {
-      "ts": "2026-03-11T17:30:49.3287905Z",
-      "event": "Blocked",
-      "tool": "glob",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-11T17:30:50.7575333Z",
-      "event": "Blocked",
-      "tool": "grep",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-11T17:30:51.2236043Z",
-      "event": "Blocked",
-      "tool": "grep",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-11T17:30:56.0996583Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "dotnet run -- agent claim auto 2\u003E\u00261",
-      "reason": "Indirect dydo invocation via dotnet run"
-    },
-    {
-      "ts": "2026-03-11T17:30:59.1351975Z",
+      "ts": "2026-03-12T10:39:38.0761665Z",
       "event": "Claim",
-      "agent": "Charlie"
+      "agent": "Frank"
     },
     {
-      "ts": "2026-03-11T17:31:04.0630378Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:09.3960627Z",
+      "ts": "2026-03-12T10:39:46.8358878Z",
       "event": "Role",
       "role": "co-thinker",
-      "task": "dispatch-and-autoclose-debug"
+      "task": "test-window-routing"
     },
     {
-      "ts": "2026-03-11T17:31:21.2137091Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:21.6579357Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-11T17:31:22.1008333Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:23.3451931Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:28.1828264Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:28.4648945Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:28.8632625Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:29.4486001Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\001-auto-close-dispatch.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:35.1443341Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:35.5730805Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentState.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:36.1420316Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WatchdogCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:31:41.2239266Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:41.6576315Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:43.3790696Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:49.0252443Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:49.7729044Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:31:54.944108Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls dydo/agents/*/state.md 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-11T17:31:56.4989776Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat dydo/.dydo/watchdog.pid 2\u003E/dev/null; echo \u0022---\u0022; wmic process where \u0022CommandLine like \u0027%watchdog..."
-    },
-    {
-      "ts": "2026-03-11T17:35:42.6037677Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "for f in dydo/agents/Adele/state.md dydo/agents/Brian/state.md dydo/agents/Dexter/state.md; do echo ..."
-    },
-    {
-      "ts": "2026-03-11T17:37:12.4403161Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\DispatchConfig.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:37:13.8872709Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat dydo/.dydo/config.json 2\u003E/dev/null || cat dydo/dydo.json 2\u003E/dev/null || echo \u0022No config found\u0022"
-    },
-    {
-      "ts": "2026-03-11T17:37:14.2704255Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "echo \u0022DYDO_WINDOW=$DYDO_WINDOW\u0022"
-    },
-    {
-      "ts": "2026-03-11T17:47:48.909944Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-11T17:47:49.8125048Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-11T17:47:54.1187895Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:47:58.9336469Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%--inbox%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev/null ..."
-    },
-    {
-      "ts": "2026-03-11T17:50:00.2158401Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%claude%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev/null |..."
-    },
-    {
-      "ts": "2026-03-11T17:54:05.4392166Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\co-thinker.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:54:23.4680745Z",
-      "event": "Role",
-      "role": "code-writer",
-      "task": "dispatch-and-autoclose-debug"
-    },
-    {
-      "ts": "2026-03-11T17:54:27.2512931Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\code-writer.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:54:31.96534Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:54:37.0614891Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:54:41.5857817Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:54:45.2027393Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:54:55.8402878Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "edit",
-      "reason": "Must-read files not yet read"
-    },
-    {
-      "ts": "2026-03-11T17:55:07.0422753Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:55:08.0677156Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:55:08.2126902Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:55:18.1064629Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-11T17:57:39.9832978Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:57:41.5584524Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T17:57:46.7194769Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:57:47.1654315Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:57:52.1539103Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\AgentLifecycleTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:58:11.2603978Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T17:58:24.7031642Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-11T17:58:31.4667838Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "cd \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 \u0026\u0026 dotnet test --filter \u0022ClaimAgent_DispatchedAgent_Pre...",
-      "reason": "Needless cd compound"
-    },
-    {
-      "ts": "2026-03-11T17:58:36.0753867Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022ClaimAgent_DispatchedAgent_PreservesDispatchMetadata|ClaimAgent_FreeAgent_Clea..."
-    },
-    {
-      "ts": "2026-03-11T17:58:48.31652Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022ClaimAgent_DispatchedAgent_PreservesDispatchMetadata|ClaimAgent_FreeAgent_Clea..."
-    },
-    {
-      "ts": "2026-03-11T17:58:55.7097179Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022SetDispatchMetadata|Release_WithAutoClose|ClaimAgent_Dispatched\u0022 -v minimal 2\u003E..."
-    },
-    {
-      "ts": "2026-03-11T17:59:16.6289277Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022SetDispatchMetadata|Release_WithAutoClose|ClaimAgent_Dispatched\u0022 --no-build -v..."
-    },
-    {
-      "ts": "2026-03-11T17:59:25.3844Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -5"
-    },
-    {
-      "ts": "2026-03-11T18:00:41.4502337Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool update --global dydo --add-source ./nupkg 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-11T18:04:07.2193244Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -3"
-    },
-    {
-      "ts": "2026-03-11T18:05:19.917216Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool update --global dydo --add-source ./nupkg 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-11T18:06:07.3538896Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-11T22:06:58.9153035Z",
-      "event": "Blocked",
-      "path": "dydo/agents/Frank/state.md",
-      "tool": "bash",
-      "cmd": "cat dydo/agents/Frank/state.md 2\u003E/dev/null",
-      "reason": "Off-limits: dydo/agents/*/state.md"
-    },
-    {
-      "ts": "2026-03-11T22:07:17.5407046Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\state.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:10:20.539657Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:10:20.9382942Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:10:35.4345819Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-11T22:11:07.3720436Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -3 \u0026\u0026 dotnet tool update --global dydo --add-source ./nupkg 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-11T22:14:03.1566573Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%--inbox%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev/null ..."
-    },
-    {
-      "ts": "2026-03-11T22:14:59.0020282Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "echo \u0022DYDO_WINDOW=$DYDO_WINDOW\u0022"
-    },
-    {
-      "ts": "2026-03-11T22:15:16.6000498Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:15:20.0785369Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T22:15:24.9738418Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\DispatchCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:15:29.538155Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T22:15:32.3866931Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:15:37.8823591Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:15:40.6042648Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:15:45.5312205Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-11T22:15:48.8197016Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:15:54.743524Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wt --help 2\u003E\u00261 | head -30"
-    },
-    {
-      "ts": "2026-03-11T22:16:18.1903782Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wt -? 2\u003E\u00261 | head -30"
-    },
-    {
-      "ts": "2026-03-11T22:16:23.2624431Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wt --version 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-11T22:17:13.2090946Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-11T22:20:59.076513Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -3 \u0026\u0026 dotnet tool update --global dydo --add-source ./nupkg 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-11T22:21:28.4278161Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
-    },
-    {
-      "ts": "2026-03-11T22:24:19.9619547Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:24:21.2064258Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-11T22:24:24.9924711Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\004-terminal-grouping-over-dashboard.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:24:45.3350281Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wt --window testguid123 new-tab powershell -Command \u0022echo \u0027WINDOW NAME TEST\u0027; Start-Sleep 10\u0022 2\u003E\u00261; ..."
-    },
-    {
-      "ts": "2026-03-11T22:27:01.4488621Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wt -w testguid123 new-tab powershell -Command \u0022echo \u0027SECOND TAB IN SAME WINDOW\u0027; Start-Sleep 10\u0022 2\u003E\u0026..."
-    },
-    {
-      "ts": "2026-03-11T22:27:15.782834Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%Frank --inbox%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev..."
-    },
-    {
-      "ts": "2026-03-11T22:27:40.8027385Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-11T22:28:19.1698658Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-11T22:28:53.4952556Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet pack -o nupkg 2\u003E\u00261 | tail -3 \u0026\u0026 dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool insta..."
-    },
-    {
-      "ts": "2026-03-11T22:29:15.6908052Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat dydo/.dydo/watchdog.pid 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-11T22:29:19.3090119Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%watchdog%\u0027\u0022 get ProcessId /format:csv 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-11T22:29:25.9138357Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%watchdog run%\u0027\u0022 get ProcessId,CommandLine /format:csv 2\u003E/dev/..."
-    },
-    {
-      "ts": "2026-03-11T22:29:34.0753469Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%dydo%\u0027 AND NOT CommandLine like \u0027%wmic%\u0027\u0022 get ProcessId,Name ..."
-    },
-    {
-      "ts": "2026-03-12T00:02:46.7515221Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
-    },
-    {
-      "ts": "2026-03-12T10:38:17.9154229Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
-    },
-    {
-      "ts": "2026-03-12T10:38:37.1770939Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%dydo%\u0027 AND NOT CommandLine like \u0027%wmic%\u0027 AND NOT CommandLine ..."
-    },
-    {
-      "ts": "2026-03-12T10:38:45.2192418Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "taskkill //PID 114720 //F 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-12T10:38:59.7345603Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet tool uninstall --global dydo 2\u003E\u00261 \u0026\u0026 dotnet tool install --global dydo --add-source ./nupkg 2..."
-    },
-    {
-      "ts": "2026-03-12T10:42:38.5214916Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wmic process where \u0022CommandLine like \u0027%Frank --inbox%\u0027\u0022 get CommandLine /format:csv 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-12T10:44:29.1141928Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\state.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T10:48:38.5142262Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\brief-test-guid-routing.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-12T10:49:18.1620037Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\brief-test-guid-routing.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-12T11:42:11.5104922Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:42:11.9558121Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-12T11:42:12.4025397Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-12T11:42:12.8769932Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-12T11:42:13.1325848Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:42:17.4021669Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:42:17.7207317Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:42:18.3267481Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:43:05.228665Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-12T11:43:05.67499Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-12T11:43:06.0171379Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-12T11:43:12.1547731Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:43:13.705243Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-12T11:44:00.9894878Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-12T11:44:04.2129478Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:44:05.8549719Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:44:09.4802384Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-12T11:44:12.6135684Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "cd \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 \u0026\u0026 dotnet build 2\u003E\u00261",
-      "reason": "Needless cd compound"
-    },
-    {
-      "ts": "2026-03-12T11:44:15.7553441Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet build 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-12T11:44:23.5480921Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022TerminalLauncher\u0022 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-12T11:44:49.0825781Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "edit",
-      "reason": "Agent Charlie (code-writer) cannot edit dydo/project/decisions/008-terminal-dispatch-routing-and-autoclose.md. Code-writer role can only edit configured source/test paths and own workspace."
-    },
-    {
-      "ts": "2026-03-12T11:45:04.8071854Z",
-      "event": "Role",
-      "role": "co-thinker",
-      "task": "gitignore-review"
-    },
-    {
-      "ts": "2026-03-12T11:45:04.8813256Z",
-      "event": "Role",
-      "role": "docs-writer",
-      "task": "dispatch-and-autoclose-debug"
-    },
-    {
-      "ts": "2026-03-12T11:45:46.5501715Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "edit",
-      "reason": "Must-read files not yet read"
-    },
-    {
-      "ts": "2026-03-12T11:45:50.6120935Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\docs-writer.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:45:54.2776012Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:45:54.7592204Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\how-to-use-docs.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:45:55.2119608Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\writing-docs.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:46:39.7316589Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-12T11:46:53.6350266Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-12T11:47:08.1654802Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-12T11:47:27.1443608Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-12T11:47:32.5439284Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\ac448dfb8..."
-    },
-    {
-      "ts": "2026-03-12T11:47:37.9269035Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\tasks\\ac448d..."
-    },
-    {
-      "ts": "2026-03-12T11:48:06.4789603Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\008-terminal-dispatch-routing-and-autoclose.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:48:20.2939775Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:50:34.8145171Z",
-      "event": "Role",
-      "role": "code-writer",
-      "task": "dispatch-and-autoclose-debug"
-    },
-    {
-      "ts": "2026-03-12T11:50:39.1304334Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "cd \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 \u0026\u0026 dotnet test --filter \u0022TerminalLauncher|Dispatch|Watc...",
-      "reason": "Needless cd compound"
-    },
-    {
-      "ts": "2026-03-12T11:50:42.6368667Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022TerminalLauncher|Dispatch|Watchdog|ClaimAgent\u0022 -v minimal 2\u003E\u00261 | tail -20"
-    },
-    {
-      "ts": "2026-03-12T11:50:59.9815905Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-12T11:51:12.9773596Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:51:18.5473648Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-12T11:51:29.0440801Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-12T11:51:36.5720631Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:51:40.4542701Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:51:45.0819051Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-12T11:51:57.1312143Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-12T11:52:01.0839771Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022Dispatch_Default_SetsNullWindowId|Dispatch_WithNewWindow_SetsWindowId|Dispatch..."
-    },
-    {
-      "ts": "2026-03-12T11:52:21.997943Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "taskkill //PID 113972 //F 2\u003E\u00261; dotnet test --filter \u0022Dispatch_Default_SetsNullWindowId|Dispatch_Wit..."
-    },
-    {
-      "ts": "2026-03-12T12:06:54.5961479Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022Dispatch|TerminalLauncher|Watchdog|ClaimAgent\u0022 -v minimal 2\u003E\u00261 | tail -5"
-    },
-    {
-      "ts": "2026-03-12T12:07:56.9219144Z",
+      "ts": "2026-03-12T10:39:52.5599196Z",
       "event": "Release",
-      "agent": "Charlie"
+      "agent": "Frank"
     }
   ],
   "snapshot": {
-    "git_commit": "c0b82b36f78ec648f9d89aa23d032bfa94847d03",
+    "git_commit": "3823b54a19b1482e339c68172c355482093eac87",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -984,24 +55,40 @@
       "CLA.md",
       "CLAUDE.md",
       "Commands/AgentCommand.cs",
+      "Commands/AgentLifecycleHandlers.cs",
+      "Commands/AgentListHandler.cs",
+      "Commands/AgentManagementHandlers.cs",
+      "Commands/AgentTreeHandler.cs",
       "Commands/AuditCommand.cs",
+      "Commands/CheckAgentValidator.cs",
       "Commands/CheckCommand.cs",
+      "Commands/CheckDocValidator.cs",
       "Commands/CleanCommand.cs",
       "Commands/CompleteCommand.cs",
       "Commands/CompletionsCommand.cs",
       "Commands/DispatchCommand.cs",
       "Commands/FixCommand.cs",
+      "Commands/FixFileHandler.cs",
+      "Commands/FixHubHandler.cs",
       "Commands/GraphCommand.cs",
+      "Commands/GraphDisplayHandler.cs",
       "Commands/GuardCommand.cs",
       "Commands/InboxCommand.cs",
       "Commands/IndexCommand.cs",
       "Commands/InitCommand.cs",
       "Commands/InquisitionCommand.cs",
       "Commands/IssueCommand.cs",
+      "Commands/IssueCreateHandler.cs",
+      "Commands/IssueListHandler.cs",
+      "Commands/IssueResolveHandler.cs",
       "Commands/MessageCommand.cs",
       "Commands/ReviewCommand.cs",
       "Commands/RolesCommand.cs",
+      "Commands/TaskApproveHandler.cs",
       "Commands/TaskCommand.cs",
+      "Commands/TaskCreateHandler.cs",
+      "Commands/TaskListHandler.cs",
+      "Commands/TaskReviewHandler.cs",
       "Commands/TemplateCommand.cs",
       "Commands/ValidateCommand.cs",
       "Commands/WaitCommand.cs",
@@ -1167,23 +254,56 @@
       "dydo/_system/audit/2026/2026-03-10-ec6a13fd-5431-49af-8aa0-2988fa958efa.json",
       "dydo/_system/audit/2026/2026-03-10-f0cc4d8d-09d5-4684-818f-03fa2578b167.json",
       "dydo/_system/audit/2026/2026-03-11-063b1dce-89c9-4560-a141-ff26d0e42414.json",
+      "dydo/_system/audit/2026/2026-03-11-0edaf0d7-dbcf-48a5-b297-b7105db5900b.json",
       "dydo/_system/audit/2026/2026-03-11-111c55ef-d645-4cdb-b39b-805d27ffa367.json",
+      "dydo/_system/audit/2026/2026-03-11-159af456-1b16-44f3-a07e-dd600028a08c.json",
+      "dydo/_system/audit/2026/2026-03-11-1be3d5d7-1e62-46d8-bc98-0532d5de59f4.json",
+      "dydo/_system/audit/2026/2026-03-11-24afcab2-89ea-446f-9d0f-9dcbccbf932a.json",
       "dydo/_system/audit/2026/2026-03-11-2cc26c68-6223-42f2-9d99-a5d35fdc846c.json",
       "dydo/_system/audit/2026/2026-03-11-2ec2ae87-247d-44c1-a8de-b1421619c9bd.json",
+      "dydo/_system/audit/2026/2026-03-11-2f0d2ea9-88e3-4686-a9d6-87822dbbc1ff.json",
+      "dydo/_system/audit/2026/2026-03-11-3489dbb5-6be9-4324-b9e4-acca5df8fb6a.json",
+      "dydo/_system/audit/2026/2026-03-11-3785c17e-2336-42fc-a379-c07bbd327a4f.json",
+      "dydo/_system/audit/2026/2026-03-11-387f3329-2af1-49ac-8041-18443c0c51d4.json",
       "dydo/_system/audit/2026/2026-03-11-3a1d662a-ca94-46f8-abfd-6035980e71ba.json",
+      "dydo/_system/audit/2026/2026-03-11-3baab85e-60b3-4384-bc5b-f5e2fdd5b219.json",
+      "dydo/_system/audit/2026/2026-03-11-470fbbb7-ea85-4b6f-8d80-eb945f5df9c2.json",
+      "dydo/_system/audit/2026/2026-03-11-48b67ec6-d0a7-4b3d-ad0f-d9401657baf9.json",
+      "dydo/_system/audit/2026/2026-03-11-4c3cde0e-134b-494a-874a-3aa5b985432b.json",
       "dydo/_system/audit/2026/2026-03-11-4e580c37-79e7-4ab5-9765-07bda287748a.json",
       "dydo/_system/audit/2026/2026-03-11-4f06e7e4-8ecd-44a1-b8d8-5ca946b712fa.json",
+      "dydo/_system/audit/2026/2026-03-11-50a675f8-9cc9-4878-81dc-5f342ff87a90.json",
+      "dydo/_system/audit/2026/2026-03-11-55657e85-7981-4d4a-a170-f08cfbd71735.json",
+      "dydo/_system/audit/2026/2026-03-11-5575002c-42ad-4a44-b3a9-a83d54ce9ef5.json",
       "dydo/_system/audit/2026/2026-03-11-56f3a93f-47c8-4ff4-90be-38b86ded9df7.json",
       "dydo/_system/audit/2026/2026-03-11-5e13c0fc-284d-4423-a3a8-bb6a68a3796b.json",
       "dydo/_system/audit/2026/2026-03-11-62a7df2f-b591-4a68-a867-74623aa1c5c8.json",
+      "dydo/_system/audit/2026/2026-03-11-64d14bf1-9aed-4298-9998-811c8baea6a4.json",
+      "dydo/_system/audit/2026/2026-03-11-66e38664-053e-4a83-9c59-70cc865ce6d9.json",
+      "dydo/_system/audit/2026/2026-03-11-67c51e92-bcf2-4ea5-9909-2955018fa9e0.json",
+      "dydo/_system/audit/2026/2026-03-11-6a093673-1c8c-48f2-9110-02d5dc526bcf.json",
+      "dydo/_system/audit/2026/2026-03-11-7400af83-e62a-4644-aafc-9e736e510bd4.json",
       "dydo/_system/audit/2026/2026-03-11-7b3f6307-6d0b-4457-b927-969f47831232.json",
+      "dydo/_system/audit/2026/2026-03-11-7ceaf955-a5f0-4f32-a3fb-d97f1f83573a.json",
       "dydo/_system/audit/2026/2026-03-11-85b39539-ab97-4a50-8156-31e10c3af5a5.json",
+      "dydo/_system/audit/2026/2026-03-11-8a1e60a6-c570-4db8-a2ab-4aaa4be25a53.json",
+      "dydo/_system/audit/2026/2026-03-11-8ba3883f-79d7-4d7c-984a-f22a8048e1a6.json",
+      "dydo/_system/audit/2026/2026-03-11-940b4879-6e11-4b90-85fc-79724204ef9d.json",
+      "dydo/_system/audit/2026/2026-03-11-9555f165-09a2-4030-9b6b-7ce9d5ed8fbd.json",
       "dydo/_system/audit/2026/2026-03-11-9749c6c4-0ea7-4be3-ad41-4008a2ce49cc.json",
       "dydo/_system/audit/2026/2026-03-11-9de48e49-ed06-47d8-bfde-ea37103539b0.json",
       "dydo/_system/audit/2026/2026-03-11-a5e6273a-b9e2-49ab-b233-79415a0cd84e.json",
+      "dydo/_system/audit/2026/2026-03-11-aac98197-7453-4e9a-b1dd-96129c6a6aee.json",
+      "dydo/_system/audit/2026/2026-03-11-af1bbedf-0d29-4897-bf52-087bff740b06.json",
       "dydo/_system/audit/2026/2026-03-11-cc5082a2-f688-4072-8b81-e44bc08e367c.json",
+      "dydo/_system/audit/2026/2026-03-11-d005f86b-46fe-4a1c-9aba-44f98dd4b224.json",
       "dydo/_system/audit/2026/2026-03-11-d15ec5ad-5d7d-4188-a2fe-e12e1aaac25a.json",
+      "dydo/_system/audit/2026/2026-03-11-d5bad251-5c4b-45e2-b249-ae42065cea15.json",
+      "dydo/_system/audit/2026/2026-03-11-d611e7ad-d28a-4e0a-8b7b-ea35093cac32.json",
+      "dydo/_system/audit/2026/2026-03-11-db70193a-2bfb-497b-a6c1-f9e7f566c48b.json",
       "dydo/_system/audit/2026/2026-03-11-dbb6cbae-669c-4cb4-a63e-a5775d6d4fd6.json",
+      "dydo/_system/audit/2026/2026-03-11-e87c500b-3931-4dcf-a5ef-27053d8be771.json",
+      "dydo/_system/audit/2026/2026-03-11-ee3adb55-75cb-4251-993a-21e1eb88a75c.json",
       "dydo/_system/audit/2026/2026-03-11-f99bd105-6e79-4029-b451-fc935925f17b.json",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
@@ -1198,11 +318,12 @@
       "dydo/_system/templates/mode-co-thinker.template.md",
       "dydo/_system/templates/mode-code-writer.template.md",
       "dydo/_system/templates/mode-docs-writer.template.md",
-      "dydo/_system/templates/mode-interviewer.template.md",
+      "dydo/_system/templates/mode-inquisitor.template.md",
+      "dydo/_system/templates/mode-judge.template.md",
+      "dydo/_system/templates/mode-orchestrator.template.md",
       "dydo/_system/templates/mode-planner.template.md",
       "dydo/_system/templates/mode-reviewer.template.md",
       "dydo/_system/templates/mode-test-writer.template.md",
-      "dydo/_system/templates/mode-tester.template.md",
       "dydo/.obsidian/app.json",
       "dydo/.obsidian/appearance.json",
       "dydo/.obsidian/core-plugins.json",
@@ -1271,6 +392,10 @@
       "dydo/project/decisions/007-oversight-roles.md",
       "dydo/project/decisions/008-data-driven-roles.md",
       "dydo/project/decisions/008-terminal-dispatch-routing-and-autoclose.md",
+      "dydo/project/decisions/009-crap-per-method-metric.md",
+      "dydo/project/future-features/_future-features.md",
+      "dydo/project/future-features/_index.md",
+      "dydo/project/future-features/doc-coverage.md",
       "dydo/project/pitfalls/_index.md",
       "dydo/project/pitfalls/_pitfalls.md",
       "dydo/project/tasks/_index.md",
@@ -1279,19 +404,43 @@
       "dydo/project/tasks/auto-close-test.md",
       "dydo/project/tasks/clean-command-hardening.md",
       "dydo/project/tasks/composable-constraints.md",
+      "dydo/project/tasks/consolidate-local-runtime-state.md",
       "dydo/project/tasks/custom-role-ux.md",
       "dydo/project/tasks/data-driven-roles.md",
+      "dydo/project/tasks/dispatch-and-autoclose-debug.md",
+      "dydo/project/tasks/dispatch-release-test.md",
       "dydo/project/tasks/dispatch-wait-state-machine.md",
+      "dydo/project/tasks/doc-coverage-idea.md",
       "dydo/project/tasks/dynamic-role-table.md",
       "dydo/project/tasks/fix-doc-consistency-tests.md",
+      "dydo/project/tasks/fix-gap-check-crap-metric.md",
       "dydo/project/tasks/fix-gh-actions-dotnet.md",
+      "dydo/project/tasks/fix-project-sync.md",
+      "dydo/project/tasks/fix-reference-docs.md",
+      "dydo/project/tasks/fix-template-generation.md",
+      "dydo/project/tasks/gitignore-last-validation.md",
       "dydo/project/tasks/inbox-indicator.md",
       "dydo/project/tasks/no-launch-nudge.md",
+      "dydo/project/tasks/project-issues-design.md",
+      "dydo/project/tasks/project-issues-integration.md",
+      "dydo/project/tasks/release-test.md",
       "dydo/project/tasks/role-behavioral-tests.md",
       "dydo/project/tasks/role-nudge-tweak.md",
       "dydo/project/tasks/search-codebase-for-role-nudging-and-claiming.md",
       "dydo/project/tasks/setup-coverage-viewer.md",
+      "dydo/project/tasks/t1-agent-lifecycle.md",
+      "dydo/project/tasks/t1-audit-snapshots.md",
+      "dydo/project/tasks/t1-coverage-sprint.md",
+      "dydo/project/tasks/t1-dispatch-messaging.md",
+      "dydo/project/tasks/t1-doc-validation.md",
+      "dydo/project/tasks/t1-guard-security.md",
+      "dydo/project/tasks/t1-platform-utils.md",
+      "dydo/project/tasks/t1-setup-templates.md",
+      "dydo/project/tasks/t1-task-review.md",
       "dydo/project/tasks/test-auto-close.md",
+      "dydo/project/tasks/test-autoclose-fix.md",
+      "dydo/project/tasks/test-autoclose-v2.md",
+      "dydo/project/tasks/test-autoclose-v3.md",
       "dydo/project/tasks/v1.2-stabilization-and-v1.3-planning.md",
       "dydo/project/tasks/v1.3-coverage-system-2.md",
       "dydo/project/tasks/v1.3-custom-agent-modes-2.md",
@@ -1600,6 +749,7 @@
       "DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
       "DynaDocs.Tests/Integration/InitCheckIntegrationTests.cs",
       "DynaDocs.Tests/Integration/InitCommandTests.cs",
+      "DynaDocs.Tests/Integration/InquisitionTests.cs",
       "DynaDocs.Tests/Integration/IntegrationTestBase.cs",
       "DynaDocs.Tests/Integration/IntegrationTestCollection.cs",
       "DynaDocs.Tests/Integration/IssueTests.cs",
@@ -1614,7 +764,9 @@
       "DynaDocs.Tests/Integration/WaitCommandTests.cs",
       "DynaDocs.Tests/Integration/WorkflowTests.cs",
       "DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs",
+      "DynaDocs.Tests/Models/AgentsConfigTests.cs",
       "DynaDocs.Tests/Models/DocFileTests.cs",
+      "DynaDocs.Tests/Models/HookInputExtensionsTests.cs",
       "DynaDocs.Tests/Models/PresetAgentNamesTests.cs",
       "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs",
       "DynaDocs.Tests/Rules/FolderMetaFilesRuleTests.cs",
@@ -1624,9 +776,12 @@
       "DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs",
       "DynaDocs.Tests/Rules/RelativeLinksRuleTests.cs",
       "DynaDocs.Tests/Rules/SummaryRuleTests.cs",
+      "DynaDocs.Tests/Rules/UncustomizedDocsRuleTests.cs",
       "DynaDocs.Tests/Services/AgentRegistryTests.cs",
+      "DynaDocs.Tests/Services/AgentSelectorTests.cs",
       "DynaDocs.Tests/Services/AuditCompactionTests.cs",
       "DynaDocs.Tests/Services/AuditServiceTests.cs",
+      "DynaDocs.Tests/Services/AuditVisualizationServiceTests.cs",
       "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs",
       "DynaDocs.Tests/Services/ConfigServiceTests.cs",
       "DynaDocs.Tests/Services/ConfigurablePathsTests.cs",
@@ -1638,6 +793,7 @@
       "DynaDocs.Tests/Services/LinkResolverTests.cs",
       "DynaDocs.Tests/Services/MarkdownParserTests.cs",
       "DynaDocs.Tests/Services/OffLimitsServiceTests.cs",
+      "DynaDocs.Tests/Services/PathUtilsDiscoveryTests.cs",
       "DynaDocs.Tests/Services/PathUtilsTests.cs",
       "DynaDocs.Tests/Services/ProcessUtilsCollection.cs",
       "DynaDocs.Tests/Services/ProcessUtilsTests.cs",
@@ -1653,7 +809,7 @@
       "DynaDocs.Tests/Services/WatchdogServiceTests.cs",
       "DynaDocs.Tests/Services/WhoamiConcurrencyTests.cs",
       "DynaDocs.Tests/Services/WorkspaceArchiveTests.cs",
-      "DynaDocs.Tests/TestResults/6434726d-ea71-49b2-bb2c-0673048a7a2a/coverage.cobertura.xml",
+      "DynaDocs.Tests/Services/WorkspaceCleanerTests.cs",
       "LICENSE",
       "Models/AgentsConfig.cs",
       "Models/AgentSession.cs",
@@ -1715,13 +871,27 @@
       "Rules/SummaryRule.cs",
       "Rules/UncustomizedDocsRule.cs",
       "Serialization/DydoJsonContext.cs",
+      "Services/AgentClaimValidator.cs",
+      "Services/AgentCrudOperations.cs",
       "Services/AgentRegistry.cs",
+      "Services/AgentSelector.cs",
+      "Services/AgentSessionManager.cs",
+      "Services/AgentStateStore.cs",
+      "Services/AnchorExtractor.cs",
       "Services/AuditService.cs",
+      "Services/AuditVisualizationService.cs",
       "Services/BashCommandAnalyzer.cs",
+      "Services/CompletionProvider.cs",
+      "Services/ConfigFactory.cs",
+      "Services/ConfigFileLocator.cs",
       "Services/ConfigService.cs",
+      "Services/DispatchService.cs",
       "Services/DocGraph.cs",
+      "Services/DocLinkResolver.cs",
       "Services/DocScanner.cs",
       "Services/FolderScaffolder.cs",
+      "Services/FrontmatterExtractor.cs",
+      "Services/HubContentFormatter.cs",
       "Services/HubGenerator.cs",
       "Services/IAgentRegistry.cs",
       "Services/IAuditService.cs",
@@ -1733,6 +903,9 @@
       "Services/IIndexGenerator.cs",
       "Services/ILinkResolver.cs",
       "Services/IMarkdownParser.cs",
+      "Services/InboxItemParser.cs",
+      "Services/InboxMetadataReader.cs",
+      "Services/InboxService.cs",
       "Services/IncludeReanchor.cs",
       "Services/IndexGenerator.cs",
       "Services/IOffLimitsService.cs",
@@ -1741,10 +914,19 @@
       "Services/ISnapshotService.cs",
       "Services/ITerminalDetector.cs",
       "Services/IValidationService.cs",
+      "Services/LinkExtractor.cs",
       "Services/LinkResolver.cs",
+      "Services/LinuxTerminalLauncher.cs",
+      "Services/MacTerminalLauncher.cs",
       "Services/MarkdownParser.cs",
+      "Services/MarkerStore.cs",
+      "Services/MessageFinder.cs",
+      "Services/MessageService.cs",
+      "Services/MustReadTracker.cs",
       "Services/OffLimitsService.cs",
+      "Services/PathPermissionChecker.cs",
       "Services/ProcessUtils.cs",
+      "Services/RoleConstraintEvaluator.cs",
       "Services/RoleDefinitionService.cs",
       "Services/ShellCompletionInstaller.cs",
       "Services/SnapshotCompactionService.cs",
@@ -1753,11 +935,15 @@
       "Services/TerminalLauncher.cs",
       "Services/ValidationService.cs",
       "Services/WatchdogService.cs",
+      "Services/WindowsTerminalLauncher.cs",
+      "Services/WorkspaceArchiver.cs",
+      "Services/WorkspaceCleaner.cs",
       "spec.md",
       "temp/.gitkeep",
       "Templates/_changelog.template.md",
       "Templates/_decisions.template.md",
       "Templates/_guides.template.md",
+      "Templates/_issues.template.md",
       "Templates/_pitfalls.template.md",
       "Templates/_project.template.md",
       "Templates/_reference.template.md",
@@ -1793,7 +979,8 @@
       "Templates/writing-docs.template.md",
       "Utils/ConsoleOutput.cs",
       "Utils/ExitCodes.cs",
-      "Utils/PathUtils.cs"
+      "Utils/PathUtils.cs",
+      "Utils/PathUtils.Discovery.cs"
     ],
     "folders": [
       ".claude",
@@ -1818,6 +1005,7 @@
       "dydo/project/changelog/2026/2026-03-07",
       "dydo/project/changelog/2026/2026-03-08",
       "dydo/project/decisions",
+      "dydo/project/future-features",
       "dydo/project/pitfalls",
       "dydo/project/tasks",
       "dydo/reference",
@@ -1834,8 +1022,6 @@
       "DynaDocs.Tests/Models",
       "DynaDocs.Tests/Rules",
       "DynaDocs.Tests/Services",
-      "DynaDocs.Tests/TestResults",
-      "DynaDocs.Tests/TestResults/6434726d-ea71-49b2-bb2c-0673048a7a2a",
       "Models",
       "npm",
       "npm/bin",
@@ -1892,6 +1078,7 @@
         "dydo/project/v1.3-release.md",
         "dydo/project/changelog/_index.md",
         "dydo/project/decisions/_index.md",
+        "dydo/project/future-features/_index.md",
         "dydo/project/pitfalls/_index.md",
         "dydo/project/tasks/_index.md"
       ],
@@ -1945,62 +1132,268 @@
         "dydo/project/decisions/004-terminal-grouping-over-dashboard.md"
       ],
       "dydo/agents/adele/workflow.md": [
-        "dydo/agents/adele/modes/interviewer.md",
-        "dydo/agents/adele/modes/planner.md",
-        "dydo/agents/adele/modes/code-writer.md",
         "dydo/agents/adele/modes/co-thinker.md",
-        "dydo/agents/adele/modes/reviewer.md",
+        "dydo/agents/adele/modes/code-writer.md",
         "dydo/agents/adele/modes/docs-writer.md",
-        "dydo/agents/adele/modes/tester.md"
+        "dydo/agents/adele/modes/inquisitor.md",
+        "dydo/agents/adele/modes/judge.md",
+        "dydo/agents/adele/modes/orchestrator.md",
+        "dydo/agents/adele/modes/planner.md",
+        "dydo/agents/adele/modes/reviewer.md",
+        "dydo/agents/adele/modes/test-writer.md"
       ],
       "dydo/agents/brian/workflow.md": [
-        "dydo/agents/brian/modes/planner.md",
-        "dydo/agents/brian/modes/code-writer.md",
         "dydo/agents/brian/modes/co-thinker.md",
+        "dydo/agents/brian/modes/code-writer.md",
+        "dydo/agents/brian/modes/docs-writer.md",
+        "dydo/agents/brian/modes/inquisitor.md",
+        "dydo/agents/brian/modes/judge.md",
+        "dydo/agents/brian/modes/orchestrator.md",
+        "dydo/agents/brian/modes/planner.md",
         "dydo/agents/brian/modes/reviewer.md",
-        "dydo/agents/brian/modes/docs-writer.md"
+        "dydo/agents/brian/modes/test-writer.md"
       ],
       "dydo/agents/charlie/workflow.md": [
         "dydo/agents/charlie/modes/co-thinker.md",
-        "dydo/agents/charlie/modes/planner.md",
         "dydo/agents/charlie/modes/code-writer.md",
-        "dydo/agents/charlie/modes/test-writer.md",
+        "dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/agents/charlie/modes/judge.md",
+        "dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/agents/charlie/modes/planner.md",
         "dydo/agents/charlie/modes/reviewer.md",
-        "dydo/agents/charlie/modes/docs-writer.md"
+        "dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/agents/dexter/workflow.md": [
         "dydo/agents/dexter/modes/co-thinker.md",
-        "dydo/agents/dexter/modes/planner.md",
         "dydo/agents/dexter/modes/code-writer.md",
-        "dydo/agents/dexter/modes/test-writer.md",
+        "dydo/agents/dexter/modes/docs-writer.md",
+        "dydo/agents/dexter/modes/inquisitor.md",
+        "dydo/agents/dexter/modes/judge.md",
+        "dydo/agents/dexter/modes/orchestrator.md",
+        "dydo/agents/dexter/modes/planner.md",
         "dydo/agents/dexter/modes/reviewer.md",
-        "dydo/agents/dexter/modes/docs-writer.md"
+        "dydo/agents/dexter/modes/test-writer.md"
+      ],
+      "dydo/agents/emma/workflow.md": [
+        "dydo/agents/emma/modes/co-thinker.md",
+        "dydo/agents/emma/modes/code-writer.md",
+        "dydo/agents/emma/modes/docs-writer.md",
+        "dydo/agents/emma/modes/inquisitor.md",
+        "dydo/agents/emma/modes/judge.md",
+        "dydo/agents/emma/modes/orchestrator.md",
+        "dydo/agents/emma/modes/planner.md",
+        "dydo/agents/emma/modes/reviewer.md",
+        "dydo/agents/emma/modes/test-writer.md"
+      ],
+      "dydo/agents/frank/workflow.md": [
+        "dydo/agents/frank/modes/co-thinker.md",
+        "dydo/agents/frank/modes/code-writer.md",
+        "dydo/agents/frank/modes/docs-writer.md",
+        "dydo/agents/frank/modes/inquisitor.md",
+        "dydo/agents/frank/modes/judge.md",
+        "dydo/agents/frank/modes/orchestrator.md",
+        "dydo/agents/frank/modes/planner.md",
+        "dydo/agents/frank/modes/reviewer.md",
+        "dydo/agents/frank/modes/test-writer.md"
       ],
       "dydo/agents/henry/workflow.md": [
-        "dydo/agents/henry/modes/interviewer.md",
-        "dydo/agents/henry/modes/planner.md",
-        "dydo/agents/henry/modes/code-writer.md",
         "dydo/agents/henry/modes/co-thinker.md",
-        "dydo/agents/henry/modes/reviewer.md",
+        "dydo/agents/henry/modes/code-writer.md",
         "dydo/agents/henry/modes/docs-writer.md",
-        "dydo/agents/henry/modes/tester.md"
+        "dydo/agents/henry/modes/inquisitor.md",
+        "dydo/agents/henry/modes/judge.md",
+        "dydo/agents/henry/modes/orchestrator.md",
+        "dydo/agents/henry/modes/planner.md",
+        "dydo/agents/henry/modes/reviewer.md",
+        "dydo/agents/henry/modes/test-writer.md"
       ],
-      "dydo/agents/jack/workflow.md": [
-        "dydo/agents/jack/modes/co-thinker.md",
-        "dydo/agents/jack/modes/planner.md",
-        "dydo/agents/jack/modes/code-writer.md",
-        "dydo/agents/jack/modes/test-writer.md",
-        "dydo/agents/jack/modes/reviewer.md",
-        "dydo/agents/jack/modes/docs-writer.md"
+      "dydo/agents/iris/workflow.md": [
+        "dydo/agents/iris/modes/co-thinker.md",
+        "dydo/agents/iris/modes/code-writer.md",
+        "dydo/agents/iris/modes/docs-writer.md",
+        "dydo/agents/iris/modes/inquisitor.md",
+        "dydo/agents/iris/modes/judge.md",
+        "dydo/agents/iris/modes/orchestrator.md",
+        "dydo/agents/iris/modes/planner.md",
+        "dydo/agents/iris/modes/reviewer.md",
+        "dydo/agents/iris/modes/test-writer.md"
+      ],
+      "dydo/agents/kate/workflow.md": [
+        "dydo/agents/kate/modes/co-thinker.md",
+        "dydo/agents/kate/modes/code-writer.md",
+        "dydo/agents/kate/modes/docs-writer.md",
+        "dydo/agents/kate/modes/inquisitor.md",
+        "dydo/agents/kate/modes/judge.md",
+        "dydo/agents/kate/modes/orchestrator.md",
+        "dydo/agents/kate/modes/planner.md",
+        "dydo/agents/kate/modes/reviewer.md",
+        "dydo/agents/kate/modes/test-writer.md"
       ],
       "dydo/agents/leo/workflow.md": [
-        "dydo/agents/leo/modes/interviewer.md",
-        "dydo/agents/leo/modes/planner.md",
-        "dydo/agents/leo/modes/code-writer.md",
         "dydo/agents/leo/modes/co-thinker.md",
-        "dydo/agents/leo/modes/reviewer.md",
+        "dydo/agents/leo/modes/code-writer.md",
         "dydo/agents/leo/modes/docs-writer.md",
-        "dydo/agents/leo/modes/tester.md"
+        "dydo/agents/leo/modes/inquisitor.md",
+        "dydo/agents/leo/modes/judge.md",
+        "dydo/agents/leo/modes/orchestrator.md",
+        "dydo/agents/leo/modes/planner.md",
+        "dydo/agents/leo/modes/reviewer.md",
+        "dydo/agents/leo/modes/test-writer.md"
+      ],
+      "dydo/agents/mia/workflow.md": [
+        "dydo/agents/mia/modes/co-thinker.md",
+        "dydo/agents/mia/modes/code-writer.md",
+        "dydo/agents/mia/modes/docs-writer.md",
+        "dydo/agents/mia/modes/inquisitor.md",
+        "dydo/agents/mia/modes/judge.md",
+        "dydo/agents/mia/modes/orchestrator.md",
+        "dydo/agents/mia/modes/planner.md",
+        "dydo/agents/mia/modes/reviewer.md",
+        "dydo/agents/mia/modes/test-writer.md"
+      ],
+      "dydo/agents/noah/workflow.md": [
+        "dydo/agents/noah/modes/co-thinker.md",
+        "dydo/agents/noah/modes/code-writer.md",
+        "dydo/agents/noah/modes/docs-writer.md",
+        "dydo/agents/noah/modes/inquisitor.md",
+        "dydo/agents/noah/modes/judge.md",
+        "dydo/agents/noah/modes/orchestrator.md",
+        "dydo/agents/noah/modes/planner.md",
+        "dydo/agents/noah/modes/reviewer.md",
+        "dydo/agents/noah/modes/test-writer.md"
+      ],
+      "dydo/agents/olivia/workflow.md": [
+        "dydo/agents/olivia/modes/co-thinker.md",
+        "dydo/agents/olivia/modes/code-writer.md",
+        "dydo/agents/olivia/modes/docs-writer.md",
+        "dydo/agents/olivia/modes/inquisitor.md",
+        "dydo/agents/olivia/modes/judge.md",
+        "dydo/agents/olivia/modes/orchestrator.md",
+        "dydo/agents/olivia/modes/planner.md",
+        "dydo/agents/olivia/modes/reviewer.md",
+        "dydo/agents/olivia/modes/test-writer.md"
+      ],
+      "dydo/agents/paul/workflow.md": [
+        "dydo/agents/paul/modes/co-thinker.md",
+        "dydo/agents/paul/modes/code-writer.md",
+        "dydo/agents/paul/modes/docs-writer.md",
+        "dydo/agents/paul/modes/inquisitor.md",
+        "dydo/agents/paul/modes/judge.md",
+        "dydo/agents/paul/modes/orchestrator.md",
+        "dydo/agents/paul/modes/planner.md",
+        "dydo/agents/paul/modes/reviewer.md",
+        "dydo/agents/paul/modes/test-writer.md"
+      ],
+      "dydo/agents/quinn/workflow.md": [
+        "dydo/agents/quinn/modes/co-thinker.md",
+        "dydo/agents/quinn/modes/code-writer.md",
+        "dydo/agents/quinn/modes/docs-writer.md",
+        "dydo/agents/quinn/modes/inquisitor.md",
+        "dydo/agents/quinn/modes/judge.md",
+        "dydo/agents/quinn/modes/orchestrator.md",
+        "dydo/agents/quinn/modes/planner.md",
+        "dydo/agents/quinn/modes/reviewer.md",
+        "dydo/agents/quinn/modes/test-writer.md"
+      ],
+      "dydo/agents/rose/workflow.md": [
+        "dydo/agents/rose/modes/co-thinker.md",
+        "dydo/agents/rose/modes/code-writer.md",
+        "dydo/agents/rose/modes/docs-writer.md",
+        "dydo/agents/rose/modes/inquisitor.md",
+        "dydo/agents/rose/modes/judge.md",
+        "dydo/agents/rose/modes/orchestrator.md",
+        "dydo/agents/rose/modes/planner.md",
+        "dydo/agents/rose/modes/reviewer.md",
+        "dydo/agents/rose/modes/test-writer.md"
+      ],
+      "dydo/agents/sam/workflow.md": [
+        "dydo/agents/sam/modes/co-thinker.md",
+        "dydo/agents/sam/modes/code-writer.md",
+        "dydo/agents/sam/modes/docs-writer.md",
+        "dydo/agents/sam/modes/inquisitor.md",
+        "dydo/agents/sam/modes/judge.md",
+        "dydo/agents/sam/modes/orchestrator.md",
+        "dydo/agents/sam/modes/planner.md",
+        "dydo/agents/sam/modes/reviewer.md",
+        "dydo/agents/sam/modes/test-writer.md"
+      ],
+      "dydo/agents/tara/workflow.md": [
+        "dydo/agents/tara/modes/co-thinker.md",
+        "dydo/agents/tara/modes/code-writer.md",
+        "dydo/agents/tara/modes/docs-writer.md",
+        "dydo/agents/tara/modes/inquisitor.md",
+        "dydo/agents/tara/modes/judge.md",
+        "dydo/agents/tara/modes/orchestrator.md",
+        "dydo/agents/tara/modes/planner.md",
+        "dydo/agents/tara/modes/reviewer.md",
+        "dydo/agents/tara/modes/test-writer.md"
+      ],
+      "dydo/agents/uma/workflow.md": [
+        "dydo/agents/uma/modes/co-thinker.md",
+        "dydo/agents/uma/modes/code-writer.md",
+        "dydo/agents/uma/modes/docs-writer.md",
+        "dydo/agents/uma/modes/inquisitor.md",
+        "dydo/agents/uma/modes/judge.md",
+        "dydo/agents/uma/modes/orchestrator.md",
+        "dydo/agents/uma/modes/planner.md",
+        "dydo/agents/uma/modes/reviewer.md",
+        "dydo/agents/uma/modes/test-writer.md"
+      ],
+      "dydo/agents/victor/workflow.md": [
+        "dydo/agents/victor/modes/co-thinker.md",
+        "dydo/agents/victor/modes/code-writer.md",
+        "dydo/agents/victor/modes/docs-writer.md",
+        "dydo/agents/victor/modes/inquisitor.md",
+        "dydo/agents/victor/modes/judge.md",
+        "dydo/agents/victor/modes/orchestrator.md",
+        "dydo/agents/victor/modes/planner.md",
+        "dydo/agents/victor/modes/reviewer.md",
+        "dydo/agents/victor/modes/test-writer.md"
+      ],
+      "dydo/agents/wendy/workflow.md": [
+        "dydo/agents/wendy/modes/co-thinker.md",
+        "dydo/agents/wendy/modes/code-writer.md",
+        "dydo/agents/wendy/modes/docs-writer.md",
+        "dydo/agents/wendy/modes/inquisitor.md",
+        "dydo/agents/wendy/modes/judge.md",
+        "dydo/agents/wendy/modes/orchestrator.md",
+        "dydo/agents/wendy/modes/planner.md",
+        "dydo/agents/wendy/modes/reviewer.md",
+        "dydo/agents/wendy/modes/test-writer.md"
+      ],
+      "dydo/agents/xavier/workflow.md": [
+        "dydo/agents/xavier/modes/co-thinker.md",
+        "dydo/agents/xavier/modes/code-writer.md",
+        "dydo/agents/xavier/modes/docs-writer.md",
+        "dydo/agents/xavier/modes/inquisitor.md",
+        "dydo/agents/xavier/modes/judge.md",
+        "dydo/agents/xavier/modes/orchestrator.md",
+        "dydo/agents/xavier/modes/planner.md",
+        "dydo/agents/xavier/modes/reviewer.md",
+        "dydo/agents/xavier/modes/test-writer.md"
+      ],
+      "dydo/agents/yara/workflow.md": [
+        "dydo/agents/yara/modes/co-thinker.md",
+        "dydo/agents/yara/modes/code-writer.md",
+        "dydo/agents/yara/modes/docs-writer.md",
+        "dydo/agents/yara/modes/inquisitor.md",
+        "dydo/agents/yara/modes/judge.md",
+        "dydo/agents/yara/modes/orchestrator.md",
+        "dydo/agents/yara/modes/planner.md",
+        "dydo/agents/yara/modes/reviewer.md",
+        "dydo/agents/yara/modes/test-writer.md"
+      ],
+      "dydo/agents/zelda/workflow.md": [
+        "dydo/agents/zelda/modes/co-thinker.md",
+        "dydo/agents/zelda/modes/code-writer.md",
+        "dydo/agents/zelda/modes/docs-writer.md",
+        "dydo/agents/zelda/modes/inquisitor.md",
+        "dydo/agents/zelda/modes/judge.md",
+        "dydo/agents/zelda/modes/orchestrator.md",
+        "dydo/agents/zelda/modes/planner.md",
+        "dydo/agents/zelda/modes/reviewer.md",
+        "dydo/agents/zelda/modes/test-writer.md"
       ],
       "dydo/project/changelog/_changelog.md": [
         "dydo/project/tasks/_index.md",
@@ -2008,6 +1401,9 @@
       ],
       "dydo/project/changelog/_index.md": [
         "dydo/project/changelog/2026/_index.md"
+      ],
+      "dydo/project/decisions/009-crap-per-method-metric.md": [
+        "dydo/understand/architecture.md"
       ],
       "dydo/project/decisions/_decisions.md": [
         "dydo/project/pitfalls/_index.md"
@@ -2019,7 +1415,17 @@
         "dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
         "dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
         "dydo/project/decisions/006-drop-interviewer-role.md",
-        "dydo/project/decisions/007-oversight-roles.md"
+        "dydo/project/decisions/007-oversight-roles.md",
+        "dydo/project/decisions/008-data-driven-roles.md",
+        "dydo/project/decisions/008-terminal-dispatch-routing-and-autoclose.md",
+        "dydo/project/decisions/009-crap-per-method-metric.md"
+      ],
+      "dydo/project/future-features/doc-coverage.md": [
+        "dydo/reference/dydo-commands.md"
+      ],
+      "dydo/project/future-features/_index.md": [
+        "dydo/project/future-features/coverage.py-update.md",
+        "dydo/project/future-features/doc-coverage.md"
       ],
       "dydo/project/pitfalls/_pitfalls.md": [
         "dydo/project/decisions/_index.md"
@@ -2028,8 +1434,42 @@
         "dydo/project/tasks/auto-close-fix.md",
         "dydo/project/tasks/auto-close-test.md",
         "dydo/project/tasks/clean-command-hardening.md",
+        "dydo/project/tasks/composable-constraints.md",
+        "dydo/project/tasks/consolidate-local-runtime-state.md",
+        "dydo/project/tasks/custom-role-ux.md",
+        "dydo/project/tasks/data-driven-roles.md",
+        "dydo/project/tasks/dispatch-and-autoclose-debug.md",
+        "dydo/project/tasks/dispatch-release-test.md",
         "dydo/project/tasks/dispatch-wait-state-machine.md",
+        "dydo/project/tasks/doc-coverage-idea.md",
+        "dydo/project/tasks/dynamic-role-table.md",
+        "dydo/project/tasks/fix-doc-consistency-tests.md",
+        "dydo/project/tasks/fix-gap-check-crap-metric.md",
+        "dydo/project/tasks/fix-gh-actions-dotnet.md",
+        "dydo/project/tasks/fix-project-sync.md",
+        "dydo/project/tasks/fix-reference-docs.md",
+        "dydo/project/tasks/fix-template-generation.md",
+        "dydo/project/tasks/gitignore-last-validation.md",
+        "dydo/project/tasks/inbox-indicator.md",
+        "dydo/project/tasks/no-launch-nudge.md",
+        "dydo/project/tasks/project-issues-design.md",
+        "dydo/project/tasks/project-issues-integration.md",
+        "dydo/project/tasks/release-test.md",
+        "dydo/project/tasks/role-behavioral-tests.md",
+        "dydo/project/tasks/role-nudge-tweak.md",
         "dydo/project/tasks/search-codebase-for-role-nudging-and-claiming.md",
+        "dydo/project/tasks/setup-coverage-viewer.md",
+        "dydo/project/tasks/t1-agent-lifecycle.md",
+        "dydo/project/tasks/t1-audit-snapshots.md",
+        "dydo/project/tasks/t1-coverage-sprint.md",
+        "dydo/project/tasks/t1-dispatch-messaging.md",
+        "dydo/project/tasks/t1-doc-validation.md",
+        "dydo/project/tasks/t1-guard-security.md",
+        "dydo/project/tasks/t1-platform-utils.md",
+        "dydo/project/tasks/t1-setup-templates.md",
+        "dydo/project/tasks/t1-task-review.md",
+        "dydo/project/tasks/test-auto-close.md",
+        "dydo/project/tasks/test-autoclose-fix.md",
         "dydo/project/tasks/v1.2-stabilization-and-v1.3-planning.md",
         "dydo/project/tasks/v1.3-coverage-system-2.md",
         "dydo/project/tasks/v1.3-custom-agent-modes-2.md",
@@ -2043,6 +1483,7 @@
         "dydo/project/tasks/v1.3-release-plan-update.md",
         "dydo/project/tasks/v1.3-release-planning.md",
         "dydo/project/tasks/v1.3-roles-reference-docs.md",
+        "dydo/project/tasks/v1.3-terminal-dispatch-bugs.md",
         "dydo/project/tasks/v1.3-terminal-grouping-2.md",
         "dydo/project/tasks/v1.3-terminal-launcher-fixes-2.md",
         "dydo/project/tasks/v1.3-workflow-role-revamp-2.md",
@@ -2078,7 +1519,17 @@
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/templates/mode-interviewer.template.md": [
+      "dydo/_system/templates/mode-inquisitor.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/templates/mode-judge.template.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/templates/mode-orchestrator.template.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
@@ -2092,10 +1543,6 @@
         "dydo/guides/coding-standards.md"
       ],
       "dydo/_system/templates/mode-test-writer.template.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md"
-      ],
-      "dydo/_system/templates/mode-tester.template.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
@@ -2115,10 +1562,24 @@
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
+      "dydo/agents/adele/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
       "dydo/agents/adele/modes/interviewer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/agents/adele/modes/planner.md"
+      ],
+      "dydo/agents/adele/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/adele/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
       ],
       "dydo/agents/adele/modes/planner.md": [
         "dydo/understand/about.md",
@@ -2129,6 +1590,10 @@
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/adele/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
       ],
       "dydo/agents/adele/modes/tester.md": [
         "dydo/understand/about.md",
@@ -2149,6 +1614,20 @@
         "dydo/understand/about.md",
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/brian/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/brian/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/brian/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
       ],
       "dydo/agents/brian/modes/planner.md": [
         "dydo/understand/about.md",
@@ -2180,6 +1659,20 @@
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
+      "dydo/agents/charlie/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
       "dydo/agents/charlie/modes/planner.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
@@ -2210,6 +1703,20 @@
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
+      "dydo/agents/dexter/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
       "dydo/agents/dexter/modes/planner.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
@@ -2221,6 +1728,94 @@
         "dydo/guides/coding-standards.md"
       ],
       "dydo/agents/dexter/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/emma/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/emma/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/emma/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/frank/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/frank/modes/code-writer.md"
+      ],
+      "dydo/agents/frank/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/frank/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/frank/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/frank/modes/code-writer.md"
+      ],
+      "dydo/agents/frank/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
@@ -2240,10 +1835,24 @@
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
+      "dydo/agents/henry/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
       "dydo/agents/henry/modes/interviewer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/agents/henry/modes/planner.md"
+      ],
+      "dydo/agents/henry/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/henry/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
       ],
       "dydo/agents/henry/modes/planner.md": [
         "dydo/understand/about.md",
@@ -2255,37 +1864,99 @@
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
+      "dydo/agents/henry/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
       "dydo/agents/henry/modes/tester.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
-      "dydo/agents/jack/modes/co-thinker.md": [
+      "dydo/agents/iris/modes/co-thinker.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/project/decisions/_index.md",
-        "dydo/agents/jack/modes/code-writer.md"
+        "dydo/agents/iris/modes/code-writer.md"
       ],
-      "dydo/agents/jack/modes/code-writer.md": [
+      "dydo/agents/iris/modes/code-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/jack/modes/docs-writer.md": [
+      "dydo/agents/iris/modes/docs-writer.md": [
         "dydo/understand/about.md",
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/jack/modes/planner.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/agents/jack/modes/code-writer.md"
-      ],
-      "dydo/agents/jack/modes/reviewer.md": [
+      "dydo/agents/iris/modes/inquisitor.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/jack/modes/test-writer.md": [
+      "dydo/agents/iris/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/iris/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/iris/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/iris/modes/code-writer.md"
+      ],
+      "dydo/agents/iris/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/iris/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/kate/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/kate/modes/code-writer.md"
+      ],
+      "dydo/agents/kate/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/kate/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/kate/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/kate/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/kate/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/kate/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/kate/modes/code-writer.md"
+      ],
+      "dydo/agents/kate/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/kate/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
@@ -2305,10 +1976,19 @@
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/leo/modes/interviewer.md": [
+      "dydo/agents/leo/modes/inquisitor.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
-        "dydo/agents/leo/modes/planner.md"
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/leo/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/leo/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
       ],
       "dydo/agents/leo/modes/planner.md": [
         "dydo/understand/about.md",
@@ -2320,7 +2000,623 @@
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/leo/modes/tester.md": [
+      "dydo/agents/leo/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/mia/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/mia/modes/code-writer.md"
+      ],
+      "dydo/agents/mia/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/mia/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/mia/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/mia/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/mia/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/mia/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/mia/modes/code-writer.md"
+      ],
+      "dydo/agents/mia/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/mia/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/noah/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/noah/modes/code-writer.md"
+      ],
+      "dydo/agents/noah/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/noah/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/noah/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/noah/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/noah/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/noah/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/noah/modes/code-writer.md"
+      ],
+      "dydo/agents/noah/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/noah/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/olivia/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/olivia/modes/code-writer.md"
+      ],
+      "dydo/agents/olivia/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/olivia/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/olivia/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/olivia/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/olivia/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/olivia/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/olivia/modes/code-writer.md"
+      ],
+      "dydo/agents/olivia/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/olivia/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/paul/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/paul/modes/code-writer.md"
+      ],
+      "dydo/agents/paul/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/paul/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/paul/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/paul/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/paul/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/paul/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/paul/modes/code-writer.md"
+      ],
+      "dydo/agents/paul/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/paul/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/quinn/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/quinn/modes/code-writer.md"
+      ],
+      "dydo/agents/quinn/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/quinn/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/quinn/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/quinn/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/quinn/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/quinn/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/quinn/modes/code-writer.md"
+      ],
+      "dydo/agents/quinn/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/quinn/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/rose/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/rose/modes/code-writer.md"
+      ],
+      "dydo/agents/rose/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/rose/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/rose/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/rose/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/rose/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/rose/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/rose/modes/code-writer.md"
+      ],
+      "dydo/agents/rose/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/rose/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/sam/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/sam/modes/code-writer.md"
+      ],
+      "dydo/agents/sam/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/sam/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/sam/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/sam/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/sam/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/sam/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/sam/modes/code-writer.md"
+      ],
+      "dydo/agents/sam/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/sam/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/tara/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/tara/modes/code-writer.md"
+      ],
+      "dydo/agents/tara/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/tara/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/tara/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/tara/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/tara/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/tara/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/tara/modes/code-writer.md"
+      ],
+      "dydo/agents/tara/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/tara/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/uma/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/uma/modes/code-writer.md"
+      ],
+      "dydo/agents/uma/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/uma/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/uma/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/uma/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/uma/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/uma/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/uma/modes/code-writer.md"
+      ],
+      "dydo/agents/uma/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/uma/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/victor/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/victor/modes/code-writer.md"
+      ],
+      "dydo/agents/victor/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/victor/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/victor/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/victor/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/victor/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/victor/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/victor/modes/code-writer.md"
+      ],
+      "dydo/agents/victor/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/victor/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/wendy/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/wendy/modes/code-writer.md"
+      ],
+      "dydo/agents/wendy/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/wendy/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/wendy/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/wendy/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/wendy/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/wendy/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/wendy/modes/code-writer.md"
+      ],
+      "dydo/agents/wendy/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/wendy/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/xavier/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/xavier/modes/code-writer.md"
+      ],
+      "dydo/agents/xavier/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/xavier/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/xavier/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/xavier/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/xavier/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/xavier/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/xavier/modes/code-writer.md"
+      ],
+      "dydo/agents/xavier/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/xavier/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/yara/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/yara/modes/code-writer.md"
+      ],
+      "dydo/agents/yara/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/yara/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/yara/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/yara/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/yara/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/yara/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/yara/modes/code-writer.md"
+      ],
+      "dydo/agents/yara/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/yara/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/zelda/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/zelda/modes/code-writer.md"
+      ],
+      "dydo/agents/zelda/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/zelda/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/zelda/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/zelda/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/zelda/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/zelda/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/zelda/modes/code-writer.md"
+      ],
+      "dydo/agents/zelda/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/zelda/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],

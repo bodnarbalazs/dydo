@@ -70,96 +70,23 @@ public static class TemplateCommand
         var warnings = new List<string>();
 
         foreach (var relativePath in FrameworkTemplateFiles)
-        {
-            var result = UpdateTemplateFile(relativePath, dydoRoot, config, diff, force);
-            switch (result)
-            {
-                case UpdateResult.Updated: updated++; break;
-                case UpdateResult.Skipped: skipped++; break;
-                case UpdateResult.Warning warning:
-                    warnings.Add(warning.Message);
-                    if (force) updated++;
-                    break;
-            }
-        }
+            AccumulateResult(UpdateTemplateFile(relativePath, dydoRoot, config, diff, force),
+                ref updated, ref skipped, warnings, forceCountWarning: force);
 
         foreach (var relativePath in FrameworkDocFiles)
-        {
-            var result = UpdateDocFile(relativePath, dydoRoot, config, diff);
-            switch (result)
-            {
-                case UpdateResult.Updated: updated++; break;
-                case UpdateResult.Skipped: skipped++; break;
-                case UpdateResult.Warning warning:
-                    warnings.Add(warning.Message);
-                    break;
-            }
-        }
+            AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff),
+                ref updated, ref skipped, warnings);
 
         foreach (var relativePath in FrameworkBinaryFiles)
-        {
-            var result = UpdateBinaryFile(relativePath, dydoRoot, config, diff);
-            switch (result)
-            {
-                case UpdateResult.Updated: updated++; break;
-                case UpdateResult.Skipped: skipped++; break;
-                case UpdateResult.Warning warning:
-                    warnings.Add(warning.Message);
-                    break;
-            }
-        }
+            AccumulateResult(UpdateBinaryFile(relativePath, dydoRoot, config, diff),
+                ref updated, ref skipped, warnings);
 
-        // Clean up stale template files not in the current framework set
-        var validTemplateSet = new HashSet<string>(FrameworkTemplateFiles);
-        var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
-        if (Directory.Exists(templatesDir))
-        {
-            foreach (var file in Directory.GetFiles(templatesDir, "*.template.md"))
-            {
-                var relative = "_system/templates/" + Path.GetFileName(file);
-                if (validTemplateSet.Contains(relative)) continue;
-
-                if (!diff)
-                    File.Delete(file);
-                Console.WriteLine($"  Removed stale: {relative}");
-                updated++;
-            }
-        }
-
-        // Prune stale hash entries for templates no longer in the framework set
-        var validHashKeys = new HashSet<string>(FrameworkTemplateFiles
-            .Concat(FrameworkDocFiles)
-            .Concat(FrameworkBinaryFiles));
-        var staleKeys = config.FrameworkHashes.Keys
-            .Where(k => !validHashKeys.Contains(k))
-            .ToList();
-        foreach (var key in staleKeys)
-        {
-            if (!diff)
-                config.FrameworkHashes.Remove(key);
-            Console.WriteLine($"  Pruned stale hash: {key}");
-        }
-
-        // Regenerate agent workspace files (workflow.md + mode files)
-        var scaffolder = new FolderScaffolder();
-        var agentsPath = Path.Combine(dydoRoot, "agents");
-        if (Directory.Exists(agentsPath))
-        {
-            var sourcePaths = config.Paths.Source;
-            var testPaths = config.Paths.Tests;
-            foreach (var agentDir in Directory.GetDirectories(agentsPath))
-            {
-                var agentName = Path.GetFileName(agentDir);
-                if (!diff)
-                    scaffolder.RegenerateAgentFiles(agentsPath, agentName, sourcePaths, testPaths);
-                Console.WriteLine($"  Regenerated: agents/{agentName}");
-            }
-        }
+        updated += CleanStaleTemplates(dydoRoot, diff);
+        PruneStaleHashes(config, diff);
+        RegenerateAgentWorkspaces(dydoRoot, config, diff);
 
         if (!diff)
-        {
             configService.SaveConfig(config, configPath);
-        }
 
         Console.WriteLine($"Template update complete: {updated} updated, {skipped} already current.");
 
@@ -167,6 +94,79 @@ public static class TemplateCommand
             Console.Error.WriteLine($"  Warning: {warning}");
 
         return warnings.Count > 0 && !force ? 1 : 0;
+    }
+
+    private static void AccumulateResult(UpdateResult result,
+        ref int updated, ref int skipped, List<string> warnings, bool forceCountWarning = false)
+    {
+        switch (result)
+        {
+            case UpdateResult.Updated:
+                updated++;
+                break;
+            case UpdateResult.Skipped:
+                skipped++;
+                break;
+            case UpdateResult.Warning warning:
+                warnings.Add(warning.Message);
+                if (forceCountWarning) updated++;
+                break;
+        }
+    }
+
+    private static int CleanStaleTemplates(string dydoRoot, bool diff)
+    {
+        var validSet = new HashSet<string>(FrameworkTemplateFiles);
+        var templatesDir = Path.Combine(dydoRoot, "_system", "templates");
+        if (!Directory.Exists(templatesDir))
+            return 0;
+
+        var removed = 0;
+        foreach (var file in Directory.GetFiles(templatesDir, "*.template.md"))
+        {
+            var relative = "_system/templates/" + Path.GetFileName(file);
+            if (validSet.Contains(relative)) continue;
+
+            if (!diff)
+                File.Delete(file);
+            Console.WriteLine($"  Removed stale: {relative}");
+            removed++;
+        }
+        return removed;
+    }
+
+    private static void PruneStaleHashes(DydoConfig config, bool diff)
+    {
+        var validKeys = new HashSet<string>(FrameworkTemplateFiles
+            .Concat(FrameworkDocFiles)
+            .Concat(FrameworkBinaryFiles));
+        var staleKeys = config.FrameworkHashes.Keys
+            .Where(k => !validKeys.Contains(k))
+            .ToList();
+        foreach (var key in staleKeys)
+        {
+            if (!diff)
+                config.FrameworkHashes.Remove(key);
+            Console.WriteLine($"  Pruned stale hash: {key}");
+        }
+    }
+
+    private static void RegenerateAgentWorkspaces(string dydoRoot, DydoConfig config, bool diff)
+    {
+        var agentsPath = Path.Combine(dydoRoot, "agents");
+        if (!Directory.Exists(agentsPath))
+            return;
+
+        var scaffolder = new FolderScaffolder();
+        var sourcePaths = config.Paths.Source;
+        var testPaths = config.Paths.Tests;
+        foreach (var agentDir in Directory.GetDirectories(agentsPath))
+        {
+            var agentName = Path.GetFileName(agentDir);
+            if (!diff)
+                scaffolder.RegenerateAgentFiles(agentsPath, agentName, sourcePaths, testPaths);
+            Console.WriteLine($"  Regenerated: agents/{agentName}");
+        }
     }
 
     private static UpdateResult UpdateTemplateFile(
@@ -177,16 +177,7 @@ public static class TemplateCommand
         var embeddedContent = TemplateGenerator.ReadBuiltInTemplate(templateName);
 
         if (!File.Exists(fullPath))
-        {
-            if (!diff)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-                File.WriteAllText(fullPath, embeddedContent);
-                config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-            }
-            Console.WriteLine($"  Created: {relativePath}");
-            return new UpdateResult.Updated();
-        }
+            return CreateFile(fullPath, relativePath, embeddedContent, config, diff);
 
         var onDisk = File.ReadAllText(fullPath);
 
@@ -201,19 +192,17 @@ public static class TemplateCommand
         var isUserEdited = storedHash != null ? storedHash != onDiskHash : onDisk != embeddedContent;
 
         if (!isUserEdited)
-        {
-            if (!diff)
-            {
-                File.WriteAllText(fullPath, embeddedContent);
-                config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-            }
-            Console.WriteLine($"  Updated: {relativePath}");
-            return new UpdateResult.Updated();
-        }
+            return WriteUpdate(fullPath, relativePath, embeddedContent, config, diff);
 
-        // User edited — extract user-added includes and re-anchor
+        return HandleUserEditedTemplate(
+            fullPath, relativePath, embeddedContent, onDisk, config, diff, force);
+    }
+
+    private static UpdateResult HandleUserEditedTemplate(
+        string fullPath, string relativePath, string embeddedContent,
+        string onDisk, DydoConfig config, bool diff, bool force)
+    {
         var oldStock = GetOldStockContent(relativePath, config, onDisk, embeddedContent);
-
         var userIncludes = IncludeReanchor.ExtractUserIncludes(oldStock, onDisk);
 
         if (userIncludes.Count == 0)
@@ -230,34 +219,13 @@ public static class TemplateCommand
         var reanchorResult = IncludeReanchor.Reanchor(embeddedContent, userIncludes);
 
         if (diff)
-        {
-            Console.WriteLine($"  Would update: {relativePath}");
-            foreach (var tag in reanchorResult.Placed)
-                Console.WriteLine($"    Re-anchor: {tag}");
-            foreach (var tag in reanchorResult.Unplaced)
-                Console.WriteLine($"    UNPLACED: {tag}");
-            return reanchorResult.Unplaced.Count > 0
-                ? new UpdateResult.Warning($"{relativePath}: {reanchorResult.Unplaced.Count} tag(s) could not be re-anchored")
-                : new UpdateResult.Updated();
-        }
+            return ReportReanchorDiff(relativePath, reanchorResult);
 
         if (reanchorResult.Unplaced.Count > 0 && !force)
-        {
-            Console.Error.WriteLine($"  Skipped: {relativePath} — {reanchorResult.Unplaced.Count} tag(s) could not be re-anchored. Use --force to override.");
-            var unplacedPath = fullPath + ".unplaced";
-            File.WriteAllText(unplacedPath, string.Join("\n", reanchorResult.Unplaced));
-            return new UpdateResult.Warning($"{relativePath}: unplaced tags saved to {Path.GetFileName(unplacedPath)}");
-        }
+            return HandleUnplacedTags(fullPath, relativePath, reanchorResult);
 
-        if (reanchorResult.Unplaced.Count > 0 && force)
-        {
-            var backupPath = fullPath + ".backup";
-            File.Copy(fullPath, backupPath, overwrite: true);
-            Console.WriteLine($"  Backed up: {relativePath} -> {Path.GetFileName(backupPath)}");
-
-            var unplacedPath = fullPath + ".unplaced";
-            File.WriteAllText(unplacedPath, string.Join("\n", reanchorResult.Unplaced));
-        }
+        if (reanchorResult.Unplaced.Count > 0)
+            BackupAndSaveUnplaced(fullPath, relativePath, reanchorResult);
 
         File.WriteAllText(fullPath, reanchorResult.Content);
         config.FrameworkHashes[relativePath] = ComputeHash(reanchorResult.Content);
@@ -271,6 +239,64 @@ public static class TemplateCommand
         return new UpdateResult.Updated();
     }
 
+    private static UpdateResult ReportReanchorDiff(
+        string relativePath, IncludeReanchor.ReanchorResult result)
+    {
+        Console.WriteLine($"  Would update: {relativePath}");
+        foreach (var tag in result.Placed)
+            Console.WriteLine($"    Re-anchor: {tag}");
+        foreach (var tag in result.Unplaced)
+            Console.WriteLine($"    UNPLACED: {tag}");
+        return result.Unplaced.Count > 0
+            ? new UpdateResult.Warning($"{relativePath}: {result.Unplaced.Count} tag(s) could not be re-anchored")
+            : new UpdateResult.Updated();
+    }
+
+    private static UpdateResult HandleUnplacedTags(
+        string fullPath, string relativePath, IncludeReanchor.ReanchorResult result)
+    {
+        Console.Error.WriteLine($"  Skipped: {relativePath} — {result.Unplaced.Count} tag(s) could not be re-anchored. Use --force to override.");
+        var unplacedPath = fullPath + ".unplaced";
+        File.WriteAllText(unplacedPath, string.Join("\n", result.Unplaced));
+        return new UpdateResult.Warning($"{relativePath}: unplaced tags saved to {Path.GetFileName(unplacedPath)}");
+    }
+
+    private static void BackupAndSaveUnplaced(
+        string fullPath, string relativePath, IncludeReanchor.ReanchorResult result)
+    {
+        var backupPath = fullPath + ".backup";
+        File.Copy(fullPath, backupPath, overwrite: true);
+        Console.WriteLine($"  Backed up: {relativePath} -> {Path.GetFileName(backupPath)}");
+
+        var unplacedPath = fullPath + ".unplaced";
+        File.WriteAllText(unplacedPath, string.Join("\n", result.Unplaced));
+    }
+
+    private static UpdateResult CreateFile(
+        string fullPath, string relativePath, string content, DydoConfig config, bool diff)
+    {
+        if (!diff)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllText(fullPath, content);
+            config.FrameworkHashes[relativePath] = ComputeHash(content);
+        }
+        Console.WriteLine($"  Created: {relativePath}");
+        return new UpdateResult.Updated();
+    }
+
+    private static UpdateResult WriteUpdate(
+        string fullPath, string relativePath, string content, DydoConfig config, bool diff)
+    {
+        if (!diff)
+        {
+            File.WriteAllText(fullPath, content);
+            config.FrameworkHashes[relativePath] = ComputeHash(content);
+        }
+        Console.WriteLine($"  Updated: {relativePath}");
+        return new UpdateResult.Updated();
+    }
+
     private static UpdateResult UpdateDocFile(
         string relativePath, string dydoRoot, DydoConfig config, bool diff)
     {
@@ -280,16 +306,7 @@ public static class TemplateCommand
             return new UpdateResult.Skipped();
 
         if (!File.Exists(fullPath))
-        {
-            if (!diff)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-                File.WriteAllText(fullPath, embeddedContent);
-                config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-            }
-            Console.WriteLine($"  Created: {relativePath}");
-            return new UpdateResult.Updated();
-        }
+            return CreateFile(fullPath, relativePath, embeddedContent, config, diff);
 
         var onDisk = File.ReadAllText(fullPath);
         if (onDisk == embeddedContent)
@@ -307,13 +324,7 @@ public static class TemplateCommand
             return new UpdateResult.Warning($"{relativePath}: user-edited, skipped");
         }
 
-        if (!diff)
-        {
-            File.WriteAllText(fullPath, embeddedContent);
-            config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
-        }
-        Console.WriteLine($"  Updated: {relativePath}");
-        return new UpdateResult.Updated();
+        return WriteUpdate(fullPath, relativePath, embeddedContent, config, diff);
     }
 
     private static UpdateResult UpdateBinaryFile(
@@ -376,8 +387,6 @@ public static class TemplateCommand
     private static string GetOldStockContent(
         string relativePath, DydoConfig config, string onDisk, string embeddedContent)
     {
-        // If no stored hash, the on-disk version is our best reference for diffing
-        // If stored hash matches on-disk, on-disk IS the old stock
         var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
         if (storedHash == null)
             return embeddedContent;

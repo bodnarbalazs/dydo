@@ -922,6 +922,544 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect FolderScaffolder 2\u003E\u00261 | grep -A 5 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:09:34.8111321Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect InitCommand 2\u003E\u00261 | grep -A 5 \u0022INSPECT:\u0022",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-12T11:09:46.3214641Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect InitCommand 2\u003E\u00261 | grep -A 5 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:13:08.6135694Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --name-only HEAD -- Services/FolderScaffolder.cs Commands/InitCommand.cs"
+    },
+    {
+      "ts": "2026-03-12T11:13:12.4368029Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short -- Services/FolderScaffolder.cs Commands/InitCommand.cs"
+    },
+    {
+      "ts": "2026-03-12T11:13:19.3855195Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect TemplateGenerator 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:15:00.3940431Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect TemplateCommand 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:16:34.1914506Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect WorkspaceCommand 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:18:20.6043595Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-12T11:18:22.3422633Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-12T11:18:22.4314258Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:18:24.8617948Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\0edaf0d7-dbcf-48a5-b297-..."
+    },
+    {
+      "ts": "2026-03-12T11:18:24.9835659Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateGeneratorTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:18:28.3121821Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\0edaf0d7-dbcf-48a5-b297-..."
+    },
+    {
+      "ts": "2026-03-12T11:18:31.119609Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:18:33.9694644Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:09.4929302Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:13.0544721Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:16.9867788Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:22.5362062Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:31.7474341Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:35.7695655Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:19:42.2187282Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:20:23.3484788Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T11:20:29.5634445Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T11:20:40.4537541Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:20:45.9777883Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj",
+      "tool": "edit",
+      "reason": "Agent Kate (code-writer) cannot edit DynaDocs.csproj. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-12T11:20:58.1542415Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-12T11:21:03.3085695Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AssemblyAttributes.cs",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-12T11:21:07.9001861Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:14.5262342Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:18.4248134Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:22.7255327Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:27.3046356Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:36.5382632Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:42.0842819Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:47.3004218Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:21:52.4120093Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-12T11:22:02.9211416Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateGeneratorTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:22:09.0298296Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateGeneratorTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:22:42.4600435Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateGeneratorTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:22:47.2294139Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --filter \u0022Templa..."
+    },
+    {
+      "ts": "2026-03-12T11:23:33.6901379Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --collect:\u0022XPlat..."
+    },
+    {
+      "ts": "2026-03-12T11:25:12.3466725Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect TemplateGenerator 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:26:57.4169672Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dotnet run -- template list 2\u003E/dev/null | grep agent-states || echo \u0022not in list\u0022",
+      "reason": "Indirect dydo invocation via dotnet run"
+    },
+    {
+      "ts": "2026-03-12T11:27:02.0693357Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-12T11:27:22.5131129Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:27:31.559738Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:27:58.4402174Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:28:09.4076941Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:28:19.4272531Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:28:42.8775026Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:28:47.0342845Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:28:53.2753091Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TemplateGenerator.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:29:07.5340699Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TemplateGeneratorTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:29:13.0088404Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --filter \u0022Templa..."
+    },
+    {
+      "ts": "2026-03-12T11:29:42.8066344Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --collect:\u0022XPlat..."
+    },
+    {
+      "ts": "2026-03-12T11:31:47.1981724Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect TemplateGenerator 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:33:57.0828167Z",
+      "event": "Blocked",
+      "path": "EOF",
+      "tool": "bash",
+      "cmd": "git add Services/TemplateGenerator.cs Services/AssemblyAttributes.cs DynaDocs.Tests/Services/Templat...",
+      "reason": "Agent Kate (code-writer) cannot write EOF. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-12T11:34:01.1058317Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add Services/TemplateGenerator.cs Services/AssemblyAttributes.cs DynaDocs.Tests/Services/Templat..."
+    },
+    {
+      "ts": "2026-03-12T11:34:09.6550543Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022t1: TemplateGenerator \u00D4\u00C7\u00F6 expose fallback methods \u002B add tests. CC 24, CRAP 24, 96% li..."
+    },
+    {
+      "ts": "2026-03-12T11:34:53.8164907Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short"
+    },
+    {
+      "ts": "2026-03-12T11:34:58.8499333Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:35:14.4324085Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:35:24.7492221Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:36:20.6642168Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-12T11:36:24.3503849Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-12T11:36:32.3589289Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --filter \u0022Templa..."
+    },
+    {
+      "ts": "2026-03-12T11:36:48.6415056Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --collect:\u0022XPlat..."
+    },
+    {
+      "ts": "2026-03-12T11:40:51.7011497Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect TemplateCommand 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:44:08.4502204Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T11:44:13.0461273Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\TemplateCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:44:23.7637069Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\TemplateCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:44:27.7383125Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T11:44:31.5115983Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:44:36.8112674Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:45:05.1882939Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\TemplateCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:45:20.6738249Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\TemplateCommandTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:45:26.5891828Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --filter \u0022Templa..."
+    },
+    {
+      "ts": "2026-03-12T11:46:17.926023Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --collect:\u0022XPlat..."
+    },
+    {
+      "ts": "2026-03-12T11:49:28.3591152Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect TemplateCommand 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T11:53:02.6680159Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorkspaceCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:53:10.4973676Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T11:53:15.3282733Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T11:53:46.2115292Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T11:53:51.3228333Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --filter \u0022Worksp..."
+    },
+    {
+      "ts": "2026-03-12T12:05:36.0191385Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T12:05:42.0775908Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --filter \u0022Worksp..."
+    },
+    {
+      "ts": "2026-03-12T12:06:01.4849836Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; dotnet test DynaDocs.Tests --no-restore --collect:\u0022XPlat..."
+    },
+    {
+      "ts": "2026-03-12T12:10:16.0029149Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect WorkspaceCommand 2\u003E\u00261 | grep -A 8 \u0022INSPECT:\u0022"
+    },
+    {
+      "ts": "2026-03-12T12:12:38.1593508Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect FolderScaffolder --inspect InitCommand --inspe..."
     }
   ],
   "snapshot": {

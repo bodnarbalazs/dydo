@@ -8,7 +8,7 @@ supersedes: [001, 004]
 
 # 008 — Terminal Dispatch Routing and Auto-Close Watchdog
 
-GUID-based window routing for correct tab placement, and a global stateless watchdog for auto-closing released agent tabs.
+Two-tier window routing (MRU for linear workflows, GUID for parallel slices), and a global stateless watchdog for auto-closing released agent tabs.
 
 ## Problem
 
@@ -20,33 +20,53 @@ Two bugs in terminal dispatch:
 
 ## Decision
 
-### Part 1 — GUID-Based Window Routing
+### Part 1 — Two-Tier Window Routing
 
-Replace `-w 0` with named windows using opaque GUIDs.
+Use two routing strategies depending on the dispatch context.
 
-**Window creation (`--new-window` dispatch):**
+**Tier 1 — MRU routing (default, linear workflows):**
+When `DYDO_WINDOW` is not set and `--new-window` is not used, dispatch with `-w 0` (most recently used window). No `DYDO_WINDOW` is injected into the child shell, so grandchildren also cascade `-w 0`. This is the common case: co-thinker dispatches planner, planner dispatches code-writer, code-writer dispatches reviewer — all tabs land in the user's current window with no ceremony.
+
+```
+wt -w 0 new-tab pwsh -Command "Remove-Item Env:CLAUDECODE ...; claude '{Agent} --inbox'"
+```
+
+**Tier 2 — GUID routing (explicit `--new-window`, parallel slices):**
+When `--new-window` is used, generate an opaque GUID and create a named window. The GUID is injected as `$env:DYDO_WINDOW` so all child dispatches from that window target the same named window via `-w {guid}`.
+
 ```
 wt --window a3f7b2c1 new-tab pwsh -Command "$env:DYDO_WINDOW='a3f7b2c1'; ..."
 ```
 
-**Tab creation (`--tab` dispatch):**
+**Tab routing within a named window (child dispatches):**
+When `DYDO_WINDOW` is inherited from the parent shell, use `-w {guid}` to target the parent's named window:
+
 ```
 wt -w a3f7b2c1 new-tab pwsh -Command "$env:DYDO_WINDOW='a3f7b2c1'; ..."
 ```
 
-The dispatching agent reads `$env:DYDO_WINDOW` from its own environment (inherited from the shell that launched it) and passes it to `wt -w`. Child agents inherit the same env var.
+**Why two tiers:**
+Windows Terminal cannot retroactively name a window — `--window {name}` only works at creation time. The user's manually opened terminal has no GUID name, so targeting it by GUID is impossible. Always generating a GUID forces the first dispatch into a new window, which is disruptive for simple linear workflows. MRU (`-w 0`) is the right default: it targets whatever window the user is focused on, which for linear flows is almost always the dispatching terminal. GUID routing is reserved for multi-window parallel workflows where precise targeting matters.
 
-**Window ID lifecycle:**
+**Routing decision logic (`ConfigureWindowSettings`):**
+
+| `DYDO_WINDOW` set? | `--new-window`? | Result |
+|---------------------|-----------------|--------|
+| No | No | `windowName = null` → launcher uses `-w 0` (MRU) |
+| No | Yes | `windowName = fresh GUID` → launcher uses `--window {guid}` |
+| Yes | No | `windowName = inherited GUID` → launcher uses `-w {guid}` |
+| Yes | Yes | `windowName = inherited GUID` → launcher uses `--window {guid}` |
+
+**Window ID lifecycle (Tier 2 only):**
 - Generated as a short GUID (`Guid.NewGuid().ToString("N")[..8]`) at `--new-window` dispatch time
 - Stored in target agent's `.state` file as `windowId`
 - Set as `$env:DYDO_WINDOW` in the spawned shell command
+- Inherited by child dispatches — they use `-w {guid}` to target the same window
 - Survives agent release (`.state` is updated, not deleted)
 - Overwritten on next claim (fresh state)
 
-**Fallback:** If `DYDO_WINDOW` is unset (user's original terminal, manual launch), `--tab` falls back to `-w 0`. Acceptable for the root case where the user is typically focused on their own window.
-
 **Why GUIDs, not agent names:**
-Agent identities are reclaimed — Charlie finishes slice A2, releases, then gets dispatched to C3 in a different window. Name-based window IDs would collide. GUIDs are opaque and collision-free. The user doesn't see them (they're internal WT routing tokens, not tab titles). Claude's green-star attention indicator on tabs is unaffected — that's the tab title, not the window name.
+Agent identities are reclaimed — Charlie finishes slice A2, releases, then gets dispatched to C3 in a different window. Name-based window IDs would collide. GUIDs are opaque and collision-free. The user doesn't see them (they're internal WT routing tokens, not tab titles).
 
 ### Part 2 — Global Auto-Close Watchdog
 
@@ -111,12 +131,17 @@ Both survive release (state file is updated in place, not deleted). Both are ove
 
 ## Shell Command Templates
 
-**Windows — new window with auto-close:**
+**Windows — MRU tab (Tier 1, default):**
+```
+wt -w 0 new-tab pwsh -NoExit -Command "Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{Agent} --inbox'"
+```
+
+**Windows — new named window (Tier 2, `--new-window`):**
 ```
 wt --window {guid} new-tab pwsh -Command "$env:DYDO_WINDOW='{guid}'; Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{Agent} --inbox'"
 ```
 
-**Windows — tab in existing window:**
+**Windows — tab in named window (Tier 2, child dispatch):**
 ```
 wt -w {guid} new-tab pwsh -Command "$env:DYDO_WINDOW='{guid}'; Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{Agent} --inbox'"
 ```
@@ -137,25 +162,34 @@ Omit `-NoExit` (Windows) / replace `exec bash` with `exit 0` (Linux/macOS) when 
 
 | File | Change |
 |------|--------|
+| `Services/DispatchService.cs` | `ConfigureWindowSettings`: only generate GUID for `--new-window`; return null for MRU routing |
 | `Services/TerminalLauncher.cs` | Add `windowName` parameter; generate GUID for new windows; use `--window` / `-w` with GUID; inject `DYDO_WINDOW` env var; remove `-NoExit` when autoClose |
+| `Services/WindowsTerminalLauncher.cs` | Handle null `windowName` in tab mode (fall back to `-w 0`); generate GUID in new-window mode if null |
 | `Commands/DispatchCommand.cs` | Read `DYDO_WINDOW` from env; pass to launcher; store `windowId` and `autoClose` in target agent `.state`; call `dydo watchdog start` on first auto-close dispatch |
 | `Models/AgentState.cs` | Add `WindowId` and `AutoClose` properties |
-| `Services/AgentRegistry.cs` | Persist new state fields; ensure they survive release |
+| `Services/AgentRegistry.cs` | Persist new state fields; ensure they survive release; preserve dispatch metadata in `ClaimAgent` for dispatched agents |
 | New: `Commands/WatchdogCommand.cs` | `start`, `stop`, `run` subcommands |
-| New: `Services/WatchdogService.cs` | Polling loop, process discovery, kill logic |
+| New: `Services/WatchdogService.cs` | Polling loop, process discovery, kill logic; filter shell processes to avoid killing the wrapper |
 | `Services/ProcessUtils.cs` | Add cross-platform command-line inspection for process matching |
+
+## Amendment — 2026-03-12: Two-Tier Routing
+
+The original decision always generated a GUID, which forced root terminal dispatches into a new window. This was disruptive for simple linear workflows. The amendment introduces MRU (`-w 0`) as the default for root dispatches, reserving GUID routing for `--new-window` dispatches where precise window targeting matters. The `ClaimAgent` fix (preserving `WindowId`/`AutoClose` for dispatched agents) and watchdog shell-process filtering were also discovered and fixed during implementation.
 
 ## Edge Cases
 
 | Scenario | Behavior |
 |----------|----------|
-| `--tab` without `DYDO_WINDOW` set | Falls back to `-w 0` (MRU) — same as current behavior |
+| Root dispatch (no `DYDO_WINDOW`, no `--new-window`) | Uses `-w 0` (MRU). Tab opens in the most recently focused window |
+| User alt-tabs away before MRU tab opens | Tab may land in the wrong window. Acceptable tradeoff for linear workflows |
+| `--new-window` dispatch | Generates GUID, creates named window. Children inherit GUID and route correctly |
+| Child dispatch with inherited `DYDO_WINDOW` | Uses `-w {guid}` to target the parent's named window |
 | Agent releases, watchdog not running | Tab stays open. Next dispatch restarts watchdog, catches it on next poll |
 | Watchdog crashes | Next dispatch restarts it. Released agents caught on first poll |
 | Multiple agents release simultaneously | Watchdog handles all in one poll cycle |
 | Agent identity reclaimed before watchdog acts | New claim overwrites `.state` with `autoClose: false` (or new value) — watchdog skips it |
 | Claude process not found (already exited) | No-op. Idempotent |
-| Last tab in window closes | Window closes too (WT default behavior, expected) |
+| Last tab in named window closes | Window closes too (WT default behavior, expected) |
 | GUID collision | Negligible probability with 8-char hex (4 billion possibilities) |
 
 ## Relationship to Previous Decisions

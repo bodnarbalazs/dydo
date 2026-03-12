@@ -177,7 +177,7 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateJitiIndexMd(List<string> agentNames, string workflowLinks)
+    internal static string GenerateJitiIndexMd(List<string> agentNames, string workflowLinks)
     {
         return """
             ---
@@ -393,35 +393,39 @@ public static class TemplateGenerator
         }
         catch (FileNotFoundException)
         {
-            // Fall back to inline generation if template not found
-            return $"""
-                ---
-                last-updated: {DateTime.UtcNow:o}
-                ---
-
-                # Agent States
-
-                | Agent | Status | Role | Task | Since |
-                |-------|--------|------|------|-------|
-                {rows}
-
-                ## Pending Inbox
-
-                | Agent | Items | Oldest |
-                |-------|-------|--------|
-                | (none) | - | - |
-
-                ---
-
-                <!--
-                This file is updated by dydo commands.
-                Check agent status: dydo agent list [--all]
-                -->
-                """;
+            return GenerateFallbackAgentStatesMd(rows);
         }
     }
 
-    private static string GenerateFallbackWorkflowFile(string agentName,
+    internal static string GenerateFallbackAgentStatesMd(string rows)
+    {
+        return $"""
+            ---
+            last-updated: {DateTime.UtcNow:o}
+            ---
+
+            # Agent States
+
+            | Agent | Status | Role | Task | Since |
+            |-------|--------|------|------|-------|
+            {rows}
+
+            ## Pending Inbox
+
+            | Agent | Items | Oldest |
+            |-------|-------|--------|
+            | (none) | - | - |
+
+            ---
+
+            <!--
+            This file is updated by dydo commands.
+            Check agent status: dydo agent list [--all]
+            -->
+            """;
+    }
+
+    internal static string GenerateFallbackWorkflowFile(string agentName,
         List<string> sourcePaths, List<string> testPaths)
     {
         var lowerName = agentName.ToLowerInvariant();
@@ -555,7 +559,7 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateFallbackArchitectureMd()
+    internal static string GenerateFallbackArchitectureMd()
     {
         return """
             ---
@@ -621,7 +625,7 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateFallbackWelcomeMd()
+    internal static string GenerateFallbackWelcomeMd()
     {
         return """
             ---
@@ -665,7 +669,7 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateFallbackCodingStandardsMd()
+    internal static string GenerateFallbackCodingStandardsMd()
     {
         return """
             ---
@@ -722,7 +726,7 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateFallbackHowToUseDocsMd()
+    internal static string GenerateFallbackHowToUseDocsMd()
     {
         return """
             ---
@@ -847,23 +851,28 @@ public static class TemplateGenerator
         }
         catch (FileNotFoundException)
         {
-            return """
-                ---
-                area: understand
-                type: context
-                ---
-
-                # About This Project
-
-                > **Fill this in.** This is the first thing AI agents read. Make it count.
-
-                *[Describe the project in 2-3 sentences]*
-
-                ---
-
-                *See [architecture.md](./architecture.md) for technical structure.*
-                """;
+            return GenerateFallbackAboutMd();
         }
+    }
+
+    internal static string GenerateFallbackAboutMd()
+    {
+        return """
+            ---
+            area: understand
+            type: context
+            ---
+
+            # About This Project
+
+            > **Fill this in.** This is the first thing AI agents read. Make it count.
+
+            *[Describe the project in 2-3 sentences]*
+
+            ---
+
+            *See [architecture.md](./architecture.md) for technical structure.*
+            """;
     }
 
     /// <summary>
@@ -900,7 +909,7 @@ public static class TemplateGenerator
     public static string FormatPathsList(List<string> paths) =>
         string.Join(", ", paths.Select(p => $"`{p}`"));
 
-    private static string GenerateFallbackModeFile(string agentName, string modeName,
+    internal static string GenerateFallbackModeFile(string agentName, string modeName,
         List<string> sourcePaths, List<string> testPaths)
     {
         var formattedSource = FormatPathsList(sourcePaths);
@@ -1002,7 +1011,7 @@ public static class TemplateGenerator
         }
     }
 
-    private static string GenerateFallbackFilesOffLimitsMd()
+    internal static string GenerateFallbackFilesOffLimitsMd()
     {
         return """
             ---
@@ -1058,88 +1067,93 @@ public static class TemplateGenerator
         }
         catch (FileNotFoundException)
         {
-            return """
-                ---
-                area: reference
-                type: reference
-                ---
-
-                # CLI Commands Reference
-
-                Complete reference for all `dydo` commands.
-
-                Run `dydo help` for a quick overview of available commands.
-
-                ---
-
-                ## Setup Commands
-
-                | Command | Description |
-                |---------|-------------|
-                | `dydo init <integration>` | Initialize project (claude, none) |
-                | `dydo init <int> --join` | Join existing project |
-                | `dydo whoami` | Show current agent identity |
-
-                ## Documentation Commands
-
-                | Command | Description |
-                |---------|-------------|
-                | `dydo check [path]` | Validate docs |
-                | `dydo fix [path]` | Auto-fix issues |
-                | `dydo index [path]` | Regenerate index |
-                | `dydo graph <file>` | Show link graph |
-
-                ## Agent Commands
-
-                | Command | Description |
-                |---------|-------------|
-                | `dydo agent claim auto\|<name>` | Claim agent |
-                | `dydo agent release` | Release agent |
-                | `dydo agent status [name]` | Show status |
-                | `dydo agent list [--free] [--all]` | List agents |
-                | `dydo agent role <role>` | Set role |
-                | `dydo agent new <name> <human>` | Create agent |
-                | `dydo agent rename <old> <new>` | Rename agent |
-                | `dydo agent remove <name>` | Remove agent |
-                | `dydo agent reassign <name> <human>` | Reassign agent |
-
-                ## Task Commands
-
-                | Command | Description |
-                |---------|-------------|
-                | `dydo task create <name>` | Create task |
-                | `dydo task ready-for-review <name>` | Mark ready for review |
-                | `dydo task approve <name>` | Approve task |
-                | `dydo task reject <name>` | Reject task |
-                | `dydo task list` | List tasks |
-
-                ## Workflow Commands
-
-                | Command | Description |
-                |---------|-------------|
-                | `dydo dispatch` | Dispatch work to another agent |
-                | `dydo inbox list` | List agents with inbox items |
-                | `dydo inbox show` | Show current agent's inbox |
-                | `dydo inbox clear` | Clear processed inbox items |
-                | `dydo guard` | Check permissions (for hooks) |
-                | `dydo clean <agent>` | Clean agent workspace |
-                | `dydo workspace init` | Initialize agent workspaces |
-                | `dydo workspace check` | Verify workflow before session end |
-                | `dydo review complete <task>` | Complete a code review |
-
-                ## Audit Commands
-
-                | Command | Description |
-                |---------|-------------|
-                | `dydo audit` | Generate activity replay visualization |
-                | `dydo audit --list` | List available sessions |
-                | `dydo audit --session <id>` | Show details for a session |
-
-                ---
-
-                Run `dydo <command> --help` for detailed usage of each command.
-                """;
+            return GenerateFallbackDydoCommandsMd();
         }
+    }
+
+    internal static string GenerateFallbackDydoCommandsMd()
+    {
+        return """
+            ---
+            area: reference
+            type: reference
+            ---
+
+            # CLI Commands Reference
+
+            Complete reference for all `dydo` commands.
+
+            Run `dydo help` for a quick overview of available commands.
+
+            ---
+
+            ## Setup Commands
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo init <integration>` | Initialize project (claude, none) |
+            | `dydo init <int> --join` | Join existing project |
+            | `dydo whoami` | Show current agent identity |
+
+            ## Documentation Commands
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo check [path]` | Validate docs |
+            | `dydo fix [path]` | Auto-fix issues |
+            | `dydo index [path]` | Regenerate index |
+            | `dydo graph <file>` | Show link graph |
+
+            ## Agent Commands
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo agent claim auto\|<name>` | Claim agent |
+            | `dydo agent release` | Release agent |
+            | `dydo agent status [name]` | Show status |
+            | `dydo agent list [--free] [--all]` | List agents |
+            | `dydo agent role <role>` | Set role |
+            | `dydo agent new <name> <human>` | Create agent |
+            | `dydo agent rename <old> <new>` | Rename agent |
+            | `dydo agent remove <name>` | Remove agent |
+            | `dydo agent reassign <name> <human>` | Reassign agent |
+
+            ## Task Commands
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo task create <name>` | Create task |
+            | `dydo task ready-for-review <name>` | Mark ready for review |
+            | `dydo task approve <name>` | Approve task |
+            | `dydo task reject <name>` | Reject task |
+            | `dydo task list` | List tasks |
+
+            ## Workflow Commands
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo dispatch` | Dispatch work to another agent |
+            | `dydo inbox list` | List agents with inbox items |
+            | `dydo inbox show` | Show current agent's inbox |
+            | `dydo inbox clear` | Clear processed inbox items |
+            | `dydo guard` | Check permissions (for hooks) |
+            | `dydo clean <agent>` | Clean agent workspace |
+            | `dydo workspace init` | Initialize agent workspaces |
+            | `dydo workspace check` | Verify workflow before session end |
+            | `dydo review complete <task>` | Complete a code review |
+
+            ## Audit Commands
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo audit` | Generate activity replay visualization |
+            | `dydo audit --list` | List available sessions |
+            | `dydo audit --session <id>` | Show details for a session |
+
+            ---
+
+            Run `dydo <command> --help` for detailed usage of each command.
+            """;
     }
 
     /// <summary>
@@ -1154,54 +1168,59 @@ public static class TemplateGenerator
         }
         catch (FileNotFoundException)
         {
-            return """
-                ---
-                area: reference
-                type: reference
-                ---
-
-                # Writing Documentation
-
-                Reference for documentation conventions, structure, and validation rules.
-
-                ---
-
-                ## Frontmatter
-
-                Every document requires YAML frontmatter:
-
-                ```yaml
-                ---
-                area: guides
-                type: guide
-                ---
-                ```
-
-                ### Required Fields
-
-                | Field | Values |
-                |-------|--------|
-                | `area` | `understand`, `guides`, `reference`, `general`, `frontend`, `backend`, `microservices`, `platform` |
-                | `type` | `context`, `concept`, `guide`, `reference`, `hub`, `decision`, `pitfall`, `changelog` |
-
-                ---
-
-                ## Naming Conventions
-
-                - **Files:** `kebab-case.md`
-                - **Folders:** `kebab-case/`
-                - **Hub files:** `_index.md` in each folder
-
-                ---
-
-                ## Validation
-
-                ```bash
-                dydo check              # Find issues
-                dydo fix                # Auto-fix what's possible
-                ```
-                """;
+            return GenerateFallbackWritingDocsMd();
         }
+    }
+
+    internal static string GenerateFallbackWritingDocsMd()
+    {
+        return """
+            ---
+            area: reference
+            type: reference
+            ---
+
+            # Writing Documentation
+
+            Reference for documentation conventions, structure, and validation rules.
+
+            ---
+
+            ## Frontmatter
+
+            Every document requires YAML frontmatter:
+
+            ```yaml
+            ---
+            area: guides
+            type: guide
+            ---
+            ```
+
+            ### Required Fields
+
+            | Field | Values |
+            |-------|--------|
+            | `area` | `understand`, `guides`, `reference`, `general`, `frontend`, `backend`, `microservices`, `platform` |
+            | `type` | `context`, `concept`, `guide`, `reference`, `hub`, `decision`, `pitfall`, `changelog` |
+
+            ---
+
+            ## Naming Conventions
+
+            - **Files:** `kebab-case.md`
+            - **Folders:** `kebab-case/`
+            - **Hub files:** `_index.md` in each folder
+
+            ---
+
+            ## Validation
+
+            ```bash
+            dydo check              # Find issues
+            dydo fix                # Auto-fix what's possible
+            ```
+            """;
     }
 
     /// <summary>
@@ -1216,35 +1235,40 @@ public static class TemplateGenerator
         }
         catch (FileNotFoundException)
         {
-            return """
-                ---
-                area: general
-                type: reference
-                ---
-
-                # Glossary
-
-                Definitions of domain-specific terms used throughout this project.
-
-                ---
-
-                ## Project Terms
-
-                ### Example Term
-
-                Brief definition. Include context about when/where this concept applies.
-
-                ---
-
-                <!--
-                Add terms alphabetically. Format:
-
-                ### Term Name
-
-                Definition. Context.
-                -->
-                """;
+            return GenerateFallbackGlossaryMd();
         }
+    }
+
+    internal static string GenerateFallbackGlossaryMd()
+    {
+        return """
+            ---
+            area: general
+            type: reference
+            ---
+
+            # Glossary
+
+            Definitions of domain-specific terms used throughout this project.
+
+            ---
+
+            ## Project Terms
+
+            ### Example Term
+
+            Brief definition. Include context about when/where this concept applies.
+
+            ---
+
+            <!--
+            Add terms alphabetically. Format:
+
+            ### Term Name
+
+            Definition. Context.
+            -->
+            """;
     }
 
     /// <summary>
@@ -1259,55 +1283,60 @@ public static class TemplateGenerator
         }
         catch (FileNotFoundException)
         {
-            return """
-                ---
-                area: reference
-                type: reference
-                ---
-
-                # DynaDocs (dydo)
-
-                Documentation-driven context and agent orchestration for AI coding assistants.
-
-                100% local, 100% under your control.
-
-                ## The Problem
-
-                AI code editors need persistence. Without it, each session starts fresh and the agent has to gather context about the project before it can even begin working on your actual task.
-
-                ## The Solution
-
-                DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management.
-
-                ![DynaDocs Architecture](./../_assets/dydo-diagram.svg)
-
-                ## Workflow Flags
-
-                | Flag | Workflow |
-                |------|----------|
-                | `--inbox` | Process dispatched work |
-
-                ## Agent Roles
-
-                | Role | Can Edit | Purpose |
-                |------|----------|---------|
-                | `co-thinker` | `decisions/**`, agent workspace | Explore ideas, scope requirements |
-                | `planner` | `tasks/**`, agent workspace | Design implementation |
-                | `code-writer` | source + test directories | Implement features |
-                | `test-writer` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
-                | `reviewer` | agent workspace | Review code |
-                | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
-
-                ## More Information
-
-                - **Project Repository**: [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
-                - **Command Reference**: [dydo-commands.md](./dydo-commands.md)
-
-                ## License
-
-                MIT
-                """;
+            return GenerateFallbackAboutDynadocsMd();
         }
+    }
+
+    internal static string GenerateFallbackAboutDynadocsMd()
+    {
+        return """
+            ---
+            area: reference
+            type: reference
+            ---
+
+            # DynaDocs (dydo)
+
+            Documentation-driven context and agent orchestration for AI coding assistants.
+
+            100% local, 100% under your control.
+
+            ## The Problem
+
+            AI code editors need persistence. Without it, each session starts fresh and the agent has to gather context about the project before it can even begin working on your actual task.
+
+            ## The Solution
+
+            DynaDocs combines an agent-friendly documentation format with a CLI tool for deterministic rule enforcement and framework management.
+
+            ![DynaDocs Architecture](./../_assets/dydo-diagram.svg)
+
+            ## Workflow Flags
+
+            | Flag | Workflow |
+            |------|----------|
+            | `--inbox` | Process dispatched work |
+
+            ## Agent Roles
+
+            | Role | Can Edit | Purpose |
+            |------|----------|---------|
+            | `co-thinker` | `decisions/**`, agent workspace | Explore ideas, scope requirements |
+            | `planner` | `tasks/**`, agent workspace | Design implementation |
+            | `code-writer` | source + test directories | Implement features |
+            | `test-writer` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
+            | `reviewer` | agent workspace | Review code |
+            | `docs-writer` | `dydo/**` (except agents/) | Write documentation |
+
+            ## More Information
+
+            - **Project Repository**: [github.com/bodnarbalazs/dydo](https://github.com/bodnarbalazs/dydo)
+            - **Command Reference**: [dydo-commands.md](./dydo-commands.md)
+
+            ## License
+
+            MIT
+            """;
     }
 
     /// <summary>

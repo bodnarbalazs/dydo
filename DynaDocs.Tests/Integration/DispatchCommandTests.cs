@@ -831,6 +831,59 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Window Routing Tests
+
+    [Fact]
+    public async Task Dispatch_Default_SetsNullWindowId()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief");
+
+        result.AssertSuccess();
+
+        // Default dispatch (no --new-window) should not set a window-id
+        // because ConfigureWindowSettings returns null for MRU routing
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("window-id: null", stateContent);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithNewWindow_SetsWindowId()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", newWindow: true);
+
+        result.AssertSuccess();
+
+        // --new-window should generate a GUID window-id
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.DoesNotContain("window-id: null", stateContent);
+        // Window ID should be an 8-char hex string
+        Assert.Matches(@"window-id: [0-9a-f]{8}", stateContent);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithAutoCloseAndNoNewWindow_HasNullWindowId()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", autoClose: true);
+
+        result.AssertSuccess();
+
+        // auto-close without --new-window: should still have null window-id (MRU routing)
+        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", stateContent);
+        Assert.Contains("window-id: null", stateContent);
+    }
+
+    #endregion
+
     #region Shell Metacharacter Rejection Tests
 
     [Theory]

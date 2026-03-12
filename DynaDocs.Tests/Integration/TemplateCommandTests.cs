@@ -203,4 +203,160 @@ public class TemplateCommandTests : IntegrationTestBase
         var updatedContent = File.ReadAllText(docPath);
         Assert.NotEqual(oldContent, updatedContent);
     }
+
+    [Fact]
+    public async Task TemplateUpdate_StaleTemplate_Removed()
+    {
+        await InitProjectAsync();
+
+        var staleFile = Path.Combine(TestDir, "dydo/_system/templates/mode-old-removed.template.md");
+        File.WriteAllText(staleFile, "stale template");
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Removed stale:");
+        Assert.False(File.Exists(staleFile));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_StaleHash_Pruned()
+    {
+        await InitProjectAsync();
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes["_system/templates/mode-deleted.template.md"] = "abc123";
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Pruned stale hash:");
+
+        var updatedConfig = new ConfigService().LoadConfig()!;
+        Assert.False(updatedConfig.FrameworkHashes.ContainsKey("_system/templates/mode-deleted.template.md"));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_MissingDocFile_Created()
+    {
+        await InitProjectAsync();
+
+        var docPath = Path.Combine(TestDir, "dydo/reference/dydo-commands.md");
+        File.Delete(docPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Created: reference/dydo-commands.md");
+        Assert.True(File.Exists(docPath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_UserEditedDocFile_Skipped()
+    {
+        await InitProjectAsync();
+
+        var relativePath = "reference/dydo-commands.md";
+        var docPath = Path.Combine(TestDir, "dydo", relativePath);
+        var originalContent = File.ReadAllText(docPath);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(originalContent);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        File.WriteAllText(docPath, originalContent + "\n\n<!-- User added this -->");
+
+        var result = await RunTemplateUpdateAsync();
+
+        Assert.Contains("user-edited", result.Stderr);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_MissingBinaryFile_Created()
+    {
+        await InitProjectAsync();
+
+        var svgPath = Path.Combine(TestDir, "dydo/_assets/dydo-diagram.svg");
+        if (File.Exists(svgPath))
+        {
+            File.Delete(svgPath);
+
+            var result = await RunTemplateUpdateAsync();
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Created: _assets/dydo-diagram.svg");
+            Assert.True(File.Exists(svgPath));
+        }
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_UserEditedBinaryFile_Skipped()
+    {
+        await InitProjectAsync();
+
+        var relativePath = "_assets/dydo-diagram.svg";
+        var svgPath = Path.Combine(TestDir, "dydo", relativePath);
+        if (!File.Exists(svgPath)) return;
+
+        var originalBytes = File.ReadAllBytes(svgPath);
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHashBytes(originalBytes);
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        File.WriteAllText(svgPath, "<svg>custom content</svg>");
+
+        var result = await RunTemplateUpdateAsync();
+
+        Assert.Contains("user-edited", result.Stderr);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_RegeneratesAgentWorkspaces()
+    {
+        await InitProjectAsync();
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Regenerated: agents/");
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_Diff_DoesNotRecreateFiles()
+    {
+        await InitProjectAsync();
+
+        var relativePath = "_system/templates/mode-code-writer.template.md";
+        var templatePath = Path.Combine(TestDir, "dydo", relativePath);
+        File.Delete(templatePath);
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(templatePath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_UpdatedBinaryFile_Replaced()
+    {
+        await InitProjectAsync();
+
+        var relativePath = "_assets/dydo-diagram.svg";
+        var svgPath = Path.Combine(TestDir, "dydo", relativePath);
+        if (!File.Exists(svgPath)) return;
+
+        var oldContent = "<svg>old framework version</svg>";
+        File.WriteAllText(svgPath, oldContent);
+
+        var config = new ConfigService().LoadConfig()!;
+        config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHashBytes(
+            System.Text.Encoding.UTF8.GetBytes(oldContent));
+        new ConfigService().SaveConfig(config, Path.Combine(TestDir, "dydo.json"));
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Updated: _assets/dydo-diagram.svg");
+    }
 }

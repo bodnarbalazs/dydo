@@ -9,6 +9,12 @@ public class UncustomizedDocsRuleTests
     private readonly UncustomizedDocsRule _rule = new();
 
     [Fact]
+    public void Properties_AreSet()
+    {
+        Assert.False(string.IsNullOrEmpty(_rule.Description));
+    }
+
+    [Fact]
     public void Validate_WarnsAboutUncustomizedAbout()
     {
         var doc = CreateDoc("understand/about.md",

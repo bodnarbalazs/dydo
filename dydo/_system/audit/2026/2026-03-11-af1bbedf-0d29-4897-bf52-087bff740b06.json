@@ -1251,6 +1251,498 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; taskkill //F //IM dotnet.exe 2\u003E/dev/null; taskkill //F /..."
+    },
+    {
+      "ts": "2026-03-12T13:35:54.8335475Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "rm -f DynaDocs.Tests/TestResults/*/coverage.cobertura.xml 2\u003E/dev/null; dotnet test DynaDocs.Tests/Dy...",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-12T13:36:12.56848Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rm -f DynaDocs.Tests/TestResults/*/coverage.cobertura.xml 2\u003E/dev/null; dotnet test DynaDocs.Tests/Dy..."
+    },
+    {
+      "ts": "2026-03-12T13:37:03.9706072Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; taskkill //F //IM dotnet.exe 2\u003E/dev/null; taskkill //F /..."
+    },
+    {
+      "ts": "2026-03-12T13:37:29.3349032Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l DynaDocs.Tests/TestResults/02f99b3e-7c86-4382-8555-e4617bfdca63/coverage.cobertura.xml 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:37:36.6680284Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Audit 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-12T13:37:46.949764Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Snapshot 2\u003E\u00261 | grep -E \u0022INSPECT|..."
+    },
+    {
+      "ts": "2026-03-12T13:38:15.9970099Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Snapshot 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-12T13:38:26.5715763Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect CompactionResult 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-12T13:38:38.3840878Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --no-build --filter \u0022FullyQualifiedName~CompressionRatio\u0022 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-12T13:38:45.0460898Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:38:49.0050693Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:38:54.5264617Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AuditCompactionTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:39:00.3284373Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AuditCompactionTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:39:07.6579224Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AuditCompactionTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:39:14.092911Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:40:11.6380619Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:40:23.4631522Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:40:27.9988692Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:40:35.3528274Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:40:42.700621Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:41:03.183831Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:41:10.0583282Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:41:16.3578894Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:41:25.9395399Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:41:31.6392913Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; taskkill //F //IM VBCSCompiler.exe 2\u003E/dev/null; dotnet b..."
+    },
+    {
+      "ts": "2026-03-12T13:42:05.4412031Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --filter \u0022FullyQualifiedName~AuditVisualizationServiceTests|FullyQualifiedName~AuditComp..."
+    },
+    {
+      "ts": "2026-03-12T13:42:19.9825919Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill //F //IM testhost.exe 2\u003E/dev/null; rm -rf DynaDocs.Tests/TestResults; dotnet test DynaDocs...."
+    },
+    {
+      "ts": "2026-03-12T13:44:01.4999631Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l DynaDocs.Tests/TestResults/8fd20036-9127-4215-a058-731e5d66f79b/coverage.cobertura.xml"
+    },
+    {
+      "ts": "2026-03-12T13:44:06.5211449Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect Audit 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-12T13:44:19.5523085Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-12T13:44:24.5481905Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:26.8924586Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:27.0973299Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:33.6239732Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AuditService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:34.1334093Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AuditSession.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:34.4950719Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:46:39.3404467Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils\\ExitCodes.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:39.7736236Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AuditEvent.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:40.1039688Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils\\ConsoleOutput.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:46:48.2531486Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:46:48.4136907Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:46:55.4152889Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:47:15.0959207Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:47:22.7189727Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-12T13:47:22.7927032Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-12T13:47:27.1057353Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestCollection.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:47:27.3950696Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\InitCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:48:33.6943594Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\ProjectSnapshot.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:49:40.6836677Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\AuditCommandTests.cs",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-12T13:49:47.7882618Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cd C:/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 dotnet build --no-restore 2\u003E\u00261 | tail -20",
+      "reason": "Needless cd compound"
+    },
+    {
+      "ts": "2026-03-12T13:49:51.3328376Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -20"
+    },
+    {
+      "ts": "2026-03-12T13:49:57.6904413Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests --no-build --filter \u0022FullyQualifiedName~AuditCommandTests\u0022 --verbosity no..."
+    },
+    {
+      "ts": "2026-03-12T13:50:06.4979433Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests --no-build --filter \u0022FullyQualifiedName~AuditCommandTests or FullyQualifi..."
+    },
+    {
+      "ts": "2026-03-12T13:50:17.3896978Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests --no-build --filter \u0022FullyQualifiedName~AuditCommandTests|FullyQualifiedN..."
+    },
+    {
+      "ts": "2026-03-12T13:50:33.4050023Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect AuditCommand --xml DynaDocs.Tests/TestResults/..."
+    },
+    {
+      "ts": "2026-03-12T13:50:40.1629367Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect AuditCommand 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:52:10.0955399Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\NoOpProcessStarter.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:52:10.6338981Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:52:14.728679Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\IProcessStarter.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:52:15.4105165Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:52:30.2485957Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:52:34.9426045Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-12T13:52:41.8273973Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:52:49.224963Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AuditCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:52:53.5351497Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:53:01.8627655Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:53:09.5156849Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-12T13:53:16.4111222Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-12T13:53:24.0248433Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests --no-build --filter \u0022FullyQualifiedName~AuditCommandTests\u0022 --verbosity no..."
+    },
+    {
+      "ts": "2026-03-12T13:53:37.1728575Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests --filter \u0022FullyQualifiedName~AuditCommandTests|FullyQualifiedName~AuditVi..."
+    },
+    {
+      "ts": "2026-03-12T13:53:52.7581176Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect AuditCommand 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T13:55:42.0495683Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect CompactionResult 2\u003E\u00261 | grep -A 5 \u0022INSPECT\u0022"
+    },
+    {
+      "ts": "2026-03-12T14:00:32.697501Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022SnapshotCompaction|AuditService|SnapshotServi..."
+    },
+    {
+      "ts": "2026-03-12T14:02:13.9456912Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect \u0022SnapshotCompactionService\u0022 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-12T14:04:37.6882816Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status -u 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T14:05:20.5914217Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -3 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T14:05:25.3248192Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --stat HEAD -- Services/AuditVisualizationService.cs DynaDocs.Tests/Services/AuditVisualiza..."
+    },
+    {
+      "ts": "2026-03-12T14:05:29.5253701Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git ls-files --error-unmatch Services/AuditVisualizationService.cs DynaDocs.Tests/Services/AuditVisu..."
+    },
+    {
+      "ts": "2026-03-12T14:05:34.4444186Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add Commands/AuditCommand.cs DynaDocs.Tests/Integration/IntegrationTestBase.cs DynaDocs.Tests/In..."
+    },
+    {
+      "ts": "2026-03-12T14:05:45.0859124Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --cached --stat 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-12T14:05:52.6855209Z",
+      "event": "Blocked",
+      "path": "EOF",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nt1: AuditCommand \u00D4\u00C7\u00F6 refactor CC 31\u00D4\u0107\u013A14, add 22 integration tests, Bro...",
+      "reason": "Agent Mia (code-writer) cannot write EOF. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-12T14:05:56.6726815Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022t1: AuditCommand \u00D4\u00C7\u00F6 refactor CC 31\u00D4\u0107\u013A14, add 22 integration tests, BrowserLauncherOv..."
+    },
+    {
+      "ts": "2026-03-12T14:07:07.8503233Z",
+      "event": "Release",
+      "agent": "Mia"
     }
   ],
   "snapshot": {

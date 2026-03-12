@@ -399,6 +399,18 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect \u0022FixCommand\\|FixFileHandler\\|FixH..."
+    },
+    {
+      "ts": "2026-03-12T13:36:08.5765299Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect \u0022Fix\u0022 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-12T13:40:21.056354Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find DynaDocs.Tests/TestResults -name \u0022coverage.cobertura.xml\u0022 -exec ls -la {} \\;"
     }
   ],
   "snapshot": {

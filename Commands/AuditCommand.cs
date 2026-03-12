@@ -14,12 +14,9 @@ using DynaDocs.Utils;
 /// </summary>
 public static class AuditCommand
 {
-    // Agent color palette for multi-agent visualization
-    private static readonly string[] AgentColors =
-    [
-        "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4",
-        "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F"
-    ];
+    // Delegate to AuditVisualizationService for testability
+
+    internal static IProcessStarter? BrowserLauncherOverride { get; set; }
 
     public static Command Create()
     {
@@ -134,18 +131,7 @@ public static class AuditCommand
 
             foreach (var e in session.Events)
             {
-                var details = e.EventType switch
-                {
-                    AuditEventType.Read or AuditEventType.Write or AuditEventType.Edit or AuditEventType.Delete
-                        => e.Path,
-                    AuditEventType.Bash => TruncateCommand(e.Command ?? ""),
-                    AuditEventType.Role => $"{e.Role}" + (e.Task != null ? $" on {e.Task}" : ""),
-                    AuditEventType.Claim or AuditEventType.Release => e.AgentName,
-                    AuditEventType.Commit => $"{e.CommitHash} {TruncateCommand(e.CommitMessage ?? "")}",
-                    AuditEventType.Blocked => $"{e.Path ?? e.Command} - {e.BlockReason}",
-                    _ => ""
-                };
-
+                var details = AuditVisualizationService.FormatEventDetails(e);
                 Console.WriteLine($"  {e.Timestamp:HH:mm:ss} {e.EventType,-8} {details}");
             }
 
@@ -196,12 +182,8 @@ public static class AuditCommand
         }
     }
 
-    private static string FormatBytes(long bytes) => bytes switch
-    {
-        < 1024 => $"{bytes} B",
-        < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
-        _ => $"{bytes / (1024.0 * 1024.0):F1} MB"
-    };
+    private static string FormatBytes(long bytes)
+        => AuditVisualizationService.FormatBytes(bytes);
 
     private static int ExecuteGenerateVisualization(string? yearFilter)
     {
@@ -247,7 +229,10 @@ public static class AuditCommand
                     FileName = htmlPath,
                     UseShellExecute = true
                 };
-                Process.Start(psi);
+                if (BrowserLauncherOverride != null)
+                    BrowserLauncherOverride.Start(psi);
+                else
+                    Process.Start(psi);
                 Console.WriteLine("Opened in browser.");
             }
             catch
@@ -385,61 +370,28 @@ public static class AuditCommand
     }
 
     private static Dictionary<string, string> AssignAgentColors(IReadOnlyList<AuditSession> sessions)
-    {
-        var colors = new Dictionary<string, string>();
-        var colorIndex = 0;
-
-        foreach (var session in sessions)
-        {
-            var agent = session.AgentName ?? session.SessionId;
-            if (!colors.ContainsKey(agent))
-            {
-                colors[agent] = AgentColors[colorIndex % AgentColors.Length];
-                colorIndex++;
-            }
-        }
-
-        return colors;
-    }
+        => AuditVisualizationService.AssignAgentColors(sessions);
 
     private static List<MergedEvent> MergeTimelines(IReadOnlyList<AuditSession> sessions)
     {
-        var merged = new List<MergedEvent>();
-
-        foreach (var session in sessions)
-        {
-            var agent = session.AgentName ?? session.SessionId;
-            foreach (var evt in session.Events)
+        return AuditVisualizationService.MergeTimelines(sessions)
+            .Select(t => new MergedEvent
             {
-                merged.Add(new MergedEvent
-                {
-                    Timestamp = evt.Timestamp,
-                    Agent = agent,
-                    EventType = evt.EventType.ToString(),
-                    Path = evt.Path,
-                    Command = evt.Command,
-                    Role = evt.Role,
-                    Task = evt.Task
-                });
-            }
-        }
-
-        return merged.OrderBy(e => e.Timestamp).ToList();
+                Timestamp = t.Timestamp,
+                Agent = t.Agent,
+                EventType = t.EventType,
+                Path = t.Path,
+                Command = t.Command,
+                Role = t.Role,
+                Task = t.Task
+            })
+            .ToList();
     }
 
     private static ProjectSnapshot BuildCombinedSnapshot(IReadOnlyList<AuditSession> sessions)
     {
-        // Resolve all snapshots (inline or delta-referenced)
-        var resolveCache = new Dictionary<string, ProjectSnapshot>();
-
-        // Build lookup helpers for delta resolution
+        // Load baselines from audit folder for delta resolution
         var baselineCache = new Dictionary<string, SnapshotBaseline>();
-        var sessionLookup = sessions.ToDictionary(s => s.SessionId);
-
-        SnapshotBaseline? LoadBaseline(string id) => baselineCache.GetValueOrDefault(id);
-        AuditSession? LoadSession(string id) => sessionLookup.GetValueOrDefault(id);
-
-        // Try to load baselines from the audit folder
         try
         {
             var auditService = new AuditService();
@@ -458,41 +410,11 @@ public static class AuditCommand
         }
         catch { /* Baselines may not exist yet */ }
 
-        var combined = new ProjectSnapshot { GitCommit = "unknown" };
-        var allFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var allLinks = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var session in sessions)
-        {
-            var snapshot = SnapshotCompactionService.ResolveSnapshot(
-                session, LoadBaseline, LoadSession, resolveCache);
-            if (snapshot == null) continue;
-
-            if (combined.GitCommit == "unknown")
-                combined.GitCommit = snapshot.GitCommit;
-
-            foreach (var file in snapshot.Files)
-                allFiles.Add(file);
-            foreach (var folder in snapshot.Folders)
-                allFolders.Add(folder);
-            foreach (var (source, targets) in snapshot.DocLinks)
-            {
-                if (!allLinks.ContainsKey(source))
-                    allLinks[source] = new List<string>();
-                foreach (var target in targets)
-                {
-                    if (!allLinks[source].Contains(target, StringComparer.OrdinalIgnoreCase))
-                        allLinks[source].Add(target);
-                }
-            }
-        }
-
-        combined.Files = allFiles.OrderBy(f => f).ToList();
-        combined.Folders = allFolders.OrderBy(f => f).ToList();
-        combined.DocLinks = allLinks;
-
-        return combined;
+        var sessionLookup = sessions.ToDictionary(s => s.SessionId);
+        return AuditVisualizationService.BuildCombinedSnapshot(
+            sessions,
+            id => baselineCache.GetValueOrDefault(id),
+            id => sessionLookup.GetValueOrDefault(id));
     }
 
     private static string GetJavaScript() => """
@@ -1021,12 +943,7 @@ public static class AuditCommand
 """;
 
     private static string TruncateCommand(string command)
-    {
-        const int maxLength = 50;
-        if (command.Length <= maxLength)
-            return command;
-        return command[..maxLength] + "...";
-    }
+        => AuditVisualizationService.TruncateCommand(command);
 }
 
 /// <summary>

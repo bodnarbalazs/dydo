@@ -382,6 +382,31 @@ public class AuditCompactionTests : IDisposable
 
     #endregion
 
+    #region CompactionResult
+
+    [Fact]
+    public void CompressionRatio_ZeroOldSize_ReturnsZero()
+    {
+        var result = new CompactionResult { OldTotalSizeBytes = 0, NewTotalSizeBytes = 0 };
+        Assert.Equal(0, result.CompressionRatio);
+    }
+
+    [Fact]
+    public void CompressionRatio_WithData_CalculatesCorrectly()
+    {
+        var result = new CompactionResult { OldTotalSizeBytes = 1000, NewTotalSizeBytes = 250 };
+        Assert.Equal(0.75, result.CompressionRatio, precision: 2);
+    }
+
+    [Fact]
+    public void CompressionRatio_NoCompression_ReturnsZero()
+    {
+        var result = new CompactionResult { OldTotalSizeBytes = 100, NewTotalSizeBytes = 100 };
+        Assert.Equal(0, result.CompressionRatio, precision: 2);
+    }
+
+    #endregion
+
     #region Full Compaction
 
     [Fact]

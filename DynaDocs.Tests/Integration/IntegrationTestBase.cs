@@ -23,6 +23,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
+    private readonly IProcessStarter? _originalBrowserLauncherStarter;
 
     protected IntegrationTestBase()
     {
@@ -37,9 +38,11 @@ public abstract class IntegrationTestBase : IDisposable
         _originalErr = Console.Error;
         _originalIn = Console.In;
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
+        _originalBrowserLauncherStarter = AuditCommand.BrowserLauncherOverride;
 
-        // Prevent tests from launching real terminals
+        // Prevent tests from launching real terminals or browsers
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
+        AuditCommand.BrowserLauncherOverride = new NoOpProcessStarter();
 
         // Set working directory to test dir
         Environment.CurrentDirectory = TestDir;
@@ -54,6 +57,7 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
+        AuditCommand.BrowserLauncherOverride = _originalBrowserLauncherStarter;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))

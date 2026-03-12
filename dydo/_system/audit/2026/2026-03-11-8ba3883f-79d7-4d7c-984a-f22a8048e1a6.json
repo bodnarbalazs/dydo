@@ -854,6 +854,161 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/.worktrees/\u0022 2\u003E/dev/null; echo \u0022---\u0022; ls \u0022C:/Users/User/..."
+    },
+    {
+      "ts": "2026-03-12T13:36:41.9145898Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -l \u0022project-issues-integration\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/202..."
+    },
+    {
+      "ts": "2026-03-12T13:42:03.3833928Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rl \u0022project-issues-integration\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/\u0022 --inclu..."
+    },
+    {
+      "ts": "2026-03-12T13:42:09.5002516Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Jack/state.md\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-12T13:42:09.9705037Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Jack/archive/\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-12T13:42:14.9124985Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Jack/archive/20260311-194642/\u0022 2\u003E/dev/nu..."
+    },
+    {
+      "ts": "2026-03-12T13:42:19.3288743Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Jack/archive/20260311-194642/notes.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T13:42:27.0848764Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11-c2720432-30b0-4653-b..."
+    },
+    {
+      "ts": "2026-03-12T13:42:29.4588178Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in $(grep -l \u0022project-issues-integration\u0022 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_syste..."
+    },
+    {
+      "ts": "2026-03-12T13:43:37.0895231Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -o \u0027\u0022agent\u0022:\u0022[^\u0022]*\u0022\\|\u0022role\u0022:\u0022[^\u0022]*\u0022\\|\u0022task\u0022:\u0022[^\u0022]*\u0022\u0027 \u0022C:/Users/User/Desktop/Projects/DynaDocs/d..."
+    },
+    {
+      "ts": "2026-03-12T13:43:45.5669405Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -o \u0027\u0022agent\u0022: *\u0022[^\u0022]*\u0022\\|\u0022role\u0022: *\u0022[^\u0022]*\u0022\\|\u0022task\u0022: *\u0022[^\u0022]*\u0022\u0027 \u0022C:/Users/User/Desktop/Projects/Dyna..."
+    },
+    {
+      "ts": "2026-03-12T13:43:56.2975663Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-11\u0022*.json \u0022C:/User..."
+    },
+    {
+      "ts": "2026-03-12T13:47:34.2993836Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -o \u0027\u0022event\u0022: *\u0022[^\u0022]*\u0022\\|\u0022path\u0022: *\u0022[^\u0022]*\u0022\u0027 \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/..."
+    },
+    {
+      "ts": "2026-03-12T13:48:42.4751513Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 log --all --oneline --grep=\u0022issue\u0022 2\u003E/dev/null | he..."
+    },
+    {
+      "ts": "2026-03-12T13:49:19.6922844Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 log --all --oneline --diff-filter=A -- \u0022Templates/_..."
+    },
+    {
+      "ts": "2026-03-12T13:49:21.6646601Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 reflog --oneline 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-12T13:49:30.9285768Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/_issues.template.md 2\u003E/dev/null..."
+    },
+    {
+      "ts": "2026-03-12T13:49:39.6687538Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 log --oneline 450a68d..HEAD 2\u003E/dev/null; echo \u0022---\u0022..."
+    },
+    {
+      "ts": "2026-03-12T13:49:45.7954164Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Services/FolderScaffolder.cs 2\u003E/dev/null ..."
+    },
+    {
+      "ts": "2026-03-12T13:49:59.5558127Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Services/TemplateGenerator.cs 2\u003E/dev/null..."
+    },
+    {
+      "ts": "2026-03-12T13:50:16.2856096Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/mode-judge.template.md 2\u003E/dev/n..."
+    },
+    {
+      "ts": "2026-03-12T13:50:17.4230429Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/mode-test-writer.template.md 2\u003E..."
+    },
+    {
+      "ts": "2026-03-12T13:50:24.0197695Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/_project.template.md 2\u003E/dev/nul..."
+    },
+    {
+      "ts": "2026-03-12T13:50:48.3110286Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/mode-code-writer.template.md 2\u003E..."
+    },
+    {
+      "ts": "2026-03-12T13:50:49.7874907Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/mode-reviewer.template.md 2\u003E/de..."
+    },
+    {
+      "ts": "2026-03-12T13:50:51.797975Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show HEAD:Templates/dydo-commands.template.md 2\u003E/de..."
+    },
+    {
+      "ts": "2026-03-12T13:52:57.0806272Z",
+      "event": "Release",
+      "agent": "Dexter"
     }
   ],
   "snapshot": {

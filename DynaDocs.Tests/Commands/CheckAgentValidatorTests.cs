@@ -84,7 +84,7 @@ public class CheckAgentValidatorTests : IDisposable
         var config = CreateConfig("Alice");
         config.Agents.Assignments = new Dictionary<string, List<string>> { ["bob"] = ["Alice"] };
 
-        var ws = Path.Combine(_testDir, "agents", "Alice");
+        var ws = Path.Combine(_testDir, "dydo", "agents", "Alice");
         Directory.CreateDirectory(ws);
         var registry = new FakeAgentRegistryForCAV();
         registry.Workspaces["Alice"] = ws;
@@ -103,7 +103,7 @@ public class CheckAgentValidatorTests : IDisposable
     public void Validate_StaleSession_ReportsWarning()
     {
         var config = CreateConfig("Alice");
-        var ws = Path.Combine(_testDir, "agents", "Alice");
+        var ws = Path.Combine(_testDir, "dydo", "agents", "Alice");
         Directory.CreateDirectory(ws);
         var registry = new FakeAgentRegistryForCAV();
         registry.Workspaces["Alice"] = ws;
@@ -124,7 +124,7 @@ public class CheckAgentValidatorTests : IDisposable
     public void Validate_FreshSession_NoStaleWarning()
     {
         var config = CreateConfig("Alice");
-        var ws = Path.Combine(_testDir, "agents", "Alice");
+        var ws = Path.Combine(_testDir, "dydo", "agents", "Alice");
         Directory.CreateDirectory(ws);
         var registry = new FakeAgentRegistryForCAV();
         registry.Workspaces["Alice"] = ws;
@@ -145,7 +145,7 @@ public class CheckAgentValidatorTests : IDisposable
     public void Validate_OrphanedWorkspace_ReportsWarning()
     {
         var config = CreateConfig("Alice");
-        var agentsDir = Path.Combine(_testDir, "agents");
+        var agentsDir = Path.Combine(_testDir, "dydo", "agents");
         Directory.CreateDirectory(Path.Combine(agentsDir, "Alice"));
         Directory.CreateDirectory(Path.Combine(agentsDir, "Orphan"));
 
@@ -163,7 +163,7 @@ public class CheckAgentValidatorTests : IDisposable
     public void Validate_DotPrefixedFolder_Ignored()
     {
         var config = CreateConfig("Alice");
-        var agentsDir = Path.Combine(_testDir, "agents");
+        var agentsDir = Path.Combine(_testDir, "dydo", "agents");
         Directory.CreateDirectory(Path.Combine(agentsDir, "Alice"));
         Directory.CreateDirectory(Path.Combine(agentsDir, ".hidden"));
 
@@ -188,7 +188,7 @@ public class CheckAgentValidatorTests : IDisposable
         public string? GetHumanFromEnv() => "tester";
         public string? GetProjectRoot(string? startPath = null) => _basePath;
         public string GetDydoRoot(string? startPath = null) => Path.Combine(_basePath, "dydo");
-        public string GetAgentsPath(string? startPath = null) => Path.Combine(_basePath, "agents");
+        public string GetAgentsPath(string? startPath = null) => Path.Combine(_basePath, "dydo", "agents");
         public string GetDocsPath(string? startPath = null) => "";
         public string GetTasksPath(string? startPath = null) => "";
         public string GetAuditPath(string? startPath = null) => "";

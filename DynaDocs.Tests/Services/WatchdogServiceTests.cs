@@ -187,6 +187,114 @@ public class WatchdogServiceTests : IDisposable
         Assert.IsType<bool>(result);
     }
 
+    [Fact]
+    public void ParseStateForWatchdog_ValidState_ReturnsFields()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Adele\nstatus: free\nauto-close: true\n---\n");
+
+        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(statePath);
+
+        Assert.True(autoClose);
+        Assert.True(isFree);
+        Assert.Equal("Adele", agentName);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_WorkingStatus_IsFreeIsFalse()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Bob");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Bob\nstatus: working\nauto-close: false\n---\n");
+
+        var (autoClose, isFree, _) = WatchdogService.ParseStateForWatchdog(statePath);
+
+        Assert.False(autoClose);
+        Assert.False(isFree);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_NoFrontmatter_ReturnsDefaults()
+    {
+        var path = Path.Combine(_testDir, "no-front.md");
+        File.WriteAllText(path, "just plain text");
+
+        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+
+        Assert.False(autoClose);
+        Assert.False(isFree);
+        Assert.Null(agentName);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_UnclosedFrontmatter_ReturnsDefaults()
+    {
+        var path = Path.Combine(_testDir, "unclosed.md");
+        File.WriteAllText(path, "---\nagent: X\nno closing");
+
+        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+
+        Assert.False(autoClose);
+        Assert.False(isFree);
+        Assert.Null(agentName);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_NonexistentFile_ReturnsDefaults()
+    {
+        var path = Path.Combine(_testDir, "does-not-exist.md");
+
+        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+
+        Assert.False(autoClose);
+        Assert.False(isFree);
+        Assert.Null(agentName);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_LinesWithoutColon_Skipped()
+    {
+        var path = Path.Combine(_testDir, "nocolon.md");
+        File.WriteAllText(path, "---\nno-colon-here\nagent: Test\nstatus: free\nauto-close: true\n---\n");
+
+        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+
+        Assert.True(autoClose);
+        Assert.True(isFree);
+        Assert.Equal("Test", agentName);
+    }
+
+    [Fact]
+    public void Stop_NonNumericPidFile_ReturnsFalse()
+    {
+        var pidFile = WatchdogService.GetPidFilePath(_testDir);
+        Directory.CreateDirectory(Path.GetDirectoryName(pidFile)!);
+        File.WriteAllText(pidFile, "not-a-number");
+
+        Assert.False(WatchdogService.Stop(_testDir));
+        Assert.False(File.Exists(pidFile));
+    }
+
+    [Fact]
+    public void ShellProcessNames_ContainsExpectedEntries()
+    {
+        Assert.Contains("powershell", WatchdogService.ShellProcessNames);
+        Assert.Contains("pwsh", WatchdogService.ShellProcessNames);
+        Assert.Contains("bash", WatchdogService.ShellProcessNames);
+        Assert.Contains("cmd", WatchdogService.ShellProcessNames);
+        Assert.DoesNotContain("dotnet", WatchdogService.ShellProcessNames);
+    }
+
+    [Fact]
+    public void ShellProcessNames_IsCaseInsensitive()
+    {
+        Assert.Contains("POWERSHELL", WatchdogService.ShellProcessNames);
+        Assert.Contains("Bash", WatchdogService.ShellProcessNames);
+    }
+
     private void WriteAgentState(string agentName, string status, bool autoClose, string? windowId = null)
     {
         var agentDir = Path.Combine(_testDir, "agents", agentName);

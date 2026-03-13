@@ -1,31 +1,35 @@
 namespace DynaDocs.Services;
 
 using System.Diagnostics;
-using DynaDocs.Models;
 using DynaDocs.Utils;
 
 public static class WatchdogService
 {
+    internal static readonly HashSet<string> ShellProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "powershell", "pwsh", "bash", "sh", "cmd", "zsh"
+    };
+
     public static string GetPidFilePath(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "watchdog.pid");
-
-    private static string GetPidFilePath() =>
-        GetPidFilePath(PathUtils.FindDydoRoot() ?? ".");
 
     /// <summary>
     /// Starts the watchdog if not already running. Called automatically by DispatchCommand
     /// when --auto-close is set. Idempotent: multiple calls are safe.
+    /// Returns true if a new watchdog was started, false if one was already running.
     /// </summary>
-    public static void EnsureRunning()
+    public static bool EnsureRunning() => EnsureRunning(PathUtils.FindDydoRoot() ?? ".");
+
+    public static bool EnsureRunning(string dydoRoot)
     {
-        var pidFile = GetPidFilePath();
+        var pidFile = GetPidFilePath(dydoRoot);
 
         if (File.Exists(pidFile))
         {
             if (int.TryParse(File.ReadAllText(pidFile).Trim(), out var existingPid) &&
                 ProcessUtils.IsProcessRunning(existingPid))
             {
-                return;
+                return false;
             }
             // Stale PID file — process died, clean up and restart
             File.Delete(pidFile);
@@ -33,9 +37,8 @@ public static class WatchdogService
 
         try
         {
-            // Find the dydo executable path
             var dydoPath = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(dydoPath)) return;
+            if (string.IsNullOrEmpty(dydoPath)) return false;
 
             var psi = new ProcessStartInfo(dydoPath, "watchdog run")
             {
@@ -46,36 +49,44 @@ public static class WatchdogService
             };
 
             var proc = Process.Start(psi);
-            if (proc == null) return;
+            if (proc == null) return false;
 
             Directory.CreateDirectory(Path.GetDirectoryName(pidFile)!);
             File.WriteAllText(pidFile, proc.Id.ToString());
+            return true;
         }
         catch
         {
-            // Non-fatal: watchdog is best-effort. Next dispatch will retry.
+            return false;
         }
     }
 
     /// <summary>
     /// Stops the watchdog process.
+    /// Returns true if a running watchdog was stopped, false if none was running.
     /// </summary>
-    public static void Stop()
-    {
-        var pidFile = GetPidFilePath();
-        if (!File.Exists(pidFile)) return;
+    public static bool Stop() => Stop(PathUtils.FindDydoRoot() ?? ".");
 
+    public static bool Stop(string dydoRoot)
+    {
+        var pidFile = GetPidFilePath(dydoRoot);
+        if (!File.Exists(pidFile)) return false;
+
+        var stopped = false;
         try
         {
-            if (int.TryParse(File.ReadAllText(pidFile).Trim(), out var pid))
+            if (int.TryParse(File.ReadAllText(pidFile).Trim(), out var pid) &&
+                ProcessUtils.IsProcessRunning(pid))
             {
                 using var proc = Process.GetProcessById(pid);
                 proc.Kill();
+                stopped = true;
             }
         }
         catch { }
 
         try { File.Delete(pidFile); } catch { }
+        return stopped;
     }
 
     /// <summary>
@@ -115,10 +126,6 @@ public static class WatchdogService
             var (autoClose, isFree, agentName) = ParseStateForWatchdog(statePath);
             if (!autoClose || !isFree || agentName == null) continue;
 
-            // Find and kill only the claude process for this agent, not the shell
-            // wrapper (powershell/bash). The pattern matches both — killing the shell
-            // prevents its post-claude status check from running `exit 0`, so WT
-            // sees a non-zero exit and keeps the tab open.
             var pattern = $"{agentName} --inbox";
             var pids = ProcessUtils.FindProcessesByCommandLine(pattern);
 
@@ -127,8 +134,7 @@ public static class WatchdogService
                 try
                 {
                     using var proc = Process.GetProcessById(pid);
-                    var name = proc.ProcessName.ToLowerInvariant();
-                    if (name is "powershell" or "pwsh" or "bash" or "sh" or "cmd" or "zsh")
+                    if (ShellProcessNames.Contains(proc.ProcessName))
                         continue;
                     proc.Kill();
                 }
@@ -137,10 +143,7 @@ public static class WatchdogService
         }
     }
 
-    /// <summary>
-    /// Lightweight parse of state.md for just the fields the watchdog needs.
-    /// </summary>
-    private static (bool autoClose, bool isFree, string? agentName) ParseStateForWatchdog(string statePath)
+    internal static (bool autoClose, bool isFree, string? agentName) ParseStateForWatchdog(string statePath)
     {
         try
         {

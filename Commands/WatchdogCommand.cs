@@ -12,16 +12,20 @@ public static class WatchdogCommand
         var startCommand = new Command("start", "Start the watchdog (if not already running)");
         startCommand.SetAction(_ =>
         {
-            WatchdogService.EnsureRunning();
-            Console.WriteLine("Watchdog started.");
+            if (WatchdogService.EnsureRunning())
+                Console.WriteLine("Watchdog started.");
+            else
+                Console.WriteLine("Watchdog is already running.");
             return 0;
         });
 
         var stopCommand = new Command("stop", "Stop the watchdog");
         stopCommand.SetAction(_ =>
         {
-            WatchdogService.Stop();
-            Console.WriteLine("Watchdog stopped.");
+            if (WatchdogService.Stop())
+                Console.WriteLine("Watchdog stopped.");
+            else
+                Console.WriteLine("Watchdog is already stopped.");
             return 0;
         });
 

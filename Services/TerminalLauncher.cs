@@ -59,10 +59,14 @@ public class TerminalLauncher
     ];
 
     internal static string WorktreeSetupScript(string worktreeId) =>
-        $"mkdir -p _system/.local/worktrees && git worktree prune && git worktree add _system/.local/worktrees/{worktreeId} -b worktree/{worktreeId} && cd _system/.local/worktrees/{worktreeId} && ";
+        $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees && git worktree prune && " +
+        $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{worktreeId} && " +
+        $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
+        $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && ";
 
     internal static string WorktreeCleanupScript(string worktreeId) =>
-        $"cd ../../../.. && git worktree remove _system/.local/worktrees/{worktreeId} --force";
+        $"rm -f dydo/agents; " +
+        $"cd ../../../../.. && git worktree remove dydo/_system/.local/worktrees/{worktreeId} --force";
 
     internal static string CdPrefix(string? workingDirectory)
     {

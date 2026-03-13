@@ -4,6 +4,7 @@ using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Services;
 
+[Collection("Integration")]
 public class RolesCreateCommandTests : IDisposable
 {
     private readonly string _testDir;

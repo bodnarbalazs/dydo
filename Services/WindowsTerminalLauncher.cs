@@ -19,15 +19,20 @@ public static class WindowsTerminalLauncher
 
         if (worktreeId != null)
         {
-            var wtDir = $"_system/.local/worktrees/{worktreeId}";
+            var wtDir = $"dydo/_system/.local/worktrees/{worktreeId}";
             var branch = $"worktree/{worktreeId}";
             return $"{noExitFlag}-Command \"{windowEnv}$_wt_root = Get-Location; " +
-                   $"New-Item -ItemType Directory -Force -Path _system/.local/worktrees | Out-Null; " +
+                   $"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees | Out-Null; " +
                    $"git worktree prune; " +
                    $"git worktree add {wtDir} -b {branch}; " +
                    $"Set-Location {wtDir}; " +
+                   $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
+                   $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
-                   $"finally {{ Set-Location $_wt_root; git worktree remove {wtDir} --force }}\"";
+                   $"finally {{ Set-Location $_wt_root; " +
+                   $"$jPath = Join-Path '{wtDir}' 'dydo/agents'; " +
+                   $"if (Test-Path $jPath) {{ cmd /c rmdir $jPath; }} " +
+                   $"git worktree remove {wtDir} --force }}\"";
         }
 
         return $"{noExitFlag}-Command \"{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";

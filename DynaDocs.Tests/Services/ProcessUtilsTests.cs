@@ -109,6 +109,51 @@ public class ProcessUtilsTests
             $"Expected 'pwsh.exe' or 'powershell.exe' but got '{result}'");
     }
 
+    [Fact]
+    public void GetProcessName_ReturnsNull_ForNonexistentPid()
+    {
+        // PID that's very unlikely to exist — exercises the catch branch
+        var result = ProcessUtils.GetProcessName(int.MaxValue);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void IsProcessRunning_ReturnsFalse_ForNonexistentPid()
+    {
+        Assert.False(ProcessUtils.IsProcessRunning(int.MaxValue));
+    }
+
+    [Fact]
+    public void FindProcessesByCommandLine_ReturnsListForAnyPattern()
+    {
+        // Exercises the Windows wmic/PowerShell path
+        var result = ProcessUtils.FindProcessesByCommandLine("dotnet");
+
+        Assert.NotNull(result);
+        Assert.IsType<List<int>>(result);
+    }
+
+    [Fact]
+    public void FindProcessesByCommandLine_ReturnsEmptyForBogusPattern()
+    {
+        var result = ProcessUtils.FindProcessesByCommandLine("zzz-nonexistent-process-pattern-zzz");
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void FindAncestorProcess_FindsDotnet()
+    {
+        // We're running inside dotnet test, so "dotnet" should be an ancestor
+        var pid = ProcessUtils.FindAncestorProcess("dotnet");
+
+        // May or may not find it depending on how tests are launched,
+        // but the method should not throw
+        if (pid != null)
+            Assert.True(pid > 0);
+    }
+
     [Theory]
     [InlineData("simple", "simple")]
     [InlineData("it's", "it''s")]

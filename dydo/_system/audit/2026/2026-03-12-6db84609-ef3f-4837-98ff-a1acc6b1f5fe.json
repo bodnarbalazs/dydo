@@ -411,6 +411,212 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "find DynaDocs.Tests/TestResults -name \u0022coverage.cobertura.xml\u0022 -exec ls -la {} \\;"
+    },
+    {
+      "ts": "2026-03-12T14:07:55.0681297Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect FixFileHandler 2\u003E\u00261 | grep -A10 \u0022..."
+    },
+    {
+      "ts": "2026-03-12T14:08:04.2673867Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect GraphDisplayHandler 2\u003E\u00261 | grep -..."
+    },
+    {
+      "ts": "2026-03-12T14:08:38.0363241Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect CheckAgentValidator 2\u003E\u00261 | grep -..."
+    },
+    {
+      "ts": "2026-03-12T14:08:39.7671912Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect \u0022MarkdownParser\\|LinkExtractor\\|F..."
+    },
+    {
+      "ts": "2026-03-12T14:08:49.5053385Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect MarkdownParser 2\u003E\u00261 | grep -A7 \u0022I..."
+    },
+    {
+      "ts": "2026-03-12T14:08:51.1997282Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect LinkExtractor 2\u003E\u00261 | grep -A7 \u0022IN..."
+    },
+    {
+      "ts": "2026-03-12T14:08:52.7331865Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect DocGraph 2\u003E\u00261 | grep -A7 \u0022INSPECT..."
+    },
+    {
+      "ts": "2026-03-12T14:08:54.0782781Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect OrphanDocsRule 2\u003E\u00261 | grep -A7 \u0022I..."
+    },
+    {
+      "ts": "2026-03-12T14:08:55.3674354Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect CheckCommand 2\u003E\u00261 | grep -A7 \u0022INS..."
+    },
+    {
+      "ts": "2026-03-12T14:09:00.7670462Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect FrontmatterExtractor 2\u003E\u00261 | grep ..."
+    },
+    {
+      "ts": "2026-03-12T14:09:02.2864296Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect AnchorExtractor 2\u003E\u00261 | grep -A7 \u0022..."
+    },
+    {
+      "ts": "2026-03-12T14:09:04.1176155Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect DocLinkResolver 2\u003E\u00261 | grep -A7 \u0022..."
+    },
+    {
+      "ts": "2026-03-12T14:09:05.5814556Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect GraphCommand 2\u003E\u00261 | grep -A7 \u0022INS..."
+    },
+    {
+      "ts": "2026-03-12T14:09:06.9730501Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect FixCommand 2\u003E\u00261 | grep -A10 \u0022INSP..."
+    },
+    {
+      "ts": "2026-03-12T14:09:08.2746449Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect FixHubHandler 2\u003E\u00261 | grep -A10 \u0022I..."
+    },
+    {
+      "ts": "2026-03-12T14:09:09.6793113Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect CheckDocValidator 2\u003E\u00261 | grep -A7..."
+    },
+    {
+      "ts": "2026-03-12T14:09:16.9423817Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for rule in FrontmatterRule HubFilesRule NamingRule SummaryRule UncustomizedDocsRule; do python Dyna..."
+    },
+    {
+      "ts": "2026-03-12T14:09:27.2499253Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-12T14:09:29.4597631Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\FixHubHandler.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:09:29.6726038Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\CheckDocValidator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:09:29.8091728Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\CheckAgentValidator.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:10:23.6577214Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-12T14:10:25.7248955Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MarkdownParser.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:10:25.8648934Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\FrontmatterExtractor.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:10:26.2962429Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DocGraph.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:10:26.3258937Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DocLinkResolver.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:11:03.2152554Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-12T14:11:05.0509362Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Rules\\FrontmatterRuleTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:11:05.395725Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Rules\\NamingRuleTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:11:05.5994329Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Rules\\UncustomizedDocsRuleTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:11:05.9046398Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Rules\\HubFilesRule.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:11:05.9280827Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Rules\\SummaryRule.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T14:13:09.742757Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Frank/"
+    },
+    {
+      "ts": "2026-03-12T14:13:41.5540978Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\review-t1-doc-validation.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-12T14:33:58.139593Z",
+      "event": "Release",
+      "agent": "Frank"
     }
   ],
   "snapshot": {

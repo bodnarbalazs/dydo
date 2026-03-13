@@ -85,6 +85,19 @@ public class AgentManagementTests : IntegrationTestBase
         result.AssertStdoutContains("Agent created");
     }
 
+    [Fact]
+    public async Task New_SingleCharName_Succeeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await JoinProjectAsync("none", "alice", 0);
+
+        var result = await AgentNewAsync("Z", "alice");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Agent created");
+        result.AssertStdoutContains("Z");
+    }
+
     #endregion
 
     #region Agent Rename

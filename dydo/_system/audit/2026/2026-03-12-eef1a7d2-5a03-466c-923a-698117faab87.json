@@ -1,0 +1,59 @@
+{
+  "session": "eef1a7d2-5a03-466c-923a-698117faab87",
+  "human": "balazs",
+  "started": "2026-03-12T12:24:15.8611407Z",
+  "git_head": "4063be0",
+  "events": [
+    {
+      "ts": "2026-03-12T12:24:15.8606204Z",
+      "event": "Blocked",
+      "tool": "agent",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-12T12:24:18.3867222Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-12T12:24:23.5493116Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/"
+    },
+    {
+      "ts": "2026-03-12T12:24:24.4640559Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "glob",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-12T12:24:24.9895913Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-12T12:24:32.6321903Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls C:/Users/User/Desktop/Projects/DynaDocs/*.csproj C:/Users/User/Desktop/Projects/DynaDocs/*/*.cspr..."
+    },
+    {
+      "ts": "2026-03-12T12:24:33.2150334Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/ 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-12T12:24:35.8192644Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\DynaDocs.Tests.csproj",
+      "tool": "read",
+      "reason": "No agent identity"
+    }
+  ]
+}

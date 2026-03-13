@@ -19,5 +19,5 @@ Index of decisions documentation.
 - [006 — Drop Interviewer Role (Absorbed by Co-Thinker)](./006-drop-interviewer-role.md) - Remove the interviewer role since the co-thinker already covers all its responsibilities plus deeper exploration.
 - [007 — Oversight Roles: Orchestrator, Inquisitor, Judge](./007-oversight-roles.md) - Three new roles that enable swarm coordination, adversarial QA, and dispute resolution.
 - [008 — Data-Driven Role Definitions](./008-data-driven-roles.md) - Replace hardcoded role permissions and constraints with JSON role definition files.
-- [008 — Terminal Dispatch Routing and Auto-Close Watchdog](./008-terminal-dispatch-routing-and-autoclose.md) - GUID-based window routing for correct tab placement, and a global stateless watchdog for auto-closing released agent tabs.
+- [008 — Terminal Dispatch Routing and Auto-Close Watchdog](./008-terminal-dispatch-routing-and-autoclose.md) - Two-tier window routing (MRU for linear workflows, GUID for parallel slices), and a global stateless watchdog for auto-closing released agent tabs.
 - [009 — CRAP Uses Per-Method Cyclomatic Complexity](./009-crap-per-method-metric.md) - CRAP (Change Risk Anti-Patterns) is a per-method metric.

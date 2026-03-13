@@ -16,40 +16,49 @@ public static class ShellCompletionInstaller
             if (shell == null || profilePath == null)
                 return null;
 
-            // Check for marker (idempotent)
-            if (File.Exists(profilePath))
-            {
-                var content = File.ReadAllText(profilePath);
-                if (content.Contains(Marker))
-                    return null;
-            }
-
-            // Ensure directory exists
-            var dir = Path.GetDirectoryName(profilePath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            var sourcingLine = shell switch
-            {
-                "bash" => "eval \"$(dydo completions bash)\"",
-                "zsh" => "eval \"$(dydo completions zsh)\"",
-                "powershell" => "dydo completions powershell | Invoke-Expression",
-                _ => null
-            };
-
-            if (sourcingLine == null)
-                return null;
-
-            var block = $"\n{Marker}\n{sourcingLine}\n";
-            File.AppendAllText(profilePath, block);
-
-            return $"Shell completions installed ({shell} → {Path.GetFileName(profilePath)})";
+            return InstallToProfile(shell, profilePath);
         }
         catch
         {
             // Best-effort: never fail init
             return null;
         }
+    }
+
+    /// <summary>
+    /// Writes completion block to the given profile path if not already present.
+    /// Extracted for testability — Install() calls this after detecting the shell.
+    /// </summary>
+    public static string? InstallToProfile(string shell, string profilePath)
+    {
+        // Check for marker (idempotent)
+        if (File.Exists(profilePath))
+        {
+            var content = File.ReadAllText(profilePath);
+            if (content.Contains(Marker))
+                return null;
+        }
+
+        // Ensure directory exists
+        var dir = Path.GetDirectoryName(profilePath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        var sourcingLine = shell switch
+        {
+            "bash" => "eval \"$(dydo completions bash)\"",
+            "zsh" => "eval \"$(dydo completions zsh)\"",
+            "powershell" => "dydo completions powershell | Invoke-Expression",
+            _ => null
+        };
+
+        if (sourcingLine == null)
+            return null;
+
+        var block = $"\n{Marker}\n{sourcingLine}\n";
+        File.AppendAllText(profilePath, block);
+
+        return $"Shell completions installed ({shell} → {Path.GetFileName(profilePath)})";
     }
 
     public static (string? Shell, string? ProfilePath) DetectShell()

@@ -1,0 +1,104 @@
+namespace DynaDocs.Services;
+
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+public static partial class ProcessUtils
+{
+    /// <summary>
+    /// Gets the parent process ID for a given PID.
+    /// Uses .NET's Process class on Windows; parses /proc on Linux; ps on macOS.
+    /// </summary>
+    public static int? GetParentPid(int pid)
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return GetParentPidWindows(pid);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return GetParentPidLinux(pid);
+            return GetParentPidMac(pid);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Walks up the process tree from the current process, returning the first ancestor
+    /// whose process name contains the given string (case-insensitive).
+    /// </summary>
+    public static int? FindAncestorProcess(string nameContains, int maxDepth = 10)
+    {
+        var pid = Environment.ProcessId;
+
+        for (var i = 0; i < maxDepth; i++)
+        {
+            var parentPid = GetParentPid(pid);
+            if (parentPid == null || parentPid <= 1) return null;
+
+            var name = GetProcessName(parentPid.Value);
+            if (name != null && name.Contains(nameContains, StringComparison.OrdinalIgnoreCase))
+                return parentPid.Value;
+
+            pid = parentPid.Value;
+        }
+
+        return null;
+    }
+
+    private static int? GetParentPidWindows(int pid)
+    {
+        using var process = Process.GetProcessById(pid);
+        var pbi = new PROCESS_BASIC_INFORMATION();
+        int status = NtQueryInformationProcess(
+            process.Handle, 0, ref pbi,
+            Marshal.SizeOf<PROCESS_BASIC_INFORMATION>(), out _);
+        return status == 0 ? (int)pbi.InheritedFromUniqueProcessId : null;
+    }
+
+    private static int? GetParentPidLinux(int pid)
+    {
+        var statusPath = $"/proc/{pid}/status";
+        if (!File.Exists(statusPath)) return null;
+        foreach (var line in File.ReadLines(statusPath))
+        {
+            if (line.StartsWith("PPid:") && int.TryParse(line[5..].Trim(), out var ppid))
+                return ppid;
+        }
+        return null;
+    }
+
+    private static int? GetParentPidMac(int pid)
+    {
+        var psi = new ProcessStartInfo("ps", $"-o ppid= -p {pid}")
+        {
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var proc = Process.Start(psi);
+        if (proc == null) return null;
+        var output = proc.StandardOutput.ReadToEnd().Trim();
+        proc.WaitForExit();
+        return int.TryParse(output, out var result) ? result : null;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_BASIC_INFORMATION
+    {
+        public nint ExitStatus;
+        public nint PebBaseAddress;
+        public nint AffinityMask;
+        public nint BasePriority;
+        public nint UniqueProcessId;
+        public nint InheritedFromUniqueProcessId;
+    }
+
+    [DllImport("ntdll.dll")]
+    private static extern int NtQueryInformationProcess(
+        nint processHandle, int processInformationClass,
+        ref PROCESS_BASIC_INFORMATION processInformation,
+        int processInformationLength, out int returnLength);
+}

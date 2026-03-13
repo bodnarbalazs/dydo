@@ -8,10 +8,12 @@ using DynaDocs.Services;
 /// </summary>
 internal static class CheckAgentValidator
 {
-    public static List<string> Validate(DydoConfig config, IConfigService configService)
+    public static List<string> Validate(DydoConfig config, IConfigService configService) =>
+        Validate(config, configService, new AgentRegistry());
+
+    internal static List<string> Validate(DydoConfig config, IConfigService configService, IAgentRegistry registry)
     {
         var warnings = new List<string>();
-        var registry = new AgentRegistry();
         var agentsPath = configService.GetAgentsPath();
 
         ValidatePoolAgents(config, registry, warnings);
@@ -20,7 +22,7 @@ internal static class CheckAgentValidator
         return warnings;
     }
 
-    private static void ValidatePoolAgents(DydoConfig config, AgentRegistry registry, List<string> warnings)
+    private static void ValidatePoolAgents(DydoConfig config, IAgentRegistry registry, List<string> warnings)
     {
         foreach (var agentName in config.Agents.Pool)
         {

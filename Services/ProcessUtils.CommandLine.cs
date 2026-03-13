@@ -47,7 +47,7 @@ public static partial class ProcessUtils
         return ParseWmicCsvOutput(output);
     }
 
-    private static List<int> ParseWmicCsvOutput(string output)
+    internal static List<int> ParseWmicCsvOutput(string output)
     {
         var pids = new List<int>();
         foreach (var line in output.Split('\n'))

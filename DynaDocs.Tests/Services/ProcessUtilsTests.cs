@@ -165,4 +165,51 @@ public class ProcessUtilsTests
     {
         Assert.Equal(expected, ProcessUtils.EscapeForPowerShellLike(input));
     }
+
+    [Fact]
+    public void ParseWmicCsvOutput_ValidCsv_ExtractsPids()
+    {
+        var csv = "Node,ProcessId\nMACHINE,1234\nMACHINE,5678\n";
+        var pids = ProcessUtils.ParseWmicCsvOutput(csv);
+
+        Assert.Equal(2, pids.Count);
+        Assert.Contains(1234, pids);
+        Assert.Contains(5678, pids);
+    }
+
+    [Fact]
+    public void ParseWmicCsvOutput_EmptyOutput_ReturnsEmpty()
+    {
+        Assert.Empty(ProcessUtils.ParseWmicCsvOutput(""));
+    }
+
+    [Fact]
+    public void ParseWmicCsvOutput_BlankLines_Skipped()
+    {
+        var csv = "\n\nMACHINE,42\n\n";
+        var pids = ProcessUtils.ParseWmicCsvOutput(csv);
+
+        Assert.Single(pids);
+        Assert.Equal(42, pids[0]);
+    }
+
+    [Fact]
+    public void ParseWmicCsvOutput_InvalidPid_Skipped()
+    {
+        var csv = "Node,ProcessId\nMACHINE,notanumber\nMACHINE,100\n";
+        var pids = ProcessUtils.ParseWmicCsvOutput(csv);
+
+        Assert.Single(pids);
+        Assert.Equal(100, pids[0]);
+    }
+
+    [Fact]
+    public void ParseWmicCsvOutput_ZeroPid_Skipped()
+    {
+        var csv = "Node,ProcessId\nMACHINE,0\nMACHINE,99\n";
+        var pids = ProcessUtils.ParseWmicCsvOutput(csv);
+
+        Assert.Single(pids);
+        Assert.Equal(99, pids[0]);
+    }
 }

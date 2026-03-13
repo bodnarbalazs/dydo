@@ -14,7 +14,7 @@ public static class MacTerminalLauncher
         if (worktreeId != null)
         {
             wtSetup = TerminalLauncher.WorktreeSetupScript(worktreeId);
-            wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId);
+            wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
         }
 
         var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
@@ -33,7 +33,7 @@ public static class MacTerminalLauncher
         if (worktreeId != null)
         {
             wtSetup = TerminalLauncher.WorktreeSetupScript(worktreeId);
-            wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId);
+            wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
         }
 
         var shellCommand = $"{cdPrefix}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";

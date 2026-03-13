@@ -29,10 +29,7 @@ public static class WindowsTerminalLauncher
                    $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
-                   $"finally {{ Set-Location $_wt_root; " +
-                   $"$jPath = Join-Path '{wtDir}' 'dydo/agents'; " +
-                   $"if (Test-Path $jPath) {{ cmd /c rmdir $jPath; }} " +
-                   $"git worktree remove {wtDir} --force }}\"";
+                   $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
         return $"{noExitFlag}-Command \"{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";

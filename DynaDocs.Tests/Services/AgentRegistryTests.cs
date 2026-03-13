@@ -1974,4 +1974,248 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region Worktree Helpers
+
+    [Fact]
+    public void GetWorktreeId_ReturnsId_WhenMarkerExists()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), "Adele-20260313120000\n");
+
+        Assert.Equal("Adele-20260313120000", _registry.GetWorktreeId("Adele"));
+    }
+
+    [Fact]
+    public void GetWorktreeId_ReturnsNull_WhenNoMarker()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        Assert.Null(_registry.GetWorktreeId("Adele"));
+    }
+
+    [Fact]
+    public void IsWorktreeStale_ReturnsTrue_WhenDirectoryMissing()
+    {
+        Assert.True(_registry.IsWorktreeStale("nonexistent-id"));
+    }
+
+    [Fact]
+    public void IsWorktreeStale_ReturnsFalse_WhenDirectoryExists()
+    {
+        var wtDir = Path.Combine(_testDir, "_system", ".local", "worktrees", "test-wt-id");
+        Directory.CreateDirectory(wtDir);
+
+        Assert.False(_registry.IsWorktreeStale("test-wt-id"));
+    }
+
+    [Theory]
+    [InlineData("Frank-20260313124733", "Frank-0313")]
+    [InlineData("Adele-20260101000000", "Adele-0101")]
+    [InlineData("Grace-20261231235959", "Grace-1231")]
+    public void TruncateWorktreeId_ExtractsMonthDay(string input, string expected)
+    {
+        Assert.Equal(expected, AgentRegistry.TruncateWorktreeId(input));
+    }
+
+    [Theory]
+    [InlineData("short")]
+    [InlineData("no-dash")]
+    [InlineData("x-123")]
+    public void TruncateWorktreeId_ReturnsOriginal_WhenCannotParse(string input)
+    {
+        Assert.Equal(input, AgentRegistry.TruncateWorktreeId(input));
+    }
+
+    #endregion
+
+    #region Claim Auto Nudge Tests
+
+    private void CreateDispatchedState(string agentName, string human = "testuser")
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: {{agentName}}
+            status: dispatched
+            assigned: {{human}}
+            started: {{DateTime.UtcNow:o}}
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            task-role-history: {}
+            ---
+            # {{agentName}} — Session State
+            """);
+    }
+
+    [Fact]
+    public void ClaimAuto_WithDispatchedAgent_FailsOnFirstAttempt()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+            CreateDispatchedState("Adele");
+            CreateInboxItem("Adele", "my-task", "code-writer");
+
+            var registry = new AgentRegistry(_testDir);
+            registry.StoreSessionContext("test-session-cn1");
+
+            var result = registry.ClaimAuto(out _, out var error);
+
+            Assert.False(result);
+            Assert.Contains("dispatched agents waiting", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_WithDispatchedAgent_SucceedsOnRetry()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+            CreateDispatchedState("Adele");
+            CreateInboxItem("Adele", "my-task", "code-writer");
+
+            var registry = new AgentRegistry(_testDir);
+            registry.StoreSessionContext("test-session-cn2");
+            registry.StorePendingSessionId("Brian", "test-session-cn2");
+
+            // First call fails with nudge
+            registry.ClaimAuto(out _, out _);
+
+            // Second call succeeds
+            var result = registry.ClaimAuto(out var claimed, out var error);
+
+            Assert.True(result, $"ClaimAuto should succeed on retry: {error}");
+            Assert.Equal("Brian", claimed);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_WithNoDispatchedAgents_SucceedsWithoutNudge()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+            var registry = new AgentRegistry(_testDir);
+            registry.StoreSessionContext("test-session-cn3");
+            registry.StorePendingSessionId("Adele", "test-session-cn3");
+
+            var result = registry.ClaimAuto(out var claimed, out var error);
+
+            Assert.True(result, $"ClaimAuto should succeed without dispatched agents: {error}");
+            Assert.Equal("Adele", claimed);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_WithMultipleDispatchedAgents_StillNudges()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian", "Charlie" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele", "Brian", "Charlie" } });
+            CreateDispatchedState("Adele");
+            CreateInboxItem("Adele", "task-a", "code-writer");
+            CreateDispatchedState("Brian");
+            CreateInboxItem("Brian", "task-b", "reviewer");
+
+            var registry = new AgentRegistry(_testDir);
+            registry.StoreSessionContext("test-session-cn4");
+
+            var result = registry.ClaimAuto(out _, out var error);
+
+            Assert.False(result);
+            Assert.Contains("dispatched agents waiting", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_NudgeMarkerCleanedOnClaimByName()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+            CreateDispatchedState("Adele");
+            CreateInboxItem("Adele", "my-task", "code-writer");
+
+            var registry = new AgentRegistry(_testDir);
+            registry.StoreSessionContext("test-session-cn5");
+            registry.StorePendingSessionId("Adele", "test-session-cn5");
+
+            // Trigger nudge
+            registry.ClaimAuto(out _, out _);
+
+            var agentsPath = Path.Combine(_testDir, "dydo", "agents");
+            var markerPath = Path.Combine(agentsPath, ".claim-nudge-test-session-cn5");
+            Assert.True(File.Exists(markerPath), "Marker should exist after nudge");
+
+            // Claim by name — marker should be cleaned
+            var result = registry.ClaimAgent("Adele", out var error);
+
+            Assert.True(result, $"ClaimAgent should succeed: {error}");
+            Assert.False(File.Exists(markerPath), "Marker should be deleted after claim by name");
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_DispatchedAgentWithNoInbox_NoNudge()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+            CreateDispatchedState("Adele");
+            // No inbox item for Adele
+
+            var registry = new AgentRegistry(_testDir);
+            registry.StoreSessionContext("test-session-cn6");
+            registry.StorePendingSessionId("Brian", "test-session-cn6");
+
+            var result = registry.ClaimAuto(out var claimed, out var error);
+
+            Assert.True(result, $"ClaimAuto should succeed when dispatched agent has no inbox: {error}");
+            Assert.Equal("Brian", claimed);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_NoSessionContext_NoNudge()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+            CreateDispatchedState("Adele");
+            CreateInboxItem("Adele", "my-task", "code-writer");
+
+            var registry = new AgentRegistry(_testDir);
+            // No StoreSessionContext — no session ID available
+            registry.StorePendingSessionId("Brian", "fallback-session");
+
+            var result = registry.ClaimAuto(out var claimed, out var error);
+
+            Assert.True(result, $"ClaimAuto should succeed without session context: {error}");
+            Assert.Equal("Brian", claimed);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    #endregion
 }

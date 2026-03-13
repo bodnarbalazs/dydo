@@ -1,5 +1,6 @@
 namespace DynaDocs.Services;
 
+using System.Diagnostics;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -86,11 +87,37 @@ public static class DispatchService
         PrintDispatchSummary(targetAgentName, role, task, itemPath, escalate);
 
         var effectiveAutoClose = autoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
-        var worktreeId = SetupWorktree(registry, targetAgentName, worktree);
+
+        string? worktreeId;
+        string? workingDirOverride = null;
+        var senderWorktreeId = GetSenderWorktreeId(registry, senderName);
+        var needsMerge = HasNeedsMergeMarker(registry, senderName);
+
+        if (senderWorktreeId != null && !needsMerge)
+        {
+            if (worktree)
+                Console.WriteLine("  Warning: --worktree ignored — inheriting parent's worktree instead.");
+
+            InheritWorktree(registry, targetAgentName, senderName, senderWorktreeId);
+            workingDirOverride = GetWorktreePath(registry, senderName);
+            worktreeId = null; // Don't generate setup/cleanup scripts
+        }
+        else if (senderWorktreeId != null && needsMerge)
+        {
+            // Merge dispatch — child launches in main repo to do the merge
+            CopyWorktreeMetadataForMerger(registry, targetAgentName, senderName, senderWorktreeId);
+            ClearNeedsMerge(registry, senderName);
+            worktreeId = null;
+        }
+        else
+        {
+            worktreeId = SetupWorktree(registry, targetAgentName, worktree);
+        }
+
         var (windowName, launchInTab) = ConfigureWindowSettings(registry, useTab, useNewWindow);
 
         registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
-        LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose, worktreeId, windowName);
+        LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride);
 
         if (effectiveAutoClose)
             WatchdogService.EnsureRunning();
@@ -156,9 +183,97 @@ public static class DispatchService
             return null;
 
         var worktreeId = TerminalLauncher.GenerateWorktreeId(targetAgentName);
-        var worktreeMarker = Path.Combine(registry.GetAgentWorkspace(targetAgentName), ".worktree");
-        File.WriteAllText(worktreeMarker, worktreeId);
+        var workspace = registry.GetAgentWorkspace(targetAgentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
+
+        var projectRoot = PathUtils.FindProjectRoot()!;
+        var worktreePath = Path.GetFullPath(Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees", worktreeId));
+        File.WriteAllText(Path.Combine(workspace, ".worktree-path"), worktreePath);
+
+        var baseBranch = GetCurrentGitBranch() ?? "master";
+        File.WriteAllText(Path.Combine(workspace, ".worktree-base"), baseBranch);
+
         return worktreeId;
+    }
+
+    internal static string? GetCurrentGitBranch()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "rev-parse --abbrev-ref HEAD",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            var process = Process.Start(psi);
+            if (process == null) return null;
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+            return process.ExitCode == 0 && !string.IsNullOrEmpty(output) ? output : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? GetSenderWorktreeId(AgentRegistry registry, string senderName)
+    {
+        var marker = Path.Combine(registry.GetAgentWorkspace(senderName), ".worktree");
+        if (!File.Exists(marker)) return null;
+        return File.ReadAllText(marker).Trim();
+    }
+
+    private static string? GetWorktreePath(AgentRegistry registry, string agentName)
+    {
+        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".worktree-path");
+        if (!File.Exists(marker)) return null;
+        return File.ReadAllText(marker).Trim();
+    }
+
+    private static void InheritWorktree(AgentRegistry registry, string targetAgentName, string senderName, string worktreeId)
+    {
+        var senderWorkspace = registry.GetAgentWorkspace(senderName);
+        var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
+        Directory.CreateDirectory(targetWorkspace);
+        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree"), worktreeId);
+
+        foreach (var marker in new[] { ".worktree-path", ".worktree-base" })
+        {
+            var src = Path.Combine(senderWorkspace, marker);
+            if (File.Exists(src))
+                File.Copy(src, Path.Combine(targetWorkspace, marker), overwrite: true);
+        }
+    }
+
+    private static bool HasNeedsMergeMarker(AgentRegistry registry, string agentName)
+    {
+        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".needs-merge");
+        return File.Exists(marker);
+    }
+
+    private static void CopyWorktreeMetadataForMerger(AgentRegistry registry, string targetAgentName, string senderName, string senderWorktreeId)
+    {
+        var senderWorkspace = registry.GetAgentWorkspace(senderName);
+        var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
+        Directory.CreateDirectory(targetWorkspace);
+
+        var baseSrc = Path.Combine(senderWorkspace, ".worktree-base");
+        if (File.Exists(baseSrc))
+            File.Copy(baseSrc, Path.Combine(targetWorkspace, ".worktree-base"), overwrite: true);
+
+        File.WriteAllText(Path.Combine(targetWorkspace, ".merge-source"), $"worktree/{senderWorktreeId}");
+    }
+
+    private static void ClearNeedsMerge(AgentRegistry registry, string agentName)
+    {
+        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".needs-merge");
+        if (File.Exists(marker))
+            File.Delete(marker);
     }
 
     private static (string? windowName, bool launchInTab) ConfigureWindowSettings(AgentRegistry registry, bool useTab, bool useNewWindow)
@@ -177,12 +292,12 @@ public static class DispatchService
     }
 
     private static void LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
-        bool effectiveAutoClose, string? worktreeId, string? windowName)
+        bool effectiveAutoClose, string? worktreeId, string? windowName, string? workingDirOverride = null)
     {
         if (noLaunch)
             return;
 
-        var projectRoot = PathUtils.FindProjectRoot();
+        var projectRoot = workingDirOverride ?? PathUtils.FindProjectRoot();
         TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName);
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
     }

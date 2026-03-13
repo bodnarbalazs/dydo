@@ -120,6 +120,20 @@ public static class ReviewCommand
             Console.WriteLine($"Review PASSED for {taskName}");
             Console.WriteLine("Task now awaits human approval");
             Console.WriteLine("Human can run: dydo task approve " + taskName);
+
+            // If reviewer is in a worktree, require merge dispatch before release
+            if (agent != null)
+            {
+                var workspace = registry.GetAgentWorkspace(agent.Name);
+                var worktreeMarker = Path.Combine(workspace, ".worktree");
+                if (File.Exists(worktreeMarker))
+                {
+                    File.WriteAllText(Path.Combine(workspace, ".needs-merge"), taskName);
+                    Console.WriteLine();
+                    Console.WriteLine("Worktree branch needs merging. Dispatch a code-writer to merge before releasing:");
+                    Console.WriteLine($"  dydo dispatch --no-wait --auto-close --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
+                }
+            }
         }
         else
         {

@@ -58,6 +58,25 @@ public partial class AgentRegistry : IAgentRegistry
     public string GetAgentWorkspace(string agentName) =>
         Path.Combine(WorkspacePath, agentName);
 
+    public string? GetWorktreeId(string agentName)
+    {
+        var marker = Path.Combine(GetAgentWorkspace(agentName), ".worktree");
+        return File.Exists(marker) ? File.ReadAllText(marker).Trim() : null;
+    }
+
+    public bool IsWorktreeStale(string worktreeId) =>
+        !Directory.Exists(Path.Combine(_basePath, "_system", ".local", "worktrees", worktreeId));
+
+    public static string TruncateWorktreeId(string worktreeId)
+    {
+        // Format: AgentName-yyyyMMddHHmmss → AgentName-MMDD
+        var dashIdx = worktreeId.LastIndexOf('-');
+        if (dashIdx < 0 || worktreeId.Length - dashIdx - 1 < 8)
+            return worktreeId;
+        var timestamp = worktreeId[(dashIdx + 1)..];
+        return worktreeId[..dashIdx] + "-" + timestamp[4..8];
+    }
+
     public bool HasPendingInbox(string agentName)
     {
         var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
@@ -261,6 +280,14 @@ public partial class AgentRegistry : IAgentRegistry
             // Write agent hint for fast GetCurrentAgent lookups
             try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
 
+            // Clean up claim nudge marker if this session was nudged
+            try
+            {
+                var nudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
+                if (File.Exists(nudgePath)) File.Delete(nudgePath);
+            }
+            catch { }
+
             return true;
         }
         finally
@@ -279,6 +306,33 @@ public partial class AgentRegistry : IAgentRegistry
         {
             error = "DYDO_HUMAN environment variable not set.\nSet it to identify which human is operating this terminal:\n  export DYDO_HUMAN=your_name";
             return false;
+        }
+
+        // Nudge: dispatched agents with inbox items suggest this terminal was launched
+        // for a specific agent — the agent should claim by name, not auto.
+        var sessionId = GetSessionContext();
+        if (!string.IsNullOrEmpty(sessionId))
+        {
+            var humanAgents = GetAgentsForHuman(human);
+            var hasDispatchedWithInbox = GetAllAgentStates()
+                .Any(a => a.Status == AgentStatus.Dispatched
+                    && humanAgents.Contains(a.Name, StringComparer.OrdinalIgnoreCase)
+                    && HasPendingInbox(a.Name));
+
+            if (hasDispatchedWithInbox)
+            {
+                var markerPath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
+                if (!File.Exists(markerPath))
+                {
+                    File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+                    error = "There are dispatched agents waiting to be claimed. " +
+                            "Check your prompt for your agent name — " +
+                            "'dydo agent claim auto' is probably not meant for you. " +
+                            "If you intentionally want auto-assignment, run the command again.";
+                    return false;
+                }
+                File.Delete(markerPath);
+            }
         }
 
         // Get free agents for this human
@@ -363,6 +417,17 @@ public partial class AgentRegistry : IAgentRegistry
                 return false;
             }
 
+            // Check for pending worktree merge
+            var needsMergePath = Path.Combine(workspace, ".needs-merge");
+            if (File.Exists(needsMergePath))
+            {
+                var mergeTask = File.ReadAllText(needsMergePath).Trim();
+                error = $"Cannot release: review passed in worktree but merge not dispatched.\n" +
+                        $"Dispatch a code-writer to merge the worktree branch:\n" +
+                        $"  dydo dispatch --no-wait --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch\"";
+                return false;
+            }
+
             var sessionPath = Path.Combine(workspace, ".session");
 
             if (File.Exists(sessionPath))
@@ -410,6 +475,13 @@ public partial class AgentRegistry : IAgentRegistry
             // Clean up no-launch nudge markers
             foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
                 File.Delete(marker);
+
+            // Clean up claim nudge marker for this session
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                var claimNudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
+                try { if (File.Exists(claimNudgePath)) File.Delete(claimNudgePath); } catch { }
+            }
 
             return true;
         }

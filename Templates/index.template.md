@@ -39,3 +39,7 @@ discarded.
 If a guardrail blocks your work, first re-read the relevant docs and usage — most issues stem from not using the
 system correctly.
 If you're still blocked after that, report the issue to the user. Never work around it.
+
+The system is built to enable many agents to work in harmony toward a common goal.
+Adherence to the rules and the workflow is essential for it to work well.
+Don't be that one agent who ruins the party for everyone.

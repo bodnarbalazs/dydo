@@ -16,5 +16,3 @@ Index of changelog documentation.
 ## Subfolders
 
 - [2026](./2026/_index.md)
-- [2026](./2026/_index.md)
-- [2026](./2026/_index.md)

@@ -1254,10 +1254,10 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_ContainsWorktreeRemove()
+    public void GetWindowsArguments_Worktree_CleanupCallsDydoCommand()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree remove dydo/_system/.local/worktrees/{TestWorktreeId} --force", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
     [Fact]
@@ -1287,7 +1287,7 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true, worktreeId: TestWorktreeId);
         Assert.Contains("git worktree add", args);
-        Assert.Contains("git worktree remove", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
         Assert.DoesNotContain("-NoExit", args);
     }
@@ -1316,10 +1316,10 @@ public class TerminalLauncherTests
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
     [InlineData("alacritty")]
-    public void GetLinuxArguments_Worktree_ContainsWorktreeRemove(string terminal)
+    public void GetLinuxArguments_Worktree_ContainsCleanupCommand(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree remove dydo/_system/.local/worktrees/{TestWorktreeId} --force", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
     [Theory]
@@ -1334,10 +1334,10 @@ public class TerminalLauncherTests
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
-    public void GetLinuxArguments_Worktree_CdBackToRoot(string terminal)
+    public void GetLinuxArguments_Worktree_CleanupCallsDydoCommand(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("cd ../../../../..", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
     [Theory]
@@ -1347,10 +1347,10 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", autoClose: true, worktreeId: TestWorktreeId);
         Assert.Contains("git worktree add", args);
-        Assert.Contains("git worktree remove", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
-        // Cleanup before status check: remove appears before dydo agent status
-        Assert.True(args.IndexOf("git worktree remove") < args.IndexOf("dydo agent status"));
+        // Cleanup before status check
+        Assert.True(args.IndexOf("dydo worktree cleanup") < args.IndexOf("dydo agent status"));
     }
 
     [Theory]
@@ -1371,10 +1371,10 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetMacArguments_Worktree_ContainsWorktreeRemove()
+    public void GetMacArguments_Worktree_ContainsCleanupCommand()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree remove dydo/_system/.local/worktrees/{TestWorktreeId} --force", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
     [Fact]
@@ -1382,9 +1382,9 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetMacArguments("Adele", autoClose: true, worktreeId: TestWorktreeId);
         Assert.Contains("git worktree add", args);
-        Assert.Contains("git worktree remove", args);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
-        Assert.True(args.IndexOf("git worktree remove") < args.IndexOf("dydo agent status"));
+        Assert.True(args.IndexOf("dydo worktree cleanup") < args.IndexOf("dydo agent status"));
     }
 
     [Fact]
@@ -1462,7 +1462,7 @@ public class TerminalLauncherTests
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("git worktree add", script);
-        Assert.Contains("git worktree remove", script);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", script);
     }
 
     [Fact]
@@ -1477,7 +1477,7 @@ public class TerminalLauncherTests
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("git worktree add", script);
-        Assert.Contains("git worktree remove", script);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", script);
     }
 
     [Fact]
@@ -1489,7 +1489,7 @@ public class TerminalLauncherTests
         launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", worktreeId: TestWorktreeId);
 
         Assert.Contains("git worktree add", recorder.Started[0].Arguments);
-        Assert.Contains("git worktree remove", recorder.Started[0].Arguments);
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", recorder.Started[0].Arguments);
     }
 
     #endregion
@@ -1505,19 +1505,10 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void WorktreeCleanupScript_PathsUnderDydo()
+    public void WorktreeCleanupScript_CallsDydoWorktreeCleanup()
     {
-        var script = TerminalLauncher.WorktreeCleanupScript(TestWorktreeId);
-        Assert.Contains("dydo/_system/.local/worktrees", script);
-        Assert.DoesNotContain("git worktree remove _system/", script);
-    }
-
-    [Fact]
-    public void WorktreeCleanupScript_CdBackFiveLevels()
-    {
-        // dydo/_system/.local/worktrees/{id} = 5 levels deep from project root
-        var script = TerminalLauncher.WorktreeCleanupScript(TestWorktreeId);
-        Assert.Contains("cd ../../../../..", script);
+        var script = TerminalLauncher.WorktreeCleanupScript(TestWorktreeId, "Adele");
+        Assert.Equal($"dydo worktree cleanup {TestWorktreeId} --agent Adele", script);
     }
 
     [Fact]
@@ -1566,13 +1557,14 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_CleansUpJunctionBeforeRemove()
+    public void GetWindowsArguments_Worktree_FinallyCallsCleanupCommand()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        var rmdirIdx = args.IndexOf("cmd /c rmdir $jPath");
-        var wtRemoveIdx = args.IndexOf("git worktree remove");
-        Assert.True(rmdirIdx >= 0, "Expected 'cmd /c rmdir $jPath' in args");
-        Assert.True(rmdirIdx < wtRemoveIdx, "Junction removal must precede worktree removal");
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
+        // Cleanup is in the finally block
+        var finallyIdx = args.IndexOf("finally {");
+        var cleanupIdx = args.IndexOf("dydo worktree cleanup");
+        Assert.True(finallyIdx >= 0 && cleanupIdx > finallyIdx);
     }
 
     [Fact]
@@ -1619,13 +1611,10 @@ public class TerminalLauncherTests
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
     [InlineData("alacritty")]
-    public void GetLinuxArguments_Worktree_CleansUpSymlinkBeforeRemove(string terminal)
+    public void GetLinuxArguments_Worktree_CleanupUsesCommand(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        var rmIdx = args.IndexOf("rm -f dydo/agents");
-        var wtRemoveIdx = args.IndexOf("git worktree remove");
-        Assert.True(rmIdx >= 0, "Expected 'rm -f dydo/agents' in args");
-        Assert.True(rmIdx < wtRemoveIdx, "Symlink removal must precede worktree removal");
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
     [Fact]
@@ -1636,13 +1625,10 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetMacArguments_Worktree_CleansUpSymlinkBeforeRemove()
+    public void GetMacArguments_Worktree_CleanupUsesCommand()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
-        var rmIdx = args.IndexOf("rm -f dydo/agents");
-        var wtRemoveIdx = args.IndexOf("git worktree remove");
-        Assert.True(rmIdx >= 0, "Expected 'rm -f dydo/agents' in args");
-        Assert.True(rmIdx < wtRemoveIdx, "Symlink removal must precede worktree removal");
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
     #endregion

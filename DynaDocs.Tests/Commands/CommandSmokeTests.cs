@@ -39,7 +39,8 @@ public class CommandSmokeTests
             ValidateCommand.Create,
             WatchdogCommand.Create,
             WhoamiCommand.Create,
-            WorkspaceCommand.Create
+            WorkspaceCommand.Create,
+            WorktreeCommand.Create
         };
 
         foreach (var createCommand in commands)

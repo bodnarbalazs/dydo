@@ -149,58 +149,38 @@ public class AgentStateStore
         }
     }
 
+    private static readonly Dictionary<string, Action<AgentState, string>> FieldAppliers = new()
+    {
+        ["role"] = (s, v) => s.Role = NullIfNull(v),
+        ["task"] = (s, v) => s.Task = NullIfNull(v),
+        ["status"] = (s, v) => s.Status = ParseStatus(v),
+        ["assigned"] = (s, v) => s.AssignedHuman = v is "unassigned" or "null" ? null : v,
+        ["dispatched-by"] = (s, v) => s.DispatchedBy = NullIfNull(v),
+        ["window-id"] = (s, v) => s.WindowId = NullIfNull(v),
+        ["auto-close"] = (s, v) => s.AutoClose = v == "true",
+        ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },
+        ["writable-paths"] = (s, v) => s.WritablePaths = ParsePathList(v),
+        ["readonly-paths"] = (s, v) => s.ReadOnlyPaths = ParsePathList(v),
+        ["unread-must-reads"] = (s, v) => s.UnreadMustReads = ParsePathList(v),
+        ["unread-messages"] = (s, v) => s.UnreadMessages = ParsePathList(v),
+        ["task-role-history"] = (s, v) => s.TaskRoleHistory = ParseTaskRoleHistory(v),
+    };
+
     private static void ApplyStateField(AgentState state, string key, string value)
     {
-        switch (key)
-        {
-            case "role":
-                state.Role = value == "null" ? null : value;
-                break;
-            case "task":
-                state.Task = value == "null" ? null : value;
-                break;
-            case "status":
-                state.Status = value switch
-                {
-                    "dispatched" => AgentStatus.Dispatched,
-                    "working" => AgentStatus.Working,
-                    "reviewing" => AgentStatus.Reviewing,
-                    _ => AgentStatus.Free
-                };
-                break;
-            case "assigned":
-                state.AssignedHuman = value == "unassigned" || value == "null" ? null : value;
-                break;
-            case "dispatched-by":
-                state.DispatchedBy = value == "null" ? null : value;
-                break;
-            case "window-id":
-                state.WindowId = value == "null" ? null : value;
-                break;
-            case "auto-close":
-                state.AutoClose = value == "true";
-                break;
-            case "started":
-                if (value != "null" && DateTime.TryParse(value, out var dt))
-                    state.Since = dt;
-                break;
-            case "writable-paths":
-                state.WritablePaths = ParsePathList(value);
-                break;
-            case "readonly-paths":
-                state.ReadOnlyPaths = ParsePathList(value);
-                break;
-            case "unread-must-reads":
-                state.UnreadMustReads = ParsePathList(value);
-                break;
-            case "unread-messages":
-                state.UnreadMessages = ParsePathList(value);
-                break;
-            case "task-role-history":
-                state.TaskRoleHistory = ParseTaskRoleHistory(value);
-                break;
-        }
+        if (FieldAppliers.TryGetValue(key, out var applier))
+            applier(state, value);
     }
+
+    private static string? NullIfNull(string value) => value == "null" ? null : value;
+
+    private static AgentStatus ParseStatus(string value) => value switch
+    {
+        "dispatched" => AgentStatus.Dispatched,
+        "working" => AgentStatus.Working,
+        "reviewing" => AgentStatus.Reviewing,
+        _ => AgentStatus.Free
+    };
 
     public static Dictionary<string, List<string>> ParseTaskRoleHistory(string value)
     {

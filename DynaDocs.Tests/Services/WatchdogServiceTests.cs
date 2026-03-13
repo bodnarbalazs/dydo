@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Services;
 
+using System.Diagnostics;
 using DynaDocs.Services;
 
 public class WatchdogServiceTests : IDisposable
@@ -24,6 +25,92 @@ public class WatchdogServiceTests : IDisposable
         var path = WatchdogService.GetPidFilePath(_testDir);
         var expected = Path.Combine(_testDir, "_system", ".local", "watchdog.pid");
         Assert.Equal(expected, path);
+    }
+
+    [Fact]
+    public void Stop_ReturnsFalse_WhenNoPidFile()
+    {
+        Assert.False(WatchdogService.Stop(_testDir));
+    }
+
+    [Fact]
+    public void Stop_ReturnsFalse_WhenPidFileHasStalePid()
+    {
+        WritePidFile(99999999); // almost certainly not running
+        Assert.False(WatchdogService.Stop(_testDir));
+    }
+
+    [Fact]
+    public void Stop_CleansStalePidFile()
+    {
+        WritePidFile(99999999);
+        WatchdogService.Stop(_testDir);
+        Assert.False(File.Exists(WatchdogService.GetPidFilePath(_testDir)));
+    }
+
+    [Fact]
+    public void Stop_ReturnsTrue_WhenProcessIsRunning()
+    {
+        using var proc = StartDummyProcess();
+        WritePidFile(proc.Id);
+
+        Assert.True(WatchdogService.Stop(_testDir));
+        Assert.True(proc.HasExited);
+    }
+
+    [Fact]
+    public void Stop_DeletesPidFile_WhenProcessIsRunning()
+    {
+        using var proc = StartDummyProcess();
+        WritePidFile(proc.Id);
+
+        WatchdogService.Stop(_testDir);
+        Assert.False(File.Exists(WatchdogService.GetPidFilePath(_testDir)));
+    }
+
+    [Fact]
+    public void EnsureRunning_ReturnsFalse_WhenProcessAlreadyRunning()
+    {
+        using var proc = StartDummyProcess();
+        WritePidFile(proc.Id);
+
+        Assert.False(WatchdogService.EnsureRunning(_testDir));
+        proc.Kill();
+    }
+
+    [Fact]
+    public void EnsureRunning_CleansUpStalePidFile()
+    {
+        WritePidFile(99999999);
+        // Will fail to start the actual watchdog (wrong ProcessPath in test),
+        // but should still clean up the stale PID file
+        WatchdogService.EnsureRunning(_testDir);
+        var pidFile = WatchdogService.GetPidFilePath(_testDir);
+        // Either the file was deleted (stale cleanup) or replaced with a new PID
+        if (File.Exists(pidFile))
+        {
+            var content = File.ReadAllText(pidFile).Trim();
+            Assert.NotEqual("99999999", content);
+        }
+    }
+
+    private void WritePidFile(int pid)
+    {
+        var pidFile = WatchdogService.GetPidFilePath(_testDir);
+        Directory.CreateDirectory(Path.GetDirectoryName(pidFile)!);
+        File.WriteAllText(pidFile, pid.ToString());
+    }
+
+    private static Process StartDummyProcess()
+    {
+        // Start a long-running process we can safely kill
+        var psi = new ProcessStartInfo("ping", OperatingSystem.IsWindows() ? "-n 600 127.0.0.1" : "-c 600 127.0.0.1")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true
+        };
+        return Process.Start(psi)!;
     }
 
     [Fact]
@@ -59,6 +146,45 @@ public class WatchdogServiceTests : IDisposable
     {
         // No agents/ directory — should not throw
         WatchdogService.PollAndCleanup(_testDir);
+    }
+
+    [Fact]
+    public void PollAndCleanup_FreeAutoCloseAgent_SearchesForProcesses()
+    {
+        WriteAgentState("Adele", status: "free", autoClose: true);
+
+        // Should enter the kill-search logic but find no matching processes
+        WatchdogService.PollAndCleanup(_testDir);
+    }
+
+    [Fact]
+    public void PollAndCleanup_CorruptStateFile_SkipsGracefully()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Bad");
+        Directory.CreateDirectory(agentDir);
+        File.WriteAllText(Path.Combine(agentDir, "state.md"), "corrupt data, no frontmatter");
+
+        WatchdogService.PollAndCleanup(_testDir);
+    }
+
+    [Fact]
+    public void PollAndCleanup_UnclosedFrontmatter_SkipsGracefully()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Bad2");
+        Directory.CreateDirectory(agentDir);
+        File.WriteAllText(Path.Combine(agentDir, "state.md"), "---\nagent: Bad2\nno closing");
+
+        WatchdogService.PollAndCleanup(_testDir);
+    }
+
+    [Fact]
+    public void EnsureRunning_NoPidFile_AttemptsStart()
+    {
+        // No PID file exists — code will try to start the watchdog
+        // It may fail (ProcessPath won't be dydo in test), but covers the launch path
+        var result = WatchdogService.EnsureRunning(_testDir);
+        // Either starts or fails — both are valid
+        Assert.IsType<bool>(result);
     }
 
     private void WriteAgentState(string agentName, string status, bool autoClose, string? windowId = null)

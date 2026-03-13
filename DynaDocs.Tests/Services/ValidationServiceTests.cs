@@ -214,6 +214,98 @@ public class ValidationServiceTests : IDisposable
 
     #endregion
 
+    #region ValidateSystem — Null deserialization
+
+    [Fact]
+    public void ValidateSystem_DydoJsonDeserializesToNull_ReportsError()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "null");
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("deserialize"));
+    }
+
+    #endregion
+
+    #region ValidateSystem — Unreadable role file
+
+    [Fact]
+    public void ValidateRoleFile_UnreadableFile_ReportsError()
+    {
+        CreateDydoJson();
+        var rolesDir = CreateRolesDir();
+        // Point at a directory instead of a file to trigger a read exception
+        var dirAsFile = Path.Combine(rolesDir, "fake.role.json");
+        Directory.CreateDirectory(dirAsFile);
+
+        var issues = _service.ValidateRoleFile(_testDir, dirAsFile);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("Cannot read file"));
+    }
+
+    #endregion
+
+    #region ValidateSystem — Null role deserialization
+
+    [Fact]
+    public void ValidateRoleFile_NullDeserialization_ReportsError()
+    {
+        CreateDydoJson();
+        var rolesDir = CreateRolesDir();
+        var filePath = Path.Combine(rolesDir, "nullrole.role.json");
+        File.WriteAllText(filePath, "null");
+
+        var issues = _service.ValidateRoleFile(_testDir, filePath);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("null"));
+    }
+
+    #endregion
+
+    #region ValidateSystem — Empty constraint message
+
+    [Fact]
+    public void ValidateSystem_ConstraintWithEmptyMessage_ReportsError()
+    {
+        CreateDydoJson();
+        var rolesDir = CreateRolesDir();
+        var role = new RoleDefinition
+        {
+            Name = "empty-msg-role", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "mode-empty-msg-role.template.md",
+            DenialHint = "hint",
+            Constraints = [new RoleConstraint { Type = "must-read-all", Message = "" }]
+        };
+        WriteRoleFile(rolesDir, role);
+        CreateTemplateFile("mode-empty-msg-role.template.md");
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("empty message"));
+    }
+
+    #endregion
+
+    #region ValidateSystem — Agent state parse failure
+
+    [Fact]
+    public void ValidateSystem_MalformedAgentState_ReportsError()
+    {
+        CreateDydoJson();
+        var agentDir = Path.Combine(_testDir, "dydo", "agents", "BadAgent");
+        Directory.CreateDirectory(agentDir);
+        // Write a state.md that will fail to parse (no valid frontmatter)
+        File.WriteAllText(Path.Combine(agentDir, "state.md"), "not valid frontmatter at all");
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.File.Contains("BadAgent") && i.Severity == "error");
+    }
+
+    #endregion
+
     #region Custom role DenialHint warning
 
     [Fact]

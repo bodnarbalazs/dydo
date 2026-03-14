@@ -15,6 +15,14 @@ This folder answers "What IS this?" — the foundational context that agents nee
 
 - **about.md** - Project overview, purpose, and scope
 - **architecture.md** - Technical structure and key components
+- **agent-lifecycle.md** - Claim → role → work → dispatch/release cycle
+- **guard-system.md** - Hook enforcement, staged onboarding, permission model
+- **dispatch-and-messaging.md** - How agents communicate
+- **roles-and-permissions.md** - Role system, enforcement, custom roles
+- **task-lifecycle.md** - Task states from creation through approval
+- **documentation-model.md** - JITI philosophy and doc structure
+- **templates-and-customization.md** - Template overrides, include tags
+- **multi-agent-workflows.md** - Parallel agents, worktrees, orchestration
 
 ## When to Add Docs Here
 

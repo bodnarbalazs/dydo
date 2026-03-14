@@ -4,6 +4,7 @@ using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
 
+[Collection("ConsoleOutput")]
 public class GraphDisplayHandlerTests
 {
     private class FakeDocGraph : IDocGraph

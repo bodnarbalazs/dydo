@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
 
+[Collection("ConsoleOutput")]
 public class CompletionsCommandTests
 {
     [Fact]

@@ -11,13 +11,14 @@ Index of project documentation.
 
 ## Contents
 
+- [Documentation Upgrade Sprint](./docs-upgrade-sprint.md) - Bring dydo's own documentation up to date after the v1.
 - [v1.3.0 Release Plan](./v1.3-release.md) - Stabilize v1.
 
 ## Subfolders
 
 - [Changelog](./changelog/_index.md) - Chronological record of completed work.
-- [Changelog](./changelog/_index.md) - Chronological record of completed work.
 - [Decisions](./decisions/_index.md) - Decision Records documenting choices that required deliberation.
 - [Future-features](./future-features/_index.md) - Speculative feature ideas that are worth capturing but not yet committed to a release.
+- [Issues](./issues/_index.md) - Actionable work items with lifecycle tracking.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.
 - [Tasks](./tasks/_index.md) - Task tracking for work in progress.

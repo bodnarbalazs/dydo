@@ -7,6 +7,7 @@ using Xunit;
 /// Tests for the help command to ensure it documents all available commands.
 /// These tests verify that the help output stays in sync with the actual commands.
 /// </summary>
+[Collection("ConsoleOutput")]
 public class HelpCommandTests
 {
     /// <summary>

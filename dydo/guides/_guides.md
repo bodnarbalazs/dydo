@@ -15,6 +15,10 @@ This folder answers "How do I DO this?" — step-by-step instructions for common
 
 - **coding-standards.md** - Code conventions and style rules
 - **how-to-use-docs.md** - Navigating this documentation
+- **getting-started.md** - First-time setup walkthrough
+- **customizing-roles.md** - Creating custom roles and permission sets
+- **writing-good-briefs.md** - How to write effective dispatch briefs
+- **troubleshooting.md** - Common errors and recovery patterns
 
 ## When to Add Docs Here
 

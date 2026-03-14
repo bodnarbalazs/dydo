@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Commands;
 using DynaDocs.Commands;
 using DynaDocs.Services;
 
+[Collection("ConsoleOutput")]
 public class WorktreeCommandTests : IDisposable
 {
     private readonly string _testDir;

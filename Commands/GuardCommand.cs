@@ -1049,12 +1049,17 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectShellDydoRegex();
 
+    // Matches: python/python3/py [flags...] dydo [args...]
+    // Also matches: python -c "dydo ...", python3 dydo agent claim auto
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
+    private static partial Regex IndirectPythonDydoRegex();
+
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+stash(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitStashRegex();
 
     /// <summary>
-    /// Check if a command invokes dydo indirectly via npx or dotnet.
+    /// Check if a command invokes dydo indirectly via npx, dotnet, shell, or python.
     /// Returns the invoker name and the args that follow dydo.
     /// </summary>
     private static (bool isIndirect, string? invoker, string? dydoArgs) CheckIndirectDydoInvocation(string command)
@@ -1076,6 +1081,13 @@ public static partial class GuardCommand
         {
             var shellName = Regex.Match(command, @"(?:bash|sh|zsh|cmd|powershell|pwsh)", RegexOptions.IgnoreCase).Value.ToLowerInvariant();
             return (true, shellName, shellMatch.Groups[1].Value.Trim().TrimEnd('"', '\''));
+        }
+
+        var pythonMatch = IndirectPythonDydoRegex().Match(command);
+        if (pythonMatch.Success)
+        {
+            var pythonName = Regex.Match(command, @"(?:python3?|py)", RegexOptions.IgnoreCase).Value.ToLowerInvariant();
+            return (true, pythonName, pythonMatch.Groups[1].Value.Trim().TrimEnd('"', '\''));
         }
 
         return (false, null, null);

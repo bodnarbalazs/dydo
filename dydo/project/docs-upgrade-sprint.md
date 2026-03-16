@@ -34,8 +34,8 @@ Bring dydo's own documentation up to date after the v1.2/v1.3 feature sprint. Th
 ### reference/
 
 - [x] `guardrails.md` — Three-tier guardrail system (nudge / soft-block / hard rule) with all instances
-- [ ] `configuration.md` — dydo.json schema, all config options
-- [ ] `audit-system.md` — Audit trail format, compaction, replay visualization
+- [x] `configuration.md` — Done (Frank, 2026-03-16, batch D)
+- [x] `audit-system.md` — Done (Frank, 2026-03-16, batch D)
 
 ---
 
@@ -43,7 +43,7 @@ Bring dydo's own documentation up to date after the v1.2/v1.3 feature sprint. Th
 
 ### Stubs (need full content)
 
-- [ ] `understand/about.md` — Currently near-empty, needs real project context
+- [x] `understand/about.md` — Done (Frank, 2026-03-16, batch D)
 - [x] `reference/roles/co-thinker.md` — Done (Adele, 2026-03-14)
 - [x] `reference/roles/code-writer.md` — Done (Charlie, 2026-03-14) — needs your review
 - [x] `reference/roles/docs-writer.md` — Done (Dexter, 2026-03-14) — needs your review
@@ -59,12 +59,12 @@ Bring dydo's own documentation up to date after the v1.2/v1.3 feature sprint. Th
 
 ### Outdated (need review + update)
 
-- [ ] `understand/architecture.md` — Decent but missing new features (dispatch, messaging, roles system, custom roles)
-- [ ] `reference/about-dynadocs.md` — References dropped interviewer role, role table outdated, missing new features
-- [ ] `reference/dydo-commands.md` — Review for completeness against current CLI
-- [ ] `glossary.md` — Template only, needs real terms (nudge, dispatch, guard, etc.)
-- [ ] `welcome.md` — Still boilerplate
-- [ ] `project/v1.3-release.md` — Needs status update, some slices shipped
+- [x] `understand/architecture.md` — Added guard, roles, dispatch, audit sections (Frank, 2026-03-16, batch D)
+- [x] `reference/about-dynadocs.md` — Fixed role table, removed interviewer, added new commands (Frank, 2026-03-16, batch D)
+- [x] `reference/dydo-commands.md` — Added inquisition coverage command (Frank, 2026-03-16, batch D)
+- [x] `glossary.md` — Added 16 real project terms (Frank, 2026-03-16, batch D)
+- [x] `welcome.md` — Replaced boilerplate with DyDo-specific content (Frank, 2026-03-16, batch D)
+- [x] `project/v1.3-release.md` — Updated all slice statuses (Frank, 2026-03-16, batch D)
 
 ---
 

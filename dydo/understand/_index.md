@@ -11,7 +11,7 @@ Index of understand documentation.
 
 ## Contents
 
-- [About This Project](./about.md) - > This is the DyDo project.
+- [About This Project](./about.md) - DynaDocs (dydo) is a documentation-driven agent orchestration framework for AI coding assistants.
 - [Agent Lifecycle](./agent-lifecycle.md) - How an agent goes from unclaimed to working to released.
 - [Architecture Overview](./architecture.md) - DynaDocs (`dydo`) is a .
 - [Dispatch and Messaging](./dispatch-and-messaging.md) - How agents communicate: dispatching work, inbox delivery, direct messaging, and waiting for responses.

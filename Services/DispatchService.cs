@@ -332,7 +332,7 @@ public static class DispatchService
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
     }
 
-    private static string? CheckNoLaunchNudge(AgentRegistry registry, string sessionId, string task)
+    private static string? CheckNoLaunchNudge(AgentRegistry registry, string? sessionId, string task)
     {
         var sender = registry.GetCurrentAgent(sessionId);
         if (sender == null) return null;

@@ -1,0 +1,2 @@
+- [ ] Coverage gap check passes (no tier regressions)
+- [ ] New code has appropriate tier annotation (`// @test-tier: N`) if above T1

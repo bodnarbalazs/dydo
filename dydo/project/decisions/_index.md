@@ -22,3 +22,4 @@ Index of decisions documentation.
 - [008 — Terminal Dispatch Routing and Auto-Close Watchdog](./008-terminal-dispatch-routing-and-autoclose.md) - Two-tier window routing (MRU for linear workflows, GUID for parallel slices), and a global stateless watchdog for auto-closing released agent tabs.
 - [009 — CRAP Uses Per-Method Cyclomatic Complexity](./009-crap-per-method-metric.md) - CRAP (Change Risk Anti-Patterns) is a per-method metric.
 - [010 — Baton-Passing and Review Enforcement](./010-baton-passing-and-review-enforcement.md) - When an agent dispatches on the same task, its reply obligation passes to the dispatched agent.
+- [011 — Worktrees as Default for Parallel Development](./011-worktrees-as-default-for-parallel-work.md) - When an orchestrator dispatches multiple code-writers in parallel, each should run in its own git worktree.

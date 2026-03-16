@@ -11,5 +11,5 @@ Index of future-features documentation.
 
 ## Contents
 
-- [Coverage.Py Update](./coverage.py-update.md)
+- [Per-Method Complexity Breakdown for gap_check.py](./coverage.py-update.md) - The per-method cyclomatic complexity breakdown would be a useful feature for `gap_check.
 - [Documentation Coverage Estimation](./doc-coverage.md) - Static analysis that estimates how well the documentation workspace covers the concepts that matter in the codebase.

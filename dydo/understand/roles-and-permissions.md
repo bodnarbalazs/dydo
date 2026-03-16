@@ -7,21 +7,149 @@ type: concept
 
 The role system: what roles are, how they define agent capabilities, and how permissions are enforced.
 
-<!-- PLACEHOLDER — to be filled during docs upgrade sprint -->
-<!--
-Topics to cover:
-- What a role is (mode file + permission set + behavioral constraints)
-- Base roles vs custom roles
-- Role definition files (.role.json in _system/roles/)
-- How permissions map to file paths
-- Role transitions and restrictions
-  - Orchestrator: graduation-only (must have been co-thinker or planner first)
-  - dispatch --wait restricted to oversight roles
-- Custom roles: dydo roles create, the .role.json schema
-- How the guard resolves permissions at runtime
-- Role history tracking (TaskRoleHistory)
-- Cross-reference to individual role pages
--->
+---
+
+## What a Role Is
+
+A role is the combination of three things:
+
+1. **Mode file** — A markdown template (e.g., `mode-code-writer.template.md`) describing the role's responsibilities, must-reads, workflow, and completion steps.
+2. **Permission set** — File paths the agent can read and write, defined in `.role.json`.
+3. **Behavioral constraints** — Data-driven rules governing role transitions, prerequisites, and panel limits.
+
+When an agent sets a role with `dydo agent role <role> --task <task>`, all three components are loaded and enforced by the guard.
+
+---
+
+## Base Roles
+
+Nine built-in roles ship with dydo, marked `"base": true` in their definitions:
+
+| Role | Purpose | Key Permissions |
+|------|---------|-----------------|
+| **code-writer** | Implements features and fixes bugs | Source code, tests, own workspace |
+| **reviewer** | Reviews code for quality and correctness | Source code (read-only), own workspace |
+| **co-thinker** | Collaborates on design decisions | Documentation, own workspace |
+| **planner** | Creates implementation plans and task breakdowns | Documentation, own workspace |
+| **docs-writer** | Creates and maintains documentation | Documentation tree, own workspace |
+| **test-writer** | Writes and maintains test suites | Tests, own workspace |
+| **orchestrator** | Coordinates multi-agent workflows | Documentation, own workspace |
+| **inquisitor** | Conducts documentation and knowledge audits | Documentation, own workspace |
+| **judge** | Arbitrates disputes between agents | Documentation, own workspace |
+
+Base roles are immutable — they cannot be deleted or renamed, and `dydo roles reset` regenerates them from defaults.
+
+---
+
+## Custom Roles
+
+Projects can define additional roles:
+
+```bash
+dydo roles create <name>
+```
+
+This scaffolds a minimal `.role.json` in `dydo/_system/roles/` and suggests next steps: set the description, writable paths, denial hint, and optionally create a mode template. Custom roles are marked `"base": false` and participate in all the same guard checks as base roles.
+
+---
+
+## Role Definition Schema
+
+Role definitions live at `dydo/_system/roles/<name>.role.json`:
+
+```json
+{
+  "name": "code-writer",
+  "description": "Implements features and fixes bugs in source code.",
+  "base": true,
+  "writablePaths": ["{source}", "{tests}", "dydo/agents/{self}/**"],
+  "readOnlyPaths": ["dydo/**"],
+  "templateFile": "mode-code-writer.template.md",
+  "denialHint": "Code-writer role can only edit configured source/test paths and own workspace.",
+  "constraints": [...]
+}
+```
+
+**Path tokens** are expanded at role assignment time:
+- `{self}` — the agent's name (e.g., `dydo/agents/Brian/**`)
+- `{source}` — configured source directories from `dydo.json`
+- `{tests}` — configured test directories from `dydo.json`
+
+**Glob patterns**: `**` matches any path depth, `*` matches within a single segment.
+
+---
+
+## How Permissions Map to File Paths
+
+When an agent attempts a write, the guard resolves permissions in this order:
+
+1. **Off-limits check** — Does the path match a global off-limits pattern? If yes, block (regardless of role).
+2. **WritablePaths match** — Does the path match any pattern in the role's `WritablePaths`? If yes, allow.
+3. **Denial** — No match found. Block with the role's `denialHint` appended to the error.
+
+Path matching converts glob patterns to regex (`**` → `.*`, `*` → `[^/]*`) and performs case-insensitive comparison.
+
+---
+
+## Role Transitions and Restrictions
+
+Roles define **constraints** — data-driven rules evaluated when an agent attempts to take a role:
+
+### No Self-Review (H10)
+
+The reviewer role has a `role-transition` constraint blocking agents that were previously `code-writer` on the same task. Checked against `TaskRoleHistory`.
+
+### Orchestrator Graduation (H11)
+
+The orchestrator role has a `requires-prior` constraint: the agent must have been `co-thinker` or `planner` on the same task first. This ensures orchestrators have project context before coordinating work.
+
+### Judge Panel Limit (H12)
+
+The judge role has a `panel-limit` constraint: maximum 3 judges can be active on the same task simultaneously. Beyond that, escalate to the human.
+
+### Dispatch --wait Restriction
+
+The `--wait` flag on dispatch is reserved for oversight roles only (orchestrator, inquisitor, judge). All other roles must use `--no-wait`.
+
+### Constraint Types
+
+| Type | Checks | Example |
+|------|--------|---------|
+| `role-transition` | Agent held `fromRole` on same task | code-writer → reviewer blocked |
+| `requires-prior` | Agent held one of `requiredRoles` on same task | orchestrator requires co-thinker or planner |
+| `panel-limit` | Fewer than `maxCount` agents in role on task | max 3 judges |
+
+Constraints are data-driven — adding new constraints to a `.role.json` does not require code changes.
+
+---
+
+## How the Guard Resolves Permissions at Runtime
+
+The guard processes every tool call through this pipeline:
+
+1. **Session lookup** — Find the agent bound to this session ID
+2. **Staged access** — Check onboarding stage (no identity → no role → full working)
+3. **Off-limits** — Check global patterns (bypass for bootstrap/mode files)
+4. **Bash analysis** — For bash tools: dangerous patterns, file operation extraction, per-operation permission checks
+5. **Must-read enforcement** — For writes: verify all `must-read: true` files have been read
+6. **Role permissions** — For writes: check path against `WritablePaths`
+7. **Audit logging** — Log the action (allowed or blocked) for the audit trail
+
+---
+
+## Role History Tracking
+
+`TaskRoleHistory` is a per-agent, per-task dictionary mapping task names to lists of roles held:
+
+```
+{"auth-login": ["planner", "orchestrator"], "db-schema": ["code-writer"]}
+```
+
+This history **persists across agent releases and reclaims**. It is used for:
+- **Self-review prevention** — An agent that was code-writer on a task cannot become reviewer on that same task, even in a later session
+- **Orchestrator graduation** — Verifying the agent has prior co-thinker or planner experience on the task
+
+The history is stored in the agent's `state.md` file and survives workspace archival.
 
 ---
 
@@ -29,5 +157,5 @@ Topics to cover:
 
 - [Guard System](./guard-system.md)
 - [Agent Lifecycle](./agent-lifecycle.md)
-- [Role Reference Pages](../reference/roles/_index.md)
-- [Customizing Roles Guide](../guides/customizing-roles.md)
+- [Guardrails Reference](../reference/guardrails.md) — Full catalog of all guardrail rules
+

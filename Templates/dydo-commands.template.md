@@ -615,6 +615,20 @@ dydo template update --force   # Overwrite even if re-anchoring fails (backs up 
 
 ---
 
+## Inquisition Commands
+
+### dydo inquisition coverage
+
+Show inquisition coverage across project areas.
+
+```bash
+dydo inquisition coverage
+```
+
+**Output:** Lists project areas with their inquisition coverage status based on reports in `dydo/project/inquisitions/`.
+
+---
+
 ## Role Commands
 
 ### dydo roles list

@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.2.21</Version>
+        <Version>1.2.22</Version>
         <Description>Documentation-driven context and agent orchestration for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
@@ -43,6 +43,7 @@
         <Content Remove="DynaDocs.Tests\**" />
         <EmbeddedResource Remove="DynaDocs.Tests\**" />
         <None Remove="DynaDocs.Tests\**" />
+        <None Remove="nupkg\dydo.1.2.22.nupkg" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,6 +52,10 @@
 
     <ItemGroup>
         <None Include="README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="nupkg\" />
     </ItemGroup>
 
 </Project>

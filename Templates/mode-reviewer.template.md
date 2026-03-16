@@ -67,7 +67,8 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 2. **Review the changes** — Check against coding standards, including stack specific standards if there are any
 3. **Run tests** — Verify they pass
 {{include:extra-review-steps}}
-4. **Document findings** — Note issues clearly
+
+**Document findings** — Note issues clearly
 
 **Review checklist:**
 
@@ -95,13 +96,24 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-
 
 ```bash
 dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tests pass."
+```
+
+**Baton-passing:** If you were dispatched as part of a chain (check inbox `From`/`Origin`), the baton is with you — you are the last agent. Message back to the origin:
+
+```bash
+dydo msg --to <origin> --subject <task-name> --body "Review passed. Task complete. [key details]"
+```
+
+Then release:
+
+```bash
 dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
 
 ### If Review Fails
 
-Dispatch another agent to fix the issues.
+Dispatch another agent to fix the issues. The baton passes back to the code-writer.
 
 ```bash
 dydo dispatch --no-wait --auto-close --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"

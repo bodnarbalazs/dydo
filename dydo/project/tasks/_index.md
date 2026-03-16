@@ -13,11 +13,21 @@ Index of tasks documentation.
 
 - [Task: baton-passing-docs](./baton-passing-docs.md) - (No description)
 - [Task: baton-passing-implementation](./baton-passing-implementation.md) - Implement decision 010: baton-passing reply-pending clearance and review enforcement for dispatched code-writers.
+- [Task: docs-batch-a](./docs-batch-a.md) - (No description)
+- [Task: docs-batch-b](./docs-batch-b.md) - (No description)
+- [Task: docs-batch-c](./docs-batch-c.md) - Docs Batch C: Fill in placeholder guide docs with complete content.
+- [Task: docs-batch-d](./docs-batch-d.md) - Fill in remaining reference placeholders and update outdated pages per the docs-upgrade-sprint plan.
 - [Task: docs-structure-planning](./docs-structure-planning.md) - (No description)
 - [Task: docs-upgrade-sprint](./docs-upgrade-sprint.md) - (No description)
 - [Task: find-t1-coverage-doc](./find-t1-coverage-doc.md) - (No description)
 - [Task: fix-test-errors](./fix-test-errors.md) - (No description)
+- [Task: gap-check-fix](./gap-check-fix.md) - (No description)
 - [Task: gap-check-setup](./gap-check-setup.md) - (No description)
+- [Task: git-stash-guard-block](./git-stash-guard-block.md) - (No description)
+- [Task: guard-python-invocation](./guard-python-invocation.md) - (No description)
+- [Task: guardrails-doc-update](./guardrails-doc-update.md) - (No description)
+- [Task: investigate-last-validation-bug](./investigate-last-validation-bug.md) - (No description)
+- [Task: orchestrator-worktree-guidance](./orchestrator-worktree-guidance.md) - (No description)
 - [Task: role-docs-batch1](./role-docs-batch1.md) - (No description)
 - [Task: role-docs-batch2](./role-docs-batch2.md) - (No description)
 - [Task: role-docs-batch3](./role-docs-batch3.md) - (No description)
@@ -27,5 +37,6 @@ Index of tasks documentation.
 - [Task: t1-slice-b](./t1-slice-b.md) - (No description)
 - [Task: t1-slice-c](./t1-slice-c.md) - (No description)
 - [Task: template-bug-fixes](./template-bug-fixes.md) - (No description)
+- [Task: template-harmonization](./template-harmonization.md) - (No description)
 - [Task: worktree-implementation](./worktree-implementation.md) - (No description)
 - [Task: worktree-workflow-design](./worktree-workflow-design.md) - (No description)

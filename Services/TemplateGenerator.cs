@@ -78,6 +78,12 @@ public static class TemplateGenerator
     /// </summary>
     public static string ReadBuiltInTemplate(string templateName)
     {
+        // Dev-mode: when running within the DynaDocs source tree,
+        // prefer source Templates/ over potentially stale embedded resources
+        var devPath = Path.Combine("Templates", templateName);
+        if (File.Exists(devPath) && File.Exists("DynaDocs.csproj"))
+            return File.ReadAllText(devPath);
+
         var content = ReadEmbeddedTemplate(templateName);
         if (content != null)
             return content;

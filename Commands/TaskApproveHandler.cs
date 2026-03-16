@@ -136,7 +136,7 @@ internal static class TaskApproveHandler
                     var normalizedPath = evt.Path.Replace('\\', '/');
                     if (normalizedPath.Contains("dydo/", StringComparison.OrdinalIgnoreCase)) continue;
 
-                    ClassifyEvent(evt, created, modified, deleted);
+                    ClassifyEvent(evt.EventType, evt.Path!, created, modified, deleted);
                 }
             }
         }
@@ -148,23 +148,23 @@ internal static class TaskApproveHandler
         return (created, modified, deleted);
     }
 
-    private static void ClassifyEvent(AuditEvent evt, List<string> created, List<string> modified, List<string> deleted)
+    private static void ClassifyEvent(AuditEventType eventType, string path, List<string> created, List<string> modified, List<string> deleted)
     {
-        switch (evt.EventType)
+        switch (eventType)
         {
             case AuditEventType.Write:
-                if (!created.Contains(evt.Path) && !modified.Contains(evt.Path))
-                    created.Add(evt.Path);
+                if (!created.Contains(path) && !modified.Contains(path))
+                    created.Add(path);
                 break;
             case AuditEventType.Edit:
-                if (!modified.Contains(evt.Path) && !created.Contains(evt.Path))
-                    modified.Add(evt.Path);
+                if (!modified.Contains(path) && !created.Contains(path))
+                    modified.Add(path);
                 break;
             case AuditEventType.Delete:
-                created.Remove(evt.Path);
-                modified.Remove(evt.Path);
-                if (!deleted.Contains(evt.Path))
-                    deleted.Add(evt.Path);
+                created.Remove(path);
+                modified.Remove(path);
+                if (!deleted.Contains(path))
+                    deleted.Add(path);
                 break;
         }
     }

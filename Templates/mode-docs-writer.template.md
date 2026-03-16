@@ -98,7 +98,15 @@ dydo dispatch --no-wait --auto-close --role reviewer --task <task-name> --brief 
 
 This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
 
-### If Done
+**Baton-passing:** By dispatching the reviewer on the same task, your reply obligation to whoever dispatched you is fulfilled. The reviewer inherits that obligation and reports back on your behalf.
+
+### If Done (No Review Needed)
+
+If you were dispatched (check inbox `From`/`Origin`), message back before releasing:
+
+```bash
+dydo msg --to <origin> --subject <task-name> --body "Documentation complete. [key details]"
+```
 
 ```bash
 dydo inbox clear --all    # Archive any inbox messages

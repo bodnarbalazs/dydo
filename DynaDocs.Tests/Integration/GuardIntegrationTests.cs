@@ -562,6 +562,9 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("sh dydo agent claim auto")]
     [InlineData("bash -c \\\"dydo agent claim auto\\\"")]
     [InlineData("sh -c 'dydo agent claim auto'")]
+    [InlineData("python dydo agent claim auto")]
+    [InlineData("python3 dydo agent claim auto")]
+    [InlineData("py dydo agent claim auto")]
     public async Task Guard_IndirectDydo_IsBlocked(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -582,6 +585,9 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dotnet run -- whoami", "dotnet run")]
     [InlineData("bash dydo agent claim auto", "bash")]
     [InlineData("sh -c \\\"dydo agent claim auto\\\"", "sh")]
+    [InlineData("python dydo agent claim auto", "python")]
+    [InlineData("python3 dydo agent claim auto", "python3")]
+    [InlineData("py dydo agent claim auto", "py")]
     public async Task Guard_IndirectDydo_ShowsInvokerName(string command, string expectedInvoker)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -603,6 +609,9 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dotnet run -- whoami", "dydo whoami")]
     [InlineData("bash dydo agent claim auto", "dydo agent claim auto")]
     [InlineData("sh -c \\\"dydo agent claim auto\\\"", "dydo agent claim auto")]
+    [InlineData("python dydo agent claim auto", "dydo agent claim auto")]
+    [InlineData("python3 dydo agent role code-writer", "dydo agent role code-writer")]
+    [InlineData("py dydo whoami", "dydo whoami")]
     public async Task Guard_IndirectDydo_ShowsCorrectedCommand(string command, string expectedCorrected)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -626,6 +635,9 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("bash script.sh")]
     [InlineData("sh -c \\\"echo hello\\\"")]
     [InlineData("bash -c \\\"npm install\\\"")]
+    [InlineData("python script.py")]
+    [InlineData("python3 -m pytest")]
+    [InlineData("py -3 script.py")]
     public async Task Guard_IndirectDydo_FalsePositiveSafety(string command)
     {
         await InitProjectAsync("none", "balazs", 3);

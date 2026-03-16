@@ -14,7 +14,7 @@ You are **{{AGENT_NAME}}**, working as a **code-writer**. Your job: implement th
 Read these before performing any other operations.
 Files with `must-read: true` in their frontmatter are enforced — the guard will block writes until you've read them.
 
-1. **Your plan** (if `--task` or `--feature`): Check `dydo inbox show`
+1. **Your plan**: Check `dydo inbox show`
 2. [about.md](../../../understand/about.md) — What this project is
 3. [architecture.md](../../../understand/architecture.md) — Codebase structure
 4. [coding-standards.md](../../../guides/coding-standards.md) — Code conventions
@@ -57,14 +57,12 @@ The reviewer will scrutinize every line — make sure it holds up to both the ge
 
 ## Read the Plan First
 
-If you're in `--task` or `--feature` mode, a plan exists. Find it:
+A plan should exist for your task. Find it:
 
 1. Check inbox: `dydo inbox show`
 2. Look for: `dydo/agents/*/plan-{task}.md`
 
-Read it before coding. For `--quick` mode, you make the decisions.
-
-All the major decisions and questions should have been sorted out during the planning phase.
+Read it before coding. All the major decisions and questions should have been sorted out during the planning phase.
 If something is still unclear do a brief search and if the answer is not found stop immediately and ask for clarification.
 Never guess or assume.
 
@@ -98,7 +96,7 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-
 When implementation is done and tests pass:
 
 ```bash
-dydo dispatch --wait --auto-close --role reviewer --task <task-name> --brief "..."
+dydo dispatch --no-wait --auto-close --role reviewer --task <task-name> --brief "..."
 ```
 
 This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
@@ -108,11 +106,7 @@ The brief should include:
 - Plan deviations and why (if any)
 - Key decisions made
 
-**Reporting back to origin?** If another agent dispatched you (check inbox `From`/`Origin`), send a summary:
-
-```bash
-dydo msg --to <origin> --subject <task-name> --body "Implementation complete. [key details]"
-```
+**Baton-passing:** By dispatching the reviewer on the same task, your reply obligation to whoever dispatched you is fulfilled. The reviewer inherits that obligation and reports back on your behalf. Do not message your origin separately.
 
 Then release:
 

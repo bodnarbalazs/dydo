@@ -138,30 +138,27 @@ You're ready to go. For best results, keep docs up to date and accurate to match
 
 ## How It Works
 
-**Example prompt:** `Hey Adele, help me implement authentication --feature`
+**Example prompt:** `Hey Adele, help me implement authentication --task`
 
 1. The agent reads `CLAUDE.md`, gets redirected to `dydo/index.md`
 2. From `index.md`, it navigates to its workspace: `dydo/agents/Adele/workflow.md`
 3. It claims its identity: `dydo agent claim Adele`
-4. The `--feature` flag tells it to follow: **interview → plan → code → review**
-5. It sets its role: `dydo agent role interviewer --task auth`
-6. On every file operation, the `dydo guard` hook enforces permissions based on the current role
+4. It reads the prompt, infers the role, and sets it: `dydo agent role code-writer --task auth`
+5. On every file operation, the `dydo guard` hook enforces permissions based on the current role
+6. When done, it dispatches to a *different* agent for review — fresh eyes, enforced
 
-**What's happening:** The AI onboards itself by following the documentation funnel — you don't have to re-explain what's already documented. Permissions aren't suggestions; the hook blocks unauthorized edits. When the code-writer finishes, it dispatches to a *different* agent for review. Fresh eyes, enforced.
+**What's happening:** The AI onboards itself by following the documentation funnel — you don't have to re-explain what's already documented. Permissions aren't suggestions; the hook blocks unauthorized edits.
 
 ---
 
-## Workflow Flags
+## Prompt Flags
+
+The agent name and an optional flag in the prompt tell the agent what workflow to follow:
 
 | Flag | Workflow |
 |------|----------|
-| `--feature` | Interview → Plan → Code → Review |
-| `--task` | Plan → Code → Review |
-| `--quick` | Code only (simple changes) |
-| `--think` | Co-thinker mode |
-| `--review` | Reviewer mode |
-| `--docs` | Docs-writer mode |
-| `--test` | Tester mode |
+| `--inbox` | Process dispatched work from inbox |
+| (no flag) | Infer role from prompt context |
 
 ---
 
@@ -169,13 +166,15 @@ You're ready to go. For best results, keep docs up to date and accurate to match
 
 | Role | Can Edit | Purpose |
 |------|----------|---------|
-| `code-writer` | `src/**`, `tests/**` | Implement features |
-| `reviewer` | agent workspace | Review code |
-| `planner` | `tasks/**`, agent workspace | Design implementation |
-| `tester` | `tests/**`, `pitfalls/**`, agent workspace | Write tests, report bugs |
-| `docs-writer` | `dydo/**` (except agents/) | Write documentation |
-| `co-thinker` | `decisions/**`, agent workspace | Explore ideas |
-| `interviewer` | agent workspace | Gather requirements |
+| `code-writer` | source, tests, agent workspace | Implement features and fix bugs |
+| `reviewer` | agent workspace only | Review code changes |
+| `planner` | tasks, agent workspace | Create implementation plans |
+| `test-writer` | tests, pitfalls, agent workspace | Write and maintain tests |
+| `docs-writer` | `dydo/**` (except other agents) | Write documentation |
+| `co-thinker` | decisions, agent workspace | Design and architecture collaboration |
+| `orchestrator` | tasks, decisions, agent workspace | Coordinate multi-agent workflows |
+| `inquisitor` | inquisitions, agent workspace | Documentation and knowledge audits |
+| `judge` | issues, agent workspace | Arbitrate disputes between agents |
 
 ---
 
@@ -301,6 +300,19 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo task list` | List tasks |
 | `dydo review complete <task>` | Complete a code review |
 
+### Messaging
+| Command | Description |
+|---------|-------------|
+| `dydo msg --to <agent> --body "..."` | Send message to another agent |
+| `dydo wait --task <name>` | Wait for incoming message |
+
+### Issues
+| Command | Description |
+|---------|-------------|
+| `dydo issue create --title "..." --area <a> --severity <s>` | Create an issue |
+| `dydo issue list` | List issues |
+| `dydo issue resolve <id> --summary "..."` | Resolve an issue |
+
 ### Workspace
 | Command | Description |
 |---------|-------------|
@@ -317,16 +329,20 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo audit --session <id>` | Show details for a session |
 | `dydo audit compact [year]` | Compact audit snapshots |
 
-### Template
+### Roles & Templates
 | Command | Description |
 |---------|-------------|
+| `dydo roles list` | List all role definitions |
+| `dydo roles create <name>` | Scaffold a custom role |
 | `dydo template update` | Update framework templates and docs |
 | `dydo template update --diff` | Preview changes without writing |
+| `dydo validate` | Validate config, roles, and agent state |
 
 ### Utility
 | Command | Description |
 |---------|-------------|
 | `dydo completions <shell>` | Generate shell completions |
+| `dydo version` | Show version |
 
 ---
 

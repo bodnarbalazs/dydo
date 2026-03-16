@@ -94,12 +94,12 @@ public static class InboxService
         Directory.CreateDirectory(archivePath);
 
         if (all)
-            return ClearAll(registry, agent.Name, sessionId, inboxPath, archivePath);
+            return ClearAll(registry, agent.Name, inboxPath, archivePath);
 
         return ClearById(registry, agent.Name, sessionId, inboxPath, archivePath, id!);
     }
 
-    private static int ClearAll(AgentRegistry registry, string agentName, string sessionId, string inboxPath, string archivePath)
+    private static int ClearAll(AgentRegistry registry, string agentName, string inboxPath, string archivePath)
     {
         var files = Directory.GetFiles(inboxPath, "*.md");
         foreach (var file in files)
@@ -113,7 +113,7 @@ public static class InboxService
         return ExitCodes.Success;
     }
 
-    private static int ClearById(AgentRegistry registry, string agentName, string sessionId, string inboxPath, string archivePath, string id)
+    private static int ClearById(AgentRegistry registry, string agentName, string? sessionId, string inboxPath, string archivePath, string id)
     {
         var files = Directory.GetFiles(inboxPath, $"{id}*.md");
         if (files.Length == 0)

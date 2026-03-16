@@ -126,8 +126,10 @@ When the plan is ready:
 ### Option A: Dispatch to Code-Writer
 
 ```bash
-dydo dispatch --no-wait --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
+dydo dispatch --no-wait --auto-close --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
 ```
+
+**Baton-passing:** By dispatching the code-writer on the same task, your reply obligation to whoever dispatched you is fulfilled.
 
 ### Option B: Transition Yourself to Code-Writer
 
@@ -138,21 +140,5 @@ dydo agent role code-writer --task <task-name>
 ```
 
 Then read [modes/code-writer.md](./code-writer.md) and implement.
-
-### Option C: Dispatch and Wait for Results
-
-For complex tasks where you need the implementation results:
-
-```bash
-dydo dispatch --wait --auto-close --role code-writer --task <task-name> --brief "..."
-```
-
-Dispatch returns immediately after registering the wait. Then listen for the response in background:
-
-```bash
-dydo wait --task <task-name>
-```
-
-The code-writer will message you back when done.
 
 Decision principle for choosing: Did I explore many irrelevant files/avenues? What is my context's signal to noise ratio like? If it's better to start fresh go with option A, if the context is high quality go with option B.

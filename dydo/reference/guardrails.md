@@ -103,6 +103,7 @@ These are defined in the `constraints` array of each role definition file, makin
 | H18 | Chained `cd` commands | `cd /path && command` or `cd /path; command`. Breaks the guard's ability to analyze the actual command. | `BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.` |
 | H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, etc. Dydo should be called directly. | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
 | H20 | `dydo wait` in foreground | `dydo wait` executed without `run_in_background: true`. Would block the agent's main thread. | `BLOCKED: 'dydo wait' must run in background.` |
+| H26 | Conditional git stash block | Bash command matches `git stash` (any variant) and the agent is NOT running in a worktree. Allowed inside worktrees where the stash stack is isolated. | `BLOCKED: git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents' stash operations will interfere. Commit your changes instead.` |
 
 ### Messaging
 
@@ -135,7 +136,7 @@ The guardrail system is designed for extension through role definition files (`.
 **What's hard-coded:**
 - Staged access control (H3, H6)
 - Off-limits enforcement (H2)
-- Bash safety analysis (H17–H20)
+- Bash safety analysis (H17–H20, H26)
 - Release blocking checks (H13–H16, H25)
 - Messaging restrictions (H21–H22)
 - Soft-block marker file logic (S1–S4)

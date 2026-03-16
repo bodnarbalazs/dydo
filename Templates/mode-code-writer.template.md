@@ -106,11 +106,7 @@ The brief should include:
 - Plan deviations and why (if any)
 - Key decisions made
 
-**Reporting back to origin?** If another agent dispatched you (check inbox `From`/`Origin`), send a summary:
-
-```bash
-dydo msg --to <origin> --subject <task-name> --body "Implementation complete. [key details]"
-```
+**Baton-passing:** By dispatching the reviewer on the same task, your reply obligation to whoever dispatched you is fulfilled. The reviewer inherits that obligation and reports back on your behalf. Do not message your origin separately.
 
 Then release:
 

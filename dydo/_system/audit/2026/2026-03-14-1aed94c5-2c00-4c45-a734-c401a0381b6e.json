@@ -1420,6 +1420,107 @@
       "event": "Write",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\011-worktrees-as-default-for-parallel-work.md",
       "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T18:22:26.9777731Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5b415f11-msg-baton-passing-implementation.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T18:24:11.2789201Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-template-harmonization.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T18:57:24.4376123Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-16T18:57:38.7679896Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T19:02:50.7999269Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\docs-upgrade-sprint.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T19:03:14.3457567Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-a.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T19:11:17.2216158Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-b.md",
+      "tool": "write",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-16T19:11:17.610588Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-c.md",
+      "tool": "write",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-16T19:11:17.9953556Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-d.md",
+      "tool": "write",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-16T19:12:22.8979197Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-b.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T19:12:27.4220421Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-c.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T19:12:31.4310521Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-docs-batch-d.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T21:13:40.7699204Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git status --short 2\u003E\u00261 | head -30",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-16T21:14:19.3974118Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short 2\u003E\u00261 | head -40"
+    },
+    {
+      "ts": "2026-03-16T21:14:19.6471678Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --name-only 2\u003E\u00261 | head -30"
+    },
+    {
+      "ts": "2026-03-16T21:28:47.7165245Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for f in agent-lifecycle guard-system dispatch-and-messaging roles-and-permissions task-lifecycle do..."
     }
   ]
 }

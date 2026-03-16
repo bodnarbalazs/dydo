@@ -1,557 +1,170 @@
 {
-  "session": "cbee593e-458e-4f1f-9d8d-b6f3263a547c",
-  "agent": "Brian",
+  "session": "81259b4d-4b56-4bc0-97a6-0ed34a64d40b",
+  "agent": "Charlie",
   "human": "balazs",
-  "started": "2026-03-14T13:37:00.564213Z",
-  "git_head": "9eb3434",
+  "started": "2026-03-14T15:06:09.9515408Z",
+  "git_head": "f2271d4",
   "events": [
     {
-      "ts": "2026-03-14T13:37:00.5634172Z",
+      "ts": "2026-03-14T15:06:09.9509182Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:05.7569902Z",
-      "event": "Blocked",
-      "tool": "agent",
-      "reason": "No agent identity"
+      "ts": "2026-03-14T15:06:13.092352Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md",
+      "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:09.3519593Z",
+      "ts": "2026-03-14T15:06:18.4606955Z",
       "event": "Claim",
-      "agent": "Brian"
+      "agent": "Charlie"
     },
     {
-      "ts": "2026-03-14T13:37:11.8478212Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T13:37:15.8525945Z",
+      "ts": "2026-03-14T15:06:28.9011778Z",
       "event": "Role",
-      "role": "code-writer",
-      "task": "fix-test-errors"
+      "role": "docs-writer",
+      "task": "role-docs-batch1"
     },
     {
-      "ts": "2026-03-14T13:37:18.4029553Z",
+      "ts": "2026-03-14T15:06:37.4094945Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\docs-writer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:21.7863084Z",
+      "ts": "2026-03-14T15:06:37.983206Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\role-docs-batch1.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:06:41.7805681Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:22.2283496Z",
+      "ts": "2026-03-14T15:06:42.3971593Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\how-to-use-docs.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:22.4507819Z",
+      "ts": "2026-03-14T15:06:42.9746798Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\writing-docs.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:26.8929626Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test DynaDocs.Tests/ --verbosity normal 2\u003E\u00261 | tail -80"
-    },
-    {
-      "ts": "2026-03-14T14:18:57.6635615Z",
+      "ts": "2026-03-14T15:06:48.5184681Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\code-writer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:18:58.1039655Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:18:58.6470632Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CompletionsCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:19:03.4646045Z",
+      "ts": "2026-03-14T15:06:49.429054Z",
       "event": "Read",
       "tool": "glob"
     },
     {
-      "ts": "2026-03-14T14:19:03.6403596Z",
+      "ts": "2026-03-14T15:06:49.5431097Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\reviewer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:06:53.6793465Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\co-thinker.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:06:54.0397958Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\docs-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:06:54.6873667Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\code-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:06:54.7403529Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\reviewer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:07:01.30327Z",
       "event": "Read",
       "tool": "glob"
     },
     {
-      "ts": "2026-03-14T14:19:03.7500871Z",
+      "ts": "2026-03-14T15:07:01.3400483Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:07:07.1224026Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\005-fresh-agent-over-wait-for-feedback.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:07:07.3262348Z",
       "event": "Read",
       "tool": "glob"
     },
     {
-      "ts": "2026-03-14T14:19:06.0303684Z",
+      "ts": "2026-03-14T15:07:10.4190626Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GraphDisplayHandler.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\roles\\code-writer.role.json",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:19:06.9600233Z",
+      "ts": "2026-03-14T15:07:11.0587116Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\CompletionsCommand.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\roles\\reviewer.role.json",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:19:07.6297314Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:11.4349548Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:15.7018835Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:19:16.6945522Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Program.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:21.0737607Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Program.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:34.3392086Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:30.9322727Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:20:38.4945882Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:20:45.3769211Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:46.2809103Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:46.8565839Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CompletionsCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:47.298183Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:51.532535Z",
+      "ts": "2026-03-14T15:07:49.2939247Z",
       "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\code-writer.md",
       "tool": "edit"
     },
     {
-      "ts": "2026-03-14T14:35:29.7470569Z",
+      "ts": "2026-03-14T15:08:53.5648299Z",
       "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\roles\\reviewer.md",
       "tool": "edit"
     },
     {
-      "ts": "2026-03-14T14:35:30.0714796Z",
+      "ts": "2026-03-14T15:09:20.1458604Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/reference/roles/ \u0026\u0026 ls dydo/project/decisions/005*.md 2\u003E/dev/null \u0026\u0026 ls dydo/reference/guard..."
+    },
+    {
+      "ts": "2026-03-14T15:09:43.6654045Z",
       "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CompletionsCommandTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\role-docs-batch1.md",
       "tool": "edit"
     },
     {
-      "ts": "2026-03-14T14:35:30.3885564Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-14T14:35:34.8179718Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test DynaDocs.Tests/ --verbosity normal --filter \u0022FullyQualifiedName~GraphDisplayHandlerTests..."
-    },
-    {
-      "ts": "2026-03-14T14:35:44.6951079Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test DynaDocs.Tests/ --verbosity normal 2\u003E\u00261 | tail -15"
-    },
-    {
-      "ts": "2026-03-14T14:45:30.2600319Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-14T14:50:36.6574592Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:37.0647086Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentListHandler.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:37.5072919Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:37.992138Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:38.2346398Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:43.1219603Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:47.0071735Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:47.719536Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:48.0002037Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:51.5759815Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:56.5385841Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:50:57.5061926Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:50:58.3981991Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:50:59.226614Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:51:02.5650934Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:02.9444953Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ProcessUtilsTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:03.0297448Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:07.5473444Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:08.0997502Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\gap_check.py",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:12.4102871Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --detail 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-14T15:03:12.8271288Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect AgentRegistry 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-14T15:12:57.8048993Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:12:58.7022532Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentListHandler.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:12:59.579762Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:00.4543167Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:00.9211843Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:05.1662597Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:06.6491572Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:07.4300365Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:17:27.636023Z",
-      "event": "Role",
-      "role": "planner",
-      "task": "t1-coverage-gaps"
-    },
-    {
-      "ts": "2026-03-14T15:17:31.0792018Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\planner.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:36.3125148Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:37.0093333Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:17:40.2925251Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:44.4403531Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:49.386173Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:18:16.538996Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-t1-slice-a.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:18:55.7335421Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-t1-slice-b.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:19:35.0735976Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-t1-slice-c.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:19:38.8290376Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:19:43.5160735Z",
-      "event": "Role",
-      "role": "orchestrator",
-      "task": "t1-coverage-gaps"
-    },
-    {
-      "ts": "2026-03-14T15:19:46.9611686Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\orchestrator.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:20:24.8779984Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-b.md",
-      "tool": "write",
-      "reason": "Pending wait markers"
-    },
-    {
-      "ts": "2026-03-14T15:22:12.2685424Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-b.md",
-      "tool": "write",
-      "reason": "Pending wait markers"
-    },
-    {
-      "ts": "2026-03-14T15:22:24.9534088Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-b.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:22:37.0091655Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-c.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:23:10.754164Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bo3r1sq7j.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T17:52:49.9437643Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bswzu7ye0.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T18:06:44.7731307Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bmhxnkd29.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T18:24:58.4758636Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bn8p9u0xf.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T19:01:40.958683Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -30",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-14T19:01:51.565727Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-16T12:14:04.3572337Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-16T12:16:06.5868964Z",
+      "ts": "2026-03-14T15:10:02.8513401Z",
       "event": "Release",
-      "agent": "Brian"
+      "agent": "Charlie"
     }
   ],
   "snapshot": {
-    "git_commit": "9eb3434e02bc141d08358a9954fd554adbce495d",
+    "git_commit": "f2271d4ab4d5090dd4b90d399208f71f9daa6dfc",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -864,6 +477,8 @@
       "dydo/_system/audit/2026/2026-03-13-d5ae81b8-9a42-432c-8f2b-e775460b90a3.json",
       "dydo/_system/audit/2026/2026-03-13-d615819f-ae7d-40a6-8bd2-041d67ca5fb3.json",
       "dydo/_system/audit/2026/2026-03-13-e51c2620-0caf-4a0b-9901-7a5b714de1c6.json",
+      "dydo/_system/audit/2026/2026-03-14-1aed94c5-2c00-4c45-a734-c401a0381b6e.json",
+      "dydo/_system/audit/2026/2026-03-14-cbee593e-458e-4f1f-9d8d-b6f3263a547c.json",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
       "dydo/_system/roles/docs-writer.role.json",
@@ -892,7 +507,11 @@
       "dydo/guides/_guides.md",
       "dydo/guides/_index.md",
       "dydo/guides/coding-standards.md",
+      "dydo/guides/customizing-roles.md",
+      "dydo/guides/getting-started.md",
       "dydo/guides/how-to-use-docs.md",
+      "dydo/guides/troubleshooting.md",
+      "dydo/guides/writing-good-briefs.md",
       "dydo/index.md",
       "dydo/project/_index.md",
       "dydo/project/_project.md",
@@ -1035,6 +654,7 @@
       "dydo/project/decisions/008-data-driven-roles.md",
       "dydo/project/decisions/008-terminal-dispatch-routing-and-autoclose.md",
       "dydo/project/decisions/009-crap-per-method-metric.md",
+      "dydo/project/docs-upgrade-sprint.md",
       "dydo/project/future-features/_future-features.md",
       "dydo/project/future-features/_index.md",
       "dydo/project/future-features/coverage.py-update.md",
@@ -1046,11 +666,17 @@
       "dydo/project/pitfalls/_pitfalls.md",
       "dydo/project/tasks/_index.md",
       "dydo/project/tasks/_tasks.md",
+      "dydo/project/tasks/docs-structure-planning.md",
+      "dydo/project/tasks/docs-upgrade-sprint.md",
+      "dydo/project/tasks/fix-test-errors.md",
       "dydo/project/v1.3-release.md",
       "dydo/reference/_index.md",
       "dydo/reference/_reference.md",
       "dydo/reference/about-dynadocs.md",
+      "dydo/reference/audit-system.md",
+      "dydo/reference/configuration.md",
       "dydo/reference/dydo-commands.md",
+      "dydo/reference/guardrails.md",
       "dydo/reference/roles/_index.md",
       "dydo/reference/roles/_roles.md",
       "dydo/reference/roles/co-thinker.md",
@@ -1066,7 +692,15 @@
       "dydo/understand/_index.md",
       "dydo/understand/_understand.md",
       "dydo/understand/about.md",
+      "dydo/understand/agent-lifecycle.md",
       "dydo/understand/architecture.md",
+      "dydo/understand/dispatch-and-messaging.md",
+      "dydo/understand/documentation-model.md",
+      "dydo/understand/guard-system.md",
+      "dydo/understand/multi-agent-workflows.md",
+      "dydo/understand/roles-and-permissions.md",
+      "dydo/understand/task-lifecycle.md",
+      "dydo/understand/templates-and-customization.md",
       "dydo/welcome.md",
       "DynaDocs.csproj",
       "DynaDocs.sln",
@@ -1741,7 +1375,9 @@
       "dydo/reference/guardrails.md": [
         "dydo/understand/guard-system.md",
         "dydo/understand/roles-and-permissions.md",
-        "dydo/understand/agent-lifecycle.md"
+        "dydo/understand/agent-lifecycle.md",
+        "dydo/reference/configuration.md",
+        "dydo/guides/troubleshooting.md"
       ],
       "dydo/reference/writing-docs.md": [
         "dydo/guides/how-to-use-docs.md",
@@ -1855,6 +1491,17 @@
         "dydo/agents/brian/modes/reviewer.md",
         "dydo/agents/brian/modes/test-writer.md"
       ],
+      "dydo/agents/charlie/workflow.md": [
+        "dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/agents/charlie/modes/code-writer.md",
+        "dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/agents/charlie/modes/judge.md",
+        "dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/agents/charlie/modes/planner.md",
+        "dydo/agents/charlie/modes/reviewer.md",
+        "dydo/agents/charlie/modes/test-writer.md"
+      ],
       "dydo/project/changelog/_changelog.md": [
         "dydo/project/tasks/_index.md",
         "dydo/project/decisions/_index.md"
@@ -1903,6 +1550,12 @@
       ],
       "dydo/project/tasks/_tasks.md": [
         "dydo/project/changelog/_index.md"
+      ],
+      "dydo/reference/roles/co-thinker.md": [
+        "dydo/project/decisions/006-drop-interviewer-role.md",
+        "dydo/reference/roles/orchestrator.md",
+        "dydo/reference/roles/planner.md",
+        "dydo/reference/guardrails.md"
       ],
       "dydo/reference/roles/_index.md": [
         "dydo/reference/roles/co-thinker.md",
@@ -2042,6 +1695,50 @@
         "dydo/guides/coding-standards.md"
       ],
       "dydo/agents/brian/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/charlie/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/charlie/modes/code-writer.md"
+      ],
+      "dydo/agents/charlie/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/charlie/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/charlie/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/charlie/modes/code-writer.md"
+      ],
+      "dydo/agents/charlie/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],

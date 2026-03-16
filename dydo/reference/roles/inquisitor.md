@@ -33,14 +33,16 @@ Source code is read-only. The inquisitor investigates — it doesn't fix.
 5. Send confirmed findings to a judge for validation
 6. Produce inquisition report at `project/inquisitions/{area}.md`
 
-## Relationships
-
-- Dispatched by **orchestrator**, **human**, or other roles
-- Dispatches to **test-writer** (for hypothesis testing) and **judge** (for finding validation)
-- Operates autonomously — asks the human only when genuinely stuck
-
 ## Design Notes
 
 - Quality over quantity. One confirmed finding beats ten speculative ones.
-- Designed for human-scarce operation: dispatched and left to work.
+- Designed for human-scarce operation: dispatched and left to work autonomously, asking the human only when genuinely stuck.
+- No constraints in `.role.json` — the role is straightforward dispatch-and-work.
+- Source code is read-only (H1) — the inquisitor investigates, it doesn't fix.
 - See decision 007 for full rationale.
+
+## Related
+
+- [Test-Writer](./test-writer.md) — dispatched to prove/disprove hypotheses
+- [Judge](./judge.md) — dispatched to validate findings
+- [Guardrails Reference](../guardrails.md) — H1 (role-based write permissions)

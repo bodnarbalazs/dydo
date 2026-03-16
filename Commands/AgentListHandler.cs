@@ -17,7 +17,7 @@ internal static class AgentListHandler
         return ShowHumanAgents(registry, freeOnly, human);
     }
 
-    private static int ShowAllAgents(AgentRegistry registry, bool freeOnly, string? human)
+    internal static int ShowAllAgents(AgentRegistry registry, bool freeOnly, string? human)
     {
         var agents = freeOnly ? registry.GetFreeAgents() : registry.GetAllAgentStates();
 
@@ -86,7 +86,7 @@ internal static class AgentListHandler
         return ExitCodes.Success;
     }
 
-    private static int ShowHumanAgents(AgentRegistry registry, bool freeOnly, string? human)
+    internal static int ShowHumanAgents(AgentRegistry registry, bool freeOnly, string? human)
     {
         if (string.IsNullOrEmpty(human))
         {

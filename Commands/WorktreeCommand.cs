@@ -8,6 +8,8 @@ using DynaDocs.Utils;
 
 public static class WorktreeCommand
 {
+    internal static Action<string, string>? RunProcessOverride;
+
     public static Command Create()
     {
         var command = new Command("worktree", "Manage git worktrees for agent dispatch");
@@ -111,6 +113,23 @@ public static class WorktreeCommand
         return Directory.Exists(conventionPath) ? conventionPath : null;
     }
 
+    private static void RunProcess(string fileName, string arguments)
+    {
+        if (RunProcessOverride != null)
+        {
+            RunProcessOverride(fileName, arguments);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        })?.WaitForExit();
+    }
+
     private static void RemoveAgentsJunction(string worktreePath)
     {
         var junctionPath = Path.Combine(worktreePath, "dydo", "agents");
@@ -121,13 +140,7 @@ public static class WorktreeCommand
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // Junctions on Windows: rmdir without /s to remove only the junction, not contents
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "cmd",
-                    Arguments = $"/c rmdir \"{junctionPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                })?.WaitForExit();
+                RunProcess("cmd", $"/c rmdir \"{junctionPath}\"");
             }
             else
             {
@@ -144,13 +157,7 @@ public static class WorktreeCommand
     {
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = $"worktree remove \"{worktreePath}\" --force",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            })?.WaitForExit();
+            RunProcess("git", $"worktree remove \"{worktreePath}\" --force");
         }
         catch
         {
@@ -162,13 +169,7 @@ public static class WorktreeCommand
     {
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = $"branch -D worktree/{worktreeId}",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            })?.WaitForExit();
+            RunProcess("git", $"branch -D worktree/{worktreeId}");
         }
         catch
         {

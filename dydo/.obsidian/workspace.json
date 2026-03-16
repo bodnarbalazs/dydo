@@ -13,15 +13,30 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "reference/guardrails.md",
+                "file": "project/future-features/_index.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "guardrails"
+              "title": "_index"
+            }
+          },
+          {
+            "id": "2bb65a6b0e131126",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "reference/roles/test-writer.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "test-writer"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -183,43 +198,43 @@
       "bases:Create new base": false
     }
   },
-  "active": "ffff39c68fb85ae1",
+  "active": "2bb65a6b0e131126",
   "lastOpenFiles": [
-    "reference/guardrails.md.tmp.26236.1773499023014",
-    "project/tasks/fix-test-errors.md",
-    "reference/guardrails.md.tmp.26236.1773495434814",
-    "agents/Brian/state.md",
-    "agents/Brian/modes/judge.md",
-    "agents/Brian/modes/test-writer.md",
-    "agents/Brian/modes/reviewer.md",
-    "agents/Brian/modes/planner.md",
-    "agents/Brian/modes/orchestrator.md",
-    "agents/Brian/modes/inquisitor.md",
-    "agents/Brian/modes/docs-writer.md",
-    "agents/Brian/modes/code-writer.md",
-    "agents/Brian/modes/co-thinker.md",
-    "agents/Brian/modes",
-    "_system/audit/2026/2026-03-14-cbee593e-458e-4f1f-9d8d-b6f3263a547c.json",
-    "project/v1.3-release.md",
-    "reference/_reference.md.tmp.26236.1773494511938",
-    "guides/_guides.md.tmp.26236.1773494508826",
-    "understand/_understand.md.tmp.26236.1773494506664",
-    "reference/audit-system.md",
-    "reference/audit-system.md.tmp.26236.1773494488444",
-    "reference/configuration.md",
-    "reference/configuration.md.tmp.26236.1773494483555",
-    "reference/guardrails.md",
-    "reference/guardrails.md.tmp.26236.1773494478418",
-    "guides/troubleshooting.md",
-    "guides/troubleshooting.md.tmp.26236.1773494461010",
-    "guides/writing-good-briefs.md",
-    "guides/customizing-roles.md",
-    "guides/getting-started.md",
-    "understand/multi-agent-workflows.md",
-    "understand/templates-and-customization.md",
-    "understand/documentation-model.md",
-    "understand/task-lifecycle.md",
-    "understand/roles-and-permissions.md",
-    "understand/dispatch-and-messaging.md"
+    "project/docs-upgrade-sprint.md.tmp.26236.1773663458561",
+    "reference/roles/reviewer.md",
+    "reference/roles/planner.md",
+    "reference/roles/orchestrator.md",
+    "reference/roles/judge.md",
+    "reference/roles/inquisitor.md",
+    "reference/roles/docs-writer.md",
+    "reference/roles/code-writer.md",
+    "agents/Adele/archive/inbox/fdf9d33b-msg-role-docs-batch3.md",
+    "reference/roles/co-thinker.md",
+    "reference/roles/test-writer.md",
+    "index.md",
+    "agents/Brian/archive/inbox/76cfcee1-msg-t1-slice-a.md",
+    "agents/Brian/archive/inbox/6050b0fa-msg-t1-slice-c.md",
+    "agents/Brian/archive/inbox/50bd2773-msg-t1-slice-b.md",
+    "agents/Brian/archive/inbox/45b4ee76-msg-t1-slice-c.md",
+    "agents/Brian/archive/inbox/0ce5178b-msg-t1-slice-a.md",
+    "agents/Brian/archive/inbox/01bdd560-msg-t1-slice-b.md",
+    "agents/Charlie/archive/inbox/27f20a44-t1-slice-b.md",
+    "agents/Charlie/review-t1-slice-b.md",
+    "agents/Charlie/review-t1-slice-b.md.tmp.39952.1773513161623",
+    "agents/Charlie/modes/test-writer.md",
+    "agents/Charlie/modes/planner.md",
+    "agents/Charlie/modes/reviewer.md",
+    "agents/Charlie/modes/orchestrator.md",
+    "agents/Charlie/modes/judge.md",
+    "agents/Charlie/modes/inquisitor.md",
+    "agents/Charlie/modes",
+    "_system/audit/2026/2026-03-14-54a2fab8-b5ec-4c61-b0c1-c768936b80fe.json",
+    "reference/coverage-tools.md.tmp.36220.1773510886794",
+    "agents/Grace/modes",
+    "agents/Grace/archive/20260314-175256",
+    "_system/audit/2026/2026-03-14-6f7c283a-ca31-44e2-9334-53d396d53577.json",
+    "agents/Frank/modes",
+    "_system/audit/2026/2026-03-14-961e3794-b0db-429d-9345-30b28e38f80c.json",
+    "agents/Emma/modes"
   ]
 }

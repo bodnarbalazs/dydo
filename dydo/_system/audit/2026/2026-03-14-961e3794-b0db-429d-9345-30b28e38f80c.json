@@ -1,557 +1,584 @@
 {
-  "session": "cbee593e-458e-4f1f-9d8d-b6f3263a547c",
-  "agent": "Brian",
+  "session": "961e3794-b0db-429d-9345-30b28e38f80c",
+  "agent": "Frank",
   "human": "balazs",
-  "started": "2026-03-14T13:37:00.564213Z",
-  "git_head": "9eb3434",
+  "started": "2026-03-14T15:24:00.7808834Z",
+  "git_head": "f2271d4",
   "events": [
     {
-      "ts": "2026-03-14T13:37:00.5634172Z",
+      "ts": "2026-03-14T15:24:00.780215Z",
+      "event": "Blocked",
+      "tool": "grep",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-14T15:24:01.0570978Z",
+      "event": "Blocked",
+      "tool": "grep",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-14T15:24:05.3860468Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:05.7569902Z",
-      "event": "Blocked",
-      "tool": "agent",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-14T13:37:09.3519593Z",
+      "ts": "2026-03-14T15:24:09.1875091Z",
       "event": "Claim",
-      "agent": "Brian"
+      "agent": "Frank"
     },
     {
-      "ts": "2026-03-14T13:37:11.8478212Z",
+      "ts": "2026-03-14T15:24:12.8281053Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:15.8525945Z",
+      "ts": "2026-03-14T15:24:19.365336Z",
       "event": "Role",
-      "role": "code-writer",
-      "task": "fix-test-errors"
+      "role": "inquisitor",
+      "task": "find-t1-coverage-doc"
     },
     {
-      "ts": "2026-03-14T13:37:18.4029553Z",
+      "ts": "2026-03-14T15:24:22.1980457Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\modes\\inquisitor.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:21.7863084Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T13:37:22.2283496Z",
+      "ts": "2026-03-14T15:24:26.4257363Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:22.4507819Z",
+      "ts": "2026-03-14T15:24:26.4891453Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T13:37:26.8929626Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test DynaDocs.Tests/ --verbosity normal 2\u003E\u00261 | tail -80"
+      "ts": "2026-03-14T15:24:31.7965065Z",
+      "event": "Read",
+      "tool": "grep"
     },
     {
-      "ts": "2026-03-14T14:18:57.6635615Z",
+      "ts": "2026-03-14T15:24:35.6026746Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\t1-coverage-gaps.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:18:58.1039655Z",
+      "ts": "2026-03-14T15:24:37.3389699Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\changelog\\2026\\2026-03-13\\t1-coverage-sprint.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:18:58.6470632Z",
+      "ts": "2026-03-14T15:24:37.4536067Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CompletionsCommandTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\t1-slice-a.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:19:03.4646045Z",
+      "ts": "2026-03-14T15:24:37.5464952Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\009-crap-per-method-metric.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:24:42.0206529Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\future-features\\doc-coverage.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:24:43.0441508Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-14T15:24:50.1016391Z",
       "event": "Read",
       "tool": "glob"
     },
     {
-      "ts": "2026-03-14T14:19:03.6403596Z",
+      "ts": "2026-03-14T15:24:51.1016082Z",
       "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-14T14:19:03.7500871Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-14T14:19:06.0303684Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GraphDisplayHandler.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:19:06.9600233Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\CompletionsCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:19:07.6297314Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands",
       "tool": "grep"
     },
     {
-      "ts": "2026-03-14T14:19:11.4349548Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:15.7018835Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:19:16.6945522Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Program.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:21.0737607Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Program.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:19:34.3392086Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:30.9322727Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:20:38.4945882Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:20:45.3769211Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:46.2809103Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:46.8565839Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CompletionsCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:47.298183Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:20:51.532535Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\GraphDisplayHandlerTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-14T14:35:29.7470569Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\HelpCommandTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-14T14:35:30.0714796Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CompletionsCommandTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-14T14:35:30.3885564Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-14T14:35:34.8179718Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test DynaDocs.Tests/ --verbosity normal --filter \u0022FullyQualifiedName~GraphDisplayHandlerTests..."
-    },
-    {
-      "ts": "2026-03-14T14:35:44.6951079Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test DynaDocs.Tests/ --verbosity normal 2\u003E\u00261 | tail -15"
-    },
-    {
-      "ts": "2026-03-14T14:45:30.2600319Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-14T14:50:36.6574592Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:37.0647086Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentListHandler.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:37.5072919Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:37.992138Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:38.2346398Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:43.1219603Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:47.0071735Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:47.719536Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:48.0002037Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:51.5759815Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:50:56.5385841Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:50:57.5061926Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:50:58.3981991Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:50:59.226614Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T14:51:02.5650934Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:02.9444953Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ProcessUtilsTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:03.0297448Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:07.5473444Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T14:51:08.0997502Z",
+      "ts": "2026-03-14T15:24:54.1256794Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\gap_check.py",
       "tool": "read"
     },
     {
-      "ts": "2026-03-14T14:51:12.4102871Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --detail 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-14T15:03:12.8271288Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect AgentRegistry 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-14T15:12:57.8048993Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:12:58.7022532Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentListHandler.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:12:59.579762Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:00.4543167Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:00.9211843Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:05.1662597Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:06.6491572Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:13:07.4300365Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:17:27.636023Z",
-      "event": "Role",
-      "role": "planner",
-      "task": "t1-coverage-gaps"
-    },
-    {
-      "ts": "2026-03-14T15:17:31.0792018Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\planner.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:36.3125148Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:37.0093333Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:17:40.2925251Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:44.4403531Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:17:49.386173Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:18:16.538996Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-t1-slice-a.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:18:55.7335421Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-t1-slice-b.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:19:35.0735976Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-t1-slice-c.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:19:38.8290376Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-14T15:19:43.5160735Z",
-      "event": "Role",
-      "role": "orchestrator",
-      "task": "t1-coverage-gaps"
-    },
-    {
-      "ts": "2026-03-14T15:19:46.9611686Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\orchestrator.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T15:20:24.8779984Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-b.md",
-      "tool": "write",
-      "reason": "Pending wait markers"
-    },
-    {
-      "ts": "2026-03-14T15:22:12.2685424Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-b.md",
-      "tool": "write",
-      "reason": "Pending wait markers"
-    },
-    {
-      "ts": "2026-03-14T15:22:24.9534088Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-b.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:22:37.0091655Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-t1-slice-c.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-14T15:23:10.754164Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bo3r1sq7j.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T17:52:49.9437643Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bswzu7ye0.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T18:06:44.7731307Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bmhxnkd29.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T18:24:58.4758636Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\cbee593e-458e-4f1f-9d8d-b6f3263a547c\\tasks\\bn8p9u0xf.output",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-14T19:01:40.958683Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -30",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-14T19:01:51.565727Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-16T12:14:04.3572337Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-16T12:16:06.5868964Z",
+      "ts": "2026-03-14T15:25:05.8816163Z",
       "event": "Release",
-      "agent": "Brian"
+      "agent": "Frank"
+    },
+    {
+      "ts": "2026-03-14T15:25:53.586487Z",
+      "event": "Claim",
+      "agent": "Frank"
+    },
+    {
+      "ts": "2026-03-14T15:25:59.2864184Z",
+      "event": "Role",
+      "role": "docs-writer",
+      "task": "t1-coverage-doc"
+    },
+    {
+      "ts": "2026-03-14T15:26:03.7478711Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\modes\\docs-writer.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:26:04.9495732Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/LC/\u0022 2\u003E\u00261 || ls \u0022C:/Users/User/Desktop/Projects/LC/\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-14T15:26:22.8502391Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:26:23.3780358Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\how-to-use-docs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:26:24.3595334Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\writing-docs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T15:26:28.3392611Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-14T15:26:30.6978269Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/Projects/LC\u0022 -type d -name \u0022dydo\u0022 2\u003E/dev/null | head -5"
+    },
+    {
+      "ts": "2026-03-14T15:26:30.8509932Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/LC/\u0022 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-14T15:27:03.0875791Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "pwd"
+    },
+    {
+      "ts": "2026-03-14T15:27:03.4356912Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/ 2\u003E/dev/null | grep -E \u0022^d\u0022 | head -20"
+    },
+    {
+      "ts": "2026-03-14T17:29:59.7951244Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-14T17:29:59.89608Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-14T17:30:02.7448584Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-14T17:30:03.1710513Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-14T17:30:03.418867Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-14T17:30:03.9039911Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.md\u0022 | xargs grep -l \u0022tier\\|T1\\|CRAP\\|g..."
+    },
+    {
+      "ts": "2026-03-14T17:30:40.3808999Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/009-crap-per-method-metric.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:40.611101Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/t1-coverage-gaps.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:40.8047124Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/t1-coverage-doc.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:44.2240321Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/changelog/2026/2026-03-13/v1.3-coverage-system-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:44.2453601Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/changelog/2026/2026-03-13/t1-coverage-sprint.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:44.9268142Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-14T17:30:47.0643324Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/v1.3-release.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:47.6418863Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*coverage*\u0022 -o -name \u0022*gap*check*\u0022 2\u003E/de..."
+    },
+    {
+      "ts": "2026-03-14T17:30:50.5229984Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type d \\( -name \u0022coverage\u0022 -o -name \u0022*coverage*\u0022 \\) 2\u003E..."
+    },
+    {
+      "ts": "2026-03-14T17:30:50.6309746Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/coverage/ 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-14T17:30:52.5305801Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/coverage/gap_check.py",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:52.744343Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/coverage/coverage.runsettings",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:52.9703903Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/coverage/tier_registry.json",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:56.3124704Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-14T17:30:56.4560244Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/reference/guardrails.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:30:59.2748983Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 -path \u0022*/Tests/*\u0022 | xargs grep -l ..."
+    },
+    {
+      "ts": "2026-03-14T17:31:06.44743Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022tier_registry\u0022 /c/Users/User/Desktop/Projects/DynaDocs --include=\u0022*.md\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-14T17:31:09.8351632Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Kate/archive/20260311-174307/plan-v1.3-coverage-system-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:31:26.1400149Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/LC/\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-14T17:39:52.3031658Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-14T17:39:55.0560245Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/dydo\u0022 -type f -name \u0022*.md\u0022 | head -30"
+    },
+    {
+      "ts": "2026-03-14T17:40:06.4486827Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-14T17:40:09.2968234Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-14T17:40:09.4206115Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/tests\u0022 -type f -name \u0022*.md\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-14T17:41:10.2698558Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat \u0022C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\961e3794-b0db-429d-9345-..."
+    },
+    {
+      "ts": "2026-03-14T17:41:12.1921368Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:41:29.6184872Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/dydo\u0022 -type f -name \u0022*testing*\u0022 -o -name \u0022*coverage*\u0022 -o -name \u0022*tier..."
+    },
+    {
+      "ts": "2026-03-14T17:41:37.9603387Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/reference/coverage-tools.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:41:38.1034485Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/guides/testing-strategy.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:41:38.3150422Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/decisions/002-crap-score-tier-thresholds.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:41:38.5416584Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/decisions/005-testing-tier-metric-revision.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:42:04.9292112Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/decisions/003-unified-coverage-reporting.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:42:05.204328Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/decisions/006-coverage-tooling-split.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:42:05.3993265Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/decisions/007-istanbul-coverage-provider.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:09.058432Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/decisions/001-vitest-for-frontend-testing.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:10.1571472Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/dydo\u0022 -type f -name \u0022*.md\u0022 | xargs grep -l \u0022T1\\|T2\\|T3\\|tier\u0022 | head ..."
+    },
+    {
+      "ts": "2026-03-14T17:49:13.6548934Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/dydo/understand\u0022 -type f -name \u0022*.md\u0022"
+    },
+    {
+      "ts": "2026-03-14T17:49:16.9926152Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/dydo/guides\u0022 -type f -name \u0022*.md\u0022"
+    },
+    {
+      "ts": "2026-03-14T17:49:19.9217659Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/understand/tease-player.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:20.0483367Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/understand/_understand.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:25.2065211Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/dydo/reference\u0022 -type f -name \u0022*.md\u0022"
+    },
+    {
+      "ts": "2026-03-14T17:49:28.8351216Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/changelog/2026/2026-02-16",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:31.6067524Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls \u0022C:/Users/User/Desktop/LC/dydo/project/changelog/2026/2026-02-16\u0022 | head -20"
+    },
+    {
+      "ts": "2026-03-14T17:49:35.7600087Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/changelog/2026/2026-02-16/t1-coverage-assessment.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:36.2133787Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/changelog/2026/2026-02-16/testing-tier-review.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:36.3278252Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/dydo/project/changelog/2026/2026-02-16/review-testing-setups-and-plan-t1-coverage.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:49:55.4092536Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:/Users/User/Desktop/LC/tests/coverage\u0022 -type f -name \u0022*.json\u0022 -o -name \u0022*.py\u0022 | head -10"
+    },
+    {
+      "ts": "2026-03-14T17:50:32.1946609Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/tests/coverage/tier_registry.json",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:50:32.3960385Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/tests/coverage/gap_check.py",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:50:32.5664981Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/LC/tests/coverage/report.py",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:51:50.2341051Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\guides\\testing-strategy.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:51:50.6783053Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\reference\\coverage-tools.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:51:51.1237679Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\project\\decisions\\002-crap-score-tier-thresholds.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:51:51.5163504Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\project\\decisions\\005-testing-tier-metric-revision.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:53:59.5745452Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\_index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:53:59.7065978Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\_index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-14T17:54:34.1891838Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\testing-strategy.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-14T17:54:46.7608365Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\coverage-tools.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-14T17:55:13.3533936Z",
+      "event": "Release",
+      "agent": "Frank"
     }
   ],
   "snapshot": {
-    "git_commit": "9eb3434e02bc141d08358a9954fd554adbce495d",
+    "git_commit": "f2271d4ab4d5090dd4b90d399208f71f9daa6dfc",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -864,6 +891,8 @@
       "dydo/_system/audit/2026/2026-03-13-d5ae81b8-9a42-432c-8f2b-e775460b90a3.json",
       "dydo/_system/audit/2026/2026-03-13-d615819f-ae7d-40a6-8bd2-041d67ca5fb3.json",
       "dydo/_system/audit/2026/2026-03-13-e51c2620-0caf-4a0b-9901-7a5b714de1c6.json",
+      "dydo/_system/audit/2026/2026-03-14-1aed94c5-2c00-4c45-a734-c401a0381b6e.json",
+      "dydo/_system/audit/2026/2026-03-14-cbee593e-458e-4f1f-9d8d-b6f3263a547c.json",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
       "dydo/_system/roles/docs-writer.role.json",
@@ -892,7 +921,11 @@
       "dydo/guides/_guides.md",
       "dydo/guides/_index.md",
       "dydo/guides/coding-standards.md",
+      "dydo/guides/customizing-roles.md",
+      "dydo/guides/getting-started.md",
       "dydo/guides/how-to-use-docs.md",
+      "dydo/guides/troubleshooting.md",
+      "dydo/guides/writing-good-briefs.md",
       "dydo/index.md",
       "dydo/project/_index.md",
       "dydo/project/_project.md",
@@ -1035,6 +1068,7 @@
       "dydo/project/decisions/008-data-driven-roles.md",
       "dydo/project/decisions/008-terminal-dispatch-routing-and-autoclose.md",
       "dydo/project/decisions/009-crap-per-method-metric.md",
+      "dydo/project/docs-upgrade-sprint.md",
       "dydo/project/future-features/_future-features.md",
       "dydo/project/future-features/_index.md",
       "dydo/project/future-features/coverage.py-update.md",
@@ -1046,11 +1080,17 @@
       "dydo/project/pitfalls/_pitfalls.md",
       "dydo/project/tasks/_index.md",
       "dydo/project/tasks/_tasks.md",
+      "dydo/project/tasks/docs-structure-planning.md",
+      "dydo/project/tasks/docs-upgrade-sprint.md",
+      "dydo/project/tasks/fix-test-errors.md",
       "dydo/project/v1.3-release.md",
       "dydo/reference/_index.md",
       "dydo/reference/_reference.md",
       "dydo/reference/about-dynadocs.md",
+      "dydo/reference/audit-system.md",
+      "dydo/reference/configuration.md",
       "dydo/reference/dydo-commands.md",
+      "dydo/reference/guardrails.md",
       "dydo/reference/roles/_index.md",
       "dydo/reference/roles/_roles.md",
       "dydo/reference/roles/co-thinker.md",
@@ -1066,7 +1106,15 @@
       "dydo/understand/_index.md",
       "dydo/understand/_understand.md",
       "dydo/understand/about.md",
+      "dydo/understand/agent-lifecycle.md",
       "dydo/understand/architecture.md",
+      "dydo/understand/dispatch-and-messaging.md",
+      "dydo/understand/documentation-model.md",
+      "dydo/understand/guard-system.md",
+      "dydo/understand/multi-agent-workflows.md",
+      "dydo/understand/roles-and-permissions.md",
+      "dydo/understand/task-lifecycle.md",
+      "dydo/understand/templates-and-customization.md",
       "dydo/welcome.md",
       "DynaDocs.csproj",
       "DynaDocs.sln",
@@ -1741,7 +1789,9 @@
       "dydo/reference/guardrails.md": [
         "dydo/understand/guard-system.md",
         "dydo/understand/roles-and-permissions.md",
-        "dydo/understand/agent-lifecycle.md"
+        "dydo/understand/agent-lifecycle.md",
+        "dydo/reference/configuration.md",
+        "dydo/guides/troubleshooting.md"
       ],
       "dydo/reference/writing-docs.md": [
         "dydo/guides/how-to-use-docs.md",
@@ -1855,6 +1905,50 @@
         "dydo/agents/brian/modes/reviewer.md",
         "dydo/agents/brian/modes/test-writer.md"
       ],
+      "dydo/agents/charlie/workflow.md": [
+        "dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/agents/charlie/modes/code-writer.md",
+        "dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/agents/charlie/modes/judge.md",
+        "dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/agents/charlie/modes/planner.md",
+        "dydo/agents/charlie/modes/reviewer.md",
+        "dydo/agents/charlie/modes/test-writer.md"
+      ],
+      "dydo/agents/dexter/workflow.md": [
+        "dydo/agents/dexter/modes/co-thinker.md",
+        "dydo/agents/dexter/modes/code-writer.md",
+        "dydo/agents/dexter/modes/docs-writer.md",
+        "dydo/agents/dexter/modes/inquisitor.md",
+        "dydo/agents/dexter/modes/judge.md",
+        "dydo/agents/dexter/modes/orchestrator.md",
+        "dydo/agents/dexter/modes/planner.md",
+        "dydo/agents/dexter/modes/reviewer.md",
+        "dydo/agents/dexter/modes/test-writer.md"
+      ],
+      "dydo/agents/emma/workflow.md": [
+        "dydo/agents/emma/modes/co-thinker.md",
+        "dydo/agents/emma/modes/code-writer.md",
+        "dydo/agents/emma/modes/docs-writer.md",
+        "dydo/agents/emma/modes/inquisitor.md",
+        "dydo/agents/emma/modes/judge.md",
+        "dydo/agents/emma/modes/orchestrator.md",
+        "dydo/agents/emma/modes/planner.md",
+        "dydo/agents/emma/modes/reviewer.md",
+        "dydo/agents/emma/modes/test-writer.md"
+      ],
+      "dydo/agents/frank/workflow.md": [
+        "dydo/agents/frank/modes/co-thinker.md",
+        "dydo/agents/frank/modes/code-writer.md",
+        "dydo/agents/frank/modes/docs-writer.md",
+        "dydo/agents/frank/modes/inquisitor.md",
+        "dydo/agents/frank/modes/judge.md",
+        "dydo/agents/frank/modes/orchestrator.md",
+        "dydo/agents/frank/modes/planner.md",
+        "dydo/agents/frank/modes/reviewer.md",
+        "dydo/agents/frank/modes/test-writer.md"
+      ],
       "dydo/project/changelog/_changelog.md": [
         "dydo/project/tasks/_index.md",
         "dydo/project/decisions/_index.md"
@@ -1903,6 +1997,56 @@
       ],
       "dydo/project/tasks/_tasks.md": [
         "dydo/project/changelog/_index.md"
+      ],
+      "dydo/reference/roles/co-thinker.md": [
+        "dydo/project/decisions/006-drop-interviewer-role.md",
+        "dydo/reference/roles/orchestrator.md",
+        "dydo/reference/roles/planner.md",
+        "dydo/reference/guardrails.md"
+      ],
+      "dydo/reference/roles/code-writer.md": [
+        "dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
+        "dydo/reference/roles/reviewer.md",
+        "dydo/reference/roles/planner.md",
+        "dydo/reference/roles/test-writer.md",
+        "dydo/reference/guardrails.md"
+      ],
+      "dydo/reference/roles/docs-writer.md": [
+        "dydo/reference/writing-docs.md",
+        "dydo/reference/guardrails.md",
+        "dydo/reference/roles/reviewer.md"
+      ],
+      "dydo/reference/roles/inquisitor.md": [
+        "dydo/reference/roles/test-writer.md",
+        "dydo/reference/roles/judge.md",
+        "dydo/reference/guardrails.md"
+      ],
+      "dydo/reference/roles/judge.md": [
+        "dydo/reference/roles/test-writer.md",
+        "dydo/reference/roles/inquisitor.md",
+        "dydo/reference/guardrails.md"
+      ],
+      "dydo/reference/roles/orchestrator.md": [
+        "dydo/reference/roles/co-thinker.md",
+        "dydo/reference/roles/planner.md",
+        "dydo/reference/guardrails.md"
+      ],
+      "dydo/reference/roles/planner.md": [
+        "dydo/project/decisions/007-oversight-roles.md",
+        "dydo/reference/guardrails.md",
+        "dydo/reference/roles/co-thinker.md",
+        "dydo/reference/roles/code-writer.md",
+        "dydo/reference/roles/orchestrator.md"
+      ],
+      "dydo/reference/roles/reviewer.md": [
+        "dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
+        "dydo/reference/roles/code-writer.md",
+        "dydo/reference/guardrails.md"
+      ],
+      "dydo/reference/roles/test-writer.md": [
+        "dydo/reference/roles/code-writer.md",
+        "dydo/reference/roles/inquisitor.md",
+        "dydo/reference/guardrails.md"
       ],
       "dydo/reference/roles/_index.md": [
         "dydo/reference/roles/co-thinker.md",
@@ -2042,6 +2186,182 @@
         "dydo/guides/coding-standards.md"
       ],
       "dydo/agents/brian/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/charlie/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/charlie/modes/code-writer.md"
+      ],
+      "dydo/agents/charlie/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/charlie/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/charlie/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/charlie/modes/code-writer.md"
+      ],
+      "dydo/agents/charlie/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/charlie/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/dexter/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/dexter/modes/code-writer.md"
+      ],
+      "dydo/agents/dexter/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/dexter/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/dexter/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/dexter/modes/code-writer.md"
+      ],
+      "dydo/agents/dexter/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/dexter/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/emma/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/emma/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/emma/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/frank/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/frank/modes/code-writer.md"
+      ],
+      "dydo/agents/frank/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/frank/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/frank/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/frank/modes/code-writer.md"
+      ],
+      "dydo/agents/frank/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/frank/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],

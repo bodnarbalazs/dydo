@@ -58,11 +58,19 @@ public static partial class ProcessUtils
         return status == 0 ? (int)pbi.InheritedFromUniqueProcessId : null;
     }
 
-    private static int? GetParentPidLinux(int pid)
+    internal static int? GetParentPidLinux(int pid)
     {
         var statusPath = $"/proc/{pid}/status";
         if (!File.Exists(statusPath)) return null;
-        foreach (var line in File.ReadLines(statusPath))
+        return ParseProcStatusForPpid(File.ReadLines(statusPath));
+    }
+
+    /// <summary>
+    /// Parses /proc/PID/status lines to extract the parent PID.
+    /// </summary>
+    internal static int? ParseProcStatusForPpid(IEnumerable<string> lines)
+    {
+        foreach (var line in lines)
         {
             if (line.StartsWith("PPid:") && int.TryParse(line[5..].Trim(), out var ppid))
                 return ppid;
@@ -70,19 +78,18 @@ public static partial class ProcessUtils
         return null;
     }
 
-    private static int? GetParentPidMac(int pid)
+    internal static int? GetParentPidMac(int pid)
     {
-        var psi = new ProcessStartInfo("ps", $"-o ppid= -p {pid}")
-        {
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        using var proc = Process.Start(psi);
-        if (proc == null) return null;
-        var output = proc.StandardOutput.ReadToEnd().Trim();
-        proc.WaitForExit();
-        return int.TryParse(output, out var result) ? result : null;
+        var output = RunProcess("ps", $"-o ppid= -p {pid}");
+        return output != null ? ParsePsPpidOutput(output) : null;
+    }
+
+    /// <summary>
+    /// Parses `ps -o ppid=` output to extract a parent PID.
+    /// </summary>
+    internal static int? ParsePsPpidOutput(string output)
+    {
+        return int.TryParse(output.Trim(), out var result) ? result : null;
     }
 
     [StructLayout(LayoutKind.Sequential)]

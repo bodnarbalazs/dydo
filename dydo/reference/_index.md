@@ -14,6 +14,7 @@ Index of reference documentation.
 - [DynaDocs (dydo)](./about-dynadocs.md) - Documentation-driven context and agent orchestration for AI coding assistants.
 - [Audit System](./audit-system.md) - The audit trail: how dydo records agent activity for replay and accountability.
 - [Configuration Reference](./configuration.md) - Complete reference for `dydo.
+- [Coverage Tools](./coverage-tools.md) - An in-house Python script for measuring and enforcing test coverage.
 - [CLI Commands Reference](./dydo-commands.md) - Complete reference for all `dydo` commands.
 - [Guardrails](./guardrails.md) - The three-tier system that shapes agent behavior.
 - [Writing Documentation](./writing-docs.md) - Reference for documentation conventions, structure, and validation rules.

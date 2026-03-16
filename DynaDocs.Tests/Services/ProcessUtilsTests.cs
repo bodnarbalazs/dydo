@@ -212,4 +212,311 @@ public class ProcessUtilsTests
         Assert.Single(pids);
         Assert.Equal(99, pids[0]);
     }
+
+    [Fact]
+    public void ParseWmicCsvOutput_SingleColumn_Skipped()
+    {
+        var csv = "ProcessId\n1234\n";
+        var pids = ProcessUtils.ParseWmicCsvOutput(csv);
+
+        Assert.Empty(pids);
+    }
+
+    // --- ParseNewlineSeparatedPids ---
+
+    [Fact]
+    public void ParseNewlineSeparatedPids_ValidOutput_ExtractsPids()
+    {
+        var output = "100\n200\n300\n";
+        var pids = ProcessUtils.ParseNewlineSeparatedPids(output);
+
+        Assert.Equal(3, pids.Count);
+        Assert.Equal([100, 200, 300], pids);
+    }
+
+    [Fact]
+    public void ParseNewlineSeparatedPids_EmptyOutput_ReturnsEmpty()
+    {
+        Assert.Empty(ProcessUtils.ParseNewlineSeparatedPids(""));
+    }
+
+    [Fact]
+    public void ParseNewlineSeparatedPids_WhitespaceAndBlanks_Skipped()
+    {
+        var output = "  42  \n\n  \n99\n";
+        var pids = ProcessUtils.ParseNewlineSeparatedPids(output);
+
+        Assert.Equal(2, pids.Count);
+        Assert.Contains(42, pids);
+        Assert.Contains(99, pids);
+    }
+
+    [Fact]
+    public void ParseNewlineSeparatedPids_ZeroAndNegative_Skipped()
+    {
+        var output = "0\n-5\n10\n";
+        var pids = ProcessUtils.ParseNewlineSeparatedPids(output);
+
+        Assert.Single(pids);
+        Assert.Equal(10, pids[0]);
+    }
+
+    [Fact]
+    public void ParseNewlineSeparatedPids_NonNumeric_Skipped()
+    {
+        var output = "abc\n50\nxyz\n";
+        var pids = ProcessUtils.ParseNewlineSeparatedPids(output);
+
+        Assert.Single(pids);
+        Assert.Equal(50, pids[0]);
+    }
+
+    // --- ParsePsEoPidArgs ---
+
+    [Fact]
+    public void ParsePsEoPidArgs_MatchingLines_ExtractsPids()
+    {
+        var output = "  PID ARGS\n  123 /usr/bin/dotnet run\n  456 /usr/bin/node server.js\n  789 dotnet test\n";
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "dotnet");
+
+        Assert.Equal(2, pids.Count);
+        Assert.Contains(123, pids);
+        Assert.Contains(789, pids);
+    }
+
+    [Fact]
+    public void ParsePsEoPidArgs_NoMatch_ReturnsEmpty()
+    {
+        var output = "  PID ARGS\n  123 /usr/bin/node server.js\n";
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "dotnet");
+
+        Assert.Empty(pids);
+    }
+
+    [Fact]
+    public void ParsePsEoPidArgs_CaseInsensitive()
+    {
+        var output = "  100 DOTNET run\n";
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "dotnet");
+
+        Assert.Single(pids);
+        Assert.Equal(100, pids[0]);
+    }
+
+    [Fact]
+    public void ParsePsEoPidArgs_EmptyOutput_ReturnsEmpty()
+    {
+        Assert.Empty(ProcessUtils.ParsePsEoPidArgs("", "dotnet"));
+    }
+
+    [Fact]
+    public void ParsePsEoPidArgs_HeaderLineNotNumeric_Skipped()
+    {
+        var output = "  PID ARGS dotnet\n  42 dotnet test\n";
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "dotnet");
+
+        Assert.Single(pids);
+        Assert.Equal(42, pids[0]);
+    }
+
+    [Fact]
+    public void ParsePsEoPidArgs_NoSpace_Skipped()
+    {
+        // A line with no space can't have a PID prefix
+        var output = "dotnet\n  55 dotnet run\n";
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "dotnet");
+
+        Assert.Single(pids);
+        Assert.Equal(55, pids[0]);
+    }
+
+    [Fact]
+    public void ParsePsEoPidArgs_ZeroPid_Skipped()
+    {
+        var output = "  0 dotnet run\n  77 dotnet test\n";
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "dotnet");
+
+        Assert.Single(pids);
+        Assert.Equal(77, pids[0]);
+    }
+
+    // --- ParseProcStatusForPpid ---
+
+    [Fact]
+    public void ParseProcStatusForPpid_ValidStatus_ReturnsPpid()
+    {
+        var lines = new[] { "Name:\ttest", "State:\tS (sleeping)", "PPid:\t1234", "TracerPid:\t0" };
+        var ppid = ProcessUtils.ParseProcStatusForPpid(lines);
+
+        Assert.Equal(1234, ppid);
+    }
+
+    [Fact]
+    public void ParseProcStatusForPpid_NoPpidLine_ReturnsNull()
+    {
+        var lines = new[] { "Name:\ttest", "State:\tS (sleeping)", "TracerPid:\t0" };
+
+        Assert.Null(ProcessUtils.ParseProcStatusForPpid(lines));
+    }
+
+    [Fact]
+    public void ParseProcStatusForPpid_EmptyLines_ReturnsNull()
+    {
+        Assert.Null(ProcessUtils.ParseProcStatusForPpid(Array.Empty<string>()));
+    }
+
+    [Fact]
+    public void ParseProcStatusForPpid_MalformedPpid_ReturnsNull()
+    {
+        var lines = new[] { "PPid:\tnot_a_number" };
+
+        Assert.Null(ProcessUtils.ParseProcStatusForPpid(lines));
+    }
+
+    [Fact]
+    public void ParseProcStatusForPpid_PpidWithWhitespace_Parsed()
+    {
+        var lines = new[] { "PPid:\t  567  " };
+
+        Assert.Equal(567, ProcessUtils.ParseProcStatusForPpid(lines));
+    }
+
+    // --- ParsePsPpidOutput ---
+
+    [Fact]
+    public void ParsePsPpidOutput_ValidPid_ReturnsPid()
+    {
+        Assert.Equal(1234, ProcessUtils.ParsePsPpidOutput("  1234  "));
+    }
+
+    [Fact]
+    public void ParsePsPpidOutput_EmptyOutput_ReturnsNull()
+    {
+        Assert.Null(ProcessUtils.ParsePsPpidOutput(""));
+    }
+
+    [Fact]
+    public void ParsePsPpidOutput_NonNumeric_ReturnsNull()
+    {
+        Assert.Null(ProcessUtils.ParsePsPpidOutput("  abc  "));
+    }
+
+    [Fact]
+    public void ParsePsPpidOutput_WhitespaceOnly_ReturnsNull()
+    {
+        Assert.Null(ProcessUtils.ParsePsPpidOutput("   "));
+    }
+
+    // --- FindByPowerShell (integration, Windows only) ---
+
+    [Fact]
+    public void FindByPowerShell_ReturnsListForKnownPattern()
+    {
+        var result = ProcessUtils.FindByPowerShell("dotnet");
+
+        Assert.NotNull(result);
+        Assert.IsType<List<int>>(result);
+    }
+
+    [Fact]
+    public void FindByPowerShell_ReturnsListForBogusPattern()
+    {
+        // May match the PowerShell process itself, so just verify no crash
+        var result = ProcessUtils.FindByPowerShell("zzz-nonexistent-process-pattern-zzz");
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void FindByPowerShell_ResolverThrows_ReturnsEmpty()
+    {
+        // Trigger the catch path by making the resolver throw
+        ProcessUtils.PowerShellResolverOverride = () => throw new InvalidOperationException("test");
+        try
+        {
+            var result = ProcessUtils.FindByPowerShell("dotnet");
+            Assert.Empty(result);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    // --- FindByWmic (integration, Windows only) ---
+
+    [Fact]
+    public void FindByWmic_ReturnsListForKnownPattern()
+    {
+        var result = ProcessUtils.FindByWmic("dotnet");
+
+        Assert.NotNull(result);
+        Assert.IsType<List<int>>(result);
+    }
+
+    [Fact]
+    public void FindByWmic_ReturnsListForBogusPattern()
+    {
+        // May match the wmic process itself, so just verify no crash
+        var result = ProcessUtils.FindByWmic("zzz-nonexistent-process-pattern-zzz");
+
+        Assert.NotNull(result);
+    }
+
+    // --- Platform-specific methods on Windows (error path coverage) ---
+
+    [Fact]
+    public void FindProcessesByCommandLineMac_OnWindows_ReturnsEmpty()
+    {
+        // ps command doesn't exist on Windows; RunProcess returns null
+        var result = ProcessUtils.FindProcessesByCommandLineMac("dotnet");
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void FindProcessesByCommandLineLinux_OnWindows_ReturnsEmpty()
+    {
+        // /proc doesn't exist on Windows; outer catch returns empty
+        var result = ProcessUtils.FindProcessesByCommandLineLinux("dotnet");
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void GetParentPidLinux_OnWindows_ReturnsNull()
+    {
+        // /proc/PID/status doesn't exist on Windows
+        var result = ProcessUtils.GetParentPidLinux(1);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetParentPidMac_OnWindows_ReturnsNull()
+    {
+        // ps command doesn't exist on Windows; RunProcess returns null
+        var result = ProcessUtils.GetParentPidMac(1);
+
+        Assert.Null(result);
+    }
+
+    // --- RunProcess ---
+
+    [Fact]
+    public void RunProcess_ValidCommand_ReturnsOutput()
+    {
+        var output = ProcessUtils.RunProcess("cmd", "/c echo hello");
+
+        Assert.NotNull(output);
+        Assert.Contains("hello", output);
+    }
+
+    [Fact]
+    public void RunProcess_NonExistentCommand_ReturnsNull()
+    {
+        var output = ProcessUtils.RunProcess("nonexistent-command-xyz", "");
+
+        Assert.Null(output);
+    }
 }

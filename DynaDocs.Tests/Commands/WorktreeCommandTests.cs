@@ -110,6 +110,120 @@ public class WorktreeCommandTests : IDisposable
         Assert.Contains("no path found", stdout);
     }
 
+    [Fact]
+    public void Cleanup_LastAgent_CallsRemoveGitWorktree()
+    {
+        var worktreeId = "Adele-20260314120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("worktree remove"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_LastAgent_CallsDeleteWorktreeBranch()
+    {
+        var worktreeId = "Adele-20260314120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains($"branch -D worktree/{worktreeId}"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_LastAgent_WithJunction_CallsRmdir()
+    {
+        var worktreeId = "Adele-20260314120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        // Create the junction target directory so RemoveAgentsJunction finds it
+        Directory.CreateDirectory(Path.Combine(worktreePath, "dydo", "agents"));
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_ResolveWorktreePath_ViaAgentMarker()
+    {
+        var worktreeId = "Adele-20260314120000";
+        var worktreePath = Path.Combine(_testDir, "some-worktree", worktreeId);
+
+        // Adele is the cleanup agent — her markers get deleted
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), worktreeId);
+
+        // Brian still has a .worktree-path pointing to the worktree
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var stdout = CaptureStdout(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+            // Path resolved from Brian's marker; cleanup proceeds
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("worktree remove") && c.Arguments.Contains(worktreePath));
+            Assert.Contains("cleaned up", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
+    {
+        // Create agent workspace with worktree marker
+        var ws = _registry.GetAgentWorkspace(agent);
+        Directory.CreateDirectory(ws);
+        File.WriteAllText(Path.Combine(ws, ".worktree"), worktreeId);
+
+        // Another agent retains the worktree-path so ResolveWorktreePath can find it
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+    }
+
     private static string CaptureStdout(Action action)
     {
         var original = Console.Out;

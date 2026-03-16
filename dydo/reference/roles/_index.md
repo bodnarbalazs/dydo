@@ -12,11 +12,11 @@ Index of roles documentation.
 ## Contents
 
 - [Co-Thinker](./co-thinker.md) - Explores ideas collaboratively with the human.
-- [Code-Writer](./code-writer.md) - Implements features, fixes bugs, writes tests.
+- [Code-Writer](./code-writer.md) - Implements features, fixes bugs, and writes tests.
 - [Docs-Writer](./docs-writer.md) - Writes and maintains project documentation.
 - [Inquisitor](./inquisitor.md) - Adversarial hypothesis-driven QA.
 - [Judge](./judge.md) - Evaluates claims, examines evidence, and rules.
 - [Orchestrator](./orchestrator.md) - Coordinates parallel agent workstreams.
 - [Planner](./planner.md) - Designs the implementation approach.
 - [Reviewer](./reviewer.md) - Reviews code for correctness, standards compliance, security, and unnecessary complexity.
-- [Test-Writer](./test-writer.md) - Writes tests.
+- [Test-Writer](./test-writer.md) - Writes and maintains automated tests.

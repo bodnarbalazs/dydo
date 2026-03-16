@@ -2218,4 +2218,219 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region CRAP Coverage — Uncovered Error Paths
+
+    [Fact]
+    public void ReserveAgent_InvalidName_Fails()
+    {
+        var result = _registry.ReserveAgent("Invalid", out var error);
+        Assert.False(result);
+        Assert.Contains("does not exist", error);
+    }
+
+    [Fact]
+    public void ReserveAgent_NullState_Fails()
+    {
+        // Agent exists but state returns null — covered by the "not found" path
+        // (actually GetAgentState returns a default, so this tests "not free" path)
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var registry = new AgentRegistry(_testDir);
+
+        // Put Adele in working status
+        CreateSessionFile("Adele", "test-sess-reserve1");
+        registry = new AgentRegistry(_testDir);
+
+        var result = registry.ReserveAgent("Adele", out var error);
+        Assert.False(result);
+        Assert.Contains("not free", error);
+    }
+
+    [Fact]
+    public void ClaimAgent_SessionAlreadyHasDifferentAgent_Fails()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele", "Brian" } });
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "shared-session");
+            registry.ClaimAgent("Adele", out _);
+
+            // Try to claim Brian with same session
+            registry.StorePendingSessionId("Brian", "shared-session");
+            var result = registry.ClaimAgent("Brian", out var error);
+
+            Assert.False(result);
+            Assert.Contains("already has agent Adele", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAgent_AlreadyClaimedByOtherSession_ShowsClaimableAgents()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele", "Brian" } });
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "session-1");
+            registry.ClaimAgent("Adele", out _);
+
+            // Try claiming Adele from a different session
+            registry.StorePendingSessionId("Adele", "session-2");
+            var result = registry.ClaimAgent("Adele", out var error);
+
+            Assert.False(result);
+            Assert.Contains("already claimed by another session", error);
+            Assert.Contains("Claimable agents", error);
+            Assert.Contains("Brian", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_NoAgentsAssigned_Fails()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "nobody");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+
+            var registry = new AgentRegistry(_testDir);
+            var result = registry.ClaimAuto(out _, out var error);
+
+            Assert.False(result);
+            Assert.Contains("No agents assigned to human", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ClaimAuto_AllAgentsBusy_ShowsStatuses()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+
+            // Claim Adele so no free agents remain
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-busy");
+            registry.ClaimAgent("Adele", out _);
+
+            // Try ClaimAuto from a different session
+            registry.StoreSessionContext("sess-busy2");
+            var result = registry.ClaimAuto(out _, out var error);
+
+            Assert.False(result);
+            Assert.Contains("No free agents", error);
+            Assert.Contains("Adele (working)", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void SetRole_RoleNudge_DispatchedAsDifferentRole()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+            { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-rn1");
+        CreateInboxItem("Adele", "my-task", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+
+        // First attempt should nudge
+        var result = registry.SetRole("test-session-rn1", "co-thinker", "my-task", out var error);
+        Assert.False(result);
+        Assert.Contains("dispatched as 'reviewer'", error);
+
+        // Second attempt should succeed (marker exists from first try)
+        result = registry.SetRole("test-session-rn1", "co-thinker", "my-task", out error);
+        Assert.True(result, $"Should succeed on retry: {error}");
+    }
+
+    [Fact]
+    public void ReleaseAgent_WithWaitMarkers_Fails()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-wait");
+            registry.ClaimAgent("Adele", out _);
+            registry.SetRole("sess-wait", "code-writer", "test-task", out _);
+
+            // Create a wait marker
+            registry.CreateWaitMarker("Adele", "test-task", "Brian");
+
+            var result = registry.ReleaseAgent("sess-wait", out var error);
+            Assert.False(result);
+            Assert.Contains("waiting for response", error);
+            Assert.Contains("test-task", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ReleaseAgent_WithReplyPendingMarkers_Fails()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-reply");
+            registry.ClaimAgent("Adele", out _);
+            registry.SetRole("sess-reply", "code-writer", "test-task", out _);
+
+            // Create a reply-pending marker
+            registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
+
+            var result = registry.ReleaseAgent("sess-reply", out var error);
+            Assert.False(result);
+            Assert.Contains("pending reply", error);
+            Assert.Contains("Brian", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ReleaseAgent_WithNeedsMerge_Fails()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-merge");
+            registry.ClaimAgent("Adele", out _);
+            registry.SetRole("sess-merge", "code-writer", "test-task", out _);
+
+            // Create .needs-merge marker
+            var workspace = registry.GetAgentWorkspace("Adele");
+            File.WriteAllText(Path.Combine(workspace, ".needs-merge"), "test-task");
+
+            var result = registry.ReleaseAgent("sess-merge", out var error);
+            Assert.False(result);
+            Assert.Contains("merge not dispatched", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    #endregion
 }

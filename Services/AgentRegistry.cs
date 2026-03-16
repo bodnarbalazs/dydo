@@ -153,147 +153,149 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Get pending session_id from guard hook
-        var sessionId = GetPendingSessionId(agentName);
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            // Fall back to session context (persists after release from previous guard invocation)
-            sessionId = GetSessionContext();
-        }
+        var sessionId = ResolveSessionId(agentName);
         if (string.IsNullOrEmpty(sessionId))
         {
             error = "No session ID available. Claim must be initiated via hook.";
             return false;
         }
 
-        // Acquire lock before any state checks to prevent race conditions
         if (!TryAcquireLock(agentName, out error))
             return false;
 
         try
         {
-            // Validate human assignment
             var human = GetCurrentHuman();
-            var (canClaim, claimError) = _configService.ValidateAgentClaim(agentName, human, _config);
-            if (!canClaim)
-            {
-                error = claimError!;
+            if (!ValidateClaimPreconditions(agentName, sessionId, human, out error))
                 return false;
-            }
 
-            // Check if this session already has a different agent
-            var existingAgent = GetCurrentAgent(sessionId);
-            if (existingAgent != null && existingAgent.Name != agentName)
-            {
-                error = $"This session already has agent {existingAgent.Name} claimed. Release first.";
-                return false;
-            }
-
-            // Check if agent is already claimed by another session
             var state = GetAgentState(agentName);
             var existingSession = GetSession(agentName);
-            if (state?.Status != AgentStatus.Free && state?.Status != AgentStatus.Dispatched && existingSession != null)
-            {
-                if (existingSession.SessionId == sessionId)
-                {
-                    // Same session reclaiming - idempotent, success
-                    return true;
-                }
-                error = $"Agent {agentName} is already claimed by another session.";
-                if (_config != null && human != null)
-                {
-                    var claimable = GetFreeAgentsForHuman(human);
-                    if (claimable.Count > 0)
-                        error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
-                }
-                error += "\nUse 'dydo agent claim auto' to claim the first available.";
+            if (!HandleExistingSession(agentName, state, existingSession, sessionId, human, out error))
                 return false;
-            }
 
-            // Write session file
-            var workspace = GetAgentWorkspace(agentName);
-            Directory.CreateDirectory(workspace);
+            // HandleExistingSession returns true for both "proceed" and "idempotent reclaim";
+            // if the error string is empty and we got a match, it was idempotent.
+            if (existingSession?.SessionId == sessionId &&
+                state?.Status != AgentStatus.Free && state?.Status != AgentStatus.Dispatched)
+                return true;
 
-            // Archive user files from previous session (if any)
-            try
-            {
-                ArchiveWorkspace(workspace);
-                PruneArchive(workspace);
-            }
-            catch
-            {
-                // Archive failure should not block agent claim
-            }
-
-            // Regenerate missing _system/templates/ from embedded defaults
-            _folderScaffolder.CopyBuiltInTemplates(_configService.GetDydoRoot(_basePath));
-
-            // Regenerate mode files from templates (fresh start for each claim)
-            _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName,
-                _config?.Paths.Source, _config?.Paths.Tests);
-
-            var session = new AgentSession
-            {
-                Agent = agentName,
-                SessionId = sessionId,
-                Claimed = DateTime.UtcNow
-            };
-
-            var sessionPath = Path.Combine(workspace, ".session");
-            File.WriteAllText(sessionPath, JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
-
-            // Preserve dispatch metadata (WindowId, AutoClose) when claiming a dispatched
-            // agent — they were set by the dispatch that launched this terminal and the
-            // watchdog needs them after release.
-            var wasDispatched = state?.Status == AgentStatus.Dispatched;
-            UpdateAgentState(agentName, s =>
-            {
-                s.Status = AgentStatus.Working;
-                s.Since = DateTime.UtcNow;
-                s.AssignedHuman = human;
-                if (!wasDispatched)
-                {
-                    s.WindowId = null;
-                    s.AutoClose = false;
-                }
-            });
-
-            // Capture project snapshot for audit visualization
-            ProjectSnapshot? snapshot = null;
-            try
-            {
-                var snapshotService = new SnapshotService(_configService);
-                snapshot = snapshotService.CaptureSnapshot(_basePath);
-            }
-            catch
-            {
-                // Snapshot failure should not block agent claim
-            }
-
-            // Log claim event with snapshot
-            LogLifecycleEvent(sessionId, new AuditEvent
-            {
-                EventType = AuditEventType.Claim,
-                AgentName = agentName
-            }, agentName, human, snapshot);
-
-            // Write agent hint for fast GetCurrentAgent lookups
-            try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
-
-            // Clean up claim nudge marker if this session was nudged
-            try
-            {
-                var nudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
-                if (File.Exists(nudgePath)) File.Delete(nudgePath);
-            }
-            catch { }
-
+            SetupAgentWorkspace(agentName, sessionId, human, state?.Status == AgentStatus.Dispatched);
             return true;
         }
         finally
         {
             ReleaseLock(agentName);
         }
+    }
+
+    private string? ResolveSessionId(string agentName)
+    {
+        var sessionId = GetPendingSessionId(agentName);
+        if (string.IsNullOrEmpty(sessionId))
+            sessionId = GetSessionContext();
+        return sessionId;
+    }
+
+    private bool ValidateClaimPreconditions(string agentName, string sessionId, string? human, out string error)
+    {
+        error = string.Empty;
+
+        var (canClaim, claimError) = _configService.ValidateAgentClaim(agentName, human, _config);
+        if (!canClaim)
+        {
+            error = claimError!;
+            return false;
+        }
+
+        var existingAgent = GetCurrentAgent(sessionId);
+        if (existingAgent != null && existingAgent.Name != agentName)
+        {
+            error = $"This session already has agent {existingAgent.Name} claimed. Release first.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool HandleExistingSession(string agentName, AgentState? state, AgentSession? existingSession,
+        string sessionId, string? human, out string error)
+    {
+        error = string.Empty;
+
+        if (state?.Status == AgentStatus.Free || state?.Status == AgentStatus.Dispatched || existingSession == null)
+            return true;
+
+        if (existingSession.SessionId == sessionId)
+            return true;
+
+        error = $"Agent {agentName} is already claimed by another session.";
+        if (_config != null && human != null)
+        {
+            var claimable = GetFreeAgentsForHuman(human);
+            if (claimable.Count > 0)
+                error += $"\nClaimable agents for human '{human}': {string.Join(", ", claimable.Select(a => a.Name))}";
+        }
+        error += "\nUse 'dydo agent claim auto' to claim the first available.";
+        return false;
+    }
+
+    private void SetupAgentWorkspace(string agentName, string sessionId, string? human, bool wasDispatched)
+    {
+        var workspace = GetAgentWorkspace(agentName);
+        Directory.CreateDirectory(workspace);
+
+        try { ArchiveWorkspace(workspace); PruneArchive(workspace); }
+        catch { /* Archive failure should not block agent claim */ }
+
+        _folderScaffolder.CopyBuiltInTemplates(_configService.GetDydoRoot(_basePath));
+        _folderScaffolder.RegenerateAgentFiles(WorkspacePath, agentName,
+            _config?.Paths.Source, _config?.Paths.Tests);
+
+        var session = new AgentSession
+        {
+            Agent = agentName,
+            SessionId = sessionId,
+            Claimed = DateTime.UtcNow
+        };
+
+        var sessionPath = Path.Combine(workspace, ".session");
+        File.WriteAllText(sessionPath, JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
+
+        UpdateAgentState(agentName, s =>
+        {
+            s.Status = AgentStatus.Working;
+            s.Since = DateTime.UtcNow;
+            s.AssignedHuman = human;
+            if (!wasDispatched)
+            {
+                s.WindowId = null;
+                s.AutoClose = false;
+            }
+        });
+
+        ProjectSnapshot? snapshot = null;
+        try
+        {
+            var snapshotService = new SnapshotService(_configService);
+            snapshot = snapshotService.CaptureSnapshot(_basePath);
+        }
+        catch { /* Snapshot failure should not block agent claim */ }
+
+        LogLifecycleEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Claim,
+            AgentName = agentName
+        }, agentName, human, snapshot);
+
+        try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
+
+        try
+        {
+            var nudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
+            if (File.Exists(nudgePath)) File.Delete(nudgePath);
+        }
+        catch { }
     }
 
     public bool ClaimAuto(out string claimedAgent, out string error)
@@ -376,7 +378,6 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Acquire lock to prevent race with concurrent claim attempts
         if (!TryAcquireLock(agent.Name, out error))
             return false;
 
@@ -384,60 +385,15 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var workspace = GetAgentWorkspace(agent.Name);
 
-            // Check for unprocessed inbox items
-            var inboxPath = Path.Combine(workspace, "inbox");
-            if (Directory.Exists(inboxPath))
-            {
-                var unprocessedItems = Directory.GetFiles(inboxPath, "*.md").Length;
-                if (unprocessedItems > 0)
-                {
-                    error = $"Cannot release: {unprocessedItems} unprocessed inbox item(s).\n" +
-                            "Process all inbox items, then run 'dydo inbox clear' before releasing.";
-                    return false;
-                }
-            }
-
-            // Check for active wait markers
-            var waitMarkers = GetWaitMarkers(agent.Name);
-            if (waitMarkers.Count > 0)
-            {
-                var tasks = string.Join(", ", waitMarkers.Select(m => m.Task));
-                error = $"Cannot release: waiting for response on: {tasks}.\n" +
-                        "Cancel with: dydo wait --task <name> --cancel";
+            if (!ValidateReleasePreconditions(agent.Name, workspace, out error))
                 return false;
-            }
-
-            // Check for pending reply obligations
-            var replyMarkers = GetReplyPendingMarkers(agent.Name);
-            if (replyMarkers.Count > 0)
-            {
-                var pending = string.Join(", ", replyMarkers.Select(m => $"'{m.Task}' to {m.To}"));
-                error = $"Cannot release: pending reply on: {pending}.\n" +
-                        "Send a message first: dydo msg --to <agent> --subject <task> --body \"...\"";
-                return false;
-            }
-
-            // Check for pending worktree merge
-            var needsMergePath = Path.Combine(workspace, ".needs-merge");
-            if (File.Exists(needsMergePath))
-            {
-                var mergeTask = File.ReadAllText(needsMergePath).Trim();
-                error = $"Cannot release: review passed in worktree but merge not dispatched.\n" +
-                        $"Dispatch a code-writer to merge the worktree branch:\n" +
-                        $"  dydo dispatch --no-wait --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch\"";
-                return false;
-            }
 
             var sessionPath = Path.Combine(workspace, ".session");
-
             if (File.Exists(sessionPath))
                 File.Delete(sessionPath);
 
-            // Clear agent hint
-            var hintPath = GetAgentHintPath();
-            try { if (File.Exists(hintPath)) File.Delete(hintPath); } catch { }
+            try { var hintPath = GetAgentHintPath(); if (File.Exists(hintPath)) File.Delete(hintPath); } catch { }
 
-            // Log release event before clearing state
             var human = GetCurrentHuman();
             LogLifecycleEvent(sessionId, new AuditEvent
             {
@@ -457,37 +413,81 @@ public partial class AgentRegistry : IAgentRegistry
                 s.UnreadMessages = [];
             });
 
-            // Remove modes/ directory (regenerated fresh on next claim)
-            var modesPath = Path.Combine(workspace, "modes");
-            if (Directory.Exists(modesPath))
-                Directory.Delete(modesPath, true);
-
-            // Clean up any orphaned wait markers
-            ClearAllWaitMarkers(agent.Name);
-
-            // Clean up any orphaned reply-pending markers
-            ClearAllReplyPendingMarkers(agent.Name);
-
-            // Clean up role nudge markers
-            foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
-                File.Delete(marker);
-
-            // Clean up no-launch nudge markers
-            foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
-                File.Delete(marker);
-
-            // Clean up claim nudge marker for this session
-            if (!string.IsNullOrEmpty(sessionId))
-            {
-                var claimNudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
-                try { if (File.Exists(claimNudgePath)) File.Delete(claimNudgePath); } catch { }
-            }
-
+            CleanupAfterRelease(agent.Name, workspace, sessionId);
             return true;
         }
         finally
         {
             ReleaseLock(agent.Name);
+        }
+    }
+
+    private bool ValidateReleasePreconditions(string agentName, string workspace, out string error)
+    {
+        error = string.Empty;
+
+        var inboxPath = Path.Combine(workspace, "inbox");
+        if (Directory.Exists(inboxPath))
+        {
+            var unprocessedItems = Directory.GetFiles(inboxPath, "*.md").Length;
+            if (unprocessedItems > 0)
+            {
+                error = $"Cannot release: {unprocessedItems} unprocessed inbox item(s).\n" +
+                        "Process all inbox items, then run 'dydo inbox clear' before releasing.";
+                return false;
+            }
+        }
+
+        var waitMarkers = GetWaitMarkers(agentName);
+        if (waitMarkers.Count > 0)
+        {
+            var tasks = string.Join(", ", waitMarkers.Select(m => m.Task));
+            error = $"Cannot release: waiting for response on: {tasks}.\n" +
+                    "Cancel with: dydo wait --task <name> --cancel";
+            return false;
+        }
+
+        var replyMarkers = GetReplyPendingMarkers(agentName);
+        if (replyMarkers.Count > 0)
+        {
+            var pending = string.Join(", ", replyMarkers.Select(m => $"'{m.Task}' to {m.To}"));
+            error = $"Cannot release: pending reply on: {pending}.\n" +
+                    "Send a message first: dydo msg --to <agent> --subject <task> --body \"...\"";
+            return false;
+        }
+
+        var needsMergePath = Path.Combine(workspace, ".needs-merge");
+        if (File.Exists(needsMergePath))
+        {
+            var mergeTask = File.ReadAllText(needsMergePath).Trim();
+            error = $"Cannot release: review passed in worktree but merge not dispatched.\n" +
+                    $"Dispatch a code-writer to merge the worktree branch:\n" +
+                    $"  dydo dispatch --no-wait --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch\"";
+            return false;
+        }
+
+        return true;
+    }
+
+    private void CleanupAfterRelease(string agentName, string workspace, string? sessionId)
+    {
+        var modesPath = Path.Combine(workspace, "modes");
+        if (Directory.Exists(modesPath))
+            Directory.Delete(modesPath, true);
+
+        ClearAllWaitMarkers(agentName);
+        ClearAllReplyPendingMarkers(agentName);
+
+        foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
+            File.Delete(marker);
+
+        foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
+            File.Delete(marker);
+
+        if (!string.IsNullOrEmpty(sessionId))
+        {
+            var claimNudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");
+            try { if (File.Exists(claimNudgePath)) File.Delete(claimNudgePath); } catch { }
         }
     }
 
@@ -580,59 +580,20 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // Check role-specific restrictions (self-review, orchestrator graduation, judge panel limit)
-        if (!string.IsNullOrEmpty(task))
+        if (!string.IsNullOrEmpty(task) && !CanTakeRole(agent.Name, role, task, out var reason))
         {
-            if (!CanTakeRole(agent.Name, role, task, out var reason))
-            {
-                error = reason;
-                return false;
-            }
+            error = reason;
+            return false;
         }
 
-        // Nudge when agent claims a different role than what the inbox item specifies
-        if (!string.IsNullOrEmpty(task))
-        {
-            var dispatchedRole = GetDispatchedRole(agent.Name, task);
-            var markerPath = Path.Combine(GetAgentWorkspace(agent.Name), $".role-nudge-{PathUtils.SanitizeForFilename(task)}");
-
-            if (dispatchedRole != null && !string.Equals(dispatchedRole, role, StringComparison.OrdinalIgnoreCase))
-            {
-                // Skip nudge if agent already fulfilled the dispatched role and is switching intentionally
-                var state = GetAgentState(agent.Name);
-                var alreadyFulfilled = state != null
-                    && state.TaskRoleHistory.TryGetValue(task, out var history)
-                    && history.Contains(dispatchedRole, StringComparer.OrdinalIgnoreCase);
-
-                if (!alreadyFulfilled)
-                {
-                    if (!File.Exists(markerPath))
-                    {
-                        File.WriteAllText(markerPath, role);
-                        error = $"You were dispatched as '{dispatchedRole}' for this task. If '{role}' fits better, run the command again.";
-                        return false;
-                    }
-                    File.Delete(markerPath);
-                }
-                else if (File.Exists(markerPath))
-                {
-                    File.Delete(markerPath);
-                }
-            }
-            else if (File.Exists(markerPath))
-            {
-                File.Delete(markerPath);
-            }
-        }
+        if (!string.IsNullOrEmpty(task) && !HandleRoleNudge(agent.Name, task, role, out error))
+            return false;
 
         var (writable, readOnly) = _rolePermissions[role];
-
-        // Replace {self} placeholder with agent name
         writable = writable.Select(p => p.Replace("{self}", agent.Name)).ToList();
         readOnly = readOnly.Select(p => p.Replace("{self}", agent.Name)).ToList();
 
         var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId);
-
         var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
 
         UpdateAgentState(agent.Name, s =>
@@ -644,65 +605,18 @@ public partial class AgentRegistry : IAgentRegistry
             s.UnreadMustReads = mustReads;
             s.DispatchedBy = dispatchedFrom;
 
-            // Track role in task history
             if (!string.IsNullOrEmpty(task))
             {
                 if (!s.TaskRoleHistory.ContainsKey(task))
-                {
                     s.TaskRoleHistory[task] = new List<string>();
-                }
                 if (!s.TaskRoleHistory[task].Contains(role))
-                {
                     s.TaskRoleHistory[task].Add(role);
-                }
             }
         });
 
-        // Auto-create task file if task specified and file doesn't exist
         if (!string.IsNullOrEmpty(task))
-        {
-            try
-            {
-                var tasksPath = _configService.GetTasksPath(_basePath);
-                var taskFilePath = Path.Combine(tasksPath, $"{task}.md");
-                if (!File.Exists(taskFilePath))
-                {
-                    Directory.CreateDirectory(tasksPath);
-                    var content = $"""
-                        ---
-                        area: general
-                        name: {task}
-                        status: pending
-                        created: {DateTime.UtcNow:o}
-                        assigned: {agent.Name}
-                        ---
+            AutoCreateTaskFile(task, agent.Name);
 
-                        # Task: {task}
-
-                        (No description)
-
-                        ## Progress
-
-                        - [ ] (Not started)
-
-                        ## Files Changed
-
-                        (None yet)
-
-                        ## Review Summary
-
-                        (Pending)
-                        """;
-                    File.WriteAllText(taskFilePath, content);
-                }
-            }
-            catch
-            {
-                // Non-blocking: task file creation is a convenience side-effect
-            }
-        }
-
-        // Log role change event
         var human = GetCurrentHuman();
         LogLifecycleEvent(sessionId, new AuditEvent
         {
@@ -712,6 +626,85 @@ public partial class AgentRegistry : IAgentRegistry
         }, agent.Name, human);
 
         return true;
+    }
+
+    private bool HandleRoleNudge(string agentName, string task, string role, out string error)
+    {
+        error = string.Empty;
+        var dispatchedRole = GetDispatchedRole(agentName, task);
+        var markerPath = Path.Combine(GetAgentWorkspace(agentName), $".role-nudge-{PathUtils.SanitizeForFilename(task)}");
+
+        if (dispatchedRole != null && !string.Equals(dispatchedRole, role, StringComparison.OrdinalIgnoreCase))
+        {
+            var state = GetAgentState(agentName);
+            var alreadyFulfilled = state != null
+                && state.TaskRoleHistory.TryGetValue(task, out var history)
+                && history.Contains(dispatchedRole, StringComparer.OrdinalIgnoreCase);
+
+            if (!alreadyFulfilled)
+            {
+                if (!File.Exists(markerPath))
+                {
+                    File.WriteAllText(markerPath, role);
+                    error = $"You were dispatched as '{dispatchedRole}' for this task. If '{role}' fits better, run the command again.";
+                    return false;
+                }
+                File.Delete(markerPath);
+            }
+            else if (File.Exists(markerPath))
+            {
+                File.Delete(markerPath);
+            }
+        }
+        else if (File.Exists(markerPath))
+        {
+            File.Delete(markerPath);
+        }
+
+        return true;
+    }
+
+    private void AutoCreateTaskFile(string task, string agentName)
+    {
+        try
+        {
+            var tasksPath = _configService.GetTasksPath(_basePath);
+            var taskFilePath = Path.Combine(tasksPath, $"{task}.md");
+            if (!File.Exists(taskFilePath))
+            {
+                Directory.CreateDirectory(tasksPath);
+                var content = $"""
+                    ---
+                    area: general
+                    name: {task}
+                    status: pending
+                    created: {DateTime.UtcNow:o}
+                    assigned: {agentName}
+                    ---
+
+                    # Task: {task}
+
+                    (No description)
+
+                    ## Progress
+
+                    - [ ] (Not started)
+
+                    ## Files Changed
+
+                    (None yet)
+
+                    ## Review Summary
+
+                    (Pending)
+                    """;
+                File.WriteAllText(taskFilePath, content);
+            }
+        }
+        catch
+        {
+            // Non-blocking: task file creation is a convenience side-effect
+        }
     }
 
     /// <summary>
@@ -1419,14 +1412,39 @@ public partial class AgentRegistry : IAgentRegistry
         return "{ " + string.Join(", ", entries) + " }";
     }
 
+    private static readonly Dictionary<string, Action<AgentState, string>> StateFieldParsers = new()
+    {
+        ["role"] = (s, v) => s.Role = NullableString(v),
+        ["task"] = (s, v) => s.Task = NullableString(v),
+        ["status"] = (s, v) => s.Status = ParseStatus(v),
+        ["assigned"] = (s, v) => s.AssignedHuman = v is "unassigned" or "null" ? null : v,
+        ["dispatched-by"] = (s, v) => s.DispatchedBy = NullableString(v),
+        ["window-id"] = (s, v) => s.WindowId = NullableString(v),
+        ["auto-close"] = (s, v) => s.AutoClose = v == "true",
+        ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },
+        ["writable-paths"] = (s, v) => s.WritablePaths = ParsePathList(v),
+        ["readonly-paths"] = (s, v) => s.ReadOnlyPaths = ParsePathList(v),
+        ["unread-must-reads"] = (s, v) => s.UnreadMustReads = ParsePathList(v),
+        ["unread-messages"] = (s, v) => s.UnreadMessages = ParsePathList(v),
+        ["task-role-history"] = (s, v) => s.TaskRoleHistory = ParseTaskRoleHistory(v),
+    };
+
+    private static string? NullableString(string value) => value == "null" ? null : value;
+
+    private static AgentStatus ParseStatus(string value) => value switch
+    {
+        "dispatched" => AgentStatus.Dispatched,
+        "working" => AgentStatus.Working,
+        "reviewing" => AgentStatus.Reviewing,
+        _ => AgentStatus.Free
+    };
+
     private AgentState? ParseStateFile(string agentName, string statePath)
     {
         try
         {
             var content = FileReadWithRetry(statePath);
-            if (content == null)
-                return new AgentState { Name = agentName };
-            if (!content.StartsWith("---"))
+            if (content == null || !content.StartsWith("---"))
                 return new AgentState { Name = agentName };
 
             var endIndex = content.IndexOf("---", 3);
@@ -1444,55 +1462,8 @@ public partial class AgentRegistry : IAgentRegistry
                 var key = line[..colonIndex].Trim();
                 var value = line[(colonIndex + 1)..].Trim();
 
-                switch (key)
-                {
-                    case "role":
-                        state.Role = value == "null" ? null : value;
-                        break;
-                    case "task":
-                        state.Task = value == "null" ? null : value;
-                        break;
-                    case "status":
-                        state.Status = value switch
-                        {
-                            "dispatched" => AgentStatus.Dispatched,
-                            "working" => AgentStatus.Working,
-                            "reviewing" => AgentStatus.Reviewing,
-                            _ => AgentStatus.Free
-                        };
-                        break;
-                    case "assigned":
-                        state.AssignedHuman = value == "unassigned" || value == "null" ? null : value;
-                        break;
-                    case "dispatched-by":
-                        state.DispatchedBy = value == "null" ? null : value;
-                        break;
-                    case "window-id":
-                        state.WindowId = value == "null" ? null : value;
-                        break;
-                    case "auto-close":
-                        state.AutoClose = value == "true";
-                        break;
-                    case "started":
-                        if (value != "null" && DateTime.TryParse(value, out var dt))
-                            state.Since = dt;
-                        break;
-                    case "writable-paths":
-                        state.WritablePaths = ParsePathList(value);
-                        break;
-                    case "readonly-paths":
-                        state.ReadOnlyPaths = ParsePathList(value);
-                        break;
-                    case "unread-must-reads":
-                        state.UnreadMustReads = ParsePathList(value);
-                        break;
-                    case "unread-messages":
-                        state.UnreadMessages = ParsePathList(value);
-                        break;
-                    case "task-role-history":
-                        state.TaskRoleHistory = ParseTaskRoleHistory(value);
-                        break;
-                }
+                if (StateFieldParsers.TryGetValue(key, out var parser))
+                    parser(state, value);
             }
 
             return state;
@@ -1548,73 +1519,34 @@ public partial class AgentRegistry : IAgentRegistry
     {
         error = string.Empty;
 
-        // Validate name format
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            error = "Agent name cannot be empty.";
+        if (!ValidateAgentNameFormat(name, out error))
             return false;
-        }
 
-        if (!Regex.IsMatch(name, @"^[A-Za-z][A-Za-z0-9-]*$"))
-        {
-            error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
-            return false;
-        }
-
-        if (name.Length > 9)
-        {
-            error = "Agent name cannot exceed 9 characters.";
-            return false;
-        }
-
-        // Validate human name
         if (string.IsNullOrWhiteSpace(human))
         {
             error = "Human name cannot be empty.";
             return false;
         }
 
-        // Normalize name to PascalCase (first letter uppercase)
-        name = name.Length > 1
-            ? char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant()
-            : name.ToUpperInvariant();
+        name = NormalizeAgentName(name);
 
-        // Load fresh config
-        var configPath = _configService.FindConfigFile(_basePath);
-        if (configPath == null)
-        {
-            error = "No dydo.json found. Run 'dydo init' first.";
+        if (!LoadConfigForCrud(out var configPath, out var config, out error))
             return false;
-        }
 
-        var config = _configService.LoadConfig(_basePath);
-        if (config == null)
-        {
-            error = "Failed to load dydo.json.";
-            return false;
-        }
-
-        // Check if agent already exists
         if (config.Agents.Pool.Contains(name, StringComparer.OrdinalIgnoreCase))
         {
             error = $"Agent '{name}' already exists in the pool.";
             return false;
         }
 
-        // Add to pool
         config.Agents.Pool.Add(name);
 
-        // Add to human's assignments
         if (!config.Agents.Assignments.ContainsKey(human))
-        {
             config.Agents.Assignments[human] = new List<string>();
-        }
         config.Agents.Assignments[human].Add(name);
 
-        // Save config
         _configService.SaveConfig(config, configPath);
 
-        // Create agent workspace with workflow and mode files
         var agentsPath = _configService.GetAgentsPath(_basePath);
         _folderScaffolder.ScaffoldAgentWorkspace(agentsPath, name);
 
@@ -1662,74 +1594,98 @@ public partial class AgentRegistry : IAgentRegistry
         return true;
     }
 
+    private bool LoadConfigForCrud(out string configPath, out DydoConfig config, out string error)
+    {
+        error = string.Empty;
+        configPath = string.Empty;
+
+        var path = _configService.FindConfigFile(_basePath);
+        if (path == null)
+        {
+            error = "No dydo.json found. Run 'dydo init' first.";
+            config = null!;
+            return false;
+        }
+        configPath = path;
+
+        var loaded = _configService.LoadConfig(_basePath);
+        if (loaded == null)
+        {
+            error = "Failed to load dydo.json.";
+            config = null!;
+            return false;
+        }
+        config = loaded;
+        return true;
+    }
+
+    private static bool ValidateAgentNameFormat(string name, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            error = "Agent name cannot be empty.";
+            return false;
+        }
+        if (!Regex.IsMatch(name, @"^[A-Za-z][A-Za-z0-9-]*$"))
+        {
+            error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
+            return false;
+        }
+        if (name.Length > 9)
+        {
+            error = "Agent name cannot exceed 9 characters.";
+            return false;
+        }
+        return true;
+    }
+
+    private static string NormalizeAgentName(string name) =>
+        name.Length > 1
+            ? char.ToUpperInvariant(name[0]) + name[1..].ToLowerInvariant()
+            : name.ToUpperInvariant();
+
+    private string? FindInPool(DydoConfig config, string name) =>
+        config.Agents.Pool.FirstOrDefault(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    private bool IsAgentActive(string agentName)
+    {
+        var state = GetAgentState(agentName);
+        var session = GetSession(agentName);
+        return (state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched;
+    }
+
     /// <summary>
     /// Renames an agent: updates pool, assignments, workspace folder, and regenerates workflow/mode files.
     /// </summary>
     public bool RenameAgent(string oldName, string newName, out string error)
     {
-        error = string.Empty;
-
-        // Validate new name format
-        if (string.IsNullOrWhiteSpace(newName))
+        if (!ValidateAgentNameFormat(newName, out error))
         {
-            error = "New agent name cannot be empty.";
+            error = error.Replace("Agent name", "New agent name");
             return false;
         }
 
-        if (!Regex.IsMatch(newName, @"^[A-Za-z][A-Za-z0-9-]*$"))
-        {
-            error = "Agent name must start with a letter and contain only letters, numbers, and hyphens.";
-            return false;
-        }
-
-        if (newName.Length > 9)
-        {
-            error = "Agent name cannot exceed 9 characters.";
-            return false;
-        }
-
-        // Normalize names
         oldName = NormalizeName(oldName);
-        newName = newName.Length > 1
-            ? char.ToUpperInvariant(newName[0]) + newName[1..].ToLowerInvariant()
-            : newName.ToUpperInvariant();
+        newName = NormalizeAgentName(newName);
 
-        // Load fresh config
-        var configPath = _configService.FindConfigFile(_basePath);
-        if (configPath == null)
-        {
-            error = "No dydo.json found. Run 'dydo init' first.";
+        if (!LoadConfigForCrud(out var configPath, out var config, out error))
             return false;
-        }
 
-        var config = _configService.LoadConfig(_basePath);
-        if (config == null)
-        {
-            error = "Failed to load dydo.json.";
-            return false;
-        }
-
-        // Find the actual name in the pool (case-insensitive match)
-        var existingName = config.Agents.Pool.FirstOrDefault(n =>
-            n.Equals(oldName, StringComparison.OrdinalIgnoreCase));
-
+        var existingName = FindInPool(config, oldName);
         if (existingName == null)
         {
             error = $"Agent '{oldName}' does not exist in the pool.";
             return false;
         }
 
-        // Check if new name already exists
         if (config.Agents.Pool.Contains(newName, StringComparer.OrdinalIgnoreCase))
         {
             error = $"Agent '{newName}' already exists in the pool.";
             return false;
         }
 
-        // Check agent is not claimed or dispatched
-        var state = GetAgentState(existingName);
-        var session = GetSession(existingName);
-        if ((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched)
+        if (IsAgentActive(existingName))
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
@@ -1746,12 +1702,9 @@ public partial class AgentRegistry : IAgentRegistry
             var agentIndex = assignment.Value.FindIndex(n =>
                 n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
             if (agentIndex >= 0)
-            {
                 assignment.Value[agentIndex] = newName;
-            }
         }
 
-        // Save config
         _configService.SaveConfig(config, configPath);
 
         // Rename workspace folder
@@ -1761,25 +1714,26 @@ public partial class AgentRegistry : IAgentRegistry
         if (Directory.Exists(oldWorkspace))
         {
             Directory.Move(oldWorkspace, newWorkspace);
-
-            // Update state file with new name
-            var statePath = Path.Combine(newWorkspace, "state.md");
-            if (File.Exists(statePath))
-            {
-                var content = File.ReadAllText(statePath);
-                content = Regex.Replace(content, $@"^agent:\s*{Regex.Escape(existingName)}\s*$",
-                    $"agent: {newName}", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-                content = Regex.Replace(content, $@"^# {Regex.Escape(existingName)} —",
-                    $"# {newName} —", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-                File.WriteAllText(statePath, content);
-            }
+            UpdateStateFileForRename(newWorkspace, existingName, newName);
         }
 
-        // Regenerate workflow and mode files with new name
         _folderScaffolder.RegenerateAgentFiles(agentsPath, newName,
             _config?.Paths.Source, _config?.Paths.Tests);
 
         return true;
+    }
+
+    private static void UpdateStateFileForRename(string workspace, string oldName, string newName)
+    {
+        var statePath = Path.Combine(workspace, "state.md");
+        if (!File.Exists(statePath)) return;
+
+        var content = File.ReadAllText(statePath);
+        content = Regex.Replace(content, $@"^agent:\s*{Regex.Escape(oldName)}\s*$",
+            $"agent: {newName}", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        content = Regex.Replace(content, $@"^# {Regex.Escape(oldName)} —",
+            $"# {newName} —", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        File.WriteAllText(statePath, content);
     }
 
     /// <summary>
@@ -1787,60 +1741,31 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     public bool RemoveAgent(string name, out string error)
     {
-        error = string.Empty;
-
-        // Load fresh config
-        var configPath = _configService.FindConfigFile(_basePath);
-        if (configPath == null)
-        {
-            error = "No dydo.json found. Run 'dydo init' first.";
+        if (!LoadConfigForCrud(out var configPath, out var config, out error))
             return false;
-        }
 
-        var config = _configService.LoadConfig(_basePath);
-        if (config == null)
-        {
-            error = "Failed to load dydo.json.";
-            return false;
-        }
-
-        // Find the actual name in the pool
-        var existingName = config.Agents.Pool.FirstOrDefault(n =>
-            n.Equals(name, StringComparison.OrdinalIgnoreCase));
-
+        var existingName = FindInPool(config, name);
         if (existingName == null)
         {
             error = $"Agent '{name}' does not exist in the pool.";
             return false;
         }
 
-        // Check agent is not claimed or dispatched
-        var state = GetAgentState(existingName);
-        var session = GetSession(existingName);
-        if ((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched)
+        if (IsAgentActive(existingName))
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
         }
 
-        // Remove from pool
         config.Agents.Pool.RemoveAll(n => n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
-
-        // Remove from all assignments
         foreach (var assignment in config.Agents.Assignments)
-        {
             assignment.Value.RemoveAll(n => n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
-        }
 
-        // Save config
         _configService.SaveConfig(config, configPath);
 
-        // Delete workspace folder (includes workflow.md and modes/)
         var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
         if (Directory.Exists(workspace))
-        {
             Directory.Delete(workspace, recursive: true);
-        }
 
         return true;
     }
@@ -1852,75 +1777,47 @@ public partial class AgentRegistry : IAgentRegistry
     {
         error = string.Empty;
 
-        // Validate human name
         if (string.IsNullOrWhiteSpace(newHuman))
         {
             error = "Human name cannot be empty.";
             return false;
         }
 
-        // Load fresh config
-        var configPath = _configService.FindConfigFile(_basePath);
-        if (configPath == null)
-        {
-            error = "No dydo.json found. Run 'dydo init' first.";
+        if (!LoadConfigForCrud(out var configPath, out var config, out error))
             return false;
-        }
 
-        var config = _configService.LoadConfig(_basePath);
-        if (config == null)
-        {
-            error = "Failed to load dydo.json.";
-            return false;
-        }
-
-        // Find the actual name in the pool
-        var existingName = config.Agents.Pool.FirstOrDefault(n =>
-            n.Equals(name, StringComparison.OrdinalIgnoreCase));
-
+        var existingName = FindInPool(config, name);
         if (existingName == null)
         {
             error = $"Agent '{name}' does not exist in the pool.";
             return false;
         }
 
-        // Check agent is not claimed or dispatched
-        var state = GetAgentState(existingName);
-        var session = GetSession(existingName);
-        if ((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched)
+        if (IsAgentActive(existingName))
         {
             error = $"Agent '{existingName}' is currently claimed. Release it first.";
             return false;
         }
 
-        // Find current assignment
         var currentHuman = config.Agents.GetHumanForAgent(existingName);
-
-        // Check if already assigned to the new human
         if (currentHuman != null && currentHuman.Equals(newHuman, StringComparison.OrdinalIgnoreCase))
         {
             error = $"Agent '{existingName}' is already assigned to '{newHuman}'.";
             return false;
         }
 
-        // Remove from current human's assignments
         if (currentHuman != null && config.Agents.Assignments.ContainsKey(currentHuman))
         {
             config.Agents.Assignments[currentHuman].RemoveAll(n =>
                 n.Equals(existingName, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Add to new human's assignments
         if (!config.Agents.Assignments.ContainsKey(newHuman))
-        {
             config.Agents.Assignments[newHuman] = new List<string>();
-        }
         config.Agents.Assignments[newHuman].Add(existingName);
 
-        // Save config
         _configService.SaveConfig(config, configPath);
 
-        // Update state file if it exists
         var workspace = Path.Combine(_configService.GetAgentsPath(_basePath), existingName);
         var statePath = Path.Combine(workspace, "state.md");
         if (File.Exists(statePath))

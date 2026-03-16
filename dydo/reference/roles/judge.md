@@ -40,13 +40,15 @@ When a judge can't reach a confident ruling:
 5. Gather more evidence if needed (dispatch test-writer)
 6. Rule: **confirmed**, **false positive**, or **inconclusive**
 
-## Relationships
-
-- Dispatched by **inquisitor** (to validate findings), **co-thinker** (to evaluate ideas), **orchestrator** (to break deadlocks)
-- May dispatch to **test-writer** (for more evidence) or another **judge** (for split decisions)
-
 ## Design Notes
 
 - The judge is general-purpose. Any role or the human can invoke one to evaluate a claim.
 - Impartiality is the core constraint. The dispatching agent has a position — the judge doesn't.
+- Maximum 3 judges per task (H12, `panel-limit` constraint in `.role.json`). If three can't agree, escalate to the human.
 - See decision 007 for full rationale. Some use cases (e.g., agent pushback/appeal) are not yet settled.
+
+## Related
+
+- [Test-Writer](./test-writer.md) — dispatched for additional evidence
+- [Inquisitor](./inquisitor.md) — primary dispatcher (finding validation)
+- [Guardrails Reference](../guardrails.md) — H12 (judge panel limit)

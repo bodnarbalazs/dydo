@@ -30,21 +30,12 @@ public static partial class ProcessUtils
         }
     }
 
-    private static List<int> FindByWmic(string pattern)
+    internal static List<int> FindByWmic(string pattern)
     {
         var escaped = pattern.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\"", "\\\"");
-        var psi = new ProcessStartInfo("wmic",
-            $"process where \"CommandLine like '%{escaped}%'\" get ProcessId /format:csv")
-        {
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        using var proc = Process.Start(psi);
-        if (proc == null) return [];
-        var output = proc.StandardOutput.ReadToEnd();
-        proc.WaitForExit(5000);
-        return ParseWmicCsvOutput(output);
+        var output = RunProcess("wmic",
+            $"process where \"CommandLine like '%{escaped}%'\" get ProcessId /format:csv");
+        return output != null ? ParseWmicCsvOutput(output) : [];
     }
 
     internal static List<int> ParseWmicCsvOutput(string output)
@@ -61,51 +52,62 @@ public static partial class ProcessUtils
         return pids;
     }
 
-    private static List<int> FindByPowerShell(string pattern)
+    internal static List<int> FindByPowerShell(string pattern)
     {
-        var pids = new List<int>();
         try
         {
             var shell = ResolvePowerShell();
             var psEscaped = EscapeForPowerShellLike(pattern);
-            var psi = new ProcessStartInfo(shell,
-                $"-NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object {{ $_.CommandLine -like '*{psEscaped}*' }} | Select-Object -ExpandProperty ProcessId\"")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var proc = Process.Start(psi);
-            if (proc == null) return pids;
-            var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(10000);
-
-            foreach (var line in output.Split('\n'))
-            {
-                if (int.TryParse(line.Trim(), out var pid) && pid > 0)
-                    pids.Add(pid);
-            }
+            var output = RunProcess(shell,
+                $"-NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object {{ $_.CommandLine -like '*{psEscaped}*' }} | Select-Object -ExpandProperty ProcessId\"",
+                10000);
+            return output != null ? ParseNewlineSeparatedPids(output) : [];
         }
-        catch { }
+        catch { return []; }
+    }
+
+    /// <summary>
+    /// Parses newline-separated PID output (used by PowerShell and ps commands).
+    /// </summary>
+    internal static List<int> ParseNewlineSeparatedPids(string output)
+    {
+        var pids = new List<int>();
+        foreach (var line in output.Split('\n'))
+        {
+            if (int.TryParse(line.Trim(), out var pid) && pid > 0)
+                pids.Add(pid);
+        }
         return pids;
     }
 
-    private static List<int> FindProcessesByCommandLineLinux(string pattern)
+    /// <summary>
+    /// Parses `ps -eo pid,args` output, returning PIDs whose args contain the pattern.
+    /// </summary>
+    internal static List<int> ParsePsEoPidArgs(string output, string pattern)
+    {
+        var pids = new List<int>();
+        foreach (var line in output.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (!trimmed.Contains(pattern, StringComparison.OrdinalIgnoreCase)) continue;
+            var spaceIdx = trimmed.IndexOf(' ');
+            if (spaceIdx > 0 && int.TryParse(trimmed[..spaceIdx], out var pid) && pid > 0)
+                pids.Add(pid);
+        }
+        return pids;
+    }
+
+    internal static List<int> FindProcessesByCommandLineLinux(string pattern)
     {
         var pids = new List<int>();
         try
         {
             foreach (var dir in Directory.GetDirectories("/proc"))
             {
-                var name = Path.GetFileName(dir);
-                if (!int.TryParse(name, out var pid)) continue;
-
-                var cmdlinePath = Path.Combine(dir, "cmdline");
-                if (!File.Exists(cmdlinePath)) continue;
-
+                if (!int.TryParse(Path.GetFileName(dir), out var pid)) continue;
                 try
                 {
-                    var cmdline = File.ReadAllText(cmdlinePath).Replace('\0', ' ');
+                    var cmdline = File.ReadAllText(Path.Combine(dir, "cmdline")).Replace('\0', ' ');
                     if (cmdline.Contains(pattern, StringComparison.OrdinalIgnoreCase))
                         pids.Add(pid);
                 }
@@ -116,32 +118,9 @@ public static partial class ProcessUtils
         return pids;
     }
 
-    private static List<int> FindProcessesByCommandLineMac(string pattern)
+    internal static List<int> FindProcessesByCommandLineMac(string pattern)
     {
-        var pids = new List<int>();
-        try
-        {
-            var psi = new ProcessStartInfo("ps", "-eo pid,args")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var proc = Process.Start(psi);
-            if (proc == null) return pids;
-            var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(5000);
-
-            foreach (var line in output.Split('\n'))
-            {
-                var trimmed = line.Trim();
-                if (!trimmed.Contains(pattern, StringComparison.OrdinalIgnoreCase)) continue;
-                var spaceIdx = trimmed.IndexOf(' ');
-                if (spaceIdx > 0 && int.TryParse(trimmed[..spaceIdx], out var pid) && pid > 0)
-                    pids.Add(pid);
-            }
-        }
-        catch { }
-        return pids;
+        var output = RunProcess("ps", "-eo pid,args");
+        return output != null ? ParsePsEoPidArgs(output, pattern) : [];
     }
 }

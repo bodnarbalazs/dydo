@@ -15,5 +15,6 @@ Index of guides documentation.
 - [Customizing Roles](./customizing-roles.md) - How to create custom roles, modify permission sets, and extend the role system.
 - [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, and run your first agent session.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
+- [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
 - [Troubleshooting](./troubleshooting.md) - Common errors, guard blocks, and recovery patterns.
 - [Writing Good Briefs](./writing-good-briefs.md) - How to write dispatch briefs that give agents enough context to work independently.

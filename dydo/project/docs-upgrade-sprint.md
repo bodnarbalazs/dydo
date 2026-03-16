@@ -44,18 +44,18 @@ Bring dydo's own documentation up to date after the v1.2/v1.3 feature sprint. Th
 ### Stubs (need full content)
 
 - [ ] `understand/about.md` — Currently near-empty, needs real project context
-- [ ] `reference/roles/co-thinker.md` — Stub, needs full doc (like inquisitor/judge/orchestrator)
-- [ ] `reference/roles/code-writer.md` — Stub
-- [ ] `reference/roles/docs-writer.md` — Stub
-- [ ] `reference/roles/planner.md` — Stub
-- [ ] `reference/roles/reviewer.md` — Stub
-- [ ] `reference/roles/test-writer.md` — Stub
+- [x] `reference/roles/co-thinker.md` — Done (Adele, 2026-03-14)
+- [x] `reference/roles/code-writer.md` — Done (Charlie, 2026-03-14) — needs your review
+- [x] `reference/roles/docs-writer.md` — Done (Dexter, 2026-03-14) — needs your review
+- [x] `reference/roles/planner.md` — Done (Dexter, 2026-03-14) — needs your review
+- [x] `reference/roles/reviewer.md` — Done (Charlie, 2026-03-14) — needs your review
+- [x] `reference/roles/test-writer.md` — Done (Emma, 2026-03-14) — needs your review
 
 ### Review for accuracy (have content, may be outdated)
 
-- [ ] `reference/roles/inquisitor.md` — Written during v1.3 sprint, review for accuracy
-- [ ] `reference/roles/judge.md` — Written during v1.3 sprint, review for accuracy
-- [ ] `reference/roles/orchestrator.md` — Written during v1.3 sprint, review for accuracy
+- [x] `reference/roles/inquisitor.md` — Reviewed by Emma, consistency edits applied — needs your review
+- [x] `reference/roles/judge.md` — Reviewed by Emma, consistency edits applied — needs your review
+- [x] `reference/roles/orchestrator.md` — Reviewed by Emma, consistency edits applied — needs your review
 
 ### Outdated (need review + update)
 

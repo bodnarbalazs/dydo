@@ -83,4 +83,24 @@ public static partial class ProcessUtils
         return value.Replace("'", "''");
     }
 
+    /// <summary>
+    /// Launches a process and returns its stdout. Returns null if the process fails to start.
+    /// </summary>
+    internal static string? RunProcess(string command, string args, int timeoutMs = 5000)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo(command, args)
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi)!;
+            var output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(timeoutMs);
+            return output;
+        }
+        catch { return null; }
+    }
 }

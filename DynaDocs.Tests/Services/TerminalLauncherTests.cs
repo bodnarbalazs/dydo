@@ -1632,6 +1632,106 @@ public class TerminalLauncherTests
     }
 
     #endregion
+
+    #region Inherited Worktree Cleanup Tests
+
+    [Fact]
+    public void GetWindowsArguments_InheritedWorktree_ContainsCleanupCommand()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: @"C:\project");
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Brian", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_InheritedWorktree_DoesNotContainWorktreeAdd()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: @"C:\project");
+        Assert.DoesNotContain("git worktree add", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_InheritedWorktree_NavigatesToMainProject()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: @"C:\project");
+        Assert.Contains(@"Set-Location 'C:\project'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    public void GetLinuxArguments_InheritedWorktree_ContainsCleanupCommand(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/user/project");
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Brian", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_InheritedWorktree_DoesNotContainWorktreeAdd(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/user/project");
+        Assert.DoesNotContain("git worktree add", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_InheritedWorktree_NavigatesToMainProject(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/user/project");
+        Assert.Contains("cd '/home/user/project'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_ContainsCleanupCommand()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/dev/project");
+        Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Brian", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_DoesNotContainWorktreeAdd()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/dev/project");
+        Assert.DoesNotContain("git worktree add", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_NavigatesToMainProject()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/dev/project");
+        Assert.Contains("cd '/Users/dev/project'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_NoWorktreeOrCleanup_Unchanged(string terminal)
+    {
+        var plain = TerminalLauncher.GetLinuxArguments(terminal, "Brian");
+        var withNulls = TerminalLauncher.GetLinuxArguments(terminal, "Brian", cleanupWorktreeId: null, mainProjectRoot: null);
+        Assert.Equal(plain, withNulls);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_NoWorktreeOrCleanup_Unchanged()
+    {
+        var plain = TerminalLauncher.GetWindowsArguments("Brian");
+        var withNulls = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: null, mainProjectRoot: null);
+        Assert.Equal(plain, withNulls);
+    }
+
+    [Fact]
+    public void GetMacArguments_NoWorktreeOrCleanup_Unchanged()
+    {
+        var plain = TerminalLauncher.GetMacArguments("Brian");
+        var withNulls = TerminalLauncher.GetMacArguments("Brian", cleanupWorktreeId: null, mainProjectRoot: null);
+        Assert.Equal(plain, withNulls);
+    }
+
+    #endregion
 }
 
 /// <summary>

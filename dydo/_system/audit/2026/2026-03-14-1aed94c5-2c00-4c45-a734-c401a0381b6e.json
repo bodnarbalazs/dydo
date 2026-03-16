@@ -867,6 +867,559 @@
       "event": "Edit",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\docs-upgrade-sprint.md",
       "tool": "edit"
+    },
+    {
+      "ts": "2026-03-16T12:57:11.672302Z",
+      "event": "Role",
+      "role": "co-thinker",
+      "task": "docs-upgrade-sprint"
+    },
+    {
+      "ts": "2026-03-16T12:57:18.4591865Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/template-additions/ 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-16T12:57:26.3540271Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T12:57:28.7633077Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-code-writer.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T12:57:33.459303Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T12:57:34.0132323Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:18.8700642Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-16T13:25:20.663073Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:23.21603Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 | grep -E \u0022(DispatchService|InboxS..."
+    },
+    {
+      "ts": "2026-03-16T13:25:24.6428843Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-16T13:25:24.9869795Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:25.8482084Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:25.9746201Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MarkerStore.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:26.4378667Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:26.5581841Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:26.8990073Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:27.5570507Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-16T13:25:27.6701803Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-16T13:25:28.1117904Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:28.3662373Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentLifecycleHandlers.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:29.945572Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\WaitMarker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:30.1416528Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\ReplyPendingMarker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:30.4884997Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-16T13:25:31.2977026Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022ReleaseAgent\\|CreateWaitMarker\\|CreateReplyPendingMarker\\|RemoveReplyPendingMarker\\|GetWait..."
+    },
+    {
+      "ts": "2026-03-16T13:25:33.002129Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:33.6870935Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tool-results\\toolu_01WpTF3ZjbGLk9JdnJasr8E4.txt",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:34.2109797Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:34.9845167Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:35.6909051Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 -path \u0022*/Models/*\u0022 | grep -E \u0022Inbo..."
+    },
+    {
+      "ts": "2026-03-16T13:25:36.5251612Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:36.9216253Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:37.4388609Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:37.5930614Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\InboxItem.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:37.8390411Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\WaitMarker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:38.0781917Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\ReplyPendingMarker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:40.0011702Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022InboxItemParser.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-16T13:25:41.2343973Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:42.2211499Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxItemParser.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:43.5266496Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:44.616139Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*.cs\u0022 -type f | xargs grep -l \u0022wait.*--task\\|Exe..."
+    },
+    {
+      "ts": "2026-03-16T13:25:45.9941308Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:46.4857266Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:48.39875Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:50.0878446Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:50.8305379Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-16T13:25:51.1361573Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*[Mm]essage*\u0022 | head -20"
+    },
+    {
+      "ts": "2026-03-16T13:25:51.9889425Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022TaskCommand.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-16T13:25:52.9950579Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:25:54.3924773Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022TransitionToReviewPending\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/TaskCommand.cs"
+    },
+    {
+      "ts": "2026-03-16T13:25:55.3113067Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:55.8574273Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:57.7537402Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022MessageFinder\u0022 /c/Users/User/Desktop/Projects/DynaDocs -r --include=\u0022*.cs\u0022 | grep \u0022class Me..."
+    },
+    {
+      "ts": "2026-03-16T13:25:58.1832453Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:58.6924922Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:25:59.4913696Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageFinder.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:00.6391325Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\InboxItem.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:01.3940432Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:02.6885432Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxItemParser.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:26:03.7981395Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022reviewer\\|Reviewer\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs"
+    },
+    {
+      "ts": "2026-03-16T13:26:05.1556668Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:26:05.8093866Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:07.4976846Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchWaitIntegrationTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:08.1497784Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchWaitIntegrationTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:09.9731073Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:10.9685111Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022nested\\|chain\\|propagate\\|inherit.*wait\\|inherit.*reply\u0022 /c/Users/User/Desktop/Projects/Dyn..."
+    },
+    {
+      "ts": "2026-03-16T13:26:12.963668Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022origin\\|Origin\u0022 Services/DispatchService.cs | head -20"
+    },
+    {
+      "ts": "2026-03-16T13:26:13.1279345Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:16.0633627Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022new MarkerStore\\|_markerStore\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegist..."
+    },
+    {
+      "ts": "2026-03-16T13:26:18.2142238Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022GetWaitingDir\\|GetReplyPendingDir\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRe..."
+    },
+    {
+      "ts": "2026-03-16T13:26:20.1610107Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:26:22.546517Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022Agent.*dispatch.*Agent.*dispatch\u0022 /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -..."
+    },
+    {
+      "ts": "2026-03-16T13:26:24.3681956Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*.md\u0022 -type f | grep -i \u0022dydo\\|readme\u0022 | head -1..."
+    },
+    {
+      "ts": "2026-03-16T13:26:27.2506719Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -path \u0022*/dydo/index.md\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-16T13:26:29.1387246Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T13:27:05.0930555Z",
+      "event": "Role",
+      "role": "orchestrator",
+      "task": "docs-upgrade-sprint"
+    },
+    {
+      "ts": "2026-03-16T13:27:37.4726788Z",
+      "event": "Role",
+      "role": "co-thinker",
+      "task": "docs-upgrade-sprint"
+    },
+    {
+      "ts": "2026-03-16T13:39:27.0882827Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-16T13:39:45.7399491Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T13:52:47.4249392Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-16T14:00:16.2780136Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\010-baton-passing-and-review-enforcement.md",
+      "tool": "write",
+      "reason": "Must-read files not yet read"
+    },
+    {
+      "ts": "2026-03-16T14:00:20.7671095Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T14:00:34.623286Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\010-baton-passing-and-review-enforcement.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T14:06:38.0261431Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\010-baton-passing-and-review-enforcement.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-16T14:06:43.6712729Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\proposal-worktree-workflow.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T14:06:44.3309443Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\proposal-gap-check-setup.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T14:06:49.4518928Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-16T14:06:49.6741047Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-16T14:06:56.7064471Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\state.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-16T14:15:23.7169473Z",
+      "event": "Role",
+      "role": "orchestrator",
+      "task": "docs-upgrade-sprint"
+    },
+    {
+      "ts": "2026-03-16T14:17:35.9412386Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-track-a.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T14:18:04.4473194Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-track-b.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T14:18:51.3687193Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-track-d.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-16T16:45:10.8255765Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\011-worktrees-as-default-for-parallel-work.md",
+      "tool": "write"
     }
   ]
 }

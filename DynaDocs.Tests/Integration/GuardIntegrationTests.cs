@@ -879,6 +879,73 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Git Stash Guard
+
+    [Theory]
+    [InlineData("git stash")]
+    [InlineData("git stash pop")]
+    [InlineData("git stash apply")]
+    [InlineData("git stash drop")]
+    [InlineData("git stash push")]
+    [InlineData("git stash save")]
+    [InlineData("git stash list")]
+    [InlineData("git stash show")]
+    public async Task Guard_GitStash_NoWorktree_Blocks(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("git stash is unsafe");
+    }
+
+    [Theory]
+    [InlineData("git stash")]
+    [InlineData("git stash pop")]
+    [InlineData("git stash apply")]
+    public async Task Guard_GitStash_InWorktree_Allows(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        // Place a .worktree marker to simulate worktree mode
+        var workspace = Path.Combine(DydoDir, "agents", "Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree-id");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("git status")]
+    [InlineData("git commit -m 'test'")]
+    [InlineData("git diff")]
+    [InlineData("git log")]
+    public async Task Guard_OtherGitCommands_NotBlocked(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region Agent Tool - Staged Access
 
     [Fact]

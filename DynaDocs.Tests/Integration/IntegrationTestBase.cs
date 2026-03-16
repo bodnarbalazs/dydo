@@ -19,6 +19,7 @@ public abstract class IntegrationTestBase : IDisposable
 
     private readonly string _originalDir;
     private readonly string? _originalHuman;
+    private readonly string? _originalWindow;
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
@@ -34,6 +35,7 @@ public abstract class IntegrationTestBase : IDisposable
         // Save original state
         _originalDir = Environment.CurrentDirectory;
         _originalHuman = Environment.GetEnvironmentVariable("DYDO_HUMAN");
+        _originalWindow = Environment.GetEnvironmentVariable("DYDO_WINDOW");
         _originalOut = Console.Out;
         _originalErr = Console.Error;
         _originalIn = Console.In;
@@ -44,6 +46,9 @@ public abstract class IntegrationTestBase : IDisposable
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
         AuditCommand.BrowserLauncherOverride = new NoOpProcessStarter();
 
+        // Clear env vars that leak into dispatch logic
+        Environment.SetEnvironmentVariable("DYDO_WINDOW", null);
+
         // Set working directory to test dir
         Environment.CurrentDirectory = TestDir;
     }
@@ -53,6 +58,7 @@ public abstract class IntegrationTestBase : IDisposable
         // Restore original state
         Environment.CurrentDirectory = _originalDir;
         Environment.SetEnvironmentVariable("DYDO_HUMAN", _originalHuman);
+        Environment.SetEnvironmentVariable("DYDO_WINDOW", _originalWindow);
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);

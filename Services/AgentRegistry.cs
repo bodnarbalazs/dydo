@@ -456,6 +456,19 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
+        // H25: dispatched code-writers must dispatch a reviewer before releasing
+        var state = GetAgentState(agentName);
+        if (state != null
+            && string.Equals(state.Role, "code-writer", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrEmpty(state.DispatchedBy)
+            && !string.IsNullOrEmpty(state.Task)
+            && !HasReviewDispatchedMarker(agentName, state.Task))
+        {
+            error = $"Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n" +
+                    $"  dydo dispatch --no-wait --auto-close --role reviewer --task {state.Task} --brief \"Review changes for {state.Task}\"";
+            return false;
+        }
+
         var needsMergePath = Path.Combine(workspace, ".needs-merge");
         if (File.Exists(needsMergePath))
         {
@@ -477,6 +490,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         ClearAllWaitMarkers(agentName);
         ClearAllReplyPendingMarkers(agentName);
+        ClearAllReviewDispatchedMarkers(agentName);
 
         foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
             File.Delete(marker);
@@ -1201,6 +1215,48 @@ public partial class AgentRegistry : IAgentRegistry
     public void ClearAllReplyPendingMarkers(string agentName)
     {
         var dir = GetReplyPendingDir(agentName);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
+    }
+
+    #endregion
+
+    #region Review-Dispatched Markers
+
+    private string GetReviewDispatchedDir(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), ".review-dispatched");
+
+    public void CreateReviewDispatchedMarker(string agentName, string task, string dispatchedTo)
+    {
+        var dir = GetReviewDispatchedDir(agentName);
+        Directory.CreateDirectory(dir);
+
+        var marker = new ReviewDispatchedMarker
+        {
+            Task = task,
+            DispatchedTo = dispatchedTo,
+            Since = DateTime.UtcNow
+        };
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.ReviewDispatchedMarker);
+        File.WriteAllText(path, json);
+    }
+
+    public bool HasReviewDispatchedMarker(string agentName, string task)
+    {
+        var dir = GetReviewDispatchedDir(agentName);
+        if (!Directory.Exists(dir))
+            return false;
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        return File.Exists(Path.Combine(dir, $"{sanitized}.json"));
+    }
+
+    public void ClearAllReviewDispatchedMarkers(string agentName)
+    {
+        var dir = GetReviewDispatchedDir(agentName);
         if (Directory.Exists(dir))
             Directory.Delete(dir, true);
     }

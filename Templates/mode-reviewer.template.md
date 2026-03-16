@@ -104,7 +104,7 @@ dydo agent release
 Dispatch another agent to fix the issues.
 
 ```bash
-dydo dispatch --wait --auto-close --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"
+dydo dispatch --no-wait --auto-close --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"
 ```
 
 **Be specific.** Don't just say "fix the bugs." Say exactly what's wrong:

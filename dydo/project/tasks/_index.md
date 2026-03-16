@@ -11,10 +11,13 @@ Index of tasks documentation.
 
 ## Contents
 
+- [Task: baton-passing-docs](./baton-passing-docs.md) - (No description)
+- [Task: baton-passing-implementation](./baton-passing-implementation.md) - Implement decision 010: baton-passing reply-pending clearance and review enforcement for dispatched code-writers.
 - [Task: docs-structure-planning](./docs-structure-planning.md) - (No description)
 - [Task: docs-upgrade-sprint](./docs-upgrade-sprint.md) - (No description)
 - [Task: find-t1-coverage-doc](./find-t1-coverage-doc.md) - (No description)
 - [Task: fix-test-errors](./fix-test-errors.md) - (No description)
+- [Task: gap-check-setup](./gap-check-setup.md) - (No description)
 - [Task: role-docs-batch1](./role-docs-batch1.md) - (No description)
 - [Task: role-docs-batch2](./role-docs-batch2.md) - (No description)
 - [Task: role-docs-batch3](./role-docs-batch3.md) - (No description)
@@ -23,3 +26,6 @@ Index of tasks documentation.
 - [Task: t1-slice-a](./t1-slice-a.md) - (No description)
 - [Task: t1-slice-b](./t1-slice-b.md) - (No description)
 - [Task: t1-slice-c](./t1-slice-c.md) - (No description)
+- [Task: template-bug-fixes](./template-bug-fixes.md) - (No description)
+- [Task: worktree-implementation](./worktree-implementation.md) - (No description)
+- [Task: worktree-workflow-design](./worktree-workflow-design.md) - (No description)

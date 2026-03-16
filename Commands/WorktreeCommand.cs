@@ -9,6 +9,7 @@ using DynaDocs.Utils;
 public static class WorktreeCommand
 {
     internal static Action<string, string>? RunProcessOverride;
+    internal static Func<string, string, int>? RunProcessWithExitCodeOverride;
 
     public static Command Create()
     {
@@ -34,6 +35,20 @@ public static class WorktreeCommand
         });
 
         command.Subcommands.Add(cleanupCommand);
+
+        var mergeCommand = new Command("merge", "Merge worktree branch back into base branch");
+        var finalizeOption = new Option<bool>("--finalize")
+        {
+            Description = "Finalize a merge after resolving conflicts"
+        };
+        mergeCommand.Options.Add(finalizeOption);
+        mergeCommand.SetAction((result) =>
+        {
+            var finalize = result.GetValue(finalizeOption);
+            return ExecuteMerge(finalize);
+        });
+        command.Subcommands.Add(mergeCommand);
+
         return command;
     }
 
@@ -70,29 +85,34 @@ public static class WorktreeCommand
         return ExitCodes.Success;
     }
 
-    private static void RemoveMarkers(string workspace)
+    internal static void RemoveMarkers(string workspace)
     {
-        foreach (var name in new[] { ".worktree", ".worktree-path", ".worktree-base", ".merge-source" })
+        foreach (var name in new[] { ".worktree", ".worktree-path", ".worktree-base", ".merge-source", ".worktree-hold" })
         {
             var marker = Path.Combine(workspace, name);
             if (File.Exists(marker)) File.Delete(marker);
         }
     }
 
-    private static int CountWorktreeReferences(AgentRegistry registry, string worktreeId)
+    internal static int CountWorktreeReferences(AgentRegistry registry, string worktreeId)
     {
         var count = 0;
         foreach (var agent in registry.GetAllAgentStates())
         {
-            var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), ".worktree");
-            if (!File.Exists(marker)) continue;
-            if (File.ReadAllText(marker).Trim() == worktreeId)
-                count++;
+            foreach (var markerName in new[] { ".worktree", ".worktree-hold" })
+            {
+                var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), markerName);
+                if (File.Exists(marker) && File.ReadAllText(marker).Trim() == worktreeId)
+                {
+                    count++;
+                    break;
+                }
+            }
         }
         return count;
     }
 
-    private static string? ResolveWorktreePath(AgentRegistry registry, string worktreeId)
+    internal static string? ResolveWorktreePath(AgentRegistry registry, string worktreeId)
     {
         // Check all agents for a .worktree-path (may still exist in released agents' workspaces)
         foreach (var agent in registry.GetAllAgentStates())
@@ -130,7 +150,29 @@ public static class WorktreeCommand
         })?.WaitForExit();
     }
 
-    private static void RemoveAgentsJunction(string worktreePath)
+    internal static int RunProcessWithExitCode(string fileName, string arguments)
+    {
+        if (RunProcessWithExitCodeOverride != null)
+            return RunProcessWithExitCodeOverride(fileName, arguments);
+
+        if (RunProcessOverride != null)
+        {
+            RunProcessOverride(fileName, arguments);
+            return 0;
+        }
+
+        var p = Process.Start(new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        });
+        p?.WaitForExit();
+        return p?.ExitCode ?? 1;
+    }
+
+    internal static void RemoveAgentsJunction(string worktreePath)
     {
         var junctionPath = Path.Combine(worktreePath, "dydo", "agents");
         if (!Path.Exists(junctionPath)) return;
@@ -153,7 +195,7 @@ public static class WorktreeCommand
         }
     }
 
-    private static void RemoveGitWorktree(string worktreePath)
+    internal static void RemoveGitWorktree(string worktreePath)
     {
         try
         {
@@ -175,5 +217,79 @@ public static class WorktreeCommand
         {
             // Harmless if branch doesn't exist
         }
+    }
+
+    internal static int ExecuteMerge(bool finalize)
+    {
+        var registry = new AgentRegistry();
+        return ExecuteMerge(finalize, registry);
+    }
+
+    internal static int ExecuteMerge(bool finalize, AgentRegistry registry)
+    {
+        var sessionId = registry.GetSessionContext();
+        var agent = registry.GetCurrentAgent(sessionId);
+        if (agent == null)
+        {
+            ConsoleOutput.WriteError("No agent claimed for this session.");
+            return ExitCodes.ToolError;
+        }
+
+        var workspace = registry.GetAgentWorkspace(agent.Name);
+
+        var mergeSourcePath = Path.Combine(workspace, ".merge-source");
+        if (!File.Exists(mergeSourcePath))
+        {
+            ConsoleOutput.WriteError("No .merge-source marker found. Nothing to merge.");
+            return ExitCodes.ToolError;
+        }
+        var mergeSource = File.ReadAllText(mergeSourcePath).Trim();
+
+        var basePath = Path.Combine(workspace, ".worktree-base");
+        if (!File.Exists(basePath))
+        {
+            ConsoleOutput.WriteError("No .worktree-base marker found. Cannot determine target branch.");
+            return ExitCodes.ToolError;
+        }
+        var baseBranch = File.ReadAllText(basePath).Trim();
+
+        if (finalize)
+            return FinalizeMerge(registry, agent.Name, workspace, mergeSource);
+
+        var currentBranch = DispatchService.GetCurrentGitBranch();
+        if (!string.Equals(currentBranch, baseBranch, StringComparison.OrdinalIgnoreCase))
+            RunProcess("git", $"checkout {baseBranch}");
+
+        var exitCode = RunProcessWithExitCode("git", $"merge {mergeSource} --no-edit");
+        if (exitCode != 0)
+        {
+            Console.WriteLine("Merge conflicts detected. Resolve them, commit, then run:");
+            Console.WriteLine("  dydo worktree merge --finalize");
+            return ExitCodes.ValidationErrors;
+        }
+
+        return FinalizeMerge(registry, agent.Name, workspace, mergeSource);
+    }
+
+    internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource)
+    {
+        // Extract worktreeId from merge-source (e.g. "worktree/Emma-20260316" -> "Emma-20260316")
+        var worktreeId = mergeSource.StartsWith("worktree/")
+            ? mergeSource["worktree/".Length..]
+            : mergeSource;
+
+        RunProcess("git", $"branch -D {mergeSource}");
+
+        var worktreePath = ResolveWorktreePath(registry, worktreeId);
+        if (worktreePath != null)
+        {
+            RemoveAgentsJunction(worktreePath);
+            RemoveGitWorktree(worktreePath);
+        }
+
+        RemoveMarkers(workspace);
+
+        Console.WriteLine($"Merge finalized. Worktree {worktreeId} cleaned up.");
+        return ExitCodes.Success;
     }
 }

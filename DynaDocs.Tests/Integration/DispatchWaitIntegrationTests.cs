@@ -390,6 +390,150 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Baton-Passing
+
+    [Fact]
+    public async Task Dispatch_SameTask_ClearsSenderReplyPending()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Brian is dispatched as code-writer on "auth"
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Manually create reply-pending marker (simulates inherited from --wait dispatch)
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateReplyPendingMarker("Brian", "auth", "Adele");
+        Assert.NotEmpty(registry.GetReplyPendingMarkers("Brian"));
+
+        // Brian dispatches reviewer on the same task — baton passes
+        DispatchInSeparateSession("Brian", "reviewer", "auth", "Review this");
+
+        // Brian's reply-pending marker should be cleared
+        registry = new AgentRegistry(TestDir);
+        Assert.Empty(registry.GetReplyPendingMarkers("Brian"));
+    }
+
+    [Fact]
+    public async Task Dispatch_SameTask_TargetInheritsReplyRequired()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Brian is dispatched as code-writer on "auth"
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Manually create reply-pending marker
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateReplyPendingMarker("Brian", "auth", "Adele");
+
+        // Brian dispatches reviewer on the same task with --no-wait
+        DispatchInSeparateSession("Brian", "reviewer", "auth", "Review this");
+
+        // The target agent's inbox item should have reply_required: true (inherited)
+        var targetInbox = FindDispatchedAgentInbox("auth", "Brian");
+        Assert.NotNull(targetInbox);
+        Assert.Contains("reply_required: true", File.ReadAllText(targetInbox));
+    }
+
+    [Fact]
+    public async Task Dispatch_DifferentTask_DoesNotClearReplyPending()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Brian is dispatched as code-writer on "auth"
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Manually create reply-pending marker
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateReplyPendingMarker("Brian", "auth", "Adele");
+
+        // Brian dispatches on a DIFFERENT task — should NOT clear reply-pending
+        DispatchInSeparateSession("Brian", "code-writer", "other-task", "Something else");
+
+        registry = new AgentRegistry(TestDir);
+        Assert.NotEmpty(registry.GetReplyPendingMarkers("Brian"));
+    }
+
+    #endregion
+
+    #region Review Enforcement (H25)
+
+    [Fact]
+    public async Task Release_BlockedForDispatchedCodeWriter_WithoutReviewDispatch()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches code-writer task to Brian
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian tries to release without dispatching a reviewer
+        var releaseResult = ReleaseInSeparateSession("Brian");
+
+        Assert.Contains("dispatched code-writers must dispatch a reviewer", releaseResult);
+        Assert.Contains("--role reviewer", releaseResult);
+    }
+
+    [Fact]
+    public async Task Release_SucceedsForDispatchedCodeWriter_AfterReviewDispatch()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches code-writer task to Brian
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian dispatches a reviewer for the same task
+        DispatchInSeparateSession("Brian", "reviewer", "auth", "Review auth changes");
+
+        // Brian releases — should succeed
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("dispatched code-writers must dispatch a reviewer", releaseResult);
+    }
+
+    [Fact]
+    public async Task Release_NotBlockedForDirectCodeWriter()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Brian works directly (no dispatch origin)
+        await ClaimAgentAsync("Brian");
+        await SetRoleAsync("code-writer", "auth");
+
+        // Release should succeed without dispatching a reviewer
+        var result = await ReleaseAgentAsync();
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Release_NotBlockedForNonCodeWriter()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Brian is dispatched as a planner (not code-writer)
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "planner", "auth", "Plan auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "planner", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("dispatched code-writers must dispatch a reviewer", releaseResult);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> DispatchAsync(
@@ -589,6 +733,43 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
             """;
 
         File.WriteAllText(Path.Combine(inboxPath, $"{id}-msg-{subject}.md"), content);
+    }
+
+    private void DispatchInSeparateSession(string fromAgent, string role, string task, string brief)
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = $"other-session-{fromAgent}";
+        File.WriteAllText(contextPath, otherSession);
+
+        // Bypass no-launch nudge for the dispatching agent (not the main test session's agent)
+        var workspace = Path.Combine(TestDir, "dydo", "agents", fromAgent);
+        var sanitized = DynaDocs.Utils.PathUtils.SanitizeForFilename(task);
+        var marker = Path.Combine(workspace, $".no-launch-nudge-{sanitized}");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(marker, "test-bypass");
+
+        var command = DispatchCommand.Create();
+        RunAsync(command, "--role", role, "--task", task, "--brief", brief, "--no-launch", "--no-wait").Wait();
+
+        StoreSessionContext();
+    }
+
+    private string? FindDispatchedAgentInbox(string task, string excludeAgent)
+    {
+        var agentsDir = Path.Combine(TestDir, "dydo", "agents");
+        foreach (var agentDir in Directory.GetDirectories(agentsDir))
+        {
+            var agentName = Path.GetFileName(agentDir);
+            if (string.Equals(agentName, excludeAgent, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var inboxPath = Path.Combine(agentDir, "inbox");
+            if (!Directory.Exists(inboxPath)) continue;
+
+            foreach (var file in Directory.GetFiles(inboxPath, $"*-{task}.md"))
+                return file;
+        }
+        return null;
     }
 
     #endregion

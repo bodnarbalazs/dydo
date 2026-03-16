@@ -24,7 +24,7 @@ No source code writes. The planner explores and plans — it doesn't implement. 
 
 - Can graduate to **orchestrator** if multi-agent coordination emerges ([decision 007](../../project/decisions/007-oversight-roles.md), guardrail [H11](../guardrails.md))
 - Can switch directly to **code-writer** when context quality is high enough that starting fresh would waste signal
-- Can dispatch to **code-writer** with `--no-wait` (fire-and-forget) or `--wait` (stay active for follow-up)
+- Can dispatch to **code-writer** with `--no-wait` (fire-and-forget)
 
 ## Workflow
 
@@ -33,7 +33,7 @@ No source code writes. The planner explores and plans — it doesn't implement. 
 3. Explore the codebase: find relevant code, identify patterns, note dependencies, spot risks
 4. Write the implementation plan in workspace (`agents/{name}/plan-{task}.md`)
 5. Create formal decision docs only for non-obvious choices that required significant research
-6. Transition: dispatch to code-writer, switch to code-writer, or dispatch-and-wait
+6. Transition: dispatch to code-writer or switch to code-writer
 
 ### Transition Decision
 
@@ -41,7 +41,8 @@ The planner chooses between dispatching and self-transitioning based on context 
 
 - **Dispatch** (Option A) — context is noisy from exploring many irrelevant paths. A fresh code-writer session with just the plan will be more efficient.
 - **Self-transition** (Option B) — context is high-signal. The planner explored exactly what's needed and switching preserves that understanding.
-- **Dispatch-and-wait** (Option C) — complex tasks where the planner needs to review the implementation result or coordinate follow-up work.
+
+If multi-agent coordination is needed, graduate to orchestrator ([H11](../guardrails.md)) rather than using `--wait` from the planner role.
 
 ## Design Notes
 

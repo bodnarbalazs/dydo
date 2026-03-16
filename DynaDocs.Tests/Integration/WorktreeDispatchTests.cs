@@ -222,6 +222,37 @@ public class WorktreeDispatchTests : IntegrationTestBase
         Assert.DoesNotContain("\u250c", result.Stdout);
     }
 
+    [Fact]
+    public async Task MergeDispatch_WritesWorktreeHoldToTarget()
+    {
+        await SetupSenderWithWorktree("Adele", "merge-wt-id");
+        WriteWorktreeBase("Adele", "main");
+        WriteNeedsMerge("Adele", "some-task");
+
+        var result = await DispatchNoLaunch("code-writer", "merge-task", "Merge worktree", to: "Brian");
+        result.AssertSuccess();
+
+        var holdMarker = Path.Combine(TestDir, "dydo/agents/Brian/.worktree-hold");
+        Assert.True(File.Exists(holdMarker));
+        Assert.Equal("merge-wt-id", File.ReadAllText(holdMarker).Trim());
+    }
+
+    [Fact]
+    public async Task MergeDispatch_WorktreeHold_PreventsCleanup()
+    {
+        await SetupSenderWithWorktree("Adele", "merge-wt-id");
+        WriteWorktreeBase("Adele", "main");
+        WriteNeedsMerge("Adele", "some-task");
+
+        var result = await DispatchNoLaunch("code-writer", "merge-task", "Merge worktree", to: "Brian");
+        result.AssertSuccess();
+
+        // Verify Brian's .worktree-hold counts as a reference
+        var registry = new AgentRegistry(TestDir);
+        var refCount = WorktreeCommand.CountWorktreeReferences(registry, "merge-wt-id");
+        Assert.True(refCount > 0, "Agent with .worktree-hold should count as a reference");
+    }
+
     #endregion
 
     #region Merge-Back Enforcement

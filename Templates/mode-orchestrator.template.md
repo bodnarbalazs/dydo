@@ -74,6 +74,8 @@ Divide work into parallel-safe units. Each unit must be:
 
 If two units touch the same files, they're one unit — or one goes first.
 
+> **Worktrees** make parallel dispatch safe — each agent gets its own directory, build output, and git index. No build locking, no cross-contamination.
+
 ### 3. Dispatch
 
 ```bash
@@ -81,6 +83,21 @@ dydo dispatch --wait --auto-close --role <role> --task <sub-task> --brief "..."
 ```
 
 Write briefs as if the sub-agent knows nothing. They don't.
+
+#### When to Use `--worktree`
+
+Use `--worktree` for parallel dispatches that edit source code:
+- Code-writers dispatched in parallel
+- Test-writers dispatched alongside code-writers
+
+```bash
+dydo dispatch --wait --auto-close --worktree --role code-writer --task <sub-task> --brief "..."
+```
+
+Do **not** use `--worktree` for:
+- Sequential dispatches (one agent at a time — no contention)
+- Non-code roles (docs-writers, planners, co-thinkers — they don't build/test)
+- Single-agent dispatches
 
 ### 4. Monitor
 
@@ -93,6 +110,14 @@ As responses arrive:
 - Did the sub-agent succeed?
 - Does the output fit with other workstreams?
 - Are there emerging conflicts?
+
+#### Merge Coordination
+
+Each worktree task ends with a merge back to the main branch.
+
+- Merges happen **sequentially** — coordinate ordering as results arrive
+- Each merge checks for conflicts before committing
+- Conflicted merges **escalate to the human** — agents do not auto-resolve
 
 ### 5. Resolve Conflicts
 

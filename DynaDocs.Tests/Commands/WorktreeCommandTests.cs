@@ -211,6 +211,248 @@ public class WorktreeCommandTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Cleanup_WorktreeHold_CountsAsReference()
+    {
+        var worktreeId = "Adele-20260316120000";
+
+        // Adele is cleaning up — her markers get removed
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), worktreeId);
+
+        // Brian has .worktree-hold (merger scenario)
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-hold"), worktreeId);
+
+        var stdout = CaptureStdout(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+        Assert.Contains("still referencing", stdout);
+    }
+
+    [Fact]
+    public void Cleanup_RemovesWorktreeHoldMarker()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree-hold"), "some-wt-id");
+
+        WorktreeCommand.ExecuteCleanup("some-wt-id", "Adele", _registry);
+
+        Assert.False(File.Exists(Path.Combine(workspace, ".worktree-hold")));
+    }
+
+    [Fact]
+    public void Merge_MissingMergeSource_ReturnsError()
+    {
+        // Setup agent with .worktree-base but no .merge-source
+        SetupMergeAgent("Adele", worktreeBase: "main");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.Delete(Path.Combine(workspace, ".merge-source")); // ensure missing
+
+        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(".merge-source", stderr);
+    }
+
+    [Fact]
+    public void Merge_MissingWorktreeBase_ReturnsError()
+    {
+        // Setup agent with .merge-source but no .worktree-base
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        StoreSessionForAgent("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/Adele-20260316");
+
+        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(".worktree-base", stderr);
+    }
+
+    [Fact]
+    public void Merge_ReadsMarkersAndCallsGitMerge()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteMerge(false, _registry);
+
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("merge worktree/Adele-20260316 --no-edit"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_CleanMerge_AutoFinalizes()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/Adele-20260316"));
+            Assert.Contains("finalized", stdout.ToLower());
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_DeletesBranchAndCleansMarkers()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteMerge(true, _registry);
+
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/Adele-20260316"));
+
+            var workspace = _registry.GetAgentWorkspace("Adele");
+            Assert.False(File.Exists(Path.Combine(workspace, ".merge-source")));
+            Assert.False(File.Exists(Path.Combine(workspace, ".worktree-base")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_RemovesWorktreeHoldMarker()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-hold"), "Adele-20260316");
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            WorktreeCommand.ExecuteMerge(true, _registry);
+
+            Assert.False(File.Exists(Path.Combine(workspace, ".worktree-hold")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_CallsRemoveGitWorktree()
+    {
+        var worktreeId = "Adele-20260316";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        SetupMergeAgent("Adele", "main", $"worktree/{worktreeId}");
+
+        // Set up a .worktree-path on Brian so ResolveWorktreePath finds the path
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteMerge(true, _registry);
+
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("worktree remove") && c.Arguments.Contains(worktreePath));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_NoAgentClaimed_ReturnsError()
+    {
+        // Set up session context but no agent claimed for it
+        var agentsDir = Path.Combine(_testDir, "dydo", "agents");
+        Directory.CreateDirectory(agentsDir);
+        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), "orphan-session");
+
+        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("No agent claimed", stderr);
+    }
+
+    [Fact]
+    public void Merge_ConflictDetected_ReturnsValidationErrorAndPrintsInstructions()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+            a.Contains("merge") ? 1 : 0;
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Merge conflicts detected", stdout);
+            Assert.Contains("dydo worktree merge --finalize", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    private void SetupMergeAgent(string agentName, string? worktreeBase = null, string? mergeSource = null)
+    {
+        var workspace = _registry.GetAgentWorkspace(agentName);
+        Directory.CreateDirectory(workspace);
+        StoreSessionForAgent(agentName);
+        if (worktreeBase != null)
+            File.WriteAllText(Path.Combine(workspace, ".worktree-base"), worktreeBase);
+        if (mergeSource != null)
+            File.WriteAllText(Path.Combine(workspace, ".merge-source"), mergeSource);
+    }
+
+    private void StoreSessionForAgent(string agentName)
+    {
+        var workspace = _registry.GetAgentWorkspace(agentName);
+        Directory.CreateDirectory(workspace);
+
+        // Write state file
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $"""
+            ---
+            status: working
+            role: code-writer
+            task: merge-task
+            ---
+            """);
+
+        // Write session JSON file so GetCurrentAgent can match session ID to agent
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\"}}");
+
+        // Write session context so GetSessionContext returns "test-session"
+        var agentsDir = Path.Combine(_testDir, "dydo", "agents");
+        Directory.CreateDirectory(agentsDir);
+        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), "test-session");
+    }
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker
@@ -237,6 +479,26 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             Console.SetOut(original);
+        }
+    }
+
+    private static (int exitCode, string stdout, string stderr) CaptureAll(Func<int> action)
+    {
+        var originalOut = Console.Out;
+        var originalErr = Console.Error;
+        var outWriter = new StringWriter();
+        var errWriter = new StringWriter();
+        Console.SetOut(outWriter);
+        Console.SetError(errWriter);
+        try
+        {
+            var code = action();
+            return (code, outWriter.ToString(), errWriter.ToString());
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalErr);
         }
     }
 }

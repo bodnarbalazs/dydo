@@ -41,6 +41,10 @@ public static class DispatchService
 
         var origin = GetOriginForTask(registry, sender, task) ?? senderName;
 
+        // Baton-passing: if sender has a reply-pending marker for this task, inherit it
+        var inheritReply = sender != null && registry.GetReplyPendingMarkers(senderName)
+            .Any(m => string.Equals(m.Task, task, StringComparison.OrdinalIgnoreCase));
+
         var existing = FindAgentWorkingOnTask(registry, task, senderName);
         if (existing != null)
         {
@@ -62,7 +66,26 @@ public static class DispatchService
         var targetAgentName = selection.AgentName;
 
         WriteAndLaunch(registry, targetAgentName, senderName, origin, role, task, brief,
-            files, escalate, noLaunch, useTab, useNewWindow, autoClose, wait, worktree);
+            files, escalate, noLaunch, useTab, useNewWindow, autoClose, wait, worktree, inheritReply);
+
+        return CompleteDispatch(registry, sender, senderName, targetAgentName, role, task, inheritReply, wait);
+    }
+
+    private static int CompleteDispatch(AgentRegistry registry, AgentState? sender, string senderName,
+        string targetAgentName, string role, string task, bool inheritReply, bool wait)
+    {
+        // Clear sender's reply-pending marker after successful baton pass
+        if (inheritReply)
+            registry.RemoveReplyPendingMarker(senderName, task);
+
+        // Review enforcement: create marker when code-writer dispatches reviewer for same task
+        if (sender != null
+            && string.Equals(sender.Role, "code-writer", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(role, "reviewer", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(sender.Task, task, StringComparison.OrdinalIgnoreCase))
+        {
+            registry.CreateReviewDispatchedMarker(senderName, task, targetAgentName);
+        }
 
         if (wait)
         {
@@ -79,9 +102,9 @@ public static class DispatchService
 
     private static void WriteAndLaunch(AgentRegistry registry, string targetAgentName, string senderName,
         string origin, string role, string task, string brief, string? files, bool escalate,
-        bool noLaunch, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree)
+        bool noLaunch, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree, bool inheritReply = false)
     {
-        var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin, role, task, brief, files, escalate, wait);
+        var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin, role, task, brief, files, escalate, wait, inheritReply);
 
         HandleReviewerTransition(role, task, brief);
         PrintDispatchSummary(targetAgentName, role, task, itemPath, escalate);
@@ -93,6 +116,9 @@ public static class DispatchService
         var senderWorktreeId = GetSenderWorktreeId(registry, senderName);
         var needsMerge = HasNeedsMergeMarker(registry, senderName);
 
+        string? cleanupWorktreeId = null;
+        string? mainProjectRoot = null;
+
         if (senderWorktreeId != null && !needsMerge)
         {
             if (worktree)
@@ -100,7 +126,9 @@ public static class DispatchService
 
             InheritWorktree(registry, targetAgentName, senderName, senderWorktreeId);
             workingDirOverride = GetWorktreePath(registry, senderName);
-            worktreeId = null; // Don't generate setup/cleanup scripts
+            worktreeId = null;
+            cleanupWorktreeId = senderWorktreeId;
+            mainProjectRoot = PathUtils.FindProjectRoot();
         }
         else if (senderWorktreeId != null && needsMerge)
         {
@@ -117,14 +145,14 @@ public static class DispatchService
         var (windowName, launchInTab) = ConfigureWindowSettings(registry, useTab, useNewWindow);
 
         registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
-        LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride);
+        LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
 
         if (effectiveAutoClose)
             WatchdogService.EnsureRunning();
     }
 
     private static string WriteInboxItemToAgent(AgentRegistry registry, string targetAgentName, string senderName,
-        string origin, string role, string task, string brief, string? files, bool escalate, bool wait)
+        string origin, string role, string task, string brief, string? files, bool escalate, bool wait, bool inheritReply = false)
     {
         var inboxItem = new InboxItem
         {
@@ -138,7 +166,7 @@ public static class DispatchService
             Files = string.IsNullOrEmpty(files) ? [] : [files],
             Escalated = escalate,
             EscalatedAt = escalate ? DateTime.UtcNow : null,
-            ReplyRequired = wait
+            ReplyRequired = wait || inheritReply
         };
 
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(targetAgentName), "inbox");
@@ -267,6 +295,7 @@ public static class DispatchService
             File.Copy(baseSrc, Path.Combine(targetWorkspace, ".worktree-base"), overwrite: true);
 
         File.WriteAllText(Path.Combine(targetWorkspace, ".merge-source"), $"worktree/{senderWorktreeId}");
+        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-hold"), senderWorktreeId);
     }
 
     private static void ClearNeedsMerge(AgentRegistry registry, string agentName)
@@ -292,13 +321,14 @@ public static class DispatchService
     }
 
     private static void LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
-        bool effectiveAutoClose, string? worktreeId, string? windowName, string? workingDirOverride = null)
+        bool effectiveAutoClose, string? worktreeId, string? windowName, string? workingDirOverride = null,
+        string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         if (noLaunch)
             return;
 
         var projectRoot = workingDirOverride ?? PathUtils.FindProjectRoot();
-        TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName);
+        TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
     }
 

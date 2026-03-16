@@ -59,14 +59,22 @@ Uses the fresh agent model ([decision 005](../../project/decisions/005-fresh-age
 **On pass:**
 ```bash
 dydo review complete <task> --status pass --notes "..."
+```
+
+If the reviewer inherited a `reply_required` obligation (dispatched as part of a chain), it must message the upstream agent before releasing:
+
+```bash
+dydo msg --to <origin> --subject <task> --body "Review passed. [summary]"
 dydo inbox clear --all
 dydo agent release
 ```
 
-**On fail:** Dispatches to a *new* code-writer with specific fix instructions. The review feedback must be actionable — exact line numbers, specific issues, clear descriptions of what's wrong.
+As the last agent in the chain, the reviewer fulfills the reply obligation that was passed down (baton-passing — see [decision 010](../../project/decisions/010-baton-passing-and-review-enforcement.md)).
+
+**On fail:** Dispatches to a *new* code-writer with specific fix instructions. The review feedback must be actionable — exact line numbers, specific issues, clear descriptions of what's wrong. The baton passes to the new code-writer.
 
 ```bash
-dydo dispatch --wait --auto-close --role code-writer --task <task> --brief "Review failed. Issues: [specific list]"
+dydo dispatch --no-wait --auto-close --role code-writer --task <task> --brief "Review failed. Issues: [specific list]"
 ```
 
 After 2 failed reviews, the task may be escalated to a fresh agent or to the human.
@@ -86,3 +94,4 @@ If the reviewer discovers a bug or problem outside the current task during revie
 - [Code-Writer](./code-writer.md) — implements the code that gets reviewed
 - [Decision 005](../../project/decisions/005-fresh-agent-over-wait-for-feedback.md) — fresh agent model for review feedback
 - [Guardrails Reference](../guardrails.md) — H10 (no self-review), H1 (write permissions)
+- [Decision 010](../../project/decisions/010-baton-passing-and-review-enforcement.md) — Baton-passing and review enforcement

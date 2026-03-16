@@ -8,7 +8,7 @@ public static class LinuxTerminalLauncher
         $"if dydo agent status {agentName} 2>/dev/null | grep -q 'free'; then exit 0; fi; exec bash";
 
     public static string GetArguments(string terminalName, string agentName, string? workingDirectory = null,
-        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null)
+        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
@@ -25,6 +25,11 @@ public static class LinuxTerminalLauncher
             args = args.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeSetupScript(worktreeId) + "unset CLAUDECODE");
             args = args.Replace("exec bash", TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName) + "; exec bash");
         }
+        else if (cleanupWorktreeId != null && mainProjectRoot != null)
+        {
+            var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
+            args = args.Replace("exec bash", cleanup + "; exec bash");
+        }
 
         if (autoClose)
             args = args.Replace("exec bash", BashPostClaudeCheck(agentName));
@@ -34,7 +39,7 @@ public static class LinuxTerminalLauncher
 
     public static bool TryLaunch(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
         string agentName, string? workingDirectory = null, bool useTab = false,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null)
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         foreach (var terminal in terminals)
         {
@@ -51,6 +56,11 @@ public static class LinuxTerminalLauncher
                 {
                     arguments = arguments.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeSetupScript(worktreeId) + "unset CLAUDECODE");
                     arguments = arguments.Replace("exec bash", TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName) + "; exec bash");
+                }
+                else if (cleanupWorktreeId != null && mainProjectRoot != null)
+                {
+                    var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
+                    arguments = arguments.Replace("exec bash", cleanup + "; exec bash");
                 }
 
                 if (autoClose)

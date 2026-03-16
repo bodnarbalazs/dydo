@@ -209,4 +209,46 @@ public class MarkerStore
     }
 
     #endregion
+
+    #region Review-Dispatched Markers
+
+    private string GetReviewDispatchedDir(string agentName) =>
+        Path.Combine(_getAgentWorkspace(agentName), ".review-dispatched");
+
+    public void CreateReviewDispatchedMarker(string agentName, string task, string dispatchedTo)
+    {
+        var dir = GetReviewDispatchedDir(agentName);
+        Directory.CreateDirectory(dir);
+
+        var marker = new ReviewDispatchedMarker
+        {
+            Task = task,
+            DispatchedTo = dispatchedTo,
+            Since = DateTime.UtcNow
+        };
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.ReviewDispatchedMarker);
+        File.WriteAllText(path, json);
+    }
+
+    public bool HasReviewDispatchedMarker(string agentName, string task)
+    {
+        var dir = GetReviewDispatchedDir(agentName);
+        if (!Directory.Exists(dir))
+            return false;
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        return File.Exists(Path.Combine(dir, $"{sanitized}.json"));
+    }
+
+    public void ClearAllReviewDispatchedMarkers(string agentName)
+    {
+        var dir = GetReviewDispatchedDir(agentName);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
+    }
+
+    #endregion
 }

@@ -91,8 +91,9 @@ These are defined in the `constraints` array of each role definition file, makin
 |---|------|---------|---------|
 | H13 | Unprocessed inbox | `dydo agent release` with unread inbox items. | `Cannot release: {n} unprocessed inbox item(s). Process all inbox items, then run 'dydo inbox clear'...` |
 | H14 | Active wait markers | `dydo agent release` while waiting for a response. | `Cannot release: waiting for response on: {tasks}. Cancel with: dydo wait --task <name> --cancel` |
-| H15 | Pending reply obligation | `dydo agent release` when agent was dispatched with `--wait` and hasn't sent a message back to the dispatching agent. | `Cannot release: pending reply on: '{task}' to {agent}. Send a message first: dydo msg --to <agent> --subject <task> --body "..."` |
+| H15 | Pending reply obligation | `dydo agent release` when agent's inbox item has `reply_required: true` and it hasn't sent a message back to the upstream agent. `reply_required` is inherited through the dispatch chain (decoupled from `--wait` flag). **Baton-passing:** automatically cleared when the agent dispatches on the same task — the dispatched agent inherits the obligation. | `Cannot release: pending reply on: '{task}' to {agent}. Send a message first: dydo msg --to <agent> --subject <task> --body "..."` |
 | H16 | Pending worktree merge | `dydo agent release` when a review passed in a worktree but the merge hasn't been dispatched yet. | `Cannot release: review passed in worktree but merge not dispatched.` |
+| H25 | Dispatched code-writer review enforcement | `dydo agent release` by a code-writer that has a dispatch origin (part of an orchestrated workflow) and has not dispatched a reviewer for the same task. Does not apply when the code-writer was started directly by the human. | `Cannot release: dispatched code-writers must dispatch a reviewer before releasing. Use: dydo dispatch --no-wait --auto-close --role reviewer --task <task> --brief "..."` |
 
 ### Bash Command Safety
 
@@ -135,7 +136,7 @@ The guardrail system is designed for extension through role definition files (`.
 - Staged access control (H3, H6)
 - Off-limits enforcement (H2)
 - Bash safety analysis (H17–H20)
-- Release blocking checks (H13–H16)
+- Release blocking checks (H13–H16, H25)
 - Messaging restrictions (H21–H22)
 - Soft-block marker file logic (S1–S4)
 
@@ -150,3 +151,4 @@ Custom roles inherit the hard-coded enforcement automatically. Adding a new `.ro
 - [Agent Lifecycle](../understand/agent-lifecycle.md) — Claim → role → work → release
 - [Configuration Reference](./configuration.md) — Role definition file schema
 - [Troubleshooting](../guides/troubleshooting.md) — What to do when you hit a guardrail
+- [Decision 010](../project/decisions/010-baton-passing-and-review-enforcement.md) — Baton-passing and review enforcement rationale

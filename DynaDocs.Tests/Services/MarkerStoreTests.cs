@@ -227,4 +227,47 @@ public class MarkerStoreTests : IDisposable
     }
 
     #endregion
+
+    #region Review-Dispatched Markers
+
+    [Fact]
+    public void CreateReviewDispatchedMarker_CreatesFileOnDisk()
+    {
+        _store.CreateReviewDispatchedMarker("Alice", "my-task", "Bob");
+
+        Assert.True(_store.HasReviewDispatchedMarker("Alice", "my-task"));
+    }
+
+    [Fact]
+    public void HasReviewDispatchedMarker_NoDir_ReturnsFalse()
+    {
+        Assert.False(_store.HasReviewDispatchedMarker("NonExistent", "task"));
+    }
+
+    [Fact]
+    public void HasReviewDispatchedMarker_NoFile_ReturnsFalse()
+    {
+        var dir = Path.Combine(_testDir, "Alice", ".review-dispatched");
+        Directory.CreateDirectory(dir);
+
+        Assert.False(_store.HasReviewDispatchedMarker("Alice", "nonexistent"));
+    }
+
+    [Fact]
+    public void ClearAllReviewDispatchedMarkers_RemovesDirectory()
+    {
+        _store.CreateReviewDispatchedMarker("Alice", "task1", "Bob");
+
+        _store.ClearAllReviewDispatchedMarkers("Alice");
+
+        Assert.False(_store.HasReviewDispatchedMarker("Alice", "task1"));
+    }
+
+    [Fact]
+    public void ClearAllReviewDispatchedMarkers_NoDirNoError()
+    {
+        _store.ClearAllReviewDispatchedMarkers("NonExistent"); // should not throw
+    }
+
+    #endregion
 }

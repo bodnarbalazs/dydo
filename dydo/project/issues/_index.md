@@ -12,3 +12,4 @@ Index of issues documentation.
 ## Contents
 
 - [Code-writers don't get nudges on release attempts if they haven't dispatched to a code-reviewer](./0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md)
+- [Agents default to creating decision docs unnecessarily](./0002-agents-default-to-creating-decision-docs-unnecessarily.md)

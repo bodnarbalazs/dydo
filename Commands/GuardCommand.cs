@@ -556,6 +556,25 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
+        // git stash is only safe in worktrees (isolated stash stack); block otherwise
+        if (GitStashRegex().IsMatch(command))
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent == null || registry.GetWorktreeId(agent.Name) == null)
+            {
+                const string reason = "git stash is unsafe in multi-agent environments. "
+                    + "Stashes are a global stack -- other agents' stash operations will interfere. "
+                    + "Commit your changes instead.";
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked, Tool = "bash",
+                    Command = TruncateCommand(command), BlockReason = reason
+                });
+                Console.Error.WriteLine($"BLOCKED: {reason}");
+                return ExitCodes.ToolError;
+            }
+        }
+
         var analysis = bashAnalyzer.Analyze(command);
 
         foreach (var warning in analysis.Warnings)
@@ -1029,6 +1048,10 @@ public static partial class GuardCommand
     // Also matches: bash -c "dydo ...", sh -c 'dydo ...'
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectShellDydoRegex();
+
+    // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
+    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+stash(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
+    private static partial Regex GitStashRegex();
 
     /// <summary>
     /// Check if a command invokes dydo indirectly via npx or dotnet.

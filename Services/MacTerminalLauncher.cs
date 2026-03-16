@@ -5,7 +5,7 @@ using System.Diagnostics;
 public static class MacTerminalLauncher
 {
     public static string GetArguments(string agentName, string? workingDirectory = null,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null)
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
@@ -16,6 +16,10 @@ public static class MacTerminalLauncher
             wtSetup = TerminalLauncher.WorktreeSetupScript(worktreeId);
             wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
         }
+        else if (cleanupWorktreeId != null && mainProjectRoot != null)
+        {
+            wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
+        }
 
         var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
@@ -24,7 +28,7 @@ public static class MacTerminalLauncher
 
     public static void Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string? workingDirectory = null, bool useTab = false,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null)
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
@@ -34,6 +38,10 @@ public static class MacTerminalLauncher
         {
             wtSetup = TerminalLauncher.WorktreeSetupScript(worktreeId);
             wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
+        }
+        else if (cleanupWorktreeId != null && mainProjectRoot != null)
+        {
+            wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
         var shellCommand = $"{cdPrefix}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";

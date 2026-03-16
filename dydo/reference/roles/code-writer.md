@@ -23,7 +23,7 @@ Full write access to source code, tests, and templates. Read access to everythin
 ## Constraints
 
 - No role-specific constraints in `.role.json` (empty `constraints` array)
-- Standard guardrails apply: must-read enforcement (H5), role-based write permissions (H1), release blocking (H13–H16)
+- Standard guardrails apply: must-read enforcement (H5), role-based write permissions (H1), release blocking (H13–H16, H25)
 - Cannot become reviewer on the same task after being code-writer (H10 — enforced on the reviewer side via `role-transition` constraint)
 
 ## Workflow
@@ -41,10 +41,10 @@ Full write access to source code, tests, and templates. Read access to everythin
 Uses the fresh agent model ([decision 005](../../project/decisions/005-fresh-agent-over-wait-for-feedback.md)). After dispatching to a reviewer, the code-writer releases — it does not wait for review feedback. If the review fails, the reviewer dispatches to a *new* code-writer session with specific fix instructions.
 
 ```
-code-writer → dispatch --wait --auto-close → reviewer → (if fail) → dispatch → new code-writer
+code-writer → dispatch --no-wait --auto-close → reviewer → (if fail) → dispatch → new code-writer
 ```
 
-The `--wait --auto-close` flags mean the dispatch registers a wait and auto-closes the task on success, but the code-writer still releases after dispatching (the wait is structural, not blocking).
+The `--no-wait --auto-close` flags mean the code-writer releases immediately after dispatching (no wait registration). The reviewer inherits any `reply_required` obligation through the dispatch chain (baton-passing — see [decision 010](../../project/decisions/010-baton-passing-and-review-enforcement.md)). When the code-writer is dispatched (has an origin), H25 enforces that it must dispatch a reviewer before releasing.
 
 ## Out-of-Scope Issues
 
@@ -62,4 +62,5 @@ If the code-writer encounters a bug or problem outside its current task, it prop
 - [Planner](./planner.md) — often provides the plan the code-writer follows
 - [Test-Writer](./test-writer.md) — alternative for test-only tasks
 - [Decision 005](../../project/decisions/005-fresh-agent-over-wait-for-feedback.md) — fresh agent model for review feedback
-- [Guardrails Reference](../guardrails.md) — H1 (write permissions), H10 (no self-review)
+- [Guardrails Reference](../guardrails.md) — H1 (write permissions), H10 (no self-review), H25 (review enforcement)
+- [Decision 010](../../project/decisions/010-baton-passing-and-review-enforcement.md) — Baton-passing and review enforcement

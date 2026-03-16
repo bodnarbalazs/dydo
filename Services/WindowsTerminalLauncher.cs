@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 public static class WindowsTerminalLauncher
 {
-    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null)
+    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
         var escapedPrompt = prompt.Replace("'", "''");
@@ -32,11 +32,19 @@ public static class WindowsTerminalLauncher
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
+        // Inherited worktree: no setup, but cleanup on exit
+        if (worktreeId == null && cleanupWorktreeId != null && mainProjectRoot != null)
+        {
+            var escapedRoot = mainProjectRoot.Replace("'", "''");
+            return $"{noExitFlag}-Command \"{windowEnv}try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+                   $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
+        }
+
         return $"{noExitFlag}-Command \"{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
     }
 
     public static void Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,
-        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null)
+        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var shell = ProcessUtils.ResolvePowerShell();
 
@@ -60,7 +68,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -77,7 +85,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName),
+            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot),
             UseShellExecute = true
         };
         if (workingDirectory != null)

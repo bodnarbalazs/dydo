@@ -5,7 +5,7 @@ type: reference
 
 # Inquisitor
 
-Adversarial hypothesis-driven QA. Finds what reviewers can't — the subtle bugs, untested paths, and silent assumptions in code that already passed review.
+Adversarial hypothesis-driven QA. Finds what reviewers didn't — the subtle bugs, untested paths, and silent assumptions in code that already passed review.
 
 ## Category
 

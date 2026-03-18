@@ -3,6 +3,7 @@ namespace DynaDocs.Commands;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -20,11 +21,69 @@ public static partial class InquisitionCommand
 
     private static Command CreateCoverageCommand()
     {
-        var command = new Command("coverage", "Show inquisition coverage across project areas");
+        var filesOption = new Option<bool>("--files") { Description = "File-level coverage heatmap" };
+        var pathOption = new Option<string?>("--path") { Description = "Scope to subtree" };
+        var gapsOnlyOption = new Option<bool>("--gaps-only") { Description = "Only gap + low files" };
+        var sinceOption = new Option<int>("--since") { DefaultValueFactory = _ => 365, Description = "Days lookback" };
+        var summaryOption = new Option<bool>("--summary") { Description = "Folder-level aggregates only" };
 
-        command.SetAction(_ => ExecuteCoverage());
+        var command = new Command("coverage", "Show inquisition coverage across project areas");
+        command.Options.Add(filesOption);
+        command.Options.Add(pathOption);
+        command.Options.Add(gapsOnlyOption);
+        command.Options.Add(sinceOption);
+        command.Options.Add(summaryOption);
+
+        command.SetAction(parseResult =>
+        {
+            if (parseResult.GetValue(filesOption))
+            {
+                return ExecuteFileCoverage(new FileCoverageOptions(
+                    SinceDays: parseResult.GetValue(sinceOption),
+                    PathFilter: parseResult.GetValue(pathOption),
+                    GapsOnly: parseResult.GetValue(gapsOnlyOption),
+                    SummaryOnly: parseResult.GetValue(summaryOption)));
+            }
+            return ExecuteCoverage();
+        });
 
         return command;
+    }
+
+    private static int ExecuteFileCoverage(FileCoverageOptions options)
+    {
+        var service = new FileCoverageService();
+        var report = service.GenerateReport(options);
+        var markdown = service.RenderMarkdown(report, options);
+
+        // Determine output path
+        var configService = new ConfigService();
+        var dydoRoot = configService.GetDydoRoot();
+        string outputPath;
+
+        if (options.OutputPath != null)
+        {
+            outputPath = options.OutputPath;
+        }
+        else
+        {
+            var registry = new AgentRegistry();
+            var sessionId = registry.GetSessionContext();
+            var agent = sessionId != null ? registry.GetCurrentAgent(sessionId) : null;
+
+            outputPath = agent != null
+                ? Path.Combine(registry.GetAgentWorkspace(agent.Name), "inquisition-coverage.md")
+                : Path.Combine(dydoRoot, "project", "inquisitions", "_coverage.md");
+        }
+
+        var dir = Path.GetDirectoryName(outputPath);
+        if (dir != null) Directory.CreateDirectory(dir);
+        File.WriteAllText(outputPath, markdown);
+
+        Console.WriteLine($"File coverage report written to: {outputPath}");
+        Console.WriteLine($"  Total: {report.TotalFiles} | Covered: {report.CoveredCount} | Low: {report.LowCount} | Gaps: {report.GapCount} | Stale: {report.StaleCount}");
+
+        return ExitCodes.Success;
     }
 
     private static int ExecuteCoverage()

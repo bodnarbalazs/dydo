@@ -180,6 +180,14 @@ public interface IAgentRegistry
 
     List<Models.WaitMarker> GetNonListeningWaitMarkers(string agentName);
 
+    RoleDefinition? GetRoleDefinition(string roleName);
+
+    void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo);
+
+    bool HasDispatchMarker(string agentName, string task, string targetRole);
+
+    void ClearAllDispatchMarkers(string agentName);
+
     /// <summary>
     /// Gets the current session ID from context file.
     /// Used by commands that run as subprocesses to identify the session.

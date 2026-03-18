@@ -13,6 +13,7 @@ public static class WindowsTerminalLauncher
             : "";
         var noExitFlag = autoClose ? "" : "-NoExit ";
 
+        var agentEnv = $"$env:DYDO_AGENT='{agentName}'; ";
         var windowEnv = windowName != null
             ? $"$env:DYDO_WINDOW='{windowName}'; "
             : "";
@@ -21,7 +22,7 @@ public static class WindowsTerminalLauncher
         {
             var wtDir = $"dydo/_system/.local/worktrees/{worktreeId}";
             var branch = $"worktree/{worktreeId}";
-            return $"{noExitFlag}-Command \"{windowEnv}$_wt_root = Get-Location; " +
+            return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}$_wt_root = Get-Location; " +
                    $"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees | Out-Null; " +
                    $"git worktree prune; " +
                    $"git worktree add {wtDir} -b {branch}; " +
@@ -36,11 +37,11 @@ public static class WindowsTerminalLauncher
         if (worktreeId == null && cleanupWorktreeId != null && mainProjectRoot != null)
         {
             var escapedRoot = mainProjectRoot.Replace("'", "''");
-            return $"{noExitFlag}-Command \"{windowEnv}try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+            return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
         }
 
-        return $"{noExitFlag}-Command \"{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
+        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
     }
 
     public static void Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,

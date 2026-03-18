@@ -88,13 +88,45 @@ public class RoleConstraintEvaluator
                 }
                 return true;
 
+            case "requires-dispatch":
+                return true;
+
             default:
                 reason = $"Unknown constraint type: '{constraint.Type}'.";
                 return false;
         }
     }
 
-    private static string SubstituteConstraintVars(string message, string agentName, string task, string? currentRole)
+    /// <summary>
+    /// Checks if an agent can release, evaluating requires-dispatch constraints.
+    /// </summary>
+    public bool CanRelease(string agentName, string role, string task, bool isDispatched,
+        Func<string, string, bool> hasDispatchMarker, out string reason)
+    {
+        reason = string.Empty;
+
+        if (!_roleDefinitions.TryGetValue(role, out var roleDef))
+            return true;
+
+        foreach (var constraint in roleDef.Constraints)
+        {
+            if (constraint.Type != "requires-dispatch") continue;
+            if (constraint.OnlyWhenDispatched && !isDispatched) continue;
+
+            foreach (var requiredRole in constraint.RequiredRoles!)
+            {
+                if (!hasDispatchMarker(task, requiredRole))
+                {
+                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, role);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    internal static string SubstituteConstraintVars(string message, string agentName, string task, string? currentRole)
     {
         return message
             .Replace("{agent}", agentName)

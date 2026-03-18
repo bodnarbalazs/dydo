@@ -228,45 +228,63 @@ public class MarkerStoreTests : IDisposable
 
     #endregion
 
-    #region Review-Dispatched Markers
+    #region Dispatch Markers
 
     [Fact]
-    public void CreateReviewDispatchedMarker_CreatesFileOnDisk()
+    public void CreateDispatchMarker_CreatesFileOnDisk()
     {
-        _store.CreateReviewDispatchedMarker("Alice", "my-task", "Bob");
+        _store.CreateDispatchMarker("Alice", "my-task", "reviewer", "Bob");
 
-        Assert.True(_store.HasReviewDispatchedMarker("Alice", "my-task"));
+        Assert.True(_store.HasDispatchMarker("Alice", "my-task", "reviewer"));
     }
 
     [Fact]
-    public void HasReviewDispatchedMarker_NoDir_ReturnsFalse()
+    public void HasDispatchMarker_NoDir_ReturnsFalse()
     {
-        Assert.False(_store.HasReviewDispatchedMarker("NonExistent", "task"));
+        Assert.False(_store.HasDispatchMarker("NonExistent", "task", "reviewer"));
     }
 
     [Fact]
-    public void HasReviewDispatchedMarker_NoFile_ReturnsFalse()
+    public void HasDispatchMarker_NoFile_ReturnsFalse()
     {
-        var dir = Path.Combine(_testDir, "Alice", ".review-dispatched");
+        var dir = Path.Combine(_testDir, "Alice", ".dispatch-markers");
         Directory.CreateDirectory(dir);
 
-        Assert.False(_store.HasReviewDispatchedMarker("Alice", "nonexistent"));
+        Assert.False(_store.HasDispatchMarker("Alice", "nonexistent", "reviewer"));
     }
 
     [Fact]
-    public void ClearAllReviewDispatchedMarkers_RemovesDirectory()
+    public void HasDispatchMarker_DifferentRole_ReturnsFalse()
     {
-        _store.CreateReviewDispatchedMarker("Alice", "task1", "Bob");
+        _store.CreateDispatchMarker("Alice", "my-task", "reviewer", "Bob");
 
-        _store.ClearAllReviewDispatchedMarkers("Alice");
-
-        Assert.False(_store.HasReviewDispatchedMarker("Alice", "task1"));
+        Assert.False(_store.HasDispatchMarker("Alice", "my-task", "judge"));
     }
 
     [Fact]
-    public void ClearAllReviewDispatchedMarkers_NoDirNoError()
+    public void CreateDispatchMarker_MultipleRoles_IndependentFiles()
     {
-        _store.ClearAllReviewDispatchedMarkers("NonExistent"); // should not throw
+        _store.CreateDispatchMarker("Alice", "my-task", "reviewer", "Bob");
+        _store.CreateDispatchMarker("Alice", "my-task", "judge", "Carol");
+
+        Assert.True(_store.HasDispatchMarker("Alice", "my-task", "reviewer"));
+        Assert.True(_store.HasDispatchMarker("Alice", "my-task", "judge"));
+    }
+
+    [Fact]
+    public void ClearAllDispatchMarkers_RemovesDirectory()
+    {
+        _store.CreateDispatchMarker("Alice", "task1", "reviewer", "Bob");
+
+        _store.ClearAllDispatchMarkers("Alice");
+
+        Assert.False(_store.HasDispatchMarker("Alice", "task1", "reviewer"));
+    }
+
+    [Fact]
+    public void ClearAllDispatchMarkers_NoDirNoError()
+    {
+        _store.ClearAllDispatchMarkers("NonExistent"); // should not throw
     }
 
     #endregion

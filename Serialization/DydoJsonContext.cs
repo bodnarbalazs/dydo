@@ -45,5 +45,5 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(SnapshotDelta))]
 [JsonSerializable(typeof(WaitMarker))]
 [JsonSerializable(typeof(ReplyPendingMarker))]
-[JsonSerializable(typeof(ReviewDispatchedMarker))]
+[JsonSerializable(typeof(DispatchMarker))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }

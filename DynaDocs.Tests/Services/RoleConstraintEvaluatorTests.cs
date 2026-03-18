@@ -271,6 +271,31 @@ public class RoleConstraintEvaluatorTests
 
     #endregion
 
+    #region requires-dispatch pass-through
+
+    [Fact]
+    public void CanTakeRole_RequiresDispatch_PassesThrough()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch reviewer."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanTakeRole("Alice", "code-writer", "task1", out _));
+    }
+
+    #endregion
+
     #region Unknown constraint type
 
     [Fact]
@@ -289,6 +314,159 @@ public class RoleConstraintEvaluatorTests
 
         Assert.False(result);
         Assert.Contains("Unknown constraint type", reason);
+    }
+
+    #endregion
+
+    #region CanRelease
+
+    [Fact]
+    public void CanRelease_NoConstraints_ReturnsTrue()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer")
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanRelease("Alice", "code-writer", "task1", true,
+            (_, _) => false, out _));
+    }
+
+    [Fact]
+    public void CanRelease_RequiresDispatch_BlocksWithoutMarker()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch reviewer for {task}."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        var result = evaluator.CanRelease("Alice", "code-writer", "task1", true,
+            (_, _) => false, out var reason);
+
+        Assert.False(result);
+        Assert.Contains("reviewer", reason);
+    }
+
+    [Fact]
+    public void CanRelease_RequiresDispatch_AllowsWithMarker()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch reviewer."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanRelease("Alice", "code-writer", "task1", true,
+            (task, role) => role == "reviewer", out _));
+    }
+
+    [Fact]
+    public void CanRelease_OnlyWhenDispatched_SkipsDirectAgents()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch reviewer."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        // isDispatched = false → constraint should be skipped
+        Assert.True(evaluator.CanRelease("Alice", "code-writer", "task1", false,
+            (_, _) => false, out _));
+    }
+
+    [Fact]
+    public void CanRelease_OnlyWhenDispatched_BlocksDispatchedAgents()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch reviewer."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        // isDispatched = true → constraint applies
+        var result = evaluator.CanRelease("Alice", "code-writer", "task1", true,
+            (_, _) => false, out _);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void CanRelease_MultipleRequiredRoles_AllMustBeMet()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["multi-role"] = MakeRole("multi-role", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer", "judge"],
+                    Message = "Must dispatch both."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        // Only reviewer dispatched → should fail on judge
+        var result = evaluator.CanRelease("Alice", "multi-role", "task1", true,
+            (task, role) => role == "reviewer", out _);
+
+        Assert.False(result);
+
+        // Both dispatched → should pass
+        Assert.True(evaluator.CanRelease("Alice", "multi-role", "task1", true,
+            (_, _) => true, out _));
+    }
+
+    [Fact]
+    public void CanRelease_UnknownRole_ReturnsTrue()
+    {
+        var evaluator = new RoleConstraintEvaluator(
+            new Dictionary<string, RoleDefinition>(),
+            ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanRelease("Alice", "unknown", "task1", true,
+            (_, _) => false, out _));
     }
 
     #endregion

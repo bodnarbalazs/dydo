@@ -2433,4 +2433,93 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region DYDO_AGENT Env Var Tests
+
+    [Fact]
+    public void GetSessionContext_PrefersDydoAgentEnvVar_OverFile()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            var scaffolder = new FolderScaffolder();
+            var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+            // Store a session context file with one session ID
+            registry.StoreSessionContext("file-session-111");
+
+            // Claim agent (creates .session with a different session ID)
+            registry.StoreSessionContext("agent-session-222");
+            registry.ClaimAgent("Adele", out _);
+
+            // Now set DYDO_AGENT env var
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+
+            // GetSessionContext should return the session ID from the agent's .session file, not the file
+            var sessionId = registry.GetSessionContext();
+            var agentSession = registry.GetSession("Adele");
+            Assert.NotNull(agentSession);
+            Assert.Equal(agentSession.SessionId, sessionId);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+            Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+        }
+    }
+
+    [Fact]
+    public void GetSessionContext_FallsBackToFile_WhenDydoAgentNotSet()
+    {
+        Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+
+        var registry = new AgentRegistry(_testDir);
+        registry.StoreSessionContext("fallback-session-333");
+
+        var sessionId = registry.GetSessionContext();
+        Assert.Equal("fallback-session-333", sessionId);
+    }
+
+    [Fact]
+    public void GetCurrentAgent_PrefersDydoAgentEnvVar_OverHintFile()
+    {
+        SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            var scaffolder = new FolderScaffolder();
+            var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+            // Claim Adele and Brian with known session IDs
+            registry.StoreSessionContext("session-adele");
+            registry.ClaimAgent("Adele", out _);
+
+            registry.StoreSessionContext("session-brian");
+            registry.ClaimAgent("Brian", out _);
+
+            var adeleSession = registry.GetSession("Adele");
+            Assert.NotNull(adeleSession);
+
+            // Write hint file pointing to Brian
+            var hintPath = Path.Combine(_testDir, "dydo", "_system", ".local", ".session-agent");
+            Directory.CreateDirectory(Path.GetDirectoryName(hintPath)!);
+            File.WriteAllText(hintPath, "Brian");
+
+            // Set DYDO_AGENT to Adele
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+
+            // GetCurrentAgent should return Adele (from env var), not Brian (from hint file)
+            var result = registry.GetCurrentAgent(adeleSession.SessionId);
+            Assert.NotNull(result);
+            Assert.Equal("Adele", result.Name);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+            Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+        }
+    }
+
+    #endregion
 }

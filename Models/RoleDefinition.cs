@@ -9,5 +9,6 @@ public class RoleDefinition
     public required List<string> ReadOnlyPaths { get; init; }
     public required string TemplateFile { get; init; }
     public string? DenialHint { get; init; }
+    public bool CanOrchestrate { get; init; }
     public List<RoleConstraint> Constraints { get; init; } = [];
 }

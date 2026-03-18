@@ -9,7 +9,7 @@ public static class WorkspaceCleaner
         ["state.md", ".session", "plan.md", "notes.md", ".auto-close"];
 
     private static readonly string[] DirsToRemove =
-        ["modes", ".waiting", ".reply-pending", ".review-dispatched"];
+        ["modes", ".waiting", ".reply-pending", ".dispatch-markers", ".review-dispatched"];
 
     public static int Execute(string? agentNameOrLetter, bool all, bool force, string? task)
     {

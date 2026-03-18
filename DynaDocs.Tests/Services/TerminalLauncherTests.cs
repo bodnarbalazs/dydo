@@ -110,7 +110,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_ExactFormat()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele");
-        Assert.Equal("-NoExit -Command \"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'\"", args);
+        Assert.Equal("-NoExit -Command \"$env:DYDO_AGENT='Adele'; Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'\"", args);
     }
 
     [Theory]
@@ -158,7 +158,7 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_ContainsCdPrefix_WhenWorkingDirectoryProvided(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", "/home/user/project");
-        Assert.Contains("cd '/home/user/project' && unset CLAUDECODE; claude", args);
+        Assert.Contains("cd '/home/user/project' && export DYDO_AGENT='Adele'; unset CLAUDECODE; claude", args);
     }
 
     [Theory]
@@ -174,7 +174,7 @@ public class TerminalLauncherTests
     public void GetMacArguments_ContainsCdPrefix_WhenWorkingDirectoryProvided()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", "/Users/dev/project");
-        Assert.Contains("cd '/Users/dev/project' && unset CLAUDECODE; claude", args);
+        Assert.Contains("cd '/Users/dev/project' && export DYDO_AGENT=Adele; unset CLAUDECODE; claude", args);
     }
 
     [Fact]
@@ -1230,6 +1230,37 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetMacArguments("Adele");
 
         Assert.DoesNotContain("DYDO_WINDOW", args);
+    }
+
+    #endregion
+
+    #region DYDO_AGENT Tests
+
+    [Fact]
+    public void GetWindowsArguments_AlwaysInjectsDydoAgentEnvVar()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+
+        Assert.Contains("$env:DYDO_AGENT='Adele'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    public void GetLinuxArguments_AlwaysInjectsDydoAgentExport(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+
+        Assert.Contains("export DYDO_AGENT='Adele'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_AlwaysInjectsDydoAgentExport()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+
+        Assert.Contains("export DYDO_AGENT=Adele", args);
     }
 
     #endregion

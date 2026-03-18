@@ -17,6 +17,8 @@ public static class LinuxTerminalLauncher
             ? config.GetTabArguments(agentName, workingDirectory)
             : config.GetArguments(agentName, workingDirectory);
 
+        args = args.Replace("unset CLAUDECODE", $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE");
+
         if (windowName != null)
             args = args.Replace("unset CLAUDECODE", $"export DYDO_WINDOW='{windowName}'; unset CLAUDECODE");
 
@@ -48,6 +50,8 @@ public static class LinuxTerminalLauncher
                 var arguments = useTab && terminal.GetTabArguments != null
                     ? terminal.GetTabArguments(agentName, workingDirectory)
                     : terminal.GetArguments(agentName, workingDirectory);
+
+                arguments = arguments.Replace("unset CLAUDECODE", $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE");
 
                 if (windowName != null)
                     arguments = arguments.Replace("unset CLAUDECODE", $"export DYDO_WINDOW='{windowName}'; unset CLAUDECODE");

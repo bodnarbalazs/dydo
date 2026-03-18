@@ -22,7 +22,8 @@
       "Bash(dydo inbox:*)",
       "Bash(dydo message:*)",
       "Bash(dydo msg:*)",
-      "Bash(dydo wait:*)"
+      "Bash(dydo wait:*)",
+      "Bash(grep:*)"
     ]
   },
   "hooks": {

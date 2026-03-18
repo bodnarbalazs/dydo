@@ -396,6 +396,130 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
+    public void ValidateRoleDefinition_RequiresDispatchMissingRequiredRoles_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint { Type = "requires-dispatch", Message = "test" }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("requiredRoles"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_RequiresDispatchWithRequiredRoles_Passes()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint
+            {
+                Type = "requires-dispatch",
+                RequiredRoles = ["reviewer"],
+                Message = "Must dispatch reviewer."
+            }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.True(valid);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_RequiresPriorMissingRequiredRoles_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint { Type = "requires-prior", Message = "test" }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("requiredRoles"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_RequiresPriorEmptyRequiredRoles_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint { Type = "requires-prior", RequiredRoles = [], Message = "test" }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("requiredRoles"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_PanelLimitMissingMaxCount_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint { Type = "panel-limit", Message = "test" }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("maxCount"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_PanelLimitZeroMaxCount_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint { Type = "panel-limit", MaxCount = 0, Message = "test" }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("maxCount"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_RequiresDispatchEmptyRequiredRoles_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint { Type = "requires-dispatch", RequiredRoles = [], Message = "test" }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("requiredRoles"));
+    }
+
+    [Fact]
     public void ValidateRoleDefinition_AllBaseRoles_AreValid()
     {
         foreach (var role in RoleDefinitionService.GetBaseRoleDefinitions())
@@ -403,6 +527,39 @@ public class RoleDefinitionServiceTests : IDisposable
             var valid = _service.ValidateRoleDefinition(role, out var errors);
             Assert.True(valid, $"Base role '{role.Name}' failed validation: {string.Join(", ", errors)}");
         }
+    }
+
+    [Fact]
+    public void WriteBaseRoleDefinitions_RoundTrips_CanOrchestrate()
+    {
+        _service.WriteBaseRoleDefinitions(_testDir);
+
+        var loaded = _service.LoadRoleDefinitions(_testDir);
+
+        var orchestrator = loaded.Single(r => r.Name == "orchestrator");
+        Assert.True(orchestrator.CanOrchestrate);
+
+        var inquisitor = loaded.Single(r => r.Name == "inquisitor");
+        Assert.True(inquisitor.CanOrchestrate);
+
+        var judge = loaded.Single(r => r.Name == "judge");
+        Assert.True(judge.CanOrchestrate);
+
+        var codeWriter = loaded.Single(r => r.Name == "code-writer");
+        Assert.False(codeWriter.CanOrchestrate);
+    }
+
+    [Fact]
+    public void WriteBaseRoleDefinitions_RoundTrips_OnlyWhenDispatched()
+    {
+        _service.WriteBaseRoleDefinitions(_testDir);
+
+        var loaded = _service.LoadRoleDefinitions(_testDir);
+
+        var codeWriter = loaded.Single(r => r.Name == "code-writer");
+        var dispatchConstraint = codeWriter.Constraints.Single(c => c.Type == "requires-dispatch");
+        Assert.True(dispatchConstraint.OnlyWhenDispatched);
+        Assert.Equal(["reviewer"], dispatchConstraint.RequiredRoles);
     }
 
     #endregion

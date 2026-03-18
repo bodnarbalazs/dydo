@@ -8,6 +8,7 @@ public static class MacTerminalLauncher
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
+        var agentExport = $"export DYDO_AGENT={agentName}; ";
         var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
 
         string wtSetup = "", wtCleanup = "";
@@ -23,7 +24,7 @@ public static class MacTerminalLauncher
 
         var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
-        return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{postClaude}\"'";
+        return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{postClaude}\"'";
     }
 
     public static void Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
@@ -31,6 +32,7 @@ public static class MacTerminalLauncher
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
+        var agentExport = $"export DYDO_AGENT={agentName}; ";
         var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
 
         string wtSetup = "", wtCleanup = "";
@@ -44,7 +46,7 @@ public static class MacTerminalLauncher
             wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
-        var shellCommand = $"{cdPrefix}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
+        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
         var postCheck = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
         string script;

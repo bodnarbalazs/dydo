@@ -248,6 +248,10 @@ public class CheckAgentValidatorTests : IDisposable
         public bool UpdateWaitMarkerListening(string agentName, string task, int pid) => false;
         public void ResetWaitMarkerListening(string agentName, string task) { }
         public List<WaitMarker> GetNonListeningWaitMarkers(string agentName) => [];
+        public RoleDefinition? GetRoleDefinition(string roleName) => null;
+        public void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo) { }
+        public bool HasDispatchMarker(string agentName, string task, string targetRole) => false;
+        public void ClearAllDispatchMarkers(string agentName) { }
         public string? GetSessionContext() => null;
         public void StoreSessionContext(string sessionId) { }
     }

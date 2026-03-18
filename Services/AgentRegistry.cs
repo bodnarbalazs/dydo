@@ -456,17 +456,17 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        // H25: dispatched code-writers must dispatch a reviewer before releasing
+        // Data-driven release constraints (requires-dispatch)
         var state = GetAgentState(agentName);
-        if (state != null
-            && string.Equals(state.Role, "code-writer", StringComparison.OrdinalIgnoreCase)
-            && !string.IsNullOrEmpty(state.DispatchedBy)
-            && !string.IsNullOrEmpty(state.Task)
-            && !HasReviewDispatchedMarker(agentName, state.Task))
+        if (state != null && !string.IsNullOrEmpty(state.Role) && !string.IsNullOrEmpty(state.Task))
         {
-            error = $"Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n" +
-                    $"  dydo dispatch --no-wait --auto-close --role reviewer --task {state.Task} --brief \"Review changes for {state.Task}\"";
-            return false;
+            var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
+            if (!evaluator.CanRelease(agentName, state.Role, state.Task,
+                !string.IsNullOrEmpty(state.DispatchedBy),
+                (t, r) => HasDispatchMarker(agentName, t, r), out error))
+            {
+                return false;
+            }
         }
 
         var needsMergePath = Path.Combine(workspace, ".needs-merge");
@@ -490,7 +490,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         ClearAllWaitMarkers(agentName);
         ClearAllReplyPendingMarkers(agentName);
-        ClearAllReviewDispatchedMarkers(agentName);
+        ClearAllDispatchMarkers(agentName);
 
         foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
             File.Delete(marker);
@@ -723,86 +723,12 @@ public partial class AgentRegistry : IAgentRegistry
 
     /// <summary>
     /// Checks if an agent can take a specific role on a task.
-    /// Evaluates constraints from role definitions (data-driven).
+    /// Delegates to RoleConstraintEvaluator for data-driven constraint evaluation.
     /// </summary>
     public bool CanTakeRole(string agentName, string role, string task, out string reason)
     {
-        reason = string.Empty;
-
-        var state = GetAgentState(agentName);
-        if (state == null)
-        {
-            reason = $"Agent {agentName} not found.";
-            return false;
-        }
-
-        if (_roleDefinitions.TryGetValue(role, out var roleDef))
-        {
-            foreach (var constraint in roleDef.Constraints)
-            {
-                if (!EvaluateConstraint(constraint, agentName, role, task, state, out reason))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    private bool EvaluateConstraint(RoleConstraint constraint, string agentName, string role,
-        string task, AgentState state, out string reason)
-    {
-        reason = string.Empty;
-
-        switch (constraint.Type)
-        {
-            case "role-transition":
-                if (state.TaskRoleHistory.TryGetValue(task, out var previousRoles) &&
-                    previousRoles.Contains(constraint.FromRole!))
-                {
-                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
-                    return false;
-                }
-                return true;
-
-            case "requires-prior":
-                if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
-                    !constraint.RequiredRoles!.Any(r => taskRoles.Contains(r)))
-                {
-                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
-                    return false;
-                }
-                return true;
-
-            case "panel-limit":
-                int activeCount = 0;
-                foreach (var name in AgentNames)
-                {
-                    var s = GetAgentState(name);
-                    if (s != null && s.Role == role && s.Task == task &&
-                        s.Status != AgentStatus.Free)
-                    {
-                        activeCount++;
-                    }
-                }
-                if (activeCount >= constraint.MaxCount!.Value)
-                {
-                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
-                    return false;
-                }
-                return true;
-
-            default:
-                reason = $"Unknown constraint type: '{constraint.Type}'.";
-                return false;
-        }
-    }
-
-    private static string SubstituteConstraintVars(string message, string agentName, string task, string? currentRole)
-    {
-        return message
-            .Replace("{agent}", agentName)
-            .Replace("{task}", task)
-            .Replace("{current_role}", currentRole ?? "unknown role");
+        var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
+        return evaluator.CanTakeRole(agentName, role, task, out reason);
     }
 
 
@@ -852,6 +778,15 @@ public partial class AgentRegistry : IAgentRegistry
     {
         if (string.IsNullOrEmpty(sessionId))
             return null;
+
+        // Fastest path: check DYDO_AGENT env var
+        var envAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
+        if (!string.IsNullOrEmpty(envAgent) && IsValidAgentName(envAgent))
+        {
+            var envSession = GetSession(envAgent);
+            if (envSession?.SessionId == sessionId)
+                return GetAgentState(envAgent);
+        }
 
         // Fast path: check agent hint file
         var hintPath = GetAgentHintPath();
@@ -986,6 +921,13 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     public string? GetSessionContext()
     {
+        var agentName = Environment.GetEnvironmentVariable("DYDO_AGENT");
+        if (!string.IsNullOrEmpty(agentName))
+        {
+            var session = GetSession(agentName);
+            if (session != null) return session.SessionId;
+        }
+
         var path = GetSessionContextPath();
         if (!File.Exists(path)) return null;
 
@@ -1221,42 +1163,43 @@ public partial class AgentRegistry : IAgentRegistry
 
     #endregion
 
-    #region Review-Dispatched Markers
+    #region Dispatch Markers
 
-    private string GetReviewDispatchedDir(string agentName) =>
-        Path.Combine(GetAgentWorkspace(agentName), ".review-dispatched");
+    private string GetDispatchMarkersDir(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), ".dispatch-markers");
 
-    public void CreateReviewDispatchedMarker(string agentName, string task, string dispatchedTo)
+    public void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo)
     {
-        var dir = GetReviewDispatchedDir(agentName);
+        var dir = GetDispatchMarkersDir(agentName);
         Directory.CreateDirectory(dir);
 
-        var marker = new ReviewDispatchedMarker
+        var marker = new DispatchMarker
         {
             Task = task,
+            TargetRole = targetRole,
             DispatchedTo = dispatchedTo,
             Since = DateTime.UtcNow
         };
 
         var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.ReviewDispatchedMarker);
+        var path = Path.Combine(dir, $"{sanitized}-{targetRole}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchMarker);
         File.WriteAllText(path, json);
     }
 
-    public bool HasReviewDispatchedMarker(string agentName, string task)
+    public bool HasDispatchMarker(string agentName, string task, string targetRole)
     {
-        var dir = GetReviewDispatchedDir(agentName);
+        var dir = GetDispatchMarkersDir(agentName);
         if (!Directory.Exists(dir))
             return false;
 
         var sanitized = PathUtils.SanitizeForFilename(task);
-        return File.Exists(Path.Combine(dir, $"{sanitized}.json"));
+        return File.Exists(Path.Combine(dir, $"{sanitized}-{targetRole}.json"));
     }
 
-    public void ClearAllReviewDispatchedMarkers(string agentName)
+    public void ClearAllDispatchMarkers(string agentName)
     {
-        var dir = GetReviewDispatchedDir(agentName);
+        var dir = GetDispatchMarkersDir(agentName);
         if (Directory.Exists(dir))
             Directory.Delete(dir, true);
     }
@@ -1332,6 +1275,11 @@ public partial class AgentRegistry : IAgentRegistry
         }
 
         return true;
+    }
+
+    public RoleDefinition? GetRoleDefinition(string roleName)
+    {
+        return _roleDefinitions.GetValueOrDefault(roleName);
     }
 
     private string GetRoleRestrictionMessage(string role, string? relativePath = null)

@@ -534,6 +534,83 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Inquisitor Release Enforcement
+
+    [Fact]
+    public async Task Release_BlockedForDispatchedInquisitor_WithoutJudgeDispatch()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches inquisitor task to Brian
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit-docs", "Audit documentation");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "inquisitor", "audit-docs");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian tries to release without dispatching a judge
+        var releaseResult = ReleaseInSeparateSession("Brian");
+
+        Assert.Contains("dispatched inquisitors must dispatch a judge", releaseResult);
+        Assert.Contains("--role judge", releaseResult);
+    }
+
+    [Fact]
+    public async Task Release_SucceedsForDispatchedInquisitor_AfterJudgeDispatch()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches inquisitor task to Brian
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit-docs", "Audit documentation");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "inquisitor", "audit-docs");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian dispatches a judge for the same task
+        DispatchInSeparateSession("Brian", "judge", "audit-docs", "Judge audit findings");
+
+        // Brian releases — should succeed
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("dispatched inquisitors must dispatch a judge", releaseResult);
+    }
+
+    #endregion
+
+    #region CanOrchestrate Wait Privilege
+
+    [Fact]
+    public async Task Dispatch_Wait_AllowedForCanOrchestrateRole()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Inquisitor should be able to use --wait (canOrchestrate = true)
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit", "Audit");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "inquisitor", "audit");
+        ClearInboxInSeparateSession("Brian");
+
+        var result = DispatchInSeparateSessionWithResult("Brian", "judge", "audit", "Judge this", wait: true);
+
+        Assert.DoesNotContain("reserved for oversight roles", result);
+    }
+
+    [Fact]
+    public async Task Dispatch_Wait_BlockedForNonOrchestrateRole()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Code-writer should NOT be able to use --wait (canOrchestrate = false)
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        var result = DispatchInSeparateSessionWithResult("Brian", "reviewer", "auth", "Review this", wait: true);
+
+        Assert.Contains("reserved for oversight roles", result);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<CommandResult> DispatchAsync(
@@ -737,6 +814,11 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     private void DispatchInSeparateSession(string fromAgent, string role, string task, string brief)
     {
+        DispatchInSeparateSessionWithResult(fromAgent, role, task, brief);
+    }
+
+    private string DispatchInSeparateSessionWithResult(string fromAgent, string role, string task, string brief, bool wait = false)
+    {
         var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
         var otherSession = $"other-session-{fromAgent}";
         File.WriteAllText(contextPath, otherSession);
@@ -749,9 +831,14 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         File.WriteAllText(marker, "test-bypass");
 
         var command = DispatchCommand.Create();
-        RunAsync(command, "--role", role, "--task", task, "--brief", brief, "--no-launch", "--no-wait").Wait();
+        var args = new List<string> { "--role", role, "--task", task, "--brief", brief, "--no-launch" };
+        if (wait) args.Add("--wait");
+        else args.Add("--no-wait");
+
+        var result = RunAsync(command, args.ToArray()).Result;
 
         StoreSessionContext();
+        return result.Stdout + result.Stderr;
     }
 
     private string? FindDispatchedAgentInbox(string task, string excludeAgent)

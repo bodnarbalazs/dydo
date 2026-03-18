@@ -958,6 +958,36 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region Blocked Tools
+
+    [Fact]
+    public async Task Guard_EnterPlanMode_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("plan mode");
+    }
+
+    [Fact]
+    public async Task Guard_ExitPlanMode_Blocks()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"ExitPlanMode\",\"tool_input\":{}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("plan mode");
+    }
+
+    #endregion
+
     #region Agent Tool - Staged Access
 
     [Fact]

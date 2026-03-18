@@ -19,7 +19,16 @@ public class RoleDefinitionService : IRoleDefinitionService
                 ReadOnlyPaths = ["dydo/**", "project/**"],
                 TemplateFile = "mode-code-writer.template.md",
                 DenialHint = "Code-writer role can only edit configured source/test paths and own workspace.",
-                Constraints = []
+                Constraints =
+                [
+                    new RoleConstraint
+                    {
+                        Type = "requires-dispatch",
+                        RequiredRoles = ["reviewer"],
+                        OnlyWhenDispatched = true,
+                        Message = "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --no-wait --auto-close --role reviewer --task {task} --brief \"Review changes for {task}\""
+                    }
+                ]
             },
             new RoleDefinition
             {
@@ -92,6 +101,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-orchestrator.template.md",
+                CanOrchestrate = true,
                 Constraints =
                 [
                     new RoleConstraint
@@ -110,7 +120,17 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/inquisitions/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-inquisitor.template.md",
-                Constraints = []
+                CanOrchestrate = true,
+                Constraints =
+                [
+                    new RoleConstraint
+                    {
+                        Type = "requires-dispatch",
+                        RequiredRoles = ["judge"],
+                        OnlyWhenDispatched = true,
+                        Message = "Cannot release: dispatched inquisitors must dispatch a judge before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \"Judge findings for {task}\""
+                    }
+                ]
             },
             new RoleDefinition
             {
@@ -120,6 +140,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/issues/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-judge.template.md",
+                CanOrchestrate = true,
                 Constraints =
                 [
                     new RoleConstraint
@@ -196,28 +217,35 @@ public class RoleDefinitionService : IRoleDefinitionService
             errors.Add("Template file is required.");
 
         foreach (var constraint in role.Constraints)
-        {
-            switch (constraint.Type)
-            {
-                case "role-transition":
-                    if (string.IsNullOrWhiteSpace(constraint.FromRole))
-                        errors.Add($"Constraint 'role-transition' requires 'fromRole'.");
-                    break;
-                case "requires-prior":
-                    if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-                        errors.Add($"Constraint 'requires-prior' requires 'requiredRoles'.");
-                    break;
-                case "panel-limit":
-                    if (constraint.MaxCount == null || constraint.MaxCount < 1)
-                        errors.Add($"Constraint 'panel-limit' requires 'maxCount' >= 1.");
-                    break;
-                default:
-                    errors.Add($"Unknown constraint type: '{constraint.Type}'.");
-                    break;
-            }
-        }
+            ValidateConstraint(constraint, errors);
 
         return errors.Count == 0;
+    }
+
+    private static void ValidateConstraint(RoleConstraint constraint, List<string> errors)
+    {
+        switch (constraint.Type)
+        {
+            case "role-transition":
+                if (string.IsNullOrWhiteSpace(constraint.FromRole))
+                    errors.Add("Constraint 'role-transition' requires 'fromRole'.");
+                break;
+            case "requires-prior":
+                if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
+                    errors.Add("Constraint 'requires-prior' requires 'requiredRoles'.");
+                break;
+            case "panel-limit":
+                if (constraint.MaxCount == null || constraint.MaxCount < 1)
+                    errors.Add("Constraint 'panel-limit' requires 'maxCount' >= 1.");
+                break;
+            case "requires-dispatch":
+                if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
+                    errors.Add("Constraint 'requires-dispatch' requires 'requiredRoles'.");
+                break;
+            default:
+                errors.Add($"Unknown constraint type: '{constraint.Type}'.");
+                break;
+        }
     }
 
     public void WriteBaseRoleDefinitions(string basePath)

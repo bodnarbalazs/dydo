@@ -210,42 +210,43 @@ public class MarkerStore
 
     #endregion
 
-    #region Review-Dispatched Markers
+    #region Dispatch Markers
 
-    private string GetReviewDispatchedDir(string agentName) =>
-        Path.Combine(_getAgentWorkspace(agentName), ".review-dispatched");
+    private string GetDispatchMarkersDir(string agentName) =>
+        Path.Combine(_getAgentWorkspace(agentName), ".dispatch-markers");
 
-    public void CreateReviewDispatchedMarker(string agentName, string task, string dispatchedTo)
+    public void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo)
     {
-        var dir = GetReviewDispatchedDir(agentName);
+        var dir = GetDispatchMarkersDir(agentName);
         Directory.CreateDirectory(dir);
 
-        var marker = new ReviewDispatchedMarker
+        var marker = new DispatchMarker
         {
             Task = task,
+            TargetRole = targetRole,
             DispatchedTo = dispatchedTo,
             Since = DateTime.UtcNow
         };
 
         var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.ReviewDispatchedMarker);
+        var path = Path.Combine(dir, $"{sanitized}-{targetRole}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchMarker);
         File.WriteAllText(path, json);
     }
 
-    public bool HasReviewDispatchedMarker(string agentName, string task)
+    public bool HasDispatchMarker(string agentName, string task, string targetRole)
     {
-        var dir = GetReviewDispatchedDir(agentName);
+        var dir = GetDispatchMarkersDir(agentName);
         if (!Directory.Exists(dir))
             return false;
 
         var sanitized = PathUtils.SanitizeForFilename(task);
-        return File.Exists(Path.Combine(dir, $"{sanitized}.json"));
+        return File.Exists(Path.Combine(dir, $"{sanitized}-{targetRole}.json"));
     }
 
-    public void ClearAllReviewDispatchedMarkers(string agentName)
+    public void ClearAllDispatchMarkers(string agentName)
     {
-        var dir = GetReviewDispatchedDir(agentName);
+        var dir = GetDispatchMarkersDir(agentName);
         if (Directory.Exists(dir))
             Directory.Delete(dir, true);
     }

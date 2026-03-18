@@ -66,6 +66,7 @@ Absolute constraints the agent cannot bypass. No marker files, no retries, no fl
 | H4 | Other agent workflow | After setting a role, agent cannot read another agent's `workflow.md`. Prevents cross-contamination of agent instructions. | *(access denied)* |
 | H5 | Must-read enforcement | Write operations blocked until all files marked `must-read: true` in the role's mode file have been read. | `BLOCKED: You have not read the required files for the {role} mode: - {file1} - {file2}` |
 | H6 | Search tool lockout | Glob, Grep, and Agent tools require both identity AND role (Stage 2). Prevents broad codebase scanning before onboarding. | `BLOCKED: Read access denied...` |
+| H27 | Plan mode blocked | Agent uses `EnterPlanMode` or `ExitPlanMode` tool. Dydo agents must not use Claude Code's built-in plan mode — use planner role or workspace notes instead. | `BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.` |
 
 ### Onboarding & Identity
 
@@ -134,7 +135,7 @@ The guardrail system is designed for extension through role definition files (`.
   - `panel-limit`: caps concurrent agents in a role per task
 
 **What's hard-coded:**
-- Staged access control (H3, H6)
+- Staged access control (H3, H6) and tool blocking (H27)
 - Off-limits enforcement (H2)
 - Bash safety analysis (H17–H20, H26)
 - Release blocking checks (H13–H16, H25)

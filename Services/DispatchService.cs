@@ -32,7 +32,7 @@ public static class DispatchService
         var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
 
-        var waitError = CheckWaitPrivilege(wait, sender);
+        var waitError = CheckWaitPrivilege(wait, sender, registry);
         if (waitError != null)
         {
             ConsoleOutput.WriteError(waitError);
@@ -78,13 +78,21 @@ public static class DispatchService
         if (inheritReply)
             registry.RemoveReplyPendingMarker(senderName, task);
 
-        // Review enforcement: create marker when code-writer dispatches reviewer for same task
-        if (sender != null
-            && string.Equals(sender.Role, "code-writer", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(role, "reviewer", StringComparison.OrdinalIgnoreCase)
+        // Data-driven dispatch markers: create marker when sender's role has a requires-dispatch
+        // constraint listing the target role
+        if (sender != null && !string.IsNullOrEmpty(sender.Role)
             && string.Equals(sender.Task, task, StringComparison.OrdinalIgnoreCase))
         {
-            registry.CreateReviewDispatchedMarker(senderName, task, targetAgentName);
+            var senderRoleDef = registry.GetRoleDefinition(sender.Role);
+            if (senderRoleDef != null)
+            {
+                foreach (var constraint in senderRoleDef.Constraints)
+                {
+                    if (constraint.Type != "requires-dispatch" || constraint.RequiredRoles == null) continue;
+                    if (constraint.RequiredRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
+                        registry.CreateDispatchMarker(senderName, task, role, targetAgentName);
+                }
+            }
         }
 
         if (wait)
@@ -353,13 +361,12 @@ public static class DispatchService
         return null;
     }
 
-    private static string? CheckWaitPrivilege(bool wait, AgentState? sender)
+    private static string? CheckWaitPrivilege(bool wait, AgentState? sender, AgentRegistry registry)
     {
         if (!wait || sender == null) return null;
 
-        var waitPrivilegedRoles = new[] { "orchestrator", "inquisitor", "judge" };
-        if (!waitPrivilegedRoles.Contains(sender.Role, StringComparer.OrdinalIgnoreCase))
-            return $"The --wait flag is reserved for oversight roles (orchestrator, inquisitor, judge). Your role '{sender.Role}' should use --no-wait.";
+        if (registry.GetRoleDefinition(sender.Role ?? "")?.CanOrchestrate != true)
+            return $"The --wait flag is reserved for oversight roles. Your role '{sender.Role}' should use --no-wait.";
 
         return null;
     }

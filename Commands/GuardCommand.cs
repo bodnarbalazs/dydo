@@ -176,6 +176,23 @@ public static partial class GuardCommand
         }
 
         // ============================================================
+        // SECURITY LAYER 2.6: Blocked tools (plan mode)
+        // Dydo agents must not use Claude Code's built-in plan mode.
+        // ============================================================
+        if (toolName == "enterplanmode" || toolName == "exitplanmode")
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Tool = toolName,
+                BlockReason = "Built-in plan mode is not allowed for dydo agents"
+            });
+            Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
+            Console.Error.WriteLine("  To plan: switch to planner role ('dydo agent role planner --task <name>')");
+            Console.Error.WriteLine("  For working notes: write to your workspace (dydo/agents/<you>/notes-<topic>.md)");
+            return ExitCodes.ToolError;
+        }
+
+        // ============================================================
         // SECURITY LAYER 3: Staged access control
         // ============================================================
 

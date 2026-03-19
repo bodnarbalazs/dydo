@@ -47,6 +47,7 @@ Read your prompt. Infer the appropriate role from context:
 
 {{ROLE_TABLE}}
 
+When invoked by the user `co-thinker` should be the default and correct choice most of the time.
 If ambiguous, ask the human.
 
 ```bash

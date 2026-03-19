@@ -92,4 +92,148 @@ public class PathUtilsTests
         var result = PathUtils.NormalizeForKey(input);
         Assert.Equal(expected, result);
     }
+
+    #region NormalizeWorktreePath
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void NormalizeWorktreePath_NullOrEmpty_ReturnsUnchanged(string? input)
+    {
+        Assert.Equal(input, PathUtils.NormalizeWorktreePath(input));
+    }
+
+    [Theory]
+    [InlineData("C:/Users/User/DynaDocs/Commands/GuardCommand.cs")]
+    [InlineData("Commands/GuardCommand.cs")]
+    [InlineData("dydo/understand/about.md")]
+    [InlineData("dydo/_system/roles/code-writer.role.json")]
+    public void NormalizeWorktreePath_NonWorktreePath_ReturnsUnchanged(string input)
+    {
+        Assert.Equal(input, PathUtils.NormalizeWorktreePath(input));
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_SingleLevelWorktree_DydoContent()
+    {
+        // Set up temp dir with worktree structure containing dydo.json
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            var worktreeRoot = Path.Combine(tempDir, "dydo", "_system", ".local", "worktrees", "fix-auth");
+            Directory.CreateDirectory(worktreeRoot);
+            File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), "{}");
+
+            var input = Path.Combine(tempDir, "dydo/_system/.local/worktrees/fix-auth/dydo/understand/about.md").Replace('\\', '/');
+            var expected = Path.Combine(tempDir, "dydo/understand/about.md").Replace('\\', '/');
+
+            Assert.Equal(expected, PathUtils.NormalizeWorktreePath(input));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_SingleLevelWorktree_SourceContent()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            var worktreeRoot = Path.Combine(tempDir, "dydo", "_system", ".local", "worktrees", "fix-auth");
+            Directory.CreateDirectory(worktreeRoot);
+            File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), "{}");
+
+            var input = Path.Combine(tempDir, "dydo/_system/.local/worktrees/fix-auth/Commands/GuardCommand.cs").Replace('\\', '/');
+            var expected = Path.Combine(tempDir, "Commands/GuardCommand.cs").Replace('\\', '/');
+
+            Assert.Equal(expected, PathUtils.NormalizeWorktreePath(input));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_HierarchicalWorktree()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            // Create parent worktree (also has dydo.json)
+            var parentRoot = Path.Combine(tempDir, "dydo", "_system", ".local", "worktrees", "parent");
+            Directory.CreateDirectory(parentRoot);
+            File.WriteAllText(Path.Combine(parentRoot, "dydo.json"), "{}");
+
+            // Create child worktree (deepest match should win)
+            var childRoot = Path.Combine(tempDir, "dydo", "_system", ".local", "worktrees", "parent", "child");
+            Directory.CreateDirectory(childRoot);
+            File.WriteAllText(Path.Combine(childRoot, "dydo.json"), "{}");
+
+            var input = Path.Combine(tempDir, "dydo/_system/.local/worktrees/parent/child/Services/Foo.cs").Replace('\\', '/');
+            var expected = Path.Combine(tempDir, "Services/Foo.cs").Replace('\\', '/');
+
+            Assert.Equal(expected, PathUtils.NormalizeWorktreePath(input));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_NoWorktreeRootIdentifiable_ReturnsUnchanged()
+    {
+        // Path contains the marker but no directory has dydo.json
+        var input = "C:/nowhere/dydo/_system/.local/worktrees/mystery/Commands/Foo.cs";
+        Assert.Equal(input, PathUtils.NormalizeWorktreePath(input));
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_BackslashesInInput()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            var worktreeRoot = Path.Combine(tempDir, "dydo", "_system", ".local", "worktrees", "fix-auth");
+            Directory.CreateDirectory(worktreeRoot);
+            File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), "{}");
+
+            // Input uses backslashes (Windows-style)
+            var input = $"{tempDir}\\dydo\\_system\\.local\\worktrees\\fix-auth\\Services\\Foo.cs";
+            var expected = Path.Combine(tempDir, "Services/Foo.cs").Replace('\\', '/');
+
+            Assert.Equal(expected, PathUtils.NormalizeWorktreePath(input));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_PathPointsToWorktreeRoot_ReturnsUnchanged()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            var worktreeRoot = Path.Combine(tempDir, "dydo", "_system", ".local", "worktrees", "fix-auth");
+            Directory.CreateDirectory(worktreeRoot);
+            File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), "{}");
+
+            // Path ends at worktree root with trailing slash — no project content after it
+            var input = Path.Combine(tempDir, "dydo/_system/.local/worktrees/fix-auth/").Replace('\\', '/');
+
+            // Should return unchanged since there's no project content
+            Assert.Equal(input, PathUtils.NormalizeWorktreePath(input));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    #endregion
 }

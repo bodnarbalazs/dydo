@@ -12,6 +12,8 @@ using DynaDocs.Commands;
 public class CommandDocConsistencyTests
 {
     private static readonly HashSet<string> ExcludedFromDocs = ["_complete"];
+    // Human-only commands intentionally hidden from agent-facing documentation
+    private static readonly HashSet<string> ExcludedPaths = ["guard lift", "guard restore"];
     private static readonly HashSet<string> BuiltInOptionNames = ["--help", "-h", "-?", "--version"];
 
     private static RootCommand BuildRootCommand()
@@ -45,7 +47,7 @@ public class CommandDocConsistencyTests
     }
 
     private static List<(string Path, Command Cmd)> GetDocumentedCommands() =>
-        GetAllCommands().Where(c => !ExcludedFromDocs.Contains(c.Cmd.Name)).ToList();
+        GetAllCommands().Where(c => !ExcludedFromDocs.Contains(c.Cmd.Name) && !ExcludedPaths.Contains(c.Path)).ToList();
 
     private static IEnumerable<(string Path, Command Cmd)> WalkCommands(Command root, string prefix = "")
     {

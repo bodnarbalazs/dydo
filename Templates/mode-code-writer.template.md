@@ -85,6 +85,7 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-
 ---
 
 ## Complete
+{{include:extra-complete-gate}}
 
 When implementation is done and tests pass:
 

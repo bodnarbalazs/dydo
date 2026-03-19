@@ -94,8 +94,21 @@ public static class InboxService
         Directory.CreateDirectory(archivePath);
 
         if (all)
+        {
+            if (agent.UnreadMessages.Count > 0)
+            {
+                ConsoleOutput.WriteError(
+                    $"Cannot clear inbox: {agent.UnreadMessages.Count} unread message(s). Read them first with 'dydo inbox show' and then read each file.");
+                return ExitCodes.ToolError;
+            }
             return ClearAll(registry, agent.Name, inboxPath, archivePath);
+        }
 
+        if (agent.UnreadMessages.Any(m => m.StartsWith(id!, StringComparison.OrdinalIgnoreCase)))
+        {
+            ConsoleOutput.WriteError($"Cannot archive {id} — not yet read. Read the inbox item file first.");
+            return ExitCodes.ToolError;
+        }
         return ClearById(registry, agent.Name, sessionId, inboxPath, archivePath, id!);
     }
 

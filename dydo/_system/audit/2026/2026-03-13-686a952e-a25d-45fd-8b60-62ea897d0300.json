@@ -647,10 +647,16 @@
         "dydo/reference/_index.md": [
           "dydo/reference/roles/_index.md"
         ],
-        "dydo/agents/leo/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/grace/workflow.md": [
+          "dydo/agents/grace/modes/co-thinker.md",
+          "dydo/agents/grace/modes/code-writer.md",
+          "dydo/agents/grace/modes/docs-writer.md",
+          "dydo/agents/grace/modes/inquisitor.md",
+          "dydo/agents/grace/modes/judge.md",
+          "dydo/agents/grace/modes/orchestrator.md",
+          "dydo/agents/grace/modes/planner.md",
+          "dydo/agents/grace/modes/reviewer.md",
+          "dydo/agents/grace/modes/test-writer.md"
         ],
         "dydo/agents/adele/workflow.md": [
           "dydo/agents/adele/modes/inquisitor.md",
@@ -664,11 +670,16 @@
           "dydo/agents/brian/modes/orchestrator.md",
           "dydo/agents/brian/modes/test-writer.md"
         ],
-        "dydo/agents/leo/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/leo/modes/code-writer.md"
+        "dydo/agents/henry/workflow.md": [
+          "dydo/agents/henry/modes/co-thinker.md",
+          "dydo/agents/henry/modes/code-writer.md",
+          "dydo/agents/henry/modes/docs-writer.md",
+          "dydo/agents/henry/modes/inquisitor.md",
+          "dydo/agents/henry/modes/judge.md",
+          "dydo/agents/henry/modes/orchestrator.md",
+          "dydo/agents/henry/modes/planner.md",
+          "dydo/agents/henry/modes/reviewer.md",
+          "dydo/agents/henry/modes/test-writer.md"
         ],
         "dydo/agents/dexter/workflow.md": [
           "dydo/agents/dexter/modes/inquisitor.md",
@@ -682,27 +693,60 @@
           "dydo/agents/emma/modes/orchestrator.md",
           "dydo/agents/emma/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/agents/leo/workflow.md": [
+          "dydo/agents/leo/modes/co-thinker.md",
+          "dydo/agents/leo/modes/code-writer.md",
+          "dydo/agents/leo/modes/docs-writer.md",
+          "dydo/agents/leo/modes/inquisitor.md",
+          "dydo/agents/leo/modes/judge.md",
+          "dydo/agents/leo/modes/orchestrator.md",
+          "dydo/agents/leo/modes/planner.md",
+          "dydo/agents/leo/modes/reviewer.md",
+          "dydo/agents/leo/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/agents/rose/workflow.md": [
+          "dydo/agents/rose/modes/co-thinker.md",
+          "dydo/agents/rose/modes/code-writer.md",
+          "dydo/agents/rose/modes/docs-writer.md",
+          "dydo/agents/rose/modes/inquisitor.md",
+          "dydo/agents/rose/modes/judge.md",
+          "dydo/agents/rose/modes/orchestrator.md",
+          "dydo/agents/rose/modes/planner.md",
+          "dydo/agents/rose/modes/reviewer.md",
+          "dydo/agents/rose/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/sam/workflow.md": [
+          "dydo/agents/sam/modes/co-thinker.md",
+          "dydo/agents/sam/modes/code-writer.md",
+          "dydo/agents/sam/modes/docs-writer.md",
+          "dydo/agents/sam/modes/inquisitor.md",
+          "dydo/agents/sam/modes/judge.md",
+          "dydo/agents/sam/modes/orchestrator.md",
+          "dydo/agents/sam/modes/planner.md",
+          "dydo/agents/sam/modes/reviewer.md",
+          "dydo/agents/sam/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/henry/modes/code-writer.md"
+        "dydo/agents/tara/workflow.md": [
+          "dydo/agents/tara/modes/co-thinker.md",
+          "dydo/agents/tara/modes/code-writer.md",
+          "dydo/agents/tara/modes/docs-writer.md",
+          "dydo/agents/tara/modes/inquisitor.md",
+          "dydo/agents/tara/modes/judge.md",
+          "dydo/agents/tara/modes/orchestrator.md",
+          "dydo/agents/tara/modes/planner.md",
+          "dydo/agents/tara/modes/reviewer.md",
+          "dydo/agents/tara/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/agents/uma/workflow.md": [
+          "dydo/agents/uma/modes/co-thinker.md",
+          "dydo/agents/uma/modes/code-writer.md",
+          "dydo/agents/uma/modes/docs-writer.md",
+          "dydo/agents/uma/modes/inquisitor.md",
+          "dydo/agents/uma/modes/judge.md",
+          "dydo/agents/uma/modes/orchestrator.md",
+          "dydo/agents/uma/modes/planner.md",
+          "dydo/agents/uma/modes/reviewer.md",
+          "dydo/agents/uma/modes/test-writer.md"
         ],
         "dydo/agents/noah/workflow.md": [
           "dydo/agents/noah/modes/inquisitor.md",
@@ -719,181 +763,77 @@
           "dydo/project/decisions/008-terminal-dispatch-routing-and-autoclose.md",
           "dydo/project/decisions/009-crap-per-method-metric.md"
         ],
-        "dydo/agents/henry/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/victor/workflow.md": [
+          "dydo/agents/victor/modes/co-thinker.md",
+          "dydo/agents/victor/modes/code-writer.md",
+          "dydo/agents/victor/modes/docs-writer.md",
+          "dydo/agents/victor/modes/inquisitor.md",
+          "dydo/agents/victor/modes/judge.md",
+          "dydo/agents/victor/modes/orchestrator.md",
+          "dydo/agents/victor/modes/planner.md",
+          "dydo/agents/victor/modes/reviewer.md",
+          "dydo/agents/victor/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/henry/modes/planner.md"
+        "dydo/agents/wendy/workflow.md": [
+          "dydo/agents/wendy/modes/co-thinker.md",
+          "dydo/agents/wendy/modes/code-writer.md",
+          "dydo/agents/wendy/modes/docs-writer.md",
+          "dydo/agents/wendy/modes/inquisitor.md",
+          "dydo/agents/wendy/modes/judge.md",
+          "dydo/agents/wendy/modes/orchestrator.md",
+          "dydo/agents/wendy/modes/planner.md",
+          "dydo/agents/wendy/modes/reviewer.md",
+          "dydo/agents/wendy/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/xavier/workflow.md": [
+          "dydo/agents/xavier/modes/co-thinker.md",
+          "dydo/agents/xavier/modes/code-writer.md",
+          "dydo/agents/xavier/modes/docs-writer.md",
+          "dydo/agents/xavier/modes/inquisitor.md",
+          "dydo/agents/xavier/modes/judge.md",
+          "dydo/agents/xavier/modes/orchestrator.md",
+          "dydo/agents/xavier/modes/planner.md",
+          "dydo/agents/xavier/modes/reviewer.md",
+          "dydo/agents/xavier/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
+        "dydo/agents/yara/workflow.md": [
+          "dydo/agents/yara/modes/co-thinker.md",
+          "dydo/agents/yara/modes/code-writer.md",
+          "dydo/agents/yara/modes/docs-writer.md",
+          "dydo/agents/yara/modes/inquisitor.md",
+          "dydo/agents/yara/modes/judge.md",
+          "dydo/agents/yara/modes/orchestrator.md",
+          "dydo/agents/yara/modes/planner.md",
+          "dydo/agents/yara/modes/reviewer.md",
+          "dydo/agents/yara/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/zelda/workflow.md": [
+          "dydo/agents/zelda/modes/co-thinker.md",
+          "dydo/agents/zelda/modes/code-writer.md",
+          "dydo/agents/zelda/modes/docs-writer.md",
+          "dydo/agents/zelda/modes/inquisitor.md",
+          "dydo/agents/zelda/modes/judge.md",
+          "dydo/agents/zelda/modes/orchestrator.md",
+          "dydo/agents/zelda/modes/planner.md",
+          "dydo/agents/zelda/modes/reviewer.md",
+          "dydo/agents/zelda/modes/test-writer.md"
         ],
-        "dydo/agents/henry/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/henry/modes/code-writer.md"
-        ],
-        "dydo/agents/grace/modes/test-writer.md": [
-          "dydo/understand/about.md",
+        "dydo/project/decisions/009-crap-per-method-metric.md": [
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/grace/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/project/future-features/doc-coverage.md": [
+          "dydo/reference/dydo-commands.md"
         ],
-        "dydo/agents/grace/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/grace/modes/code-writer.md"
+        "dydo/project/future-features/_index.md": [
+          "dydo/project/future-features/coverage.py-update.md",
+          "dydo/project/future-features/doc-coverage.md"
         ],
-        "dydo/agents/grace/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/project/issues/_index.md": [
+          "dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md"
         ],
-        "dydo/agents/grace/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/grace/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/grace/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/grace/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/grace/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/grace/modes/code-writer.md"
-        ],
-        "dydo/agents/emma/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/emma/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/emma/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/emma/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/dexter/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/dexter/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/dexter/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/dexter/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/brian/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/brian/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/brian/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/brian/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/adele/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/adele/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/adele/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/adele/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/_system/templates/mode-test-writer.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/_system/templates/mode-orchestrator.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/_system/templates/mode-judge.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/_system/templates/mode-inquisitor.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/reference/roles/_index.md": [
-          "dydo/reference/roles/co-thinker.md",
-          "dydo/reference/roles/code-writer.md",
-          "dydo/reference/roles/docs-writer.md",
-          "dydo/reference/roles/inquisitor.md",
-          "dydo/reference/roles/judge.md",
-          "dydo/reference/roles/orchestrator.md",
-          "dydo/reference/roles/planner.md",
-          "dydo/reference/roles/reviewer.md",
-          "dydo/reference/roles/test-writer.md"
+        "dydo/project/issues/_issues.md": [
+          "dydo/project/pitfalls/_index.md",
+          "dydo/project/tasks/_index.md"
         ],
         "dydo/project/tasks/_index.md": [
           "dydo/project/tasks/auto-close-fix.md",
@@ -964,154 +904,214 @@
           "dydo/project/tasks/v1.3-workflow-role-revamp.md",
           "dydo/project/tasks/v1.3-workflow-template-simplification.md"
         ],
-        "dydo/project/issues/_issues.md": [
-          "dydo/project/pitfalls/_index.md",
-          "dydo/project/tasks/_index.md"
+        "dydo/reference/roles/_index.md": [
+          "dydo/reference/roles/co-thinker.md",
+          "dydo/reference/roles/code-writer.md",
+          "dydo/reference/roles/docs-writer.md",
+          "dydo/reference/roles/inquisitor.md",
+          "dydo/reference/roles/judge.md",
+          "dydo/reference/roles/orchestrator.md",
+          "dydo/reference/roles/planner.md",
+          "dydo/reference/roles/reviewer.md",
+          "dydo/reference/roles/test-writer.md"
         ],
-        "dydo/project/issues/_index.md": [
-          "dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md"
+        "dydo/_system/templates/mode-inquisitor.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/project/future-features/_index.md": [
-          "dydo/project/future-features/coverage.py-update.md",
-          "dydo/project/future-features/doc-coverage.md"
+        "dydo/_system/templates/mode-judge.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/project/future-features/doc-coverage.md": [
-          "dydo/reference/dydo-commands.md"
-        ],
-        "dydo/project/decisions/009-crap-per-method-metric.md": [
+        "dydo/_system/templates/mode-orchestrator.template.md": [
+          "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/zelda/workflow.md": [
-          "dydo/agents/zelda/modes/co-thinker.md",
-          "dydo/agents/zelda/modes/code-writer.md",
-          "dydo/agents/zelda/modes/docs-writer.md",
-          "dydo/agents/zelda/modes/inquisitor.md",
-          "dydo/agents/zelda/modes/judge.md",
-          "dydo/agents/zelda/modes/orchestrator.md",
-          "dydo/agents/zelda/modes/planner.md",
-          "dydo/agents/zelda/modes/reviewer.md",
-          "dydo/agents/zelda/modes/test-writer.md"
+        "dydo/_system/templates/mode-test-writer.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/agents/yara/workflow.md": [
-          "dydo/agents/yara/modes/co-thinker.md",
-          "dydo/agents/yara/modes/code-writer.md",
-          "dydo/agents/yara/modes/docs-writer.md",
-          "dydo/agents/yara/modes/inquisitor.md",
-          "dydo/agents/yara/modes/judge.md",
-          "dydo/agents/yara/modes/orchestrator.md",
-          "dydo/agents/yara/modes/planner.md",
-          "dydo/agents/yara/modes/reviewer.md",
-          "dydo/agents/yara/modes/test-writer.md"
+        "dydo/agents/adele/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/xavier/workflow.md": [
-          "dydo/agents/xavier/modes/co-thinker.md",
-          "dydo/agents/xavier/modes/code-writer.md",
-          "dydo/agents/xavier/modes/docs-writer.md",
-          "dydo/agents/xavier/modes/inquisitor.md",
-          "dydo/agents/xavier/modes/judge.md",
-          "dydo/agents/xavier/modes/orchestrator.md",
-          "dydo/agents/xavier/modes/planner.md",
-          "dydo/agents/xavier/modes/reviewer.md",
-          "dydo/agents/xavier/modes/test-writer.md"
+        "dydo/agents/adele/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/wendy/workflow.md": [
-          "dydo/agents/wendy/modes/co-thinker.md",
-          "dydo/agents/wendy/modes/code-writer.md",
-          "dydo/agents/wendy/modes/docs-writer.md",
-          "dydo/agents/wendy/modes/inquisitor.md",
-          "dydo/agents/wendy/modes/judge.md",
-          "dydo/agents/wendy/modes/orchestrator.md",
-          "dydo/agents/wendy/modes/planner.md",
-          "dydo/agents/wendy/modes/reviewer.md",
-          "dydo/agents/wendy/modes/test-writer.md"
+        "dydo/agents/adele/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/agents/victor/workflow.md": [
-          "dydo/agents/victor/modes/co-thinker.md",
-          "dydo/agents/victor/modes/code-writer.md",
-          "dydo/agents/victor/modes/docs-writer.md",
-          "dydo/agents/victor/modes/inquisitor.md",
-          "dydo/agents/victor/modes/judge.md",
-          "dydo/agents/victor/modes/orchestrator.md",
-          "dydo/agents/victor/modes/planner.md",
-          "dydo/agents/victor/modes/reviewer.md",
-          "dydo/agents/victor/modes/test-writer.md"
+        "dydo/agents/adele/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/agents/uma/workflow.md": [
-          "dydo/agents/uma/modes/co-thinker.md",
-          "dydo/agents/uma/modes/code-writer.md",
-          "dydo/agents/uma/modes/docs-writer.md",
-          "dydo/agents/uma/modes/inquisitor.md",
-          "dydo/agents/uma/modes/judge.md",
-          "dydo/agents/uma/modes/orchestrator.md",
-          "dydo/agents/uma/modes/planner.md",
-          "dydo/agents/uma/modes/reviewer.md",
-          "dydo/agents/uma/modes/test-writer.md"
+        "dydo/agents/brian/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/tara/workflow.md": [
-          "dydo/agents/tara/modes/co-thinker.md",
-          "dydo/agents/tara/modes/code-writer.md",
-          "dydo/agents/tara/modes/docs-writer.md",
-          "dydo/agents/tara/modes/inquisitor.md",
-          "dydo/agents/tara/modes/judge.md",
-          "dydo/agents/tara/modes/orchestrator.md",
-          "dydo/agents/tara/modes/planner.md",
-          "dydo/agents/tara/modes/reviewer.md",
-          "dydo/agents/tara/modes/test-writer.md"
+        "dydo/agents/brian/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/sam/workflow.md": [
-          "dydo/agents/sam/modes/co-thinker.md",
-          "dydo/agents/sam/modes/code-writer.md",
-          "dydo/agents/sam/modes/docs-writer.md",
-          "dydo/agents/sam/modes/inquisitor.md",
-          "dydo/agents/sam/modes/judge.md",
-          "dydo/agents/sam/modes/orchestrator.md",
-          "dydo/agents/sam/modes/planner.md",
-          "dydo/agents/sam/modes/reviewer.md",
-          "dydo/agents/sam/modes/test-writer.md"
+        "dydo/agents/brian/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/agents/rose/workflow.md": [
-          "dydo/agents/rose/modes/co-thinker.md",
-          "dydo/agents/rose/modes/code-writer.md",
-          "dydo/agents/rose/modes/docs-writer.md",
-          "dydo/agents/rose/modes/inquisitor.md",
-          "dydo/agents/rose/modes/judge.md",
-          "dydo/agents/rose/modes/orchestrator.md",
-          "dydo/agents/rose/modes/planner.md",
-          "dydo/agents/rose/modes/reviewer.md",
-          "dydo/agents/rose/modes/test-writer.md"
+        "dydo/agents/brian/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/agents/leo/workflow.md": [
-          "dydo/agents/leo/modes/co-thinker.md",
-          "dydo/agents/leo/modes/code-writer.md",
-          "dydo/agents/leo/modes/docs-writer.md",
-          "dydo/agents/leo/modes/inquisitor.md",
-          "dydo/agents/leo/modes/judge.md",
-          "dydo/agents/leo/modes/orchestrator.md",
-          "dydo/agents/leo/modes/planner.md",
-          "dydo/agents/leo/modes/reviewer.md",
-          "dydo/agents/leo/modes/test-writer.md"
+        "dydo/agents/dexter/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/henry/workflow.md": [
-          "dydo/agents/henry/modes/co-thinker.md",
-          "dydo/agents/henry/modes/code-writer.md",
-          "dydo/agents/henry/modes/docs-writer.md",
-          "dydo/agents/henry/modes/inquisitor.md",
-          "dydo/agents/henry/modes/judge.md",
-          "dydo/agents/henry/modes/orchestrator.md",
-          "dydo/agents/henry/modes/planner.md",
-          "dydo/agents/henry/modes/reviewer.md",
-          "dydo/agents/henry/modes/test-writer.md"
+        "dydo/agents/dexter/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/grace/workflow.md": [
-          "dydo/agents/grace/modes/co-thinker.md",
-          "dydo/agents/grace/modes/code-writer.md",
-          "dydo/agents/grace/modes/docs-writer.md",
-          "dydo/agents/grace/modes/inquisitor.md",
-          "dydo/agents/grace/modes/judge.md",
-          "dydo/agents/grace/modes/orchestrator.md",
-          "dydo/agents/grace/modes/planner.md",
-          "dydo/agents/grace/modes/reviewer.md",
-          "dydo/agents/grace/modes/test-writer.md"
+        "dydo/agents/dexter/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/dexter/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/emma/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/emma/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/emma/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/emma/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/grace/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/grace/modes/code-writer.md"
+        ],
+        "dydo/agents/grace/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/grace/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/grace/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/grace/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/grace/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/grace/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/grace/modes/code-writer.md"
+        ],
+        "dydo/agents/grace/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/grace/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/henry/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/henry/modes/code-writer.md"
+        ],
+        "dydo/agents/henry/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/henry/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/henry/modes/planner.md"
+        ],
+        "dydo/agents/henry/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/henry/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/henry/modes/code-writer.md"
+        ],
+        "dydo/agents/henry/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/henry/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/leo/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/leo/modes/code-writer.md"
+        ],
+        "dydo/agents/leo/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
         "dydo/agents/leo/modes/docs-writer.md": [
           "dydo/understand/about.md",

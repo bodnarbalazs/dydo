@@ -60,6 +60,59 @@ public static partial class PathUtils
     }
 
     /// <summary>
+    /// Rewrites an absolute path inside a git worktree back to the equivalent main-project path.
+    /// Detects the worktree marker <c>dydo/_system/.local/worktrees/</c>, identifies the worktree
+    /// root via <c>dydo.json</c> presence, and returns <c>{mainRoot}/{projectContent}</c>.
+    /// Returns the input unchanged if it's not a worktree path or the root can't be identified.
+    /// </summary>
+    public static string? NormalizeWorktreePath(string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return path;
+
+        var normalized = path.Replace('\\', '/');
+
+        const string marker = "dydo/_system/.local/worktrees/";
+        var markerIndex = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+            return path;
+
+        var mainRoot = normalized[..markerIndex];
+        var afterMarkerStart = markerIndex + marker.Length;
+        var afterMarker = normalized[afterMarkerStart..];
+
+        if (string.IsNullOrEmpty(afterMarker))
+            return path;
+
+        // Walk segments to find deepest worktree root (contains dydo.json)
+        var bestSplitPos = -1;
+        var pos = 0;
+
+        while (pos < afterMarker.Length)
+        {
+            var slashPos = afterMarker.IndexOf('/', pos);
+            if (slashPos < 0)
+                break;
+
+            var candidateDir = normalized[..(afterMarkerStart + slashPos)];
+            if (File.Exists(candidateDir + "/dydo.json"))
+                bestSplitPos = slashPos;
+
+            pos = slashPos + 1;
+        }
+
+        if (bestSplitPos < 0)
+            return path;
+
+        var projectContent = afterMarker[(bestSplitPos + 1)..];
+
+        if (string.IsNullOrEmpty(projectContent))
+            return path;
+
+        return mainRoot + projectContent;
+    }
+
+    /// <summary>
     /// Normalizes a path for pattern matching/comparison.
     /// Converts backslashes, removes leading './' and '/', but preserves case.
     /// Use for glob pattern matching, regex comparison with IgnoreCase.

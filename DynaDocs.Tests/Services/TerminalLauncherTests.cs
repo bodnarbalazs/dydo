@@ -110,7 +110,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_ExactFormat()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele");
-        Assert.Equal("-NoExit -Command \"$env:DYDO_AGENT='Adele'; Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'\"", args);
+        Assert.Equal("-NoExit -Command \"$env:DYDO_AGENT='Adele'; Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'; [Console]::Write([char]27 + '[?1004l')\"", args);
     }
 
     [Theory]
@@ -1125,6 +1125,72 @@ public class TerminalLauncherTests
 
     #endregion
 
+    #region Terminal Reset Tests
+
+    [Fact]
+    public void GetWindowsArguments_ContainsTerminalReset()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        Assert.Contains("[Console]::Write([char]27 + '[?1004l')", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_TerminalResetAfterClaude()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        Assert.True(args.IndexOf("claude") < args.IndexOf("[Console]::Write"));
+    }
+
+    [Fact]
+    public void GetWindowsArguments_AutoClose_TerminalResetBeforeStatusCheck()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
+        Assert.Contains("[Console]::Write([char]27 + '[?1004l')", args);
+        Assert.True(args.IndexOf("[Console]::Write") < args.IndexOf("dydo agent status"));
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxArguments_ContainsTerminalReset(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+        Assert.Contains("printf '\\e[?1004l'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_TerminalResetAfterClaude(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele");
+        Assert.True(args.IndexOf("claude") < args.IndexOf("printf"));
+    }
+
+    [Fact]
+    public void GetMacArguments_ContainsTerminalReset()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+        Assert.Contains("printf", args);
+        Assert.Contains("1004l", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_TerminalResetAfterClaude()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele");
+        Assert.True(args.IndexOf("claude") < args.IndexOf("printf"));
+    }
+
+    #endregion
+
     #region Window Routing Tests
 
     [Fact]
@@ -1905,6 +1971,76 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: "my-task", mainProjectRoot: "/repo");
         Assert.Contains("'/repo/dydo/_system/.local/worktrees/my-task'", args);
         Assert.Contains("'/repo/dydo/agents'", args);
+    }
+
+    #endregion
+
+    #region Worktree Claude Settings Copy Tests
+
+    [Fact]
+    public void WorktreeSetupScript_CopiesClaudeSettings()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task");
+        Assert.Contains("mkdir -p .claude", script);
+        Assert.Contains("settings.local.json", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithMainProjectRoot_CopiesClaudeSettings()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
+        Assert.Contains("mkdir -p .claude", script);
+        Assert.Contains("'/repo/.claude/settings.local.json'", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_SettingsCopyIsNonFatal()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task");
+        // The cp should be wrapped to not fail the && chain
+        Assert.Contains("|| true)", script);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_CopiesClaudeSettings()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("New-Item -ItemType Directory -Force -Path .claude", args);
+        Assert.Contains("settings.local.json", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_CopiesClaudeSettings()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+        Assert.Contains("New-Item -ItemType Directory -Force -Path .claude", args);
+        Assert.Contains(@"'C:\project/.claude/settings.local.json'", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_NonWorktree_NoClaudeSettingsCopy()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele");
+        // Only one .claude directory creation (none — non-worktree should have none)
+        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path .claude", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_Worktree_CopiesClaudeSettings(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("mkdir -p .claude", args);
+        Assert.Contains("settings.local.json", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Worktree_CopiesClaudeSettings()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("mkdir -p .claude", args);
+        Assert.Contains("settings.local.json", args);
     }
 
     #endregion

@@ -13,5 +13,18 @@
   ],
   "templateFile": "mode-code-writer.template.md",
   "denialHint": "Code-writer role can only edit configured source/test paths and own workspace.",
-  "constraints": []
+  "canOrchestrate": false,
+  "constraints": [
+    {
+      "type": "requires-dispatch",
+      "fromRole": null,
+      "targetRole": null,
+      "requiredRoles": [
+        "reviewer"
+      ],
+      "maxCount": null,
+      "onlyWhenDispatched": true,
+      "message": "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --no-wait --auto-close --role reviewer --task {task} --brief \u0022Review changes for {task}\u0022"
+    }
+  ]
 }

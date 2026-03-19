@@ -48,20 +48,20 @@ public class TerminalLauncher
     public static readonly TerminalConfig[] LinuxTerminals =
     [
         new("gnome-terminal",
-            (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\"",
-            (agentName, wd) => $"--tab -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+            (agentName, wd) => $"-- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\"",
+            (agentName, wd) => $"--tab -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
         new("konsole",
-            (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\"",
-            (agentName, wd) => $"--new-tab -e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+            (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\"",
+            (agentName, wd) => $"--new-tab -e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
         new("xfce4-terminal",
-            (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\"",
-            (agentName, wd) => $"--tab -e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\""),
-        new("alacritty", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
-        new("kitty", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
-        new("wezterm", (agentName, wd) => $"start -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
-        new("tilix", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\\\"\""),
-        new("foot", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
-        new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; exec bash\""),
+            (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\\\"\"",
+            (agentName, wd) => $"--tab -e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\\\"\""),
+        new("alacritty", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
+        new("kitty", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
+        new("wezterm", (agentName, wd) => $"start -- bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
+        new("tilix", (agentName, wd) => $"-e \"bash -c \\\"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\\\"\""),
+        new("foot", (agentName, wd) => $"bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
+        new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
     ];
 
     public static readonly TerminalConfig[] MacTerminals =
@@ -80,13 +80,15 @@ public class TerminalLauncher
             return $"mkdir -p '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && git worktree prune && " +
                    $"git worktree add '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' -b worktree/{branchSuffix} && " +
                    $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
-                   $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && ";
+                   $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
+                   $"mkdir -p .claude && (cp '{escapedRoot}/.claude/settings.local.json' .claude/settings.local.json 2>/dev/null || true) && ";
         }
 
         return $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees/{worktreeId} && git worktree prune && " +
                $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{branchSuffix} && " +
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
-               $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && ";
+               $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
+               $"mkdir -p .claude && (cp \"$_wt_root/.claude/settings.local.json\" .claude/settings.local.json 2>/dev/null || true) && ";
     }
 
     internal static string WorktreeCleanupScript(string worktreeId, string agentName) =>

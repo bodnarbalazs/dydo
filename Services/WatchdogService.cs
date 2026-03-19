@@ -80,6 +80,7 @@ public static class WatchdogService
             {
                 using var proc = Process.GetProcessById(pid);
                 proc.Kill();
+                proc.WaitForExit(5000);
                 stopped = true;
             }
         }
@@ -123,9 +124,17 @@ public static class WatchdogService
             var statePath = Path.Combine(agentDir, "state.md");
             if (!File.Exists(statePath)) continue;
 
-            var (autoClose, isFree, agentName) = ParseStateForWatchdog(statePath);
+            var (autoClose, isFree, agentName, windowId) = ParseStateForWatchdog(statePath);
             if (!autoClose || !isFree || agentName == null) continue;
 
+            // Try closing the terminal window via Windows Terminal API
+            if (windowId != null && TryCloseWindow(windowId))
+            {
+                ClearAutoClose(statePath);
+                continue;
+            }
+
+            // Fallback: kill matching non-shell processes
             var pattern = $"{agentName} --inbox";
             var pids = ProcessUtils.FindProcessesByCommandLine(pattern);
 
@@ -143,19 +152,53 @@ public static class WatchdogService
         }
     }
 
-    internal static (bool autoClose, bool isFree, string? agentName) ParseStateForWatchdog(string statePath)
+    internal static bool TryCloseWindow(string windowId)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("wt", $"-w {windowId} close")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc == null) return false;
+            proc.WaitForExit(5000);
+            return proc.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    internal static void ClearAutoClose(string statePath)
     {
         try
         {
             var content = File.ReadAllText(statePath);
-            if (!content.StartsWith("---")) return (false, false, null);
+            var updated = content.Replace("auto-close: true", "auto-close: false");
+            if (updated != content)
+                File.WriteAllText(statePath, updated);
+        }
+        catch { }
+    }
+
+    internal static (bool autoClose, bool isFree, string? agentName, string? windowId) ParseStateForWatchdog(string statePath)
+    {
+        try
+        {
+            var content = File.ReadAllText(statePath);
+            if (!content.StartsWith("---")) return (false, false, null, null);
 
             var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return (false, false, null);
+            if (endIndex < 0) return (false, false, null, null);
 
             var yaml = content[3..endIndex];
             bool autoClose = false, isFree = false;
-            string? agentName = null;
+            string? agentName = null, windowId = null;
 
             foreach (var line in yaml.Split('\n'))
             {
@@ -170,14 +213,17 @@ public static class WatchdogService
                     case "agent": agentName = value; break;
                     case "status": isFree = value == "free"; break;
                     case "auto-close": autoClose = value == "true"; break;
+                    case "window-id":
+                        windowId = value is "null" or "" ? null : value;
+                        break;
                 }
             }
 
-            return (autoClose, isFree, agentName);
+            return (autoClose, isFree, agentName, windowId);
         }
         catch
         {
-            return (false, false, null);
+            return (false, false, null, null);
         }
     }
 }

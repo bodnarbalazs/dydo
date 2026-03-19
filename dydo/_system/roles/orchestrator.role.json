@@ -12,15 +12,18 @@
   ],
   "templateFile": "mode-orchestrator.template.md",
   "denialHint": null,
+  "canOrchestrate": true,
   "constraints": [
     {
       "type": "requires-prior",
       "fromRole": null,
+      "targetRole": null,
       "requiredRoles": [
         "co-thinker",
         "planner"
       ],
       "maxCount": null,
+      "onlyWhenDispatched": false,
       "message": "You are a {current_role}. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification."
     }
   ]

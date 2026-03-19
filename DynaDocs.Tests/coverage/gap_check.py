@@ -10,6 +10,7 @@ Usage:
     python DynaDocs.Tests/coverage/gap_check.py                    # run tests and check
     python DynaDocs.Tests/coverage/gap_check.py --skip-tests       # analyze existing data only
     python DynaDocs.Tests/coverage/gap_check.py --detail            # show uncovered lines
+    python DynaDocs.Tests/coverage/gap_check.py --methods           # show per-method CRAP
     python DynaDocs.Tests/coverage/gap_check.py --inspect Guard     # inspect matching modules
 """
 
@@ -60,12 +61,28 @@ CONDITION_COVERAGE_RE = re.compile(r"\((\d+)/(\d+)\)")
 # ---------------------------------------------------------------------------
 
 @dataclass
+class MethodCoverage:
+    name: str
+    signature: str
+    complexity: float
+    line_rate: float
+    branch_rate: float
+
+    @property
+    def crap(self) -> float:
+        if self.complexity > 0:
+            return (self.complexity ** 2) * ((1 - self.line_rate) ** 3) + self.complexity
+        return 0.0
+
+
+@dataclass
 class LineLevelData:
     """Per-line hit counts for merging overlapping coverage."""
     lines_hits: Dict[int, int] = field(default_factory=dict)
     branch_conditions: Dict[int, Tuple[int, int]] = field(default_factory=dict)
     class_name: str = ""
     complexity: float = 0.0
+    methods: List[MethodCoverage] = field(default_factory=list)
 
     def merge(self, line_no: int, hits: int):
         self.lines_hits[line_no] = max(self.lines_hits.get(line_no, 0), hits)
@@ -118,6 +135,7 @@ class ModuleCoverage:
     tier: int = 1
     line_hits: Dict[int, int] = field(default_factory=dict)
     branch_conditions: Dict[int, Tuple[int, int]] = field(default_factory=dict)
+    methods: List[MethodCoverage] = field(default_factory=list)
 
     @property
     def crap(self) -> float:
@@ -198,6 +216,23 @@ def format_line_detail(module: ModuleCoverage) -> List[str]:
     return lines
 
 
+def format_method_detail(module: ModuleCoverage, crap_threshold: float) -> List[str]:
+    """Format per-method CRAP breakdown for methods exceeding the threshold."""
+    offending = [m for m in module.methods if m.crap > crap_threshold]
+    if not offending:
+        return []
+    offending.sort(key=lambda m: m.crap, reverse=True)
+    lines = [f"        methods exceeding CRAP threshold ({crap_threshold:.0f}):"]
+    for m in offending:
+        sig = m.signature.strip("()")
+        display_name = f"{m.name}({sig})"
+        lines.append(
+            f"          {display_name:<45s} CC: {m.complexity:>2.0f}  "
+            f"Cov: {m.line_rate*100:.1f}%  CRAP: {m.crap:.1f}"
+        )
+    return lines
+
+
 def resolve_filename(source_dir: str, raw_filename: str) -> str:
     """Resolve a filename from coverlet XML to a path relative to repo root."""
     abs_path = os.path.normpath(os.path.join(source_dir, raw_filename))
@@ -222,11 +257,12 @@ def _parse_branch_conditions(line_el) -> Optional[Tuple[int, int]]:
     return None
 
 
-def parse_cobertura_xml(xml_path: str) -> List[Tuple[str, str, Dict[int, int], Dict[int, Tuple[int, int]], float]]:
+def parse_cobertura_xml(xml_path: str) -> List[Tuple[str, str, Dict[int, int], Dict[int, Tuple[int, int]], float, List[MethodCoverage]]]:
     """Parse a Cobertura XML file.
 
     Returns list of (resolved_relative_filename, class_name, {line_no: hits},
-                      {line_no: (conditions_covered, conditions_total)}, complexity).
+                      {line_no: (conditions_covered, conditions_total)}, complexity,
+                      [MethodCoverage]).
     """
     tree = ET.parse(xml_path)
     root = tree.getroot()
@@ -247,10 +283,22 @@ def parse_cobertura_xml(xml_path: str) -> List[Tuple[str, str, Dict[int, int], D
 
             resolved = resolve_filename(source_dir, raw_fname)
 
-            # Per-method max CC (CRAP is a per-method metric)
+            # Per-method CC and coverage data
             methods_el = cls.find("methods")
+            method_entries: List[MethodCoverage] = []
             if methods_el is not None:
-                method_ccs = [float(m.get("complexity", 0)) for m in methods_el.findall("method")]
+                method_ccs = []
+                for m_el in methods_el.findall("method"):
+                    cc = float(m_el.get("complexity", 0))
+                    method_ccs.append(cc)
+                    if cc > 0:
+                        method_entries.append(MethodCoverage(
+                            name=m_el.get("name", ""),
+                            signature=m_el.get("signature", ""),
+                            complexity=cc,
+                            line_rate=float(m_el.get("line-rate", 0)),
+                            branch_rate=float(m_el.get("branch-rate", 0)),
+                        ))
                 complexity = max(method_ccs) if method_ccs else 0.0
             else:
                 complexity = float(cls.get("complexity", 0))
@@ -270,7 +318,7 @@ def parse_cobertura_xml(xml_path: str) -> List[Tuple[str, str, Dict[int, int], D
                     if cond is not None:
                         branch_conds[lno] = cond
 
-            results.append((resolved, cname, line_hits, branch_conds, complexity))
+            results.append((resolved, cname, line_hits, branch_conds, complexity, method_entries))
 
     return results
 
@@ -314,7 +362,7 @@ def collect_coverage() -> List[ModuleCoverage]:
 
     for xml_path in xml_files:
         entries = parse_cobertura_xml(str(xml_path))
-        for fname, cname, line_hits, branch_conds, complexity in entries:
+        for fname, cname, line_hits, branch_conds, complexity, methods in entries:
             if is_generated(fname):
                 continue
 
@@ -325,6 +373,7 @@ def collect_coverage() -> List[ModuleCoverage]:
             for lno, (covered, total) in branch_conds.items():
                 merged[fname].merge_branch(lno, covered, total)
             merged[fname].merge_complexity(complexity)
+            merged[fname].methods.extend(methods)
             if len(cname) > len(merged[fname].class_name):
                 merged[fname].class_name = cname
 
@@ -340,6 +389,13 @@ def collect_coverage() -> List[ModuleCoverage]:
         if data.lines_valid <= DATA_MODEL_MAX_LINES and data.lines_covered == 0:
             continue
 
+        # Deduplicate methods by (name, signature), keeping highest complexity
+        seen_methods: Dict[Tuple[str, str], MethodCoverage] = {}
+        for m in data.methods:
+            key = (m.name, m.signature)
+            if key not in seen_methods or m.complexity > seen_methods[key].complexity:
+                seen_methods[key] = m
+
         results.append(ModuleCoverage(
             filename=fname,
             class_name=data.class_name,
@@ -350,6 +406,7 @@ def collect_coverage() -> List[ModuleCoverage]:
             complexity=data.complexity,
             line_hits=dict(data.lines_hits),
             branch_conditions=dict(data.branch_conditions),
+            methods=list(seen_methods.values()),
         ))
 
     return results
@@ -443,7 +500,7 @@ def check_tier_registry(modules: List[ModuleCoverage]) -> List[str]:
 # Output
 # ---------------------------------------------------------------------------
 
-def print_report(modules: List[ModuleCoverage], *, detail: bool = False) -> bool:
+def print_report(modules: List[ModuleCoverage], *, detail: bool = False, methods: bool = False) -> bool:
     """Print coverage report. Returns True if any module fails."""
     total = len(modules)
     passing = sum(1 for m in modules if m.passes)
@@ -462,6 +519,9 @@ def print_report(modules: List[ModuleCoverage], *, detail: bool = False) -> bool
             reasons = "  |  ".join(m.failures)
             print(f"  FAIL  {m.filename}  [T{m.tier}]")
             print(f"        {reasons}")
+            if methods:
+                for line in format_method_detail(m, m.tier_thresholds["crap"]):
+                    print(line)
             if detail:
                 for line in format_line_detail(m):
                     print(line)
@@ -473,7 +533,7 @@ def print_report(modules: List[ModuleCoverage], *, detail: bool = False) -> bool
         return False
 
 
-def print_inspect_report(modules: List[ModuleCoverage], pattern: str) -> None:
+def print_inspect_report(modules: List[ModuleCoverage], pattern: str, *, methods: bool = False) -> None:
     pattern_lower = pattern.lower()
     matched = [
         m for m in modules
@@ -510,6 +570,9 @@ def print_inspect_report(modules: List[ModuleCoverage], pattern: str) -> None:
               f"CRAP: {m.crap:.1f}  CC: {m.complexity:.0f}")
         if m.failures:
             print(f"        failures: {' | '.join(m.failures)}")
+            if methods:
+                for line in format_method_detail(m, m.tier_thresholds["crap"]):
+                    print(line)
         detail_lines = format_line_detail(m)
         if detail_lines:
             for line in detail_lines:
@@ -530,6 +593,10 @@ def main():
     parser.add_argument(
         "--detail", action="store_true",
         help="Show uncovered line numbers and partial branches for failing modules",
+    )
+    parser.add_argument(
+        "--methods", action="store_true",
+        help="Show per-method CRAP breakdown for failing modules",
     )
     parser.add_argument(
         "--inspect", metavar="PATTERN",
@@ -561,11 +628,11 @@ def main():
 
     # 5. Print report
     print()
-    has_failures = print_report(modules, detail=args.detail)
+    has_failures = print_report(modules, detail=args.detail, methods=args.methods)
 
     # 6. Print inspect report (if requested)
     if args.inspect:
-        print_inspect_report(modules, args.inspect)
+        print_inspect_report(modules, args.inspect, methods=args.methods)
 
     # 7. Print registry errors
     if registry_errors:

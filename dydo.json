@@ -89,20 +89,20 @@
     "autoClose": false
   },
   "frameworkHashes": {
-    "_system/templates/agent-workflow.template.md": "2ae16f1e9fe4c27c97de7cfd80cae3f4c48f2a9b659eebe88ab44671770769fd",
-    "_system/templates/mode-code-writer.template.md": "0f0faca0cc420beeaafcefce7cfaf47576b672ceed398721aa73b017825005b6",
-    "_system/templates/mode-reviewer.template.md": "75bc770a3ba6ca3c38c3c00f0dd0d96c5b2de7fe43d75a377782e1646880a56a",
-    "_system/templates/mode-co-thinker.template.md": "f991219ce3a40f4ba01e34c8c8e752d6e2a62170028d02ceb5793eb335a58a7f",
-    "_system/templates/mode-planner.template.md": "c838867551abf0fb0d81b9dd49d604f40f03594c522b4453bcc93e45856448ff",
-    "_system/templates/mode-docs-writer.template.md": "6d7407b587660d2c154acee4959307a6b1ca0fe9f874d2ca3f72dd6e09f3e00a",
+    "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",
+    "_system/templates/mode-code-writer.template.md": "8743fb53a36042e2fd749227b53a3008255b2b5bae980738a44ab7760ce370b0",
+    "_system/templates/mode-reviewer.template.md": "eb7b55534c4c6f035b28ffb7049897260322ef660573c236a4cbbc9038801684",
+    "_system/templates/mode-co-thinker.template.md": "dda2b3831fd458ea51d17d846489124859d23ad5988b25a67554c946c73c2a4b",
+    "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
+    "_system/templates/mode-docs-writer.template.md": "12bf4f89057c9ba99fac943633827dfa9b2384ae60b9ac718a9ebd5783e3dab8",
     "reference/about-dynadocs.md": "bed2629aba2233075717a6d7a3b82e285f0f23783eb1c4cac88a65270d2eb5bb",
     "reference/dydo-commands.md": "aa59cde0f7125a972477f6944a75d2748747a83e3da310c08fddd9570c0193af",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "6c23cbc1aa47fb016e3055243f56a346eedd554574a0265283c65b27233a5dfe",
-    "_system/templates/mode-test-writer.template.md": "41c301b58750b1b5ab912979da115e5f09918f9e5e36ee367295532af1d59075",
-    "_system/templates/mode-orchestrator.template.md": "12709cab9fef643bef8fb1689886e0b90d38320374b77eeebbba4d2d0dfafd50",
-    "_system/templates/mode-inquisitor.template.md": "a7a8c36d91fa3c110156782641e33ee42e862752ebe2e2eb5b52fbaca42d9e8e",
-    "_system/templates/mode-judge.template.md": "9fa591ae7164b4e7efd73dbd68aff66172874aaf38a2c0abfdbec9d6502f1544"
+    "_system/templates/mode-test-writer.template.md": "15845eb12c90f3020aee1625067c78bb8e17d00c845b42e74e79ee09965e83cf",
+    "_system/templates/mode-orchestrator.template.md": "4cb22df09d0b8bc97dcff59a167e5d4903854626b67e2fdfd7fa4d752280f994",
+    "_system/templates/mode-inquisitor.template.md": "27ab4dc79d5aff3bc860c867531f8713871af3e5b3a5e4bbb80a813e450a924b",
+    "_system/templates/mode-judge.template.md": "455acd4bbd8ec8f1447ebada72596e9baa63731f53ef9883bfe83595be5e5c1b"
   }
 }

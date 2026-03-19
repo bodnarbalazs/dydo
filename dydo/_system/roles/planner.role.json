@@ -11,5 +11,6 @@
   ],
   "templateFile": "mode-planner.template.md",
   "denialHint": "Planner role can only edit own workspace and tasks.",
+  "canOrchestrate": false,
   "constraints": []
 }

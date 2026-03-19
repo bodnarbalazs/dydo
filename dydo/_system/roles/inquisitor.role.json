@@ -12,5 +12,18 @@
   ],
   "templateFile": "mode-inquisitor.template.md",
   "denialHint": null,
-  "constraints": []
+  "canOrchestrate": true,
+  "constraints": [
+    {
+      "type": "requires-dispatch",
+      "fromRole": null,
+      "targetRole": null,
+      "requiredRoles": [
+        "judge"
+      ],
+      "maxCount": null,
+      "onlyWhenDispatched": true,
+      "message": "Cannot release: dispatched inquisitors must dispatch a judge before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \u0022Judge findings for {task}\u0022"
+    }
+  ]
 }

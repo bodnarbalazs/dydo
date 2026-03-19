@@ -7,7 +7,7 @@
           <Format>cobertura</Format>
           <Include>[dydo]*</Include>
           <ExcludeByFile>**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs</ExcludeByFile>
-          <ExcludeByAttribute>ExcludeFromCodeCoverage,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <ExcludeByAttribute>ExcludeFromCodeCoverage,CompilerGeneratedAttribute,GeneratedCodeAttribute</ExcludeByAttribute>
         </Configuration>
       </DataCollector>
     </DataCollectors>

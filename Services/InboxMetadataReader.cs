@@ -17,6 +17,9 @@ public class InboxMetadataReader
     public string? GetDispatchedFrom(string agentName, string task) =>
         ReadFrontmatterField(agentName, task, "from");
 
+    public string? GetDispatchedFromRole(string agentName, string task) =>
+        ReadFrontmatterField(agentName, task, "from_role");
+
     private string? ReadFrontmatterField(string agentName, string task, string fieldName)
     {
         var inboxPath = Path.Combine(_getAgentWorkspace(agentName), "inbox");
@@ -26,30 +29,47 @@ public class InboxMetadataReader
         var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
         if (files.Length == 0) return null;
 
-        try
+        string? bestValue = null;
+        var bestReceived = DateTime.MinValue;
+
+        foreach (var file in files)
         {
-            var content = File.ReadAllText(files[0]);
-            if (!content.StartsWith("---")) return null;
-
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return null;
-
-            var yaml = content[3..endIndex];
-            foreach (var line in yaml.Split('\n'))
+            try
             {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
+                var content = File.ReadAllText(file);
+                if (!content.StartsWith("---")) continue;
 
-                var key = line[..colonIndex].Trim();
-                if (key == fieldName)
-                    return line[(colonIndex + 1)..].Trim();
+                var endIndex = content.IndexOf("---", 3);
+                if (endIndex < 0) continue;
+
+                var yaml = content[3..endIndex];
+                string? fieldValue = null;
+                var received = DateTime.MinValue;
+
+                foreach (var line in yaml.Split('\n'))
+                {
+                    var colonIndex = line.IndexOf(':');
+                    if (colonIndex < 0) continue;
+
+                    var key = line[..colonIndex].Trim();
+                    if (key == fieldName)
+                        fieldValue = line[(colonIndex + 1)..].Trim();
+                    else if (key == "received" && DateTime.TryParse(line[(colonIndex + 1)..].Trim(), out var dt))
+                        received = dt;
+                }
+
+                if (fieldValue != null && received >= bestReceived)
+                {
+                    bestReceived = received;
+                    bestValue = fieldValue;
+                }
+            }
+            catch
+            {
+                // Malformed inbox file — skip
             }
         }
-        catch
-        {
-            // Malformed inbox file — don't block role setting
-        }
 
-        return null;
+        return bestValue;
     }
 }

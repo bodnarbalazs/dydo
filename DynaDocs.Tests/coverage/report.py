@@ -75,6 +75,7 @@ def generate_report(xmls: list[Path]) -> bool:
         f"-reports:{reports_arg}",
         f"-targetdir:{REPORT_DIR}",
         "-reporttypes:Html",
+        "-filefilters:-**/obj/**;-**/*.g.cs;-**/*.generated.cs",
     ]
     print("\n--- Generating report ---")
     result = subprocess.run(cmd, cwd=ROOT, shell=True)

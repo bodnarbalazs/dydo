@@ -12,5 +12,6 @@
   ],
   "templateFile": "mode-co-thinker.template.md",
   "denialHint": "Co-thinker role can edit own workspace and decisions.",
+  "canOrchestrate": false,
   "constraints": []
 }

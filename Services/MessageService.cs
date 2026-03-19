@@ -12,7 +12,7 @@ public static class MessageService
         var currentHuman = registry.GetCurrentHuman();
 
         var sender = registry.GetCurrentAgent(sessionId);
-        var validationError = ValidateSendRequest(registry, sender, to, currentHuman, force);
+        var validationError = ValidateSendRequest(registry, sender, to, subject, currentHuman, force);
         if (validationError != null)
         {
             ConsoleOutput.WriteError(validationError);
@@ -25,7 +25,7 @@ public static class MessageService
     }
 
     private static string? ValidateSendRequest(AgentRegistry registry, Models.AgentState? sender,
-        string to, string? currentHuman, bool force)
+        string to, string? subject, string? currentHuman, bool force)
     {
         if (sender == null)
             return "No agent identity assigned to this process.";
@@ -40,7 +40,7 @@ public static class MessageService
         if (ownershipError != null)
             return ownershipError;
 
-        return CheckTargetActive(registry, to, force);
+        return CheckTargetActive(registry, sender.Name, to, subject, force);
     }
 
     private static string? CheckOwnership(AgentRegistry registry, string to, string? currentHuman)
@@ -51,15 +51,97 @@ public static class MessageService
         return null;
     }
 
-    private static string? CheckTargetActive(AgentRegistry registry, string to, bool force)
+    private static string? CheckTargetActive(AgentRegistry registry, string senderName, string to, string? subject, bool force)
     {
         var targetState = registry.GetAgentState(to);
-        if (targetState != null && targetState.Status != Models.AgentStatus.Working && !force)
+        if (targetState == null || targetState.Status == Models.AgentStatus.Working)
+            return null;
+
+        if (force)
+            return null;
+
+        var activeAgents = registry.GetActiveAgents();
+        var oversightAgents = registry.GetActiveOversightAgents();
+
+        // Check if sender has a reply-pending marker targeting this agent
+        var replyMarkers = registry.GetReplyPendingMarkers(senderName);
+        var hasReplyPending = replyMarkers.Any(m =>
+            m.To.Equals(to, StringComparison.OrdinalIgnoreCase)
+            && (string.IsNullOrEmpty(subject) || m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)));
+
+        if (hasReplyPending)
+            return BuildReplyPendingMessage(to, oversightAgents);
+
+        return BuildInactiveTargetMessage(registry, to, targetState, activeAgents, oversightAgents);
+    }
+
+    private static string BuildInactiveTargetMessage(AgentRegistry registry, string to,
+        Models.AgentState? targetState, List<Models.AgentState> activeAgents, List<Models.AgentState> oversightAgents)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Agent {to} has been released and will not receive this message.");
+        if (targetState?.DispatchedBy != null)
         {
-            return $"Agent {to} is not currently active. The message will sit unread until {to} is claimed.\n" +
-                   $"Send anyway with: dydo msg --to {to} --body \"...\" --force";
+            var dispatcher = registry.GetAgentState(targetState.DispatchedBy);
+            if (dispatcher?.Status == Models.AgentStatus.Working)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"  {to} was dispatched by {dispatcher.Name} — try messaging them instead:");
+                sb.AppendLine($"    dydo msg --to {dispatcher.Name} --body \"...\"");
+            }
         }
-        return null;
+
+        if (oversightAgents.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("  Active oversight agents:");
+            sb.Append(FormatActiveAgentList(oversightAgents));
+        }
+
+        if (activeAgents.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("  All active agents:");
+            sb.Append(FormatActiveAgentList(activeAgents));
+        }
+        else
+        {
+            sb.AppendLine();
+            sb.AppendLine("  No agents are currently active. Ask the human to intervene.");
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string BuildReplyPendingMessage(string to, List<Models.AgentState> oversightAgents)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Agent {to} has been released, but you have a pending reply obligation to them.");
+
+        if (oversightAgents.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("  Message an oversight agent to handle the situation:");
+            sb.Append(FormatActiveAgentList(oversightAgents));
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"  Or force-send (message will sit unread until {to} is claimed):");
+        sb.AppendLine($"    dydo msg --to {to} --body \"...\" --force");
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string FormatActiveAgentList(List<Models.AgentState> agents)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var agent in agents)
+        {
+            var role = agent.Role ?? "—";
+            var task = agent.Task != null ? $"task: {agent.Task}" : "";
+            sb.AppendLine($"    {agent.Name.PadRight(10)} {role.PadRight(16)} {task}");
+        }
+        return sb.ToString();
     }
 
     private static void WriteMessage(AgentRegistry registry, string senderName, string to,

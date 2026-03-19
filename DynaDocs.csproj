@@ -7,14 +7,14 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.2.24</Version>
+        <Version>1.2.25</Version>
         <Description>Documentation-driven context and agent orchestration for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/bodnarbalazs/dydo</PackageProjectUrl>
         <RepositoryUrl>https://github.com/bodnarbalazs/dydo</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>documentation;validation;cli;ai-agents;claude</PackageTags>
+        <PackageTags>claude;orchestration;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
         <PackageReleaseNotes>A platform-agnostic AI orchestration and context-management framework.</PackageReleaseNotes>
@@ -27,6 +27,7 @@
         <!-- Native AOT publishing -->
         <PublishAot>true</PublishAot>
         <OptimizationPreference>Size</OptimizationPreference>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,2 +1,2 @@
-- [ ] Coverage gap check passes (no tier regressions)
-- [ ] New code has appropriate tier annotation (`// @test-tier: N`) if above T1
+- [ ] `gap_check.py` exits 0 — coverage regressions mean FAIL, no exceptions
+- [ ] New code above T1 has tier annotation (`// @test-tier: N`)

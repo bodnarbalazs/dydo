@@ -288,7 +288,7 @@ public class WorkflowTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Inbox_Clear_All_ClearsUnreadMessages()
+    public async Task Inbox_Clear_All_BlockedWhenUnreadMessages()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -303,15 +303,16 @@ public class WorkflowTests : IntegrationTestBase
 
         var result = await InboxClearAsync(all: true);
 
-        result.AssertSuccess();
+        result.AssertExitCode(2);
+        result.AssertStderrContains("unread message");
 
-        // Verify unread messages cleared from state
+        // Verify unread messages are still tracked
         var state = registry.GetAgentState("Adele");
-        Assert.Empty(state!.UnreadMessages);
+        Assert.Equal(2, state!.UnreadMessages.Count);
     }
 
     [Fact]
-    public async Task Inbox_Clear_ById_ClearsSpecificUnreadMessage()
+    public async Task Inbox_Clear_ById_BlockedWhenIdUnread()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -340,11 +341,46 @@ public class WorkflowTests : IntegrationTestBase
 
         var result = await InboxClearAsync(id: "abc12345");
 
-        result.AssertSuccess();
+        result.AssertExitCode(2);
+        result.AssertStderrContains("not yet read");
 
+        // Both unread messages should still be tracked
         var state = registry.GetAgentState("Adele");
-        Assert.DoesNotContain("abc12345", state!.UnreadMessages);
+        Assert.Contains("abc12345", state!.UnreadMessages);
         Assert.Contains("other-msg", state.UnreadMessages);
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ById_AllowsWhenDifferentIdUnread()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Add unread message for a different ID
+        var registry = new AgentRegistry(TestDir);
+        registry.AddUnreadMessage("Adele", "other-msg");
+
+        // Create inbox item with a non-unread ID
+        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxPath);
+        File.WriteAllText(Path.Combine(inboxPath, "abc12345-test-task.md"), """
+            ---
+            id: abc12345
+            from: Brian
+            role: reviewer
+            task: test-task
+            received: 2024-01-01T00:00:00Z
+            ---
+
+            # Test
+
+            Brief
+            """);
+
+        var result = await InboxClearAsync(id: "abc12345");
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(Path.Combine(inboxPath, "abc12345-test-task.md")));
     }
 
     [Fact]
@@ -374,9 +410,7 @@ public class WorkflowTests : IntegrationTestBase
         await SetRoleAsync("code-writer", "test-task");
         await ReadMustReadsAsync();
 
-        // Add unread messages and inbox items
-        var registry = new AgentRegistry(TestDir);
-        registry.AddUnreadMessage("Adele", "msg-001");
+        // Create inbox items (no unread messages — simulates agent having read them)
         CreateInboxItem("Adele", "Brian", "reviewer", "task1", "Brief 1");
 
         var result = await InboxClearAsync(all: true);

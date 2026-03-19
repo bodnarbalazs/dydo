@@ -18,6 +18,7 @@ public partial class AgentRegistry : IAgentRegistry
     private readonly DydoConfig? _config;
     private readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> _rolePermissions;
     private readonly Dictionary<string, RoleDefinition> _roleDefinitions;
+    private readonly InboxMetadataReader _inboxReader;
 
     public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
     {
@@ -26,6 +27,7 @@ public partial class AgentRegistry : IAgentRegistry
         _folderScaffolder = folderScaffolder ?? new FolderScaffolder();
         _auditService = auditService ?? new AuditService(_configService, _basePath);
         _config = _configService.LoadConfig(_basePath);
+        _inboxReader = new InboxMetadataReader(GetAgentWorkspace);
 
         var roleDefService = new RoleDefinitionService();
         var roles = roleDefService.LoadRoleDefinitions(_basePath);
@@ -492,6 +494,8 @@ public partial class AgentRegistry : IAgentRegistry
         ClearAllReplyPendingMarkers(agentName);
         ClearAllDispatchMarkers(agentName);
 
+        try { new GuardLiftService().ClearLift(agentName); } catch { }
+
         foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
             File.Delete(marker);
 
@@ -505,113 +509,14 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
-    private string? GetDispatchedRole(string agentName, string task)
-    {
-        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
-        if (!Directory.Exists(inboxPath)) return null;
+    private string? GetDispatchedRole(string agentName, string task) =>
+        _inboxReader.GetDispatchedRole(agentName, task);
 
-        var sanitizedTask = PathUtils.SanitizeForFilename(task);
-        var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
-        if (files.Length == 0) return null;
+    private string? GetDispatchedFrom(string agentName, string task) =>
+        _inboxReader.GetDispatchedFrom(agentName, task);
 
-        try
-        {
-            var content = File.ReadAllText(files[0]);
-            if (!content.StartsWith("---")) return null;
-
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return null;
-
-            var yaml = content[3..endIndex];
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                if (key == "role")
-                    return line[(colonIndex + 1)..].Trim();
-            }
-        }
-        catch
-        {
-            // Malformed inbox file — don't block role setting
-        }
-
-        return null;
-    }
-
-    private string? GetDispatchedFrom(string agentName, string task)
-    {
-        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
-        if (!Directory.Exists(inboxPath)) return null;
-
-        var sanitizedTask = PathUtils.SanitizeForFilename(task);
-        var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
-        if (files.Length == 0) return null;
-
-        try
-        {
-            var content = File.ReadAllText(files[0]);
-            if (!content.StartsWith("---")) return null;
-
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return null;
-
-            var yaml = content[3..endIndex];
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                if (key == "from")
-                    return line[(colonIndex + 1)..].Trim();
-            }
-        }
-        catch
-        {
-            // Malformed inbox file — don't block role setting
-        }
-
-        return null;
-    }
-
-    private string? GetDispatchedFromRole(string agentName, string task)
-    {
-        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
-        if (!Directory.Exists(inboxPath)) return null;
-
-        var sanitizedTask = PathUtils.SanitizeForFilename(task);
-        var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
-        if (files.Length == 0) return null;
-
-        try
-        {
-            var content = File.ReadAllText(files[0]);
-            if (!content.StartsWith("---")) return null;
-
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return null;
-
-            var yaml = content[3..endIndex];
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                if (key == "from_role")
-                    return line[(colonIndex + 1)..].Trim();
-            }
-        }
-        catch
-        {
-            // Malformed inbox file — don't block role setting
-        }
-
-        return null;
-    }
+    private string? GetDispatchedFromRole(string agentName, string task) =>
+        _inboxReader.GetDispatchedFromRole(agentName, task);
 
     public bool SetRole(string? sessionId, string role, string? task, out string error)
     {
@@ -792,6 +697,21 @@ public partial class AgentRegistry : IAgentRegistry
     public List<AgentState> GetAllAgentStates()
     {
         return AgentNames.Select(name => GetAgentState(name) ?? new AgentState { Name = name }).ToList();
+    }
+
+    public List<AgentState> GetActiveAgents()
+    {
+        return GetAllAgentStates().Where(a => a.Status == AgentStatus.Working).ToList();
+    }
+
+    public List<AgentState> GetActiveOversightAgents()
+    {
+        return GetAllAgentStates()
+            .Where(a => a.Status == AgentStatus.Working
+                && !string.IsNullOrEmpty(a.Role)
+                && _roleDefinitions.TryGetValue(a.Role, out var def)
+                && def.CanOrchestrate)
+            .ToList();
     }
 
     public List<AgentState> GetFreeAgents()
@@ -1993,7 +1913,7 @@ public partial class AgentRegistry : IAgentRegistry
 
     private static string NormalizeMustReadPath(string path)
     {
-        var normalized = path.Replace('\\', '/');
+        var normalized = PathUtils.NormalizeWorktreePath(path)?.Replace('\\', '/') ?? path.Replace('\\', '/');
         var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
         return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
     }

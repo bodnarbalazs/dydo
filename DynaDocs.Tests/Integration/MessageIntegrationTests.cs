@@ -188,8 +188,9 @@ public class MessageIntegrationTests : IntegrationTestBase
         var result = await SendMessageAsync("Brian", "test");
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("not currently active");
-        result.AssertStderrContains("--force");
+        result.AssertStderrContains("has been released");
+        // General case should NOT offer --force
+        Assert.DoesNotContain("--force", result.Stderr);
     }
 
     [Fact]
@@ -566,6 +567,163 @@ public class MessageIntegrationTests : IntegrationTestBase
         var state = registry.GetAgentState("Adele");
         Assert.NotNull(state);
         Assert.Single(state.UnreadMessages);
+    }
+
+    #endregion
+
+    #region Contextual Inactive Agent Messaging
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_ListsActiveAgents()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Brian is not claimed = inactive, Adele is the only active agent
+        var result = await SendMessageAsync("Brian", "test");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("has been released");
+        result.AssertStderrContains("Adele");
+        result.AssertStderrContains("code-writer");
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_OnlySenderActive_ShowsActiveList()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var result = await SendMessageAsync("Brian", "test");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("has been released");
+        // Adele (sender) is the only active agent, so the list should include her
+        result.AssertStderrContains("All active agents");
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_WithDispatcher_SuggestsDispatcher()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Claim Brian in separate session and set DispatchedBy to Adele
+        ClaimAgentInSeparateSession("Brian");
+        var statePath = Path.Combine(TestDir, "dydo/agents/Brian/state.md");
+        var stateContent = File.ReadAllText(statePath);
+        stateContent = stateContent.Replace("dispatched-by: null", "dispatched-by: Adele");
+        File.WriteAllText(statePath, stateContent);
+
+        // Release Brian (clear inbox first)
+        StoreSessionContextForAgent("Brian");
+        var brianRegistry = new AgentRegistry(TestDir);
+        brianRegistry.ClearAllUnreadMessages("Brian");
+        var releaseCommand = AgentCommand.Create();
+        await RunAsync(releaseCommand, "release");
+
+        // Restore Adele's session and try to message Brian
+        StoreSessionContext();
+        var result = await SendMessageAsync("Brian", "test");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("dispatched by Adele");
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_WithReplyPending_OffersForce()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Create a reply-pending marker for Adele -> Brian
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
+
+        // Brian is not claimed = inactive
+        var result = await SendMessageAsync("Brian", "Reply to Brian", subject: "test-task");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("pending reply obligation");
+        result.AssertStderrContains("--force");
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_WithoutReplyPending_NoForce()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // No reply-pending marker, Brian not claimed
+        var result = await SendMessageAsync("Brian", "test");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("has been released");
+        Assert.DoesNotContain("--force", result.Stderr);
+    }
+
+    [Fact]
+    public async Task Message_ToActiveAgent_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        ClaimAgentInSeparateSession("Brian");
+
+        var result = await SendMessageAsync("Brian", "test");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_ForceTrue_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var result = await SendMessageAsync("Brian", "test", force: true);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task GetActiveOversightAgents_ReturnsOnlyWorkingOrchestrators()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        // Use inquisitor — has CanOrchestrate=true and no role-assignment constraints
+        await SetRoleAsync("inquisitor", "test-task");
+
+        var registry = new AgentRegistry(TestDir);
+        var oversight = registry.GetActiveOversightAgents();
+
+        Assert.Single(oversight);
+        Assert.Equal("Adele", oversight[0].Name);
+
+        // Non-oversight roles should not appear
+        var active = registry.GetActiveAgents();
+        Assert.Single(active);
+    }
+
+    [Fact]
+    public async Task GetActiveAgents_ReturnsOnlyWorkingAgents()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Charlie is not claimed = free
+        var registry = new AgentRegistry(TestDir);
+        var active = registry.GetActiveAgents();
+
+        // Only Adele should be active
+        Assert.Single(active);
+        Assert.Equal("Adele", active[0].Name);
     }
 
     #endregion

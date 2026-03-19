@@ -1557,6 +1557,172 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\38acdec5-msg-planner-nudge-design.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T13:14:08.2660525Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-ci.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-19T13:14:28.1170488Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "which dydo 2\u003E\u00261 || where dydo 2\u003E\u00261 || echo \u0022not found\u0022"
+    },
+    {
+      "ts": "2026-03-19T13:25:27.8380713Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git worktree list",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T13:25:40.4901838Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-19T13:25:40.890969Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/ 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T13:53:46.1111965Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git worktree list",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T13:53:56.1954192Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-19T13:54:15.9680014Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-19T13:54:22.9996524Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch | grep worktree"
+    },
+    {
+      "ts": "2026-03-19T13:54:36.2108323Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\archive\\inbox\\38acdec5-msg-planner-nudge-design.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T13:54:42.2513417Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -t dydo/agents/Adele/archive/inbox/ | head -5"
+    },
+    {
+      "ts": "2026-03-19T13:54:48.0083172Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\archive\\inbox\\7efdada8-msg-fix-ci-build.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T14:44:27.7771243Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\20b29470-msg-fix-worktree-path-resolution.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T15:00:23.9929571Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls -t dydo/agents/Frank/archive/inbox/ 2\u003E\u00261 | head -5",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T15:00:39.0886799Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\95046910-msg-fix-coverage-excludes.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T15:00:53.5798458Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -t dydo/agents/Frank/archive/inbox/ 2\u003E\u00261 | head -10"
+    },
+    {
+      "ts": "2026-03-19T15:00:58.5518304Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\archive\\inbox\\55eb6e2e-fix-coverage-excludes.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T15:01:20.7720353Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\archive\\inbox\\a85c5552-msg-reviewer-dispatch-constraint.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T18:56:07.1624267Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d30375b8-msg-fix-coverage-excludes.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T18:56:08.1808595Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d72486b4-msg-fix-inactive-agent-messaging.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T18:56:22.2229764Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\142aa89e-msg-fix-gap-check-prompt.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T19:03:04.4719933Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git log --oneline -5 2\u003E\u00261",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T19:03:16.3975669Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a8ddff01-msg-investigate-autoclose-escape-bug.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T19:03:32.1317703Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T19:04:00.8977853Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-inactive-messaging-rework.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-19T19:11:32.2713013Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-source-gen.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-19T19:21:50.9928386Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\orchestrator.md",
+      "tool": "read"
     }
   ]
 }

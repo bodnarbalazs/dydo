@@ -1,9 +1,7 @@
-4. **Coverage gate** — Verify tier compliance on the changed code
+4. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py --skip-tests
 ```
 
-Tests were already run in step 3. Check that gap_check passes (exit code 0).
-
-If it fails, include the specific failures in your review feedback. Coverage regressions are a FAIL.
+Tests already ran. If gap_check exits non-zero, the review is a FAIL — coverage regressions are not negotiable. Include the gap_check output in your review feedback so the code-writer knows exactly what to fix.

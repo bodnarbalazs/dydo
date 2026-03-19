@@ -92,6 +92,7 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-
 ## Complete
 
 ### If Review Passes
+{{include:extra-complete-gate}}
 
 ```bash
 dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tests pass."

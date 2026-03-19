@@ -105,4 +105,46 @@ public class InboxMetadataReaderTests : IDisposable
 
         Assert.Null(_reader.GetDispatchedRole("Alice", "my-task"));
     }
+
+    [Fact]
+    public void GetDispatchedFromRole_ValidFile_ReturnsFromRole()
+    {
+        CreateInboxFile("Alice", "abc123-my-task.md",
+            "---\nfrom_role: orchestrator\nfrom: Brian\nreceived: 2026-03-19T10:00:00Z\n---\n# Brief");
+
+        Assert.Equal("orchestrator", _reader.GetDispatchedFromRole("Alice", "my-task"));
+    }
+
+    [Fact]
+    public void GetDispatchedFrom_MultipleFiles_ReturnsNewestByReceived()
+    {
+        CreateInboxFile("Alice", "aaa-my-task.md",
+            "---\nfrom: OldAgent\nfrom_role: planner\nreceived: 2026-03-19T10:00:00Z\n---\n# Stale");
+        CreateInboxFile("Alice", "bbb-my-task.md",
+            "---\nfrom: NewAgent\nfrom_role: orchestrator\nreceived: 2026-03-19T12:00:00Z\n---\n# Latest");
+
+        Assert.Equal("NewAgent", _reader.GetDispatchedFrom("Alice", "my-task"));
+    }
+
+    [Fact]
+    public void GetDispatchedFromRole_MultipleFiles_ReturnsNewestByReceived()
+    {
+        CreateInboxFile("Alice", "aaa-my-task.md",
+            "---\nfrom: OldAgent\nfrom_role: planner\nreceived: 2026-03-19T10:00:00Z\n---\n# Stale");
+        CreateInboxFile("Alice", "bbb-my-task.md",
+            "---\nfrom: NewAgent\nfrom_role: orchestrator\nreceived: 2026-03-19T12:00:00Z\n---\n# Latest");
+
+        Assert.Equal("orchestrator", _reader.GetDispatchedFromRole("Alice", "my-task"));
+    }
+
+    [Fact]
+    public void GetDispatchedRole_MultipleFiles_ReturnsNewestByReceived()
+    {
+        CreateInboxFile("Alice", "aaa-my-task.md",
+            "---\nrole: planner\nreceived: 2026-03-19T08:00:00Z\n---\n# Stale");
+        CreateInboxFile("Alice", "bbb-my-task.md",
+            "---\nrole: reviewer\nreceived: 2026-03-19T14:00:00Z\n---\n# Latest");
+
+        Assert.Equal("reviewer", _reader.GetDispatchedRole("Alice", "my-task"));
+    }
 }

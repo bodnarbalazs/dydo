@@ -27,7 +27,11 @@ public enum AuditEventType
     /// <summary>Git commit was made</summary>
     Commit,
     /// <summary>Action was blocked by guard</summary>
-    Blocked
+    Blocked,
+    /// <summary>Guard RBAC was temporarily lifted for an agent</summary>
+    GuardLift,
+    /// <summary>Guard RBAC was restored for an agent</summary>
+    GuardRestore
 }
 
 /// <summary>
@@ -116,4 +120,11 @@ public class AuditEvent
     [JsonPropertyName("reason")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? BlockReason { get; set; }
+
+    /// <summary>
+    /// Whether this action occurred while guard was lifted.
+    /// </summary>
+    [JsonPropertyName("lifted")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Lifted { get; set; }
 }

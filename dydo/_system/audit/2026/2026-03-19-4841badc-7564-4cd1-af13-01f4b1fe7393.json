@@ -257,6 +257,40 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T13:06:55.811308Z",
+      "event": "Release",
+      "agent": "Dexter"
+    },
+    {
+      "ts": "2026-03-19T13:18:49.683811Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-03-19T13:18:55.6876698Z",
+      "event": "Claim",
+      "agent": "Emma"
+    },
+    {
+      "ts": "2026-03-19T13:19:05.7616347Z",
+      "event": "Role",
+      "role": "reviewer",
+      "task": "fix-ide-analyzer-errors"
+    },
+    {
+      "ts": "2026-03-19T13:19:11.7319236Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T13:19:19.7704613Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot_ref": {
@@ -539,6 +573,10 @@
         "dydo/_system/audit/2026/2026-03-18-f4c189f4-4d14-4946-893c-8f95e3b32ec5.json",
         "dydo/_system/audit/2026/2026-03-18-f6625ff3-2a78-4812-be9a-e983139fac48.json",
         "dydo/_system/audit/2026/2026-03-18-fe206058-2f66-4672-9896-c0bbf88bc8e9.json",
+        "dydo/_system/audit/2026/2026-03-19-4841badc-7564-4cd1-af13-01f4b1fe7393.json",
+        "dydo/_system/audit/2026/2026-03-19-cfc2d0bd-fc02-4d64-adf4-dcc7b176aaa5.json",
+        "dydo/_system/audit/2026/2026-03-19-d73ccdde-12f9-4b4b-bb2a-70ef488c571c.json",
+        "dydo/_system/audit/2026/2026-03-19-dadd3d7e-980b-44c8-8e17-358a40480817.json",
         "dydo/_system/roles/co-thinker.role.json",
         "dydo/_system/roles/code-writer.role.json",
         "dydo/_system/roles/docs-writer.role.json",
@@ -649,6 +687,51 @@
         "dydo/project/changelog/2026/2026-03-13/worktree-merge-enforcement.md",
         "dydo/project/changelog/2026/2026-03-13/worktree-shared-dispatch.md",
         "dydo/project/changelog/2026/2026-03-13/worktree-visualization.md",
+        "dydo/project/changelog/2026/2026-03-19/_index.md",
+        "dydo/project/changelog/2026/2026-03-19/baton-passing-docs.md",
+        "dydo/project/changelog/2026/2026-03-19/baton-passing-implementation.md",
+        "dydo/project/changelog/2026/2026-03-19/ci-test-fix.md",
+        "dydo/project/changelog/2026/2026-03-19/docs-batch-a.md",
+        "dydo/project/changelog/2026/2026-03-19/docs-batch-b.md",
+        "dydo/project/changelog/2026/2026-03-19/docs-batch-c.md",
+        "dydo/project/changelog/2026/2026-03-19/docs-batch-d.md",
+        "dydo/project/changelog/2026/2026-03-19/docs-structure-planning.md",
+        "dydo/project/changelog/2026/2026-03-19/docs-upgrade-sprint.md",
+        "dydo/project/changelog/2026/2026-03-19/find-t1-coverage-doc.md",
+        "dydo/project/changelog/2026/2026-03-19/fix-ci-null-warnings.md",
+        "dydo/project/changelog/2026/2026-03-19/fix-ide-analyzer-errors.md",
+        "dydo/project/changelog/2026/2026-03-19/fix-session-race-condition.md",
+        "dydo/project/changelog/2026/2026-03-19/fix-test-errors.md",
+        "dydo/project/changelog/2026/2026-03-19/gap-check-fix.md",
+        "dydo/project/changelog/2026/2026-03-19/gap-check-setup.md",
+        "dydo/project/changelog/2026/2026-03-19/git-stash-guard-block.md",
+        "dydo/project/changelog/2026/2026-03-19/guard-python-invocation.md",
+        "dydo/project/changelog/2026/2026-03-19/guardrails-doc-update.md",
+        "dydo/project/changelog/2026/2026-03-19/guardrails-h27-entry.md",
+        "dydo/project/changelog/2026/2026-03-19/inquisition-file-coverage.md",
+        "dydo/project/changelog/2026/2026-03-19/investigate-last-validation-bug.md",
+        "dydo/project/changelog/2026/2026-03-19/investigate-session-files.md",
+        "dydo/project/changelog/2026/2026-03-19/nested-worktrees.md",
+        "dydo/project/changelog/2026/2026-03-19/orchestrator-worktree-guidance.md",
+        "dydo/project/changelog/2026/2026-03-19/planner-nudge-design.md",
+        "dydo/project/changelog/2026/2026-03-19/refine-inquisitor-template.md",
+        "dydo/project/changelog/2026/2026-03-19/requires-dispatch-constraint.md",
+        "dydo/project/changelog/2026/2026-03-19/reviewer-dispatch-constraint.md",
+        "dydo/project/changelog/2026/2026-03-19/role-docs-batch1.md",
+        "dydo/project/changelog/2026/2026-03-19/role-docs-batch2.md",
+        "dydo/project/changelog/2026/2026-03-19/role-docs-batch3.md",
+        "dydo/project/changelog/2026/2026-03-19/session-race-conditions.md",
+        "dydo/project/changelog/2026/2026-03-19/session-race-fix-plan.md",
+        "dydo/project/changelog/2026/2026-03-19/session-race-fix.md",
+        "dydo/project/changelog/2026/2026-03-19/t1-coverage-doc.md",
+        "dydo/project/changelog/2026/2026-03-19/t1-coverage-gaps.md",
+        "dydo/project/changelog/2026/2026-03-19/t1-slice-a.md",
+        "dydo/project/changelog/2026/2026-03-19/t1-slice-b.md",
+        "dydo/project/changelog/2026/2026-03-19/t1-slice-c.md",
+        "dydo/project/changelog/2026/2026-03-19/template-bug-fixes.md",
+        "dydo/project/changelog/2026/2026-03-19/template-harmonization.md",
+        "dydo/project/changelog/2026/2026-03-19/worktree-implementation.md",
+        "dydo/project/changelog/2026/2026-03-19/worktree-workflow-design.md",
         "dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
         "dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
         "dydo/project/decisions/006-drop-interviewer-role.md",
@@ -668,49 +751,6 @@
         "dydo/project/issues/_issues.md",
         "dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
         "dydo/project/issues/0002-agents-default-to-creating-decision-docs-unnecessarily.md",
-        "dydo/project/tasks/baton-passing-docs.md",
-        "dydo/project/tasks/baton-passing-implementation.md",
-        "dydo/project/tasks/ci-test-fix.md",
-        "dydo/project/tasks/docs-batch-a.md",
-        "dydo/project/tasks/docs-batch-b.md",
-        "dydo/project/tasks/docs-batch-c.md",
-        "dydo/project/tasks/docs-batch-d.md",
-        "dydo/project/tasks/docs-structure-planning.md",
-        "dydo/project/tasks/docs-upgrade-sprint.md",
-        "dydo/project/tasks/find-t1-coverage-doc.md",
-        "dydo/project/tasks/fix-ci-null-warnings.md",
-        "dydo/project/tasks/fix-session-race-condition.md",
-        "dydo/project/tasks/fix-test-errors.md",
-        "dydo/project/tasks/gap-check-fix.md",
-        "dydo/project/tasks/gap-check-setup.md",
-        "dydo/project/tasks/git-stash-guard-block.md",
-        "dydo/project/tasks/guard-python-invocation.md",
-        "dydo/project/tasks/guardrails-doc-update.md",
-        "dydo/project/tasks/guardrails-h27-entry.md",
-        "dydo/project/tasks/inquisition-file-coverage.md",
-        "dydo/project/tasks/investigate-last-validation-bug.md",
-        "dydo/project/tasks/investigate-session-files.md",
-        "dydo/project/tasks/nested-worktrees.md",
-        "dydo/project/tasks/orchestrator-worktree-guidance.md",
-        "dydo/project/tasks/planner-nudge-design.md",
-        "dydo/project/tasks/refine-inquisitor-template.md",
-        "dydo/project/tasks/requires-dispatch-constraint.md",
-        "dydo/project/tasks/reviewer-dispatch-constraint.md",
-        "dydo/project/tasks/role-docs-batch1.md",
-        "dydo/project/tasks/role-docs-batch2.md",
-        "dydo/project/tasks/role-docs-batch3.md",
-        "dydo/project/tasks/session-race-conditions.md",
-        "dydo/project/tasks/session-race-fix-plan.md",
-        "dydo/project/tasks/session-race-fix.md",
-        "dydo/project/tasks/t1-coverage-doc.md",
-        "dydo/project/tasks/t1-coverage-gaps.md",
-        "dydo/project/tasks/t1-slice-a.md",
-        "dydo/project/tasks/t1-slice-b.md",
-        "dydo/project/tasks/t1-slice-c.md",
-        "dydo/project/tasks/template-bug-fixes.md",
-        "dydo/project/tasks/template-harmonization.md",
-        "dydo/project/tasks/worktree-implementation.md",
-        "dydo/project/tasks/worktree-workflow-design.md",
         "dydo/project/v1.3-release.md",
         "dydo/reference/audit-system.md",
         "dydo/reference/configuration.md",
@@ -849,6 +889,7 @@
         "dydo/_system/template-additions",
         "dydo/.obsidian",
         "dydo/project/changelog/2026/2026-03-13",
+        "dydo/project/changelog/2026/2026-03-19",
         "dydo/project/future-features",
         "dydo/project/issues",
         "dydo/reference/roles",
@@ -899,16 +940,12 @@
           "dydo/understand/task-lifecycle.md",
           "dydo/understand/templates-and-customization.md"
         ],
-        "dydo/agents/zelda/workflow.md": [
-          "dydo/agents/zelda/modes/co-thinker.md",
-          "dydo/agents/zelda/modes/code-writer.md",
-          "dydo/agents/zelda/modes/docs-writer.md",
-          "dydo/agents/zelda/modes/inquisitor.md",
-          "dydo/agents/zelda/modes/judge.md",
-          "dydo/agents/zelda/modes/orchestrator.md",
-          "dydo/agents/zelda/modes/planner.md",
-          "dydo/agents/zelda/modes/reviewer.md",
-          "dydo/agents/zelda/modes/test-writer.md"
+        "dydo/glossary.md": [
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/reference/audit-system.md",
+          "dydo/understand/dispatch-and-messaging.md",
+          "dydo/understand/guard-system.md",
+          "dydo/understand/roles-and-permissions.md"
         ],
         "dydo/agents/adele/workflow.md": [
           "dydo/agents/adele/modes/inquisitor.md",
@@ -934,27 +971,16 @@
           "dydo/agents/dexter/modes/orchestrator.md",
           "dydo/agents/dexter/modes/test-writer.md"
         ],
-        "dydo/agents/yara/workflow.md": [
-          "dydo/agents/yara/modes/co-thinker.md",
-          "dydo/agents/yara/modes/code-writer.md",
-          "dydo/agents/yara/modes/docs-writer.md",
-          "dydo/agents/yara/modes/inquisitor.md",
-          "dydo/agents/yara/modes/judge.md",
-          "dydo/agents/yara/modes/orchestrator.md",
-          "dydo/agents/yara/modes/planner.md",
-          "dydo/agents/yara/modes/reviewer.md",
-          "dydo/agents/yara/modes/test-writer.md"
+        "dydo/agents/emma/workflow.md": [
+          "dydo/agents/emma/modes/inquisitor.md",
+          "dydo/agents/emma/modes/judge.md",
+          "dydo/agents/emma/modes/orchestrator.md",
+          "dydo/agents/emma/modes/test-writer.md"
         ],
-        "dydo/agents/xavier/workflow.md": [
-          "dydo/agents/xavier/modes/co-thinker.md",
-          "dydo/agents/xavier/modes/code-writer.md",
-          "dydo/agents/xavier/modes/docs-writer.md",
-          "dydo/agents/xavier/modes/inquisitor.md",
-          "dydo/agents/xavier/modes/judge.md",
-          "dydo/agents/xavier/modes/orchestrator.md",
-          "dydo/agents/xavier/modes/planner.md",
-          "dydo/agents/xavier/modes/reviewer.md",
-          "dydo/agents/xavier/modes/test-writer.md"
+        "dydo/guides/customizing-roles.md": [
+          "dydo/understand/roles-and-permissions.md",
+          "dydo/reference/roles/_index.md",
+          "dydo/reference/dydo-commands.md"
         ],
         "dydo/agents/iris/workflow.md": [
           "dydo/agents/iris/modes/inquisitor.md",
@@ -997,126 +1023,109 @@
           "dydo/project/decisions/010-baton-passing-and-review-enforcement.md",
           "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md"
         ],
-        "dydo/agents/wendy/workflow.md": [
-          "dydo/agents/wendy/modes/co-thinker.md",
-          "dydo/agents/wendy/modes/code-writer.md",
-          "dydo/agents/wendy/modes/docs-writer.md",
-          "dydo/agents/wendy/modes/inquisitor.md",
-          "dydo/agents/wendy/modes/judge.md",
-          "dydo/agents/wendy/modes/orchestrator.md",
-          "dydo/agents/wendy/modes/planner.md",
-          "dydo/agents/wendy/modes/reviewer.md",
-          "dydo/agents/wendy/modes/test-writer.md"
+        "dydo/guides/getting-started.md": [
+          "dydo/reference/about-dynadocs.md",
+          "dydo/reference/configuration.md",
+          "dydo/guides/troubleshooting.md"
         ],
-        "dydo/agents/victor/workflow.md": [
-          "dydo/agents/victor/modes/co-thinker.md",
-          "dydo/agents/victor/modes/code-writer.md",
-          "dydo/agents/victor/modes/docs-writer.md",
-          "dydo/agents/victor/modes/inquisitor.md",
-          "dydo/agents/victor/modes/judge.md",
-          "dydo/agents/victor/modes/orchestrator.md",
-          "dydo/agents/victor/modes/planner.md",
-          "dydo/agents/victor/modes/reviewer.md",
-          "dydo/agents/victor/modes/test-writer.md"
+        "dydo/guides/testing-strategy.md": [
+          "dydo/project/decisions/009-crap-per-method-metric.md",
+          "dydo/reference/coverage-tools.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/uma/workflow.md": [
-          "dydo/agents/uma/modes/co-thinker.md",
-          "dydo/agents/uma/modes/code-writer.md",
-          "dydo/agents/uma/modes/docs-writer.md",
-          "dydo/agents/uma/modes/inquisitor.md",
-          "dydo/agents/uma/modes/judge.md",
-          "dydo/agents/uma/modes/orchestrator.md",
-          "dydo/agents/uma/modes/planner.md",
-          "dydo/agents/uma/modes/reviewer.md",
-          "dydo/agents/uma/modes/test-writer.md"
+        "dydo/guides/troubleshooting.md": [
+          "dydo/understand/guard-system.md",
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/reference/dydo-commands.md"
         ],
-        "dydo/agents/tara/workflow.md": [
-          "dydo/agents/tara/modes/co-thinker.md",
-          "dydo/agents/tara/modes/code-writer.md",
-          "dydo/agents/tara/modes/docs-writer.md",
-          "dydo/agents/tara/modes/inquisitor.md",
-          "dydo/agents/tara/modes/judge.md",
-          "dydo/agents/tara/modes/orchestrator.md",
-          "dydo/agents/tara/modes/planner.md",
-          "dydo/agents/tara/modes/reviewer.md",
-          "dydo/agents/tara/modes/test-writer.md"
+        "dydo/guides/writing-good-briefs.md": [
+          "dydo/understand/dispatch-and-messaging.md",
+          "dydo/understand/multi-agent-workflows.md",
+          "dydo/reference/dydo-commands.md"
         ],
-        "dydo/agents/sam/workflow.md": [
-          "dydo/agents/sam/modes/co-thinker.md",
-          "dydo/agents/sam/modes/code-writer.md",
-          "dydo/agents/sam/modes/docs-writer.md",
-          "dydo/agents/sam/modes/inquisitor.md",
-          "dydo/agents/sam/modes/judge.md",
-          "dydo/agents/sam/modes/orchestrator.md",
-          "dydo/agents/sam/modes/planner.md",
-          "dydo/agents/sam/modes/reviewer.md",
-          "dydo/agents/sam/modes/test-writer.md"
+        "dydo/project/docs-upgrade-sprint.md": [
+          "dydo/project/v1.3-release.md",
+          "dydo/reference/writing-docs.md",
+          "dydo/guides/how-to-use-docs.md"
         ],
-        "dydo/agents/rose/workflow.md": [
-          "dydo/agents/rose/modes/co-thinker.md",
-          "dydo/agents/rose/modes/code-writer.md",
-          "dydo/agents/rose/modes/docs-writer.md",
-          "dydo/agents/rose/modes/inquisitor.md",
-          "dydo/agents/rose/modes/judge.md",
-          "dydo/agents/rose/modes/orchestrator.md",
-          "dydo/agents/rose/modes/planner.md",
-          "dydo/agents/rose/modes/reviewer.md",
-          "dydo/agents/rose/modes/test-writer.md"
+        "dydo/reference/audit-system.md": [
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/reference/dydo-commands.md",
+          "dydo/reference/configuration.md"
         ],
-        "dydo/agents/quinn/workflow.md": [
-          "dydo/agents/quinn/modes/co-thinker.md",
-          "dydo/agents/quinn/modes/code-writer.md",
-          "dydo/agents/quinn/modes/docs-writer.md",
-          "dydo/agents/quinn/modes/inquisitor.md",
-          "dydo/agents/quinn/modes/judge.md",
-          "dydo/agents/quinn/modes/orchestrator.md",
-          "dydo/agents/quinn/modes/planner.md",
-          "dydo/agents/quinn/modes/reviewer.md",
-          "dydo/agents/quinn/modes/test-writer.md"
+        "dydo/reference/configuration.md": [
+          "dydo/understand/roles-and-permissions.md",
+          "dydo/guides/getting-started.md",
+          "dydo/reference/dydo-commands.md",
+          "dydo/understand/templates-and-customization.md",
+          "dydo/understand/guard-system.md"
         ],
-        "dydo/agents/paul/workflow.md": [
-          "dydo/agents/paul/modes/co-thinker.md",
-          "dydo/agents/paul/modes/code-writer.md",
-          "dydo/agents/paul/modes/docs-writer.md",
-          "dydo/agents/paul/modes/inquisitor.md",
-          "dydo/agents/paul/modes/judge.md",
-          "dydo/agents/paul/modes/orchestrator.md",
-          "dydo/agents/paul/modes/planner.md",
-          "dydo/agents/paul/modes/reviewer.md",
-          "dydo/agents/paul/modes/test-writer.md"
+        "dydo/reference/coverage-tools.md": [
+          "dydo/guides/testing-strategy.md",
+          "dydo/project/decisions/009-crap-per-method-metric.md"
         ],
-        "dydo/agents/olivia/workflow.md": [
-          "dydo/agents/olivia/modes/co-thinker.md",
-          "dydo/agents/olivia/modes/code-writer.md",
-          "dydo/agents/olivia/modes/docs-writer.md",
-          "dydo/agents/olivia/modes/inquisitor.md",
-          "dydo/agents/olivia/modes/judge.md",
-          "dydo/agents/olivia/modes/orchestrator.md",
-          "dydo/agents/olivia/modes/planner.md",
-          "dydo/agents/olivia/modes/reviewer.md",
-          "dydo/agents/olivia/modes/test-writer.md"
+        "dydo/reference/guardrails.md": [
+          "dydo/understand/guard-system.md",
+          "dydo/understand/roles-and-permissions.md",
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/reference/configuration.md",
+          "dydo/guides/troubleshooting.md",
+          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
         ],
-        "dydo/agents/leo/workflow.md": [
-          "dydo/agents/leo/modes/co-thinker.md",
-          "dydo/agents/leo/modes/code-writer.md",
-          "dydo/agents/leo/modes/docs-writer.md",
-          "dydo/agents/leo/modes/inquisitor.md",
-          "dydo/agents/leo/modes/judge.md",
-          "dydo/agents/leo/modes/orchestrator.md",
-          "dydo/agents/leo/modes/planner.md",
-          "dydo/agents/leo/modes/reviewer.md",
-          "dydo/agents/leo/modes/test-writer.md"
+        "dydo/understand/agent-lifecycle.md": [
+          "dydo/understand/dispatch-and-messaging.md",
+          "dydo/understand/guard-system.md",
+          "dydo/understand/roles-and-permissions.md"
         ],
-        "dydo/agents/henry/workflow.md": [
-          "dydo/agents/henry/modes/co-thinker.md",
-          "dydo/agents/henry/modes/code-writer.md",
-          "dydo/agents/henry/modes/docs-writer.md",
-          "dydo/agents/henry/modes/inquisitor.md",
-          "dydo/agents/henry/modes/judge.md",
-          "dydo/agents/henry/modes/orchestrator.md",
-          "dydo/agents/henry/modes/planner.md",
-          "dydo/agents/henry/modes/reviewer.md",
-          "dydo/agents/henry/modes/test-writer.md"
+        "dydo/understand/dispatch-and-messaging.md": [
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/understand/multi-agent-workflows.md",
+          "dydo/reference/dydo-commands.md"
+        ],
+        "dydo/understand/documentation-model.md": [
+          "dydo/reference/writing-docs.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/understand/templates-and-customization.md"
+        ],
+        "dydo/understand/guard-system.md": [
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/reference/guardrails.md",
+          "dydo/understand/roles-and-permissions.md"
+        ],
+        "dydo/understand/multi-agent-workflows.md": [
+          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
+          "dydo/understand/dispatch-and-messaging.md",
+          "dydo/understand/agent-lifecycle.md"
+        ],
+        "dydo/understand/roles-and-permissions.md": [
+          "dydo/understand/guard-system.md",
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/reference/guardrails.md"
+        ],
+        "dydo/understand/task-lifecycle.md": [
+          "dydo/understand/agent-lifecycle.md",
+          "dydo/understand/dispatch-and-messaging.md",
+          "dydo/reference/dydo-commands.md"
+        ],
+        "dydo/understand/templates-and-customization.md": [
+          "dydo/understand/documentation-model.md",
+          "dydo/reference/dydo-commands.md",
+          "dydo/reference/configuration.md"
+        ],
+        "dydo/agents/charlie/draft-mode-inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/draft-mode-judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/draft-mode-test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
         "dydo/agents/grace/workflow.md": [
           "dydo/agents/grace/modes/co-thinker.md",
@@ -1129,124 +1138,163 @@
           "dydo/agents/grace/modes/reviewer.md",
           "dydo/agents/grace/modes/test-writer.md"
         ],
-        "dydo/agents/charlie/draft-mode-test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/henry/workflow.md": [
+          "dydo/agents/henry/modes/co-thinker.md",
+          "dydo/agents/henry/modes/code-writer.md",
+          "dydo/agents/henry/modes/docs-writer.md",
+          "dydo/agents/henry/modes/inquisitor.md",
+          "dydo/agents/henry/modes/judge.md",
+          "dydo/agents/henry/modes/orchestrator.md",
+          "dydo/agents/henry/modes/planner.md",
+          "dydo/agents/henry/modes/reviewer.md",
+          "dydo/agents/henry/modes/test-writer.md"
         ],
-        "dydo/agents/charlie/draft-mode-judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/leo/workflow.md": [
+          "dydo/agents/leo/modes/co-thinker.md",
+          "dydo/agents/leo/modes/code-writer.md",
+          "dydo/agents/leo/modes/docs-writer.md",
+          "dydo/agents/leo/modes/inquisitor.md",
+          "dydo/agents/leo/modes/judge.md",
+          "dydo/agents/leo/modes/orchestrator.md",
+          "dydo/agents/leo/modes/planner.md",
+          "dydo/agents/leo/modes/reviewer.md",
+          "dydo/agents/leo/modes/test-writer.md"
         ],
-        "dydo/agents/charlie/draft-mode-inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/olivia/workflow.md": [
+          "dydo/agents/olivia/modes/co-thinker.md",
+          "dydo/agents/olivia/modes/code-writer.md",
+          "dydo/agents/olivia/modes/docs-writer.md",
+          "dydo/agents/olivia/modes/inquisitor.md",
+          "dydo/agents/olivia/modes/judge.md",
+          "dydo/agents/olivia/modes/orchestrator.md",
+          "dydo/agents/olivia/modes/planner.md",
+          "dydo/agents/olivia/modes/reviewer.md",
+          "dydo/agents/olivia/modes/test-writer.md"
         ],
-        "dydo/understand/templates-and-customization.md": [
-          "dydo/understand/documentation-model.md",
-          "dydo/reference/dydo-commands.md",
-          "dydo/reference/configuration.md"
+        "dydo/agents/paul/workflow.md": [
+          "dydo/agents/paul/modes/co-thinker.md",
+          "dydo/agents/paul/modes/code-writer.md",
+          "dydo/agents/paul/modes/docs-writer.md",
+          "dydo/agents/paul/modes/inquisitor.md",
+          "dydo/agents/paul/modes/judge.md",
+          "dydo/agents/paul/modes/orchestrator.md",
+          "dydo/agents/paul/modes/planner.md",
+          "dydo/agents/paul/modes/reviewer.md",
+          "dydo/agents/paul/modes/test-writer.md"
         ],
-        "dydo/understand/task-lifecycle.md": [
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/understand/dispatch-and-messaging.md",
-          "dydo/reference/dydo-commands.md"
+        "dydo/agents/quinn/workflow.md": [
+          "dydo/agents/quinn/modes/co-thinker.md",
+          "dydo/agents/quinn/modes/code-writer.md",
+          "dydo/agents/quinn/modes/docs-writer.md",
+          "dydo/agents/quinn/modes/inquisitor.md",
+          "dydo/agents/quinn/modes/judge.md",
+          "dydo/agents/quinn/modes/orchestrator.md",
+          "dydo/agents/quinn/modes/planner.md",
+          "dydo/agents/quinn/modes/reviewer.md",
+          "dydo/agents/quinn/modes/test-writer.md"
         ],
-        "dydo/understand/roles-and-permissions.md": [
-          "dydo/understand/guard-system.md",
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/reference/guardrails.md"
+        "dydo/agents/rose/workflow.md": [
+          "dydo/agents/rose/modes/co-thinker.md",
+          "dydo/agents/rose/modes/code-writer.md",
+          "dydo/agents/rose/modes/docs-writer.md",
+          "dydo/agents/rose/modes/inquisitor.md",
+          "dydo/agents/rose/modes/judge.md",
+          "dydo/agents/rose/modes/orchestrator.md",
+          "dydo/agents/rose/modes/planner.md",
+          "dydo/agents/rose/modes/reviewer.md",
+          "dydo/agents/rose/modes/test-writer.md"
         ],
-        "dydo/understand/multi-agent-workflows.md": [
-          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
-          "dydo/understand/dispatch-and-messaging.md",
-          "dydo/understand/agent-lifecycle.md"
+        "dydo/agents/sam/workflow.md": [
+          "dydo/agents/sam/modes/co-thinker.md",
+          "dydo/agents/sam/modes/code-writer.md",
+          "dydo/agents/sam/modes/docs-writer.md",
+          "dydo/agents/sam/modes/inquisitor.md",
+          "dydo/agents/sam/modes/judge.md",
+          "dydo/agents/sam/modes/orchestrator.md",
+          "dydo/agents/sam/modes/planner.md",
+          "dydo/agents/sam/modes/reviewer.md",
+          "dydo/agents/sam/modes/test-writer.md"
         ],
-        "dydo/understand/guard-system.md": [
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/reference/guardrails.md",
-          "dydo/understand/roles-and-permissions.md"
-        ],
-        "dydo/understand/documentation-model.md": [
-          "dydo/reference/writing-docs.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/understand/templates-and-customization.md"
-        ],
-        "dydo/understand/dispatch-and-messaging.md": [
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/understand/multi-agent-workflows.md",
-          "dydo/reference/dydo-commands.md"
-        ],
-        "dydo/understand/agent-lifecycle.md": [
-          "dydo/understand/dispatch-and-messaging.md",
-          "dydo/understand/guard-system.md",
-          "dydo/understand/roles-and-permissions.md"
-        ],
-        "dydo/reference/guardrails.md": [
-          "dydo/understand/guard-system.md",
-          "dydo/understand/roles-and-permissions.md",
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/reference/configuration.md",
-          "dydo/guides/troubleshooting.md",
-          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
-        ],
-        "dydo/reference/coverage-tools.md": [
-          "dydo/guides/testing-strategy.md",
-          "dydo/project/decisions/009-crap-per-method-metric.md"
-        ],
-        "dydo/reference/configuration.md": [
-          "dydo/understand/roles-and-permissions.md",
-          "dydo/guides/getting-started.md",
-          "dydo/reference/dydo-commands.md",
-          "dydo/understand/templates-and-customization.md",
-          "dydo/understand/guard-system.md"
-        ],
-        "dydo/reference/audit-system.md": [
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/reference/dydo-commands.md",
-          "dydo/reference/configuration.md"
-        ],
-        "dydo/project/docs-upgrade-sprint.md": [
-          "dydo/project/v1.3-release.md",
-          "dydo/reference/writing-docs.md",
-          "dydo/guides/how-to-use-docs.md"
-        ],
-        "dydo/guides/writing-good-briefs.md": [
-          "dydo/understand/dispatch-and-messaging.md",
-          "dydo/understand/multi-agent-workflows.md",
-          "dydo/reference/dydo-commands.md"
-        ],
-        "dydo/guides/troubleshooting.md": [
-          "dydo/understand/guard-system.md",
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/reference/dydo-commands.md"
-        ],
-        "dydo/guides/testing-strategy.md": [
-          "dydo/project/decisions/009-crap-per-method-metric.md",
-          "dydo/reference/coverage-tools.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/guides/getting-started.md": [
-          "dydo/reference/about-dynadocs.md",
-          "dydo/reference/configuration.md",
-          "dydo/guides/troubleshooting.md"
-        ],
-        "dydo/guides/customizing-roles.md": [
-          "dydo/understand/roles-and-permissions.md",
-          "dydo/reference/roles/_index.md",
-          "dydo/reference/dydo-commands.md"
-        ],
-        "dydo/glossary.md": [
-          "dydo/understand/agent-lifecycle.md",
-          "dydo/reference/audit-system.md",
-          "dydo/understand/dispatch-and-messaging.md",
-          "dydo/understand/guard-system.md",
-          "dydo/understand/roles-and-permissions.md"
+        "dydo/agents/tara/workflow.md": [
+          "dydo/agents/tara/modes/co-thinker.md",
+          "dydo/agents/tara/modes/code-writer.md",
+          "dydo/agents/tara/modes/docs-writer.md",
+          "dydo/agents/tara/modes/inquisitor.md",
+          "dydo/agents/tara/modes/judge.md",
+          "dydo/agents/tara/modes/orchestrator.md",
+          "dydo/agents/tara/modes/planner.md",
+          "dydo/agents/tara/modes/reviewer.md",
+          "dydo/agents/tara/modes/test-writer.md"
         ],
         "dydo/project/changelog/2026/_index.md": [
-          "dydo/project/changelog/2026/2026-03-13/_index.md"
+          "dydo/project/changelog/2026/2026-03-13/_index.md",
+          "dydo/project/changelog/2026/2026-03-19/_index.md"
+        ],
+        "dydo/agents/uma/workflow.md": [
+          "dydo/agents/uma/modes/co-thinker.md",
+          "dydo/agents/uma/modes/code-writer.md",
+          "dydo/agents/uma/modes/docs-writer.md",
+          "dydo/agents/uma/modes/inquisitor.md",
+          "dydo/agents/uma/modes/judge.md",
+          "dydo/agents/uma/modes/orchestrator.md",
+          "dydo/agents/uma/modes/planner.md",
+          "dydo/agents/uma/modes/reviewer.md",
+          "dydo/agents/uma/modes/test-writer.md"
+        ],
+        "dydo/agents/victor/workflow.md": [
+          "dydo/agents/victor/modes/co-thinker.md",
+          "dydo/agents/victor/modes/code-writer.md",
+          "dydo/agents/victor/modes/docs-writer.md",
+          "dydo/agents/victor/modes/inquisitor.md",
+          "dydo/agents/victor/modes/judge.md",
+          "dydo/agents/victor/modes/orchestrator.md",
+          "dydo/agents/victor/modes/planner.md",
+          "dydo/agents/victor/modes/reviewer.md",
+          "dydo/agents/victor/modes/test-writer.md"
+        ],
+        "dydo/agents/wendy/workflow.md": [
+          "dydo/agents/wendy/modes/co-thinker.md",
+          "dydo/agents/wendy/modes/code-writer.md",
+          "dydo/agents/wendy/modes/docs-writer.md",
+          "dydo/agents/wendy/modes/inquisitor.md",
+          "dydo/agents/wendy/modes/judge.md",
+          "dydo/agents/wendy/modes/orchestrator.md",
+          "dydo/agents/wendy/modes/planner.md",
+          "dydo/agents/wendy/modes/reviewer.md",
+          "dydo/agents/wendy/modes/test-writer.md"
+        ],
+        "dydo/agents/xavier/workflow.md": [
+          "dydo/agents/xavier/modes/co-thinker.md",
+          "dydo/agents/xavier/modes/code-writer.md",
+          "dydo/agents/xavier/modes/docs-writer.md",
+          "dydo/agents/xavier/modes/inquisitor.md",
+          "dydo/agents/xavier/modes/judge.md",
+          "dydo/agents/xavier/modes/orchestrator.md",
+          "dydo/agents/xavier/modes/planner.md",
+          "dydo/agents/xavier/modes/reviewer.md",
+          "dydo/agents/xavier/modes/test-writer.md"
+        ],
+        "dydo/agents/yara/workflow.md": [
+          "dydo/agents/yara/modes/co-thinker.md",
+          "dydo/agents/yara/modes/code-writer.md",
+          "dydo/agents/yara/modes/docs-writer.md",
+          "dydo/agents/yara/modes/inquisitor.md",
+          "dydo/agents/yara/modes/judge.md",
+          "dydo/agents/yara/modes/orchestrator.md",
+          "dydo/agents/yara/modes/planner.md",
+          "dydo/agents/yara/modes/reviewer.md",
+          "dydo/agents/yara/modes/test-writer.md"
+        ],
+        "dydo/agents/zelda/workflow.md": [
+          "dydo/agents/zelda/modes/co-thinker.md",
+          "dydo/agents/zelda/modes/code-writer.md",
+          "dydo/agents/zelda/modes/docs-writer.md",
+          "dydo/agents/zelda/modes/inquisitor.md",
+          "dydo/agents/zelda/modes/judge.md",
+          "dydo/agents/zelda/modes/orchestrator.md",
+          "dydo/agents/zelda/modes/planner.md",
+          "dydo/agents/zelda/modes/reviewer.md",
+          "dydo/agents/zelda/modes/test-writer.md"
         ],
         "dydo/project/decisions/009-crap-per-method-metric.md": [
           "dydo/understand/architecture.md"
@@ -1273,37 +1321,6 @@
         "dydo/project/issues/_issues.md": [
           "dydo/project/pitfalls/_index.md",
           "dydo/project/tasks/_index.md"
-        ],
-        "dydo/project/tasks/_index.md": [
-          "dydo/project/tasks/baton-passing-docs.md",
-          "dydo/project/tasks/baton-passing-implementation.md",
-          "dydo/project/tasks/docs-batch-a.md",
-          "dydo/project/tasks/docs-batch-b.md",
-          "dydo/project/tasks/docs-batch-c.md",
-          "dydo/project/tasks/docs-batch-d.md",
-          "dydo/project/tasks/docs-structure-planning.md",
-          "dydo/project/tasks/docs-upgrade-sprint.md",
-          "dydo/project/tasks/find-t1-coverage-doc.md",
-          "dydo/project/tasks/fix-test-errors.md",
-          "dydo/project/tasks/gap-check-fix.md",
-          "dydo/project/tasks/gap-check-setup.md",
-          "dydo/project/tasks/git-stash-guard-block.md",
-          "dydo/project/tasks/guard-python-invocation.md",
-          "dydo/project/tasks/guardrails-doc-update.md",
-          "dydo/project/tasks/investigate-last-validation-bug.md",
-          "dydo/project/tasks/orchestrator-worktree-guidance.md",
-          "dydo/project/tasks/role-docs-batch1.md",
-          "dydo/project/tasks/role-docs-batch2.md",
-          "dydo/project/tasks/role-docs-batch3.md",
-          "dydo/project/tasks/t1-coverage-doc.md",
-          "dydo/project/tasks/t1-coverage-gaps.md",
-          "dydo/project/tasks/t1-slice-a.md",
-          "dydo/project/tasks/t1-slice-b.md",
-          "dydo/project/tasks/t1-slice-c.md",
-          "dydo/project/tasks/template-bug-fixes.md",
-          "dydo/project/tasks/template-harmonization.md",
-          "dydo/project/tasks/worktree-implementation.md",
-          "dydo/project/tasks/worktree-workflow-design.md"
         ],
         "dydo/reference/roles/co-thinker.md": [
           "dydo/project/decisions/006-drop-interviewer-role.md",
@@ -1455,6 +1472,24 @@
           "dydo/understand/architecture.md"
         ],
         "dydo/agents/dexter/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/emma/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/emma/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/emma/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/emma/modes/test-writer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
@@ -2291,6 +2326,52 @@
           "dydo/project/changelog/2026/2026-03-13/worktree-merge-enforcement.md",
           "dydo/project/changelog/2026/2026-03-13/worktree-shared-dispatch.md",
           "dydo/project/changelog/2026/2026-03-13/worktree-visualization.md"
+        ],
+        "dydo/project/changelog/2026/2026-03-19/_index.md": [
+          "dydo/project/changelog/2026/2026-03-19/baton-passing-docs.md",
+          "dydo/project/changelog/2026/2026-03-19/baton-passing-implementation.md",
+          "dydo/project/changelog/2026/2026-03-19/ci-test-fix.md",
+          "dydo/project/changelog/2026/2026-03-19/docs-batch-a.md",
+          "dydo/project/changelog/2026/2026-03-19/docs-batch-b.md",
+          "dydo/project/changelog/2026/2026-03-19/docs-batch-c.md",
+          "dydo/project/changelog/2026/2026-03-19/docs-batch-d.md",
+          "dydo/project/changelog/2026/2026-03-19/docs-structure-planning.md",
+          "dydo/project/changelog/2026/2026-03-19/docs-upgrade-sprint.md",
+          "dydo/project/changelog/2026/2026-03-19/find-t1-coverage-doc.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-ci-null-warnings.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-ide-analyzer-errors.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-session-race-condition.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-test-errors.md",
+          "dydo/project/changelog/2026/2026-03-19/gap-check-fix.md",
+          "dydo/project/changelog/2026/2026-03-19/gap-check-setup.md",
+          "dydo/project/changelog/2026/2026-03-19/git-stash-guard-block.md",
+          "dydo/project/changelog/2026/2026-03-19/guard-python-invocation.md",
+          "dydo/project/changelog/2026/2026-03-19/guardrails-doc-update.md",
+          "dydo/project/changelog/2026/2026-03-19/guardrails-h27-entry.md",
+          "dydo/project/changelog/2026/2026-03-19/inquisition-file-coverage.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-last-validation-bug.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-session-files.md",
+          "dydo/project/changelog/2026/2026-03-19/nested-worktrees.md",
+          "dydo/project/changelog/2026/2026-03-19/orchestrator-worktree-guidance.md",
+          "dydo/project/changelog/2026/2026-03-19/planner-nudge-design.md",
+          "dydo/project/changelog/2026/2026-03-19/refine-inquisitor-template.md",
+          "dydo/project/changelog/2026/2026-03-19/requires-dispatch-constraint.md",
+          "dydo/project/changelog/2026/2026-03-19/reviewer-dispatch-constraint.md",
+          "dydo/project/changelog/2026/2026-03-19/role-docs-batch1.md",
+          "dydo/project/changelog/2026/2026-03-19/role-docs-batch2.md",
+          "dydo/project/changelog/2026/2026-03-19/role-docs-batch3.md",
+          "dydo/project/changelog/2026/2026-03-19/session-race-conditions.md",
+          "dydo/project/changelog/2026/2026-03-19/session-race-fix-plan.md",
+          "dydo/project/changelog/2026/2026-03-19/session-race-fix.md",
+          "dydo/project/changelog/2026/2026-03-19/t1-coverage-doc.md",
+          "dydo/project/changelog/2026/2026-03-19/t1-coverage-gaps.md",
+          "dydo/project/changelog/2026/2026-03-19/t1-slice-a.md",
+          "dydo/project/changelog/2026/2026-03-19/t1-slice-b.md",
+          "dydo/project/changelog/2026/2026-03-19/t1-slice-c.md",
+          "dydo/project/changelog/2026/2026-03-19/template-bug-fixes.md",
+          "dydo/project/changelog/2026/2026-03-19/template-harmonization.md",
+          "dydo/project/changelog/2026/2026-03-19/worktree-implementation.md",
+          "dydo/project/changelog/2026/2026-03-19/worktree-workflow-design.md"
         ]
       },
       "doc_links_removed": {
@@ -2315,11 +2396,6 @@
         ],
         "dydo/agents/emma/workflow.md": [
           "dydo/agents/emma/modes/interviewer.md",
-          "dydo/agents/emma/modes/planner.md",
-          "dydo/agents/emma/modes/code-writer.md",
-          "dydo/agents/emma/modes/co-thinker.md",
-          "dydo/agents/emma/modes/reviewer.md",
-          "dydo/agents/emma/modes/docs-writer.md",
           "dydo/agents/emma/modes/tester.md"
         ],
         "dydo/agents/frank/workflow.md": [
@@ -2395,36 +2471,10 @@
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/emma/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/emma/modes/code-writer.md"
-        ],
-        "dydo/agents/emma/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/emma/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
         "dydo/agents/emma/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
           "dydo/agents/emma/modes/planner.md"
-        ],
-        "dydo/agents/emma/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/emma/modes/code-writer.md"
-        ],
-        "dydo/agents/emma/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
         ],
         "dydo/agents/emma/modes/tester.md": [
           "dydo/understand/about.md",

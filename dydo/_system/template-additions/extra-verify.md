@@ -1,11 +1,12 @@
-5. **Coverage gate** — Run the gap check to verify tier compliance
+5. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py --skip-tests
 ```
 
-Tests were already run in step 4. This analyzes the existing coverage data.
+Tests already ran. This checks the existing coverage data against tier thresholds.
 
-- If it fails: fix coverage gaps before dispatching for review
-- If a module is newly below threshold: either add tests or (if the tier is wrong) discuss with the human before changing it
-- Use `--inspect <pattern>` to drill into specific modules
+Exit code 0: you're clear.
+Non-zero: you have coverage regressions. Use `--inspect <pattern>` to see what's failing, then add or improve tests until it passes. If a tier assignment seems wrong, ask the human — don't adjust tiers yourself.
+
+Do not proceed to Complete until gap_check passes.

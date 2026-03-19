@@ -58,6 +58,9 @@ public static partial class GuardCommand
             return Execute(cliAction, cliPath, cliCommand);
         });
 
+        command.Subcommands.Add(GuardLiftCommand.CreateLiftCommand());
+        command.Subcommands.Add(GuardLiftCommand.CreateRestoreCommand());
+
         return command;
     }
 
@@ -133,11 +136,11 @@ public static partial class GuardCommand
         if (ctx.HasCliArgs && string.IsNullOrEmpty(sessionId))
             sessionId = registry.GetSessionContext();
 
-        var filePath = ctx.FilePath;
+        var filePath = PathUtils.NormalizeWorktreePath(ctx.FilePath) ?? ctx.FilePath;
         var action = ctx.Action;
         var bashCommand = ctx.BashCommand;
         var toolName = ctx.ToolName;
-        var searchPath = ctx.SearchPath;
+        var searchPath = PathUtils.NormalizeWorktreePath(ctx.SearchPath) ?? ctx.SearchPath;
         var runInBackground = ctx.RunInBackground;
 
         // Load off-limits patterns
@@ -239,6 +242,17 @@ public static partial class GuardCommand
             });
             WriteMustReadError(agent);
             return ExitCodes.ToolError;
+        }
+
+        // Guard lift: skip RBAC if lifted
+        if (agent != null && IsGuardLifted(agent.Name))
+        {
+            var liftedEventType = ActionAuditMap.GetValueOrDefault(action ?? "", AuditEventType.Edit);
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = liftedEventType, Path = filePath, Tool = toolName, Lifted = true
+            });
+            return ExitCodes.Success;
         }
 
         // Check role permissions
@@ -463,6 +477,22 @@ public static partial class GuardCommand
 
         HandleClaimSessionStorage(command, sessionId, registry);
 
+        if (IsHumanOnlyDydoCommand(command))
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent != null)
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked, Tool = "bash",
+                    Command = TruncateCommand(command),
+                    BlockReason = "Human-only command"
+                });
+                Console.Error.WriteLine("BLOCKED: This command is human-only. Agents cannot run it.");
+                return ExitCodes.ToolError;
+            }
+        }
+
         if (IsDydoWaitCommand(command) && runInBackground != true)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
@@ -665,6 +695,9 @@ public static partial class GuardCommand
             var agent = registry.GetCurrentAgent(sessionId);
             if (agent != null && !string.IsNullOrEmpty(agent.Role))
             {
+                if (IsGuardLifted(agent.Name))
+                    return null;
+
                 var actionName = op.Type.ToString().ToLowerInvariant();
                 if (!registry.IsPathAllowed(sessionId, op.Path, actionName, out var error))
                 {
@@ -1024,6 +1057,14 @@ public static partial class GuardCommand
     }
 
     /// <summary>
+    /// Check if a command is a human-only dydo command (task approve/reject, roles reset, guard lift/restore).
+    /// </summary>
+    private static bool IsHumanOnlyDydoCommand(string command)
+    {
+        return HumanOnlyDydoCommandRegex().IsMatch(command);
+    }
+
+    /// <summary>
     /// Check if a command is 'dydo wait' in any form (allowed during pending state).
     /// </summary>
     private static bool IsDydoWaitAnyForm(string command)
@@ -1094,6 +1135,10 @@ public static partial class GuardCommand
 
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+merge(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitMergeRegex();
+
+    // Matches human-only dydo subcommands: task approve, task reject, roles reset, guard lift, guard restore
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:task\s+(?:approve|reject)|roles\s+reset|guard\s+(?:lift|restore))\b", RegexOptions.IgnoreCase)]
+    private static partial Regex HumanOnlyDydoCommandRegex();
 
     /// <summary>
     /// Check if a command invokes dydo indirectly via npx, dotnet, shell, or python.
@@ -1168,7 +1213,7 @@ public static partial class GuardCommand
     /// </summary>
     private static string NormalizeForMustReadComparison(string filePath)
     {
-        var normalized = filePath.Replace('\\', '/');
+        var normalized = PathUtils.NormalizeWorktreePath(filePath)?.Replace('\\', '/') ?? filePath.Replace('\\', '/');
         var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
         return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
     }
@@ -1252,6 +1297,12 @@ public static partial class GuardCommand
             // Audit logging should never break the guard
             // Silently ignore errors
         }
+    }
+
+    private static bool IsGuardLifted(string agentName)
+    {
+        var service = new GuardLiftService();
+        return service.IsLifted(agentName);
     }
 
     /// <summary>

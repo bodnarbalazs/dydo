@@ -10,13 +10,27 @@
   ],
   "templateFile": "mode-reviewer.template.md",
   "denialHint": "Reviewer role can only edit own workspace.",
+  "canOrchestrate": false,
   "constraints": [
     {
       "type": "role-transition",
       "fromRole": "code-writer",
+      "targetRole": null,
       "requiredRoles": null,
       "maxCount": null,
+      "onlyWhenDispatched": false,
       "message": "Agent {agent} was code-writer on task \u0027{task}\u0027 and cannot be reviewer on the same task. Dispatch to a different agent for review."
+    },
+    {
+      "type": "dispatch-restriction",
+      "fromRole": null,
+      "targetRole": "code-writer",
+      "requiredRoles": [
+        "code-writer"
+      ],
+      "maxCount": null,
+      "onlyWhenDispatched": true,
+      "message": "Reviewers can only dispatch a code-writer when dispatched by a code-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \u0022Review findings: ...\u0022"
     }
   ]
 }

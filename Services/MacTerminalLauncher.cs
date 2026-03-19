@@ -4,6 +4,10 @@ using System.Diagnostics;
 
 public static class MacTerminalLauncher
 {
+    // Disable focus event reporting that Claude Code leaves enabled on exit
+    // Double-escaped: \\\" → \" in output → " after AppleScript; \\\\ → \\ → \ after AppleScript
+    private const string TerminalReset = "; printf \\\"\\\\e[?1004l\\\"";
+
     public static string GetArguments(string agentName, string? workingDirectory = null,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
@@ -24,7 +28,7 @@ public static class MacTerminalLauncher
 
         var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
-        return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{postClaude}\"'";
+        return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}{postClaude}\"'";
     }
 
     public static void Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
@@ -46,7 +50,7 @@ public static class MacTerminalLauncher
             wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
-        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"";
+        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}";
         var postCheck = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
         string script;

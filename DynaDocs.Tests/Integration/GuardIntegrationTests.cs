@@ -996,6 +996,64 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
+    #region H28: Human-Only Commands
+
+    [Theory]
+    [InlineData("dydo task approve foo")]
+    [InlineData("dydo task reject foo --notes \"bad\"")]
+    [InlineData("dydo roles reset")]
+    [InlineData("dydo guard lift Brian")]
+    [InlineData("dydo guard restore Brian")]
+    public async Task Guard_HumanOnlyCommand_AgentClaimed_Blocks(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command.Replace("\"", "\\\"") + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("human-only");
+    }
+
+    [Theory]
+    [InlineData("dydo task approve foo")]
+    [InlineData("dydo task reject foo")]
+    [InlineData("dydo roles reset")]
+    [InlineData("dydo guard lift Brian")]
+    [InlineData("dydo guard restore Brian")]
+    public async Task Guard_HumanOnlyCommand_NoAgent_Allows(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        // No agent claimed — caller is human
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command.Replace("\"", "\\\"") + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("dydo task list")]
+    [InlineData("dydo task create foo")]
+    [InlineData("dydo agent status")]
+    [InlineData("dydo inbox show")]
+    public async Task Guard_NonHumanOnlyDydoCommand_AgentClaimed_Allows(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region Blocked Tools
 
     [Fact]

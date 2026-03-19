@@ -548,56 +548,51 @@
         "dydo/project/_index.md": [
           "dydo/project/v1.3-release.md"
         ],
-        "dydo/agents/henry/modes/code-writer.md": [
+        "dydo/agents/emma/draft-mode-inquisitor.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
           "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/henry/modes/co-thinker.md": [
+        "dydo/agents/emma/draft-mode-judge.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/henry/modes/code-writer.md"
+          "dydo/guides/coding-standards.md"
         ],
         "dydo/project/decisions/_index.md": [
           "dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
           "dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
           "dydo/project/decisions/006-drop-interviewer-role.md"
         ],
-        "dydo/agents/grace/modes/tester.md": [
+        "dydo/agents/emma/draft-mode-orchestrator.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/grace/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/agents/grace/workflow.md": [
+          "dydo/agents/grace/modes/interviewer.md",
+          "dydo/agents/grace/modes/planner.md",
+          "dydo/agents/grace/modes/code-writer.md",
+          "dydo/agents/grace/modes/co-thinker.md",
+          "dydo/agents/grace/modes/reviewer.md",
+          "dydo/agents/grace/modes/docs-writer.md",
+          "dydo/agents/grace/modes/tester.md"
         ],
-        "dydo/agents/grace/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/grace/modes/code-writer.md"
+        "dydo/agents/henry/workflow.md": [
+          "dydo/agents/henry/modes/interviewer.md",
+          "dydo/agents/henry/modes/planner.md",
+          "dydo/agents/henry/modes/code-writer.md",
+          "dydo/agents/henry/modes/co-thinker.md",
+          "dydo/agents/henry/modes/reviewer.md",
+          "dydo/agents/henry/modes/docs-writer.md",
+          "dydo/agents/henry/modes/tester.md"
         ],
-        "dydo/agents/grace/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/grace/modes/planner.md"
-        ],
-        "dydo/agents/grace/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/grace/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/grace/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/grace/modes/code-writer.md"
+        "dydo/agents/leo/workflow.md": [
+          "dydo/agents/leo/modes/interviewer.md",
+          "dydo/agents/leo/modes/planner.md",
+          "dydo/agents/leo/modes/code-writer.md",
+          "dydo/agents/leo/modes/co-thinker.md",
+          "dydo/agents/leo/modes/reviewer.md",
+          "dydo/agents/leo/modes/docs-writer.md",
+          "dydo/agents/leo/modes/tester.md"
         ],
         "dydo/project/tasks/_index.md": [
           "dydo/project/tasks/auto-close-fix.md",
@@ -617,43 +612,48 @@
           "dydo/project/tasks/v1.3-workflow-role-revamp-2.md",
           "dydo/project/tasks/v1.3-workflow-role-revamp.md"
         ],
-        "dydo/agents/leo/workflow.md": [
-          "dydo/agents/leo/modes/interviewer.md",
-          "dydo/agents/leo/modes/planner.md",
-          "dydo/agents/leo/modes/code-writer.md",
-          "dydo/agents/leo/modes/co-thinker.md",
-          "dydo/agents/leo/modes/reviewer.md",
-          "dydo/agents/leo/modes/docs-writer.md",
-          "dydo/agents/leo/modes/tester.md"
-        ],
-        "dydo/agents/henry/workflow.md": [
-          "dydo/agents/henry/modes/interviewer.md",
-          "dydo/agents/henry/modes/planner.md",
-          "dydo/agents/henry/modes/code-writer.md",
-          "dydo/agents/henry/modes/co-thinker.md",
-          "dydo/agents/henry/modes/reviewer.md",
-          "dydo/agents/henry/modes/docs-writer.md",
-          "dydo/agents/henry/modes/tester.md"
-        ],
-        "dydo/agents/grace/workflow.md": [
-          "dydo/agents/grace/modes/interviewer.md",
-          "dydo/agents/grace/modes/planner.md",
-          "dydo/agents/grace/modes/code-writer.md",
-          "dydo/agents/grace/modes/co-thinker.md",
-          "dydo/agents/grace/modes/reviewer.md",
-          "dydo/agents/grace/modes/docs-writer.md",
-          "dydo/agents/grace/modes/tester.md"
-        ],
-        "dydo/agents/emma/draft-mode-orchestrator.md": [
+        "dydo/agents/grace/modes/co-thinker.md": [
           "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/grace/modes/code-writer.md"
         ],
-        "dydo/agents/emma/draft-mode-judge.md": [
+        "dydo/agents/grace/modes/code-writer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
           "dydo/guides/coding-standards.md"
         ],
-        "dydo/agents/emma/draft-mode-inquisitor.md": [
+        "dydo/agents/grace/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/grace/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/grace/modes/planner.md"
+        ],
+        "dydo/agents/grace/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/grace/modes/code-writer.md"
+        ],
+        "dydo/agents/grace/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/grace/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/henry/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/henry/modes/code-writer.md"
+        ],
+        "dydo/agents/henry/modes/code-writer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
           "dydo/guides/coding-standards.md"

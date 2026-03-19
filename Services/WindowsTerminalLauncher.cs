@@ -4,6 +4,9 @@ using System.Diagnostics;
 
 public static class WindowsTerminalLauncher
 {
+    // Disable focus event reporting that Claude Code leaves enabled on exit
+    private const string TerminalReset = "; [Console]::Write([char]27 + '[?1004l')";
+
     public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
@@ -33,7 +36,9 @@ public static class WindowsTerminalLauncher
                        $"Set-Location {wtDir}; " +
                        $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
                        $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
-                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+                       $"New-Item -ItemType Directory -Force -Path .claude | Out-Null; " +
+                       $"if (Test-Path '{escapedRoot}/.claude/settings.local.json') {{ Copy-Item '{escapedRoot}/.claude/settings.local.json' .claude/settings.local.json -Force; }} " +
+                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                        $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
             }
 
@@ -45,7 +50,9 @@ public static class WindowsTerminalLauncher
                    $"Set-Location {wtDirRel}; " +
                    $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
-                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+                   $"New-Item -ItemType Directory -Force -Path .claude | Out-Null; " +
+                   $"$_settings = Join-Path $_wt_root.Path '.claude/settings.local.json'; if (Test-Path $_settings) {{ Copy-Item $_settings .claude/settings.local.json -Force; }} " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
@@ -53,11 +60,11 @@ public static class WindowsTerminalLauncher
         if (worktreeId == null && cleanupWorktreeId != null && mainProjectRoot != null)
         {
             var escapedRoot = mainProjectRoot.Replace("'", "''");
-            return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+            return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
         }
 
-        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck}\"";
+        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
     }
 
     public static void Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,

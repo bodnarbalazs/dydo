@@ -195,11 +195,12 @@ public class WatchdogServiceTests : IDisposable
         var statePath = Path.Combine(agentDir, "state.md");
         File.WriteAllText(statePath, "---\nagent: Adele\nstatus: free\nauto-close: true\n---\n");
 
-        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(statePath);
+        var (autoClose, isFree, agentName, windowId) = WatchdogService.ParseStateForWatchdog(statePath);
 
         Assert.True(autoClose);
         Assert.True(isFree);
         Assert.Equal("Adele", agentName);
+        Assert.Null(windowId);
     }
 
     [Fact]
@@ -210,7 +211,7 @@ public class WatchdogServiceTests : IDisposable
         var statePath = Path.Combine(agentDir, "state.md");
         File.WriteAllText(statePath, "---\nagent: Bob\nstatus: working\nauto-close: false\n---\n");
 
-        var (autoClose, isFree, _) = WatchdogService.ParseStateForWatchdog(statePath);
+        var (autoClose, isFree, _, _) = WatchdogService.ParseStateForWatchdog(statePath);
 
         Assert.False(autoClose);
         Assert.False(isFree);
@@ -222,11 +223,12 @@ public class WatchdogServiceTests : IDisposable
         var path = Path.Combine(_testDir, "no-front.md");
         File.WriteAllText(path, "just plain text");
 
-        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+        var (autoClose, isFree, agentName, windowId) = WatchdogService.ParseStateForWatchdog(path);
 
         Assert.False(autoClose);
         Assert.False(isFree);
         Assert.Null(agentName);
+        Assert.Null(windowId);
     }
 
     [Fact]
@@ -235,11 +237,12 @@ public class WatchdogServiceTests : IDisposable
         var path = Path.Combine(_testDir, "unclosed.md");
         File.WriteAllText(path, "---\nagent: X\nno closing");
 
-        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+        var (autoClose, isFree, agentName, windowId) = WatchdogService.ParseStateForWatchdog(path);
 
         Assert.False(autoClose);
         Assert.False(isFree);
         Assert.Null(agentName);
+        Assert.Null(windowId);
     }
 
     [Fact]
@@ -247,11 +250,12 @@ public class WatchdogServiceTests : IDisposable
     {
         var path = Path.Combine(_testDir, "does-not-exist.md");
 
-        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+        var (autoClose, isFree, agentName, windowId) = WatchdogService.ParseStateForWatchdog(path);
 
         Assert.False(autoClose);
         Assert.False(isFree);
         Assert.Null(agentName);
+        Assert.Null(windowId);
     }
 
     [Fact]
@@ -260,11 +264,79 @@ public class WatchdogServiceTests : IDisposable
         var path = Path.Combine(_testDir, "nocolon.md");
         File.WriteAllText(path, "---\nno-colon-here\nagent: Test\nstatus: free\nauto-close: true\n---\n");
 
-        var (autoClose, isFree, agentName) = WatchdogService.ParseStateForWatchdog(path);
+        var (autoClose, isFree, agentName, _) = WatchdogService.ParseStateForWatchdog(path);
 
         Assert.True(autoClose);
         Assert.True(isFree);
         Assert.Equal("Test", agentName);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_ReturnsWindowId()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Adele\nstatus: free\nauto-close: true\nwindow-id: b98d8485\n---\n");
+
+        var (_, _, _, windowId) = WatchdogService.ParseStateForWatchdog(statePath);
+
+        Assert.Equal("b98d8485", windowId);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_NullWindowId_ReturnsNull()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Adele\nstatus: free\nauto-close: true\nwindow-id: null\n---\n");
+
+        var (_, _, _, windowId) = WatchdogService.ParseStateForWatchdog(statePath);
+
+        Assert.Null(windowId);
+    }
+
+    [Fact]
+    public void ParseStateForWatchdog_EmptyWindowId_ReturnsNull()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Adele\nstatus: free\nauto-close: true\nwindow-id: \n---\n");
+
+        var (_, _, _, windowId) = WatchdogService.ParseStateForWatchdog(statePath);
+
+        Assert.Null(windowId);
+    }
+
+    [Fact]
+    public void ClearAutoClose_SetsAutoCloseToFalse()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Adele\nstatus: free\nauto-close: true\nwindow-id: abc123\n---\n");
+
+        WatchdogService.ClearAutoClose(statePath);
+
+        var content = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: false", content);
+        Assert.DoesNotContain("auto-close: true", content);
+    }
+
+    [Fact]
+    public void ClearAutoClose_NoOpWhenAlreadyFalse()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Bob");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        var originalContent = "---\nagent: Bob\nstatus: free\nauto-close: false\n---\n";
+        File.WriteAllText(statePath, originalContent);
+
+        WatchdogService.ClearAutoClose(statePath);
+
+        Assert.Equal(originalContent, File.ReadAllText(statePath));
     }
 
     [Fact]

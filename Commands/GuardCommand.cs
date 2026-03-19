@@ -592,6 +592,23 @@ public static partial class GuardCommand
             }
         }
 
+        // git merge must go through dydo worktree merge when in a worktree
+        if (GitMergeRegex().IsMatch(command))
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (agent != null && registry.GetWorktreeId(agent.Name) != null)
+            {
+                const string reason = "Use dydo worktree merge to merge in worktrees.";
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked, Tool = "bash",
+                    Command = TruncateCommand(command), BlockReason = reason
+                });
+                Console.Error.WriteLine($"BLOCKED: {reason}");
+                return ExitCodes.ToolError;
+            }
+        }
+
         var analysis = bashAnalyzer.Analyze(command);
 
         foreach (var warning in analysis.Warnings)
@@ -1074,6 +1091,9 @@ public static partial class GuardCommand
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+stash(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitStashRegex();
+
+    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+merge(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
+    private static partial Regex GitMergeRegex();
 
     /// <summary>
     /// Check if a command invokes dydo indirectly via npx, dotnet, shell, or python.

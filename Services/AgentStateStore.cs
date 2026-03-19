@@ -75,6 +75,7 @@ public class AgentStateStore
             status: {state.Status.ToString().ToLowerInvariant()}
             assigned: {state.AssignedHuman ?? _getHumanForAgent(agentName) ?? "unassigned"}
             dispatched-by: {state.DispatchedBy ?? "null"}
+            dispatched-by-role: {state.DispatchedByRole ?? "null"}
             window-id: {state.WindowId ?? "null"}
             auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
@@ -156,6 +157,7 @@ public class AgentStateStore
         ["status"] = (s, v) => s.Status = ParseStatus(v),
         ["assigned"] = (s, v) => s.AssignedHuman = v is "unassigned" or "null" ? null : v,
         ["dispatched-by"] = (s, v) => s.DispatchedBy = NullIfNull(v),
+        ["dispatched-by-role"] = (s, v) => s.DispatchedByRole = NullIfNull(v),
         ["window-id"] = (s, v) => s.WindowId = NullIfNull(v),
         ["auto-close"] = (s, v) => s.AutoClose = v == "true",
         ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },

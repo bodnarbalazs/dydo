@@ -46,6 +46,14 @@ public class RoleDefinitionService : IRoleDefinitionService
                         Type = "role-transition",
                         FromRole = "code-writer",
                         Message = "Agent {agent} was code-writer on task '{task}' and cannot be reviewer on the same task. Dispatch to a different agent for review."
+                    },
+                    new RoleConstraint
+                    {
+                        Type = "dispatch-restriction",
+                        TargetRole = "code-writer",
+                        RequiredRoles = ["code-writer"],
+                        OnlyWhenDispatched = true,
+                        Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
                     }
                 ]
             },
@@ -241,6 +249,12 @@ public class RoleDefinitionService : IRoleDefinitionService
             case "requires-dispatch":
                 if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
                     errors.Add("Constraint 'requires-dispatch' requires 'requiredRoles'.");
+                break;
+            case "dispatch-restriction":
+                if (string.IsNullOrWhiteSpace(constraint.TargetRole))
+                    errors.Add("Constraint 'dispatch-restriction' requires 'targetRole'.");
+                if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
+                    errors.Add("Constraint 'dispatch-restriction' requires 'requiredRoles'.");
                 break;
             default:
                 errors.Add($"Unknown constraint type: '{constraint.Type}'.");

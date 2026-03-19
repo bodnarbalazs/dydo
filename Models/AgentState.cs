@@ -31,6 +31,11 @@ public class AgentState
     public string? DispatchedBy { get; set; }
 
     /// <summary>
+    /// Role of the agent that dispatched this agent. Used by dispatch-restriction constraints.
+    /// </summary>
+    public string? DispatchedByRole { get; set; }
+
+    /// <summary>
     /// GUID-based window identifier for Windows Terminal routing.
     /// Survives release so the watchdog can correlate processes to windows.
     /// </summary>

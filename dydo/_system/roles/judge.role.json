@@ -3,7 +3,8 @@
   "description": "Arbitrates disputes between agents.",
   "base": true,
   "writablePaths": [
-    "dydo/agents/{self}/**"
+    "dydo/agents/{self}/**",
+    "dydo/project/issues/**"
   ],
   "readOnlyPaths": [
     "{source}",

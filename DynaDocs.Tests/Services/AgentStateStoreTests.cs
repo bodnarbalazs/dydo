@@ -187,6 +187,43 @@ public class AgentStateStoreTests : IDisposable
 
     #endregion
 
+    #region DispatchedByRole
+
+    [Fact]
+    public void DispatchedByRole_RoundTrips()
+    {
+        _store.UpdateAgentState("Alice", s =>
+        {
+            s.Role = "reviewer";
+            s.Task = "test-task";
+            s.Status = AgentStatus.Working;
+            s.DispatchedBy = "Bob";
+            s.DispatchedByRole = "code-writer";
+        }, AlwaysValid);
+
+        var state = _store.GetAgentState("Alice", AlwaysValid);
+
+        Assert.Equal("code-writer", state!.DispatchedByRole);
+        Assert.Equal("Bob", state.DispatchedBy);
+    }
+
+    [Fact]
+    public void DispatchedByRole_NullRoundTrips()
+    {
+        _store.UpdateAgentState("Alice", s =>
+        {
+            s.Role = "reviewer";
+            s.DispatchedBy = "Bob";
+            s.DispatchedByRole = null;
+        }, AlwaysValid);
+
+        var state = _store.GetAgentState("Alice", AlwaysValid);
+
+        Assert.Null(state!.DispatchedByRole);
+    }
+
+    #endregion
+
     #region Static parse utilities
 
     [Theory]

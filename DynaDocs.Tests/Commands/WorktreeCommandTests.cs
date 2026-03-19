@@ -453,6 +453,177 @@ public class WorktreeCommandTests : IDisposable
         File.WriteAllText(Path.Combine(agentsDir, ".session-context"), "test-session");
     }
 
+    [Fact]
+    public void RemoveMarkers_IncludesWorktreeRoot()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), "/some/root");
+
+        WorktreeCommand.RemoveMarkers(workspace);
+
+        Assert.False(File.Exists(Path.Combine(workspace, ".worktree-root")));
+    }
+
+    [Fact]
+    public void CountWorktreeReferences_CountsChildWorktrees()
+    {
+        var worktreeId = "parent-task";
+
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), worktreeId);
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree"), $"{worktreeId}/child-task");
+
+        var count = WorktreeCommand.CountWorktreeReferences(_registry, worktreeId);
+        Assert.Equal(2, count);
+    }
+
+    [Fact]
+    public void CountWorktreeReferences_DoesNotCountUnrelatedWorktrees()
+    {
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), "parent-task");
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree"), "other-task");
+
+        var count = WorktreeCommand.CountWorktreeReferences(_registry, "parent-task");
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public void CountChildWorktrees_CountsOnlyChildren()
+    {
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), "parent-task");
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree"), "parent-task/child-task");
+
+        var count = WorktreeCommand.CountChildWorktrees(_registry, "parent-task");
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public void CountChildWorktrees_DoesNotCountParentItself()
+    {
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), "parent-task");
+
+        var count = WorktreeCommand.CountChildWorktrees(_registry, "parent-task");
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public void CountChildWorktrees_CountsWorktreeHoldChildren()
+    {
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-hold"), "parent-task/child-task");
+
+        var count = WorktreeCommand.CountChildWorktrees(_registry, "parent-task");
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public void Cleanup_BlockedWhenChildWorktreesActive()
+    {
+        var worktreeId = "parent-task";
+
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), worktreeId);
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree"), $"{worktreeId}/child-task");
+
+        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("child worktree", stderr);
+    }
+
+    [Fact]
+    public void Merge_BlockedWhenChildWorktreesActive()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/parent-task");
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree"), "parent-task/child-task");
+
+        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("child worktree", stderr);
+    }
+
+    [Fact]
+    public void ResolveWorktreePath_HierarchicalId()
+    {
+        var worktreeId = "domain-A/auth-service";
+        var worktreePath = Path.Combine(_testDir, "dydo/_system/.local/worktrees", "domain-A", "auth-service");
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+
+        var resolved = WorktreeCommand.ResolveWorktreePath(_registry, worktreeId);
+        Assert.Equal(worktreePath, resolved);
+    }
+
+    [Fact]
+    public void Cleanup_DeletesWorktreeBranch_WithEncodedSuffix()
+    {
+        var worktreeId = "parent/child";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", "parent", "child");
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/parent.+.child"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_DecodesWorktreeIdFromBranchSuffix()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/parent.+.child");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var (_, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(true, _registry));
+
+            // The finalize message should show the decoded worktree ID
+            Assert.Contains("parent/child", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker

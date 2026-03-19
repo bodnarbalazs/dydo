@@ -577,6 +577,42 @@ public partial class AgentRegistry : IAgentRegistry
         return null;
     }
 
+    private string? GetDispatchedFromRole(string agentName, string task)
+    {
+        var inboxPath = Path.Combine(GetAgentWorkspace(agentName), "inbox");
+        if (!Directory.Exists(inboxPath)) return null;
+
+        var sanitizedTask = PathUtils.SanitizeForFilename(task);
+        var files = Directory.GetFiles(inboxPath, $"*-{sanitizedTask}.md");
+        if (files.Length == 0) return null;
+
+        try
+        {
+            var content = File.ReadAllText(files[0]);
+            if (!content.StartsWith("---")) return null;
+
+            var endIndex = content.IndexOf("---", 3);
+            if (endIndex < 0) return null;
+
+            var yaml = content[3..endIndex];
+            foreach (var line in yaml.Split('\n'))
+            {
+                var colonIndex = line.IndexOf(':');
+                if (colonIndex < 0) continue;
+
+                var key = line[..colonIndex].Trim();
+                if (key == "from_role")
+                    return line[(colonIndex + 1)..].Trim();
+            }
+        }
+        catch
+        {
+            // Malformed inbox file — don't block role setting
+        }
+
+        return null;
+    }
+
     public bool SetRole(string? sessionId, string role, string? task, out string error)
     {
         error = string.Empty;
@@ -609,6 +645,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId);
         var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
+        var dispatchedFromRole = !string.IsNullOrEmpty(task) ? GetDispatchedFromRole(agent.Name, task) : null;
 
         UpdateAgentState(agent.Name, s =>
         {
@@ -618,6 +655,7 @@ public partial class AgentRegistry : IAgentRegistry
             s.ReadOnlyPaths = readOnly;
             s.UnreadMustReads = mustReads;
             s.DispatchedBy = dispatchedFrom;
+            s.DispatchedByRole = dispatchedFromRole;
 
             if (!string.IsNullOrEmpty(task))
             {

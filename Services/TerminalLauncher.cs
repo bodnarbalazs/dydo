@@ -30,8 +30,20 @@ public class TerminalLauncher
         return $"claude \"{prompt}\"";
     }
 
-    public static string GenerateWorktreeId(string agentName) =>
-        $"{agentName}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+    public static string GenerateWorktreeId(string taskName, string? parentWorktreeId = null)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(taskName, @"^[a-zA-Z0-9_.\-]+$"))
+            throw new ArgumentException($"Task name contains unsafe characters (allowed: a-zA-Z0-9_.-): {taskName}", nameof(taskName));
+        if (taskName.Contains(".+."))
+            throw new ArgumentException($"Task name cannot contain '.+.' sequence (reserved for branch encoding): {taskName}", nameof(taskName));
+        return parentWorktreeId != null ? $"{parentWorktreeId}/{taskName}" : taskName;
+    }
+
+    public static string WorktreeIdToBranchSuffix(string worktreeId) =>
+        worktreeId.Replace("/", ".+.");
+
+    public static string BranchSuffixToWorktreeId(string suffix) =>
+        suffix.Replace(".+.", "/");
 
     public static readonly TerminalConfig[] LinuxTerminals =
     [
@@ -58,11 +70,24 @@ public class TerminalLauncher
             $"-e 'tell app \"Terminal\" to do script \"{CdPrefix(wd)}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"\"'"),
     ];
 
-    internal static string WorktreeSetupScript(string worktreeId) =>
-        $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees && git worktree prune && " +
-        $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{worktreeId} && " +
-        $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
-        $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && ";
+    internal static string WorktreeSetupScript(string worktreeId, string? mainProjectRoot = null)
+    {
+        var branchSuffix = WorktreeIdToBranchSuffix(worktreeId);
+
+        if (mainProjectRoot != null)
+        {
+            var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
+            return $"mkdir -p '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && git worktree prune && " +
+                   $"git worktree add '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' -b worktree/{branchSuffix} && " +
+                   $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
+                   $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && ";
+        }
+
+        return $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees/{worktreeId} && git worktree prune && " +
+               $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{branchSuffix} && " +
+               $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
+               $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && ";
+    }
 
     internal static string WorktreeCleanupScript(string worktreeId, string agentName) =>
         $"dydo worktree cleanup {worktreeId} --agent {agentName}";

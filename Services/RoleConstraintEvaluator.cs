@@ -91,6 +91,9 @@ public class RoleConstraintEvaluator
             case "requires-dispatch":
                 return true;
 
+            case "dispatch-restriction":
+                return true;
+
             default:
                 reason = $"Unknown constraint type: '{constraint.Type}'.";
                 return false;
@@ -126,11 +129,47 @@ public class RoleConstraintEvaluator
         return true;
     }
 
-    internal static string SubstituteConstraintVars(string message, string agentName, string task, string? currentRole)
+    /// <summary>
+    /// Checks if an agent can dispatch a target role, evaluating dispatch-restriction constraints.
+    /// </summary>
+    public bool CanDispatch(string senderName, string senderRole, string targetRole,
+        string task, out string reason)
+    {
+        reason = string.Empty;
+
+        if (!_roleDefinitions.TryGetValue(senderRole, out var roleDef))
+            return true;
+
+        var state = _getAgentState(senderName);
+        var isDispatched = state?.DispatchedBy != null;
+
+        foreach (var constraint in roleDef.Constraints)
+        {
+            if (constraint.Type != "dispatch-restriction") continue;
+            if (constraint.TargetRole == null ||
+                !string.Equals(constraint.TargetRole, targetRole, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (constraint.OnlyWhenDispatched && !isDispatched) continue;
+
+            if (constraint.RequiredRoles == null ||
+                !constraint.RequiredRoles.Contains(state?.DispatchedByRole ?? "", StringComparer.OrdinalIgnoreCase))
+            {
+                reason = SubstituteConstraintVars(constraint.Message, senderName, task, senderRole, state?.DispatchedBy);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    internal static string SubstituteConstraintVars(string message, string agentName, string task,
+        string? currentRole, string? dispatcher = null)
     {
         return message
             .Replace("{agent}", agentName)
             .Replace("{task}", task)
-            .Replace("{current_role}", currentRole ?? "unknown role");
+            .Replace("{current_role}", currentRole ?? "unknown role")
+            .Replace("{dispatcher}", dispatcher ?? "unknown");
     }
 }

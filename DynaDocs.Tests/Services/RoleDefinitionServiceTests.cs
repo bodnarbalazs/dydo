@@ -503,6 +503,74 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
+    public void ValidateConstraint_DispatchRestriction_RequiresTargetRole()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint
+            {
+                Type = "dispatch-restriction",
+                RequiredRoles = ["code-writer"],
+                Message = "test"
+            }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("targetRole"));
+    }
+
+    [Fact]
+    public void ValidateConstraint_DispatchRestriction_RequiresRequiredRoles()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint
+            {
+                Type = "dispatch-restriction",
+                TargetRole = "code-writer",
+                Message = "test"
+            }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("requiredRoles"));
+    }
+
+    [Fact]
+    public void ValidateConstraint_DispatchRestriction_ValidPasses()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint
+            {
+                Type = "dispatch-restriction",
+                TargetRole = "code-writer",
+                RequiredRoles = ["code-writer"],
+                OnlyWhenDispatched = true,
+                Message = "test"
+            }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.True(valid);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
     public void ValidateRoleDefinition_RequiresDispatchEmptyRequiredRoles_Fails()
     {
         var role = new RoleDefinition

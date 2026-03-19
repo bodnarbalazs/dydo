@@ -176,6 +176,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Credential theft indicators
         (ShadowFileAccessRegex(), "Shadow file access attempt"),
         (PasswdModifyRegex(), "Password file modification attempt"),
+
+        // Worktree lifecycle — must go through dydo
+        (GitWorktreeAddRegex(), "Use dydo dispatch --worktree to create worktrees"),
+        (GitWorktreeRemoveRegex(), "Use dydo worktree cleanup to remove worktrees"),
     ];
 
     // Bypass detection patterns
@@ -251,6 +255,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.Compiled)]
     private static partial Regex PasswdModifyRegex();
+
+    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+worktree\s+add(?:\s|$|;|&&|\|\|)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex GitWorktreeAddRegex();
+
+    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+worktree\s+remove(?:\s|$|;|&&|\|\|)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex GitWorktreeRemoveRegex();
 
     // Coaching: detect needless cd+command compounds
     [GeneratedRegex(@"^\s*cd\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]

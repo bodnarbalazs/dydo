@@ -4,6 +4,7 @@ public class InboxItem
 {
     public required string Id { get; init; }
     public required string From { get; init; }
+    public string? FromRole { get; init; }
     public required string Role { get; init; }
     public required string Task { get; init; }
     public DateTime Received { get; init; }

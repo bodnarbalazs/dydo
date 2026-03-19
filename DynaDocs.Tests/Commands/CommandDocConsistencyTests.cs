@@ -455,7 +455,7 @@ public class CommandDocConsistencyTests
         var match = boundary.Match(content, afterHeading);
         var end = match.Success ? match.Index : content.Length;
 
-        return content[idx..end].TrimEnd();
+        return content[idx..end].ReplaceLineEndings("\n").TrimEnd();
     }
 
     /// <summary>

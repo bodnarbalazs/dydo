@@ -1041,8 +1041,9 @@ public class DispatchCommandTests : IntegrationTestBase
         var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
         Assert.True(File.Exists(markerPath), "Worktree marker file should exist");
 
-        var content = File.ReadAllText(markerPath);
-        Assert.StartsWith("Adele-", content);
+        var content = File.ReadAllText(markerPath).Trim();
+        // Worktree ID is now the task name (not agent-name + timestamp)
+        Assert.Equal("my-task", content);
     }
 
     [Fact]

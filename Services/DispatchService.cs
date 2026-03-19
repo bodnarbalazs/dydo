@@ -39,6 +39,16 @@ public static class DispatchService
             return ExitCodes.ToolError;
         }
 
+        if (sender != null && !string.IsNullOrEmpty(sender.Role))
+        {
+            var dispatchError = CheckDispatchRestriction(registry, sender, role, task);
+            if (dispatchError != null)
+            {
+                ConsoleOutput.WriteError(dispatchError);
+                return ExitCodes.ToolError;
+            }
+        }
+
         var origin = GetOriginForTask(registry, sender, task) ?? senderName;
 
         // Baton-passing: if sender has a reply-pending marker for this task, inherit it
@@ -127,16 +137,19 @@ public static class DispatchService
         string? cleanupWorktreeId = null;
         string? mainProjectRoot = null;
 
-        if (senderWorktreeId != null && !needsMerge)
+        if (senderWorktreeId != null && !needsMerge && worktree)
         {
-            if (worktree)
-                Console.WriteLine("  Warning: --worktree ignored — inheriting parent's worktree instead.");
-
+            // Create child worktree (nested dispatch with --worktree from within a worktree)
+            (worktreeId, mainProjectRoot) = SetupChildWorktree(registry, targetAgentName, senderName, senderWorktreeId, task);
+        }
+        else if (senderWorktreeId != null && !needsMerge)
+        {
+            // Inherit parent worktree
             InheritWorktree(registry, targetAgentName, senderName, senderWorktreeId);
             workingDirOverride = GetWorktreePath(registry, senderName);
             worktreeId = null;
             cleanupWorktreeId = senderWorktreeId;
-            mainProjectRoot = PathUtils.FindProjectRoot();
+            mainProjectRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot();
         }
         else if (senderWorktreeId != null && needsMerge)
         {
@@ -147,7 +160,7 @@ public static class DispatchService
         }
         else
         {
-            worktreeId = SetupWorktree(registry, targetAgentName, worktree);
+            (worktreeId, mainProjectRoot) = SetupWorktree(registry, targetAgentName, worktree, task);
         }
 
         var (windowName, launchInTab) = ConfigureWindowSettings(registry, useTab, useNewWindow);
@@ -162,10 +175,12 @@ public static class DispatchService
     private static string WriteInboxItemToAgent(AgentRegistry registry, string targetAgentName, string senderName,
         string origin, string role, string task, string brief, string? files, bool escalate, bool wait, bool inheritReply = false)
     {
+        var senderState = registry.GetAgentState(senderName);
         var inboxItem = new InboxItem
         {
             Id = Guid.NewGuid().ToString("N")[..8],
             From = senderName,
+            FromRole = senderState?.Role,
             Origin = origin,
             Role = role,
             Task = task,
@@ -213,12 +228,13 @@ public static class DispatchService
             Console.WriteLine($"  Escalated: yes");
     }
 
-    private static string? SetupWorktree(AgentRegistry registry, string targetAgentName, bool worktree)
+    private static (string? worktreeId, string? mainProjectRoot) SetupWorktree(
+        AgentRegistry registry, string targetAgentName, bool worktree, string task)
     {
         if (!worktree)
-            return null;
+            return (null, null);
 
-        var worktreeId = TerminalLauncher.GenerateWorktreeId(targetAgentName);
+        var worktreeId = TerminalLauncher.GenerateWorktreeId(task);
         var workspace = registry.GetAgentWorkspace(targetAgentName);
         Directory.CreateDirectory(workspace);
         File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
@@ -230,7 +246,31 @@ public static class DispatchService
         var baseBranch = GetCurrentGitBranch() ?? "master";
         File.WriteAllText(Path.Combine(workspace, ".worktree-base"), baseBranch);
 
-        return worktreeId;
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), projectRoot);
+
+        return (worktreeId, projectRoot);
+    }
+
+    private static (string worktreeId, string mainProjectRoot) SetupChildWorktree(
+        AgentRegistry registry, string targetAgentName, string senderName, string senderWorktreeId, string task)
+    {
+        var parentWorktreeRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot()!;
+
+        var worktreeId = TerminalLauncher.GenerateWorktreeId(task, senderWorktreeId);
+        var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
+        Directory.CreateDirectory(targetWorkspace);
+
+        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree"), worktreeId);
+
+        var worktreePath = Path.GetFullPath(Path.Combine(parentWorktreeRoot, "dydo", "_system", ".local", "worktrees", worktreeId));
+        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-path"), worktreePath);
+
+        var parentBranchSuffix = TerminalLauncher.WorktreeIdToBranchSuffix(senderWorktreeId);
+        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-base"), $"worktree/{parentBranchSuffix}");
+
+        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-root"), parentWorktreeRoot);
+
+        return (worktreeId, parentWorktreeRoot);
     }
 
     internal static string? GetCurrentGitBranch()
@@ -278,12 +318,19 @@ public static class DispatchService
         Directory.CreateDirectory(targetWorkspace);
         File.WriteAllText(Path.Combine(targetWorkspace, ".worktree"), worktreeId);
 
-        foreach (var marker in new[] { ".worktree-path", ".worktree-base" })
+        foreach (var marker in new[] { ".worktree-path", ".worktree-base", ".worktree-root" })
         {
             var src = Path.Combine(senderWorkspace, marker);
             if (File.Exists(src))
                 File.Copy(src, Path.Combine(targetWorkspace, marker), overwrite: true);
         }
+    }
+
+    private static string? GetWorktreeRoot(AgentRegistry registry, string agentName)
+    {
+        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".worktree-root");
+        if (!File.Exists(marker)) return null;
+        return File.ReadAllText(marker).Trim();
     }
 
     private static bool HasNeedsMergeMarker(AgentRegistry registry, string agentName)
@@ -371,6 +418,22 @@ public static class DispatchService
         return null;
     }
 
+    private static string? CheckDispatchRestriction(AgentRegistry registry, AgentState sender, string targetRole, string task)
+    {
+        var senderRoleDef = registry.GetRoleDefinition(sender.Role!);
+        if (senderRoleDef == null) return null;
+
+        var evaluator = new RoleConstraintEvaluator(
+            new Dictionary<string, RoleDefinition> { [sender.Role!] = senderRoleDef },
+            [],
+            name => registry.GetAgentState(name));
+
+        if (!evaluator.CanDispatch(sender.Name, sender.Role!, targetRole, task, out var reason))
+            return reason;
+
+        return null;
+    }
+
     private static void PrintReleaseHint(AgentRegistry registry, AgentState? sender, string senderName)
     {
         if (sender == null || string.Equals(sender.Role, "co-thinker", StringComparison.OrdinalIgnoreCase))
@@ -419,6 +482,10 @@ public static class DispatchService
             ? $"\n## Files\n\n{string.Join("\n", item.Files.Select(f => $"- {f}"))}"
             : "";
 
+        var fromRoleYaml = !string.IsNullOrEmpty(item.FromRole)
+            ? $"\nfrom_role: {item.FromRole}"
+            : "";
+
         var originYaml = !string.IsNullOrEmpty(item.Origin)
             ? $"\norigin: {item.Origin}"
             : "";
@@ -434,7 +501,7 @@ public static class DispatchService
         var content = $"""
             ---
             id: {item.Id}
-            from: {item.From}
+            from: {item.From}{fromRoleYaml}
             role: {item.Role}
             task: {item.Task}
             received: {item.Received:o}{originYaml}{escalationYaml}{replyRequiredYaml}

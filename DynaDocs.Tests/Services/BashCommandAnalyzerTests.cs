@@ -355,6 +355,34 @@ public class BashCommandAnalyzerTests
         Assert.True(isDangerous, $"Expected dangerous: {command}");
     }
 
+    [Theory]
+    [InlineData("git worktree add my-worktree")]
+    [InlineData("git worktree add ./path -b branch")]
+    [InlineData("echo x && git worktree add foo")]
+    public void CheckDangerousPatterns_DetectsGitWorktreeAdd(string command)
+    {
+        var (isDangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+        Assert.True(isDangerous, $"Expected dangerous: {command}");
+        Assert.Contains("dydo dispatch --worktree", reason);
+    }
+
+    [Theory]
+    [InlineData("git worktree remove my-worktree")]
+    [InlineData("git worktree remove --force path")]
+    public void CheckDangerousPatterns_DetectsGitWorktreeRemove(string command)
+    {
+        var (isDangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+        Assert.True(isDangerous, $"Expected dangerous: {command}");
+        Assert.Contains("dydo worktree cleanup", reason);
+    }
+
+    [Fact]
+    public void CheckDangerousPatterns_AllowsGitWorktreeList()
+    {
+        var (isDangerous, _) = _analyzer.CheckDangerousPatterns("git worktree list");
+        Assert.False(isDangerous);
+    }
+
     #endregion
 
     #region Bypass Detection (Warnings)

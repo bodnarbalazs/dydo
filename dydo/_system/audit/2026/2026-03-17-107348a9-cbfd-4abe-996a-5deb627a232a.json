@@ -733,6 +733,109 @@
       "event": "Write",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-orchestrator.template.md",
       "tool": "write"
+    },
+    {
+      "ts": "2026-03-18T20:59:52.5818966Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-18T21:02:30.2602735Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-18T22:04:30.9254762Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-18T22:04:37.9591862Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-18T22:04:54.5454211Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\brief-reviewer-dispatch-constraint.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-18T22:08:51.8843569Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-18T22:08:56.6172947Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-18T22:09:00.9169584Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-18T22:09:05.2053657Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\InboxItem.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-18T22:19:33.5638974Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-planner.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-18T22:19:48.2656441Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-planner.template.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-18T22:26:15.6072281Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-code-writer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-18T22:26:25.5699428Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-code-writer.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-18T22:26:41.0529632Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-code-writer.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-18T22:26:55.1348919Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-code-writer.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-19T11:59:24.4922699Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-code-writer.template.md",
+      "tool": "edit",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T11:59:42.7850291Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-code-writer.template.md",
+      "tool": "edit"
     }
   ],
   "snapshot": {

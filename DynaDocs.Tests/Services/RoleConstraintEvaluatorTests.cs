@@ -318,6 +318,162 @@ public class RoleConstraintEvaluatorTests
 
     #endregion
 
+    #region CanDispatch — dispatch-restriction
+
+    [Fact]
+    public void CanDispatch_BlocksWhenDispatchedByWrongRole()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = ["code-writer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Reviewers can only dispatch code-writer when dispatched by code-writer.\n  dydo msg --to {dispatcher} --subject {task} --body \"...\""
+                }
+            ])
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "orchestrator";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        var result = evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out var reason);
+
+        Assert.False(result);
+        Assert.Contains("code-writer", reason);
+    }
+
+    [Fact]
+    public void CanDispatch_AllowsWhenDispatchedByCorrectRole()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = ["code-writer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Blocked."
+                }
+            ])
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "code-writer";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        Assert.True(evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanDispatch_SkipsWhenNotDispatched()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = ["code-writer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Blocked."
+                }
+            ])
+        };
+        // Human-started reviewer — no DispatchedBy
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        Assert.True(evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanDispatch_AllowsUnconstrainedTargetRole()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = ["code-writer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Blocked."
+                }
+            ])
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "orchestrator";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        // Dispatching docs-writer (not code-writer) — no matching constraint
+        Assert.True(evaluator.CanDispatch("Alice", "reviewer", "docs-writer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanDispatch_NoConstraintsOnRole_ReturnsTrue()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer")
+        };
+        var state = MakeState("Alice", role: "code-writer", task: "task1");
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        Assert.True(evaluator.CanDispatch("Alice", "code-writer", "reviewer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanDispatch_MessageSubstitution()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = ["code-writer"],
+                    OnlyWhenDispatched = true,
+                    Message = "Agent {agent} on {task}: msg to {dispatcher}"
+                }
+            ])
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "fix-bug");
+        state.DispatchedBy = "Charlie";
+        state.DispatchedByRole = "orchestrator";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        evaluator.CanDispatch("Alice", "reviewer", "code-writer", "fix-bug", out var reason);
+
+        Assert.Contains("Alice", reason);
+        Assert.Contains("fix-bug", reason);
+        Assert.Contains("Charlie", reason);
+    }
+
+    #endregion
+
     #region CanRelease
 
     [Fact]

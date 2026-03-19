@@ -1,370 +1,192 @@
 {
-  "session": "3d995754-1f5e-48dc-9adf-1cde75c994c5",
+  "session": "d0f1cd1c-b978-4cea-81ca-7e7797c80ade",
   "agent": "Dexter",
   "human": "balazs",
-  "started": "2026-03-18T20:23:28.2973181Z",
-  "git_head": "b131678",
+  "started": "2026-03-18T23:09:46.0920322Z",
+  "git_head": "e15c3fa",
   "events": [
     {
-      "ts": "2026-03-18T20:23:28.2966075Z",
+      "ts": "2026-03-18T23:09:46.09143Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:23:32.5227489Z",
+      "ts": "2026-03-18T23:09:50.0910362Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:23:38.6250723Z",
+      "ts": "2026-03-18T23:09:54.9668009Z",
       "event": "Claim",
       "agent": "Dexter"
     },
     {
-      "ts": "2026-03-18T20:23:47.9275329Z",
-      "event": "Blocked",
-      "tool": "glob",
-      "reason": "No role set"
-    },
-    {
-      "ts": "2026-03-18T20:23:51.81241Z",
+      "ts": "2026-03-18T23:10:05.2172961Z",
       "event": "Role",
-      "role": "co-thinker",
+      "role": "reviewer",
       "task": "nested-worktrees"
     },
     {
-      "ts": "2026-03-18T20:23:55.2711391Z",
+      "ts": "2026-03-18T23:10:08.936348Z",
       "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:23:56.1918335Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\modes\\co-thinker.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\modes\\reviewer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:00.3877685Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\d32a8d38-nested-worktrees.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:24:00.8349275Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:24:01.060798Z",
+      "ts": "2026-03-18T23:10:14.0068578Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:16.8852301Z",
+      "ts": "2026-03-18T23:10:14.4470432Z",
       "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-18T20:24:18.7357724Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:24:19.2045311Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:24:19.2703399Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:24:19.301864Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:24:21.1307774Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:21.2259959Z",
+      "ts": "2026-03-18T23:10:14.913195Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\nested-worktrees.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:21.6125599Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
-      "tool": "read"
+      "ts": "2026-03-18T23:10:28.976925Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Services/TerminalLauncher.cs"
     },
     {
-      "ts": "2026-03-18T20:24:21.653143Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs",
-      "tool": "read"
+      "ts": "2026-03-18T23:10:29.1356883Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Templates/mode-reviewer.template.md"
     },
     {
-      "ts": "2026-03-18T20:24:21.8421691Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs",
-      "tool": "read"
+      "ts": "2026-03-18T23:10:30.2587573Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- DynaDocs.Tests/ | head -300"
     },
     {
-      "ts": "2026-03-18T20:24:23.8571983Z",
+      "ts": "2026-03-18T23:10:34.6848311Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- DynaDocs.Tests/ | wc -l"
+    },
+    {
+      "ts": "2026-03-18T23:10:41.4461248Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:25.7528377Z",
+      "ts": "2026-03-18T23:10:42.310151Z",
       "event": "Read",
-      "tool": "grep"
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:26.0981116Z",
-      "event": "Read",
-      "tool": "grep"
+      "ts": "2026-03-18T23:10:42.8006326Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- DynaDocs.Tests/ | tail -n \u002B301"
     },
     {
-      "ts": "2026-03-18T20:24:26.229822Z",
-      "event": "Read",
-      "tool": "grep"
+      "ts": "2026-03-18T23:10:50.0521245Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Services/DispatchService.cs"
     },
     {
-      "ts": "2026-03-18T20:24:28.1847179Z",
-      "event": "Read",
-      "tool": "grep"
+      "ts": "2026-03-18T23:10:50.5230544Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Commands/WorktreeCommand.cs"
     },
     {
-      "ts": "2026-03-18T20:24:29.9548397Z",
+      "ts": "2026-03-18T23:10:50.7255377Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-18T23:10:56.4074839Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Models/ Services/BashCommandAnalyzer.cs Services/RoleConstraintEvaluator.cs Services/Rol..."
+    },
+    {
+      "ts": "2026-03-18T23:10:57.1616194Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Services/WindowsTerminalLauncher.cs Services/LinuxTerminalLauncher.cs Services/MacTermin..."
+    },
+    {
+      "ts": "2026-03-18T23:11:03.1889248Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff -- Templates/mode-planner.template.md Templates/mode-code-writer.template.md dydo/_system/r..."
+    },
+    {
+      "ts": "2026-03-18T23:11:11.8066709Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --verbosity quiet 2\u003E\u00261 | tail -20"
+    },
+    {
+      "ts": "2026-03-18T23:12:58.5643912Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --filter \u0022Merge_BlockedWhenChildWorktreesActive\u0022 --verbosity normal 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-18T23:13:06.8077059Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test --verbosity quiet 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-03-18T23:14:55.2513547Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T11:51:00.089588Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git stash \u0026\u0026 python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -25",
+      "reason": "git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."
+    },
+    {
+      "ts": "2026-03-19T11:51:06.2170022Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --baseline e15c3fa 2\u003E\u00261 | head -30"
+    },
+    {
+      "ts": "2026-03-19T11:52:46.3321666Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --detail 2\u003E\u00261 | head -50"
+    },
+    {
+      "ts": "2026-03-19T11:54:32.5013816Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-03-18T20:24:31.754265Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\ReviewCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:24:34.0247505Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorktreeDispatchTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:24:36.6018234Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorktreeDispatchTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:24:38.2632834Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:24:40.1554887Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\worktree-implementation.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:24:43.3166691Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:57:46.2868936Z",
-      "event": "Role",
-      "role": "planner",
-      "task": "nested-worktrees"
-    },
-    {
-      "ts": "2026-03-18T20:57:49.3022454Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\modes\\planner.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:57:54.2090835Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:57:54.663168Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:57:55.0477777Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:57:58.5238598Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:57:58.9797555Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:57:59.029659Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:58:08.2208904Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:58:09.0558497Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:58:12.7333028Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils\\PathUtils.Discovery.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:58:13.9139966Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:58:18.6356906Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:58:21.7762023Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\BashCommandAnalyzer.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:58:22.368871Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:58:28.7860071Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:58:34.0277568Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-18T20:58:39.2717713Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T20:58:48.5930749Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-18T20:58:48.7098629Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/nested-worktrees.md\u0022 2\u003E/dev/null || ..."
-    },
-    {
-      "ts": "2026-03-18T21:00:16.8237262Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-18T21:44:49.5999886Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-18T21:45:04.9373546Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:47:16.3975074Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:47:36.8915382Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:47:52.4031875Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:48:03.5114657Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:48:09.717318Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:50:09.6050816Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-nested-worktrees.md",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-18T21:50:23.4261348Z",
+      "ts": "2026-03-19T11:55:46.939448Z",
       "event": "Release",
       "agent": "Dexter"
     }
   ],
   "snapshot": {
-    "git_commit": "b131678c0a9fed655e0189a9d794e37053b0a01c",
+    "git_commit": "e15c3fa35932e4e1ed4f41f8dcda20655bcff2a2",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -745,7 +567,21 @@
       "dydo/_system/audit/2026/2026-03-17-aa4f2f96-5c6d-426b-ac7d-7552b44aadef.json",
       "dydo/_system/audit/2026/2026-03-18-0466bef7-2fd1-4bc9-82b4-7ebe1a5b6fe0.json",
       "dydo/_system/audit/2026/2026-03-18-059f866d-4f15-4f9c-99ae-20bbf9b9c78c.json",
+      "dydo/_system/audit/2026/2026-03-18-0893bfe0-3fa2-4e3b-83e9-36edfc2fc40a.json",
+      "dydo/_system/audit/2026/2026-03-18-0ac73b52-8a95-437c-b0dd-966f7d7135c7.json",
+      "dydo/_system/audit/2026/2026-03-18-0c4ec4c4-af68-4833-96aa-349e9e01ea3e.json",
+      "dydo/_system/audit/2026/2026-03-18-38b22428-43ba-4cae-a0cb-e88b9c812475.json",
+      "dydo/_system/audit/2026/2026-03-18-3d995754-1f5e-48dc-9adf-1cde75c994c5.json",
+      "dydo/_system/audit/2026/2026-03-18-52a9aa08-b2d3-4aff-8eb4-eb83b1f4123c.json",
       "dydo/_system/audit/2026/2026-03-18-6fb24795-19aa-4562-95a5-5f848df9ad46.json",
+      "dydo/_system/audit/2026/2026-03-18-bbe7992f-e107-494c-a0b4-4cf2e79d10a5.json",
+      "dydo/_system/audit/2026/2026-03-18-dcde8074-754b-44ee-9208-0c05331ea254.json",
+      "dydo/_system/audit/2026/2026-03-18-e44a2b7e-84ef-4b93-94ef-13456e4fd130.json",
+      "dydo/_system/audit/2026/2026-03-18-e9b8a1c0-f037-4021-8292-c6a35bae3155.json",
+      "dydo/_system/audit/2026/2026-03-18-f11c3dac-54f5-49e1-ac06-b746d3c683b2.json",
+      "dydo/_system/audit/2026/2026-03-18-f4c189f4-4d14-4946-893c-8f95e3b32ec5.json",
+      "dydo/_system/audit/2026/2026-03-18-f6625ff3-2a78-4812-be9a-e983139fac48.json",
+      "dydo/_system/audit/2026/2026-03-18-fe206058-2f66-4672-9896-c0bbf88bc8e9.json",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
       "dydo/_system/roles/docs-writer.role.json",
@@ -769,6 +605,7 @@
       "dydo/_system/templates/mode-planner.template.md",
       "dydo/_system/templates/mode-reviewer.template.md",
       "dydo/_system/templates/mode-test-writer.template.md",
+      "dydo/.gitignore",
       "dydo/.obsidian/app.json",
       "dydo/.obsidian/appearance.json",
       "dydo/.obsidian/core-plugins.json",
@@ -928,6 +765,7 @@
       "dydo/project/decisions/009-crap-per-method-metric.md",
       "dydo/project/decisions/010-baton-passing-and-review-enforcement.md",
       "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
+      "dydo/project/decisions/012-release-constraints-and-role-capabilities.md",
       "dydo/project/docs-upgrade-sprint.md",
       "dydo/project/future-features/_future-features.md",
       "dydo/project/future-features/_index.md",
@@ -951,19 +789,28 @@
       "dydo/project/tasks/docs-upgrade-sprint.md",
       "dydo/project/tasks/find-t1-coverage-doc.md",
       "dydo/project/tasks/fix-ci-null-warnings.md",
+      "dydo/project/tasks/fix-session-race-condition.md",
       "dydo/project/tasks/fix-test-errors.md",
       "dydo/project/tasks/gap-check-fix.md",
       "dydo/project/tasks/gap-check-setup.md",
       "dydo/project/tasks/git-stash-guard-block.md",
       "dydo/project/tasks/guard-python-invocation.md",
       "dydo/project/tasks/guardrails-doc-update.md",
+      "dydo/project/tasks/guardrails-h27-entry.md",
       "dydo/project/tasks/inquisition-file-coverage.md",
       "dydo/project/tasks/investigate-last-validation-bug.md",
+      "dydo/project/tasks/investigate-session-files.md",
+      "dydo/project/tasks/nested-worktrees.md",
       "dydo/project/tasks/orchestrator-worktree-guidance.md",
+      "dydo/project/tasks/planner-nudge-design.md",
       "dydo/project/tasks/refine-inquisitor-template.md",
+      "dydo/project/tasks/requires-dispatch-constraint.md",
       "dydo/project/tasks/role-docs-batch1.md",
       "dydo/project/tasks/role-docs-batch2.md",
       "dydo/project/tasks/role-docs-batch3.md",
+      "dydo/project/tasks/session-race-conditions.md",
+      "dydo/project/tasks/session-race-fix-plan.md",
+      "dydo/project/tasks/session-race-fix.md",
       "dydo/project/tasks/t1-coverage-doc.md",
       "dydo/project/tasks/t1-coverage-gaps.md",
       "dydo/project/tasks/t1-slice-a.md",
@@ -1365,6 +1212,7 @@
       "Models/AuditSession.cs",
       "Models/CompactionResult.cs",
       "Models/DispatchConfig.cs",
+      "Models/DispatchMarker.cs",
       "Models/DocFile.cs",
       "Models/DydoConfig.cs",
       "Models/FileCoverageEntry.cs",
@@ -1384,7 +1232,6 @@
       "Models/PresetAgentNames.cs",
       "Models/ProjectSnapshot.cs",
       "Models/ReplyPendingMarker.cs",
-      "Models/ReviewDispatchedMarker.cs",
       "Models/RoleConstraint.cs",
       "Models/RoleDefinition.cs",
       "Models/SnapshotBaseline.cs",
@@ -1870,16 +1717,16 @@
         "dydo/agents/dexter/modes/reviewer.md",
         "dydo/agents/dexter/modes/test-writer.md"
       ],
-      "dydo/agents/frank/workflow.md": [
-        "dydo/agents/frank/modes/co-thinker.md",
-        "dydo/agents/frank/modes/code-writer.md",
-        "dydo/agents/frank/modes/docs-writer.md",
-        "dydo/agents/frank/modes/inquisitor.md",
-        "dydo/agents/frank/modes/judge.md",
-        "dydo/agents/frank/modes/orchestrator.md",
-        "dydo/agents/frank/modes/planner.md",
-        "dydo/agents/frank/modes/reviewer.md",
-        "dydo/agents/frank/modes/test-writer.md"
+      "dydo/agents/emma/workflow.md": [
+        "dydo/agents/emma/modes/co-thinker.md",
+        "dydo/agents/emma/modes/code-writer.md",
+        "dydo/agents/emma/modes/docs-writer.md",
+        "dydo/agents/emma/modes/inquisitor.md",
+        "dydo/agents/emma/modes/judge.md",
+        "dydo/agents/emma/modes/orchestrator.md",
+        "dydo/agents/emma/modes/planner.md",
+        "dydo/agents/emma/modes/reviewer.md",
+        "dydo/agents/emma/modes/test-writer.md"
       ],
       "dydo/agents/grace/workflow.md": [
         "dydo/agents/grace/modes/co-thinker.md",
@@ -2469,47 +2316,47 @@
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
-      "dydo/agents/frank/modes/co-thinker.md": [
+      "dydo/agents/emma/modes/co-thinker.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/project/decisions/_index.md",
-        "dydo/agents/frank/modes/code-writer.md"
+        "dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/agents/frank/modes/code-writer.md": [
+      "dydo/agents/emma/modes/code-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/docs-writer.md": [
+      "dydo/agents/emma/modes/docs-writer.md": [
         "dydo/understand/about.md",
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/frank/modes/inquisitor.md": [
+      "dydo/agents/emma/modes/inquisitor.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/judge.md": [
+      "dydo/agents/emma/modes/judge.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/orchestrator.md": [
+      "dydo/agents/emma/modes/orchestrator.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
-      "dydo/agents/frank/modes/planner.md": [
+      "dydo/agents/emma/modes/planner.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
-        "dydo/agents/frank/modes/code-writer.md"
+        "dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/agents/frank/modes/reviewer.md": [
+      "dydo/agents/emma/modes/reviewer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/test-writer.md": [
+      "dydo/agents/emma/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],

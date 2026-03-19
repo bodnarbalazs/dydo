@@ -60,6 +60,13 @@ public static class WorktreeCommand
 
     internal static int ExecuteCleanup(string worktreeId, string agentName, AgentRegistry registry)
     {
+        var childCount = CountChildWorktrees(registry, worktreeId);
+        if (childCount > 0)
+        {
+            ConsoleOutput.WriteError($"Cannot clean up worktree '{worktreeId}': {childCount} child worktree(s) still active. Clean up children first.");
+            return ExitCodes.ToolError;
+        }
+
         var workspace = registry.GetAgentWorkspace(agentName);
         RemoveMarkers(workspace);
 
@@ -87,7 +94,7 @@ public static class WorktreeCommand
 
     internal static void RemoveMarkers(string workspace)
     {
-        foreach (var name in new[] { ".worktree", ".worktree-path", ".worktree-base", ".merge-source", ".worktree-hold" })
+        foreach (var name in new[] { ".worktree", ".worktree-path", ".worktree-base", ".merge-source", ".worktree-hold", ".worktree-root" })
         {
             var marker = Path.Combine(workspace, name);
             if (File.Exists(marker)) File.Delete(marker);
@@ -97,12 +104,35 @@ public static class WorktreeCommand
     internal static int CountWorktreeReferences(AgentRegistry registry, string worktreeId)
     {
         var count = 0;
+        var childPrefix = $"{worktreeId}/";
         foreach (var agent in registry.GetAllAgentStates())
         {
             foreach (var markerName in new[] { ".worktree", ".worktree-hold" })
             {
                 var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), markerName);
-                if (File.Exists(marker) && File.ReadAllText(marker).Trim() == worktreeId)
+                if (!File.Exists(marker)) continue;
+                var value = File.ReadAllText(marker).Trim();
+                if (value == worktreeId || value.StartsWith(childPrefix))
+                {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
+    }
+
+    internal static int CountChildWorktrees(AgentRegistry registry, string worktreeId)
+    {
+        var count = 0;
+        var childPrefix = $"{worktreeId}/";
+        foreach (var agent in registry.GetAllAgentStates())
+        {
+            foreach (var markerName in new[] { ".worktree", ".worktree-hold" })
+            {
+                var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), markerName);
+                if (!File.Exists(marker)) continue;
+                if (File.ReadAllText(marker).Trim().StartsWith(childPrefix))
                 {
                     count++;
                     break;
@@ -121,7 +151,11 @@ public static class WorktreeCommand
             if (File.Exists(pathMarker))
             {
                 var path = File.ReadAllText(pathMarker).Trim();
-                if (Path.GetFileName(path) == worktreeId)
+                // Hierarchical IDs (e.g., "parent/child") won't match Path.GetFileName;
+                // check if path ends with the worktree ID
+                var normalizedPath = path.Replace('\\', '/').TrimEnd('/');
+                var normalizedId = worktreeId.Replace('\\', '/');
+                if (normalizedPath.EndsWith("/" + normalizedId) || normalizedPath == normalizedId)
                     return path;
             }
         }
@@ -211,7 +245,7 @@ public static class WorktreeCommand
     {
         try
         {
-            RunProcess("git", $"branch -D worktree/{worktreeId}");
+            RunProcess("git", $"branch -D worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}");
         }
         catch
         {
@@ -245,6 +279,18 @@ public static class WorktreeCommand
         }
         var mergeSource = File.ReadAllText(mergeSourcePath).Trim();
 
+        // Block merge while child worktrees are still active
+        var mergeBranchSuffix = mergeSource.StartsWith("worktree/")
+            ? mergeSource["worktree/".Length..]
+            : mergeSource;
+        var mergeWorktreeId = TerminalLauncher.BranchSuffixToWorktreeId(mergeBranchSuffix);
+        var mergeChildCount = CountChildWorktrees(registry, mergeWorktreeId);
+        if (mergeChildCount > 0)
+        {
+            ConsoleOutput.WriteError($"Cannot merge: {mergeChildCount} child worktree(s) still active. Merge children first.");
+            return ExitCodes.ToolError;
+        }
+
         var basePath = Path.Combine(workspace, ".worktree-base");
         if (!File.Exists(basePath))
         {
@@ -273,10 +319,11 @@ public static class WorktreeCommand
 
     internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource)
     {
-        // Extract worktreeId from merge-source (e.g. "worktree/Emma-20260316" -> "Emma-20260316")
-        var worktreeId = mergeSource.StartsWith("worktree/")
+        // Extract worktreeId from merge-source (e.g. "worktree/domain-A.+.auth" -> "domain-A/auth")
+        var branchSuffix = mergeSource.StartsWith("worktree/")
             ? mergeSource["worktree/".Length..]
             : mergeSource;
+        var worktreeId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
 
         RunProcess("git", $"branch -D {mergeSource}");
 

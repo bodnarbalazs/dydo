@@ -145,8 +145,7 @@ public class TemplateGeneratorTests
 
         Assert.Contains("about.md", content);
         Assert.Contains("architecture.md", content);
-        // Test-writer doesn't need coding standards - focuses on behavior, not code
-        Assert.DoesNotContain("coding-standards.md", content);
+        Assert.Contains("coding-standards.md", content);
     }
 
     [Fact]

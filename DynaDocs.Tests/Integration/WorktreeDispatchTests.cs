@@ -53,18 +53,45 @@ public class WorktreeDispatchTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Dispatch_SenderHasWorktreeAndWorktreeFlag_WarnsAndInherits()
+    public async Task Dispatch_SenderHasWorktreeAndWorktreeFlag_CreatesChildWorktree()
     {
         await SetupSenderWithWorktree("Adele", "parent-wt-id");
 
-        // Dispatch with --worktree flag (should warn and inherit instead of creating new)
+        // Dispatch with --worktree flag creates a child worktree (nested dispatch)
         var result = await DispatchWithWorktreeFlag("code-writer", "child-task", "Do work", to: "Brian");
         result.AssertSuccess();
-        result.AssertStdoutContains("ignored");
 
         var childMarker = Path.Combine(TestDir, "dydo/agents/Brian/.worktree");
         Assert.True(File.Exists(childMarker));
-        Assert.Equal("parent-wt-id", File.ReadAllText(childMarker).Trim());
+        Assert.Equal("parent-wt-id/child-task", File.ReadAllText(childMarker).Trim());
+    }
+
+    [Fact]
+    public async Task Dispatch_ChildWorktree_WritesCorrectWorktreeBase()
+    {
+        await SetupSenderWithWorktree("Adele", "parent-wt-id");
+
+        var result = await DispatchWithWorktreeFlag("code-writer", "child-task", "Do work", to: "Brian");
+        result.AssertSuccess();
+
+        var childBase = Path.Combine(TestDir, "dydo/agents/Brian/.worktree-base");
+        Assert.True(File.Exists(childBase));
+        // Child's base branch should be the parent's worktree branch
+        Assert.Equal("worktree/parent-wt-id", File.ReadAllText(childBase).Trim());
+    }
+
+    [Fact]
+    public async Task Dispatch_ChildWorktree_WritesWorktreeRoot()
+    {
+        await SetupSenderWithWorktree("Adele", "parent-wt-id");
+        WriteWorktreeRoot("Adele", "/main/project");
+
+        var result = await DispatchWithWorktreeFlag("code-writer", "child-task", "Do work", to: "Brian");
+        result.AssertSuccess();
+
+        var childRoot = Path.Combine(TestDir, "dydo/agents/Brian/.worktree-root");
+        Assert.True(File.Exists(childRoot));
+        Assert.Equal("/main/project", File.ReadAllText(childRoot).Trim());
     }
 
     [Fact]
@@ -324,6 +351,39 @@ public class WorktreeDispatchTests : IntegrationTestBase
 
     #endregion
 
+    #region SetupWorktree Markers
+
+    [Fact]
+    public async Task SetupWorktree_WritesWorktreeRoot()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "parent-task");
+
+        var result = await DispatchWithWorktreeFlag("code-writer", "wt-task", "Do work", to: "Brian");
+        result.AssertSuccess();
+
+        var brianRootMarker = Path.Combine(TestDir, "dydo/agents/Brian/.worktree-root");
+        Assert.True(File.Exists(brianRootMarker), "SetupWorktree should write .worktree-root");
+        Assert.False(string.IsNullOrWhiteSpace(File.ReadAllText(brianRootMarker)));
+    }
+
+    [Fact]
+    public async Task InheritWorktree_CopiesWorktreeRoot()
+    {
+        await SetupSenderWithWorktree("Adele", "test-wt-id");
+        WriteWorktreeRoot("Adele", "/main/project/root");
+
+        var result = await DispatchNoLaunch("code-writer", "child-task", "Do work", to: "Brian");
+        result.AssertSuccess();
+
+        var childRoot = Path.Combine(TestDir, "dydo/agents/Brian/.worktree-root");
+        Assert.True(File.Exists(childRoot));
+        Assert.Equal("/main/project/root", File.ReadAllText(childRoot).Trim());
+    }
+
+    #endregion
+
     #region Worktree Cleanup Markers
 
     [Fact]
@@ -377,6 +437,13 @@ public class WorktreeDispatchTests : IntegrationTestBase
         var workspace = Path.Combine(TestDir, "dydo/agents", agentName);
         Directory.CreateDirectory(workspace);
         File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
+    }
+
+    private void WriteWorktreeRoot(string agentName, string rootPath)
+    {
+        var workspace = Path.Combine(TestDir, "dydo/agents", agentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), rootPath);
     }
 
     private void WriteWorktreeBase(string agentName, string baseBranch)

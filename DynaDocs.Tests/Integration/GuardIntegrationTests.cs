@@ -939,6 +939,44 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Theory]
+    [InlineData("git merge feature-branch")]
+    [InlineData("git merge --no-ff main")]
+    [InlineData("echo x && git merge branch")]
+    public async Task Guard_GitMerge_InWorktree_Blocks(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var workspace = Path.Combine(DydoDir, "agents", "Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree-id");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("dydo worktree merge");
+    }
+
+    [Theory]
+    [InlineData("git merge feature-branch")]
+    [InlineData("git merge --no-ff main")]
+    public async Task Guard_GitMerge_NotInWorktree_Allows(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
     [InlineData("git status")]
     [InlineData("git commit -m 'test'")]
     [InlineData("git diff")]

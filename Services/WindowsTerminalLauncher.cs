@@ -20,13 +20,29 @@ public static class WindowsTerminalLauncher
 
         if (worktreeId != null)
         {
-            var wtDir = $"dydo/_system/.local/worktrees/{worktreeId}";
-            var branch = $"worktree/{worktreeId}";
+            var branch = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
+
+            if (mainProjectRoot != null)
+            {
+                var escapedRoot = mainProjectRoot.Replace("'", "''");
+                var wtDir = $"'{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'";
+                return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
+                       $"New-Item -ItemType Directory -Force -Path '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' | Out-Null; " +
+                       $"git worktree prune; " +
+                       $"git worktree add {wtDir} -b {branch}; " +
+                       $"Set-Location {wtDir}; " +
+                       $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
+                       $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
+                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +
+                       $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
+            }
+
+            var wtDirRel = $"dydo/_system/.local/worktrees/{worktreeId}";
             return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}$_wt_root = Get-Location; " +
-                   $"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees | Out-Null; " +
+                   $"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees/{worktreeId} | Out-Null; " +
                    $"git worktree prune; " +
-                   $"git worktree add {wtDir} -b {branch}; " +
-                   $"Set-Location {wtDir}; " +
+                   $"git worktree add {wtDirRel} -b {branch}; " +
+                   $"Set-Location {wtDirRel}; " +
                    $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{postClaudeCheck} }} " +

@@ -1456,19 +1456,88 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GenerateWorktreeId_ContainsAgentName()
+    public void GenerateWorktreeId_WithoutParent_ReturnsTaskName()
     {
-        var id = TerminalLauncher.GenerateWorktreeId("Adele");
-        Assert.StartsWith("Adele-", id);
+        var id = TerminalLauncher.GenerateWorktreeId("domain-A");
+        Assert.Equal("domain-A", id);
     }
 
     [Fact]
-    public void GenerateWorktreeId_ContainsTimestamp()
+    public void GenerateWorktreeId_WithParent_ReturnsHierarchicalId()
     {
-        var before = DateTime.UtcNow;
-        var id = TerminalLauncher.GenerateWorktreeId("Adele");
-        // Format: Adele-yyyyMMddHHmmss (20 chars for "Adele-" + 14 timestamp)
-        Assert.Equal(20, id.Length);
+        var id = TerminalLauncher.GenerateWorktreeId("auth-service", "domain-A");
+        Assert.Equal("domain-A/auth-service", id);
+    }
+
+    [Fact]
+    public void GenerateWorktreeId_MultipleNesting()
+    {
+        var id = TerminalLauncher.GenerateWorktreeId("edge-cases", "domain-A/auth-service");
+        Assert.Equal("domain-A/auth-service/edge-cases", id);
+    }
+
+    [Fact]
+    public void GenerateWorktreeId_RejectsDotPlusDotInTaskName()
+    {
+        Assert.Throws<ArgumentException>(() => TerminalLauncher.GenerateWorktreeId("bad.+.name"));
+    }
+
+    [Theory]
+    [InlineData("task;rm -rf /")]
+    [InlineData("task$(whoami)")]
+    [InlineData("task`id`")]
+    [InlineData("task'inject")]
+    [InlineData("task name with spaces")]
+    [InlineData("task&echo pwned")]
+    [InlineData("task|cat /etc/passwd")]
+    [InlineData("task\nnewline")]
+    public void GenerateWorktreeId_RejectsUnsafeCharacters(string taskName)
+    {
+        Assert.Throws<ArgumentException>(() => TerminalLauncher.GenerateWorktreeId(taskName));
+    }
+
+    [Theory]
+    [InlineData("valid-task")]
+    [InlineData("my_task.v2")]
+    [InlineData("Task123")]
+    [InlineData("a")]
+    public void GenerateWorktreeId_AcceptsSafeCharacters(string taskName)
+    {
+        var id = TerminalLauncher.GenerateWorktreeId(taskName);
+        Assert.Equal(taskName, id);
+    }
+
+    [Fact]
+    public void WorktreeIdToBranchSuffix_EncodesSlashAsDotPlusDot()
+    {
+        Assert.Equal("domain-A.+.auth-service", TerminalLauncher.WorktreeIdToBranchSuffix("domain-A/auth-service"));
+    }
+
+    [Fact]
+    public void WorktreeIdToBranchSuffix_NoSlash_Unchanged()
+    {
+        Assert.Equal("domain-A", TerminalLauncher.WorktreeIdToBranchSuffix("domain-A"));
+    }
+
+    [Fact]
+    public void BranchSuffixToWorktreeId_DecodesDotPlusDotToSlash()
+    {
+        Assert.Equal("domain-A/auth-service", TerminalLauncher.BranchSuffixToWorktreeId("domain-A.+.auth-service"));
+    }
+
+    [Fact]
+    public void BranchSuffixToWorktreeId_NoDotPlusDot_Unchanged()
+    {
+        Assert.Equal("domain-A", TerminalLauncher.BranchSuffixToWorktreeId("domain-A"));
+    }
+
+    [Fact]
+    public void WorktreeId_RoundTrip()
+    {
+        var original = "domain-A/auth-service/edge-cases";
+        var encoded = TerminalLauncher.WorktreeIdToBranchSuffix(original);
+        var decoded = TerminalLauncher.BranchSuffixToWorktreeId(encoded);
+        Assert.Equal(original, decoded);
     }
 
     [Fact]
@@ -1760,6 +1829,82 @@ public class TerminalLauncherTests
         var plain = TerminalLauncher.GetMacArguments("Brian");
         var withNulls = TerminalLauncher.GetMacArguments("Brian", cleanupWorktreeId: null, mainProjectRoot: null);
         Assert.Equal(plain, withNulls);
+    }
+
+    #endregion
+
+    #region Nested Worktree Tests
+
+    [Fact]
+    public void WorktreeSetupScript_WithMainProjectRoot_UsesAbsolutePaths()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task", "/home/user/project");
+        Assert.Contains("'/home/user/project/dydo/_system/.local/worktrees/my-task'", script);
+        Assert.Contains("'/home/user/project/dydo/agents'", script);
+        Assert.DoesNotContain("$_wt_root", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithoutMainProjectRoot_UsesRelativePaths()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task");
+        Assert.Contains("$_wt_root", script);
+        Assert.Contains("dydo/_system/.local/worktrees/my-task", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_HierarchicalId_UsesBranchSuffixEncoding()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("parent/child");
+        Assert.Contains("-b worktree/parent.+.child", script);
+        Assert.Contains("dydo/_system/.local/worktrees/parent/child", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithMainProjectRoot_HierarchicalId_UsesBranchSuffix()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("parent/child", "/repo");
+        Assert.Contains("-b worktree/parent.+.child", script);
+        Assert.Contains("'/repo/dydo/_system/.local/worktrees/parent/child'", script);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_UsesAbsolutePaths()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+        Assert.Contains("'C:\\project/dydo/_system/.local/worktrees/my-task'", args);
+        Assert.Contains("-Target 'C:\\project/dydo/agents'", args);
+        Assert.DoesNotContain("$_wt_root", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_HierarchicalId()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "parent/child", mainProjectRoot: @"C:\project");
+        Assert.Contains("-b worktree/parent.+.child", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithoutMainProjectRoot_UsesRelativePaths()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task");
+        Assert.Contains("$_wt_root", args);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_Worktree_WithMainProjectRoot_UsesAbsolutePaths()
+    {
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", worktreeId: "my-task", mainProjectRoot: "/repo");
+        Assert.Contains("'/repo/dydo/_system/.local/worktrees/my-task'", args);
+        Assert.Contains("'/repo/dydo/agents'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Worktree_WithMainProjectRoot_UsesAbsolutePaths()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: "my-task", mainProjectRoot: "/repo");
+        Assert.Contains("'/repo/dydo/_system/.local/worktrees/my-task'", args);
+        Assert.Contains("'/repo/dydo/agents'", args);
     }
 
     #endregion

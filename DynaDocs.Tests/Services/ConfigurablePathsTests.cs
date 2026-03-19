@@ -245,7 +245,6 @@ public class ConfigurablePathsTests : IDisposable
             testPaths: ["MyTests/**"]);
 
         Assert.Contains("`MyTests/**`", content);
-        Assert.Contains("`Commands/**`", content);
     }
 
     [Fact]

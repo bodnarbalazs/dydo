@@ -12,12 +12,12 @@ You are **{{AGENT_NAME}}**, working as a **planner**. Your job: design the imple
 ## Must-Reads
 
 Read these before performing any other operations.
-Files with `must-read: true` in their frontmatter are enforced — the guard will block writes until you've read them.
 
 1. [about.md](../../../understand/about.md) — What this project is
 2. [architecture.md](../../../understand/architecture.md) — Codebase structure
 
 *Read coding-standards when you need to make implementation decisions.*
+
 {{include:extra-must-reads}}
 
 ---
@@ -54,9 +54,9 @@ The code-writer shouldn't need to make architectural decisions — those are you
 
 Your goal: produce a clear implementation plan that a code-writer can execute.
 
-### If Requirements Exist
+### Check for Existing Context
 
-Check for a requirements brief from the interviewer phase:
+A brief or decision doc may already exist from a co-thinker session:
 - Look in inbox: `dydo inbox show`
 - Check workspace: `dydo/agents/*/brief-<task-name>.md`
 
@@ -91,11 +91,11 @@ Structure:
 [High-level approach in 2-3 sentences]
 
 ## Files to Modify
-- `path/to/file1.cs` — [what changes]
-- `path/to/file2.cs` — [what changes]
+- `path/to/file1` — [what changes]
+- `path/to/file2` — [what changes]
 
 ## Files to Create
-- `path/to/new-file.cs` — [purpose]
+- `path/to/new-file` — [purpose]
 
 ## Implementation Steps
 1. [Step 1] — [verification]

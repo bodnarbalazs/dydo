@@ -153,6 +153,30 @@ public class WorkspaceArchiveTests : IDisposable
     }
 
     [Fact]
+    public void ArchiveWorkspace_PreservesWorktreeMarkers()
+    {
+        var workspace = CreateWorkspace();
+        var worktreeMarkers = new[]
+        {
+            ".worktree", ".worktree-path", ".worktree-base", ".worktree-root",
+            ".worktree-hold", ".merge-source", ".needs-merge"
+        };
+        foreach (var marker in worktreeMarkers)
+            File.WriteAllText(Path.Combine(workspace, marker), "marker");
+        // Add a user file so archive actually runs
+        File.WriteAllText(Path.Combine(workspace, "plan.md"), "# Plan");
+
+        var result = AgentRegistry.ArchiveWorkspace(workspace);
+
+        Assert.NotNull(result);
+        // User file should be archived
+        Assert.True(File.Exists(Path.Combine(result, "plan.md")));
+        // All worktree markers must survive in workspace
+        foreach (var marker in worktreeMarkers)
+            Assert.True(File.Exists(Path.Combine(workspace, marker)), $"{marker} must survive ArchiveWorkspace");
+    }
+
+    [Fact]
     public void ArchiveWorkspace_CreatesTimestampedDirectory()
     {
         var workspace = CreateWorkspace();

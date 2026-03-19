@@ -74,10 +74,8 @@ public class GuardLiftTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // Create an already-expired lift marker
-        var service = new GuardLiftService(TestDir);
-        var liftsDir = Path.Combine(TestDir, "dydo", "_system", ".local", "guard-lifts");
-        Directory.CreateDirectory(liftsDir);
+        // Create an already-expired lift marker in the agent workspace
+        var markerPath = Path.Combine(TestDir, "dydo", "agents", "Adele", ".guard-lift.json");
         var marker = new DynaDocs.Models.GuardLiftMarker
         {
             Agent = "Adele",
@@ -87,14 +85,14 @@ public class GuardLiftTests : IntegrationTestBase
         };
         var json = System.Text.Json.JsonSerializer.Serialize(marker,
             DynaDocs.Serialization.DydoDefaultJsonContext.Default.GuardLiftMarker);
-        File.WriteAllText(Path.Combine(liftsDir, "Adele.json"), json);
+        File.WriteAllText(markerPath, json);
 
         var result = await GuardAsync("write", "dydo/some-file.md");
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
 
         // Marker file should have been cleaned up
-        Assert.False(File.Exists(Path.Combine(liftsDir, "Adele.json")));
+        Assert.False(File.Exists(markerPath));
     }
 
     // ================================================================
@@ -157,11 +155,11 @@ public class GuardLiftTests : IntegrationTestBase
     public void GuardLiftService_Lift_CreatesMarkerFile()
     {
         var service = new GuardLiftService(TestDir);
-        Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "_system", ".local"));
+        Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "agents", "TestAgent"));
 
         service.Lift("TestAgent", "testuser", null);
 
-        var markerPath = Path.Combine(TestDir, "dydo", "_system", ".local", "guard-lifts", "TestAgent.json");
+        var markerPath = Path.Combine(TestDir, "dydo", "agents", "TestAgent", ".guard-lift.json");
         Assert.True(File.Exists(markerPath));
     }
 
@@ -169,12 +167,13 @@ public class GuardLiftTests : IntegrationTestBase
     public void GuardLiftService_Lift_WithMinutes_SetsExpiry()
     {
         var service = new GuardLiftService(TestDir);
+        Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "agents", "TestAgent"));
 
         service.Lift("TestAgent", "testuser", 30);
 
         Assert.True(service.IsLifted("TestAgent"));
 
-        var markerPath = Path.Combine(TestDir, "dydo", "_system", ".local", "guard-lifts", "TestAgent.json");
+        var markerPath = Path.Combine(TestDir, "dydo", "agents", "TestAgent", ".guard-lift.json");
         var json = File.ReadAllText(markerPath);
         var marker = System.Text.Json.JsonSerializer.Deserialize(json,
             DynaDocs.Serialization.DydoDefaultJsonContext.Default.GuardLiftMarker);
@@ -182,9 +181,32 @@ public class GuardLiftTests : IntegrationTestBase
     }
 
     [Fact]
+    public void GuardLiftService_Lift_ExpiresAtIsUtc()
+    {
+        var service = new GuardLiftService(TestDir);
+        Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "agents", "TestAgent"));
+
+        service.Lift("TestAgent", "testuser", 10);
+
+        var markerPath = Path.Combine(TestDir, "dydo", "agents", "TestAgent", ".guard-lift.json");
+        var json = File.ReadAllText(markerPath);
+        var marker = System.Text.Json.JsonSerializer.Deserialize(json,
+            DynaDocs.Serialization.DydoDefaultJsonContext.Default.GuardLiftMarker);
+
+        // ExpiresAt must round-trip as UTC — a mismatch causes timezone bugs
+        Assert.Equal(DateTimeKind.Utc, marker!.ExpiresAt!.Value.Kind);
+        Assert.Equal(DateTimeKind.Utc, marker.LiftedAt.Kind);
+
+        // Sanity: expiry should be ~10 minutes from now (within 1 minute tolerance)
+        var delta = marker.ExpiresAt.Value - DateTime.UtcNow;
+        Assert.InRange(delta.TotalMinutes, 9, 11);
+    }
+
+    [Fact]
     public void GuardLiftService_Restore_RemovesMarker()
     {
         var service = new GuardLiftService(TestDir);
+        Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "agents", "TestAgent"));
 
         service.Lift("TestAgent", "testuser", null);
         Assert.True(service.IsLifted("TestAgent"));

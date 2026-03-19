@@ -4,7 +4,9 @@ public static class WorkspaceArchiver
 {
     private static readonly HashSet<string> SystemManagedEntries = new(StringComparer.OrdinalIgnoreCase)
     {
-        "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox"
+        "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox",
+        ".worktree", ".worktree-path", ".worktree-base", ".worktree-root", ".worktree-hold",
+        ".merge-source", ".needs-merge"
     };
 
     /// <summary>

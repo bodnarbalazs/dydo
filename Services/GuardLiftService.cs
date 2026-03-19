@@ -6,21 +6,20 @@ using DynaDocs.Serialization;
 
 public class GuardLiftService
 {
-    private readonly string _liftsDir;
+    private readonly string _agentsDir;
 
     public GuardLiftService(string? basePath = null)
     {
         var root = basePath ?? Environment.CurrentDirectory;
-        _liftsDir = Path.Combine(root, "dydo", "_system", ".local", "guard-lifts");
+        _agentsDir = Path.Combine(root, "dydo", "agents");
     }
 
+    // Stored per-agent so it resolves through worktree junctions automatically
     private string MarkerPath(string agentName) =>
-        Path.Combine(_liftsDir, $"{agentName}.json");
+        Path.Combine(_agentsDir, agentName, ".guard-lift.json");
 
     public void Lift(string agentName, string humanName, int? minutes)
     {
-        Directory.CreateDirectory(_liftsDir);
-
         var marker = new GuardLiftMarker
         {
             Agent = agentName,

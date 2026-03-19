@@ -1978,69 +1978,67 @@ public class TerminalLauncherTests
     #region Worktree Claude Settings Copy Tests
 
     [Fact]
-    public void WorktreeSetupScript_CopiesClaudeSettings()
+    public void WorktreeSetupScript_UsesInitSettings()
     {
         var script = TerminalLauncher.WorktreeSetupScript("my-task");
-        Assert.Contains("mkdir -p .claude", script);
-        Assert.Contains("settings.local.json", script);
+        Assert.Contains("dydo worktree init-settings --main-root", script);
+        Assert.DoesNotContain("cp ", script);
     }
 
     [Fact]
-    public void WorktreeSetupScript_WithMainProjectRoot_CopiesClaudeSettings()
+    public void WorktreeSetupScript_WithMainProjectRoot_UsesInitSettings()
     {
         var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
-        Assert.Contains("mkdir -p .claude", script);
-        Assert.Contains("'/repo/.claude/settings.local.json'", script);
+        Assert.Contains("dydo worktree init-settings --main-root '/repo'", script);
+        Assert.DoesNotContain("cp ", script);
     }
 
     [Fact]
-    public void WorktreeSetupScript_SettingsCopyIsNonFatal()
+    public void WorktreeSetupScript_InitSettingsIsNonFatal()
     {
         var script = TerminalLauncher.WorktreeSetupScript("my-task");
-        // The cp should be wrapped to not fail the && chain
         Assert.Contains("|| true)", script);
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_CopiesClaudeSettings()
+    public void GetWindowsArguments_Worktree_UsesInitSettings()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("New-Item -ItemType Directory -Force -Path .claude", args);
-        Assert.Contains("settings.local.json", args);
+        Assert.Contains("dydo worktree init-settings --main-root", args);
+        Assert.DoesNotContain("Copy-Item", args);
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_WithMainProjectRoot_CopiesClaudeSettings()
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_UsesInitSettings()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
-        Assert.Contains("New-Item -ItemType Directory -Force -Path .claude", args);
-        Assert.Contains(@"'C:\project/.claude/settings.local.json'", args);
+        Assert.Contains("dydo worktree init-settings --main-root", args);
+        Assert.DoesNotContain("Copy-Item", args);
     }
 
     [Fact]
-    public void GetWindowsArguments_NonWorktree_NoClaudeSettingsCopy()
+    public void GetWindowsArguments_NonWorktree_NoInitSettings()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele");
-        // Only one .claude directory creation (none — non-worktree should have none)
-        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path .claude", args);
+        Assert.DoesNotContain("init-settings", args);
     }
 
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
-    public void GetLinuxArguments_Worktree_CopiesClaudeSettings(string terminal)
+    public void GetLinuxArguments_Worktree_UsesInitSettings(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("mkdir -p .claude", args);
-        Assert.Contains("settings.local.json", args);
+        Assert.Contains("dydo worktree init-settings --main-root", args);
+        Assert.DoesNotContain("cp ", args);
     }
 
     [Fact]
-    public void GetMacArguments_Worktree_CopiesClaudeSettings()
+    public void GetMacArguments_Worktree_UsesInitSettings()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("mkdir -p .claude", args);
-        Assert.Contains("settings.local.json", args);
+        Assert.Contains("dydo worktree init-settings --main-root", args);
+        Assert.DoesNotContain("cp ", args);
     }
 
     #endregion

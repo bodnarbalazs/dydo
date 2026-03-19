@@ -1723,6 +1723,383 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\orchestrator.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:00:57.3369937Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/worktree-smoke-test-2/.claude/settings.local.json 2\u003E\u00261",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T20:01:10.5222504Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c99f72fd-msg-fix-inactive-messaging-rework.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:01:10.8132362Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c178d3be-msg-guard-lift-command.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:01:11.6869365Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e55c6605-msg-fix-source-generator-errors.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:01:25.5308646Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/worktree-smoke-test-2/.claude/settings.local.json 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T20:10:40.2689407Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\dc06f30a-msg-investigate-gap-check-errors.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:10:40.7545815Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\87c8d9df-msg-worktree-smoke-test-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:13:18.0463647Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-gap-check-gaps.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-19T20:32:15.6962057Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Adele/inbox/ 2\u003E\u00261",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T20:32:35.3968869Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c53640ef-msg-worktree-smoke-test-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:38:18.553551Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ff08b76c-msg-fix-worktree-claude-permissions.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:38:52.8480828Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-critical-bugs.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-19T20:40:22.9606146Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-19T20:42:34.4083768Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tasks\\bx35ucfe1.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:42:43.2824299Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3e3701e9-msg-fix-worktree-write-permissions.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:43:05.1016143Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5937ae28-msg-task-approve-compact.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:45:50.7518411Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tasks\\bour3ijt9.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:46:04.9405206Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6020b80f-msg-fix-gap-check-gaps.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:46:29.6352736Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tasks\\b5jmwpoa5.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:46:37.1209704Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a3360028-msg-investigate-worktree-ui-regression.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:47:43.7131645Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T20:47:43.9417036Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T20:47:50.7169645Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c53640ef-msg-fix-worktree-write-permissions.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:48:08.8691893Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a9196cff-msg-fix-worktree-write-permissions.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:48:26.2350089Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T20:48:38.9424234Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\583b653b-investigate-worktree-ui-regression.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:48:52.514729Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b24956a8-msg-investigate-worktree-ui-regression.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:49:10.7481886Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:49:18.2224679Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:49:25.1755588Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:49:45.6403264Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:49:53.6843028Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:50:07.3964069Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\roles\\reviewer.role.json",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:52:42.0836154Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tasks\\beofolqu1.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:52:48.8607806Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bba80c55-msg-fix-worktree-marker-archival.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:53:47.9479235Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:53:58.3221595Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:54:06.1049325Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-19T20:59:26.882687Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tasks\\buk1c6sdn.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:59:34.1136147Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\71327cc6-msg-fix-critical-bugs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T20:59:55.9683323Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6ea92089-msg-fix-worktree-marker-archival.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T21:03:31.0351047Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1aed94c5-2c00-4c45-a734-c401a0381b6e\\tasks\\bsbab027u.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T21:03:37.1820293Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\51540f66-msg-fix-reviewer-dispatch-block.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T21:08:43.1151244Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261 | tail -30",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T21:08:56.9337965Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\0a22aa75-msg-fix-critical-bugs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T21:09:11.3229946Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261 | tail -30"
+    },
+    {
+      "ts": "2026-03-19T21:15:21.3398349Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "taskkill /IM dydo.exe /F 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:15:33.3996065Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd.exe /c \u0022taskkill /IM dydo.exe /F\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:15:42.8391367Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd.exe /c \u0022tasklist | findstr dydo\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:16:09.9106104Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build -c Release 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-19T21:16:21.1231688Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet pack -c Release 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-19T21:16:32.0351459Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool update --global --add-source bin/Release dydo 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:16:54.4886998Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd.exe /c \u0022tasklist | findstr dydo\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:17:25.767089Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dotnet tool update --global --add-source bin/Release dydo 2\u003E\u00261",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-19T21:17:40.297796Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a031db31-msg-fix-reviewer-dispatch-block.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-19T21:17:53.2432182Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet tool update --global --add-source bin/Release dydo 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:18:53.8545852Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd.exe /c \u0022handle dydo.dll\u0022 2\u003E\u00261 | head -10"
+    },
+    {
+      "ts": "2026-03-19T21:20:58.758466Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd.exe /c \u0022tasklist /FI \\\u0022IMAGENAME eq dydo.exe\\\u0022\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:21:08.8969578Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cmd.exe /c \u0022dir \\\u0022C:\\Users\\User\\.dotnet\\tools\\.store\\dydo\\1.2.26\\\u0022\u0022 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-19T21:21:18.9710807Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022Get-ChildItem \u0027C:\\Users\\User\\.dotnet\\tools\\.store\\dydo\\1.2.26\u0027 -Recurse | Selec..."
+    },
+    {
+      "ts": "2026-03-19T21:21:29.2319356Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0022try { Remove-Item \u0027C:\\Users\\User\\.dotnet\\tools\\.store\\dydo\\1.2.26\u0027 -Recurse -Fo..."
+    },
+    {
+      "ts": "2026-03-19T21:21:39.2511898Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -NoProfile -Command \u0022Remove-Item -Path \u0027C:\\Users\\User\\.dotnet\\tools\\.store\\dydo\\1.2.26\u0027 -..."
     }
   ]
 }

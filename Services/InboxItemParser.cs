@@ -60,6 +60,7 @@ public static class InboxItemParser
             {
                 Id = fields.Id,
                 From = fields.From,
+                FromRole = fields.FromRole,
                 Origin = fields.Origin,
                 Role = fields.Role ?? "",
                 Task = fields.Task ?? "",
@@ -84,6 +85,7 @@ public static class InboxItemParser
     {
         public string? Id { get; init; }
         public string? From { get; init; }
+        public string? FromRole { get; init; }
         public string? Origin { get; init; }
         public string? Role { get; init; }
         public string? Task { get; init; }
@@ -112,9 +114,10 @@ public static class InboxItemParser
 
         return new YamlFields
         {
-            Id = state.Id, From = state.From, Origin = state.Origin, Role = state.Role, Task = state.Task,
-            Type = state.Type, Subject = state.Subject, Received = state.Received,
-            Escalated = state.Escalated, EscalatedAt = state.EscalatedAt, ReplyRequired = state.ReplyRequired
+            Id = state.Id, From = state.From, FromRole = state.FromRole, Origin = state.Origin,
+            Role = state.Role, Task = state.Task, Type = state.Type, Subject = state.Subject,
+            Received = state.Received, Escalated = state.Escalated, EscalatedAt = state.EscalatedAt,
+            ReplyRequired = state.ReplyRequired
         };
     }
 
@@ -135,6 +138,7 @@ public static class InboxItemParser
         ["task"] = (s, v) => s.Task = v,
         ["type"] = (s, v) => s.Type = v,
         ["subject"] = (s, v) => s.Subject = v,
+        ["from_role"] = (s, v) => s.FromRole = v,
     };
 
     private static void ApplyDateOrBoolField(YamlParseState state, string key, string value)
@@ -175,6 +179,7 @@ public static class InboxItemParser
     {
         public string? Id { get; set; }
         public string? From { get; set; }
+        public string? FromRole { get; set; }
         public string? Origin { get; set; }
         public string? Role { get; set; }
         public string? Task { get; set; }

@@ -15,4 +15,5 @@ dydo/agents/
 dydo/_system/.local/
 
 /DynaDocs.Tests/coverage/report
+/DynaDocs.Tests/coverage/results
 /DynaDocs.Tests/TestResults

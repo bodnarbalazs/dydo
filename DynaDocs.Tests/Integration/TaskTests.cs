@@ -651,13 +651,13 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Task_Approve_CompactsAuditSnapshots()
+    public async Task Task_Approve_DoesNotCompactByDefault()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await TaskCreateAsync("compact-task", area: "general");
-        await TaskReadyForReviewAsync("compact-task", "Done");
+        await TaskCreateAsync("no-compact-task", area: "general");
+        await TaskReadyForReviewAsync("no-compact-task", "Done");
 
-        // Create audit files with inline snapshots (pre-compaction format)
+        // Create audit files with inline snapshots
         var year = DateTime.UtcNow.ToString("yyyy");
         var auditDir = Path.Combine(TestDir, "dydo", "_system", "audit", year);
         Directory.CreateDirectory(auditDir);
@@ -688,8 +688,60 @@ public class TaskTests : IntegrationTestBase
                 Path.Combine(auditDir, $"{year}-01-01-session-{i}.json"), json);
         }
 
-        // Approve — should trigger compaction
-        var result = await TaskApproveAsync("compact-task");
+        // Approve — should NOT trigger compaction (counter starts at 0, interval is 20)
+        var result = await TaskApproveAsync("no-compact-task");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("compacted", result.Stdout);
+
+        // Verify audit files are untouched (still have inline snapshots)
+        var sessionFiles = Directory.GetFiles(auditDir, "*.json")
+            .Where(f => !Path.GetFileName(f).StartsWith("_baseline-"))
+            .ToList();
+        foreach (var file in sessionFiles)
+        {
+            var content = File.ReadAllText(file);
+            Assert.DoesNotContain("snapshot_ref", content);
+        }
+    }
+
+    [Fact]
+    public async Task Task_Compact_CompactsAuditSnapshots()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create audit files with inline snapshots
+        var year = DateTime.UtcNow.ToString("yyyy");
+        var auditDir = Path.Combine(TestDir, "dydo", "_system", "audit", year);
+        Directory.CreateDirectory(auditDir);
+
+        var snapshot = new DynaDocs.Models.ProjectSnapshot
+        {
+            GitCommit = "abc123",
+            Files = ["src/file1.cs", "src/file2.cs", "src/file3.cs"],
+            Folders = ["src/"],
+            DocLinks = new() { ["a.md"] = ["b.md"] }
+        };
+
+        for (var i = 0; i < 3; i++)
+        {
+            var session = new DynaDocs.Models.AuditSession
+            {
+                SessionId = $"session-{i}",
+                AgentName = "Adele",
+                Started = DateTime.UtcNow.AddHours(-i),
+                Events = [],
+                Snapshot = snapshot
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(session, new System.Text.Json.JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
+            File.WriteAllText(
+                Path.Combine(auditDir, $"{year}-01-01-session-{i}.json"), json);
+        }
+
+        var result = await TaskCompactAsync();
 
         result.AssertSuccess();
         result.AssertStdoutContains("compacted");
@@ -708,6 +760,136 @@ public class TaskTests : IntegrationTestBase
             Assert.Contains("snapshot_ref", content);
             Assert.DoesNotContain("\"snapshot\"", content);
         }
+    }
+
+    [Fact]
+    public async Task Task_Compact_NothingToCompact()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await TaskCompactAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Nothing to compact");
+    }
+
+    [Fact]
+    public async Task Task_Approve_AutoCompact_TriggersAtInterval()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Set autoCompactInterval to 2
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var configJson = File.ReadAllText(configPath);
+        var config = System.Text.Json.JsonSerializer.Deserialize(configJson,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+        config.Tasks.AutoCompactInterval = 2;
+        var updatedJson = System.Text.Json.JsonSerializer.Serialize(config,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig);
+        File.WriteAllText(configPath, updatedJson);
+
+        // Create audit files with inline snapshots
+        var year = DateTime.UtcNow.ToString("yyyy");
+        var auditDir = Path.Combine(TestDir, "dydo", "_system", "audit", year);
+        Directory.CreateDirectory(auditDir);
+
+        var snapshot = new DynaDocs.Models.ProjectSnapshot
+        {
+            GitCommit = "abc123",
+            Files = ["src/file1.cs"],
+            Folders = ["src/"],
+            DocLinks = new() { ["a.md"] = ["b.md"] }
+        };
+
+        for (var i = 0; i < 2; i++)
+        {
+            var session = new DynaDocs.Models.AuditSession
+            {
+                SessionId = $"session-{i}",
+                AgentName = "Adele",
+                Started = DateTime.UtcNow.AddHours(-i),
+                Events = [],
+                Snapshot = snapshot
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(session, new System.Text.Json.JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
+            File.WriteAllText(
+                Path.Combine(auditDir, $"{year}-01-01-session-{i}.json"), json);
+        }
+
+        // First approve — counter goes to 1, no compaction
+        await TaskCreateAsync("auto-a", area: "general");
+        await TaskReadyForReviewAsync("auto-a", "Done");
+        var result1 = await TaskApproveAsync("auto-a");
+        result1.AssertSuccess();
+        Assert.DoesNotContain("Auto-compacting", result1.Stdout);
+
+        // Second approve — counter hits 2, compaction triggers
+        await TaskCreateAsync("auto-b", area: "general");
+        await TaskReadyForReviewAsync("auto-b", "Done");
+        var result2 = await TaskApproveAsync("auto-b");
+        result2.AssertSuccess();
+        result2.AssertStdoutContains("Auto-compacting");
+        result2.AssertStdoutContains("compacted");
+    }
+
+    [Fact]
+    public async Task Task_Approve_AutoCompact_DisabledWhenZero()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Set autoCompactInterval to 0 (disabled)
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var configJson = File.ReadAllText(configPath);
+        var config = System.Text.Json.JsonSerializer.Deserialize(configJson,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+        config.Tasks.AutoCompactInterval = 0;
+        var updatedJson = System.Text.Json.JsonSerializer.Serialize(config,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig);
+        File.WriteAllText(configPath, updatedJson);
+
+        // Create audit files
+        var year = DateTime.UtcNow.ToString("yyyy");
+        var auditDir = Path.Combine(TestDir, "dydo", "_system", "audit", year);
+        Directory.CreateDirectory(auditDir);
+
+        var snapshot = new DynaDocs.Models.ProjectSnapshot
+        {
+            GitCommit = "abc123",
+            Files = ["src/file1.cs"],
+            Folders = ["src/"],
+            DocLinks = new() { ["a.md"] = ["b.md"] }
+        };
+
+        var session = new DynaDocs.Models.AuditSession
+        {
+            SessionId = "session-0",
+            AgentName = "Adele",
+            Started = DateTime.UtcNow,
+            Events = [],
+            Snapshot = snapshot
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(session, new System.Text.Json.JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        });
+        File.WriteAllText(Path.Combine(auditDir, $"{year}-01-01-session-0.json"), json);
+
+        // Approve many tasks — none should trigger compaction
+        for (var i = 0; i < 5; i++)
+        {
+            await TaskCreateAsync($"disabled-{i}", area: "general");
+            await TaskReadyForReviewAsync($"disabled-{i}", "Done");
+            var result = await TaskApproveAsync($"disabled-{i}");
+            result.AssertSuccess();
+            Assert.DoesNotContain("compacted", result.Stdout);
+        }
+
+        // No counter file should exist
+        var counterPath = Path.Combine(TestDir, "dydo", "_system", "compact-counter");
+        Assert.False(File.Exists(counterPath));
     }
 
     [Fact]
@@ -779,6 +961,12 @@ public class TaskTests : IntegrationTestBase
         if (all) args.Add("--all");
         if (notes != null) { args.Add("--notes"); args.Add(notes); }
         return await RunAsync(command, args.ToArray());
+    }
+
+    private async Task<CommandResult> TaskCompactAsync()
+    {
+        var command = TaskCommand.Create();
+        return await RunAsync(command, "compact");
     }
 
     private async Task<CommandResult> TaskRejectAsync(string name, string notes)

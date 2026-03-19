@@ -103,7 +103,7 @@ internal static class TaskApproveHandler
         Console.WriteLine($"Changelog entry created: {relativeChangelogPath}");
         Console.WriteLine("Hub files updated.");
 
-        CompactAuditSnapshots(configService);
+        CheckAutoCompact(configService);
 
         return ExitCodes.Success;
     }
@@ -265,21 +265,33 @@ internal static class TaskApproveHandler
         }
     }
 
-    private static void CompactAuditSnapshots(ConfigService configService)
+    private static void CheckAutoCompact(ConfigService configService)
     {
         try
         {
-            var currentYearDir = Path.Combine(configService.GetAuditPath(), DateTime.UtcNow.ToString("yyyy"));
-            if (Directory.Exists(currentYearDir))
+            var config = configService.LoadConfig();
+            var interval = config?.Tasks.AutoCompactInterval ?? 20;
+            if (interval <= 0) return;
+
+            var counterPath = TaskCompactHandler.GetCounterPath(configService);
+            var count = 0;
+            if (File.Exists(counterPath) && int.TryParse(File.ReadAllText(counterPath).Trim(), out var parsed))
+                count = parsed;
+
+            count++;
+
+            if (count >= interval)
             {
-                var compactionResult = SnapshotCompactionService.Compact(currentYearDir);
-                if (compactionResult.SessionsProcessed > 0)
-                    Console.WriteLine($"Audit snapshots compacted: {compactionResult.SessionsProcessed} sessions, {compactionResult.CompressionRatio:P0} reduction.");
+                Console.WriteLine($"Auto-compacting audit snapshots ({count} approvals since last compact)...");
+                TaskCompactHandler.RunCompaction(configService);
+                count = 0;
             }
+
+            File.WriteAllText(counterPath, count.ToString());
         }
         catch
         {
-            // Compaction failure should not block approval
+            // Auto-compact failure should not affect approval
         }
     }
 }

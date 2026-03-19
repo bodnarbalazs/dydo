@@ -16,6 +16,7 @@ using DynaDocs.Models;
 [JsonSerializable(typeof(PathsConfig))]
 [JsonSerializable(typeof(AgentsConfig))]
 [JsonSerializable(typeof(DispatchConfig))]
+[JsonSerializable(typeof(TasksConfig))]
 [JsonSerializable(typeof(RoleDefinition))]
 [JsonSerializable(typeof(RoleConstraint))]
 [JsonSerializable(typeof(List<RoleConstraint>))]

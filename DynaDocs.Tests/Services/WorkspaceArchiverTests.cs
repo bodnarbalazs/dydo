@@ -89,6 +89,27 @@ public class WorkspaceArchiverTests : IDisposable
     }
 
     [Fact]
+    public void ArchiveWorkspace_PreservesWorktreeMarkers()
+    {
+        var ws = CreateWorkspace();
+        var worktreeMarkers = new[]
+        {
+            ".worktree", ".worktree-path", ".worktree-base", ".worktree-root",
+            ".worktree-hold", ".merge-source", ".needs-merge"
+        };
+        foreach (var marker in worktreeMarkers)
+            File.WriteAllText(Path.Combine(ws, marker), "marker");
+        File.WriteAllText(Path.Combine(ws, "plan.md"), "plan");
+
+        var result = WorkspaceArchiver.ArchiveWorkspace(ws);
+
+        Assert.NotNull(result);
+        Assert.True(File.Exists(Path.Combine(result, "plan.md")));
+        foreach (var marker in worktreeMarkers)
+            Assert.True(File.Exists(Path.Combine(ws, marker)), $"{marker} must survive ArchiveWorkspace");
+    }
+
+    [Fact]
     public void ArchiveWorkspace_CreatesTimestampedSnapshot()
     {
         var ws = CreateWorkspace();

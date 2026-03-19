@@ -1,9 +1,7 @@
 ---
 area: general
-name: fix-source-generator-errors
-status: human-reviewed
-created: 2026-03-19T19:12:21.7265148Z
-assigned: Charlie
+type: changelog
+date: 2026-03-19
 ---
 
 # Task: fix-source-generator-errors
@@ -30,3 +28,7 @@ No code changes needed — all three issues from the brief were already resolved
 - Notes: LGTM. Build is clean (0 warnings, 0 errors with -warnaserror). All three issues confirmed resolved: GuardLiftMarker registered in DydoJsonContext, GeneratedRegex partials correct, build passes. 2850 tests pass. No code changes were made — no coverage regressions. Pre-existing gap_check failures in GuardCommand, RoleDefinitionService, WatchdogService, RoleConstraintEvaluator are out-of-scope.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-19 19:41

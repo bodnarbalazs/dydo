@@ -1325,6 +1325,7 @@ public partial class AgentRegistry : IAgentRegistry
             status: {state.Status.ToString().ToLowerInvariant()}
             assigned: {state.AssignedHuman ?? GetHumanForAgent(agentName) ?? "unassigned"}
             dispatched-by: {state.DispatchedBy ?? "null"}
+            dispatched-by-role: {state.DispatchedByRole ?? "null"}
             window-id: {state.WindowId ?? "null"}
             auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
@@ -1381,6 +1382,7 @@ public partial class AgentRegistry : IAgentRegistry
         ["status"] = (s, v) => s.Status = ParseStatus(v),
         ["assigned"] = (s, v) => s.AssignedHuman = v is "unassigned" or "null" ? null : v,
         ["dispatched-by"] = (s, v) => s.DispatchedBy = NullableString(v),
+        ["dispatched-by-role"] = (s, v) => s.DispatchedByRole = NullableString(v),
         ["window-id"] = (s, v) => s.WindowId = NullableString(v),
         ["auto-close"] = (s, v) => s.AutoClose = v == "true",
         ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },
@@ -2063,7 +2065,9 @@ public partial class AgentRegistry : IAgentRegistry
 
     private static readonly HashSet<string> SystemManagedEntries = new(StringComparer.OrdinalIgnoreCase)
     {
-        "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox"
+        "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox",
+        ".worktree", ".worktree-path", ".worktree-base", ".worktree-root", ".worktree-hold",
+        ".merge-source", ".needs-merge"
     };
 
     /// <summary>

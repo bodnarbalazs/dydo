@@ -3,6 +3,8 @@ namespace DynaDocs.Commands;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -49,7 +51,76 @@ public static class WorktreeCommand
         });
         command.Subcommands.Add(mergeCommand);
 
+        var initSettingsCommand = new Command("init-settings", "Copy settings.local.json to worktree with Read permission for main repo path");
+        var mainRootOption = new Option<string>("--main-root")
+        {
+            Description = "Absolute path to the main project root",
+            Required = true
+        };
+        initSettingsCommand.Options.Add(mainRootOption);
+        initSettingsCommand.SetAction((result) =>
+        {
+            var mainRoot = result.GetValue(mainRootOption)!;
+            return ExecuteInitSettings(mainRoot);
+        });
+        command.Subcommands.Add(initSettingsCommand);
+
         return command;
+    }
+
+    private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
+
+    internal static int ExecuteInitSettings(string mainRoot)
+    {
+        var sourcePath = Path.Combine(mainRoot, ".claude", "settings.local.json");
+
+        JsonNode settings;
+        if (File.Exists(sourcePath))
+        {
+            try
+            {
+                settings = JsonNode.Parse(File.ReadAllText(sourcePath)) ?? new JsonObject();
+            }
+            catch
+            {
+                settings = new JsonObject();
+            }
+        }
+        else
+        {
+            // No source settings — nothing to copy
+            return ExitCodes.Success;
+        }
+
+        var permissions = settings["permissions"]?.AsObject() ?? new JsonObject();
+        settings["permissions"] = permissions;
+
+        var allow = permissions["allow"]?.AsArray() ?? new JsonArray();
+        permissions["allow"] = allow;
+
+        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+        var readEntry = $"Read({normalizedRoot}/**)";
+
+        var alreadyPresent = false;
+        foreach (var item in allow)
+        {
+            if (item?.GetValue<string>() == readEntry)
+            {
+                alreadyPresent = true;
+                break;
+            }
+        }
+
+        if (!alreadyPresent)
+            allow.Add((JsonNode)readEntry);
+
+        var claudeDir = Path.Combine(Directory.GetCurrentDirectory(), ".claude");
+        Directory.CreateDirectory(claudeDir);
+
+        var targetPath = Path.Combine(claudeDir, "settings.local.json");
+        File.WriteAllText(targetPath, settings.ToJsonString(WriteOptions));
+
+        return ExitCodes.Success;
     }
 
     internal static int ExecuteCleanup(string worktreeId, string agentName)

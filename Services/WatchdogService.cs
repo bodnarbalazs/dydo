@@ -156,7 +156,10 @@ public static class WatchdogService
     {
         try
         {
-            var psi = new ProcessStartInfo("wt", $"-w {windowId} close")
+            var wtPath = ResolveWtExe();
+            if (wtPath == null) return false;
+
+            var psi = new ProcessStartInfo(wtPath, $"-w {windowId} close")
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -172,6 +175,36 @@ public static class WatchdogService
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Resolve the full path to wt.exe. Background processes may not have
+    /// the MSIX alias directory on PATH, so check the known location first.
+    /// </summary>
+    internal static string? ResolveWtExe()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrEmpty(localAppData))
+        {
+            var alias = Path.Combine(localAppData, "Microsoft", "WindowsApps", "wt.exe");
+            if (File.Exists(alias)) return alias;
+        }
+
+        // Fall back to PATH lookup
+        var pathVar = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathVar)) return null;
+
+        foreach (var dir in pathVar.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var candidate = Path.Combine(dir, "wt.exe");
+                if (File.Exists(candidate)) return candidate;
+            }
+            catch { }
+        }
+
+        return null;
     }
 
     internal static void ClearAutoClose(string statePath)

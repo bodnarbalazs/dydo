@@ -81,14 +81,14 @@ public class TerminalLauncher
                    $"git worktree add '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' -b worktree/{branchSuffix} && " +
                    $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
                    $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
-                   $"mkdir -p .claude && (cp '{escapedRoot}/.claude/settings.local.json' .claude/settings.local.json 2>/dev/null || true) && ";
+                   $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
         }
 
         return $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees/{worktreeId} && git worktree prune && " +
                $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{branchSuffix} && " +
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
                $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
-               $"mkdir -p .claude && (cp \"$_wt_root/.claude/settings.local.json\" .claude/settings.local.json 2>/dev/null || true) && ";
+               $"(dydo worktree init-settings --main-root \"$_wt_root\" 2>/dev/null || true) && ";
     }
 
     internal static string WorktreeCleanupScript(string worktreeId, string agentName) =>

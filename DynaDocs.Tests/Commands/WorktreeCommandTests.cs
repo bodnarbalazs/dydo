@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Commands;
 
+using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Services;
 
@@ -622,6 +623,120 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
         }
+    }
+
+    [Fact]
+    public void InitSettings_CopiesSettingsWithReadPermission()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), """
+            {
+              "hooks": { "PreToolUse": [] }
+            }
+            """);
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            Assert.True(File.Exists(targetPath));
+
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]?["allow"]?.AsArray();
+            Assert.NotNull(allow);
+
+            var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+            var expected = $"Read({normalizedRoot}/**)";
+            Assert.Contains(allow, item => item?.GetValue<string>() == expected);
+
+            // Original hooks preserved
+            Assert.NotNull(json["hooks"]?["PreToolUse"]);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_Idempotent_NoDuplicateReadEntry()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "{}");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            WorktreeCommand.ExecuteInitSettings(mainRoot);
+            WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+
+            var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+            var expected = $"Read({normalizedRoot}/**)";
+            var count = allow.Count(item => item?.GetValue<string>() == expected);
+            Assert.Equal(1, count);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_NoSourceSettings_ReturnsSuccessWithoutWriting()
+    {
+        var mainRoot = Path.Combine(_testDir, "no-such-repo");
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            Assert.False(File.Exists(Path.Combine(worktreeDir, ".claude", "settings.local.json")));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_ContainsInitSettings()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
+        Assert.Contains("dydo worktree init-settings --main-root", script);
+        Assert.DoesNotContain("cp ", script);
+        Assert.DoesNotContain("mkdir -p .claude", script);
+    }
+
+    [Fact]
+    public void WindowsArguments_ContainInitSettings()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
+        Assert.Contains("dydo worktree init-settings --main-root", args);
+        Assert.DoesNotContain("Copy-Item", args);
     }
 
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)

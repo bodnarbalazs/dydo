@@ -2522,4 +2522,80 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region DispatchedByRole Persistence Tests
+
+    private void CreateInboxItemWithFromRole(string agentName, string task, string role, string from, string fromRole)
+    {
+        var inboxPath = Path.Combine(_testDir, "dydo", "agents", agentName, "inbox");
+        Directory.CreateDirectory(inboxPath);
+        var sanitizedTask = task.Replace(':', '-').Replace('<', '-').Replace('>', '-');
+        File.WriteAllText(Path.Combine(inboxPath, $"abcd1234-{sanitizedTask}.md"), $"""
+            ---
+            id: abcd1234
+            from: {from}
+            from_role: {fromRole}
+            role: {role}
+            task: {task}
+            received: 2026-01-01T00:00:00Z
+            origin: {from}
+            ---
+
+            # {role.ToUpperInvariant()} Request: {task}
+            """);
+    }
+
+    [Fact]
+    public void SetRole_PersistsDispatchedByRole_InStateFile()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-dbr1");
+        CreateInboxItemWithFromRole("Adele", "fix-bug", "reviewer", "Brian", "code-writer");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-session-dbr1", "reviewer", "fix-bug", out var error);
+
+        Assert.True(result, $"SetRole failed: {error}");
+
+        // Read state file directly from disk to verify dispatched-by-role is persisted
+        var statePath = Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("dispatched-by-role: code-writer", stateContent);
+        Assert.Contains("dispatched-by: Brian", stateContent);
+    }
+
+    [Fact]
+    public void SetRole_DispatchedByRole_SurvivesReload()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-dbr2");
+        CreateInboxItemWithFromRole("Adele", "fix-bug", "reviewer", "Brian", "code-writer");
+
+        var registry = new AgentRegistry(_testDir);
+        registry.SetRole("test-session-dbr2", "reviewer", "fix-bug", out _);
+
+        // Reload registry from disk (simulates new process)
+        var registry2 = new AgentRegistry(_testDir);
+        var state = registry2.GetAgentState("Adele");
+
+        Assert.Equal("code-writer", state?.DispatchedByRole);
+        Assert.Equal("Brian", state?.DispatchedBy);
+    }
+
+    [Fact]
+    public void SetRole_WithoutFromRole_PersistsNullDispatchedByRole()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-dbr3");
+        CreateInboxItem("Adele", "fix-bug", "reviewer");
+
+        var registry = new AgentRegistry(_testDir);
+        registry.SetRole("test-session-dbr3", "reviewer", "fix-bug", out _);
+
+        var statePath = Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md");
+        var stateContent = File.ReadAllText(statePath);
+        Assert.Contains("dispatched-by-role: null", stateContent);
+    }
+
+    #endregion
 }

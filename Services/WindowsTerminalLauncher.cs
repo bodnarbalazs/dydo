@@ -36,8 +36,7 @@ public static class WindowsTerminalLauncher
                        $"Set-Location {wtDir}; " +
                        $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
                        $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
-                       $"New-Item -ItemType Directory -Force -Path .claude | Out-Null; " +
-                       $"if (Test-Path '{escapedRoot}/.claude/settings.local.json') {{ Copy-Item '{escapedRoot}/.claude/settings.local.json' .claude/settings.local.json -Force; }} " +
+                       $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{}}; " +
                        $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                        $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
             }
@@ -50,8 +49,7 @@ public static class WindowsTerminalLauncher
                    $"Set-Location {wtDirRel}; " +
                    $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
-                   $"New-Item -ItemType Directory -Force -Path .claude | Out-Null; " +
-                   $"$_settings = Join-Path $_wt_root.Path '.claude/settings.local.json'; if (Test-Path $_settings) {{ Copy-Item $_settings .claude/settings.local.json -Force; }} " +
+                   $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{}}; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }

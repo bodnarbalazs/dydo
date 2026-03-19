@@ -1,9 +1,7 @@
 ---
 area: general
-name: human-only-commands
-status: human-reviewed
-created: 2026-03-19T18:55:22.1350032Z
-assigned: Dexter
+type: changelog
+date: 2026-03-19
 ---
 
 # Task: human-only-commands
@@ -30,3 +28,7 @@ Implemented H28: agents are blocked from running human-only dydo commands (task 
 - Notes: LGTM. Clean H28 implementation: source-generated regex, correct placement in HandleDydoBashCommand (after claim, before wait), 14 meaningful tests. gap_check exits non-zero but failures are pre-existing (CheckBashFileOperation 0% cov, RoleDefinitionService, RoleConstraintEvaluator, WatchdogService) — none caused by H28.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-03-19 19:41

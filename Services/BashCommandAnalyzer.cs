@@ -183,83 +183,83 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     ];
 
     // Bypass detection patterns
-    [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`", RegexOptions.Compiled)]
+    [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
     private static partial Regex CommandSubstitutionRegex();
 
-    [GeneratedRegex(@"base64\s+(-d|--decode)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"base64\s+(-d|--decode)", RegexOptions.IgnoreCase)]
     private static partial Regex Base64DecodeRegex();
 
-    [GeneratedRegex(@"xxd\s+-r|od\s+-A", RegexOptions.Compiled)]
+    [GeneratedRegex(@"xxd\s+-r|od\s+-A")]
     private static partial Regex HexDecodeRegex();
 
-    [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}", RegexOptions.Compiled)]
+    [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}")]
     private static partial Regex VariableExpansionRegex();
 
     // Dangerous pattern regexes (generated for performance)
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)")]
     private static partial Regex RecursiveDeleteRootRegex();
 
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)")]
     private static partial Regex RecursiveDeleteGlobRegex();
 
-    [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:", RegexOptions.Compiled)]
+    [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:")]
     private static partial Regex ForkBombClassicRegex();
 
-    [GeneratedRegex(@"\.\s*/\s*\.:", RegexOptions.Compiled)]
+    [GeneratedRegex(@"\.\s*/\s*\.:")]
     private static partial Regex ForkBombAltRegex();
 
-    [GeneratedRegex(@">\s*/dev/sd[a-z]", RegexOptions.Compiled)]
+    [GeneratedRegex(@">\s*/dev/sd[a-z]")]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/sd[a-z]", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/sd[a-z]", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
 
-    [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
     private static partial Regex CurlPipeShRegex();
 
-    [GeneratedRegex(@"wget\s+[^|]*\|\s*(ba)?sh", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"wget\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
     private static partial Regex WgetPipeShRegex();
 
-    [GeneratedRegex(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
     private static partial Regex WgetOutputPipeShRegex();
 
-    [GeneratedRegex(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", RegexOptions.IgnoreCase)]
     private static partial Regex PowerShellIwrIexRegex();
 
-    [GeneratedRegex(@"iwr\s+[^|]*\|\s*iex", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"iwr\s+[^|]*\|\s*iex", RegexOptions.IgnoreCase)]
     private static partial Regex PowerShellIwrIexShortRegex();
 
-    [GeneratedRegex(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", RegexOptions.IgnoreCase)]
     private static partial Regex PowerShellDownloadStringRegex();
 
-    [GeneratedRegex(@"eval\s+\$", RegexOptions.Compiled)]
+    [GeneratedRegex(@"eval\s+\$")]
     private static partial Regex EvalVariableRegex();
 
-    [GeneratedRegex(@"history\s+-c", RegexOptions.Compiled)]
+    [GeneratedRegex(@"history\s+-c")]
     private static partial Regex HistoryClearRegex();
 
-    [GeneratedRegex(@">\s*~/\.bash_history|>\s*~/\.zsh_history", RegexOptions.Compiled)]
+    [GeneratedRegex(@">\s*~/\.bash_history|>\s*~/\.zsh_history")]
     private static partial Regex HistoryFileTruncateRegex();
 
-    [GeneratedRegex(@"Remove-Item.*ConsoleHost_history\.txt", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"Remove-Item.*ConsoleHost_history\.txt", RegexOptions.IgnoreCase)]
     private static partial Regex PowerShellHistoryDeleteRegex();
 
-    [GeneratedRegex(@"setenforce\s+0", RegexOptions.Compiled)]
+    [GeneratedRegex(@"setenforce\s+0")]
     private static partial Regex SelinuxDisableRegex();
 
-    [GeneratedRegex(@"iptables\s+-F", RegexOptions.Compiled)]
+    [GeneratedRegex(@"iptables\s+-F")]
     private static partial Regex FirewallFlushRegex();
 
-    [GeneratedRegex(@"cat\s+/etc/shadow|head\s+/etc/shadow|tail\s+/etc/shadow", RegexOptions.Compiled)]
+    [GeneratedRegex(@"cat\s+/etc/shadow|head\s+/etc/shadow|tail\s+/etc/shadow")]
     private static partial Regex ShadowFileAccessRegex();
 
-    [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.Compiled)]
+    [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd")]
     private static partial Regex PasswdModifyRegex();
 
-    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+worktree\s+add(?:\s|$|;|&&|\|\|)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+worktree\s+add(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitWorktreeAddRegex();
 
-    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+worktree\s+remove(?:\s|$|;|&&|\|\|)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+worktree\s+remove(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitWorktreeRemoveRegex();
 
     // Coaching: detect needless cd+command compounds
@@ -267,10 +267,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex CdThenCommandRegex();
 
     // Redirection patterns
-    [GeneratedRegex(@"(?<!\d)(>{1,2})\s*([^\s|;&><]+)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"(?<!\d)(>{1,2})\s*([^\s|;&><]+)")]
     private static partial Regex OutputRedirectRegex();
 
-    [GeneratedRegex(@"<\s*([^\s|;&><]+)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"<\s*([^\s|;&><]+)")]
     private static partial Regex InputRedirectRegex();
 
     public (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command)

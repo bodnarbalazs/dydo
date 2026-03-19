@@ -17,9 +17,6 @@ public class InboxMetadataReader
     public string? GetDispatchedFrom(string agentName, string task) =>
         ReadFrontmatterField(agentName, task, "from");
 
-    public string? GetDispatchedFromRole(string agentName, string task) =>
-        ReadFrontmatterField(agentName, task, "from_role");
-
     private string? ReadFrontmatterField(string agentName, string task, string fieldName)
     {
         var inboxPath = Path.Combine(_getAgentWorkspace(agentName), "inbox");

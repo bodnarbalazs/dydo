@@ -81,6 +81,7 @@ public class TerminalLauncher
                    $"git worktree add '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' -b worktree/{branchSuffix} && " +
                    $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
                    $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
+                   $"rm -rf dydo/_system/roles && ln -s '{escapedRoot}/dydo/_system/roles' dydo/_system/roles && " +
                    $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
         }
 
@@ -88,6 +89,7 @@ public class TerminalLauncher
                $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{branchSuffix} && " +
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
                $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
+               $"rm -rf dydo/_system/roles && ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles && " +
                $"(dydo worktree init-settings --main-root \"$_wt_root\" 2>/dev/null || true) && ";
     }
 

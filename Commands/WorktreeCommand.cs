@@ -98,21 +98,23 @@ public static class WorktreeCommand
         var allow = permissions["allow"]?.AsArray() ?? new JsonArray();
         permissions["allow"] = allow;
 
-        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
-        var readEntry = $"Read({normalizedRoot}/**)";
+        var normalizedRoot = mainRoot.TrimEnd('/', '\\');
+        var readAbsoluteEntry = $"Read({normalizedRoot}/**)";
+        var readWildcardEntry = "Read(**)";
 
-        var alreadyPresent = false;
+        var hasAbsolute = false;
+        var hasWildcard = false;
         foreach (var item in allow)
         {
-            if (item?.GetValue<string>() == readEntry)
-            {
-                alreadyPresent = true;
-                break;
-            }
+            var value = item?.GetValue<string>();
+            if (value == readAbsoluteEntry) hasAbsolute = true;
+            if (value == readWildcardEntry) hasWildcard = true;
         }
 
-        if (!alreadyPresent)
-            allow.Add((JsonNode)readEntry);
+        if (!hasAbsolute)
+            allow.Add((JsonNode)readAbsoluteEntry);
+        if (!hasWildcard)
+            allow.Add((JsonNode)readWildcardEntry);
 
         var claudeDir = Path.Combine(Directory.GetCurrentDirectory(), ".claude");
         Directory.CreateDirectory(claudeDir);
@@ -155,7 +157,8 @@ public static class WorktreeCommand
             return ExitCodes.Success;
         }
 
-        RemoveAgentsJunction(worktreePath);
+        RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
+        RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
         RemoveGitWorktree(worktreePath);
         DeleteWorktreeBranch(worktreeId);
 
@@ -277,9 +280,8 @@ public static class WorktreeCommand
         return p?.ExitCode ?? 1;
     }
 
-    internal static void RemoveAgentsJunction(string worktreePath)
+    internal static void RemoveJunction(string junctionPath)
     {
-        var junctionPath = Path.Combine(worktreePath, "dydo", "agents");
         if (!Path.Exists(junctionPath)) return;
 
         try
@@ -373,6 +375,8 @@ public static class WorktreeCommand
         if (finalize)
             return FinalizeMerge(registry, agent.Name, workspace, mergeSource);
 
+        Console.WriteLine($"Merging worktree branch {mergeSource} into {baseBranch}...");
+
         var currentBranch = DispatchService.GetCurrentGitBranch();
         if (!string.Equals(currentBranch, baseBranch, StringComparison.OrdinalIgnoreCase))
             RunProcess("git", $"checkout {baseBranch}");
@@ -401,7 +405,8 @@ public static class WorktreeCommand
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
         {
-            RemoveAgentsJunction(worktreePath);
+            RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
+            RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
             RemoveGitWorktree(worktreePath);
         }
 

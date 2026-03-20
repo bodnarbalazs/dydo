@@ -140,6 +140,22 @@ public class PathPermissionCheckerTests
         Assert.True(checker.IsPathAllowed(agent, absPath, "write", out _));
     }
 
+    [Fact]
+    public void IsPathAllowed_WorktreeBasePath_ResolvesAbsolutePathCorrectly()
+    {
+        // Simulate a worktree CWD
+        var mainRoot = Path.Combine(Path.GetTempPath(), $"dydo-ppc-wt-{Guid.NewGuid():N}");
+        var worktreeBase = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "fix-auth");
+        var configService = new FakeConfigServiceForPPC(worktreeBase);
+        var checker = new PathPermissionChecker(worktreeBase, configService, new Dictionary<string, RoleDefinition>());
+        var agent = CreateAgent("Alice", "code-writer", ["Commands/**"]);
+
+        // Absolute path in the main project (after NormalizeWorktreePath)
+        var absPath = Path.Combine(mainRoot, "Commands", "MyCmd.cs");
+
+        Assert.True(checker.IsPathAllowed(agent, absPath, "write", out _));
+    }
+
     #endregion
 
     #region MatchesGlob

@@ -113,6 +113,20 @@ public static partial class PathUtils
     }
 
     /// <summary>
+    /// Detects if a directory is inside a worktree and returns the main project root.
+    /// Returns null if the directory is not inside a worktree.
+    /// </summary>
+    public static string? GetMainProjectRoot(string cwd)
+    {
+        var normalized = cwd.Replace('\\', '/');
+        const string marker = "dydo/_system/.local/worktrees/";
+        var markerIndex = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+            return null;
+        return normalized[..markerIndex].TrimEnd('/');
+    }
+
+    /// <summary>
     /// Normalizes a path for pattern matching/comparison.
     /// Converts backslashes, removes leading './' and '/', but preserves case.
     /// Use for glob pattern matching, regex comparison with IgnoreCase.
@@ -135,6 +149,26 @@ public static partial class PathUtils
     public static string NormalizeForKey(string path)
     {
         return NormalizeForPattern(path).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Ensures the dydo/_system/.local/ directory exists. Needed in worktrees where
+    /// the gitignored .local/ directory is absent.
+    /// </summary>
+    public static void EnsureLocalDirExists(string dydoRoot)
+    {
+        var localDir = Path.Combine(dydoRoot, "_system", ".local");
+        Directory.CreateDirectory(localDir);
+    }
+
+    /// <summary>
+    /// Returns true if the given path (or CWD) is inside a dydo worktree.
+    /// Detects the marker 'dydo/_system/.local/worktrees/' in the path.
+    /// </summary>
+    public static bool IsInsideWorktree(string? path = null)
+    {
+        var check = (path ?? Environment.CurrentDirectory).Replace('\\', '/');
+        return check.Contains("dydo/_system/.local/worktrees/", StringComparison.OrdinalIgnoreCase);
     }
 
     [GeneratedRegex(@"^[a-z0-9]+([.\-][a-z0-9]+)*$")]

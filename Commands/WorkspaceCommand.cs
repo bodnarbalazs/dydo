@@ -46,6 +46,12 @@ public static class WorkspaceCommand
 
     private static int ExecuteInit(string? basePath)
     {
+        if (PathUtils.IsInsideWorktree(basePath))
+        {
+            Console.Error.WriteLine("Cannot initialize workspaces inside a worktree. Run from the main project directory.");
+            return 1;
+        }
+
         basePath ??= Environment.CurrentDirectory;
         var registry = new AgentRegistry(basePath);
 

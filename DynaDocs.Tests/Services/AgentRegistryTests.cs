@@ -2005,7 +2005,8 @@ public class AgentRegistryTests : IDisposable
     [Fact]
     public void IsWorktreeStale_ReturnsFalse_WhenDirectoryExists()
     {
-        var wtDir = Path.Combine(_testDir, "_system", ".local", "worktrees", "test-wt-id");
+        // GetDydoRoot resolves to _testDir/dydo/ when no dydo.json exists
+        var wtDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", "test-wt-id");
         Directory.CreateDirectory(wtDir);
 
         Assert.False(_registry.IsWorktreeStale("test-wt-id"));

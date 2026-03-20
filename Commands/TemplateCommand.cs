@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public static class TemplateCommand
 {
@@ -55,6 +56,12 @@ public static class TemplateCommand
 
     private static int ExecuteUpdate(bool diff, bool force)
     {
+        if (PathUtils.IsInsideWorktree())
+        {
+            Console.Error.WriteLine("Cannot update templates inside a worktree. Run from the main project directory.");
+            return 1;
+        }
+
         var configService = new ConfigService();
         var configPath = configService.FindConfigFile();
         if (configPath == null)

@@ -98,7 +98,19 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-
 dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tests pass."
 ```
 
-**Baton-passing:** If you were dispatched as part of a chain (check inbox `From`/`Origin`), the baton is with you — you are the last agent. Message back to the origin:
+#### Worktree merge dispatch
+
+If you are in a worktree (check for a `.worktree` marker in your workspace), `dydo review complete` will create a `.needs-merge` marker and print a dispatch hint. **You must dispatch a code-writer to merge before releasing.** Follow the hint:
+
+```bash
+dydo dispatch --no-wait --auto-close --role code-writer --task <task-name>-merge --brief "Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace."
+```
+
+This dispatch clears your `.needs-merge` marker, unblocking release. If you try to release without dispatching the merge, it will be blocked.
+
+#### Baton-passing and release
+
+If you were dispatched as part of a chain (check inbox `From`/`Origin`), the baton is with you — you are the last agent. Message back to the origin:
 
 ```bash
 dydo msg --to <origin> --subject <task-name> --body "Review passed. Task complete. [key details]"

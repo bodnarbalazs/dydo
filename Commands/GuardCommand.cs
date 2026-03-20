@@ -136,11 +136,11 @@ public static partial class GuardCommand
         if (ctx.HasCliArgs && string.IsNullOrEmpty(sessionId))
             sessionId = registry.GetSessionContext();
 
-        var filePath = PathUtils.NormalizeWorktreePath(ctx.FilePath) ?? ctx.FilePath;
+        var filePath = ResolveWorktreePath(ctx.FilePath);
         var action = ctx.Action;
         var bashCommand = ctx.BashCommand;
         var toolName = ctx.ToolName;
-        var searchPath = PathUtils.NormalizeWorktreePath(ctx.SearchPath) ?? ctx.SearchPath;
+        var searchPath = ResolveWorktreePath(ctx.SearchPath);
         var runInBackground = ctx.RunInBackground;
 
         // Load off-limits patterns
@@ -304,7 +304,7 @@ public static partial class GuardCommand
         return ExitCodes.ToolError;
     }
 
-    private static bool ShouldBypassOffLimits(string filePath, AgentState? agent)
+    internal static bool ShouldBypassOffLimits(string filePath, AgentState? agent)
     {
         if (IsBootstrapFile(filePath))
             return true;
@@ -669,7 +669,7 @@ public static partial class GuardCommand
         return ExitCodes.Success;
     }
 
-    private static int? CheckBashFileOperation(
+    internal static int? CheckBashFileOperation(
         FileOperation op, string command, string? sessionId,
         IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
     {
@@ -862,9 +862,29 @@ public static partial class GuardCommand
     }
 
     /// <summary>
+    /// Resolves a path for worktree-aware guard checks.
+    /// When CWD is inside a worktree, converts relative paths to absolute first
+    /// (so ../../../ chains resolve correctly), then normalizes to main project paths.
+    /// In non-worktree contexts, paths pass through unchanged.
+    /// </summary>
+    internal static string? ResolveWorktreePath(string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return path;
+
+        var resolved = path;
+
+        // Only resolve relative paths to absolute when CWD is inside a worktree
+        if (!Path.IsPathRooted(resolved) && PathUtils.GetMainProjectRoot(Environment.CurrentDirectory) != null)
+            resolved = Path.GetFullPath(resolved);
+
+        return PathUtils.NormalizeWorktreePath(resolved) ?? resolved;
+    }
+
+    /// <summary>
     /// Truncate a command for display in error messages.
     /// </summary>
-    private static string TruncateCommand(string command)
+    internal static string TruncateCommand(string command)
     {
         const int maxLength = 100;
         if (command.Length <= maxLength)
@@ -906,7 +926,7 @@ public static partial class GuardCommand
     /// Stage 1 (identity, no role): + mode files for claimed agent
     /// Stage 2 (identity + role): All reads allowed (RBAC only restricts writes)
     /// </summary>
-    private static bool IsReadAllowed(string? filePath, AgentState? agent)
+    internal static bool IsReadAllowed(string? filePath, AgentState? agent)
     {
         // No path = allow (might be a non-file operation)
         if (string.IsNullOrEmpty(filePath))
@@ -941,7 +961,7 @@ public static partial class GuardCommand
     /// Check if a file is a bootstrap file that can be read without identity.
     /// Bootstrap files: root-level files, dydo/index.md, dydo/agents/*/workflow.md
     /// </summary>
-    private static bool IsBootstrapFile(string filePath)
+    internal static bool IsBootstrapFile(string filePath)
     {
         // Normalize path separators for consistent matching
         var normalizedPath = filePath.Replace('\\', '/');
@@ -972,7 +992,7 @@ public static partial class GuardCommand
     /// Check if a file is a mode file for the specified agent.
     /// Mode files: dydo/agents/{agentName}/modes/*.md
     /// </summary>
-    private static bool IsModeFile(string filePath, string agentName)
+    internal static bool IsModeFile(string filePath, string agentName)
     {
         // Normalize path separators for consistent matching
         var normalizedPath = filePath.Replace('\\', '/');
@@ -986,7 +1006,7 @@ public static partial class GuardCommand
     /// Check if a file is another agent's workflow file.
     /// Returns true if the path is a workflow.md but NOT for the specified agent.
     /// </summary>
-    private static bool IsOtherAgentWorkflow(string filePath, string agentName)
+    internal static bool IsOtherAgentWorkflow(string filePath, string agentName)
     {
         var normalizedPath = filePath.Replace('\\', '/');
         if (!Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase))
@@ -999,7 +1019,7 @@ public static partial class GuardCommand
     /// Check if a file is any agent's mode file.
     /// Mode files: dydo/agents/*/modes/*.md
     /// </summary>
-    private static bool IsAnyModeFile(string filePath)
+    internal static bool IsAnyModeFile(string filePath)
     {
         // Normalize path separators for consistent matching
         var normalizedPath = filePath.Replace('\\', '/');
@@ -1012,7 +1032,7 @@ public static partial class GuardCommand
     /// Parse a bash command to detect dydo agent claim commands.
     /// Returns (isClaim, agentName) where agentName may be "auto" or a specific agent name.
     /// </summary>
-    private static (bool isClaim, string? agentName) ParseClaimCommand(string command)
+    internal static (bool isClaim, string? agentName) ParseClaimCommand(string command)
     {
         // Match: dydo agent claim <name> or ./dydo agent claim <name>
         // Account for command chaining with ; && ||
@@ -1026,7 +1046,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Check if a command is 'dydo wait' (not --cancel).
     /// </summary>
-    private static bool IsDydoWaitCommand(string command)
+    internal static bool IsDydoWaitCommand(string command)
     {
         if (!Regex.IsMatch(command, @"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b", RegexOptions.IgnoreCase))
             return false;
@@ -1038,7 +1058,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Check if a command is a dydo command.
     /// </summary>
-    private static bool IsDydoCommand(string command)
+    internal static bool IsDydoCommand(string command)
     {
         // Match: dydo ... or ./dydo ...
         return Regex.IsMatch(command,
@@ -1059,7 +1079,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Check if a command is a human-only dydo command (task approve/reject, roles reset, guard lift/restore).
     /// </summary>
-    private static bool IsHumanOnlyDydoCommand(string command)
+    internal static bool IsHumanOnlyDydoCommand(string command)
     {
         return HumanOnlyDydoCommandRegex().IsMatch(command);
     }
@@ -1144,7 +1164,7 @@ public static partial class GuardCommand
     /// Check if a command invokes dydo indirectly via npx, dotnet, shell, or python.
     /// Returns the invoker name and the args that follow dydo.
     /// </summary>
-    private static (bool isIndirect, string? invoker, string? dydoArgs) CheckIndirectDydoInvocation(string command)
+    internal static (bool isIndirect, string? invoker, string? dydoArgs) CheckIndirectDydoInvocation(string command)
     {
         var npxMatch = IndirectNpxDydoRegex().Match(command);
         if (npxMatch.Success)
@@ -1211,7 +1231,7 @@ public static partial class GuardCommand
     /// Normalizes a file path for must-read comparison by extracting the project-relative
     /// portion starting from "dydo/".
     /// </summary>
-    private static string NormalizeForMustReadComparison(string filePath)
+    internal static string NormalizeForMustReadComparison(string filePath)
     {
         var normalized = PathUtils.NormalizeWorktreePath(filePath)?.Replace('\\', '/') ?? filePath.Replace('\\', '/');
         var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
@@ -1221,7 +1241,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Extracts from/subject from a message file in an agent's inbox.
     /// </summary>
-    private static (string From, string? Subject)? FindMessageInfo(string workspace, string messageId)
+    internal static (string From, string? Subject)? FindMessageInfo(string workspace, string messageId)
     {
         var inboxPath = Path.Combine(workspace, "inbox");
         if (!Directory.Exists(inboxPath))
@@ -1265,7 +1285,7 @@ public static partial class GuardCommand
     /// Extracts message ID from an inbox message file path.
     /// Matches paths like */inbox/{id}-msg-*.md and returns the {id} portion.
     /// </summary>
-    private static string? ExtractMessageIdFromPath(string filePath)
+    internal static string? ExtractMessageIdFromPath(string filePath)
     {
         var normalized = filePath.Replace('\\', '/');
         var match = Regex.Match(normalized, @"/inbox/([a-f0-9]+)-msg-[^/]+\.md$", RegexOptions.IgnoreCase);
@@ -1275,7 +1295,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Helper to log an audit event with proper error handling.
     /// </summary>
-    private static void LogAuditEvent(
+    internal static void LogAuditEvent(
         IAuditService auditService,
         string? sessionId,
         IAgentRegistry registry,
@@ -1335,9 +1355,8 @@ public static partial class GuardCommand
                 Console.Error.WriteLine();
             }
 
-            // Update timestamp (create parent dir if needed)
-            var dir = Path.GetDirectoryName(timestampPath);
-            if (dir != null) Directory.CreateDirectory(dir);
+            // Ensure .local/ dir exists (absent in worktrees)
+            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
             File.WriteAllText(timestampPath, DateTime.UtcNow.ToString("O"));
         }
         catch

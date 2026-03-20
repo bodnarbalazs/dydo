@@ -654,9 +654,10 @@ public class WorktreeCommandTests : IDisposable
             var allow = json["permissions"]?["allow"]?.AsArray();
             Assert.NotNull(allow);
 
-            var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
-            var expected = $"Read({normalizedRoot}/**)";
-            Assert.Contains(allow, item => item?.GetValue<string>() == expected);
+            var trimmedRoot = mainRoot.TrimEnd('/', '\\');
+            var expectedAbsolute = $"Read({trimmedRoot}/**)";
+            Assert.Contains(allow, item => item?.GetValue<string>() == expectedAbsolute);
+            Assert.Contains(allow, item => item?.GetValue<string>() == "Read(**)");
 
             // Original hooks preserved
             Assert.NotNull(json["hooks"]?["PreToolUse"]);
@@ -689,10 +690,10 @@ public class WorktreeCommandTests : IDisposable
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
 
-            var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
-            var expected = $"Read({normalizedRoot}/**)";
-            var count = allow.Count(item => item?.GetValue<string>() == expected);
-            Assert.Equal(1, count);
+            var trimmedRoot = mainRoot.TrimEnd('/', '\\');
+            var expectedAbsolute = $"Read({trimmedRoot}/**)";
+            Assert.Equal(1, allow.Count(item => item?.GetValue<string>() == expectedAbsolute));
+            Assert.Equal(1, allow.Count(item => item?.GetValue<string>() == "Read(**)"));
         }
         finally
         {
@@ -723,6 +724,85 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void InitSettings_PreservesBackslashes_OnWindowsPaths()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "{}");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+            var entry = allow[0]!.GetValue<string>();
+
+            // The Read entry must preserve the path format as-is (backslashes on Windows)
+            Assert.StartsWith("Read(", entry);
+            Assert.EndsWith("/**)", entry);
+            Assert.Contains(mainRoot.TrimEnd('/', '\\'), entry);
+            // Must NOT convert backslashes to forward slashes
+            if (mainRoot.Contains('\\'))
+                Assert.Contains("\\", entry);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void Merge_OutputsProgressMessage()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (_, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.Contains("Merging worktree branch worktree/Adele-20260316 into main", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_LastAgent_RemovesRolesJunction()
+    {
+        var worktreeId = "Adele-20260314120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        // Create the roles junction target so RemoveJunction finds it
+        Directory.CreateDirectory(Path.Combine(worktreePath, "dydo", "_system", "roles"));
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir") && c.Arguments.Contains("roles"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
     public void WorktreeSetupScript_ContainsInitSettings()
     {
         var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
@@ -732,11 +812,39 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void WorktreeSetupScript_ContainsRolesSymlink()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
+        Assert.Contains("ln -s '/home/user/project/dydo/_system/roles' dydo/_system/roles", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithoutMainRoot_ContainsRolesSymlink()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task");
+        Assert.Contains("ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles", script);
+    }
+
+    [Fact]
     public void WindowsArguments_ContainInitSettings()
     {
         var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
         Assert.Contains("dydo worktree init-settings --main-root", args);
         Assert.DoesNotContain("Copy-Item", args);
+    }
+
+    [Fact]
+    public void WindowsArguments_ContainRolesJunction()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
+        Assert.Contains("Junction -Path dydo/_system/roles", args);
+    }
+
+    [Fact]
+    public void WindowsArguments_WithoutMainRoot_ContainRolesJunction()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
+        Assert.Contains("Junction -Path dydo/_system/roles", args);
     }
 
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)

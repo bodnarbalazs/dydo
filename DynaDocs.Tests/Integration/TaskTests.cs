@@ -774,6 +774,22 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_Compact_DirectoryExistsButNoSessions()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Create the audit year directory but leave it empty — no session files
+        var year = DateTime.UtcNow.ToString("yyyy");
+        var auditDir = Path.Combine(TestDir, "dydo", "_system", "audit", year);
+        Directory.CreateDirectory(auditDir);
+
+        var result = await TaskCompactAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Nothing to compact");
+    }
+
+    [Fact]
     public async Task Task_Approve_AutoCompact_TriggersAtInterval()
     {
         await InitProjectAsync("none", "balazs", 3);

@@ -236,4 +236,84 @@ public class PathUtilsTests
     }
 
     #endregion
+
+    #region GetMainProjectRoot
+
+    [Theory]
+    [InlineData("C:/Projects/DynaDocs/dydo/_system/.local/worktrees/fix-auth", "C:/Projects/DynaDocs")]
+    [InlineData("C:/Projects/DynaDocs/dydo/_system/.local/worktrees/fix-auth/", "C:/Projects/DynaDocs")]
+    [InlineData("C:\\Projects\\DynaDocs\\dydo\\_system\\.local\\worktrees\\fix-auth", "C:/Projects/DynaDocs")]
+    public void GetMainProjectRoot_WorktreeCwd_ReturnsMainRoot(string cwd, string expected)
+    {
+        Assert.Equal(expected, PathUtils.GetMainProjectRoot(cwd));
+    }
+
+    [Theory]
+    [InlineData("C:/Projects/DynaDocs")]
+    [InlineData("C:/Projects/DynaDocs/Commands")]
+    [InlineData("/home/user/project")]
+    public void GetMainProjectRoot_NonWorktreeCwd_ReturnsNull(string cwd)
+    {
+        Assert.Null(PathUtils.GetMainProjectRoot(cwd));
+    }
+
+    #endregion
+
+    #region EnsureLocalDirExists
+
+    [Fact]
+    public void EnsureLocalDirExists_CreatesDirectory()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            PathUtils.EnsureLocalDirExists(tempDir);
+            Assert.True(Directory.Exists(Path.Combine(tempDir, "_system", ".local")));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void EnsureLocalDirExists_IdempotentWhenAlreadyExists()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"dydo-test-{Guid.NewGuid():N}");
+        try
+        {
+            var localDir = Path.Combine(tempDir, "_system", ".local");
+            Directory.CreateDirectory(localDir);
+            PathUtils.EnsureLocalDirExists(tempDir);
+            Assert.True(Directory.Exists(localDir));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    #endregion
+
+    #region IsInsideWorktree
+
+    [Theory]
+    [InlineData("C:/Projects/DynaDocs/dydo/_system/.local/worktrees/fix-auth/Commands/Foo.cs", true)]
+    [InlineData("C:\\Projects\\DynaDocs\\dydo\\_system\\.local\\worktrees\\fix-auth", true)]
+    [InlineData("C:/Projects/DynaDocs/Commands/Foo.cs", false)]
+    [InlineData("C:/Projects/DynaDocs/dydo/agents/Charlie", false)]
+    public void IsInsideWorktree_DetectsWorktreePaths(string path, bool expected)
+    {
+        Assert.Equal(expected, PathUtils.IsInsideWorktree(path));
+    }
+
+    [Fact]
+    public void IsInsideWorktree_NullPath_ChecksCwd()
+    {
+        // CWD is the main project dir, not a worktree
+        Assert.False(PathUtils.IsInsideWorktree(null));
+    }
+
+    #endregion
 }

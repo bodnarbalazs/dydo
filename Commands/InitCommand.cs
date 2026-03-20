@@ -49,6 +49,12 @@ public static class InitCommand
 
         command.SetAction(parseResult =>
         {
+            if (PathUtils.IsInsideWorktree())
+            {
+                ConsoleOutput.WriteError("Cannot run init inside a worktree. Run from the main project directory.");
+                return ExitCodes.ToolError;
+            }
+
             var integration = parseResult.GetValue(integrationArgument)!;
             var join = parseResult.GetValue(joinOption);
             var name = parseResult.GetValue(nameOption);

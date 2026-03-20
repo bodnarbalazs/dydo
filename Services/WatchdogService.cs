@@ -10,6 +10,18 @@ public static class WatchdogService
         "powershell", "pwsh", "bash", "sh", "cmd", "zsh"
     };
 
+    /// <summary>
+    /// When set, TryCloseWindow and EnsureRunning use this instead of Process.Start.
+    /// Enables testing without spawning real wt.exe or watchdog processes.
+    /// </summary>
+    internal static Func<ProcessStartInfo, Process?>? StartProcessOverride { get; set; }
+
+    /// <summary>
+    /// When set, PollAndCleanup uses this instead of ProcessUtils.FindProcessesByCommandLine.
+    /// Enables testing the processes-still-running paths without real process scanning.
+    /// </summary>
+    internal static Func<string, List<int>>? FindProcessesOverride { get; set; }
+
     public static string GetPidFilePath(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "watchdog.pid");
 
@@ -48,10 +60,10 @@ public static class WatchdogService
                 RedirectStandardError = true
             };
 
-            var proc = Process.Start(psi);
+            var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
             if (proc == null) return false;
 
-            Directory.CreateDirectory(Path.GetDirectoryName(pidFile)!);
+            PathUtils.EnsureLocalDirExists(dydoRoot);
             File.WriteAllText(pidFile, proc.Id.ToString());
             return true;
         }
@@ -127,17 +139,28 @@ public static class WatchdogService
             var (autoClose, isFree, agentName, windowId) = ParseStateForWatchdog(statePath);
             if (!autoClose || !isFree || agentName == null) continue;
 
-            // Try closing the terminal window via Windows Terminal API
+            // Check if the agent's session processes are still running
+            var pattern = $"{agentName} --inbox";
+            var pids = FindProcessesOverride != null
+                ? FindProcessesOverride(pattern)
+                : ProcessUtils.FindProcessesByCommandLine(pattern);
+
+            if (pids.Count == 0)
+            {
+                // Terminal already closed (e.g., postClaudeCheck exited the shell).
+                // Just clear the flag — calling wt close on a gone window causes 0x80070002.
+                ClearAutoClose(statePath);
+                continue;
+            }
+
+            // Terminal still open — try clean close via Windows Terminal API
             if (windowId != null && TryCloseWindow(windowId))
             {
                 ClearAutoClose(statePath);
                 continue;
             }
 
-            // Fallback: kill matching non-shell processes
-            var pattern = $"{agentName} --inbox";
-            var pids = ProcessUtils.FindProcessesByCommandLine(pattern);
-
+            // Fallback: kill remaining non-shell processes
             foreach (var pid in pids)
             {
                 try
@@ -149,6 +172,8 @@ public static class WatchdogService
                 }
                 catch { }
             }
+
+            ClearAutoClose(statePath);
         }
     }
 
@@ -166,7 +191,7 @@ public static class WatchdogService
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            using var proc = Process.Start(psi);
+            using var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
             if (proc == null) return false;
             proc.WaitForExit(5000);
             return proc.ExitCode == 0;

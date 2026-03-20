@@ -66,8 +66,11 @@ public partial class AgentRegistry : IAgentRegistry
         return File.Exists(marker) ? File.ReadAllText(marker).Trim() : null;
     }
 
-    public bool IsWorktreeStale(string worktreeId) =>
-        !Directory.Exists(Path.Combine(_basePath, "_system", ".local", "worktrees", worktreeId));
+    public bool IsWorktreeStale(string worktreeId)
+    {
+        var dydoRoot = _configService.GetDydoRoot(_basePath) ?? _basePath;
+        return !Directory.Exists(Path.Combine(dydoRoot, "_system", ".local", "worktrees", worktreeId));
+    }
 
     public static string TruncateWorktreeId(string worktreeId)
     {
@@ -1276,6 +1279,10 @@ public partial class AgentRegistry : IAgentRegistry
         if (Path.IsPathRooted(path))
         {
             var projectRoot = _configService.GetProjectRoot(_basePath) ?? _basePath;
+            // In worktrees, use the main project root so paths resolve correctly
+            var mainRoot = PathUtils.GetMainProjectRoot(_basePath);
+            if (mainRoot != null)
+                projectRoot = mainRoot;
             var relative = Path.GetRelativePath(projectRoot, path);
             return PathUtils.NormalizePath(relative);
         }

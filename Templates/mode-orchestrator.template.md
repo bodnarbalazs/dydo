@@ -115,6 +115,14 @@ dydo dispatch --wait --auto-close --worktree --role code-writer --task <sub-task
 
 **Nested worktrees:** Sub-orchestrators can create child worktrees within their parent's worktree for further isolation. The naming is hierarchical — `domain-A/auth-service/edge-cases` — encoding both the hierarchy and the merge order. Each child merges back to its parent, not to main. Use this when a sub-domain grows large enough that its agents start contending with each other.
 
+#### Dispatching Sub-Domain Co-Thinkers
+
+Co-thinkers dispatched for sub-domains graduate to sub-orchestrators. Use `--new-window` so the sub-domain gets its own window — agents the future orchestrator dispatches open as tabs within it, giving the user a natural visual grouping of related work.
+
+```bash
+dydo dispatch --wait --auto-close --worktree --new-window --role co-thinker --task <sub-domain> --brief "..."
+```
+
 #### Dispatching Inquisitors
 
 When implementation is done and you want a deep QA pass:
@@ -146,6 +154,8 @@ Each worktree task ends with a merge back — to the parent worktree's branch, o
 - Merges happen **sequentially** — coordinate ordering as results arrive
 - Each merge checks for conflicts before committing
 - Conflicted merges **escalate to the human** — agents do not auto-resolve
+
+**How merge works:** When a reviewer passes a review in a worktree, the system creates a `.needs-merge` marker and prints a dispatch hint. The reviewer dispatches a code-writer to merge. That code-writer runs `dydo worktree merge` in the main repo, which merges the worktree branch into the base branch and cleans up. Agents must use `dydo worktree merge` — never raw `git merge`.
 
 ### 5. Resolve Conflicts
 

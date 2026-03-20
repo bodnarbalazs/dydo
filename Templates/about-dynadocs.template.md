@@ -299,6 +299,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo task approve <name>` / `--all` | Approve task(s) (human only) |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |
+| `dydo task compact` | Compact audit snapshots |
 | `dydo review complete <task>` | Complete a code review |
 
 ### Workspace

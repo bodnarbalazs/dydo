@@ -113,6 +113,7 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  task approve <name>    Approve task (human only)");
     Console.WriteLine("  task reject <name>     Reject task (human only)");
     Console.WriteLine("  task list              List tasks");
+    Console.WriteLine("  task compact           Compact audit snapshots");
     Console.WriteLine();
     Console.WriteLine("  review complete <task> Complete a code review");
     Console.WriteLine();

@@ -104,6 +104,7 @@ public class RoleConstraintEvaluator
     /// Checks if an agent can release, evaluating requires-dispatch constraints.
     /// </summary>
     public bool CanRelease(string agentName, string role, string task, bool isDispatched,
+        string? dispatchedByRole,
         Func<string, string, bool> hasDispatchMarker, out string reason)
     {
         reason = string.Empty;
@@ -115,6 +116,11 @@ public class RoleConstraintEvaluator
         {
             if (constraint.Type != "requires-dispatch") continue;
             if (constraint.OnlyWhenDispatched && !isDispatched) continue;
+
+            // If dispatched by one of the required roles, the work is already done
+            if (isDispatched && !string.IsNullOrEmpty(dispatchedByRole) &&
+                constraint.RequiredRoles!.Contains(dispatchedByRole, StringComparer.OrdinalIgnoreCase))
+                continue;
 
             foreach (var requiredRole in constraint.RequiredRoles!)
             {

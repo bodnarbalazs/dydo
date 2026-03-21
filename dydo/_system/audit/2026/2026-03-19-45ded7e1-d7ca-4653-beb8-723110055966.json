@@ -572,6 +572,91 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b574be7e-msg-cleanup-stale-worktrees.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-20T20:23:26.4950596Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b96jsb7ln.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-20T20:36:44.8429683Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git log --oneline -5",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-20T20:36:50.1939653Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\06f1d542-msg-smoke-test-v3.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-20T20:36:50.6227385Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1097f806-msg-smoke-test-v3-review-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-20T20:36:51.0817582Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\843e5727-msg-smoke-test-v3-cleanup.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-20T20:36:52.0531876Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\75517c72-msg-smoke-test-v3.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-20T20:36:56.8157891Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c4e8e1bd-msg-smoke-test-v3.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T12:06:16.2364027Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b3esirzn8.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T12:06:21.3592798Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-worktree-lifecycle.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T12:06:21.7292235Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c0e982c5-msg-fix-worktree-lifecycle.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T13:45:33.7311511Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bjfwjfro7.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T13:45:38.9335121Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b327be1f-msg-fix-worktree-lifecycle.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T17:32:06.1123572Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bdna3lrpv.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-21T17:32:09.3589546Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d282e830-msg-fix-worktree-lifecycle.md",
+      "tool": "read"
     }
   ],
   "snapshot": {

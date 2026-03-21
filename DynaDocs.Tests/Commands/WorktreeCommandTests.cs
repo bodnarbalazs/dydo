@@ -837,14 +837,14 @@ public class WorktreeCommandTests : IDisposable
     public void WindowsArguments_ContainRolesJunction()
     {
         var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.Contains("Junction -Path dydo/_system/roles", args);
+        Assert.Contains("Junction -Path 'dydo/_system/roles'", args);
     }
 
     [Fact]
     public void WindowsArguments_WithoutMainRoot_ContainRolesJunction()
     {
         var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
-        Assert.Contains("Junction -Path dydo/_system/roles", args);
+        Assert.Contains("Junction -Path 'dydo/_system/roles'", args);
     }
 
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)

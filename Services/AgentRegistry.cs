@@ -468,6 +468,7 @@ public partial class AgentRegistry : IAgentRegistry
             var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
             if (!evaluator.CanRelease(agentName, state.Role, state.Task,
                 !string.IsNullOrEmpty(state.DispatchedBy),
+                state.DispatchedByRole,
                 (t, r) => HasDispatchMarker(agentName, t, r), out error))
             {
                 return false;

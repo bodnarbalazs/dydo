@@ -90,8 +90,10 @@ public static class DispatchService
 
         // Data-driven dispatch markers: create marker when sender's role has a requires-dispatch
         // constraint listing the target role
-        if (sender != null && !string.IsNullOrEmpty(sender.Role)
-            && string.Equals(sender.Task, task, StringComparison.OrdinalIgnoreCase))
+        var taskMatchesSender = sender?.Task != null &&
+            (string.Equals(sender.Task, task, StringComparison.OrdinalIgnoreCase)
+             || task.StartsWith(sender.Task + "-", StringComparison.OrdinalIgnoreCase));
+        if (sender != null && !string.IsNullOrEmpty(sender.Role) && taskMatchesSender)
         {
             var senderRoleDef = registry.GetRoleDefinition(sender.Role);
             if (senderRoleDef != null)
@@ -349,7 +351,8 @@ public static class DispatchService
         if (File.Exists(baseSrc))
             File.Copy(baseSrc, Path.Combine(targetWorkspace, ".worktree-base"), overwrite: true);
 
-        File.WriteAllText(Path.Combine(targetWorkspace, ".merge-source"), $"worktree/{senderWorktreeId}");
+        var branchSuffix = TerminalLauncher.WorktreeIdToBranchSuffix(senderWorktreeId);
+        File.WriteAllText(Path.Combine(targetWorkspace, ".merge-source"), $"worktree/{branchSuffix}");
         File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-hold"), senderWorktreeId);
     }
 

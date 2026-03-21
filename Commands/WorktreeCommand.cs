@@ -101,20 +101,25 @@ public static class WorktreeCommand
         var normalizedRoot = mainRoot.TrimEnd('/', '\\');
         var readAbsoluteEntry = $"Read({normalizedRoot}/**)";
         var readWildcardEntry = "Read(**)";
+        var readTildeEntry = "Read(~/**)";
 
         var hasAbsolute = false;
         var hasWildcard = false;
+        var hasTilde = false;
         foreach (var item in allow)
         {
             var value = item?.GetValue<string>();
             if (value == readAbsoluteEntry) hasAbsolute = true;
             if (value == readWildcardEntry) hasWildcard = true;
+            if (value == readTildeEntry) hasTilde = true;
         }
 
         if (!hasAbsolute)
             allow.Add((JsonNode)readAbsoluteEntry);
         if (!hasWildcard)
             allow.Add((JsonNode)readWildcardEntry);
+        if (!hasTilde)
+            allow.Add((JsonNode)readTildeEntry);
 
         var claudeDir = Path.Combine(Directory.GetCurrentDirectory(), ".claude");
         Directory.CreateDirectory(claudeDir);
@@ -249,13 +254,18 @@ public static class WorktreeCommand
             return;
         }
 
-        Process.Start(new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = fileName,
             Arguments = arguments,
             UseShellExecute = false,
-            CreateNoWindow = true
-        })?.WaitForExit();
+            CreateNoWindow = true,
+            RedirectStandardInput = true
+        };
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        var proc = Process.Start(psi);
+        proc?.StandardInput.Close();
+        proc?.WaitForExit();
     }
 
     internal static int RunProcessWithExitCode(string fileName, string arguments)
@@ -269,13 +279,17 @@ public static class WorktreeCommand
             return 0;
         }
 
-        var p = Process.Start(new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = fileName,
             Arguments = arguments,
             UseShellExecute = false,
-            CreateNoWindow = true
-        });
+            CreateNoWindow = true,
+            RedirectStandardInput = true
+        };
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        var p = Process.Start(psi);
+        p?.StandardInput.Close();
         p?.WaitForExit();
         return p?.ExitCode ?? 1;
     }

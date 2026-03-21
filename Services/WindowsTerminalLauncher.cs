@@ -34,10 +34,10 @@ public static class WindowsTerminalLauncher
                        $"git worktree prune; " +
                        $"git worktree add {wtDir} -b {branch}; " +
                        $"Set-Location {wtDir}; " +
-                       $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
+                       $"if (Test-Path dydo/agents) {{ [IO.Directory]::Delete((Resolve-Path dydo/agents).Path, $true); }} " +
                        $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
-                       $"if (Test-Path dydo/_system/roles) {{ cmd /c rmdir dydo/_system/roles; }} " +
-                       $"New-Item -ItemType Junction -Path dydo/_system/roles -Target '{escapedRoot}/dydo/_system/roles' | Out-Null; " +
+                       $"if (Test-Path 'dydo/_system/roles') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/_system/roles').Path, $true); }} " +
+                       $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target '{escapedRoot}/dydo/_system/roles' | Out-Null; " +
                        $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{}}; " +
                        $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                        $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
@@ -49,10 +49,10 @@ public static class WindowsTerminalLauncher
                    $"git worktree prune; " +
                    $"git worktree add {wtDirRel} -b {branch}; " +
                    $"Set-Location {wtDirRel}; " +
-                   $"if (Test-Path dydo/agents) {{ cmd /c rmdir dydo/agents; }} " +
+                   $"if (Test-Path dydo/agents) {{ [IO.Directory]::Delete((Resolve-Path dydo/agents).Path, $true); }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
-                   $"if (Test-Path dydo/_system/roles) {{ cmd /c rmdir dydo/_system/roles; }} " +
-                   $"New-Item -ItemType Junction -Path dydo/_system/roles -Target (Join-Path $_wt_root.Path 'dydo/_system/roles') | Out-Null; " +
+                   $"if (Test-Path 'dydo/_system/roles') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/_system/roles').Path, $true); }} " +
+                   $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target (Join-Path $_wt_root.Path 'dydo/_system/roles') | Out-Null; " +
                    $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{}}; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";

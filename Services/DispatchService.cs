@@ -135,7 +135,6 @@ public static class DispatchService
         string? workingDirOverride = null;
         var senderWorktreeId = GetSenderWorktreeId(registry, senderName);
         var needsMerge = HasNeedsMergeMarker(registry, senderName);
-        Console.WriteLine($"  [dispatch-debug] senderWorktreeId={senderWorktreeId ?? "null"}, needsMerge={needsMerge}, worktree={worktree}");
 
         string? cleanupWorktreeId = null;
         string? mainProjectRoot = null;
@@ -157,7 +156,6 @@ public static class DispatchService
         else if (senderWorktreeId != null && needsMerge)
         {
             // Merge dispatch — child launches in main repo to do the merge
-            Console.WriteLine($"  [dispatch-debug] MERGE PATH: copying metadata from {senderName} to {targetAgentName}, worktreeId={senderWorktreeId}");
             CopyWorktreeMetadataForMerger(registry, targetAgentName, senderName, senderWorktreeId);
             ClearNeedsMerge(registry, senderName);
             worktreeId = null;
@@ -350,20 +348,13 @@ public static class DispatchService
         var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
         Directory.CreateDirectory(targetWorkspace);
 
-        Console.WriteLine($"  [dispatch-debug] CopyWorktreeMetadataForMerger:");
-        Console.WriteLine($"  [dispatch-debug]   senderWorkspace={senderWorkspace}");
-        Console.WriteLine($"  [dispatch-debug]   targetWorkspace={targetWorkspace}");
-
         var baseSrc = Path.Combine(senderWorkspace, ".worktree-base");
-        Console.WriteLine($"  [dispatch-debug]   .worktree-base exists={File.Exists(baseSrc)}");
         if (File.Exists(baseSrc))
             File.Copy(baseSrc, Path.Combine(targetWorkspace, ".worktree-base"), overwrite: true);
 
         var branchSuffix = TerminalLauncher.WorktreeIdToBranchSuffix(senderWorktreeId);
-        Console.WriteLine($"  [dispatch-debug]   branchSuffix={branchSuffix}, writing .merge-source=worktree/{branchSuffix}");
         File.WriteAllText(Path.Combine(targetWorkspace, ".merge-source"), $"worktree/{branchSuffix}");
         File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-hold"), senderWorktreeId);
-        Console.WriteLine($"  [dispatch-debug]   Wrote .merge-source and .worktree-hold");
     }
 
     private static void ClearNeedsMerge(AgentRegistry registry, string agentName)

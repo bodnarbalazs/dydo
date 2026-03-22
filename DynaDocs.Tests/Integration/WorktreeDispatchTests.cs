@@ -402,7 +402,7 @@ public class WorktreeDispatchTests : IntegrationTestBase
     }
 
     [Fact]
-    public void Cleanup_RemovesMergeSourceMarker()
+    public void Cleanup_PreservesMergeSourceMarker()
     {
         var registry = new AgentRegistry(TestDir);
         var workspace = registry.GetAgentWorkspace("Adele");
@@ -411,7 +411,7 @@ public class WorktreeDispatchTests : IntegrationTestBase
 
         WorktreeCommand.ExecuteCleanup("some-id", "Adele", registry);
 
-        Assert.False(File.Exists(Path.Combine(workspace, ".merge-source")));
+        Assert.True(File.Exists(Path.Combine(workspace, ".merge-source")));
     }
 
     #endregion

@@ -721,6 +721,267 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\838955bf-msg-fix-worktree-lifecycle-v2.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T15:57:52.5606428Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v5.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T15:58:29.607164Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v5-review.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T16:02:44.6834771Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\blp46ao65.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:02:58.4998155Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\add818b9-msg-smoke-test-v5.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:03:11.4079871Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\cfd05049-msg-smoke-test-v5.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:11:51.1198809Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:11:52.0478687Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:11:56.128987Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:12:00.7271113Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:12:06.2258526Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:12:13.2812091Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:12:17.6303981Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:12:24.2274153Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:12:39.0799386Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:17:20.1162523Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v6.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T16:22:09.775774Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b9ykkusll.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:22:15.8331555Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git log --oneline -5",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-22T16:22:21.2853348Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d5d2e3f3-msg-smoke-test-v6.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:22:25.4380368Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ee3f5788-msg-smoke-test-v6.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:22:33.2037061Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-22T16:33:53.6552402Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git worktree list",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-22T16:34:02.5004442Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d5969bbc-msg-smoke-test-v6.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:34:17.1378104Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-22T16:34:20.8975278Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/smoke-test-v4/"
+    },
+    {
+      "ts": "2026-03-22T16:34:25.6820029Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/ 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-22T16:34:30.2052433Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/smoke-test-v6/"
+    },
+    {
+      "ts": "2026-03-22T16:34:37.1946514Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/smoke-test-v5/"
+    },
+    {
+      "ts": "2026-03-22T16:34:38.0285096Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat dydo/_system/.local/worktrees/smoke-test-v6/.git 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-22T16:34:42.9952366Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/worktrees/smoke-test-v5/ \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls -la dydo/_system/.local/work..."
+    },
+    {
+      "ts": "2026-03-22T16:35:54.3601315Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:35:55.5289404Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T16:36:04.6926137Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T16:36:13.7175224Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-22T16:36:34.4505407Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-worktree-setup.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T17:12:56.3407113Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b2qofo3of.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:12:59.9343206Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\86995917-msg-fix-worktree-setup.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:16:34.0664704Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bywuuxhbl.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:16:39.3621308Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\0c5ec410-msg-fix-worktree-setup.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:30:03.7248055Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v7.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T17:33:20.4910004Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bdtmdwezn.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:33:33.2519721Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\4d6e8605-msg-smoke-test-v7.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:33:47.2036021Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b67ba5de-msg-smoke-test-v7.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:52:23.0969302Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git log --oneline -10",
+      "reason": "Unread messages"
     }
   ],
   "snapshot": {

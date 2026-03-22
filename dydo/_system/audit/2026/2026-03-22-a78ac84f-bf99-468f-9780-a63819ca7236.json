@@ -1,0 +1,14 @@
+{
+  "session": "a78ac84f-bf99-468f-9780-a63819ca7236",
+  "agent": "Brian",
+  "human": "balazs",
+  "started": "2026-03-22T17:48:37.7801519Z",
+  "git_head": "7fcadf8",
+  "events": [
+    {
+      "ts": "2026-03-22T17:48:37.7794122Z",
+      "event": "Release",
+      "agent": "Brian"
+    }
+  ]
+}

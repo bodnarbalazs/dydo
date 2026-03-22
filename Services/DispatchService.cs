@@ -102,7 +102,7 @@ public static class DispatchService
                 {
                     if (constraint.Type != "requires-dispatch" || constraint.RequiredRoles == null) continue;
                     if (constraint.RequiredRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
-                        registry.CreateDispatchMarker(senderName, task, role, targetAgentName);
+                        registry.CreateDispatchMarker(senderName, sender.Task!, role, targetAgentName);
                 }
             }
         }

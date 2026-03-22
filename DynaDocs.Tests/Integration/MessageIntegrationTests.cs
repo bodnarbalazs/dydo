@@ -633,7 +633,7 @@ public class MessageIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Message_ToInactiveAgent_WithReplyPending_OffersForce()
+    public async Task Message_ToInactiveAgent_WithReplyPending_AllowsSend()
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
@@ -643,12 +643,36 @@ public class MessageIntegrationTests : IntegrationTestBase
         var registry = new AgentRegistry(TestDir);
         registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
 
-        // Brian is not claimed = inactive
+        // Brian is not claimed = inactive, but Adele has reply-pending — send should succeed
         var result = await SendMessageAsync("Brian", "Reply to Brian", subject: "test-task");
 
-        result.AssertExitCode(2);
-        result.AssertStderrContains("pending reply obligation");
-        result.AssertStderrContains("--force");
+        result.AssertSuccess();
+        result.AssertStdoutContains("Reply obligation fulfilled");
+
+        // Marker should be cleared
+        var markers = registry.GetReplyPendingMarkers("Adele");
+        Assert.Empty(markers);
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_WithReplyPending_NoSubject_AllowsSend()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
+
+        // No subject — reply-pending match uses empty-subject wildcard
+        var result = await SendMessageAsync("Brian", "Reply to Brian");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Reply obligation fulfilled");
+
+        // Marker should be cleared even without a subject
+        var markers = registry.GetReplyPendingMarkers("Adele");
+        Assert.Empty(markers);
     }
 
     [Fact]

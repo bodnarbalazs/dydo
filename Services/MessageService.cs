@@ -63,14 +63,14 @@ public static class MessageService
         var activeAgents = registry.GetActiveAgents();
         var oversightAgents = registry.GetActiveOversightAgents();
 
-        // Check if sender has a reply-pending marker targeting this agent
+        // Allow sends that fulfill a reply-pending obligation, even to inactive targets
         var replyMarkers = registry.GetReplyPendingMarkers(senderName);
         var hasReplyPending = replyMarkers.Any(m =>
             m.To.Equals(to, StringComparison.OrdinalIgnoreCase)
             && (string.IsNullOrEmpty(subject) || m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)));
 
         if (hasReplyPending)
-            return BuildReplyPendingMessage(to, oversightAgents);
+            return null;
 
         return BuildInactiveTargetMessage(registry, to, targetState, activeAgents, oversightAgents);
     }
@@ -109,25 +109,6 @@ public static class MessageService
             sb.AppendLine();
             sb.AppendLine("  No agents are currently active. Ask the human to intervene.");
         }
-
-        return sb.ToString().TrimEnd();
-    }
-
-    private static string BuildReplyPendingMessage(string to, List<Models.AgentState> oversightAgents)
-    {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"Agent {to} has been released, but you have a pending reply obligation to them.");
-
-        if (oversightAgents.Count > 0)
-        {
-            sb.AppendLine();
-            sb.AppendLine("  Message an oversight agent to handle the situation:");
-            sb.Append(FormatActiveAgentList(oversightAgents));
-        }
-
-        sb.AppendLine();
-        sb.AppendLine($"  Or force-send (message will sit unread until {to} is claimed):");
-        sb.AppendLine($"    dydo msg --to {to} --body \"...\" --force");
 
         return sb.ToString().TrimEnd();
     }
@@ -180,6 +161,16 @@ public static class MessageService
         {
             if (registry.RemoveReplyPendingMarker(senderName, subject))
                 Console.WriteLine($"  Reply obligation fulfilled for '{subject}'.");
+        }
+        else
+        {
+            // No subject: clear any reply-pending markers from sender to this target
+            var markers = registry.GetReplyPendingMarkers(senderName);
+            foreach (var marker in markers.Where(m => m.To.Equals(to, StringComparison.OrdinalIgnoreCase)))
+            {
+                registry.RemoveReplyPendingMarker(senderName, marker.Task);
+                Console.WriteLine($"  Reply obligation fulfilled for '{marker.Task}'.");
+            }
         }
 
         if (targetState != null && targetState.Status == Models.AgentStatus.Working)

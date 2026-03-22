@@ -504,6 +504,25 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Release_SucceedsForDispatchedCodeWriter_AfterReviewDispatch_WithVariantTask()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches code-writer task to Brian (task: "auth")
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian dispatches a reviewer with a VARIANT task name (auth-review, not auth)
+        DispatchInSeparateSession("Brian", "reviewer", "auth-review", "Review auth changes");
+
+        // Brian releases — should succeed because the dispatch marker uses sender's task
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("dispatched code-writers must dispatch a reviewer", releaseResult);
+    }
+
+    [Fact]
     public async Task Release_NotBlockedForDirectCodeWriter()
     {
         await InitProjectAsync("none", "testuser", 3);

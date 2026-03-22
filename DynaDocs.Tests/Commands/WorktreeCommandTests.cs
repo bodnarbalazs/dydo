@@ -457,15 +457,43 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
-    public void RemoveMarkers_IncludesWorktreeRoot()
+    public void RemoveWorktreeMarkers_IncludesWorktreeRoot()
     {
         var workspace = _registry.GetAgentWorkspace("Adele");
         Directory.CreateDirectory(workspace);
         File.WriteAllText(Path.Combine(workspace, ".worktree-root"), "/some/root");
 
-        WorktreeCommand.RemoveMarkers(workspace);
+        WorktreeCommand.RemoveWorktreeMarkers(workspace);
 
         Assert.False(File.Exists(Path.Combine(workspace, ".worktree-root")));
+    }
+
+    [Fact]
+    public void RemoveWorktreeMarkers_PreservesMergeSource()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), "some-id");
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
+
+        WorktreeCommand.RemoveWorktreeMarkers(workspace);
+
+        Assert.False(File.Exists(Path.Combine(workspace, ".worktree")));
+        Assert.True(File.Exists(Path.Combine(workspace, ".merge-source")));
+    }
+
+    [Fact]
+    public void RemoveAllMarkers_DeletesMergeSource()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), "some-id");
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
+
+        WorktreeCommand.RemoveAllMarkers(workspace);
+
+        Assert.False(File.Exists(Path.Combine(workspace, ".worktree")));
+        Assert.False(File.Exists(Path.Combine(workspace, ".merge-source")));
     }
 
     [Fact]

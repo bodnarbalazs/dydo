@@ -146,7 +146,7 @@ public static class WorktreeCommand
         }
 
         var workspace = registry.GetAgentWorkspace(agentName);
-        RemoveMarkers(workspace);
+        RemoveWorktreeMarkers(workspace);
 
         var remainingRefs = CountWorktreeReferences(registry, worktreeId);
         if (remainingRefs > 0)
@@ -171,13 +171,20 @@ public static class WorktreeCommand
         return ExitCodes.Success;
     }
 
-    internal static void RemoveMarkers(string workspace)
+    internal static void RemoveWorktreeMarkers(string workspace)
     {
-        foreach (var name in new[] { ".worktree", ".worktree-path", ".worktree-base", ".merge-source", ".worktree-hold", ".worktree-root" })
+        foreach (var name in new[] { ".worktree", ".worktree-path", ".worktree-base", ".worktree-hold", ".worktree-root" })
         {
             var marker = Path.Combine(workspace, name);
             if (File.Exists(marker)) File.Delete(marker);
         }
+    }
+
+    internal static void RemoveAllMarkers(string workspace)
+    {
+        RemoveWorktreeMarkers(workspace);
+        var mergeSource = Path.Combine(workspace, ".merge-source");
+        if (File.Exists(mergeSource)) File.Delete(mergeSource);
     }
 
     internal static int CountWorktreeReferences(AgentRegistry registry, string worktreeId)
@@ -421,8 +428,6 @@ public static class WorktreeCommand
             : mergeSource;
         var worktreeId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
 
-        RunProcess("git", $"-C \"{mainRoot}\" branch -D {mergeSource}");
-
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
         {
@@ -431,7 +436,9 @@ public static class WorktreeCommand
             RemoveGitWorktree(worktreePath);
         }
 
-        RemoveMarkers(workspace);
+        RunProcess("git", $"-C \"{mainRoot}\" branch -D {mergeSource}");
+
+        RemoveAllMarkers(workspace);
 
         Console.WriteLine($"Merge finalized. Worktree {worktreeId} cleaned up.");
         return ExitCodes.Success;

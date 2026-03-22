@@ -982,6 +982,192 @@
       "tool": "bash",
       "cmd": "git log --oneline -10",
       "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-22T17:52:33.6579093Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\78c1ea63-msg-smoke-test-v7.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:52:44.3730644Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -10"
+    },
+    {
+      "ts": "2026-03-22T17:52:44.8492618Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-22T17:52:45.2761685Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v7.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-22T17:52:51.4695106Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 799c378 --stat"
+    },
+    {
+      "ts": "2026-03-22T17:52:57.3102265Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --graph 799c378~3..799c378"
+    },
+    {
+      "ts": "2026-03-22T17:52:57.550046Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch -a | grep worktree"
+    },
+    {
+      "ts": "2026-03-22T17:54:33.769707Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:54:39.3811101Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T17:54:48.0049819Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T17:54:56.862909Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:55:03.9530539Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -t dydo/_system/audit/2026/ | head -5"
+    },
+    {
+      "ts": "2026-03-22T17:55:10.495687Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/agents/Charlie/ 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-22T17:55:10.98765Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/agents/Brian/ 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-22T17:55:21.1646267Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Charlie/archive/ | tail -5"
+    },
+    {
+      "ts": "2026-03-22T17:55:25.4474052Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/agents/Charlie/archive/20260320-195307/ 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-22T17:55:32.6377644Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\ReviewCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:55:50.0868003Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/worktrees/smoke-test-v7/dydo/agents 2\u003E/dev/null || echo \u0022worktree or junc..."
+    },
+    {
+      "ts": "2026-03-22T17:56:13.5119063Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/smoke-test-v7/ 2\u003E/dev/null || echo \u0022worktree dir gone\u0022"
+    },
+    {
+      "ts": "2026-03-22T17:56:30.6779975Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:56:39.8643249Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:56:46.7970335Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceArchiver.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T17:57:11.8948451Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-merge-diagnostics.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T18:00:17.2488165Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bel1vuf1a.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T18:00:22.0921489Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5a12f289-msg-fix-merge-diagnostics.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T18:08:49.1356175Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\266aa67f-msg-fix-merge-diagnostics.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T18:08:58.7887998Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5992d8c0-msg-fix-merge-diagnostics.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T18:39:34.3542144Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T18:39:39.6032818Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-22T18:39:44.0881027Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 35383f9 --stat"
+    },
+    {
+      "ts": "2026-03-22T18:39:50.1089991Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
     }
   ],
   "snapshot": {

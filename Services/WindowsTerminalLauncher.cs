@@ -30,9 +30,10 @@ public static class WindowsTerminalLauncher
                 var escapedRoot = mainProjectRoot.Replace("'", "''");
                 var wtDir = $"'{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'";
                 return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
-                       $"New-Item -ItemType Directory -Force -Path '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' | Out-Null; " +
+                       $"New-Item -ItemType Directory -Force -Path '{escapedRoot}/dydo/_system/.local/worktrees' | Out-Null; " +
+                       $"if (Test-Path {wtDir}) {{ Remove-Item -Recurse -Force {wtDir} }}; " +
                        $"git worktree prune; " +
-                       $"git worktree add {wtDir} -b {branch}; " +
+                       $"git worktree add {wtDir} -b {branch}; if ($LASTEXITCODE -ne 0) {{ exit 1 }}; " +
                        $"Set-Location {wtDir}; " +
                        $"if (Test-Path dydo/agents) {{ [IO.Directory]::Delete((Resolve-Path dydo/agents).Path, $true); }} " +
                        $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
@@ -45,9 +46,10 @@ public static class WindowsTerminalLauncher
 
             var wtDirRel = $"dydo/_system/.local/worktrees/{worktreeId}";
             return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}$_wt_root = Get-Location; " +
-                   $"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees/{worktreeId} | Out-Null; " +
+                   $"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees | Out-Null; " +
+                   $"if (Test-Path {wtDirRel}) {{ Remove-Item -Recurse -Force {wtDirRel} }}; " +
                    $"git worktree prune; " +
-                   $"git worktree add {wtDirRel} -b {branch}; " +
+                   $"git worktree add {wtDirRel} -b {branch}; if ($LASTEXITCODE -ne 0) {{ exit 1 }}; " +
                    $"Set-Location {wtDirRel}; " +
                    $"if (Test-Path dydo/agents) {{ [IO.Directory]::Delete((Resolve-Path dydo/agents).Path, $true); }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +

@@ -2042,6 +2042,90 @@ public class TerminalLauncherTests
     }
 
     #endregion
+
+    #region Worktree Directory Safety Tests
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_MkdirCreatesParentNotTarget()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.DoesNotContain($"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees/{TestWorktreeId}", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_RemovesStaleDirectory()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains($"if (Test-Path dydo/_system/.local/worktrees/{TestWorktreeId})", args);
+        Assert.Contains("Remove-Item -Recurse -Force", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_ChecksExitCode()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+        Assert.Contains("$LASTEXITCODE", args);
+        Assert.Contains("exit 1", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_MkdirCreatesParentNotTarget()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path 'C:\\project/dydo/_system/.local/worktrees/my-task'", args);
+        Assert.Contains("New-Item -ItemType Directory -Force -Path 'C:\\project/dydo/_system/.local/worktrees'", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_RemovesStaleDirectory()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+        Assert.Contains("Test-Path", args);
+        Assert.Contains("Remove-Item -Recurse -Force", args);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_MkdirCreatesParentNotTarget()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript(TestWorktreeId);
+        Assert.DoesNotContain($"mkdir -p dydo/_system/.local/worktrees/{TestWorktreeId}", script);
+        Assert.Contains("mkdir -p dydo/_system/.local/worktrees ", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_RemovesStaleDirectory()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript(TestWorktreeId);
+        Assert.Contains($"if [ -d dydo/_system/.local/worktrees/{TestWorktreeId} ]", script);
+        Assert.Contains("rm -rf", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithMainProjectRoot_MkdirCreatesParentNotTarget()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
+        Assert.Contains("mkdir -p '/repo/dydo/_system/.local/worktrees'", script);
+        Assert.DoesNotContain("mkdir -p '/repo/dydo/_system/.local/worktrees/my-task'", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithMainProjectRoot_RemovesStaleDirectory()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
+        Assert.Contains("if [ -d '/repo/dydo/_system/.local/worktrees/my-task' ]", script);
+        Assert.Contains("rm -rf", script);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_Worktree_MkdirCreatesParentNotTarget(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
+        Assert.DoesNotContain($"mkdir -p dydo/_system/.local/worktrees/{TestWorktreeId}", args);
+    }
+
+    #endregion
 }
 
 /// <summary>

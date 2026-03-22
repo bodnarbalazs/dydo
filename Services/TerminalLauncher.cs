@@ -77,7 +77,9 @@ public class TerminalLauncher
         if (mainProjectRoot != null)
         {
             var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
-            return $"mkdir -p '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && git worktree prune && " +
+            return $"mkdir -p '{escapedRoot}/dydo/_system/.local/worktrees' && " +
+                   $"if [ -d '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' ]; then rm -rf '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'; fi && " +
+                   $"git worktree prune && " +
                    $"git worktree add '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' -b worktree/{branchSuffix} && " +
                    $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
                    $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
@@ -85,7 +87,9 @@ public class TerminalLauncher
                    $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
         }
 
-        return $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees/{worktreeId} && git worktree prune && " +
+        return $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees && " +
+               $"if [ -d dydo/_system/.local/worktrees/{worktreeId} ]; then rm -rf dydo/_system/.local/worktrees/{worktreeId}; fi && " +
+               $"git worktree prune && " +
                $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{branchSuffix} && " +
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
                $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +

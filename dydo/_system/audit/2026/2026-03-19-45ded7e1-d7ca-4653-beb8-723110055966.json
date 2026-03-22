@@ -1276,6 +1276,175 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b9dee606-msg-fix-worktree-merge-execute.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:17:38.3821722Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v9.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T20:19:33.8724266Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bid26rkti.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:19:41.3933897Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git log --oneline -5",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-22T20:19:52.9785379Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8dc19380-msg-smoke-test-v9.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:20:02.4334382Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -8"
+    },
+    {
+      "ts": "2026-03-22T20:20:03.4011329Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-22T20:20:04.4848508Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v9.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-22T20:20:04.8951309Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch | grep smoke-test-v9 || echo \u0022branch cleaned up\u0022"
+    },
+    {
+      "ts": "2026-03-22T20:38:45.154433Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a6402a06-msg-smoke-test-v9-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:39:02.9463723Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\fd8af5ac-msg-smoke-test-v9.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:39:03.4669344Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b1df411e-msg-smoke-test-v9.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:39:16.3529899Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:39:22.240909Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:47:01.4393039Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-22T20:47:02.4455069Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v9.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-22T20:47:02.7719583Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-22T20:47:10.6038483Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b2acuq6cn.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:49:55.4820325Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T20:50:00.5973884Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T20:50:14.6228855Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:50:46.1092224Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-merge-marker-race.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T20:54:28.1125067Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bfv088v4d.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:54:32.8983849Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\04895f10-msg-fix-merge-marker-race.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:55:28.8231236Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bqz5accxk.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:55:38.0437896Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8f12bade-msg-fix-merge-marker-race.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T21:00:23.6406603Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b11sn6exf.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T21:00:29.2280669Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\092b692a-msg-fix-merge-marker-race.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T21:01:49.137604Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b2acuq6cn.output",
+      "tool": "read"
     }
   ],
   "snapshot": {

@@ -428,6 +428,7 @@ public class WorktreeCommandTests : IDisposable
             File.WriteAllText(Path.Combine(workspace, ".worktree-base"), worktreeBase);
         if (mergeSource != null)
             File.WriteAllText(Path.Combine(workspace, ".merge-source"), mergeSource);
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), _testDir);
     }
 
     private void StoreSessionForAgent(string agentName)

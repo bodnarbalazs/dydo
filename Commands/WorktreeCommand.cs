@@ -358,16 +358,7 @@ public static class WorktreeCommand
 
         var workspace = registry.GetAgentWorkspace(agent.Name);
 
-        Console.WriteLine($"  [merge-debug] ExecuteMerge: cwd={Directory.GetCurrentDirectory()}");
         var mergeSourcePath = Path.Combine(workspace, ".merge-source");
-        Console.WriteLine($"  [merge-debug] .merge-source exists={File.Exists(mergeSourcePath)}, path={mergeSourcePath}");
-        if (File.Exists(mergeSourcePath))
-            Console.WriteLine($"  [merge-debug] .merge-source contents={File.ReadAllText(mergeSourcePath).Trim()}");
-        var worktreeBasePath = Path.Combine(workspace, ".worktree-base");
-        Console.WriteLine($"  [merge-debug] .worktree-base exists={File.Exists(worktreeBasePath)}, path={worktreeBasePath}");
-        if (File.Exists(worktreeBasePath))
-            Console.WriteLine($"  [merge-debug] .worktree-base contents={File.ReadAllText(worktreeBasePath).Trim()}");
-
         if (!File.Exists(mergeSourcePath))
         {
             ConsoleOutput.WriteError("No .merge-source marker found. Nothing to merge.");
@@ -395,16 +386,25 @@ public static class WorktreeCommand
         }
         var baseBranch = File.ReadAllText(basePath).Trim();
 
+        // Merge must run from the main repo, not from inside a worktree.
+        // git checkout fails inside a worktree when the target branch is already
+        // checked out in the main repo. Using git -C avoids checkout entirely.
+        var worktreeRootPath = Path.Combine(workspace, ".worktree-root");
+        var mainRoot = File.Exists(worktreeRootPath)
+            ? File.ReadAllText(worktreeRootPath).Trim()
+            : PathUtils.FindProjectRoot();
+        if (mainRoot == null)
+        {
+            ConsoleOutput.WriteError("Cannot determine main project root. No .worktree-root marker and FindProjectRoot failed.");
+            return ExitCodes.ToolError;
+        }
+
         if (finalize)
-            return FinalizeMerge(registry, agent.Name, workspace, mergeSource);
+            return FinalizeMerge(registry, agent.Name, workspace, mergeSource, mainRoot);
 
         Console.WriteLine($"Merging worktree branch {mergeSource} into {baseBranch}...");
 
-        var currentBranch = DispatchService.GetCurrentGitBranch();
-        if (!string.Equals(currentBranch, baseBranch, StringComparison.OrdinalIgnoreCase))
-            RunProcess("git", $"checkout {baseBranch}");
-
-        var exitCode = RunProcessWithExitCode("git", $"merge {mergeSource} --no-edit");
+        var exitCode = RunProcessWithExitCode("git", $"-C \"{mainRoot}\" merge {mergeSource} --no-edit");
         if (exitCode != 0)
         {
             Console.WriteLine("Merge conflicts detected. Resolve them, commit, then run:");
@@ -412,10 +412,10 @@ public static class WorktreeCommand
             return ExitCodes.ValidationErrors;
         }
 
-        return FinalizeMerge(registry, agent.Name, workspace, mergeSource);
+        return FinalizeMerge(registry, agent.Name, workspace, mergeSource, mainRoot);
     }
 
-    internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource)
+    internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource, string mainRoot)
     {
         // Extract worktreeId from merge-source (e.g. "worktree/domain-A.+.auth" -> "domain-A/auth")
         var branchSuffix = mergeSource.StartsWith("worktree/")
@@ -423,7 +423,7 @@ public static class WorktreeCommand
             : mergeSource;
         var worktreeId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
 
-        RunProcess("git", $"branch -D {mergeSource}");
+        RunProcess("git", $"-C \"{mainRoot}\" branch -D {mergeSource}");
 
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)

@@ -1168,6 +1168,114 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
       "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T18:50:46.7929118Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v8.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T18:54:06.2079498Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bv5zodc20.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:16:00.2861429Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\75caf752-msg-smoke-test-v8-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:16:22.0428182Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6ebb49a8-msg-smoke-test-v8.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:16:23.0388275Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\dedad16c-msg-smoke-test-v8.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:16:23.4559216Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\734d42da-msg-smoke-test-v8.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:18:40.839081Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-worktree-merge-execute.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T19:24:01.8667024Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\byv3cqs2n.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:24:10.0651707Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\2468f241-msg-fix-worktree-merge-execute.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:24:23.5092608Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1d03d5a2-msg-fix-worktree-merge-execute.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:30:18.193605Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b2k84670l.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:30:22.532622Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d0168297-msg-fix-worktree-merge-execute.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:30:42.7190632Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:49:18.7114031Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\brq0v7gse.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:49:30.3372623Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1a10e7a8-msg-fix-worktree-merge-execute.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T19:49:41.5462999Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:03:46.1777475Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\blxcpk57j.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T20:03:51.3679499Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b9dee606-msg-fix-worktree-merge-execute.md",
+      "tool": "read"
     }
   ],
   "snapshot": {

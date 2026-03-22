@@ -386,9 +386,7 @@ public static class WorktreeCommand
         }
         var baseBranch = File.ReadAllText(basePath).Trim();
 
-        // Merge must run from the main repo, not from inside a worktree.
-        // git checkout fails inside a worktree when the target branch is already
-        // checked out in the main repo. Using git -C avoids checkout entirely.
+        // Merge must run from the main repo via git -C, not from inside a worktree.
         var worktreeRootPath = Path.Combine(workspace, ".worktree-root");
         var mainRoot = File.Exists(worktreeRootPath)
             ? File.ReadAllText(worktreeRootPath).Trim()

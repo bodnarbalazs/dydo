@@ -304,6 +304,7 @@ public class WorktreeCommandTests : IDisposable
             var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
 
             Assert.Equal(0, exitCode);
+            Assert.DoesNotContain(calls, c => c.FileName == "git" && c.Arguments.Contains("checkout"));
             Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/Adele-20260316"));
             Assert.Contains("finalized", stdout.ToLower());
         }

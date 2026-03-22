@@ -358,7 +358,16 @@ public static class WorktreeCommand
 
         var workspace = registry.GetAgentWorkspace(agent.Name);
 
+        Console.WriteLine($"  [merge-debug] ExecuteMerge: cwd={Directory.GetCurrentDirectory()}");
         var mergeSourcePath = Path.Combine(workspace, ".merge-source");
+        Console.WriteLine($"  [merge-debug] .merge-source exists={File.Exists(mergeSourcePath)}, path={mergeSourcePath}");
+        if (File.Exists(mergeSourcePath))
+            Console.WriteLine($"  [merge-debug] .merge-source contents={File.ReadAllText(mergeSourcePath).Trim()}");
+        var worktreeBasePath = Path.Combine(workspace, ".worktree-base");
+        Console.WriteLine($"  [merge-debug] .worktree-base exists={File.Exists(worktreeBasePath)}, path={worktreeBasePath}");
+        if (File.Exists(worktreeBasePath))
+            Console.WriteLine($"  [merge-debug] .worktree-base contents={File.ReadAllText(worktreeBasePath).Trim()}");
+
         if (!File.Exists(mergeSourcePath))
         {
             ConsoleOutput.WriteError("No .merge-source marker found. Nothing to merge.");

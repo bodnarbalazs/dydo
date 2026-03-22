@@ -161,6 +161,7 @@ public static class DispatchService
             CopyWorktreeMetadataForMerger(registry, targetAgentName, senderName, senderWorktreeId);
             ClearNeedsMerge(registry, senderName);
             worktreeId = null;
+            mainProjectRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot();
         }
         else
         {
@@ -394,7 +395,7 @@ public static class DispatchService
         if (noLaunch)
             return;
 
-        var projectRoot = workingDirOverride ?? PathUtils.FindProjectRoot();
+        var projectRoot = workingDirOverride ?? mainProjectRoot ?? PathUtils.FindProjectRoot();
         TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
     }

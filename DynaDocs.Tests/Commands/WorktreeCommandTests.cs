@@ -877,6 +877,188 @@ public class WorktreeCommandTests : IDisposable
         Assert.Contains("Junction -Path 'dydo/_system/roles'", args);
     }
 
+    #region PreserveAuditFiles Tests
+
+    [Fact]
+    public void PreserveAuditFiles_CopiesAuditFilesToMainRepo()
+    {
+        // Simulate worktree at _testDir/dydo/_system/.local/worktrees/test-wt
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "test-wt");
+
+        // Create audit files in worktree
+        var wtAuditDir = Path.Combine(worktreePath, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(wtAuditDir);
+        File.WriteAllText(Path.Combine(wtAuditDir, "2026-03-23-abc123.json"), """{"SessionId":"abc123"}""");
+        File.WriteAllText(Path.Combine(wtAuditDir, "2026-03-23-def456.json"), """{"SessionId":"def456"}""");
+
+        WorktreeCommand.PreserveAuditFiles(worktreePath);
+
+        var mainAuditDir = Path.Combine(mainRoot, "dydo", "_system", "audit", "2026");
+        Assert.True(File.Exists(Path.Combine(mainAuditDir, "2026-03-23-abc123.json")));
+        Assert.True(File.Exists(Path.Combine(mainAuditDir, "2026-03-23-def456.json")));
+    }
+
+    [Fact]
+    public void PreserveAuditFiles_PreservesYearSubfolders()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "test-wt");
+
+        var year2025 = Path.Combine(worktreePath, "dydo", "_system", "audit", "2025");
+        var year2026 = Path.Combine(worktreePath, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(year2025);
+        Directory.CreateDirectory(year2026);
+        File.WriteAllText(Path.Combine(year2025, "2025-12-01-old.json"), "{}");
+        File.WriteAllText(Path.Combine(year2026, "2026-03-23-new.json"), "{}");
+
+        WorktreeCommand.PreserveAuditFiles(worktreePath);
+
+        Assert.True(File.Exists(Path.Combine(mainRoot, "dydo", "_system", "audit", "2025", "2025-12-01-old.json")));
+        Assert.True(File.Exists(Path.Combine(mainRoot, "dydo", "_system", "audit", "2026", "2026-03-23-new.json")));
+    }
+
+    [Fact]
+    public void PreserveAuditFiles_SkipsTmpFiles()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "test-wt");
+
+        var wtAuditDir = Path.Combine(worktreePath, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(wtAuditDir);
+        File.WriteAllText(Path.Combine(wtAuditDir, "2026-03-23-abc123.json"), "{}");
+        File.WriteAllText(Path.Combine(wtAuditDir, "2026-03-23-abc123.json.tmp"), "partial");
+
+        WorktreeCommand.PreserveAuditFiles(worktreePath);
+
+        var mainAuditDir = Path.Combine(mainRoot, "dydo", "_system", "audit", "2026");
+        Assert.True(File.Exists(Path.Combine(mainAuditDir, "2026-03-23-abc123.json")));
+        Assert.False(File.Exists(Path.Combine(mainAuditDir, "2026-03-23-abc123.json.tmp")));
+    }
+
+    [Fact]
+    public void PreserveAuditFiles_NoAuditDir_DoesNothing()
+    {
+        var worktreePath = Path.Combine(_testDir, "empty-wt");
+        Directory.CreateDirectory(worktreePath);
+
+        // Should not throw
+        WorktreeCommand.PreserveAuditFiles(worktreePath);
+    }
+
+    [Fact]
+    public void PreserveAuditFiles_NotAWorktreePath_DoesNothing()
+    {
+        // Path without worktree marker — GetMainProjectRoot returns null
+        var worktreePath = Path.Combine(_testDir, "regular-repo");
+        var auditDir = Path.Combine(worktreePath, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(auditDir);
+        File.WriteAllText(Path.Combine(auditDir, "2026-03-23-abc.json"), "{}");
+
+        WorktreeCommand.PreserveAuditFiles(worktreePath);
+
+        // Nothing should be copied (no main root detected)
+        // The file should still exist in the original location only
+        Assert.True(File.Exists(Path.Combine(auditDir, "2026-03-23-abc.json")));
+    }
+
+    [Fact]
+    public void PreserveAuditFiles_OverwritesExistingFile()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "test-wt");
+
+        // Create existing audit file in main repo
+        var mainAuditDir = Path.Combine(mainRoot, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(mainAuditDir);
+        File.WriteAllText(Path.Combine(mainAuditDir, "2026-03-23-abc123.json"), """{"old":"data"}""");
+
+        // Create newer audit file in worktree
+        var wtAuditDir = Path.Combine(worktreePath, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(wtAuditDir);
+        File.WriteAllText(Path.Combine(wtAuditDir, "2026-03-23-abc123.json"), """{"new":"data"}""");
+
+        WorktreeCommand.PreserveAuditFiles(worktreePath);
+
+        var content = File.ReadAllText(Path.Combine(mainAuditDir, "2026-03-23-abc123.json"));
+        Assert.Contains("new", content);
+    }
+
+    [Fact]
+    public void Cleanup_LastAgent_PreservesAuditFilesBeforeRemoval()
+    {
+        var worktreeId = "audit-test-wt";
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        // Setup agent pointing at this worktree path
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(adeleWs);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree"), worktreeId);
+
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+
+        // Create audit files inside the worktree
+        var wtAuditDir = Path.Combine(worktreePath, "dydo", "_system", "audit", "2026");
+        Directory.CreateDirectory(wtAuditDir);
+        File.WriteAllText(Path.Combine(wtAuditDir, "2026-03-23-session1.json"), """{"SessionId":"session1"}""");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            // Audit file should be copied to main repo
+            var mainAuditFile = Path.Combine(mainRoot, "dydo", "_system", "audit", "2026", "2026-03-23-session1.json");
+            Assert.True(File.Exists(mainAuditFile));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    #endregion
+
+    #region Terminal Script No Git Operations Tests
+
+    [Fact]
+    public void WorktreeSetupScript_DoesNotContainGitWorktreeAdd()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
+        Assert.DoesNotContain("git worktree add", script);
+        Assert.DoesNotContain("git worktree prune", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithoutMainRoot_DoesNotContainGitWorktreeAdd()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task");
+        Assert.DoesNotContain("git worktree add", script);
+        Assert.DoesNotContain("git worktree prune", script);
+    }
+
+    [Fact]
+    public void WindowsArguments_DoNotContainGitWorktreeAdd()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
+        Assert.DoesNotContain("git worktree add", args);
+        Assert.DoesNotContain("git worktree prune", args);
+    }
+
+    [Fact]
+    public void WindowsArguments_WithoutMainRoot_DoNotContainGitWorktreeAdd()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
+        Assert.DoesNotContain("git worktree add", args);
+        Assert.DoesNotContain("git worktree prune", args);
+    }
+
+    #endregion
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker

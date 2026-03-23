@@ -20,7 +20,9 @@ public static class TemplateCommand
         "reference/about-dynadocs.md",
         "reference/dydo-commands.md",
         "reference/writing-docs.md",
-        "guides/how-to-use-docs.md"
+        "guides/how-to-use-docs.md",
+        "guides/how-to-merge-worktrees.md",
+        "guides/how-to-review-worktree-merges.md"
     ];
 
     public static readonly string[] FrameworkBinaryFiles =
@@ -388,6 +390,8 @@ public static class TemplateCommand
         "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
         "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
+        "guides/how-to-merge-worktrees.md" => TemplateGenerator.GenerateHowToMergeWorktreesMd(),
+        "guides/how-to-review-worktree-merges.md" => TemplateGenerator.GenerateHowToReviewWorktreeMergesMd(),
         _ => null
     };
 

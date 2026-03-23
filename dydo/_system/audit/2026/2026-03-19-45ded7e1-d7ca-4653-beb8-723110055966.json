@@ -1808,6 +1808,264 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e06a56b2-msg-fix-worktree-remaining.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:29:28.2308005Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v13.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-23T00:41:34.6886464Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\boqjurxlk.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:41:40.567025Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ed21f477-msg-smoke-test-v13.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:41:53.8601001Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c25bdb96-msg-smoke-test-v13.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:45:16.0776537Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b601htbd3.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:45:21.6089153Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\52260dcd-msg-smoke-test-v13.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:45:33.9799093Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-23T00:45:34.780017Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v13.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-23T00:45:35.6701494Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch | grep smoke-test-v13 || echo \u0022branch cleaned up\u0022"
+    },
+    {
+      "ts": "2026-03-23T00:45:36.0549243Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-23T11:58:38.6445169Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -3"
+    },
+    {
+      "ts": "2026-03-23T11:58:39.5642383Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v13.txt \u0026\u0026 echo \u0022v13 EXISTS\u0022 || echo \u0022v13 NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-23T11:58:46.5503679Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch | grep smoke-test-v13 || echo \u0022branch cleaned up\u0022"
+    },
+    {
+      "ts": "2026-03-23T11:58:57.0086901Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v14.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-23T12:00:36.602363Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bj3232e9t.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:00:41.6939432Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8cef7254-msg-smoke-test-v14.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:00:57.3308807Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\845f4562-msg-smoke-test-v14.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:02:24.415771Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b0m26fbuo.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:02:29.3163832Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\edd18b35-msg-smoke-test-v14.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:11:43.7539884Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -3"
+    },
+    {
+      "ts": "2026-03-23T12:11:44.6933676Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v14.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-23T12:11:45.2943669Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch | grep smoke-test-v14 || echo \u0022branch cleaned up\u0022"
+    },
+    {
+      "ts": "2026-03-23T12:40:27.4557384Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bolhr12v2.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:40:34.7184442Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-gap-check-failures.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T12:40:52.9636202Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\fa83cf7a-msg-fix-gap-check-failures.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T13:45:54.0907673Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b26ecm0tc.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T13:46:00.7063327Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\notes-gap-check-postmortem.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T13:46:13.3758056Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9b121b2f-msg-fix-gap-check-failures.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T13:57:49.5387259Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/worktrees/fix-gap-commands-rules/ 2\u003E/dev/null \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls -la dyd..."
+    },
+    {
+      "ts": "2026-03-23T13:58:00.5054675Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-23T13:58:13.0953734Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T13:58:21.1640803Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T14:16:28.6401183Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-template-and-enforcement.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-23T14:16:46.5948259Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-code-fixes-worktree.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-23T15:53:02.0436427Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find . -name \u0022*.cs\u0022 -not -path \u0022*/obj/*\u0022 -not -path \u0022*/bin/*\u0022 | xargs wc -l | tail -1"
+    },
+    {
+      "ts": "2026-03-23T15:53:42.7196018Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find . -name \u0022*.cs\u0022 -not -path \u0022*/obj/*\u0022 -not -path \u0022*/bin/*\u0022 -not -path \u0022*Tests*\u0022 | xargs wc -l | t..."
+    },
+    {
+      "ts": "2026-03-23T15:53:52.4139011Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find . -name \u0022*.cs\u0022 -not -path \u0022*/obj/*\u0022 -not -path \u0022*/bin/*\u0022 -not -path \u0022*/worktrees/*\u0022 -not -path ..."
+    },
+    {
+      "ts": "2026-03-23T16:04:14.8804805Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b6na442zr.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T16:04:22.5083258Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ac1e3819-msg-code-fixes-worktree.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T16:08:19.7595557Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bxtxfofql.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T16:08:27.3660341Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\38d51bfc-msg-template-and-enforcement.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T16:28:46.5024757Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b9e210cih.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T16:28:57.8126501Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b96ca8a2-msg-code-fixes-worktree.md",
+      "tool": "read"
     }
   ],
   "snapshot": {

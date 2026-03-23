@@ -162,6 +162,7 @@ public static class WorktreeCommand
             return ExitCodes.Success;
         }
 
+        PreserveAuditFiles(worktreePath);
         RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
         RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
         RemoveGitWorktree(worktreePath);
@@ -169,6 +170,47 @@ public static class WorktreeCommand
 
         Console.WriteLine($"Worktree {worktreeId}: cleaned up.");
         return ExitCodes.Success;
+    }
+
+    internal static void PreserveAuditFiles(string worktreePath)
+    {
+        var wtAuditDir = Path.Combine(worktreePath, "dydo", "_system", "audit");
+        if (!Directory.Exists(wtAuditDir))
+            return;
+
+        var mainRoot = PathUtils.GetMainProjectRoot(worktreePath)
+                       ?? PathUtils.FindProjectRoot();
+        if (mainRoot == null)
+            return;
+
+        var mainAuditDir = Path.Combine(mainRoot, "dydo", "_system", "audit");
+        var copied = 0;
+
+        try
+        {
+            foreach (var yearDir in Directory.GetDirectories(wtAuditDir))
+            {
+                var yearName = Path.GetFileName(yearDir);
+                var targetYearDir = Path.Combine(mainAuditDir, yearName);
+
+                foreach (var file in Directory.GetFiles(yearDir, "*.json"))
+                {
+                    if (file.EndsWith(".tmp")) continue;
+
+                    Directory.CreateDirectory(targetYearDir);
+                    var targetFile = Path.Combine(targetYearDir, Path.GetFileName(file));
+                    File.Copy(file, targetFile, overwrite: true);
+                    copied++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"WARNING: Failed to preserve some audit files: {ex.Message}");
+        }
+
+        if (copied > 0)
+            Console.WriteLine($"  Preserved {copied} audit file(s) from worktree.");
     }
 
     internal static void RemoveWorktreeMarkers(string workspace)
@@ -431,6 +473,7 @@ public static class WorktreeCommand
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
         {
+            PreserveAuditFiles(worktreePath);
             RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
             RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
             try { RunProcess("git", $"-C \"{mainRoot}\" worktree remove \"{worktreePath}\" --force"); }

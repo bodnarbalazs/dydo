@@ -126,6 +126,7 @@ public static class DispatchService
     {
         var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin, role, task, brief, files, escalate, wait, inheritReply);
 
+        InjectBriefIntoTaskFile(task, brief);
         HandleReviewerTransition(role, task, brief);
         PrintDispatchSummary(targetAgentName, role, task, itemPath, escalate);
 
@@ -211,6 +212,30 @@ public static class DispatchService
         return itemPath;
     }
 
+    internal static void InjectBriefIntoTaskFile(string task, string brief)
+    {
+        if (string.IsNullOrWhiteSpace(brief)) return;
+
+        try
+        {
+            var configService = new ConfigService();
+            var tasksPath = configService.GetTasksPath();
+            var taskFilePath = Path.Combine(tasksPath, $"{Utils.PathUtils.SanitizeForFilename(task)}.md");
+
+            if (!File.Exists(taskFilePath)) return;
+
+            var content = File.ReadAllText(taskFilePath);
+            if (!content.Contains("(No description)")) return;
+
+            content = content.Replace("(No description)", brief);
+            File.WriteAllText(taskFilePath, content);
+        }
+        catch
+        {
+            // Non-blocking: brief injection is a convenience side-effect
+        }
+    }
+
     private static void HandleReviewerTransition(string role, string task, string brief)
     {
         if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(task))
@@ -251,6 +276,9 @@ public static class DispatchService
 
         File.WriteAllText(Path.Combine(workspace, ".worktree-root"), projectRoot);
 
+        var branchName = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
+        CreateGitWorktree(projectRoot, worktreePath, branchName);
+
         return (worktreeId, projectRoot);
     }
 
@@ -272,6 +300,9 @@ public static class DispatchService
         File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-base"), $"worktree/{parentBranchSuffix}");
 
         File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-root"), parentWorktreeRoot);
+
+        var branchName = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
+        CreateGitWorktree(parentWorktreeRoot, worktreePath, branchName);
 
         return (worktreeId, parentWorktreeRoot);
     }
@@ -524,6 +555,115 @@ public static class DispatchService
             """;
 
         File.WriteAllText(path, content);
+    }
+
+    // Serializes worktree creation across processes using a file lock
+    internal static Func<string, string, string, int>? CreateGitWorktreeOverride;
+
+    internal static void CreateGitWorktree(string projectRoot, string worktreePath, string branchName)
+    {
+        var worktreesDir = Path.GetFullPath(Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees"));
+        Directory.CreateDirectory(worktreesDir);
+        var lockPath = Path.Combine(worktreesDir, ".lock");
+
+        WithWorktreeLock(lockPath, () =>
+        {
+            // Remove stale directory if it exists from a previous failed run
+            if (Directory.Exists(worktreePath))
+                Directory.Delete(worktreePath, recursive: true);
+
+            RunGitForWorktree(projectRoot, "worktree prune");
+            var exitCode = RunGitForWorktree(projectRoot, $"worktree add \"{worktreePath}\" -b {branchName}");
+            if (exitCode != 0)
+                throw new InvalidOperationException($"git worktree add failed (exit code {exitCode}) for {worktreePath}");
+        });
+    }
+
+    private static int RunGitForWorktree(string workingDir, string arguments)
+    {
+        if (CreateGitWorktreeOverride != null)
+            return CreateGitWorktreeOverride(workingDir, "git", arguments);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = $"-C \"{workingDir}\" {arguments}",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = true
+        };
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        var proc = Process.Start(psi);
+        proc?.StandardInput.Close();
+        proc?.WaitForExit();
+        return proc?.ExitCode ?? 1;
+    }
+
+    private static void WithWorktreeLock(string lockPath, Action action)
+    {
+        const int maxAttempts = 30;
+        const int retryDelayMs = 1000;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                var lockInfo = $"{{\"Pid\":{Environment.ProcessId},\"Acquired\":\"{DateTime.UtcNow:o}\"}}";
+                var bytes = System.Text.Encoding.UTF8.GetBytes(lockInfo);
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush();
+
+                try
+                {
+                    action();
+                }
+                finally
+                {
+                    stream.Close();
+                    try { File.Delete(lockPath); } catch { }
+                }
+                return;
+            }
+            catch (IOException) when (File.Exists(lockPath))
+            {
+                // Lock held by another process — check for staleness
+                if (TryRemoveStaleLock(lockPath))
+                    continue; // Removed stale lock, retry immediately
+
+                if (attempt < maxAttempts - 1)
+                    Thread.Sleep(retryDelayMs);
+            }
+        }
+
+        throw new TimeoutException($"Could not acquire worktree lock after {maxAttempts}s. Lock file: {lockPath}");
+    }
+
+    private static bool TryRemoveStaleLock(string lockPath)
+    {
+        try
+        {
+            var json = File.ReadAllText(lockPath);
+            var pidStart = json.IndexOf("\"Pid\":", StringComparison.Ordinal);
+            if (pidStart < 0) return false;
+
+            pidStart += 6;
+            var pidEnd = json.IndexOfAny([',', '}'], pidStart);
+            if (pidEnd < 0) return false;
+
+            if (!int.TryParse(json[pidStart..pidEnd].Trim(), out var pid))
+                return false;
+
+            if (ProcessUtils.IsProcessRunning(pid))
+                return false;
+
+            File.Delete(lockPath);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     internal static string? GetOriginForTask(AgentRegistry registry, AgentState? sender, string task)

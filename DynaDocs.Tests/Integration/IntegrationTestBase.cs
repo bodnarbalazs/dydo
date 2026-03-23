@@ -25,6 +25,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextReader _originalIn;
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
     private readonly IProcessStarter? _originalBrowserLauncherStarter;
+    private readonly Func<string, string, string, int>? _originalCreateGitWorktreeOverride;
 
     protected IntegrationTestBase()
     {
@@ -41,10 +42,12 @@ public abstract class IntegrationTestBase : IDisposable
         _originalIn = Console.In;
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
         _originalBrowserLauncherStarter = AuditCommand.BrowserLauncherOverride;
+        _originalCreateGitWorktreeOverride = DispatchService.CreateGitWorktreeOverride;
 
-        // Prevent tests from launching real terminals or browsers
+        // Prevent tests from launching real terminals, browsers, or git worktree operations
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
         AuditCommand.BrowserLauncherOverride = new NoOpProcessStarter();
+        DispatchService.CreateGitWorktreeOverride = (_, _, _) => 0;
 
         // Clear env vars that leak into dispatch logic
         Environment.SetEnvironmentVariable("DYDO_WINDOW", null);
@@ -64,6 +67,7 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetIn(_originalIn);
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
         AuditCommand.BrowserLauncherOverride = _originalBrowserLauncherStarter;
+        DispatchService.CreateGitWorktreeOverride = _originalCreateGitWorktreeOverride;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))

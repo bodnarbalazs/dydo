@@ -157,7 +157,11 @@ Each worktree task ends with a merge back — to the parent worktree's branch, o
 
 **How merge works:** When a reviewer passes a review in a worktree, the system creates a `.needs-merge` marker and prints a dispatch hint. The reviewer dispatches a code-writer to merge. That code-writer runs `dydo worktree merge` in the main repo, which merges the worktree branch into the base branch and cleans up. Agents must use `dydo worktree merge` — never raw `git merge`.
 
+**Verify merge results:** Before accepting a merge task as complete, check `git log --oneline -5` to confirm the expected commits landed. Empty or no-op merges indicate a problem — investigate before accepting.
+
 ### 5. Resolve Conflicts
+
+You are not a passive observer. When you see problems — agents fixing the same thing, using stale data, going off-scope, or producing low-quality work — it is your active duty to intervene immediately. Message agents to correct course, halt their work if needed, or escalate to the user. Noting a problem without acting on it is a failure of your role.
 
 If two agents' work collides or an agent reports a problem:
 - Investigate: read the agents' workspaces, check messages

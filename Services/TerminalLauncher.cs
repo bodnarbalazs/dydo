@@ -72,25 +72,18 @@ public class TerminalLauncher
 
     internal static string WorktreeSetupScript(string worktreeId, string? mainProjectRoot = null)
     {
-        var branchSuffix = WorktreeIdToBranchSuffix(worktreeId);
-
+        // Worktree is already created by DispatchService.CreateGitWorktree() before terminal launch.
+        // This script only cd's into it and sets up symlinks.
         if (mainProjectRoot != null)
         {
             var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
-            return $"mkdir -p '{escapedRoot}/dydo/_system/.local/worktrees' && " +
-                   $"if [ -d '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' ]; then rm -rf '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'; fi && " +
-                   $"git worktree prune && " +
-                   $"git worktree add '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' -b worktree/{branchSuffix} && " +
-                   $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
+            return $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
                    $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
                    $"rm -rf dydo/_system/roles && ln -s '{escapedRoot}/dydo/_system/roles' dydo/_system/roles && " +
                    $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
         }
 
-        return $"_wt_root=\"$(pwd)\" && mkdir -p dydo/_system/.local/worktrees && " +
-               $"if [ -d dydo/_system/.local/worktrees/{worktreeId} ]; then rm -rf dydo/_system/.local/worktrees/{worktreeId}; fi && " +
-               $"git worktree prune && " +
-               $"git worktree add dydo/_system/.local/worktrees/{worktreeId} -b worktree/{branchSuffix} && " +
+        return $"_wt_root=\"$(pwd)\" && " +
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
                $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
                $"rm -rf dydo/_system/roles && ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles && " +

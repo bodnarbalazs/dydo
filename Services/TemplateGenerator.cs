@@ -1467,6 +1467,16 @@ public static class TemplateGenerator
         return ReadTemplateOrThrow("_project.template.md");
     }
 
+    public static string GenerateHowToMergeWorktreesMd()
+    {
+        return ReadTemplateOrThrow("how-to-merge-worktrees.template.md");
+    }
+
+    public static string GenerateHowToReviewWorktreeMergesMd()
+    {
+        return ReadTemplateOrThrow("how-to-review-worktree-merges.template.md");
+    }
+
     /// <summary>
     /// Read a template, throwing if not found (for required templates).
     /// </summary>

@@ -26,7 +26,7 @@ public class MustReadTracker
     /// Computes the list of must-read files for a given role by inspecting the mode file's links.
     /// Filters out files already read in the current audit session.
     /// </summary>
-    public List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId)
+    public List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId, string? task = null)
     {
         var workspace = _getAgentWorkspace(agentName);
         var modeFilePath = Path.Combine(workspace, "modes", $"{role}.md");
@@ -64,6 +64,9 @@ public class MustReadTracker
         var modeRelative = PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, modeFilePath));
         mustReads.Add(modeRelative);
 
+        // Conditional must-reads (Decision 013: hardcoded for now, move to role JSON if more cases emerge)
+        AddConditionalMustReads(mustReads, workspace, role, task, projectRoot);
+
         mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
         // Filter out files already read in this session
@@ -89,6 +92,40 @@ public class MustReadTracker
         }
 
         return mustReads;
+    }
+
+    /// <summary>
+    /// Adds conditional must-reads based on workspace markers and task context.
+    /// Decision 013: hardcoded checks — move to conditionalMustReads in role JSON if a third case emerges.
+    /// </summary>
+    internal static void AddConditionalMustReads(List<string> mustReads, string workspace, string role, string? task, string projectRoot)
+    {
+        // Merge code-writers must read the merge workflow guide
+        if (role.Equals("code-writer", StringComparison.OrdinalIgnoreCase)
+            && File.Exists(Path.Combine(workspace, ".merge-source")))
+        {
+            var mergeGuide = Path.Combine(projectRoot, "dydo", "guides", "how-to-merge-worktrees.md");
+            if (File.Exists(mergeGuide))
+                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, mergeGuide)));
+        }
+
+        // Merge reviewers must read the merge review guide
+        if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrEmpty(task)
+            && task.EndsWith("-merge", StringComparison.OrdinalIgnoreCase))
+        {
+            var mergeReviewGuide = Path.Combine(projectRoot, "dydo", "guides", "how-to-review-worktree-merges.md");
+            if (File.Exists(mergeReviewGuide))
+                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, mergeReviewGuide)));
+        }
+
+        // All reviewers must read the task file to understand what was supposed to be done
+        if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(task))
+        {
+            var taskFile = Path.Combine(projectRoot, "dydo", "project", "tasks", $"{task}.md");
+            if (File.Exists(taskFile))
+                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, taskFile)));
+        }
     }
 
     public static string NormalizeMustReadPath(string path)

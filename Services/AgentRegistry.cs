@@ -552,7 +552,7 @@ public partial class AgentRegistry : IAgentRegistry
         writable = writable.Select(p => p.Replace("{self}", agent.Name)).ToList();
         readOnly = readOnly.Select(p => p.Replace("{self}", agent.Name)).ToList();
 
-        var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId);
+        var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId, task);
         var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
         var dispatchedFromRole = !string.IsNullOrEmpty(task) ? GetDispatchedFromRole(agent.Name, task) : null;
 
@@ -1818,7 +1818,7 @@ public partial class AgentRegistry : IAgentRegistry
     /// Computes the list of must-read files for a given role by inspecting the mode file's links.
     /// Filters out files already read in the current audit session.
     /// </summary>
-    private List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId)
+    private List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId, string? task = null)
     {
         var workspace = GetAgentWorkspace(agentName);
         var modeFilePath = Path.Combine(workspace, "modes", $"{role}.md");
@@ -1855,6 +1855,9 @@ public partial class AgentRegistry : IAgentRegistry
         // Add the mode file itself (always implicitly must-read)
         var modeRelative = PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, modeFilePath));
         mustReads.Add(modeRelative);
+
+        // Conditional must-reads (Decision 013)
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, role, task, projectRoot);
 
         // Deduplicate
         mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();

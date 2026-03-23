@@ -1336,10 +1336,10 @@ public class TerminalLauncherTests
     private const string TestWorktreeId = "Adele-20260309120000";
 
     [Fact]
-    public void GetWindowsArguments_Worktree_ContainsWorktreeAdd()
+    public void GetWindowsArguments_Worktree_DoesNotContainWorktreeAdd()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree add dydo/_system/.local/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
+        Assert.DoesNotContain("git worktree add", args);
     }
 
     [Fact]
@@ -1358,17 +1358,17 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_ContainsPrune()
+    public void GetWindowsArguments_Worktree_DoesNotContainPrune()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("git worktree prune", args);
+        Assert.DoesNotContain("git worktree prune", args);
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_ContainsMkdir()
+    public void GetWindowsArguments_Worktree_DoesNotContainMkdir()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees", args);
+        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees", args);
     }
 
     [Fact]
@@ -1383,7 +1383,7 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_Worktree_CombinesWithAutoClose()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true, worktreeId: TestWorktreeId);
-        Assert.Contains("git worktree add", args);
+        Assert.DoesNotContain("git worktree add", args);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
         Assert.DoesNotContain("-NoExit", args);
@@ -1403,10 +1403,10 @@ public class TerminalLauncherTests
     [InlineData("kitty")]
     [InlineData("foot")]
     [InlineData("xterm")]
-    public void GetLinuxArguments_Worktree_ContainsWorktreeAdd(string terminal)
+    public void GetLinuxArguments_Worktree_DoesNotContainWorktreeAdd(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree add dydo/_system/.local/worktrees/{TestWorktreeId} -b worktree/{TestWorktreeId}", args);
+        Assert.DoesNotContain("git worktree add", args);
     }
 
     [Theory]
@@ -1422,10 +1422,10 @@ public class TerminalLauncherTests
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
-    public void GetLinuxArguments_Worktree_ContainsMkdirP(string terminal)
+    public void GetLinuxArguments_Worktree_DoesNotContainMkdirP(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("mkdir -p dydo/_system/.local/worktrees", args);
+        Assert.DoesNotContain("mkdir -p", args);
     }
 
     [Theory]
@@ -1443,10 +1443,9 @@ public class TerminalLauncherTests
     public void GetLinuxArguments_Worktree_CombinesWithAutoClose(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", autoClose: true, worktreeId: TestWorktreeId);
-        Assert.Contains("git worktree add", args);
+        Assert.DoesNotContain("git worktree add", args);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
-        // Cleanup before status check
         Assert.True(args.IndexOf("dydo worktree cleanup") < args.IndexOf("dydo agent status"));
     }
 
@@ -1457,14 +1456,14 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", "/home/user/project", worktreeId: TestWorktreeId);
         Assert.Contains("cd '/home/user/project'", args);
-        Assert.Contains("git worktree add", args);
+        Assert.DoesNotContain("git worktree add", args);
     }
 
     [Fact]
-    public void GetMacArguments_Worktree_ContainsWorktreeAdd()
+    public void GetMacArguments_Worktree_DoesNotContainWorktreeAdd()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"git worktree add dydo/_system/.local/worktrees/{TestWorktreeId}", args);
+        Assert.DoesNotContain("git worktree add", args);
     }
 
     [Fact]
@@ -1478,7 +1477,7 @@ public class TerminalLauncherTests
     public void GetMacArguments_Worktree_CombinesWithAutoClose()
     {
         var args = TerminalLauncher.GetMacArguments("Adele", autoClose: true, worktreeId: TestWorktreeId);
-        Assert.Contains("git worktree add", args);
+        Assert.DoesNotContain("git worktree add", args);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
         Assert.True(args.IndexOf("dydo worktree cleanup") < args.IndexOf("dydo agent status"));
@@ -1489,7 +1488,7 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetMacArguments("Adele", "/Users/dev/project", worktreeId: TestWorktreeId);
         Assert.Contains("cd '/Users/dev/project'", args);
-        Assert.Contains("git worktree add", args);
+        Assert.DoesNotContain("git worktree add", args);
     }
 
     [Theory]
@@ -1607,7 +1606,7 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void LaunchWindows_Worktree_WtArgs_ContainWorktreeAdd()
+    public void LaunchWindows_Worktree_WtArgs_DoNotContainWorktreeAdd()
     {
         var recorder = new RecordingProcessStarter();
         var launcher = new TerminalLauncher(recorder);
@@ -1615,7 +1614,7 @@ public class TerminalLauncherTests
         launcher.LaunchWindows("Adele", worktreeId: TestWorktreeId);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
-        Assert.Contains("git worktree add", wtCall.Arguments);
+        Assert.DoesNotContain("git worktree add", wtCall.Arguments);
     }
 
     [Fact]
@@ -1627,7 +1626,7 @@ public class TerminalLauncherTests
         launcher.LaunchMac("Adele", worktreeId: TestWorktreeId);
 
         var script = recorder.Started[0].ArgumentList[1];
-        Assert.Contains("git worktree add", script);
+        Assert.DoesNotContain("git worktree add", script);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", script);
     }
 
@@ -1642,19 +1641,19 @@ public class TerminalLauncherTests
         launcher.LaunchMac("Adele", useTab: true, worktreeId: TestWorktreeId);
 
         var script = recorder.Started[0].ArgumentList[1];
-        Assert.Contains("git worktree add", script);
+        Assert.DoesNotContain("git worktree add", script);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", script);
     }
 
     [Fact]
-    public void TryLaunchTerminals_Worktree_ArgumentsContainWorktreeAdd()
+    public void TryLaunchTerminals_Worktree_ArgumentsDoNotContainWorktreeAdd()
     {
         var recorder = new RecordingProcessStarter();
         var launcher = new TerminalLauncher(recorder);
 
         launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", worktreeId: TestWorktreeId);
 
-        Assert.Contains("git worktree add", recorder.Started[0].Arguments);
+        Assert.DoesNotContain("git worktree add", recorder.Started[0].Arguments);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", recorder.Started[0].Arguments);
     }
 
@@ -1683,7 +1682,6 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
         // All _system references should be prefixed with dydo/
         Assert.DoesNotContain("Path _system/", args);
-        Assert.Contains("Path dydo/_system/", args);
     }
 
     [Theory]
@@ -1693,7 +1691,6 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
         Assert.DoesNotContain("mkdir -p _system/", args);
-        Assert.Contains("mkdir -p dydo/_system/", args);
     }
 
     [Fact]
@@ -1701,7 +1698,6 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetMacArguments("Adele", worktreeId: TestWorktreeId);
         Assert.DoesNotContain("mkdir -p _system/", args);
-        Assert.Contains("mkdir -p dydo/_system/", args);
     }
 
     #endregion
@@ -1956,19 +1952,19 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void WorktreeSetupScript_HierarchicalId_UsesBranchSuffixEncoding()
+    public void WorktreeSetupScript_HierarchicalId_CdsIntoWorktree()
     {
         var script = TerminalLauncher.WorktreeSetupScript("parent/child");
-        Assert.Contains("-b worktree/parent.+.child", script);
         Assert.Contains("dydo/_system/.local/worktrees/parent/child", script);
+        Assert.DoesNotContain("-b worktree/", script);
     }
 
     [Fact]
-    public void WorktreeSetupScript_WithMainProjectRoot_HierarchicalId_UsesBranchSuffix()
+    public void WorktreeSetupScript_WithMainProjectRoot_HierarchicalId_CdsIntoWorktree()
     {
         var script = TerminalLauncher.WorktreeSetupScript("parent/child", "/repo");
-        Assert.Contains("-b worktree/parent.+.child", script);
         Assert.Contains("'/repo/dydo/_system/.local/worktrees/parent/child'", script);
+        Assert.DoesNotContain("-b worktree/", script);
     }
 
     [Fact]
@@ -1984,7 +1980,8 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_Worktree_WithMainProjectRoot_HierarchicalId()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "parent/child", mainProjectRoot: @"C:\project");
-        Assert.Contains("-b worktree/parent.+.child", args);
+        Assert.Contains("parent/child", args);
+        Assert.DoesNotContain("-b worktree/", args);
     }
 
     [Fact]
@@ -2083,83 +2080,46 @@ public class TerminalLauncherTests
     #region Worktree Directory Safety Tests
 
     [Fact]
-    public void GetWindowsArguments_Worktree_MkdirCreatesParentNotTarget()
+    public void GetWindowsArguments_Worktree_NoMkdirOrStaleCleanup()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.DoesNotContain($"New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees/{TestWorktreeId}", args);
+        // Worktree directory creation is handled by DispatchService, not terminal script
+        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees", args);
+        Assert.DoesNotContain("Remove-Item -Recurse -Force", args);
+        Assert.DoesNotContain("$LASTEXITCODE", args);
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_RemovesStaleDirectory()
-    {
-        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains($"if (Test-Path dydo/_system/.local/worktrees/{TestWorktreeId})", args);
-        Assert.Contains("Remove-Item -Recurse -Force", args);
-    }
-
-    [Fact]
-    public void GetWindowsArguments_Worktree_ChecksExitCode()
-    {
-        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        Assert.Contains("$LASTEXITCODE", args);
-        Assert.Contains("exit 1", args);
-    }
-
-    [Fact]
-    public void GetWindowsArguments_Worktree_WithMainProjectRoot_MkdirCreatesParentNotTarget()
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_NoMkdirOrStaleCleanup()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
-        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path 'C:\\project/dydo/_system/.local/worktrees/my-task'", args);
-        Assert.Contains("New-Item -ItemType Directory -Force -Path 'C:\\project/dydo/_system/.local/worktrees'", args);
+        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path", args);
+        Assert.DoesNotContain("Remove-Item -Recurse -Force", args);
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_WithMainProjectRoot_RemovesStaleDirectory()
-    {
-        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
-        Assert.Contains("Test-Path", args);
-        Assert.Contains("Remove-Item -Recurse -Force", args);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_MkdirCreatesParentNotTarget()
+    public void WorktreeSetupScript_NoGitOrMkdirOperations()
     {
         var script = TerminalLauncher.WorktreeSetupScript(TestWorktreeId);
-        Assert.DoesNotContain($"mkdir -p dydo/_system/.local/worktrees/{TestWorktreeId}", script);
-        Assert.Contains("mkdir -p dydo/_system/.local/worktrees ", script);
+        Assert.DoesNotContain("mkdir -p", script);
+        Assert.DoesNotContain("git worktree", script);
     }
 
     [Fact]
-    public void WorktreeSetupScript_RemovesStaleDirectory()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript(TestWorktreeId);
-        Assert.Contains($"if [ -d dydo/_system/.local/worktrees/{TestWorktreeId} ]", script);
-        Assert.Contains("rm -rf", script);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_WithMainProjectRoot_MkdirCreatesParentNotTarget()
+    public void WorktreeSetupScript_WithMainProjectRoot_NoGitOrMkdirOperations()
     {
         var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
-        Assert.Contains("mkdir -p '/repo/dydo/_system/.local/worktrees'", script);
-        Assert.DoesNotContain("mkdir -p '/repo/dydo/_system/.local/worktrees/my-task'", script);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_WithMainProjectRoot_RemovesStaleDirectory()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
-        Assert.Contains("if [ -d '/repo/dydo/_system/.local/worktrees/my-task' ]", script);
-        Assert.Contains("rm -rf", script);
+        Assert.DoesNotContain("mkdir -p", script);
+        Assert.DoesNotContain("git worktree", script);
     }
 
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
-    public void GetLinuxArguments_Worktree_MkdirCreatesParentNotTarget(string terminal)
+    public void GetLinuxArguments_Worktree_NoMkdirInScript(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.DoesNotContain($"mkdir -p dydo/_system/.local/worktrees/{TestWorktreeId}", args);
+        Assert.DoesNotContain("mkdir -p", args);
     }
 
     #endregion

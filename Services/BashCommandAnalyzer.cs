@@ -437,8 +437,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         // Extract the command name
         var tokens = TokenizeCommand(command);
-        if (tokens.Count == 0)
-            return;
 
         var cmdName = tokens[0];
 
@@ -669,8 +667,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return true;
         if (int.TryParse(value, out _))
             return true;
-        if (value.StartsWith("-") && value.Contains(":"))
-            return true;
         return false;
     }
 
@@ -681,9 +677,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static bool LooksLikePath(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return false;
-
         if (IsNotPathPrefix(value))
             return false;
 

@@ -346,6 +346,22 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
+    public void ValidateRoleDefinition_MissingTemplateFile_Fails()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = ""
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("Template file"));
+    }
+
+    [Fact]
     public void ValidateRoleDefinition_EmptyWritablePaths_Fails()
     {
         var role = new RoleDefinition

@@ -65,11 +65,11 @@ public class WatchdogCommandTests : IDisposable
         // Override to return a quick-exiting process so EnsureRunning returns true
         WatchdogService.StartProcessOverride = _ =>
         {
-            var psi = new System.Diagnostics.ProcessStartInfo("cmd", "/c echo ok")
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            var psi = OperatingSystem.IsWindows()
+                ? new System.Diagnostics.ProcessStartInfo("cmd", "/c echo ok")
+                : new System.Diagnostics.ProcessStartInfo("echo", "ok");
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
             return System.Diagnostics.Process.Start(psi);
         };
 

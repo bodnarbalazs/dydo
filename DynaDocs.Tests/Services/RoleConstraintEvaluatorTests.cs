@@ -428,6 +428,17 @@ public class RoleConstraintEvaluatorTests
     }
 
     [Fact]
+    public void CanDispatch_UnknownSenderRole_ReturnsTrue()
+    {
+        var evaluator = new RoleConstraintEvaluator(
+            new Dictionary<string, RoleDefinition>(),
+            ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanDispatch("Alice", "unknown-role", "reviewer", "task1", out _));
+    }
+
+    [Fact]
     public void CanDispatch_NoConstraintsOnRole_ReturnsTrue()
     {
         var roles = new Dictionary<string, RoleDefinition>

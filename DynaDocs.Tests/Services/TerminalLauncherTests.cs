@@ -1871,6 +1871,29 @@ public class TerminalLauncherTests
         Assert.Contains("cd '/Users/dev/project'", args);
     }
 
+    [Fact]
+    public void GetWindowsArguments_InheritedWorktree_RunsInitSettings()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: @"C:\project");
+        Assert.Contains("dydo worktree init-settings --main-root 'C:\\project'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_InheritedWorktree_RunsInitSettings(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/user/project");
+        Assert.Contains("dydo worktree init-settings --main-root '/home/user/project'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_RunsInitSettings()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/dev/project");
+        Assert.Contains("dydo worktree init-settings --main-root '/Users/dev/project'", args);
+    }
+
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
@@ -1900,6 +1923,20 @@ public class TerminalLauncherTests
     #endregion
 
     #region Nested Worktree Tests
+
+    [Fact]
+    public void WorktreeInitSettingsScript_ReturnsInitCommand()
+    {
+        var script = TerminalLauncher.WorktreeInitSettingsScript("/home/user/project");
+        Assert.Contains("dydo worktree init-settings --main-root '/home/user/project'", script);
+        Assert.Contains("2>/dev/null || true", script);
+    }
+
+    [Fact]
+    public void WorktreeInitSettingsScript_NullRoot_ReturnsEmpty()
+    {
+        Assert.Equal("", TerminalLauncher.WorktreeInitSettingsScript(null));
+    }
 
     [Fact]
     public void WorktreeSetupScript_WithMainProjectRoot_UsesAbsolutePaths()

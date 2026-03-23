@@ -23,6 +23,7 @@ public static class MacTerminalLauncher
         }
         else if (cleanupWorktreeId != null && mainProjectRoot != null)
         {
+            wtSetup = TerminalLauncher.WorktreeInitSettingsScript(mainProjectRoot);
             wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
@@ -47,6 +48,7 @@ public static class MacTerminalLauncher
         }
         else if (cleanupWorktreeId != null && mainProjectRoot != null)
         {
+            wtSetup = TerminalLauncher.WorktreeInitSettingsScript(mainProjectRoot);
             wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 

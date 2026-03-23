@@ -182,6 +182,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (GitWorktreeRemoveRegex(), "Use dydo worktree cleanup to remove worktrees"),
     ];
 
+    // Heredoc detection — strip $(cat <<'WORD'...WORD) to prevent false positives
+    [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
+    private static partial Regex CatHeredocRegex();
+
     // Bypass detection patterns
     [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
     private static partial Regex CommandSubstitutionRegex();
@@ -305,11 +309,14 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return result;
         }
 
+        // Strip cat heredoc blocks — literal text, not shell code
+        var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
+
         // Check for bypass attempts
-        CheckBypassAttempts(command, result);
+        CheckBypassAttempts(strippedCommand, result);
 
         // Split command by separators (;, &&, ||, newlines)
-        var subCommands = SplitCommand(command);
+        var subCommands = SplitCommand(strippedCommand);
 
         foreach (var subCmd in subCommands)
         {

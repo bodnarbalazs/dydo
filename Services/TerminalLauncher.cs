@@ -97,6 +97,13 @@ public class TerminalLauncher
                $"(dydo worktree init-settings --main-root \"$_wt_root\" 2>/dev/null || true) && ";
     }
 
+    internal static string WorktreeInitSettingsScript(string? mainProjectRoot)
+    {
+        if (mainProjectRoot == null) return "";
+        var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
+        return $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
+    }
+
     internal static string WorktreeCleanupScript(string worktreeId, string agentName) =>
         $"dydo worktree cleanup {worktreeId} --agent {agentName}";
 

@@ -433,10 +433,16 @@ public static class WorktreeCommand
         {
             RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
             RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
-            RemoveGitWorktree(worktreePath);
+            try { RunProcess("git", $"-C \"{mainRoot}\" worktree remove \"{worktreePath}\" --force"); }
+            catch { Console.Error.WriteLine($"WARNING: Failed to remove worktree at {worktreePath}"); }
         }
 
-        RunProcess("git", $"-C \"{mainRoot}\" branch -D {mergeSource}");
+        // Prune stale worktree references before branch deletion
+        try { RunProcess("git", $"-C \"{mainRoot}\" worktree prune"); }
+        catch { /* best-effort */ }
+
+        try { RunProcess("git", $"-C \"{mainRoot}\" branch -D {mergeSource}"); }
+        catch { Console.Error.WriteLine($"WARNING: Failed to delete branch {mergeSource}"); }
 
         RemoveAllMarkers(workspace);
 

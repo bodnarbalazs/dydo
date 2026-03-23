@@ -29,6 +29,8 @@ public static class LinuxTerminalLauncher
         }
         else if (cleanupWorktreeId != null && mainProjectRoot != null)
         {
+            var initSettings = $"(dydo worktree init-settings --main-root '{mainProjectRoot}' 2>/dev/null || true) && ";
+            args = args.Replace("unset CLAUDECODE", initSettings + "unset CLAUDECODE");
             var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
             args = args.Replace("exec bash", cleanup + "; exec bash");
         }
@@ -63,6 +65,8 @@ public static class LinuxTerminalLauncher
                 }
                 else if (cleanupWorktreeId != null && mainProjectRoot != null)
                 {
+                    var initSettings = $"(dydo worktree init-settings --main-root '{mainProjectRoot}' 2>/dev/null || true) && ";
+                    arguments = arguments.Replace("unset CLAUDECODE", initSettings + "unset CLAUDECODE");
                     var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
                     arguments = arguments.Replace("exec bash", cleanup + "; exec bash");
                 }

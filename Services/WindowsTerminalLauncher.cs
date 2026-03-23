@@ -60,11 +60,13 @@ public static class WindowsTerminalLauncher
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
-        // Inherited worktree: no setup, but cleanup on exit
+        // Inherited worktree: no creation, but init-settings + cleanup on exit
         if (worktreeId == null && cleanupWorktreeId != null && mainProjectRoot != null)
         {
             var escapedRoot = mainProjectRoot.Replace("'", "''");
-            return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+            return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
+                   $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{}}; " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
         }
 

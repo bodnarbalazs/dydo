@@ -397,6 +397,26 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Warnings, w => w.Contains("command substitution", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Analyze_GitCommitWithHeredoc_NoCommandSubstitutionWarning()
+    {
+        var command = "git commit -m \"$(cat <<'EOF'\nFix some issue\n\nCo-Authored-By: Test <noreply@example.com>\nEOF\n)\"";
+
+        var result = _analyzer.Analyze(command);
+
+        Assert.DoesNotContain(result.Warnings, w => w.Contains("command substitution", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Analyze_GitCommitWithHeredoc_NoWriteOperationOnEOF()
+    {
+        var command = "git commit -m \"$(cat <<'EOF'\nFix some issue\n\nCo-Authored-By: Test <noreply@example.com>\nEOF\n)\"";
+
+        var result = _analyzer.Analyze(command);
+
+        Assert.DoesNotContain(result.Operations, op => op.Path == "EOF" && op.Type == FileOperationType.Write);
+    }
+
     [Theory]
     [InlineData("echo 'cm0gLXJmIC8=' | base64 -d | sh")]
     [InlineData("base64 --decode encoded.txt | sh")]

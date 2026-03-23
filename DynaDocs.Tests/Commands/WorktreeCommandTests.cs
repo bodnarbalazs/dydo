@@ -1352,6 +1352,52 @@ public class WorktreeCommandTests : IDisposable
         Assert.Equal(0, exitCode);
     }
 
+    [Fact]
+    public void RemoveZombieDirectory_DeletesDirectory_WhenExists()
+    {
+        var zombieDir = Path.Combine(_testDir, "zombie-wt-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(zombieDir);
+        File.WriteAllText(Path.Combine(zombieDir, "dummy.txt"), "test");
+
+        WorktreeCommand.RemoveZombieDirectory(zombieDir);
+
+        Assert.False(Directory.Exists(zombieDir));
+    }
+
+    [Fact]
+    public void RemoveZombieDirectory_NoOp_WhenDirectoryMissing()
+    {
+        var missingDir = Path.Combine(_testDir, "no-such-dir-" + Guid.NewGuid().ToString("N")[..8]);
+
+        WorktreeCommand.RemoveZombieDirectory(missingDir);
+
+        Assert.False(Directory.Exists(missingDir));
+    }
+
+    [Fact]
+    public void Cleanup_RemovesZombieDirectory_AfterGitWorktreeRemoveFails()
+    {
+        var worktreeId = "zombie-" + Guid.NewGuid().ToString("N")[..8];
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+        File.WriteAllText(Path.Combine(worktreePath, "dummy.txt"), "data");
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        // Override git calls to no-op (simulates git worktree remove failing silently)
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.False(Directory.Exists(worktreePath));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker

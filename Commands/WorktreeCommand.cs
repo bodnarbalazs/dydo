@@ -167,6 +167,7 @@ public static class WorktreeCommand
         RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
         RemoveGitWorktree(worktreePath);
         DeleteWorktreeBranch(worktreeId);
+        RemoveZombieDirectory(worktreePath);
 
         Console.WriteLine($"Worktree {worktreeId}: cleaned up.");
         return ExitCodes.Success;
@@ -374,6 +375,21 @@ public static class WorktreeCommand
         catch
         {
             // Harmless if worktree already removed
+        }
+    }
+
+    internal static void RemoveZombieDirectory(string worktreePath)
+    {
+        // git worktree remove only works for registered worktrees.
+        // Zombie directories (unregistered) need direct deletion.
+        if (!Directory.Exists(worktreePath)) return;
+        try
+        {
+            Directory.Delete(worktreePath, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"WARNING: Could not remove directory {worktreePath}: {ex.Message}");
         }
     }
 

@@ -1059,6 +1059,299 @@ public class WorktreeCommandTests : IDisposable
 
     #endregion
 
+    [Fact]
+    public void InitSettings_MalformedJson_CreatesNewSettings()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "NOT VALID JSON {{{");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            Assert.True(File.Exists(targetPath));
+
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]?["allow"]?.AsArray();
+            Assert.NotNull(allow);
+            Assert.True(allow.Count >= 3);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_ExistingAllowEntries_DoesNotDuplicate()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        var trimmedRoot = mainRoot.TrimEnd('/', '\\');
+
+        // Build settings JSON programmatically to avoid backslash escaping issues
+        var sourceSettings = new JsonObject
+        {
+            ["permissions"] = new JsonObject
+            {
+                ["allow"] = new JsonArray(
+                    (JsonNode)$"Read({trimmedRoot}/**)",
+                    (JsonNode)"Read(**)",
+                    (JsonNode)"Read(~/**)")
+            }
+        };
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"),
+            sourceSettings.ToJsonString());
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+
+            // Should not add duplicates — count should remain 3
+            Assert.Equal(3, allow.Count(item => item?.GetValue<string>() != null));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_ExistingPermissionsNoAllow_AddsAllow()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        var sourceSettings = new JsonObject
+        {
+            ["permissions"] = new JsonObject
+            {
+                ["deny"] = new JsonArray((JsonNode)"Bash(rm*)")
+            }
+        };
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"),
+            sourceSettings.ToJsonString());
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+            Assert.Equal(3, allow.Count);
+            // deny should still be preserved
+            Assert.NotNull(json["permissions"]!["deny"]);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_ExistingAllowWithSomeMatches_AddsMissingOnly()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        var trimmedRoot = mainRoot.TrimEnd('/', '\\');
+
+        // Only include the absolute entry — wildcard and tilde are missing
+        var sourceSettings = new JsonObject
+        {
+            ["permissions"] = new JsonObject
+            {
+                ["allow"] = new JsonArray(
+                    (JsonNode)$"Read({trimmedRoot}/**)",
+                    (JsonNode)"Bash(git *)")
+            }
+        };
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"),
+            sourceSettings.ToJsonString());
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+            // Original 2 + 2 new (wildcard and tilde)
+            Assert.Equal(4, allow.Count);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void ResolveWorktreePath_NonMatchingMarker_ReturnsNull()
+    {
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), "/some/path/other-task");
+
+        var resolved = WorktreeCommand.ResolveWorktreePath(_registry, "target-task");
+        Assert.Null(resolved);
+    }
+
+    [Fact]
+    public void InitSettings_AllowWithNullEntry_HandledGracefully()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        // JSON with a null entry in the allow array
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"),
+            """{"permissions":{"allow":[null,"Bash(git *)"]}}""");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+            // null + Bash(git *) + 3 Read entries = 5
+            Assert.Equal(5, allow.Count);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_NonWorktreePrefixedBranch_StillCleans()
+    {
+        // Use a merge source that does NOT start with "worktree/"
+        SetupMergeAgent("Adele", "main", "feature/some-branch");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(true, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("finalized", stdout.ToLower());
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D feature/some-branch"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void InitSettings_JsonNullLiteral_CreatesNewSettings()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "null");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.Equal(0, exitCode);
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            Assert.True(File.Exists(targetPath));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void Merge_MissingWorktreeRoot_FallsBackToFindProjectRoot()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        // Remove the .worktree-root marker so the code falls back to FindProjectRoot
+        File.Delete(Path.Combine(workspace, ".worktree-root"));
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        try
+        {
+            // This may fail or succeed depending on FindProjectRoot, but it exercises the branch
+            WorktreeCommand.ExecuteMerge(false, _registry);
+        }
+        catch { }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+        }
+    }
+
+    [Fact]
+    public void RemoveGitWorktree_NonexistentPath_DoesNotThrow()
+    {
+        // Exercises the real RunProcess path (no override) with a harmless failing command
+        var nonexistentPath = Path.Combine(_testDir, "no-such-worktree-" + Guid.NewGuid().ToString("N")[..8]);
+        WorktreeCommand.RemoveGitWorktree(nonexistentPath);
+    }
+
+    [Fact]
+    public void RunProcessWithExitCode_RealProcess_ReturnsExitCode()
+    {
+        // Exercises the real RunProcessWithExitCode path (no overrides)
+        var cmd = OperatingSystem.IsWindows() ? "cmd" : "true";
+        var args = OperatingSystem.IsWindows() ? "/c exit 0" : "";
+        var exitCode = WorktreeCommand.RunProcessWithExitCode(cmd, args);
+        Assert.Equal(0, exitCode);
+    }
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker

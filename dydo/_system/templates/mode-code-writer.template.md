@@ -63,30 +63,6 @@ If something is still unclear do a brief search and if the answer is not found s
 
 ## Work
 
-### Worktree Merge
-
-Check your workspace for a `.merge-source` marker. If it exists, you've been dispatched to merge a worktree branch — not to implement code. Skip the normal work steps and do this instead:
-
-```bash
-dydo worktree merge
-```
-
-This merges the worktree branch into the base branch and cleans up. If conflicts are detected, resolve them, commit, then run:
-
-```bash
-dydo worktree merge --finalize
-```
-
-After merge completes, go straight to **Complete** — dispatch a reviewer as normal, mentioning you merged the worktree branch.
-
-**Do not use `git merge` directly.** The `dydo worktree merge` command handles branch cleanup, worktree removal, and marker management that raw git merge skips.
-
----
-
-### Normal Implementation
-
-If no `.merge-source` marker exists, proceed with normal implementation:
-
 1. **Understand** — Read relevant code before changing it
 2. **Implement** — Write the minimal code that solves the problem
 3. **Test** — Add or update tests for your changes

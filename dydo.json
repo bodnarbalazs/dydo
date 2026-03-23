@@ -93,7 +93,7 @@
   },
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",
-    "_system/templates/mode-code-writer.template.md": "32c0c1769780eff6dfcbb6cdf1af52a68296a983f5fe44e1233b91a1dec80d16",
+    "_system/templates/mode-code-writer.template.md": "3f2f0ee2bb41df33785a593917cb89faf6e388915dbe3bfccae0d29719c2efbd",
     "_system/templates/mode-reviewer.template.md": "dffbfed55cd40c93530c7adc99fb034997a5b184c82e890841e008d5068e430f",
     "_system/templates/mode-co-thinker.template.md": "dda2b3831fd458ea51d17d846489124859d23ad5988b25a67554c946c73c2a4b",
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
@@ -104,8 +104,10 @@
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "6c23cbc1aa47fb016e3055243f56a346eedd554574a0265283c65b27233a5dfe",
     "_system/templates/mode-test-writer.template.md": "15845eb12c90f3020aee1625067c78bb8e17d00c845b42e74e79ee09965e83cf",
-    "_system/templates/mode-orchestrator.template.md": "0d7f3c84858229c645698c2ac9742dfa455ac2632ef468854fd155a9788f8f90",
+    "_system/templates/mode-orchestrator.template.md": "aac249af90408d30f2ab258585e3a5e32d6fccd9496db572339d8a9f4c9cfa1b",
     "_system/templates/mode-inquisitor.template.md": "27ab4dc79d5aff3bc860c867531f8713871af3e5b3a5e4bbb80a813e450a924b",
-    "_system/templates/mode-judge.template.md": "455acd4bbd8ec8f1447ebada72596e9baa63731f53ef9883bfe83595be5e5c1b"
+    "_system/templates/mode-judge.template.md": "455acd4bbd8ec8f1447ebada72596e9baa63731f53ef9883bfe83595be5e5c1b",
+    "guides/how-to-merge-worktrees.md": "a01edead0a9e0751b4768fedf7941e460eabdc1317d76c33041f60a24da38e5c",
+    "guides/how-to-review-worktree-merges.md": "6aa310868e0ce37f7f783d9bb6ba2f88fc273dfe697ad1c9b5107218ec40ea3a"
   }
 }

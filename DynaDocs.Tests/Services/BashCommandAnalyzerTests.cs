@@ -683,6 +683,83 @@ public class BashCommandAnalyzerTests
 
     #endregion
 
+    #region Dangerous Patterns via Analyze
+
+    [Fact]
+    public void Analyze_DangerousPattern_SetsHasDangerousAndReturnsEarly()
+    {
+        var result = _analyzer.Analyze("rm -rf /");
+
+        Assert.True(result.HasDangerousPattern);
+        Assert.NotNull(result.DangerousPatternReason);
+        Assert.Empty(result.Operations);
+    }
+
+    #endregion
+
+    #region Awk/Gawk Commands
+
+    [Theory]
+    [InlineData("awk '{print $1}' data.csv", "awk", "data.csv")]
+    [InlineData("gawk '/pattern/' log.txt", "gawk", "log.txt")]
+    public void Analyze_DetectsAwkGawkReadOperations(string command, string expectedCmd, string expectedPath)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op =>
+            op.Type == FileOperationType.Read && op.Path == expectedPath && op.Command == expectedCmd);
+    }
+
+    [Fact]
+    public void Analyze_AwkMultipleInputFiles()
+    {
+        var result = _analyzer.Analyze("awk '{print}' file1.csv file2.csv");
+
+        Assert.True(result.Operations.Count(op =>
+            op.Type == FileOperationType.Read && op.Command == "awk") >= 2);
+    }
+
+    #endregion
+
+    #region Path Detection Edge Cases
+
+    [Fact]
+    public void Analyze_DoesNotTreatDigitColonAsPath()
+    {
+        var result = _analyzer.Analyze("cat 0:20");
+
+        Assert.DoesNotContain(result.Operations, op => op.Path == "0:20");
+    }
+
+    [Fact]
+    public void Analyze_DetectsSensitiveFileNameAsPath()
+    {
+        var result = _analyzer.Analyze("cat credentials");
+
+        Assert.Contains(result.Operations, op =>
+            op.Type == FileOperationType.Read && op.Path == "credentials");
+    }
+
+    [Fact]
+    public void Analyze_StderrRedirectTokenNotTreatedAsPath()
+    {
+        var result = _analyzer.Analyze("cat 2>error.log");
+
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Type == FileOperationType.Read && op.Path == "2>error.log");
+    }
+
+    [Fact]
+    public void Analyze_TrailingWhitespaceInChainedCommand()
+    {
+        var result = _analyzer.Analyze("cat file.txt ;   ");
+
+        Assert.Contains(result.Operations, op =>
+            op.Type == FileOperationType.Read && op.Path == "file.txt");
+    }
+
+    #endregion
+
     #region LooksLikePath False Positives
 
     [Theory]

@@ -1669,6 +1669,145 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\0dca6fb9-msg-fix-merge-launch-and-release-merge.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:24:52.1255874Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-smoke-test-v12.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-22T23:29:08.861258Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bet91zm7k.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:29:13.9380864Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b10f2e1d-msg-smoke-test-v12.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:29:29.4438914Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9e76f40a-msg-smoke-test-v12.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:31:50.0529075Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b7821j3au.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:31:55.0409573Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\0785b897-msg-smoke-test-v12.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:32:06.0486525Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-22T23:32:06.9820909Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v12.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-22T23:32:08.0357546Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch | grep smoke-test-v12 || echo \u0022branch cleaned up\u0022"
+    },
+    {
+      "ts": "2026-03-22T23:32:08.2398194Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list"
+    },
+    {
+      "ts": "2026-03-22T23:37:39.3381404Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-22T23:37:40.0734619Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-test-v12.txt \u0026\u0026 echo \u0022EXISTS on master\u0022 || echo \u0022NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-22T23:37:52.1812953Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-22T23:37:58.2168855Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-22T23:38:04.3604054Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat dydo/_system/.local/worktrees/smoke-test-v12/.claude/settings.local.json 2\u003E/dev/null || echo \u0022Fi..."
+    },
+    {
+      "ts": "2026-03-22T23:38:09.4228476Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/smoke-test-v12/.claude/ 2\u003E/dev/null || echo \u0022No .claude dir\u0022"
+    },
+    {
+      "ts": "2026-03-22T23:38:32.9841997Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\project_worktree_status.md",
+      "tool": "write",
+      "reason": "Agent Adele (orchestrator) cannot write ../../../.claude/projects/C--Users-User-Desktop-Projects-DynaDocs/memory/project_worktree_status.md. "
+    },
+    {
+      "ts": "2026-03-22T23:46:55.3629771Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-worktree-remaining.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-23T00:02:01.6095433Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bdv6x0n8v.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:02:06.4486706Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a0a36f77-msg-fix-worktree-remaining.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:02:22.0754998Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\28087941-msg-fix-worktree-remaining.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:19:20.5225982Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b0900vzng.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T00:19:25.3560496Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e06a56b2-msg-fix-worktree-remaining.md",
+      "tool": "read"
     }
   ],
   "snapshot": {

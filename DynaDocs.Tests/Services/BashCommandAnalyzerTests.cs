@@ -824,4 +824,64 @@ public class BashCommandAnalyzerTests
     }
 
     #endregion
+
+    #region Safety Guard Regression
+
+    [Theory]
+    [InlineData("ls")]
+    [InlineData("ls -la")]
+    [InlineData("ls -l /tmp")]
+    public void Analyze_LsCommand_NoFileOperations(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasDangerousPattern);
+        Assert.Empty(result.Operations);
+    }
+
+    [Theory]
+    [InlineData("dydo agent release")]
+    [InlineData("dydo agent status")]
+    [InlineData("dydo whoami")]
+    public void Analyze_DydoCommands_NoFileOperations(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasDangerousPattern);
+        Assert.Empty(result.Operations);
+    }
+
+    [Fact]
+    public void Analyze_EmptyQuotedString_DoesNotThrow()
+    {
+        // TokenizeCommand("\"\"") returns empty list — guard prevents IndexOutOfRangeException
+        var result = _analyzer.Analyze("\"\"");
+
+        Assert.False(result.HasDangerousPattern);
+    }
+
+    [Fact]
+    public void LooksLikePath_EmptyString_NotTreatedAsPath()
+    {
+        // Without the whitespace guard, empty strings pass all exclusion filters
+        // and fall through to the final catch-all which returns true
+        var result = _analyzer.Analyze("echo '' > /dev/null");
+
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Type == FileOperationType.Read && string.IsNullOrEmpty(op.Path));
+    }
+
+    [Theory]
+    [InlineData("icacls file.txt /grant Users:R")]
+    [InlineData("git log --format=%H:%s")]
+    public void Analyze_FlagWithColon_NotTreatedAsPath(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        // Flag-like tokens with colons should not be extracted as paths
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Path.StartsWith("-") || op.Path.StartsWith("%"));
+    }
+
+    #endregion
 }

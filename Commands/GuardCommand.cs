@@ -1141,12 +1141,12 @@ public static partial class GuardCommand
 
     // Matches: bash/sh/zsh/cmd/powershell/pwsh [flags...] dydo [args...]
     // Also matches: bash -c "dydo ...", sh -c 'dydo ...'
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectShellDydoRegex();
 
     // Matches: python/python3/py [flags...] dydo [args...]
     // Also matches: python -c "dydo ...", python3 dydo agent claim auto
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo\b(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
     private static partial Regex IndirectPythonDydoRegex();
 
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)

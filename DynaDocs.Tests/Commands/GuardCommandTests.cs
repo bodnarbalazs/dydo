@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Commands;
 
+using DynaDocs.Commands;
 using DynaDocs.Services;
 
 /// <summary>
@@ -374,6 +375,54 @@ public class GuardCommandTests : IDisposable
 
         Assert.Empty(result.Operations);
         Assert.False(result.HasDangerousPattern);
+    }
+
+    #endregion
+
+    #region Indirect Dydo Invocation — Python path false positive
+
+    [Theory]
+    [InlineData("python dydo/agents/Brian/check_coverage.py")]
+    [InlineData("python3 dydo/scripts/run.py")]
+    [InlineData("py dydo/tools/helper.py")]
+    public void CheckIndirectDydo_PythonWithDydoPath_NotIndirect(string command)
+    {
+        var (isIndirect, _, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+
+        Assert.False(isIndirect, $"Should not match dydo as a path component: {command}");
+    }
+
+    [Theory]
+    [InlineData("python dydo agent claim auto")]
+    [InlineData("python3 dydo inbox show")]
+    [InlineData("py dydo whoami")]
+    public void CheckIndirectDydo_PythonWithDydoCommand_IsIndirect(string command)
+    {
+        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+
+        Assert.True(isIndirect, $"Should match dydo as a command: {command}");
+        Assert.Contains(invoker!, new[] { "python", "python3", "py" });
+    }
+
+    [Theory]
+    [InlineData("bash dydo/agents/Brian/run.sh")]
+    [InlineData("sh dydo/scripts/setup.sh")]
+    public void CheckIndirectDydo_ShellWithDydoPath_NotIndirect(string command)
+    {
+        var (isIndirect, _, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+
+        Assert.False(isIndirect, $"Should not match dydo as a path component: {command}");
+    }
+
+    [Theory]
+    [InlineData("bash -c \"dydo agent claim auto\"")]
+    [InlineData("sh -c 'dydo whoami'")]
+    public void CheckIndirectDydo_ShellWithDydoCommand_IsIndirect(string command)
+    {
+        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+
+        Assert.True(isIndirect, $"Should match dydo as a command: {command}");
+        Assert.NotNull(invoker);
     }
 
     #endregion

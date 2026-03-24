@@ -391,6 +391,398 @@
       "event": "Read",
       "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models/AuditEvent.cs",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:18:56.3211913Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-24T21:18:58.2128543Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 | grep -i guard | head -20"
+    },
+    {
+      "ts": "2026-03-24T21:18:59.7585541Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-24T21:19:00.4396712Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:00.6661121Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardLiftCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:01.1302589Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:19:01.7361961Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-24T21:19:01.8078252Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-24T21:19:03.6847906Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:04.3885414Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:04.8374628Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:19:06.0640261Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:19:06.5839443Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:19:06.6597694Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models/ViolationSeverity.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:07.0864861Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/GuardCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:07.3558739Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:08.6512717Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:08.9473439Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:09.9187054Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022CheckIndirectDydoInvocation\\|nudge\\|one.time\\|warn\u0022 --include=\u0022*.cs\u0022 | head -40"
+    },
+    {
+      "ts": "2026-03-24T21:19:11.3004043Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:14.0851025Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l /c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-24T21:19:16.2712434Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:16.6470807Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022Severity\\|severity\\|Warn\\|nudge\\|one.time\\|retry\\|already\u0022 /c/Users/User/Desktop/Projects/D..."
+    },
+    {
+      "ts": "2026-03-24T21:19:19.6995683Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:19.7894862Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:22.4879082Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:25.3835539Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "head -200 /c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-24T21:19:27.7834188Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022ViolationSeverity\\|nudge\\|Nudge\\|attempt\\|Attempt\\|already\\|Already\u0022 /c/Users/User/Desktop/..."
+    },
+    {
+      "ts": "2026-03-24T21:19:30.4668648Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*OffLimits*Service.cs\u0022 | grep -v worktre..."
+    },
+    {
+      "ts": "2026-03-24T21:19:32.4333536Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/OffLimitsService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:32.5418237Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/IOffLimitsService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:35.2364057Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022Severity\\|severity\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs"
+    },
+    {
+      "ts": "2026-03-24T21:19:37.5592462Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022IsWarning\\|Warning\\|warn\\|nudge\\|one.time\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Service..."
+    },
+    {
+      "ts": "2026-03-24T21:19:39.4047765Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:42.5336052Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -rn \u0022nudge\\|\\.nudge\\|Nudge\\|-nudge\u0022 /c/Users/User/Desktop/Projects/DynaDocs --include=\u0022*.cs\u0022 | ..."
+    },
+    {
+      "ts": "2026-03-24T21:19:46.9123073Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:47.1114965Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:19:50.0778751Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -n \u0027592,650p\u0027 /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs"
+    },
+    {
+      "ts": "2026-03-24T21:19:52.2874896Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "sed -n \u0027295,345p\u0027 /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs"
+    },
+    {
+      "ts": "2026-03-24T21:19:55.4307207Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f \\( -name \u0022.nudge*\u0022 -o -name \u0022.warn*\u0022 -o -name \u0022..."
+    },
+    {
+      "ts": "2026-03-24T21:20:30.4664016Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/PathPermissionChecker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:40.7414786Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-24T21:36:43.0109896Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:43.0844411Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-24T21:36:43.1601609Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-24T21:36:45.3459529Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-24T21:36:45.7549432Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:46.701712Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/ValidateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:49.8091704Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:49.9091546Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:52.4639652Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:36:53.1154194Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:36:53.6460858Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:36:56.7427735Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:56.9630922Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:59.5614443Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:36:59.9685785Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:37:00.4722158Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:37:03.3818903Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:37:04.2566216Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:37:04.4161064Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:37:06.8654997Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:37:07.5773993Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:37:10.4003884Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-24T21:37:11.0743899Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:37:56.2058386Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-24T21:38:01.8505993Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ValidationService.cs",
+      "tool": "read"
     }
   ],
   "snapshot": {

@@ -376,6 +376,31 @@ public class BashCommandAnalyzerTests
         Assert.Contains("dydo worktree cleanup", reason);
     }
 
+    [Theory]
+    [InlineData("base64 -d | python")]
+    [InlineData("base64 --decode | bash")]
+    [InlineData("base64 -d | sh")]
+    [InlineData("echo 'payload' | base64 -d | python3")]
+    [InlineData("base64 -d payload.txt | zsh")]
+    public void CheckDangerousPatterns_DetectsBase64DecodePipeInterpreter(string command)
+    {
+        var (isDangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(isDangerous, $"Expected dangerous: {command}");
+        Assert.Contains("base64", reason!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("base64 -d encoded.txt")]
+    [InlineData("echo 'data' | base64 --decode")]
+    [InlineData("base64 -d file.bin > output.txt")]
+    public void CheckDangerousPatterns_AllowsBase64DecodeWithoutInterpreterPipe(string command)
+    {
+        var (isDangerous, _) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(isDangerous, $"Should not be dangerous: {command}");
+    }
+
     [Fact]
     public void CheckDangerousPatterns_AllowsGitWorktreeList()
     {
@@ -418,8 +443,8 @@ public class BashCommandAnalyzerTests
     }
 
     [Theory]
-    [InlineData("echo 'cm0gLXJmIC8=' | base64 -d | sh")]
-    [InlineData("base64 --decode encoded.txt | sh")]
+    [InlineData("base64 -d encoded.txt")]
+    [InlineData("echo 'data' | base64 --decode")]
     public void Analyze_WarnsOnBase64Decode(string command)
     {
         var result = _analyzer.Analyze(command);

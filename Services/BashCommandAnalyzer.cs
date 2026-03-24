@@ -151,6 +151,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (DirectDiskWriteRegex(), "Direct disk write attempt"),
         (DdDiskWriteRegex(), "Direct disk write via dd"),
 
+        // Base64 decode piped to interpreter
+        (Base64DecodePipeExecRegex(), "Base64 decode piped to interpreter"),
+
         // Download and execute - Unix
         (CurlPipeShRegex(), "Download and execute pattern (curl | sh)"),
         (WgetPipeShRegex(), "Download and execute pattern (wget | sh)"),
@@ -217,6 +220,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/sd[a-z]", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
+
+    [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
+    private static partial Regex Base64DecodePipeExecRegex();
 
     [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase)]
     private static partial Regex CurlPipeShRegex();

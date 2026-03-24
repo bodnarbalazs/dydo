@@ -94,6 +94,1022 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git branch -d worktree/smoke-test-v2 worktree/smoke-test-v3 worktree/smoke-test-v7"
+    },
+    {
+      "ts": "2026-03-23T21:01:39.9522131Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git branch -D worktree/smoke-test-v2 worktree/smoke-test-v3"
+    },
+    {
+      "ts": "2026-03-23T21:01:48.6847832Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls dydo/_system/.local/worktrees/"
+    },
+    {
+      "ts": "2026-03-23T21:08:16.8179506Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "for dir in smoke-test-v3 smoke-test-v5 smoke-test-v6 smoke-test-v7 smoke-test-v12 smoke-test-v13 smo..."
+    },
+    {
+      "ts": "2026-03-23T21:13:48.4108186Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git worktree list \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 ls dydo/_system/.local/worktrees/ 2\u003E\u00261 \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 git branc..."
+    },
+    {
+      "ts": "2026-03-23T21:13:53.9206481Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/_system/.local/worktrees/smoke-test-v2/ 2\u003E\u00261 | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:14:02.0822144Z",
+      "event": "Blocked",
+      "path": "dydo/_system/.local/worktrees/smoke-test-v2",
+      "tool": "bash",
+      "cmd": "rm -rf dydo/_system/.local/worktrees/smoke-test-v2 2\u003E\u00261",
+      "reason": "Agent Emma (code-writer) cannot delete dydo/_system/.local/worktrees/smoke-test-v2. Code-writer role can only edit configured source/test paths and own workspace."
+    },
+    {
+      "ts": "2026-03-23T21:14:12.7008377Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-23T21:14:14.083494Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:14:14.1358906Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:14:16.2786359Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:14:16.4942346Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:14:18.323044Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:14:21.354097Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:14:22.9267624Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\u0022 -name \u0022AgentRegistry.cs\u0022 -type f"
+    },
+    {
+      "ts": "2026-03-23T21:14:24.5192567Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:14:27.2178809Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:14:39.0764682Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:14:42.7087645Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:14:46.5366914Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:15:12.816476Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:15:19.1230837Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-23T21:17:52.5276771Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:17:59.1976582Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-23T21:18:04.0848102Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:18:08.2848571Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:13.1217142Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:18:17.8289588Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:21.437595Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:25.63177Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:30.0558105Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:18:33.9762505Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:37.6889265Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:42.3722383Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:18:54.3803437Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-03-23T21:19:00.2805466Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "cd C:/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 dotnet build --nologo -v q 2\u003E\u00261 | tail -5",
+      "reason": "Needless cd compound"
+    },
+    {
+      "ts": "2026-03-23T21:19:03.8377308Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet build --nologo -v q 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-03-23T21:19:14.4457089Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests --nologo -v q --filter \u0022FullyQualifiedName~WorktreeCommandTests\u0022 2\u003E\u00261 | t..."
+    },
+    {
+      "ts": "2026-03-23T21:19:32.3288766Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-23T21:19:34.1062306Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:34.2804318Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:34.6074828Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type d -name DynaDocs.Tests 2\u003E/dev/null | head -5"
+    },
+    {
+      "ts": "2026-03-23T21:19:35.0075948Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-23T21:19:36.96721Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Program.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:37.0529955Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/Templates/ | grep -i \u0022about-dynadocs\u0022"
+    },
+    {
+      "ts": "2026-03-23T21:19:37.1408858Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:37.5356353Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:38.4241421Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-23T21:19:38.8450809Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\GuardLiftService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:39.0829644Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardLiftCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:39.2670056Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:39.8198078Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:40.3844283Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 | xargs grep -l \u0022class TaskCompact..."
+    },
+    {
+      "ts": "2026-03-23T21:19:40.9160477Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:41.2887919Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:41.5613313Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:41.7498563Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:41.8254453Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-03-23T21:19:42.1840041Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:42.3943067Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/about-dynadocs.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:42.8506037Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/TaskCompactHandler.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:43.1907823Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -type f -name \u0022*.cs\u0022 | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:19:43.5852359Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:43.7261971Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/understand/guard-system.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:43.8011694Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:43.9569771Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/reference/guardrails.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:44.1858928Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:44.2270517Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/fix-guard-worktree-paths.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:44.5318872Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all --grep=\u0022guard.*timezone\\|timezone.*guard\u0022 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:19:44.6636859Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all --grep=\u0022guard lift\u0022 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:19:45.4869717Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -type f -name \u0022*TaskCompact*\u0022 -o -name \u0022..."
+    },
+    {
+      "ts": "2026-03-23T21:19:45.5803956Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022TaskCompactHandler\u0022 /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests --include=\u0022*.cs\u0022..."
+    },
+    {
+      "ts": "2026-03-23T21:19:46.2509416Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\InboxCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:46.6694928Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\changelog\\2026\\2026-03-19\\investigate-inbox-clear-bypass.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:46.8339743Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\changelog\\2026\\2026-03-19\\fix-inbox-clear-bypass.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:47.0872879Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:47.2320962Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:19:47.4312561Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AuditCompactionTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:47.7393209Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022class.*Compact.*Test\\|void.*Compact\u0022 /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests..."
+    },
+    {
+      "ts": "2026-03-23T21:19:49.1349788Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Utils/PathUtils.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:49.3605106Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:49.412329Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:49.5235883Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/PathPermissionChecker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:49.9419079Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\archive\\20260319-141007\\notes-inbox-clear-bypass.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:50.1575629Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -type f -name \u0022*Handler*Tests*.cs\u0022 | xar..."
+    },
+    {
+      "ts": "2026-03-23T21:19:51.6800486Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:51.946904Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:52.4725974Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkflowTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:52.6760737Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:19:53.6449353Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022help\\|Help\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Program.cs | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:19:53.8793786Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:54.170129Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022private static.*ResolveWorktreePath\\|public static.*ResolveWorktreePath\u0022 \u0022/c/Users/User/Des..."
+    },
+    {
+      "ts": "2026-03-23T21:19:54.6609379Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkflowTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:55.6110947Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/fix-critical-bugs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:56.3591972Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -20"
+    },
+    {
+      "ts": "2026-03-23T21:19:56.416865Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022ResolveWorktreePath\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs\u0022 | h..."
+    },
+    {
+      "ts": "2026-03-23T21:19:56.5909082Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "wc -l \u0022/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs\u0022"
+    },
+    {
+      "ts": "2026-03-23T21:19:57.8213024Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Program.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:19:57.8669411Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --grep=\u0022inbox\u0022 --oneline | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:19:59.4526423Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline -- Services/InboxService.cs | head -10"
+    },
+    {
+      "ts": "2026-03-23T21:19:59.7536436Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:00.0806703Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/about-dynadocs.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:20:00.8655276Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 8242fc9 --stat | head -40"
+    },
+    {
+      "ts": "2026-03-23T21:20:01.8081076Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -name \u0022*TaskCompact*\u0022 -o -name \u0022*Task*Co..."
+    },
+    {
+      "ts": "2026-03-23T21:20:01.9380466Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCompatTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:02.3763311Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:20:02.427935Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 8242fc9:Services/InboxService.cs | head -120"
+    },
+    {
+      "ts": "2026-03-23T21:20:03.5838282Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022TaskCompactHandler\\|task compact\\|RunCompaction\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Dy..."
+    },
+    {
+      "ts": "2026-03-23T21:20:04.2883898Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T21:20:04.8326851Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/PathUtilsTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:05.1617006Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -20"
+    },
+    {
+      "ts": "2026-03-23T21:20:06.8174168Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/PathUtilsTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:08.949528Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/*Task* 2\u003E/dev/null || echo \u0022N..."
+    },
+    {
+      "ts": "2026-03-23T21:20:10.8732468Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022compact\\|TaskCompact\u0022 /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/Comma..."
+    },
+    {
+      "ts": "2026-03-23T21:20:11.2540164Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Dexter/archive/20260320-140134/brief-fix-guard-worktree-paths.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:12.6391286Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*coverage*\u0022 -o -name \u0022*crap*\u0022 2\u003E/dev/null | head..."
+    },
+    {
+      "ts": "2026-03-23T21:20:13.2056344Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022GetMainProjectRoot\\|GetRelativePath\u0022 \u0022/c/Users/User/Desktop/Projects/DynaDocs/Services/Agen..."
+    },
+    {
+      "ts": "2026-03-23T21:20:13.6432457Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:14.428203Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/archive/20260323-195059/check_coverage.py",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:20:16.1496557Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 62b8199 --stat | grep -i \u0022test\\|coverage\u0022 | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:20:17.6100313Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 11062d9 --stat"
+    },
+    {
+      "ts": "2026-03-23T21:20:19.9701809Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022class.*TaskCompactHandler\\|\\.Execute\\(\\)\\|RunCompaction\u0022 /c/Users/User/Desktop/Projects/Dyn..."
+    },
+    {
+      "ts": "2026-03-23T21:20:22.2526721Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests -type f -name \u0022*.cs\u0022 -exec grep -l \u0022Task..."
+    },
+    {
+      "ts": "2026-03-23T21:25:01.1115278Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T21:25:01.3617194Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all -20 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-23T21:25:01.7526845Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log -p --all -S \u0022UtcNow\u0022 -- \u0022*GuardLift*\u0022 2\u003E/dev/null | head -100"
+    },
+    {
+      "ts": "2026-03-23T21:25:03.7089516Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/TestResults/ 2\u003E/dev/null | head -10"
+    },
+    {
+      "ts": "2026-03-23T21:25:08.7488811Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -lt /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/TestResults/ | head -5"
+    },
+    {
+      "ts": "2026-03-23T21:25:10.3538226Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/TestResults -name \u0022*.xml\u0022 2\u003E/dev/null | ..."
+    },
+    {
+      "ts": "2026-03-23T21:25:12.2077313Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -i \u0022TaskCompactHandler\u0022 /c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/TestResults/8aab..."
+    },
+    {
+      "ts": "2026-03-23T21:25:13.2651811Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\GuardLiftMarker.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:25:13.3932953Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline --all -1 -- \u0022*GuardLift*\u0022 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-23T21:25:14.7500284Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline --grep=\u0022UTC\\|timezone\\|Utc\u0022 2\u003E/dev/null | head -20"
+    },
+    {
+      "ts": "2026-03-23T21:55:12.0291925Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\GuardLiftTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:55:13.8521197Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\GuardLiftTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T21:55:15.4774145Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all --oneline -- \u0022*GuardLift*\u0022 2\u003E/dev/null | head -10"
+    },
+    {
+      "ts": "2026-03-23T22:32:49.115364Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*.md\u0022 -path \u0022*/dydo/project/tasks/*\u0022 -exec grep ..."
+    },
+    {
+      "ts": "2026-03-23T22:32:53.0668876Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\guard-lift-command.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:32:55.0701157Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:32:57.2418913Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T22:32:59.0169835Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:33:01.0389283Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022DateTime.UtcNow\u0022 --include=\u0022*.cs\u0022 Services/GuardLiftService.cs Commands/GuardCommand.cs 2\u003E/..."
+    },
+    {
+      "ts": "2026-03-23T22:33:01.2261421Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022DateTime.Now\\b\u0022 --include=\u0022*.cs\u0022 Services/GuardLiftService.cs Commands/GuardCommand.cs 2\u003E/d..."
+    },
+    {
+      "ts": "2026-03-23T22:33:03.371623Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -r \u0022DateTime\\\\.Now\u0022 --include=\u0022*.cs\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/GuardLift..."
+    },
+    {
+      "ts": "2026-03-23T22:33:06.0124946Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --all -p -S \u0022ExpiresAtIsUtc\\|DateTimeKind.Utc\u0022 --oneline 2\u003E/dev/null | head -100"
+    },
+    {
+      "ts": "2026-03-23T22:33:09.2320378Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -n \u0022GuardLiftMarker\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Serialization/DydoDefaultJsonConte..."
+    },
+    {
+      "ts": "2026-03-23T22:33:10.7096663Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T22:33:12.0567102Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-23T22:33:13.7830756Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Serialization\\DydoJsonContext.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:33:15.762553Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\GuardLiftTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:33:37.4410103Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261"
+    },
+    {
+      "ts": "2026-03-23T22:42:42.7669476Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status -u"
+    },
+    {
+      "ts": "2026-03-23T22:42:51.7864014Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff Commands/WorktreeCommand.cs DynaDocs.Tests/Commands/WorktreeCommandTests.cs"
+    },
+    {
+      "ts": "2026-03-23T22:42:57.2784964Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add Commands/WorktreeCommand.cs DynaDocs.Tests/Commands/WorktreeCommandTests.cs"
+    },
+    {
+      "ts": "2026-03-23T22:43:10.9325224Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nFix worktree cleanup leaving zombie directories behind\n\nWhen git worktr...",
+      "reason": "Dangerous pattern: Use dydo worktree cleanup to remove worktrees"
+    },
+    {
+      "ts": "2026-03-23T22:43:16.1986298Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nFix worktree cleanup leaving zombie directories behind\n\nWhen git worktr..."
+    },
+    {
+      "ts": "2026-03-23T22:43:57.4636242Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Emma/"
+    },
+    {
+      "ts": "2026-03-23T22:44:01.6766544Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Emma/inbox/ 2\u003E/dev/null; ls dydo/agents/Emma/archive/inbox/ 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-23T22:44:06.9429443Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\state.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:44:18.4831023Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Adele/inbox/ 2\u003E/dev/null"
+    },
+    {
+      "ts": "2026-03-23T22:44:26.8841211Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T22:44:30.8701091Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:45:04.4959263Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T22:45:08.2608211Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:45:12.1155909Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Emma/.reply-pending/ 2\u003E/dev/null || echo \u0022No reply-pending dir\u0022"
+    },
+    {
+      "ts": "2026-03-23T22:45:16.9335922Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "cat dydo/agents/Emma/.reply-pending/worktree-cleanup-verify.json"
+    },
+    {
+      "ts": "2026-03-23T22:45:23.8123909Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T22:45:27.6772303Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:45:33.418074Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:45:52.971216Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:45:58.1657815Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:46:11.1942457Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-23T22:46:23.6478973Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T22:46:47.1670443Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot": {

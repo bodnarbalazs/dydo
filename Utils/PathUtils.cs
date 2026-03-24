@@ -62,7 +62,7 @@ public static partial class PathUtils
     /// <summary>
     /// Rewrites an absolute path inside a git worktree back to the equivalent main-project path.
     /// Detects the worktree marker <c>dydo/_system/.local/worktrees/</c>, identifies the worktree
-    /// root via <c>dydo.json</c> presence, and returns <c>{mainRoot}/{projectContent}</c>.
+    /// root via <c>dydo.json</c> presence, and remaps to the main-project equivalent.
     /// Returns the input unchanged if it's not a worktree path or the root can't be identified.
     /// </summary>
     public static string? NormalizeWorktreePath(string? path)

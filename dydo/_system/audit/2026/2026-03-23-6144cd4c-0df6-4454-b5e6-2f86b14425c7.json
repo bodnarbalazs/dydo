@@ -116,6 +116,89 @@
       "event": "Read",
       "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/guides/coding-standards.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:22:46.8791091Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests"
+    },
+    {
+      "ts": "2026-03-23T18:22:53.9619102Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect WorktreeCommand"
+    },
+    {
+      "ts": "2026-03-23T18:23:02.0562385Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Commands/WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:02.3850298Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:07.1096127Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:11.3016796Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:14.9531993Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:18.7392936Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:23.4740268Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:27.387781Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-23T18:23:50.5241804Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --collect:\u0022XPlat Code Coverage\u0022 --results-directory..."
+    },
+    {
+      "ts": "2026-03-23T18:25:03.4788419Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --collect:\u0022XPlat Code Coverage\u0022 --results-directory..."
+    },
+    {
+      "ts": "2026-03-23T18:27:11.6173178Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests --inspect WorktreeCommand"
+    },
+    {
+      "ts": "2026-03-23T18:27:40.3725789Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot": {

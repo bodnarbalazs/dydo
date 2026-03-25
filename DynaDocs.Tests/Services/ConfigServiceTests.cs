@@ -257,4 +257,39 @@ public class ConfigServiceTests : IDisposable
             Environment.SetEnvironmentVariable("DYDO_HUMAN", original);
         }
     }
+
+    [Fact]
+    public void LoadConfig_WithNudges_DeserializesCorrectly()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {
+                "version": 1,
+                "structure": { "root": "dydo" },
+                "agents": { "pool": [], "assignments": {} },
+                "nudges": [
+                    { "pattern": "dotnet test.*coverlet", "message": "Use gap_check.py.", "severity": "warn" },
+                    { "pattern": "rm -rf", "message": "Don't do that.", "severity": "block" }
+                ]
+            }
+            """);
+
+        var service = new ConfigService();
+        var config = service.LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.Equal(2, config!.Nudges.Count);
+        Assert.Equal("dotnet test.*coverlet", config.Nudges[0].Pattern);
+        Assert.Equal("warn", config.Nudges[0].Severity);
+        Assert.Equal("block", config.Nudges[1].Severity);
+    }
+
+    [Fact]
+    public void LoadConfig_WithoutNudges_DefaultsToEmptyList()
+    {
+        var service = new ConfigService();
+        var config = service.LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.Empty(config!.Nudges);
+    }
 }

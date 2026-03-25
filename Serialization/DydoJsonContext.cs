@@ -22,6 +22,8 @@ using DynaDocs.Models;
 [JsonSerializable(typeof(List<RoleConstraint>))]
 [JsonSerializable(typeof(Dictionary<string, bool>))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
+[JsonSerializable(typeof(NudgeConfig))]
+[JsonSerializable(typeof(List<NudgeConfig>))]
 [JsonSerializable(typeof(List<string>))]
 internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 

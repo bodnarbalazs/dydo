@@ -1,6 +1,7 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
@@ -419,9 +420,9 @@ public static partial class GuardCommand
         IAuditService auditService,
         bool? runInBackground = null)
     {
-        // Block indirect dydo invocations (npx dydo, dotnet dydo)
-        var blocked = CheckIndirectDydoBlock(command, sessionId, registry, auditService);
-        if (blocked != null) return blocked.Value;
+        // Check nudges (built-in + custom from dydo.json)
+        var nudged = CheckNudges(command, sessionId, registry, auditService);
+        if (nudged != null) return nudged.Value;
 
         // Handle dydo commands
         if (IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId))
@@ -446,29 +447,99 @@ public static partial class GuardCommand
         return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
     }
 
-    private static int? CheckIndirectDydoBlock(string command, string? sessionId, AgentRegistry registry, IAuditService auditService)
+    internal static readonly List<NudgeConfig> BuiltInNudges =
+    [
+        new() {
+            Pattern = @"(?:^|[;&|]\s*)npx\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*dydo\b(.*)",
+            Message = "Don't use npx to run dydo — it's already on your PATH. Just use: dydo $1",
+            Severity = "block"
+        },
+        new() {
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)",
+            Message = "Don't use dotnet to run dydo — it's already on your PATH. Just use: dydo $1",
+            Severity = "block"
+        },
+        new() {
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\b.*)",
+            Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
+            Severity = "block"
+        },
+        new() {
+            Pattern = @"(?:^|[;&|]\s*)(bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
+            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+            Severity = "block"
+        },
+        new() {
+            Pattern = @"(?:^|[;&|]\s*)(python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
+            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+            Severity = "block"
+        },
+    ];
+
+    internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry, IAuditService auditService)
     {
-        var (isIndirect, invoker, dydoArgs) = CheckIndirectDydoInvocation(command);
-        if (!isIndirect) return null;
+        var allNudges = new List<NudgeConfig>(BuiltInNudges);
+        if (registry.Config?.Nudges is { Count: > 0 } custom)
+            allNudges.AddRange(custom);
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        foreach (var nudge in allNudges)
         {
-            EventType = AuditEventType.Blocked, Tool = "bash",
-            Command = TruncateCommand(command), BlockReason = $"Indirect dydo invocation via {invoker}"
-        });
+            Regex regex;
+            try { regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase); }
+            catch { continue; }
 
-        var correctedCommand = string.IsNullOrEmpty(dydoArgs) ? "dydo" : $"dydo {dydoArgs}";
-        if (IsDydoOnPath())
-        {
-            Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH.");
-            Console.Error.WriteLine($"  Just use: {correctedCommand}");
+            var match = regex.Match(command);
+            if (!match.Success) continue;
+
+            var message = nudge.Message;
+            for (int i = 1; i < match.Groups.Count; i++)
+                message = message.Replace($"${i}", match.Groups[i].Value.Trim());
+
+            if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+            {
+                var agent = registry.GetCurrentAgent(sessionId);
+                if (agent == null) continue;
+
+                var hash = ComputeNudgeHash(nudge.Pattern);
+                var workspace = registry.GetAgentWorkspace(agent.Name);
+                var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+
+                if (!File.Exists(markerPath))
+                {
+                    File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked, Tool = "bash",
+                        Command = TruncateCommand(command),
+                        BlockReason = $"Nudge (warn): {message}"
+                    });
+                    Console.Error.WriteLine($"BLOCKED: {message}");
+                    Console.Error.WriteLine("  (Run the same command again to proceed anyway.)");
+                    return ExitCodes.ToolError;
+                }
+
+                File.Delete(markerPath);
+                continue;
+            }
+
+            // Block severity: always block
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command),
+                BlockReason = $"Nudge (block): {message}"
+            });
+            Console.Error.WriteLine($"BLOCKED: {message}");
+            return ExitCodes.ToolError;
         }
-        else
-        {
-            Console.Error.WriteLine($"BLOCKED: Don't use '{invoker}' to run dydo — dydo is not on your PATH.");
-            Console.Error.WriteLine($"  Add it to your PATH, then use: {correctedCommand}");
-        }
-        return ExitCodes.ToolError;
+
+        return null;
+    }
+
+    internal static string ComputeNudgeHash(string pattern)
+    {
+        var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(pattern));
+        return Convert.ToHexString(bytes)[..8].ToLowerInvariant();
     }
 
     private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, IAuditService auditService, bool? runInBackground)
@@ -1125,30 +1196,6 @@ public static partial class GuardCommand
         Console.Error.WriteLine("  Run: dydo wait --task <name> (in background)");
     }
 
-    // Matches: npx [flags...] dydo [args...]
-    // Handles optional flags like -q, --yes, -y, --quiet, --package, etc.
-    [GeneratedRegex(@"(?:^|[;&|]\s*)npx\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*dydo\b(.*)", RegexOptions.IgnoreCase)]
-    private static partial Regex IndirectNpxDydoRegex();
-
-    // Matches: dotnet [tool run] dydo [args...]
-    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)", RegexOptions.IgnoreCase)]
-    private static partial Regex IndirectDotnetDydoRegex();
-
-    // Matches: dotnet run [flags...] -- <dydo-subcommand> [args...]
-    // Only matches when args after -- start with a known dydo subcommand.
-    [GeneratedRegex(@"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\b.*)", RegexOptions.IgnoreCase)]
-    private static partial Regex IndirectDotnetRunRegex();
-
-    // Matches: bash/sh/zsh/cmd/powershell/pwsh [flags...] dydo [args...]
-    // Also matches: bash -c "dydo ...", sh -c 'dydo ...'
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
-    private static partial Regex IndirectShellDydoRegex();
-
-    // Matches: python/python3/py [flags...] dydo [args...]
-    // Also matches: python -c "dydo ...", python3 dydo agent claim auto
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$", RegexOptions.IgnoreCase)]
-    private static partial Regex IndirectPythonDydoRegex();
-
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+stash(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitStashRegex();
@@ -1159,73 +1206,6 @@ public static partial class GuardCommand
     // Matches human-only dydo subcommands: task approve, task reject, roles reset, guard lift, guard restore
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:task\s+(?:approve|reject)|roles\s+reset|guard\s+(?:lift|restore))\b", RegexOptions.IgnoreCase)]
     private static partial Regex HumanOnlyDydoCommandRegex();
-
-    /// <summary>
-    /// Check if a command invokes dydo indirectly via npx, dotnet, shell, or python.
-    /// Returns the invoker name and the args that follow dydo.
-    /// </summary>
-    internal static (bool isIndirect, string? invoker, string? dydoArgs) CheckIndirectDydoInvocation(string command)
-    {
-        var npxMatch = IndirectNpxDydoRegex().Match(command);
-        if (npxMatch.Success)
-            return (true, "npx", npxMatch.Groups[1].Value.Trim());
-
-        var dotnetMatch = IndirectDotnetDydoRegex().Match(command);
-        if (dotnetMatch.Success)
-            return (true, "dotnet", dotnetMatch.Groups[1].Value.Trim());
-
-        var dotnetRunMatch = IndirectDotnetRunRegex().Match(command);
-        if (dotnetRunMatch.Success)
-            return (true, "dotnet run", dotnetRunMatch.Groups[1].Value.Trim());
-
-        var shellMatch = IndirectShellDydoRegex().Match(command);
-        if (shellMatch.Success)
-        {
-            var shellName = Regex.Match(command, @"(?:bash|sh|zsh|cmd|powershell|pwsh)", RegexOptions.IgnoreCase).Value.ToLowerInvariant();
-            return (true, shellName, shellMatch.Groups[1].Value.Trim().TrimEnd('"', '\''));
-        }
-
-        var pythonMatch = IndirectPythonDydoRegex().Match(command);
-        if (pythonMatch.Success)
-        {
-            var pythonName = Regex.Match(command, @"(?:python3?|py)", RegexOptions.IgnoreCase).Value.ToLowerInvariant();
-            return (true, pythonName, pythonMatch.Groups[1].Value.Trim().TrimEnd('"', '\''));
-        }
-
-        return (false, null, null);
-    }
-
-    /// <summary>
-    /// Check if dydo is available on the system PATH.
-    /// </summary>
-    private static bool IsDydoOnPath()
-    {
-        var pathVar = Environment.GetEnvironmentVariable("PATH");
-        if (string.IsNullOrEmpty(pathVar))
-            return false;
-
-        var separator = OperatingSystem.IsWindows() ? ';' : ':';
-        var dirs = pathVar.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-        var names = new[] { "dydo", "dydo.exe", "dydo.cmd" };
-
-        foreach (var dir in dirs)
-        {
-            foreach (var name in names)
-            {
-                try
-                {
-                    if (File.Exists(Path.Combine(dir, name)))
-                        return true;
-                }
-                catch
-                {
-                    // Skip inaccessible directories
-                }
-            }
-        }
-
-        return false;
-    }
 
     /// <summary>
     /// Normalizes a file path for must-read comparison by extracting the project-relative

@@ -506,6 +506,9 @@ public partial class AgentRegistry : IAgentRegistry
         foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
             File.Delete(marker);
 
+        foreach (var marker in Directory.GetFiles(workspace, ".nudge-*"))
+            File.Delete(marker);
+
         if (!string.IsNullOrEmpty(sessionId))
         {
             var claimNudgePath = Path.Combine(WorkspacePath, $".claim-nudge-{sessionId}");

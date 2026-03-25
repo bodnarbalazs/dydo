@@ -329,4 +329,88 @@ public class ValidationServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Nudge Validation
+
+    [Fact]
+    public void ValidateSystem_NudgeWithInvalidRegex_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
+            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
+            nudges = new[] { new { pattern = "[invalid(regex", message = "test", severity = "block" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("invalid regex"));
+    }
+
+    [Fact]
+    public void ValidateSystem_NudgeWithEmptyPattern_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
+            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
+            nudges = new[] { new { pattern = "", message = "test", severity = "block" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("empty pattern"));
+    }
+
+    [Fact]
+    public void ValidateSystem_NudgeWithEmptyMessage_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
+            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
+            nudges = new[] { new { pattern = "test.*pattern", message = "", severity = "block" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("empty message"));
+    }
+
+    [Fact]
+    public void ValidateSystem_NudgeWithInvalidSeverity_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
+            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
+            nudges = new[] { new { pattern = "test", message = "test", severity = "invalid" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("invalid severity"));
+    }
+
+    [Fact]
+    public void ValidateSystem_NudgeWithValidConfig_NoNudgeErrors()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
+            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
+            nudges = new[] { new { pattern = @"dotnet test.*coverlet", message = "Use gap_check.py instead.", severity = "warn" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.DoesNotContain(issues, i => i.Message.Contains("Nudge"));
+    }
+
+    #endregion
 }

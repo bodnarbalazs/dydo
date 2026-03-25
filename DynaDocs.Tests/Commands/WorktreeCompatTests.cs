@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Commands;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -439,18 +440,19 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void CheckIndirectDydoInvocation_NpxDydo_ReturnsTrue()
+    public void BuiltInNudges_NpxDydo_Matches()
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation("npx dydo whoami");
-        Assert.True(isIndirect);
-        Assert.Equal("npx", invoker);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("npx dydo whoami"));
+        Assert.True(matched);
     }
 
     [Fact]
-    public void CheckIndirectDydoInvocation_DirectDydo_ReturnsFalse()
+    public void BuiltInNudges_DirectDydo_NoMatch()
     {
-        var (isIndirect, _, _) = GuardCommand.CheckIndirectDydoInvocation("dydo whoami");
-        Assert.False(isIndirect);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dydo whoami"));
+        Assert.False(matched);
     }
 
     [Fact]
@@ -518,35 +520,35 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void CheckIndirectDydoInvocation_DotnetDydo_ReturnsTrue()
+    public void BuiltInNudges_DotnetDydo_Matches()
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation("dotnet dydo whoami");
-        Assert.True(isIndirect);
-        Assert.Equal("dotnet", invoker);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dotnet dydo whoami"));
+        Assert.True(matched);
     }
 
     [Fact]
-    public void CheckIndirectDydoInvocation_BashDydo_ReturnsTrue()
+    public void BuiltInNudges_BashDydo_Matches()
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation("bash -c \"dydo whoami\"");
-        Assert.True(isIndirect);
-        Assert.Equal("bash", invoker);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("bash -c \"dydo whoami\""));
+        Assert.True(matched);
     }
 
     [Fact]
-    public void CheckIndirectDydoInvocation_DotnetRunDydo_ReturnsTrue()
+    public void BuiltInNudges_DotnetRunDydo_Matches()
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation("dotnet run -- agent claim auto");
-        Assert.True(isIndirect);
-        Assert.Equal("dotnet run", invoker);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dotnet run -- agent claim auto"));
+        Assert.True(matched);
     }
 
     [Fact]
-    public void CheckIndirectDydoInvocation_PythonDydo_ReturnsTrue()
+    public void BuiltInNudges_PythonDydo_Matches()
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation("python dydo whoami");
-        Assert.True(isIndirect);
-        Assert.Equal("python", invoker);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("python dydo whoami"));
+        Assert.True(matched);
     }
 
     [Fact]

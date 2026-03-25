@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 
@@ -54,6 +55,10 @@ public class ValidationService : IValidationService
                     Message = "Failed to deserialize dydo.json."
                 });
             }
+            else
+            {
+                ValidateNudges(config, issues);
+            }
         }
         catch (JsonException ex)
         {
@@ -63,6 +68,53 @@ public class ValidationService : IValidationService
                 File = "dydo.json",
                 Message = $"Invalid JSON: {ex.Message}"
             });
+        }
+    }
+
+    private static void ValidateNudges(DydoConfig config, List<ValidationIssue> issues)
+    {
+        for (int i = 0; i < config.Nudges.Count; i++)
+        {
+            var nudge = config.Nudges[i];
+
+            if (string.IsNullOrWhiteSpace(nudge.Pattern))
+            {
+                issues.Add(new ValidationIssue
+                {
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has empty pattern."
+                });
+                continue;
+            }
+
+            try { _ = new Regex(nudge.Pattern); }
+            catch (ArgumentException ex)
+            {
+                issues.Add(new ValidationIssue
+                {
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has invalid regex pattern: {ex.Message}"
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(nudge.Message))
+            {
+                issues.Add(new ValidationIssue
+                {
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has empty message."
+                });
+            }
+
+            if (!string.Equals(nudge.Severity, "block", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+            {
+                issues.Add(new ValidationIssue
+                {
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has invalid severity '{nudge.Severity}'. Must be 'block' or 'warn'."
+                });
+            }
         }
     }
 

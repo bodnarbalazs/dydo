@@ -1,7 +1,10 @@
 namespace DynaDocs.Tests.Commands;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Commands;
+using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 /// <summary>
 /// Tests for GuardCommand integration with OffLimitsService and BashCommandAnalyzer.
@@ -379,50 +382,238 @@ public class GuardCommandTests : IDisposable
 
     #endregion
 
-    #region Indirect Dydo Invocation — Python path false positive
+    #region Built-in Nudges — Indirect Dydo Invocation
 
     [Theory]
     [InlineData("python dydo/agents/Brian/check_coverage.py")]
     [InlineData("python3 dydo/scripts/run.py")]
     [InlineData("py dydo/tools/helper.py")]
-    public void CheckIndirectDydo_PythonWithDydoPath_NotIndirect(string command)
+    public void BuiltInNudges_PythonWithDydoPath_NoMatch(string command)
     {
-        var (isIndirect, _, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
-        Assert.False(isIndirect, $"Should not match dydo as a path component: {command}");
+        Assert.False(matched, $"Should not match dydo as a path component: {command}");
     }
 
     [Theory]
     [InlineData("python dydo agent claim auto")]
     [InlineData("python3 dydo inbox show")]
     [InlineData("py dydo whoami")]
-    public void CheckIndirectDydo_PythonWithDydoCommand_IsIndirect(string command)
+    public void BuiltInNudges_PythonWithDydoCommand_Matches(string command)
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
-        Assert.True(isIndirect, $"Should match dydo as a command: {command}");
-        Assert.Contains(invoker!, new[] { "python", "python3", "py" });
+        Assert.True(matched, $"Should match dydo as a command: {command}");
     }
 
     [Theory]
     [InlineData("bash dydo/agents/Brian/run.sh")]
     [InlineData("sh dydo/scripts/setup.sh")]
-    public void CheckIndirectDydo_ShellWithDydoPath_NotIndirect(string command)
+    public void BuiltInNudges_ShellWithDydoPath_NoMatch(string command)
     {
-        var (isIndirect, _, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
-        Assert.False(isIndirect, $"Should not match dydo as a path component: {command}");
+        Assert.False(matched, $"Should not match dydo as a path component: {command}");
     }
 
     [Theory]
     [InlineData("bash -c \"dydo agent claim auto\"")]
     [InlineData("sh -c 'dydo whoami'")]
-    public void CheckIndirectDydo_ShellWithDydoCommand_IsIndirect(string command)
+    public void BuiltInNudges_ShellWithDydoCommand_Matches(string command)
     {
-        var (isIndirect, invoker, _) = GuardCommand.CheckIndirectDydoInvocation(command);
+        var matched = GuardCommand.BuiltInNudges.Any(n =>
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
-        Assert.True(isIndirect, $"Should match dydo as a command: {command}");
-        Assert.NotNull(invoker);
+        Assert.True(matched, $"Should match dydo as a command: {command}");
+    }
+
+    #endregion
+
+    #region Nudge Hash and Capture Group Substitution
+
+    [Fact]
+    public void ComputeNudgeHash_IsDeterministic()
+    {
+        var hash1 = GuardCommand.ComputeNudgeHash("test pattern");
+        var hash2 = GuardCommand.ComputeNudgeHash("test pattern");
+
+        Assert.Equal(hash1, hash2);
+    }
+
+    [Fact]
+    public void ComputeNudgeHash_DifferentPatterns_DifferentHashes()
+    {
+        var hash1 = GuardCommand.ComputeNudgeHash("pattern-a");
+        var hash2 = GuardCommand.ComputeNudgeHash("pattern-b");
+
+        Assert.NotEqual(hash1, hash2);
+    }
+
+    [Fact]
+    public void ComputeNudgeHash_Returns8HexChars()
+    {
+        var hash = GuardCommand.ComputeNudgeHash("any pattern");
+
+        Assert.Equal(8, hash.Length);
+        Assert.Matches("^[0-9a-f]{8}$", hash);
+    }
+
+    [Theory]
+    [InlineData("npx dydo agent claim auto", "agent claim auto")]
+    [InlineData("npx --yes dydo whoami", "whoami")]
+    [InlineData("dotnet dydo agent status", "agent status")]
+    [InlineData("dotnet run -- agent claim auto", "agent claim auto")]
+    public void BuiltInNudges_CaptureGroupExtractsArgs(string command, string expectedArgs)
+    {
+        foreach (var nudge in GuardCommand.BuiltInNudges)
+        {
+            var match = new Regex(nudge.Pattern, RegexOptions.IgnoreCase).Match(command);
+            if (!match.Success) continue;
+
+            // Find the last capture group (args are always in the last group)
+            var argsGroup = match.Groups[match.Groups.Count - 1].Value.Trim();
+            Assert.Equal(expectedArgs, argsGroup);
+            return;
+        }
+        Assert.Fail($"No built-in nudge matched: {command}");
+    }
+
+    [Fact]
+    public void BuiltInNudges_AllHaveBlockSeverity()
+    {
+        Assert.All(GuardCommand.BuiltInNudges, n =>
+            Assert.Equal("block", n.Severity));
+    }
+
+    #endregion
+
+    #region CheckNudges — Warn-then-Allow Marker Flow
+
+    [Fact]
+    public void CheckNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
+    {
+        var registry = CreateRegistryWithAgent("Adele", "sess-1");
+        var workspace = registry.GetAgentWorkspace("Adele");
+        var pattern = @"dangerous-command";
+        var hash = GuardCommand.ComputeNudgeHash(pattern);
+        var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+
+        // Inject a custom warn nudge via dydo.json
+        WriteConfigWithNudge(pattern, "Don't do that", "warn");
+        registry = new AgentRegistry(_testDir);
+
+        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry, new NoOpAuditService());
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.True(File.Exists(markerPath), "Marker file should be created on first encounter");
+    }
+
+    [Fact]
+    public void CheckNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
+    {
+        var registry = CreateRegistryWithAgent("Adele", "sess-1");
+        var workspace = registry.GetAgentWorkspace("Adele");
+        var pattern = @"dangerous-command";
+        var hash = GuardCommand.ComputeNudgeHash(pattern);
+        var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+
+        WriteConfigWithNudge(pattern, "Don't do that", "warn");
+        registry = new AgentRegistry(_testDir);
+
+        // First call: blocks
+        GuardCommand.CheckNudges("dangerous-command", "sess-1", registry, new NoOpAuditService());
+
+        // Second call: allows
+        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry, new NoOpAuditService());
+
+        Assert.Null(result);
+        Assert.False(File.Exists(markerPath), "Marker file should be deleted on second encounter");
+    }
+
+    [Fact]
+    public void CheckNudges_WarnSeverity_DifferentPatterns_ProduceDifferentMarkers()
+    {
+        CreateRegistryWithAgent("Adele", "sess-1");
+        var patternA = @"risky-alpha";
+        var patternB = @"risky-beta";
+
+        WriteConfigWithNudges(
+            (patternA, "Warning A", "warn"),
+            (patternB, "Warning B", "warn"));
+        var registry = new AgentRegistry(_testDir);
+
+        var workspace = registry.GetAgentWorkspace("Adele");
+        var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
+        var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
+
+        // Trigger pattern A only
+        GuardCommand.CheckNudges("risky-alpha", "sess-1", registry, new NoOpAuditService());
+
+        Assert.True(File.Exists(markerA), "Marker for pattern A should exist");
+        Assert.False(File.Exists(markerB), "Marker for pattern B should not exist");
+
+        // Trigger pattern B
+        GuardCommand.CheckNudges("risky-beta", "sess-1", registry, new NoOpAuditService());
+
+        Assert.True(File.Exists(markerA), "Marker for pattern A should still exist");
+        Assert.True(File.Exists(markerB), "Marker for pattern B should now exist");
+    }
+
+    private AgentRegistry CreateRegistryWithAgent(string agentName, string sessionId)
+    {
+        var workspace = Path.Combine(_dydoDir, "agents", agentName);
+        Directory.CreateDirectory(workspace);
+
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            $$"""{"Agent":"{{agentName}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}"}""");
+
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: {{agentName}}
+            status: working
+            assigned: testuser
+            ---
+            """);
+
+        return new AgentRegistry(_testDir);
+    }
+
+    private void WriteConfigWithNudge(string pattern, string message, string severity)
+    {
+        WriteConfigWithNudges((pattern, message, severity));
+    }
+
+    private void WriteConfigWithNudges(params (string Pattern, string Message, string Severity)[] nudges)
+    {
+        var nudgeJson = string.Join(",\n          ",
+            nudges.Select(n => $$"""{"pattern": "{{n.Pattern.Replace("\\", "\\\\")}}", "message": "{{n.Message}}", "severity": "{{n.Severity}}"}"""));
+
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
+            {
+                "version": 1,
+                "structure": { "root": "dydo" },
+                "agents": {
+                    "pool": ["Adele"],
+                    "assignments": { "testuser": ["Adele"] }
+                },
+                "nudges": [
+                  {{nudgeJson}}
+                ]
+            }
+            """);
+    }
+
+    private class NoOpAuditService : IAuditService
+    {
+        public void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null, ProjectSnapshot? snapshot = null) { }
+        public AuditSession? GetSession(string sessionId) => null;
+        public (IReadOnlyList<AuditSession> Sessions, bool LimitReached) LoadSessions(string? yearFilter = null) => ([], false);
+        public IReadOnlyList<string> ListSessionFiles(string? yearFilter = null) => [];
+        public string GetAuditPath() => "";
+        public void EnsureAuditFolder() { }
     }
 
     #endregion

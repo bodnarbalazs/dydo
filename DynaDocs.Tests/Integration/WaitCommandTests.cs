@@ -230,6 +230,129 @@ public class WaitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Parent Liveness Tests
+
+    [Fact]
+    public async Task WaitForTask_ExitsWhenParentDies()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "my-task", "Brian");
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command, "--task", "my-task");
+
+            result.AssertExitCode(2);
+
+            // Marker should be reset (listening=false, pid=null)
+            registry = new AgentRegistry(TestDir);
+            var markers = registry.GetWaitMarkers("Adele");
+            Assert.Single(markers);
+            Assert.False(markers[0].Listening);
+            Assert.Null(markers[0].Pid);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_ExitsWhenParentDies()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+
+            // General wait marker should be cleaned up
+            var registry = new AgentRegistry(TestDir);
+            var markers = registry.GetWaitMarkers("Adele");
+            Assert.Empty(markers);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task WaitForTask_MessageFound_StillWorks()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "my-task", "Brian");
+
+        CreateMessageFile("Adele", "Charlie", "my-task", "Done");
+
+        // Parent alive — should find message and succeed
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command, "--task", "my-task");
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Charlie");
+
+            // Marker should be fully removed (message found)
+            registry = new AgentRegistry(TestDir);
+            var markers = registry.GetWaitMarkers("Adele");
+            Assert.Empty(markers);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_RecordsPidInMarker()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Pre-populate message so the loop exits immediately
+        CreateMessageFile("Adele", "Brian", "general-subject", "Hello");
+
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+
+            // General marker should be cleaned up after exit
+            var registry = new AgentRegistry(TestDir);
+            var markers = registry.GetWaitMarkers("Adele");
+            Assert.Empty(markers);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

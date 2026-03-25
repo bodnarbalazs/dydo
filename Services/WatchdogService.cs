@@ -10,9 +10,13 @@ public static class WatchdogService
         "powershell", "pwsh", "bash", "sh", "cmd", "zsh"
     };
 
+    // Agents seen as "free + auto-close + processes still running" on a previous poll.
+    // On first sighting we defer (let natural exit work). On the next poll, if still running, we intervene.
+    internal static readonly HashSet<string> PendingCleanup = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
-    /// When set, TryCloseWindow and EnsureRunning use this instead of Process.Start.
-    /// Enables testing without spawning real wt.exe or watchdog processes.
+    /// When set, EnsureRunning uses this instead of Process.Start.
+    /// Enables testing without spawning real watchdog processes.
     /// </summary>
     internal static Func<ProcessStartInfo, Process?>? StartProcessOverride { get; set; }
 
@@ -131,15 +135,18 @@ public static class WatchdogService
         var agentsDir = Path.Combine(dydoRoot, "agents");
         if (!Directory.Exists(agentsDir)) return;
 
+        var activeAgents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var agentDir in Directory.GetDirectories(agentsDir))
         {
             var statePath = Path.Combine(agentDir, "state.md");
             if (!File.Exists(statePath)) continue;
 
-            var (autoClose, isFree, agentName, windowId) = ParseStateForWatchdog(statePath);
+            var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
             if (!autoClose || !isFree || agentName == null) continue;
 
-            // Check if the agent's session processes are still running
+            activeAgents.Add(agentName);
+
             var pattern = $"{agentName} --inbox";
             var pids = FindProcessesOverride != null
                 ? FindProcessesOverride(pattern)
@@ -147,20 +154,17 @@ public static class WatchdogService
 
             if (pids.Count == 0)
             {
-                // Terminal already closed (e.g., postClaudeCheck exited the shell).
-                // Just clear the flag — calling wt close on a gone window causes 0x80070002.
+                // Tab already closed naturally. Clear the flag.
+                PendingCleanup.Remove(agentName);
                 ClearAutoClose(statePath);
                 continue;
             }
 
-            // Terminal still open — try clean close via Windows Terminal API
-            if (windowId != null && TryCloseWindow(windowId))
-            {
-                ClearAutoClose(statePath);
+            // Processes still running — defer on first sighting to let natural exit work.
+            if (PendingCleanup.Add(agentName))
                 continue;
-            }
 
-            // Fallback: kill remaining non-shell processes
+            // Second consecutive poll with processes still running — kill non-shell processes.
             foreach (var pid in pids)
             {
                 try
@@ -173,8 +177,12 @@ public static class WatchdogService
                 catch { }
             }
 
+            PendingCleanup.Remove(agentName);
             ClearAutoClose(statePath);
         }
+
+        // Evict stale entries for agents no longer in free+auto-close state
+        PendingCleanup.IntersectWith(activeAgents);
     }
 
     internal static bool TryCloseWindow(string windowId)

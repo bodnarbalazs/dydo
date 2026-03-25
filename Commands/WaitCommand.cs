@@ -69,45 +69,81 @@ public static class WaitCommand
         return ExitCodes.Success;
     }
 
+    private const string GeneralWaitMarker = "_general-wait";
+
     private static int WaitGeneral(AgentRegistry registry, string agentName, string inboxPath)
     {
+        var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
+        var cancelled = false;
+        Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
+
         var markers = registry.GetWaitMarkers(agentName);
         var claimedTasks = new HashSet<string>(
             markers.Select(m => m.Task),
             StringComparer.OrdinalIgnoreCase);
 
+        // Record PID for visibility (after reading markers so it doesn't self-exclude)
+        registry.CreateWaitMarker(agentName, GeneralWaitMarker, agentName);
+        registry.UpdateWaitMarkerListening(agentName, GeneralWaitMarker, Environment.ProcessId);
+
         Console.WriteLine("Waiting for message...");
 
-        while (true)
+        try
         {
-            var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks);
-            if (message != null)
+            while (!cancelled)
             {
-                PrintMessage(message);
-                return ExitCodes.Success;
-            }
+                var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks);
+                if (message != null)
+                {
+                    PrintMessage(message);
+                    return ExitCodes.Success;
+                }
 
-            Thread.Sleep(10_000);
+                if (parentPid.HasValue && !ProcessUtils.IsProcessRunning(parentPid.Value))
+                    return ExitCodes.ToolError;
+
+                Thread.Sleep(10_000);
+            }
+            return ExitCodes.ToolError;
+        }
+        finally
+        {
+            registry.RemoveWaitMarker(agentName, GeneralWaitMarker);
         }
     }
 
     private static int WaitForTask(AgentRegistry registry, string agentName, string inboxPath, string task)
     {
+        var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
+        var cancelled = false;
+        Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
+
         registry.UpdateWaitMarkerListening(agentName, task, Environment.ProcessId);
 
         Console.WriteLine($"Waiting for message about '{task}'...");
 
-        while (true)
+        try
         {
-            var message = MessageFinder.FindMessage(inboxPath, task);
-            if (message != null)
+            while (!cancelled)
             {
-                PrintMessage(message);
-                registry.RemoveWaitMarker(agentName, task);
-                return ExitCodes.Success;
-            }
+                var message = MessageFinder.FindMessage(inboxPath, task);
+                if (message != null)
+                {
+                    PrintMessage(message);
+                    registry.RemoveWaitMarker(agentName, task);
+                    return ExitCodes.Success;
+                }
 
-            Thread.Sleep(10_000);
+                if (parentPid.HasValue && !ProcessUtils.IsProcessRunning(parentPid.Value))
+                    return ExitCodes.ToolError;
+
+                Thread.Sleep(10_000);
+            }
+            return ExitCodes.ToolError;
+        }
+        finally
+        {
+            registry.ResetWaitMarkerListening(agentName, task);
         }
     }
 

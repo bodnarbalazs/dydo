@@ -12,8 +12,14 @@ public static partial class ProcessUtils
     /// Checks if a process with the given PID is still running.
     /// Used for detecting stale lock files.
     /// </summary>
+    /// <summary>
+    /// When set, IsProcessRunning uses this instead of probing the system.
+    /// </summary>
+    public static Func<int, bool>? IsProcessRunningOverride { get; set; }
+
     public static bool IsProcessRunning(int processId)
     {
+        if (IsProcessRunningOverride != null) return IsProcessRunningOverride(processId);
         if (processId <= 0) return false;
 
         try

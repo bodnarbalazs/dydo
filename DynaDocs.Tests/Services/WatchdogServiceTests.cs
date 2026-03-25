@@ -19,6 +19,7 @@ public class WatchdogServiceTests : IDisposable
     {
         WatchdogService.StartProcessOverride = null;
         WatchdogService.FindProcessesOverride = null;
+        WatchdogService.PendingCleanup.Clear();
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
     }
@@ -391,11 +392,20 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void PollAndCleanup_FreeAutoCloseAgent_ClearsAutoClose()
+    public void PollAndCleanup_FreeAutoCloseAgent_NoProcesses_ClearsAutoClose()
     {
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: "abc12345");
 
-        WatchdogService.PollAndCleanup(_testDir);
+        WatchdogService.FindProcessesOverride = _ => [];
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+        }
 
         var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
         var content = File.ReadAllText(statePath);
@@ -404,18 +414,20 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void PollAndCleanup_ProcessesRunning_WindowCloseFails_RunsKillFallback()
+    public void PollAndCleanup_ProcessesRunning_SecondPoll_KillsFallback()
     {
         using var dummy = StartDummyProcess();
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: "win-xyz");
 
-        // Simulate processes found (pids.Count > 0)
         WatchdogService.FindProcessesOverride = _ => [dummy.Id];
-        // TryCloseWindow will fail: StartProcessOverride returns null
-        WatchdogService.StartProcessOverride = _ => null;
 
         try
         {
+            // First poll: defers — adds to PendingCleanup
+            WatchdogService.PollAndCleanup(_testDir);
+            Assert.False(dummy.HasExited);
+
+            // Second poll: processes still running — kills
             WatchdogService.PollAndCleanup(_testDir);
         }
         finally
@@ -423,7 +435,6 @@ public class WatchdogServiceTests : IDisposable
             WatchdogService.FindProcessesOverride = null;
         }
 
-        // Kill fallback ran: dummy (ping, not a shell process) was killed
         dummy.WaitForExit(5000);
         Assert.True(dummy.HasExited);
 
@@ -433,16 +444,20 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void PollAndCleanup_ProcessesRunning_NoWindowId_RunsKillFallback()
+    public void PollAndCleanup_ProcessesRunning_NoWindowId_SecondPoll_Kills()
     {
         using var dummy = StartDummyProcess();
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
         WatchdogService.FindProcessesOverride = _ => [dummy.Id];
-        WatchdogService.StartProcessOverride = _ => null;
 
         try
         {
+            // First poll: defers
+            WatchdogService.PollAndCleanup(_testDir);
+            Assert.False(dummy.HasExited);
+
+            // Second poll: kills
             WatchdogService.PollAndCleanup(_testDir);
         }
         finally
@@ -459,27 +474,29 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void PollAndCleanup_ProcessesRunning_DeadPid_ClearsAutoClose()
+    public void PollAndCleanup_ProcessesRunning_DeadPid_SecondPoll_ClearsAutoClose()
     {
         // Fake PID that doesn't exist — exercises the pids.Count > 0 path
         // but Process.GetProcessById throws in the kill fallback (caught gracefully)
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
         WatchdogService.FindProcessesOverride = _ => [99999999];
-        WatchdogService.StartProcessOverride = _ => null;
 
         try
         {
+            // First poll: defers
             WatchdogService.PollAndCleanup(_testDir);
+            var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
+            Assert.Contains("auto-close: true", File.ReadAllText(statePath));
+
+            // Second poll: attempts kill (gracefully handles dead PID), clears
+            WatchdogService.PollAndCleanup(_testDir);
+            Assert.Contains("auto-close: false", File.ReadAllText(statePath));
         }
         finally
         {
             WatchdogService.FindProcessesOverride = null;
         }
-
-        var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
-        var content = File.ReadAllText(statePath);
-        Assert.Contains("auto-close: false", content);
     }
 
     [Fact]
@@ -505,19 +522,11 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void PollAndCleanup_ProcessesRunning_WindowCloseSucceeds_ClearsAutoClose()
+    public void PollAndCleanup_FirstPoll_ProcessesRunning_DefersCleanup()
     {
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: "win-ok");
 
         WatchdogService.FindProcessesOverride = _ => [99999999];
-        // Return a quick-exiting process so TryCloseWindow returns true
-        WatchdogService.StartProcessOverride = _ =>
-        {
-            var psi = OperatingSystem.IsWindows()
-                ? new ProcessStartInfo("cmd", "/c ver") { UseShellExecute = false, CreateNoWindow = true }
-                : new ProcessStartInfo("true") { UseShellExecute = false, CreateNoWindow = true };
-            return Process.Start(psi);
-        };
 
         try
         {
@@ -528,36 +537,91 @@ public class WatchdogServiceTests : IDisposable
             WatchdogService.FindProcessesOverride = null;
         }
 
+        // First poll should defer — auto-close still true
         var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
-        var content = File.ReadAllText(statePath);
-        Assert.Contains("auto-close: false", content);
+        Assert.Contains("auto-close: true", File.ReadAllText(statePath));
+        Assert.Contains("Adele", WatchdogService.PendingCleanup);
     }
 
     [Fact]
     public void PollAndCleanup_ProcessesRunning_ShellProcess_SkipsKill()
     {
-        // Shell processes (cmd, bash, etc.) should be skipped in the kill fallback
-        var currentPid = Environment.ProcessId;
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
-        WatchdogService.FindProcessesOverride = _ => [currentPid];
-        WatchdogService.StartProcessOverride = _ => null;
+        var shellPid = FindShellParentPid();
+        if (shellPid == null) return; // Skip if no shell process found
+
+        WatchdogService.FindProcessesOverride = _ => [shellPid.Value];
 
         try
         {
-            // Current process is "dotnet" (test host) — not a shell process,
-            // but the catch block protects us from actually killing it.
-            // To test the shell-skip, use a real shell PID.
-            // On Windows, find the parent cmd/powershell process.
-            var shellPid = FindShellParentPid();
-            if (shellPid != null)
-            {
-                WatchdogService.FindProcessesOverride = _ => [shellPid.Value];
-                WatchdogService.PollAndCleanup(_testDir);
+            // First poll: defers
+            WatchdogService.PollAndCleanup(_testDir);
 
-                // Shell process should still be alive (was skipped)
-                Assert.True(ProcessUtils.IsProcessRunning(shellPid.Value));
-            }
+            // Second poll: kill phase — but shell processes are skipped
+            WatchdogService.PollAndCleanup(_testDir);
+
+            Assert.True(ProcessUtils.IsProcessRunning(shellPid.Value));
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+        }
+    }
+
+    [Fact]
+    public void PollAndCleanup_ProcessesGoneBySecondPoll_ClearsWithoutKilling()
+    {
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true, windowId: "win-abc");
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+
+        try
+        {
+            // First poll: defers
+            WatchdogService.PollAndCleanup(_testDir);
+            Assert.False(dummy.HasExited);
+            Assert.Contains("Adele", WatchdogService.PendingCleanup);
+
+            // Simulate natural exit between polls
+            WatchdogService.FindProcessesOverride = _ => [];
+
+            // Second poll: no processes → clears without killing
+            WatchdogService.PollAndCleanup(_testDir);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+        }
+
+        // Process was NOT killed (natural exit path)
+        Assert.False(dummy.HasExited);
+        dummy.Kill();
+
+        var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
+        Assert.Contains("auto-close: false", File.ReadAllText(statePath));
+        Assert.DoesNotContain("Adele", WatchdogService.PendingCleanup);
+    }
+
+    [Fact]
+    public void PollAndCleanup_PendingCleanup_EvictsStaleEntries()
+    {
+        WriteAgentState("Adele", status: "free", autoClose: true);
+        WatchdogService.FindProcessesOverride = _ => [99999999];
+
+        try
+        {
+            // First poll: Adele enters PendingCleanup
+            WatchdogService.PollAndCleanup(_testDir);
+            Assert.Contains("Adele", WatchdogService.PendingCleanup);
+
+            // Adele is no longer free+auto-close
+            WriteAgentState("Adele", status: "working", autoClose: true);
+            WatchdogService.PollAndCleanup(_testDir);
+
+            // Stale entry evicted
+            Assert.DoesNotContain("Adele", WatchdogService.PendingCleanup);
         }
         finally
         {

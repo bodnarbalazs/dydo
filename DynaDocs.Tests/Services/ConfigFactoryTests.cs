@@ -72,4 +72,52 @@ public class ConfigFactoryTests
         Assert.Contains("Charlie", bobAgents);
         Assert.Contains("Dexter", bobAgents);
     }
+
+    [Fact]
+    public void CreateDefault_IncludesDefaultNudges()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+
+        Assert.NotEmpty(config.Nudges);
+        Assert.Equal(ConfigFactory.DefaultNudges.Count, config.Nudges.Count);
+        Assert.All(config.Nudges, n => Assert.False(string.IsNullOrEmpty(n.Pattern)));
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_AddsToEmptyList()
+    {
+        var config = new DydoConfig();
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(ConfigFactory.DefaultNudges.Count, added);
+        Assert.Equal(ConfigFactory.DefaultNudges.Count, config.Nudges.Count);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_SkipsAlreadyPresent()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+        var originalCount = config.Nudges.Count;
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(0, added);
+        Assert.Equal(originalCount, config.Nudges.Count);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_PreservesCustomNudges()
+    {
+        var config = new DydoConfig
+        {
+            Nudges = [new NudgeConfig { Pattern = "custom-pattern", Message = "Custom", Severity = "block" }]
+        };
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(ConfigFactory.DefaultNudges.Count, added);
+        Assert.Equal(ConfigFactory.DefaultNudges.Count + 1, config.Nudges.Count);
+        Assert.Contains(config.Nudges, n => n.Pattern == "custom-pattern");
+    }
 }

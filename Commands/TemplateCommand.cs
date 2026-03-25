@@ -94,6 +94,13 @@ public static class TemplateCommand
         PruneStaleHashes(config, diff);
         RegenerateAgentWorkspaces(dydoRoot, config, diff);
 
+        var nudgesAdded = diff ? 0 : ConfigFactory.EnsureDefaultNudges(config);
+        if (nudgesAdded > 0)
+        {
+            Console.WriteLine($"  Added {nudgesAdded} default nudge(s)");
+            updated += nudgesAdded;
+        }
+
         if (!diff)
             configService.SaveConfig(config, configPath);
 

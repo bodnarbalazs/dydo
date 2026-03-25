@@ -84,14 +84,15 @@ public class WorktreeDispatchTests : IntegrationTestBase
     public async Task Dispatch_ChildWorktree_WritesWorktreeRoot()
     {
         await SetupSenderWithWorktree("Adele", "parent-wt-id");
-        WriteWorktreeRoot("Adele", "/main/project");
+        // Use TestDir as the worktree root — /main/project causes permission errors on Linux
+        WriteWorktreeRoot("Adele", TestDir);
 
         var result = await DispatchWithWorktreeFlag("code-writer", "child-task", "Do work", to: "Brian");
         result.AssertSuccess();
 
         var childRoot = Path.Combine(TestDir, "dydo/agents/Brian/.worktree-root");
         Assert.True(File.Exists(childRoot));
-        Assert.Equal("/main/project", File.ReadAllText(childRoot).Trim());
+        Assert.Equal(TestDir, File.ReadAllText(childRoot).Trim());
     }
 
     [Fact]

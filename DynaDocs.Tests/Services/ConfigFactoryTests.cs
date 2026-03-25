@@ -84,6 +84,17 @@ public class ConfigFactoryTests
     }
 
     [Fact]
+    public void CreateDefault_NudgesAreDeepCopied()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+        var originalMessage = ConfigFactory.DefaultNudges[0].Message;
+
+        config.Nudges[0].Message = "mutated";
+
+        Assert.Equal(originalMessage, ConfigFactory.DefaultNudges[0].Message);
+    }
+
+    [Fact]
     public void EnsureDefaultNudges_AddsToEmptyList()
     {
         var config = new DydoConfig();

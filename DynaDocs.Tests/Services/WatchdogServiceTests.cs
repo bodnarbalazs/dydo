@@ -513,11 +513,9 @@ public class WatchdogServiceTests : IDisposable
         // Return a quick-exiting process so TryCloseWindow returns true
         WatchdogService.StartProcessOverride = _ =>
         {
-            var psi = new ProcessStartInfo("cmd", "/c ver")
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            var psi = OperatingSystem.IsWindows()
+                ? new ProcessStartInfo("cmd", "/c ver") { UseShellExecute = false, CreateNoWindow = true }
+                : new ProcessStartInfo("true") { UseShellExecute = false, CreateNoWindow = true };
             return Process.Start(psi);
         };
 

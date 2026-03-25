@@ -91,11 +91,12 @@
   "tasks": {
     "autoCompactInterval": 20
   },
+  "nudges": [],
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",
     "_system/templates/mode-code-writer.template.md": "3f2f0ee2bb41df33785a593917cb89faf6e388915dbe3bfccae0d29719c2efbd",
     "_system/templates/mode-reviewer.template.md": "dffbfed55cd40c93530c7adc99fb034997a5b184c82e890841e008d5068e430f",
-    "_system/templates/mode-co-thinker.template.md": "dda2b3831fd458ea51d17d846489124859d23ad5988b25a67554c946c73c2a4b",
+    "_system/templates/mode-co-thinker.template.md": "a32d83f42719f262a67f47165950bad4c99c72881ec7ddab5ca77574a6e11795",
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
     "_system/templates/mode-docs-writer.template.md": "12bf4f89057c9ba99fac943633827dfa9b2384ae60b9ac718a9ebd5783e3dab8",
     "reference/about-dynadocs.md": "ab69b6cf89a43c99de3a80113d8cc6a2675305f5e52e28da38fee6fba5e68c85",

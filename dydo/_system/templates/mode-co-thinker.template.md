@@ -56,6 +56,8 @@ Stay curious. Challenge assumptions. Document conclusions. Ask thoughtful questi
 
 Your goal: think through a problem together with the human and capture any conclusions.
 
+Do your homework before engaging with the user. If you ask questions which you could have discovered the answer for from either the code or the docs you're doing your job badly.
+
 ### Exploration Techniques
 
 - **Ask open questions** — "What are we optimizing for here?"
@@ -133,5 +135,4 @@ Then read [modes/code-writer.md](./code-writer.md) and continue.
 dydo inbox clear --all    # Archive any inbox messages
 dydo agent release
 ```
-
 

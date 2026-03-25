@@ -164,7 +164,8 @@ public class WorktreeCommandTests : IDisposable
         SetupLastAgentScenario("Adele", worktreeId, worktreePath);
 
         // Create the junction target directory so RemoveAgentsJunction finds it
-        Directory.CreateDirectory(Path.Combine(worktreePath, "dydo", "agents"));
+        var agentsJunction = Path.Combine(worktreePath, "dydo", "agents");
+        Directory.CreateDirectory(agentsJunction);
 
         var calls = new List<(string FileName, string Arguments)>();
         WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
@@ -172,7 +173,10 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
 
-            Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir"));
+            if (OperatingSystem.IsWindows())
+                Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir"));
+            else
+                Assert.False(Directory.Exists(agentsJunction));
         }
         finally
         {
@@ -816,7 +820,8 @@ public class WorktreeCommandTests : IDisposable
         SetupLastAgentScenario("Adele", worktreeId, worktreePath);
 
         // Create the roles junction target so RemoveJunction finds it
-        Directory.CreateDirectory(Path.Combine(worktreePath, "dydo", "_system", "roles"));
+        var rolesJunction = Path.Combine(worktreePath, "dydo", "_system", "roles");
+        Directory.CreateDirectory(rolesJunction);
 
         var calls = new List<(string FileName, string Arguments)>();
         WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
@@ -824,7 +829,10 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
 
-            Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir") && c.Arguments.Contains("roles"));
+            if (OperatingSystem.IsWindows())
+                Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir") && c.Arguments.Contains("roles"));
+            else
+                Assert.False(Directory.Exists(rolesJunction));
         }
         finally
         {

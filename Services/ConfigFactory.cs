@@ -35,7 +35,12 @@ public static class ConfigFactory
                 }
             },
             Integrations = new Dictionary<string, bool>(),
-            Nudges = new List<NudgeConfig>(DefaultNudges)
+            Nudges = DefaultNudges.Select(n => new NudgeConfig
+            {
+                Pattern = n.Pattern,
+                Message = n.Message,
+                Severity = n.Severity
+            }).ToList()
         };
     }
 

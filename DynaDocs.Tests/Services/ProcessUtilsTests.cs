@@ -468,6 +468,7 @@ public class ProcessUtilsTests
     [Fact]
     public void FindProcessesByCommandLineMac_OnWindows_ReturnsEmpty()
     {
+        if (!OperatingSystem.IsWindows()) return;
         // ps command doesn't exist on Windows; RunProcess returns null
         var result = ProcessUtils.FindProcessesByCommandLineMac("dotnet");
 
@@ -477,6 +478,7 @@ public class ProcessUtilsTests
     [Fact]
     public void FindProcessesByCommandLineLinux_OnWindows_ReturnsEmpty()
     {
+        if (!OperatingSystem.IsWindows()) return;
         // /proc doesn't exist on Windows; outer catch returns empty
         var result = ProcessUtils.FindProcessesByCommandLineLinux("dotnet");
 
@@ -486,6 +488,7 @@ public class ProcessUtilsTests
     [Fact]
     public void GetParentPidLinux_OnWindows_ReturnsNull()
     {
+        if (!OperatingSystem.IsWindows()) return;
         // /proc/PID/status doesn't exist on Windows
         var result = ProcessUtils.GetParentPidLinux(1);
 
@@ -495,6 +498,7 @@ public class ProcessUtilsTests
     [Fact]
     public void GetParentPidMac_OnWindows_ReturnsNull()
     {
+        if (!OperatingSystem.IsWindows()) return;
         // ps command doesn't exist on Windows; RunProcess returns null
         var result = ProcessUtils.GetParentPidMac(1);
 
@@ -506,7 +510,9 @@ public class ProcessUtilsTests
     [Fact]
     public void RunProcess_ValidCommand_ReturnsOutput()
     {
-        var output = ProcessUtils.RunProcess("cmd", "/c echo hello");
+        var output = OperatingSystem.IsWindows()
+            ? ProcessUtils.RunProcess("cmd", "/c echo hello")
+            : ProcessUtils.RunProcess("echo", "hello");
 
         Assert.NotNull(output);
         Assert.Contains("hello", output);

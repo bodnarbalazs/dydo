@@ -219,7 +219,8 @@ public class FileCoverageService : IFileCoverageService
     {
         try
         {
-            var relative = Path.GetRelativePath(projectRoot, absolutePath);
+            // Normalize backslashes so Windows audit paths resolve correctly on Linux
+            var relative = Path.GetRelativePath(projectRoot, PathUtils.NormalizePath(absolutePath));
             if (relative.StartsWith("..")) return null;
             return PathUtils.NormalizeForKey(relative);
         }

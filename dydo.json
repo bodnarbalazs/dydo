@@ -91,7 +91,6 @@
   "tasks": {
     "autoCompactInterval": 20
   },
-  "nudges": [],
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",
     "_system/templates/mode-code-writer.template.md": "3f2f0ee2bb41df33785a593917cb89faf6e388915dbe3bfccae0d29719c2efbd",

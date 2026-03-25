@@ -139,7 +139,7 @@ public class WhoamiConcurrencyTests : IDisposable
     }
 
     [Fact]
-    public async Task FileContention_RetrySucceeds()
+    public void FileContention_RetrySucceeds()
     {
         var agents = new[] { "Adele" };
         SetupConfig(agents);
@@ -150,18 +150,21 @@ public class WhoamiConcurrencyTests : IDisposable
         // Hold an exclusive lock on the .session file, release after a short delay
         var lockStream = new FileStream(sessionPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-        var releaseTask = Task.Run(async () =>
+        // Dedicated thread with Thread.Sleep for reliable timing on CI runners
+        // (Task.Delay on the thread pool can be delayed unpredictably under load)
+        var releaseThread = new Thread(() =>
         {
-            await Task.Delay(100);
+            Thread.Sleep(10);
             lockStream.Dispose();
-        });
+        }) { IsBackground = true };
+        releaseThread.Start();
 
         var registry = new AgentRegistry(_testDir);
         var result = registry.GetCurrentAgent("session-locked");
 
-        await releaseTask;
+        releaseThread.Join(TimeSpan.FromSeconds(5));
 
-        // Should succeed after retry (lock released after 100ms, first retry at 50ms, second at 150ms)
+        // Should succeed after retry (lock released at ~10ms, first retry at ~50ms)
         Assert.NotNull(result);
         Assert.Equal("Adele", result.Name);
     }

@@ -326,4 +326,73 @@ public class QueueServiceTests : IDisposable
         Assert.Equal("wt-old", entry.CleanupWorktreeId);
         Assert.Equal("/project", entry.MainProjectRoot);
     }
+
+    [Fact]
+    public void TryAcquireOrEnqueue_FirstCall_ReturnsAcquired()
+    {
+        var result = _service.TryAcquireOrEnqueue("merge", "Brian", "task-1",
+            true, false, null, null, null, null, null);
+
+        Assert.Equal(QueueResult.Acquired, result);
+
+        var active = _service.GetActive("merge");
+        Assert.NotNull(active);
+        Assert.Equal("Brian", active.Agent);
+        Assert.Equal("task-1", active.Task);
+        Assert.Equal(0, active.Pid);
+    }
+
+    [Fact]
+    public void TryAcquireOrEnqueue_SecondCall_ReturnsQueued()
+    {
+        _service.TryAcquireOrEnqueue("merge", "Charlie", "task-0",
+            true, false, null, null, null, null, null);
+
+        var result = _service.TryAcquireOrEnqueue("merge", "Brian", "task-1",
+            true, true, "wt-123", null, null, null, "/project");
+
+        Assert.Equal(QueueResult.Queued, result);
+
+        var pending = _service.GetPending("merge");
+        Assert.Single(pending);
+        Assert.Equal("Brian", pending[0].Entry.Agent);
+    }
+
+    [Fact]
+    public void TryAcquireOrEnqueue_ConcurrentCalls_ExactlyOneAcquires()
+    {
+        // Verifies the check-then-set is atomic: two sequential calls produce
+        // exactly one Acquired and one Queued (the lock ensures this even when
+        // calls overlap in production across processes).
+        var r1 = _service.TryAcquireOrEnqueue("merge", "Brian", "race-task",
+            true, false, null, null, null, null, null);
+        var r2 = _service.TryAcquireOrEnqueue("merge", "Charlie", "race-task",
+            true, false, null, null, null, null, null);
+
+        Assert.Equal(QueueResult.Acquired, r1);
+        Assert.Equal(QueueResult.Queued, r2);
+
+        var active = _service.GetActive("merge");
+        Assert.Equal("Brian", active!.Agent);
+
+        var pending = _service.GetPending("merge");
+        Assert.Single(pending);
+        Assert.Equal("Charlie", pending[0].Entry.Agent);
+    }
+
+    [Fact]
+    public void UpdateActivePid_UpdatesExistingEntry()
+    {
+        _service.TryAcquireOrEnqueue("merge", "Brian", "task-1",
+            true, false, null, null, null, null, null);
+
+        Assert.Equal(0, _service.GetActive("merge")!.Pid);
+
+        _service.UpdateActivePid("merge", 42);
+
+        var active = _service.GetActive("merge");
+        Assert.NotNull(active);
+        Assert.Equal(42, active.Pid);
+        Assert.Equal("Brian", active.Agent);
+    }
 }

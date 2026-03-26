@@ -177,8 +177,11 @@ public static class DispatchService
         if (!string.IsNullOrEmpty(queue))
         {
             var queueService = new QueueService(null, registry.Config);
-            if (queueService.TryEnqueue(queue, targetAgentName, task, launchInTab, effectiveAutoClose,
-                    worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot))
+            var queueResult = queueService.TryAcquireOrEnqueue(queue, targetAgentName, task,
+                launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride,
+                cleanupWorktreeId, mainProjectRoot);
+
+            if (queueResult == QueueResult.Queued)
             {
                 var pending = queueService.GetPending(queue);
                 queueService.WriteQueuedMarker(targetAgentName, queue, pending.Count);
@@ -186,10 +189,9 @@ public static class DispatchService
             }
             else
             {
-                // No active item — launch immediately and mark as active
                 var pid = LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose,
                     worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
-                queueService.SetActive(queue, targetAgentName, task, pid);
+                queueService.UpdateActivePid(queue, pid);
             }
         }
         else

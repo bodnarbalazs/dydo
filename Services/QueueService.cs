@@ -113,6 +113,75 @@ public class QueueService
     }
 
     /// <summary>
+    /// Atomically checks whether the queue slot is free. If free, marks the caller as active
+    /// (with placeholder PID=0) and returns Acquired. If occupied, writes a pending entry and
+    /// returns Queued. File lock prevents two dispatches from both acquiring the slot.
+    /// </summary>
+    public QueueResult TryAcquireOrEnqueue(string queueName, string agentName, string task,
+        bool launchInTab, bool autoClose, string? worktreeId, string? windowName,
+        string? workingDirOverride, string? cleanupWorktreeId, string? mainProjectRoot)
+    {
+        var dir = GetQueueDir(queueName);
+        Directory.CreateDirectory(dir);
+        var lockPath = Path.Combine(dir, ".lock");
+
+        var result = QueueResult.Acquired;
+
+        WithQueueLock(lockPath, () =>
+        {
+            var activePath = Path.Combine(dir, "_active.json");
+            if (File.Exists(activePath))
+            {
+                var entry = new QueueEntry
+                {
+                    Agent = agentName,
+                    Task = task,
+                    LaunchInTab = launchInTab,
+                    AutoClose = autoClose,
+                    WorktreeId = worktreeId,
+                    WindowName = windowName,
+                    WorkingDirOverride = workingDirOverride,
+                    CleanupWorktreeId = cleanupWorktreeId,
+                    MainProjectRoot = mainProjectRoot,
+                    Enqueued = DateTime.UtcNow
+                };
+
+                var seq = GetNextSequenceNumber(dir);
+                var sanitizedTask = PathUtils.SanitizeForFilename(task);
+                var fileName = $"{seq:D4}-{sanitizedTask}.json";
+                var json = JsonSerializer.Serialize(entry, DydoDefaultJsonContext.Default.QueueEntry);
+                File.WriteAllText(Path.Combine(dir, fileName), json);
+                result = QueueResult.Queued;
+            }
+            else
+            {
+                // Queue free — write placeholder _active.json; caller updates PID after launch
+                var active = new QueueActiveEntry
+                {
+                    Agent = agentName,
+                    Task = task,
+                    Pid = 0,
+                    Started = DateTime.UtcNow
+                };
+                var json = JsonSerializer.Serialize(active, DydoDefaultJsonContext.Default.QueueActiveEntry);
+                File.WriteAllText(activePath, json);
+                result = QueueResult.Acquired;
+            }
+        });
+
+        return result;
+    }
+
+    public void UpdateActivePid(string queueName, int pid)
+    {
+        var active = GetActive(queueName);
+        if (active == null) return;
+        active.Pid = pid;
+        var json = JsonSerializer.Serialize(active, DydoDefaultJsonContext.Default.QueueActiveEntry);
+        File.WriteAllText(Path.Combine(GetQueueDir(queueName), "_active.json"), json);
+    }
+
+    /// <summary>
     /// Tries to enqueue a terminal launch. If the queue has no active item,
     /// returns false (caller should launch immediately). If an active item exists,
     /// writes the pending entry and returns true (launch deferred).
@@ -374,5 +443,71 @@ public class QueueService
                 max = seq;
         }
         return max + 1;
+    }
+
+    private static void WithQueueLock(string lockPath, Action action)
+    {
+        const int maxAttempts = 30;
+        const int retryDelayMs = 1000;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                var lockInfo = $"{{\"Pid\":{Environment.ProcessId},\"Acquired\":\"{DateTime.UtcNow:o}\"}}";
+                var bytes = System.Text.Encoding.UTF8.GetBytes(lockInfo);
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush();
+
+                try
+                {
+                    action();
+                }
+                finally
+                {
+                    stream.Close();
+                    try { File.Delete(lockPath); } catch { }
+                }
+                return;
+            }
+            catch (IOException) when (File.Exists(lockPath))
+            {
+                if (TryRemoveStaleLock(lockPath))
+                    continue;
+
+                if (attempt < maxAttempts - 1)
+                    Thread.Sleep(retryDelayMs);
+            }
+        }
+
+        throw new TimeoutException($"Could not acquire queue lock after {maxAttempts}s. Lock file: {lockPath}");
+    }
+
+    private static bool TryRemoveStaleLock(string lockPath)
+    {
+        try
+        {
+            var json = File.ReadAllText(lockPath);
+            var pidStart = json.IndexOf("\"Pid\":", StringComparison.Ordinal);
+            if (pidStart < 0) return false;
+
+            pidStart += 6;
+            var pidEnd = json.IndexOfAny([',', '}'], pidStart);
+            if (pidEnd < 0) return false;
+
+            if (!int.TryParse(json[pidStart..pidEnd].Trim(), out var pid))
+                return false;
+
+            if (ProcessUtils.IsProcessRunning(pid))
+                return false;
+
+            File.Delete(lockPath);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

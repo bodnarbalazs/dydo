@@ -483,7 +483,8 @@ public class WorktreeCompatTests : IDisposable
         var workspace = Path.Combine(_testDir, "find-msg-match");
         var inboxPath = Path.Combine(workspace, "inbox");
         Directory.CreateDirectory(inboxPath);
-        File.WriteAllText(Path.Combine(inboxPath, "abc12345-msg-task.md"), """
+        var filePath = Path.Combine(inboxPath, "abc12345-msg-task.md");
+        File.WriteAllText(filePath, """
             ---
             from: Grace
             subject: review-result
@@ -495,6 +496,7 @@ public class WorktreeCompatTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("Grace", result.Value.From);
         Assert.Equal("review-result", result.Value.Subject);
+        Assert.Equal(filePath, result.Value.FilePath);
     }
 
     [Fact]

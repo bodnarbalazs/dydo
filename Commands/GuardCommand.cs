@@ -870,14 +870,18 @@ public static partial class GuardCommand
         {
             var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
             if (msgInfo != null)
+            {
+                var displayPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), msgInfo.Value.FilePath)
+                    .Replace('\\', '/');
                 Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
+                Console.Error.WriteLine($"  File: {displayPath}");
+            }
         }
         Console.Error.WriteLine();
         Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
-        Console.Error.WriteLine("  Read your message(s) to continue:");
-        Console.Error.WriteLine("    1. Run: dydo inbox show");
-        Console.Error.WriteLine("    2. Read the message file(s) shown");
-        Console.Error.WriteLine("    3. Then: dydo inbox clear --id <id>");
+        Console.Error.WriteLine("  Read your message(s) and then clear them to continue:");
+        Console.Error.WriteLine("    1. Read each file listed above");
+        Console.Error.WriteLine("    2. Then: dydo inbox clear --id <id>");
         Console.Error.WriteLine();
         Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
         return ExitCodes.ToolError;
@@ -1202,7 +1206,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Extracts from/subject from a message file in an agent's inbox.
     /// </summary>
-    internal static (string From, string? Subject)? FindMessageInfo(string workspace, string messageId)
+    internal static (string From, string? Subject, string FilePath)? FindMessageInfo(string workspace, string messageId)
     {
         var inboxPath = Path.Combine(workspace, "inbox");
         if (!Directory.Exists(inboxPath))
@@ -1234,7 +1238,7 @@ public static partial class GuardCommand
                 }
 
                 if (from != null)
-                    return (from, subject);
+                    return (from, subject, file);
             }
             catch { }
         }

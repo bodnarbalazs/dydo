@@ -2030,6 +2030,54 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e0bf193e-msg-smoke-comp-postmortem.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T20:49:05.1973403Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo.json",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T22:20:48.7418727Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\biaeczso8.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T22:20:56.4730578Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\50e8ee2e-msg-verify-process-leak-fix.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T22:22:43.2337793Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b0i071q8i.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T22:22:49.5286038Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\40a79de1-msg-fix-inbox-discoverability.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T22:28:01.0607738Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bfnyq88is.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T22:28:21.142261Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1046d9b8-msg-fix-inbox-discoverability.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T22:28:33.4184859Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5aa50cb0-msg-investigate-plan-mode-block.md",
+      "tool": "read"
     }
   ],
   "snapshot_ref": {

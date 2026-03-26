@@ -171,6 +171,17 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Init_Claude_MatcherIncludesPlanModeTools()
+    {
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        Assert.Contains("EnterPlanMode", content);
+        Assert.Contains("ExitPlanMode", content);
+    }
+
+    [Fact]
     public async Task Init_Claude_PreservesExistingHooks()
     {
         // Arrange: Create existing settings with a custom hook

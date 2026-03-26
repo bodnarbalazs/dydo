@@ -1,5 +1,6 @@
 namespace DynaDocs.Services;
 
+using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -104,6 +105,22 @@ public static class WorkspaceCleaner
         }
 
         Console.WriteLine($"Cleaned {cleaned} workspace(s)");
+
+        var markersRemoved = 0;
+        foreach (var name in registry.AgentNames)
+        {
+            var workspace = registry.GetAgentWorkspace(name);
+            if (!Directory.Exists(workspace)) continue;
+            foreach (var marker in new[] { ".worktree", ".worktree-path", ".worktree-base",
+                ".worktree-hold", ".worktree-root", ".merge-source", ".needs-merge" })
+            {
+                var path = Path.Combine(workspace, marker);
+                if (File.Exists(path)) { File.Delete(path); markersRemoved++; }
+            }
+        }
+        if (markersRemoved > 0)
+            Console.WriteLine($"Removed {markersRemoved} stale worktree marker(s)");
+
         ReportWaitMarkerAudit(registry, markersBefore);
         return ExitCodes.Success;
     }

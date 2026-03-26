@@ -1436,6 +1436,157 @@ public class WorktreeCommandTests : IDisposable
         Assert.Equal(0, exitCode);
     }
 
+    // --- Prune tests ---
+
+    [Fact]
+    public void Prune_NoWorktreeDirectories_ReportsNothing()
+    {
+        // worktrees dir doesn't exist at all
+        var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Pruned 0 orphaned worktree(s)", stdout);
+    }
+
+    [Fact]
+    public void Prune_OrphanDirectory_RemovesIt()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var orphanDir = Path.Combine(worktreesDir, "orphan-20260326");
+        Directory.CreateDirectory(orphanDir);
+        File.WriteAllText(Path.Combine(orphanDir, "dummy.txt"), "content");
+
+        // Create an agent workspace so GetAllAgentStates has something to iterate
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("Pruning orphaned worktree: orphan-20260326", stdout);
+            Assert.Contains("Pruned 1 orphaned worktree(s)", stdout);
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("worktree remove"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D"));
+            Assert.False(Directory.Exists(orphanDir));
+        }
+        finally { WorktreeCommand.RunProcessOverride = null; }
+    }
+
+    [Fact]
+    public void Prune_ActiveWorktree_SkipsIt()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var activeDir = Path.Combine(worktreesDir, "active-wt");
+        Directory.CreateDirectory(activeDir);
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+        File.WriteAllText(Path.Combine(ws, ".worktree"), "active-wt");
+
+        var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("skipping", stdout);
+        Assert.True(Directory.Exists(activeDir));
+        Assert.Contains("Pruned 0 orphaned worktree(s)", stdout);
+    }
+
+    [Fact]
+    public void Prune_CleansStaleWorktreeHoldMarker()
+    {
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+        File.WriteAllText(Path.Combine(ws, ".worktree-hold"), "some-wt-id");
+        // No agent has .worktree = some-wt-id
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(File.Exists(Path.Combine(ws, ".worktree-hold")));
+            Assert.Contains("stale .worktree-hold", stdout);
+            Assert.Contains("cleaned 1 stale marker(s)", stdout);
+        }
+        finally { WorktreeCommand.RunProcessOverride = null; }
+    }
+
+    [Fact]
+    public void Prune_CleansStaleMarkerSourceMarker()
+    {
+        var ws = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(ws);
+        File.WriteAllText(Path.Combine(ws, ".merge-source"), "worktree/some-branch");
+        // No agent has .worktree referencing corresponding worktreeId
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(File.Exists(Path.Combine(ws, ".merge-source")));
+            Assert.Contains("stale .merge-source", stdout);
+        }
+        finally { WorktreeCommand.RunProcessOverride = null; }
+    }
+
+    [Fact]
+    public void Prune_MixedOrphanedAndActive_OnlyRemovesOrphans()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var orphanDir = Path.Combine(worktreesDir, "orphan-wt");
+        var activeDir = Path.Combine(worktreesDir, "active-wt");
+        Directory.CreateDirectory(orphanDir);
+        Directory.CreateDirectory(activeDir);
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+        File.WriteAllText(Path.Combine(ws, ".worktree"), "active-wt");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(Directory.Exists(orphanDir));
+            Assert.True(Directory.Exists(activeDir));
+            Assert.Contains("Pruned 1 orphaned worktree(s)", stdout);
+        }
+        finally { WorktreeCommand.RunProcessOverride = null; }
+    }
+
+    [Fact]
+    public void Prune_EmptyZombieDirectory_RemovesIt()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var zombieDir = Path.Combine(worktreesDir, "zombie-empty");
+        Directory.CreateDirectory(zombieDir);
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(Directory.Exists(zombieDir));
+            Assert.Contains("Pruned 1 orphaned worktree(s)", stdout);
+        }
+        finally { WorktreeCommand.RunProcessOverride = null; }
+    }
+
+    // --- End prune tests ---
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker

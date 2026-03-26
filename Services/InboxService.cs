@@ -158,7 +158,7 @@ public static class InboxService
         }
     }
 
-    private static void PrintInboxItem(InboxItem item)
+    internal static void PrintInboxItem(InboxItem item)
     {
         if (item.Type == "message")
         {
@@ -187,6 +187,13 @@ public static class InboxService
 
             if (item.Files.Count > 0)
                 Console.WriteLine($"  Files: {string.Join(", ", item.Files)}");
+        }
+
+        if (!string.IsNullOrEmpty(item.FilePath))
+        {
+            var displayPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), item.FilePath)
+                .Replace('\\', '/');
+            Console.WriteLine($"  File: {displayPath}");
         }
     }
 }

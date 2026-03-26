@@ -3,6 +3,7 @@ namespace DynaDocs.Models;
 public class InboxItem
 {
     public required string Id { get; init; }
+    public string? FilePath { get; init; }
     public required string From { get; init; }
     public string? FromRole { get; init; }
     public required string Role { get; init; }

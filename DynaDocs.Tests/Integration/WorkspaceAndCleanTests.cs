@@ -397,6 +397,48 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
         Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.waiting/task.json")));
     }
 
+    [Fact]
+    public async Task Clean_All_RemovesWorktreeMarkers()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var markers = new[] { ".worktree", ".worktree-path", ".worktree-base",
+            ".worktree-hold", ".worktree-root", ".merge-source", ".needs-merge" };
+
+        foreach (var marker in markers)
+        {
+            WriteFile($"dydo/agents/Adele/{marker}", "some-value");
+            WriteFile($"dydo/agents/Brian/{marker}", "some-value");
+        }
+
+        var result = await CleanAllAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("stale worktree marker(s)");
+        foreach (var marker in markers)
+        {
+            Assert.False(File.Exists(Path.Combine(TestDir, $"dydo/agents/Adele/{marker}")));
+            Assert.False(File.Exists(Path.Combine(TestDir, $"dydo/agents/Brian/{marker}")));
+        }
+    }
+
+    [Fact]
+    public async Task Clean_SingleAgent_PreservesWorktreeMarkers()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        WriteFile("dydo/agents/Adele/.worktree", "some-wt-id");
+        WriteFile("dydo/agents/Adele/.worktree-hold", "some-wt-id");
+        WriteFile("dydo/agents/Adele/.merge-source", "worktree/some-branch");
+
+        var result = await CleanAsync("Adele");
+
+        result.AssertSuccess();
+        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.worktree")));
+        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.worktree-hold")));
+        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.merge-source")));
+    }
+
     #endregion
 
     #region Clean By Task — Marker Removal

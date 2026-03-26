@@ -91,6 +91,9 @@
   "tasks": {
     "autoCompactInterval": 100
   },
+  "queues": [
+    "merge"
+  ],
   "nudges": [
     {
       "pattern": "(?:^|[;\u0026|]\\s*)npx\\s\u002B(?:(?:-\\w\u002B|--[\\w-]\u002B(?:\\s\u002B\\S\u002B)?)\\s\u002B)*dydo\\b(.*)",

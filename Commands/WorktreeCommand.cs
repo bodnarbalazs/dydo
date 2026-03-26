@@ -65,6 +65,10 @@ public static class WorktreeCommand
         });
         command.Subcommands.Add(initSettingsCommand);
 
+        var pruneCommand = new Command("prune", "Remove orphaned worktree directories and stale markers");
+        pruneCommand.SetAction((result) => ExecutePrune());
+        command.Subcommands.Add(pruneCommand);
+
         return command;
     }
 
@@ -393,7 +397,7 @@ public static class WorktreeCommand
         }
     }
 
-    private static void DeleteWorktreeBranch(string worktreeId)
+    internal static void DeleteWorktreeBranch(string worktreeId)
     {
         try
         {
@@ -507,5 +511,120 @@ public static class WorktreeCommand
 
         Console.WriteLine($"Merge finalized. Worktree {worktreeId} cleaned up.");
         return ExitCodes.Success;
+    }
+
+    internal static int ExecutePrune()
+    {
+        var registry = new AgentRegistry();
+        return ExecutePrune(registry);
+    }
+
+    internal static int ExecutePrune(AgentRegistry registry)
+    {
+        var worktreesDir = Path.GetFullPath(Path.Combine(registry.WorkspacePath, "..", "_system", ".local", "worktrees"));
+
+        var orphansRemoved = 0;
+
+        if (Directory.Exists(worktreesDir))
+        {
+            var dirs = EnumerateLeafDirectories(worktreesDir);
+            foreach (var (worktreeId, dirPath) in dirs)
+            {
+                var refs = CountWorktreeReferences(registry, worktreeId);
+                if (refs > 0)
+                {
+                    Console.WriteLine($"Worktree {worktreeId}: {refs} reference(s), skipping.");
+                    continue;
+                }
+
+                Console.WriteLine($"Pruning orphaned worktree: {worktreeId}");
+                PreserveAuditFiles(dirPath);
+                RemoveJunction(Path.Combine(dirPath, "dydo", "agents"));
+                RemoveJunction(Path.Combine(dirPath, "dydo", "_system", "roles"));
+                RemoveGitWorktree(dirPath);
+                DeleteWorktreeBranch(worktreeId);
+                RemoveZombieDirectory(dirPath);
+                orphansRemoved++;
+            }
+        }
+
+        var staleMarkersRemoved = CleanStaleMarkers(registry);
+
+        Console.WriteLine($"Pruned {orphansRemoved} orphaned worktree(s), cleaned {staleMarkersRemoved} stale marker(s).");
+        return ExitCodes.Success;
+    }
+
+    internal static int CountLiveWorktreeReferences(AgentRegistry registry, string worktreeId)
+    {
+        var count = 0;
+        var childPrefix = $"{worktreeId}/";
+        foreach (var agent in registry.GetAllAgentStates())
+        {
+            var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), ".worktree");
+            if (!File.Exists(marker)) continue;
+            var value = File.ReadAllText(marker).Trim();
+            if (value == worktreeId || value.StartsWith(childPrefix))
+                count++;
+        }
+        return count;
+    }
+
+    private static int CleanStaleMarkers(AgentRegistry registry)
+    {
+        var cleaned = 0;
+        foreach (var agent in registry.GetAllAgentStates())
+        {
+            var workspace = registry.GetAgentWorkspace(agent.Name);
+
+            var holdPath = Path.Combine(workspace, ".worktree-hold");
+            if (File.Exists(holdPath))
+            {
+                var holdId = File.ReadAllText(holdPath).Trim();
+                if (CountLiveWorktreeReferences(registry, holdId) == 0)
+                {
+                    File.Delete(holdPath);
+                    Console.WriteLine($"  Removed stale .worktree-hold from {agent.Name} (referenced {holdId})");
+                    cleaned++;
+                }
+            }
+
+            var mergePath = Path.Combine(workspace, ".merge-source");
+            if (File.Exists(mergePath))
+            {
+                var mergeSource = File.ReadAllText(mergePath).Trim();
+                var branchSuffix = mergeSource.StartsWith("worktree/")
+                    ? mergeSource["worktree/".Length..]
+                    : mergeSource;
+                var wtId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
+                if (CountLiveWorktreeReferences(registry, wtId) == 0)
+                {
+                    File.Delete(mergePath);
+                    Console.WriteLine($"  Removed stale .merge-source from {agent.Name} (referenced {mergeSource})");
+                    cleaned++;
+                }
+            }
+        }
+        return cleaned;
+    }
+
+    private static List<(string worktreeId, string path)> EnumerateLeafDirectories(string worktreesDir)
+    {
+        var result = new List<(string, string)>();
+        CollectLeafDirectories(worktreesDir, worktreesDir, result);
+        return result;
+    }
+
+    private static void CollectLeafDirectories(string root, string current, List<(string, string)> result)
+    {
+        var subdirs = Directory.GetDirectories(current);
+        if (subdirs.Length == 0)
+        {
+            if (current == root) return;
+            var id = Path.GetRelativePath(root, current).Replace('\\', '/');
+            result.Add((id, current));
+            return;
+        }
+        foreach (var sub in subdirs)
+            CollectLeafDirectories(root, sub, result);
     }
 }

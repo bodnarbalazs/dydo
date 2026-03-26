@@ -64,4 +64,43 @@ public class InboxItemParserTests : IDisposable
         Assert.Single(items);
         Assert.Equal("orchestrator", items[0].FromRole);
     }
+
+    [Fact]
+    public void ParseInboxItem_SetsFilePath()
+    {
+        var path = CreateInboxFile("abc123-my-task.md",
+            "---\nid: abc123\nfrom: Brian\nrole: reviewer\ntask: my-task\nreceived: 2026-03-19T10:00:00Z\n---\n\n## Brief\n\nReview this code.");
+
+        var item = InboxItemParser.ParseInboxItem(path);
+
+        Assert.NotNull(item);
+        Assert.Equal(path, item!.FilePath);
+    }
+
+    [Fact]
+    public void ParseInboxItem_Message_SetsFilePath()
+    {
+        var path = CreateInboxFile("def456-msg-hello.md",
+            "---\nid: def456\nfrom: Adele\ntype: message\nsubject: hello\nreceived: 2026-03-19T10:00:00Z\n---\n\n## Body\n\nHello Brian.");
+
+        var item = InboxItemParser.ParseInboxItem(path);
+
+        Assert.NotNull(item);
+        Assert.Equal(path, item!.FilePath);
+    }
+
+    [Fact]
+    public void GetInboxItems_AllItemsHaveFilePath()
+    {
+        CreateInboxFile("abc123-my-task.md",
+            "---\nid: abc123\nfrom: Brian\nrole: code-writer\ntask: my-task\nreceived: 2026-03-19T10:00:00Z\n---\n\n## Brief\n\nImplement feature.");
+        CreateInboxFile("def456-msg-hello.md",
+            "---\nid: def456\nfrom: Adele\ntype: message\nsubject: hello\nreceived: 2026-03-19T10:00:00Z\n---\n\n## Body\n\nHello.");
+
+        var items = InboxItemParser.GetInboxItems(_testDir);
+
+        Assert.Equal(2, items.Count);
+        Assert.All(items, item => Assert.NotNull(item.FilePath));
+        Assert.All(items, item => Assert.True(File.Exists(item.FilePath)));
+    }
 }

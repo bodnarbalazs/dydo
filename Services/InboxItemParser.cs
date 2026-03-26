@@ -59,6 +59,7 @@ public static class InboxItemParser
             return new InboxItem
             {
                 Id = fields.Id,
+                FilePath = filePath,
                 From = fields.From,
                 FromRole = fields.FromRole,
                 Origin = fields.Origin,

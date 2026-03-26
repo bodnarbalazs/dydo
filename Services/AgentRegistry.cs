@@ -481,7 +481,7 @@ public partial class AgentRegistry : IAgentRegistry
             var mergeTask = File.ReadAllText(needsMergePath).Trim();
             error = $"Cannot release: review passed in worktree but merge not dispatched.\n" +
                     $"Dispatch a code-writer to merge the worktree branch:\n" +
-                    $"  dydo dispatch --no-wait --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch\"";
+                    $"  dydo dispatch --no-wait --auto-close --queue merge --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"";
             return false;
         }
 

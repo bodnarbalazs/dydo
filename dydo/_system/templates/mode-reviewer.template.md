@@ -103,7 +103,7 @@ dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tes
 If you are in a worktree (check for a `.worktree` marker in your workspace), `dydo review complete` will create a `.needs-merge` marker and print a dispatch hint. **You must dispatch a code-writer to merge before releasing.** Follow the hint:
 
 ```bash
-dydo dispatch --no-wait --auto-close --role code-writer --task <task-name>-merge --brief "Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace."
+dydo dispatch --no-wait --auto-close --queue merge --role code-writer --task <task-name>-merge --brief "Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace."
 ```
 
 This dispatch clears your `.needs-merge` marker, unblocking release. If you try to release without dispatching the merge, it will be blocked.

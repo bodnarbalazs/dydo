@@ -977,6 +977,49 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Theory]
+    [InlineData("git merge feature-branch")]
+    [InlineData("git merge --no-ff main")]
+    public async Task Guard_GitMerge_WithMergeSource_OnMain_Blocks(string command)
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        // Place .merge-source marker (no .worktree — agent is on main)
+        var workspace = Path.Combine(DydoDir, "agents", "Adele");
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("dydo worktree merge");
+    }
+
+    [Fact]
+    public async Task Guard_GitMerge_WithMergeSource_MustReadFirst()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        // Don't call ReadMustReadsAsync — leave must-reads unread
+        await SetRoleAsync("code-writer", "test-task");
+
+        // Place .merge-source marker
+        var workspace = Path.Combine(DydoDir, "agents", "Adele");
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"git merge feature-branch\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        // Must-read enforcement fires before git merge block
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("not read the required files");
+    }
+
+    [Theory]
     [InlineData("git status")]
     [InlineData("git commit -m 'test'")]
     [InlineData("git diff")]

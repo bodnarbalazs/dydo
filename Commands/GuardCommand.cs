@@ -609,7 +609,10 @@ public static partial class GuardCommand
                     or FileOperationType.Move or FileOperationType.Copy
                     or FileOperationType.PermissionChange);
 
-                if (hasWriteOps)
+                // git merge is implicitly write-like (modifies working tree + refs)
+                var isGitMerge = GitMergeRegex().IsMatch(command);
+
+                if (hasWriteOps || isGitMerge)
                 {
                     LogAuditEvent(auditService, sessionId, registry, new AuditEvent
                     {
@@ -663,20 +666,28 @@ public static partial class GuardCommand
             }
         }
 
-        // git merge must go through dydo worktree merge when in a worktree
+        // git merge must go through dydo worktree merge
         if (GitMergeRegex().IsMatch(command))
         {
             var agent = registry.GetCurrentAgent(sessionId);
-            if (agent != null && registry.GetWorktreeId(agent.Name) != null)
+            if (agent != null)
             {
-                const string reason = "Use dydo worktree merge to merge in worktrees.";
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                var inWorktree = registry.GetWorktreeId(agent.Name) != null;
+                var hasMergeSource = File.Exists(
+                    Path.Combine(registry.GetAgentWorkspace(agent.Name), ".merge-source"));
+
+                if (inWorktree || hasMergeSource)
                 {
-                    EventType = AuditEventType.Blocked, Tool = "bash",
-                    Command = TruncateCommand(command), BlockReason = reason
-                });
-                Console.Error.WriteLine($"BLOCKED: {reason}");
-                return ExitCodes.ToolError;
+                    const string reason = "Use dydo worktree merge to merge worktree branches. "
+                        + "Do not use git merge directly.";
+                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                    {
+                        EventType = AuditEventType.Blocked, Tool = "bash",
+                        Command = TruncateCommand(command), BlockReason = reason
+                    });
+                    Console.Error.WriteLine($"BLOCKED: {reason}");
+                    return ExitCodes.ToolError;
+                }
             }
         }
 

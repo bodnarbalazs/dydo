@@ -1406,6 +1406,36 @@ public class WorktreeCommandTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Cleanup_RemovesMergeSourceMarker()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        var worktreeId = "Adele-20260313120000";
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
+
+        WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+        Assert.False(File.Exists(Path.Combine(workspace, ".worktree")));
+        Assert.False(File.Exists(Path.Combine(workspace, ".merge-source")));
+    }
+
+    [Fact]
+    public void Cleanup_IdempotentAfterFinalizeMerge()
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        // After FinalizeMerge, all markers are already gone
+        var worktreeId = "Adele-20260313120000";
+
+        var exitCode = WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+        Assert.Equal(0, exitCode);
+    }
+
     private void SetupLastAgentScenario(string agent, string worktreeId, string worktreePath)
     {
         // Create agent workspace with worktree marker

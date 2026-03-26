@@ -146,7 +146,7 @@ public static class WorktreeCommand
         }
 
         var workspace = registry.GetAgentWorkspace(agentName);
-        RemoveWorktreeMarkers(workspace);
+        RemoveAllMarkers(workspace);
 
         var remainingRefs = CountWorktreeReferences(registry, worktreeId);
         if (remainingRefs > 0)

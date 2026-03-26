@@ -162,6 +162,7 @@ public static class DispatchService
             CopyWorktreeMetadataForMerger(registry, targetAgentName, senderName, senderWorktreeId);
             ClearNeedsMerge(registry, senderName);
             worktreeId = null;
+            cleanupWorktreeId = senderWorktreeId;
             mainProjectRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot();
         }
         else

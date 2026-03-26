@@ -87,6 +87,123 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git diff HEAD --stat"
+    },
+    {
+      "ts": "2026-03-26T19:43:20.9116099Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- Commands/WorktreeCommand.cs"
+    },
+    {
+      "ts": "2026-03-26T19:43:21.3481632Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- DynaDocs.Tests/Commands/WorktreeCommandTests.cs"
+    },
+    {
+      "ts": "2026-03-26T19:43:22.0267808Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- DynaDocs.Tests/Integration/WorktreeDispatchTests.cs"
+    },
+    {
+      "ts": "2026-03-26T19:43:22.4765517Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- DynaDocs.csproj Services/DispatchService.cs npm/package.json"
+    },
+    {
+      "ts": "2026-03-26T19:43:28.4859924Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --cached --stat"
+    },
+    {
+      "ts": "2026-03-26T19:43:28.8312301Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --stat"
+    },
+    {
+      "ts": "2026-03-26T19:43:39.6455653Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status --short"
+    },
+    {
+      "ts": "2026-03-26T19:43:46.1960282Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -30"
+    },
+    {
+      "ts": "2026-03-26T19:43:50.6082259Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show dd91d0c --stat"
+    },
+    {
+      "ts": "2026-03-26T19:43:55.6990097Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff 57e2557..dd91d0c -- Commands/ Services/ DynaDocs.Tests/ DynaDocs.csproj npm/package.json"
+    },
+    {
+      "ts": "2026-03-26T19:44:02.9409032Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:44:03.7072864Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:44:04.1340984Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:44:10.2000286Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T19:44:14.4391682Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:44:19.2172022Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:44:24.7037805Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:44:29.4819248Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-03-26T19:44:35.2485881Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
+    },
+    {
+      "ts": "2026-03-26T19:51:21.7066047Z",
+      "event": "Release",
+      "agent": "Dexter"
     }
   ],
   "snapshot": {

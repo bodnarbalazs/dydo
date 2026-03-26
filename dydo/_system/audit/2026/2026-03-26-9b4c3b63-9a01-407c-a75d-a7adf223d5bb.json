@@ -104,6 +104,29 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
+    },
+    {
+      "ts": "2026-03-26T19:45:04.997703Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T19:45:05.5579559Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T19:45:09.6260175Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T19:45:44.8990362Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot": {

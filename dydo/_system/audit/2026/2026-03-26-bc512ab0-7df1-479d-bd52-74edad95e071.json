@@ -250,6 +250,18 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git diff -- DynaDocs.csproj"
+    },
+    {
+      "ts": "2026-03-26T19:43:15.4221778Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add Services/DispatchService.cs DynaDocs.csproj"
+    },
+    {
+      "ts": "2026-03-26T19:43:26.5008617Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nVersion bump and dispatch cleanup worktree fix\n\nCo-Authored-By: Claude ..."
     }
   ],
   "snapshot": {

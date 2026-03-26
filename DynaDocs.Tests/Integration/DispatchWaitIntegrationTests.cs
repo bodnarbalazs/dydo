@@ -346,6 +346,70 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Release_SucceedsWhenReplyBeforeInboxClear()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches with --wait to Brian (needs oversight role)
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        // Verify marker was created at dispatch time (not at inbox clear)
+        var registry = new AgentRegistry(TestDir);
+        var markers = registry.GetReplyPendingMarkers("Brian");
+        Assert.Single(markers);
+        Assert.Equal("Adele", markers[0].To);
+
+        // Brian claims, sends reply BEFORE clearing inbox (the natural agent flow)
+        ClaimAgentInSeparateSession("Brian");
+
+        // Marker must survive claim (archive must not destroy it)
+        registry = new AgentRegistry(TestDir);
+        var markersAfterClaim = registry.GetReplyPendingMarkers("Brian");
+        Assert.Single(markersAfterClaim);
+        Assert.Equal("Adele", markersAfterClaim[0].To);
+
+        SetRoleInState("Brian", "code-writer", "auth");
+        SendMessageInSeparateSession("Brian", "Adele", "auth", "Done implementing.");
+
+        // Marker should be cleared by msg
+        registry = new AgentRegistry(TestDir);
+        Assert.Empty(registry.GetReplyPendingMarkers("Brian"));
+
+        // Now clear inbox — should NOT recreate the marker
+        ClearInboxInSeparateSession("Brian");
+
+        // Marker should still be empty
+        registry = new AgentRegistry(TestDir);
+        Assert.Empty(registry.GetReplyPendingMarkers("Brian"));
+
+        // Release should succeed
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("pending reply", releaseResult, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithWait_CreatesReplyPendingAtDispatchTime()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        // Reply-pending marker should exist on Brian immediately after dispatch
+        var replyPendingDir = Path.Combine(TestDir, "dydo/agents/Brian/.reply-pending");
+        Assert.True(Directory.Exists(replyPendingDir), "Reply-pending marker should be created at dispatch time");
+        var markerFiles = Directory.GetFiles(replyPendingDir, "*.json");
+        Assert.Single(markerFiles);
+    }
+
+    [Fact]
     public async Task NoReplyPending_ForNoWaitDispatch()
     {
         await InitProjectAsync("none", "testuser", 3);

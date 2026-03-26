@@ -122,6 +122,7 @@ public static class WatchdogService
             try
             {
                 PollAndCleanup(dydoRoot);
+                PollQueues(dydoRoot);
             }
             catch
             {
@@ -185,61 +186,6 @@ public static class WatchdogService
         PendingCleanup.IntersectWith(activeAgents);
     }
 
-    internal static bool TryCloseWindow(string windowId)
-    {
-        try
-        {
-            var wtPath = ResolveWtExe();
-            if (wtPath == null) return false;
-
-            var psi = new ProcessStartInfo(wtPath, $"-w {windowId} close")
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-            using var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
-            if (proc == null) return false;
-            proc.WaitForExit(5000);
-            return proc.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Resolve the full path to wt.exe. Background processes may not have
-    /// the MSIX alias directory on PATH, so check the known location first.
-    /// </summary>
-    internal static string? ResolveWtExe()
-    {
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        if (!string.IsNullOrEmpty(localAppData))
-        {
-            var alias = Path.Combine(localAppData, "Microsoft", "WindowsApps", "wt.exe");
-            if (File.Exists(alias)) return alias;
-        }
-
-        // Fall back to PATH lookup
-        var pathVar = Environment.GetEnvironmentVariable("PATH");
-        if (string.IsNullOrEmpty(pathVar)) return null;
-
-        foreach (var dir in pathVar.Split(';', StringSplitOptions.RemoveEmptyEntries))
-        {
-            try
-            {
-                var candidate = Path.Combine(dir, "wt.exe");
-                if (File.Exists(candidate)) return candidate;
-            }
-            catch { }
-        }
-
-        return null;
-    }
-
     internal static void ClearAutoClose(string statePath)
     {
         try
@@ -250,6 +196,40 @@ public static class WatchdogService
                 File.WriteAllText(statePath, updated);
         }
         catch { }
+    }
+
+    /// <summary>
+    /// Detects stale active queue entries (dead PIDs) and promotes the next pending item.
+    /// Also cleans up empty transient queues.
+    /// </summary>
+    public static void PollQueues(string dydoRoot)
+    {
+        var configService = new ConfigService();
+        var config = configService.LoadConfig();
+        var queueService = new QueueService(dydoRoot, config);
+
+        // Stale active detection
+        var staleEntries = queueService.FindStaleActiveEntries();
+        foreach (var (queueName, _) in staleEntries)
+        {
+            queueService.ClearActive(queueName);
+            var next = queueService.DequeueNext(queueName);
+            if (next != null)
+            {
+                queueService.ClearQueuedMarker(next.Agent);
+                var projectRoot = next.WorkingDirOverride ?? next.MainProjectRoot ?? Utils.PathUtils.FindProjectRoot();
+                var pid = TerminalLauncher.LaunchNewTerminal(next.Agent, projectRoot, next.LaunchInTab,
+                    next.AutoClose, next.WorktreeId, next.WindowName, next.CleanupWorktreeId, next.MainProjectRoot);
+                queueService.SetActive(queueName, next.Agent, next.Task, pid);
+            }
+            else
+            {
+                queueService.CleanupIfEmptyTransient(queueName);
+            }
+        }
+
+        // Transient queue cleanup
+        queueService.CleanupAllEmptyTransient();
     }
 
     internal static (bool autoClose, bool isFree, string? agentName, string? windowId) ParseStateForWatchdog(string statePath)

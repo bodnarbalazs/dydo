@@ -40,7 +40,8 @@ public class CommandSmokeTests
             WatchdogCommand.Create,
             WhoamiCommand.Create,
             WorkspaceCommand.Create,
-            WorktreeCommand.Create
+            WorktreeCommand.Create,
+            QueueCommand.Create
         };
 
         foreach (var createCommand in commands)
@@ -82,11 +83,12 @@ public class CommandSmokeTests
                 WaitCommand.Create(),
                 WatchdogCommand.Create(),
                 WhoamiCommand.Create(),
-                WorkspaceCommand.Create()
+                WorkspaceCommand.Create(),
+                QueueCommand.Create()
             };
 
             // Verify subcommands are present
-            Assert.True(rootCommand.Subcommands.Count >= 25);
+            Assert.True(rootCommand.Subcommands.Count >= 26);
         });
 
         Assert.Null(exception);

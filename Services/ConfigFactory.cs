@@ -8,10 +8,34 @@ public static class ConfigFactory
     [
         new()
         {
-            Pattern = @"dotnet\s+test\b.*(?:coverlet|cobertura|--collect\b)",
-            Message = "Consider using your project coverage tool instead of running coverage directly.",
-            Severity = "warn"
-        }
+            Pattern = @"(?:^|[;&|]\s*)npx\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*dydo\b(.*)",
+            Message = "Don't use npx to run dydo — it's already on your PATH. Just use: dydo $1",
+            Severity = "block"
+        },
+        new()
+        {
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)",
+            Message = "Don't use dotnet to run dydo — it's already on your PATH. Just use: dydo $1",
+            Severity = "block"
+        },
+        new()
+        {
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\b.*)",
+            Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
+            Severity = "block"
+        },
+        new()
+        {
+            Pattern = @"(?:^|[;&|]\s*)(bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
+            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+            Severity = "block"
+        },
+        new()
+        {
+            Pattern = @"(?:^|[;&|]\s*)(python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
+            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+            Severity = "block"
+        },
     ];
 
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

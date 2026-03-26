@@ -40,7 +40,7 @@ public static class LinuxTerminalLauncher
         return args;
     }
 
-    public static bool TryLaunch(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
+    public static int TryLaunch(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
         string agentName, string? workingDirectory = null, bool useTab = false,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
@@ -72,13 +72,12 @@ public static class LinuxTerminalLauncher
                 if (autoClose)
                     arguments = arguments.Replace("exec bash", BashPostClaudeCheck(agentName));
 
-                processStarter.Start(new ProcessStartInfo
+                return processStarter.Start(new ProcessStartInfo
                 {
                     FileName = terminal.FileName,
                     Arguments = arguments,
                     UseShellExecute = false
                 });
-                return true;
             }
             catch (ArgumentException)
             {
@@ -89,6 +88,6 @@ public static class LinuxTerminalLauncher
                 // Terminal not found — try next one
             }
         }
-        return false;
+        return 0;
     }
 }

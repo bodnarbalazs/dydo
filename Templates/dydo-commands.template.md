@@ -259,6 +259,7 @@ dydo dispatch --no-wait --role code-writer --task auth-login --brief "Implement 
 - `--tab` - Launch in a new tab instead of a new window (overrides config)
 - `--new-window` - Launch in a new window (overrides config)
 - `--worktree` - Run dispatched agent in a git worktree for isolated work
+- `--queue <name>` - Named queue to serialize terminal launch (e.g., `--queue merge`). Defers terminal launch if another item is active in the queue. Agent selection and inbox happen immediately.
 
 **Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
 

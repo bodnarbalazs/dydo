@@ -65,7 +65,7 @@ public static class WindowsTerminalLauncher
         return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
     }
 
-    public static void Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,
+    public static int Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,
         bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         var shell = ProcessUtils.ResolvePowerShell();
@@ -95,8 +95,7 @@ public static class WindowsTerminalLauncher
             };
             if (workingDirectory != null)
                 psi.WorkingDirectory = workingDirectory;
-            processStarter.Start(psi);
-            return;
+            return processStarter.Start(psi);
         }
         catch
         {
@@ -112,6 +111,6 @@ public static class WindowsTerminalLauncher
         };
         if (workingDirectory != null)
             fallbackPsi.WorkingDirectory = workingDirectory;
-        processStarter.Start(fallbackPsi);
+        return processStarter.Start(fallbackPsi);
     }
 }

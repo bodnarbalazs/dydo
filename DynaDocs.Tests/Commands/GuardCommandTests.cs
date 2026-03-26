@@ -382,15 +382,15 @@ public class GuardCommandTests : IDisposable
 
     #endregion
 
-    #region Built-in Nudges — Indirect Dydo Invocation
+    #region Default Nudges — Indirect Dydo Invocation
 
     [Theory]
     [InlineData("python dydo/agents/Brian/check_coverage.py")]
     [InlineData("python3 dydo/scripts/run.py")]
     [InlineData("py dydo/tools/helper.py")]
-    public void BuiltInNudges_PythonWithDydoPath_NoMatch(string command)
+    public void DefaultNudges_PythonWithDydoPath_NoMatch(string command)
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
         Assert.False(matched, $"Should not match dydo as a path component: {command}");
@@ -400,9 +400,9 @@ public class GuardCommandTests : IDisposable
     [InlineData("python dydo agent claim auto")]
     [InlineData("python3 dydo inbox show")]
     [InlineData("py dydo whoami")]
-    public void BuiltInNudges_PythonWithDydoCommand_Matches(string command)
+    public void DefaultNudges_PythonWithDydoCommand_Matches(string command)
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
         Assert.True(matched, $"Should match dydo as a command: {command}");
@@ -411,9 +411,9 @@ public class GuardCommandTests : IDisposable
     [Theory]
     [InlineData("bash dydo/agents/Brian/run.sh")]
     [InlineData("sh dydo/scripts/setup.sh")]
-    public void BuiltInNudges_ShellWithDydoPath_NoMatch(string command)
+    public void DefaultNudges_ShellWithDydoPath_NoMatch(string command)
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
         Assert.False(matched, $"Should not match dydo as a path component: {command}");
@@ -422,9 +422,9 @@ public class GuardCommandTests : IDisposable
     [Theory]
     [InlineData("bash -c \"dydo agent claim auto\"")]
     [InlineData("sh -c 'dydo whoami'")]
-    public void BuiltInNudges_ShellWithDydoCommand_Matches(string command)
+    public void DefaultNudges_ShellWithDydoCommand_Matches(string command)
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch(command));
 
         Assert.True(matched, $"Should match dydo as a command: {command}");
@@ -466,9 +466,9 @@ public class GuardCommandTests : IDisposable
     [InlineData("npx --yes dydo whoami", "whoami")]
     [InlineData("dotnet dydo agent status", "agent status")]
     [InlineData("dotnet run -- agent claim auto", "agent claim auto")]
-    public void BuiltInNudges_CaptureGroupExtractsArgs(string command, string expectedArgs)
+    public void DefaultNudges_CaptureGroupExtractsArgs(string command, string expectedArgs)
     {
-        foreach (var nudge in GuardCommand.BuiltInNudges)
+        foreach (var nudge in ConfigFactory.DefaultNudges)
         {
             var match = new Regex(nudge.Pattern, RegexOptions.IgnoreCase).Match(command);
             if (!match.Success) continue;
@@ -482,9 +482,9 @@ public class GuardCommandTests : IDisposable
     }
 
     [Fact]
-    public void BuiltInNudges_AllHaveBlockSeverity()
+    public void DefaultNudges_AllHaveBlockSeverity()
     {
-        Assert.All(GuardCommand.BuiltInNudges, n =>
+        Assert.All(ConfigFactory.DefaultNudges, n =>
             Assert.Equal("block", n.Severity));
     }
 

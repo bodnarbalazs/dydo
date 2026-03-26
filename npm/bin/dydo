@@ -9,7 +9,7 @@ function main() {
 
   if (!platformInfo.supported) {
     console.error(`Error: ${platformInfo.error}`);
-    console.error('Install via .NET instead: dotnet tool install -g DynaDocs');
+    console.error('Install via .NET instead: dotnet tool install -g dydo');
     process.exit(2);
   }
 
@@ -18,7 +18,7 @@ function main() {
   if (!isBinaryInstalled(platformInfo)) {
     console.error('Error: dydo binary not found.');
     console.error('Try reinstalling: npm install -g dydo');
-    console.error('Or install via .NET: dotnet tool install -g DynaDocs');
+    console.error('Or install via .NET: dotnet tool install -g dydo');
     process.exit(2);
   }
 

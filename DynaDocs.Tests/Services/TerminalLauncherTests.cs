@@ -579,7 +579,7 @@ public class TerminalLauncherTests
 
         var result = launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
 
-        Assert.True(result);
+        Assert.NotEqual(0, result);
         // Should only try one terminal (the first one that succeeds)
         Assert.Single(recorder.Started);
         Assert.Equal("gnome-terminal", recorder.Started[0].FileName);
@@ -594,7 +594,7 @@ public class TerminalLauncherTests
 
         var result = launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
 
-        Assert.True(result);
+        Assert.NotEqual(0, result);
         // Should have tried gnome-terminal first, then konsole
         Assert.Equal(2, recorder.Started.Count);
         Assert.Equal("gnome-terminal", recorder.Started[0].FileName);
@@ -602,14 +602,14 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void TryLaunchTerminals_ReturnsFalse_WhenAllFail()
+    public void TryLaunchTerminals_ReturnsZero_WhenAllFail()
     {
         var recorder = new RecordingProcessStarter { FailAll = true };
         var launcher = new TerminalLauncher(recorder);
 
         var result = launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
 
-        Assert.False(result);
+        Assert.Equal(0, result);
         // Should have tried all terminals
         Assert.Equal(TerminalLauncher.LinuxTerminals.Length, recorder.Started.Count);
     }
@@ -2151,7 +2151,7 @@ public class RecordingProcessStarter : IProcessStarter
         _failingFileNames.Add(fileName);
     }
 
-    public void Start(ProcessStartInfo psi)
+    public int Start(ProcessStartInfo psi)
     {
         Started.Add(psi);
 
@@ -2159,5 +2159,7 @@ public class RecordingProcessStarter : IProcessStarter
         {
             throw new Win32Exception("File not found (simulated)");
         }
+
+        return Environment.ProcessId;
     }
 }

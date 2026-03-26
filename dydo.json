@@ -89,7 +89,7 @@
     "autoClose": false
   },
   "tasks": {
-    "autoCompactInterval": 20
+    "autoCompactInterval": 100
   },
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",

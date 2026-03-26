@@ -9,14 +9,14 @@ using System.Diagnostics;
 public static partial class ProcessUtils
 {
     /// <summary>
-    /// Checks if a process with the given PID is still running.
-    /// Used for detecting stale lock files.
-    /// </summary>
-    /// <summary>
     /// When set, IsProcessRunning uses this instead of probing the system.
     /// </summary>
     public static Func<int, bool>? IsProcessRunningOverride { get; set; }
 
+    /// <summary>
+    /// Checks if a process with the given PID is still running.
+    /// Used for detecting stale lock files.
+    /// </summary>
     public static bool IsProcessRunning(int processId)
     {
         if (IsProcessRunningOverride != null) return IsProcessRunningOverride(processId);

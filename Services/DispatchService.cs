@@ -7,7 +7,8 @@ using DynaDocs.Utils;
 public static class DispatchService
 {
     public static int Execute(string role, string task, string brief, string? files, bool noLaunch,
-        string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree)
+        string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree,
+        string? queue = null)
     {
         if (useTab && useNewWindow)
         {
@@ -76,7 +77,7 @@ public static class DispatchService
         var targetAgentName = selection.AgentName;
 
         WriteAndLaunch(registry, targetAgentName, senderName, origin, role, task, brief,
-            files, escalate, noLaunch, useTab, useNewWindow, autoClose, wait, worktree, inheritReply);
+            files, escalate, noLaunch, useTab, useNewWindow, autoClose, wait, worktree, inheritReply, queue);
 
         return CompleteDispatch(registry, sender, senderName, targetAgentName, role, task, inheritReply, wait);
     }
@@ -122,7 +123,8 @@ public static class DispatchService
 
     private static void WriteAndLaunch(AgentRegistry registry, string targetAgentName, string senderName,
         string origin, string role, string task, string brief, string? files, bool escalate,
-        bool noLaunch, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree, bool inheritReply = false)
+        bool noLaunch, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree,
+        bool inheritReply = false, string? queue = null)
     {
         var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin, role, task, brief, files, escalate, wait, inheritReply);
 
@@ -170,7 +172,30 @@ public static class DispatchService
         var (windowName, launchInTab) = ConfigureWindowSettings(registry, useTab, useNewWindow);
 
         registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
-        LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
+
+        if (!string.IsNullOrEmpty(queue))
+        {
+            var queueService = new QueueService(null, registry.Config);
+            if (queueService.TryEnqueue(queue, targetAgentName, task, launchInTab, effectiveAutoClose,
+                    worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot))
+            {
+                var pending = queueService.GetPending(queue);
+                queueService.WriteQueuedMarker(targetAgentName, queue, pending.Count);
+                Console.WriteLine($"  Queued in '{queue}' (position {pending.Count}). Terminal launch deferred.");
+            }
+            else
+            {
+                // No active item — launch immediately and mark as active
+                var pid = LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose,
+                    worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
+                queueService.SetActive(queue, targetAgentName, task, pid);
+            }
+        }
+        else
+        {
+            LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose,
+                worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
+        }
 
         if (effectiveAutoClose)
             WatchdogService.EnsureRunning();
@@ -209,6 +234,11 @@ public static class DispatchService
 
         var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{sanitizedTask}.md");
         WriteInboxItem(itemPath, inboxItem);
+
+        // Create reply-pending marker at dispatch time so msg can clear it regardless of inbox clear ordering
+        if (inboxItem.ReplyRequired && !string.IsNullOrEmpty(task))
+            registry.CreateReplyPendingMarker(targetAgentName, task, senderName);
+
         return itemPath;
     }
 
@@ -410,16 +440,17 @@ public static class DispatchService
         return (windowName, launchInTab);
     }
 
-    private static void LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
+    private static int LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
         bool effectiveAutoClose, string? worktreeId, string? windowName, string? workingDirOverride = null,
         string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         if (noLaunch)
-            return;
+            return 0;
 
         var projectRoot = workingDirOverride ?? mainProjectRoot ?? PathUtils.FindProjectRoot();
-        TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
+        return pid;
     }
 
     private static string? CheckNoLaunchNudge(AgentRegistry registry, string? sessionId, string task)

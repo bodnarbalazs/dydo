@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -45,6 +46,10 @@ TEST_COMMAND = [
 EXCLUDED_CLASSES = {"Program"}
 DATA_MODEL_MAX_LINES = 3
 GENERATED_PATTERNS = ["/obj/", ".g.cs", ".generated.cs"]
+
+# Source directories to check for staleness (relative to ROOT)
+SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization"]
+SOURCE_GLOBS = ["*.cs"]
 
 TIER_THRESHOLDS = {
     1: {"line_coverage": 0.80, "crap": 30, "branch_coverage": 0.60},
@@ -581,6 +586,58 @@ def print_inspect_report(modules: List[ModuleCoverage], pattern: str, *, methods
 
 
 # ---------------------------------------------------------------------------
+# Staleness check
+# ---------------------------------------------------------------------------
+
+def check_coverage_staleness() -> Optional[str]:
+    """Check if any source file is newer than the coverage XML.
+
+    Returns an error message if stale, None if fresh.
+    """
+    xml_files = sorted(ROOT.glob(XML_PATTERN))
+    if not xml_files:
+        return "No coverage XML found. Run without --skip-tests."
+
+    oldest_xml = min(f.stat().st_mtime for f in xml_files)
+
+    stale_files = []
+    for src_dir in SOURCE_DIRS:
+        d = ROOT / src_dir
+        if not d.exists():
+            continue
+        for glob in SOURCE_GLOBS:
+            for src in d.rglob(glob):
+                if is_generated(str(src)):
+                    continue
+                if src.stat().st_mtime > oldest_xml:
+                    stale_files.append(str(src.relative_to(ROOT)))
+
+    # Also check test sources
+    test_dir = ROOT / "DynaDocs.Tests"
+    if test_dir.exists():
+        for src in test_dir.rglob("*.cs"):
+            if is_generated(str(src)):
+                continue
+            if src.stat().st_mtime > oldest_xml:
+                stale_files.append(str(src.relative_to(ROOT)))
+
+    if stale_files:
+        age_mins = (time.time() - oldest_xml) / 60
+        count = len(stale_files)
+        examples = stale_files[:5]
+        msg = (
+            f"Coverage data is stale: {count} source file(s) changed since last coverage run "
+            f"({age_mins:.0f} min ago).\n"
+            f"  Examples: {', '.join(examples)}\n"
+            f"  Run without --skip-tests to collect fresh coverage, "
+            f"or use --force-stale to analyze anyway."
+        )
+        return msg
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -602,6 +659,10 @@ def main():
         "--inspect", metavar="PATTERN",
         help="Show full line-level detail for modules matching PATTERN",
     )
+    parser.add_argument(
+        "--force-stale", action="store_true",
+        help="Allow --skip-tests even when coverage data is stale",
+    )
     args = parser.parse_args()
 
     # 1. Run tests (unless --skip-tests)
@@ -609,6 +670,11 @@ def main():
         tests_ok = run_tests()
         if not tests_ok:
             print("\nTests failed. Analyzing available coverage data anyway.")
+    elif not args.force_stale:
+        stale_msg = check_coverage_staleness()
+        if stale_msg:
+            print(f"\n[ERROR] {stale_msg}")
+            sys.exit(1)
 
     # 2. Collect coverage data
     print("\nCollecting coverage data...")

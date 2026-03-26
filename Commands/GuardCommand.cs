@@ -420,7 +420,7 @@ public static partial class GuardCommand
         IAuditService auditService,
         bool? runInBackground = null)
     {
-        // Check nudges (built-in + custom from dydo.json)
+        // Check nudges from dydo.json (defaults + custom)
         var nudged = CheckNudges(command, sessionId, registry, auditService);
         if (nudged != null) return nudged.Value;
 
@@ -447,42 +447,12 @@ public static partial class GuardCommand
         return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
     }
 
-    internal static readonly List<NudgeConfig> BuiltInNudges =
-    [
-        new() {
-            Pattern = @"(?:^|[;&|]\s*)npx\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*dydo\b(.*)",
-            Message = "Don't use npx to run dydo — it's already on your PATH. Just use: dydo $1",
-            Severity = "block"
-        },
-        new() {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)",
-            Message = "Don't use dotnet to run dydo — it's already on your PATH. Just use: dydo $1",
-            Severity = "block"
-        },
-        new() {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\b.*)",
-            Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
-            Severity = "block"
-        },
-        new() {
-            Pattern = @"(?:^|[;&|]\s*)(bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
-            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
-            Severity = "block"
-        },
-        new() {
-            Pattern = @"(?:^|[;&|]\s*)(python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
-            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
-            Severity = "block"
-        },
-    ];
-
     internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry, IAuditService auditService)
     {
-        var allNudges = new List<NudgeConfig>(BuiltInNudges);
-        if (registry.Config?.Nudges is { Count: > 0 } custom)
-            allNudges.AddRange(custom);
+        if (registry.Config?.Nudges is not { Count: > 0 } nudges)
+            return null;
 
-        foreach (var nudge in allNudges)
+        foreach (var nudge in nudges)
         {
             Regex regex;
             try { regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase); }

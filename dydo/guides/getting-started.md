@@ -27,7 +27,7 @@ And an AI coding assistant (Claude Code recommended, others supported).
 npm install -g dydo
 
 # or, if you have .NET
-dotnet tool install -g DynaDocs
+dotnet tool install -g dydo
 ```
 
 Verify the installation:

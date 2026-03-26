@@ -32,7 +32,7 @@ public static class MacTerminalLauncher
         return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}{postClaude}\"'";
     }
 
-    public static void Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
+    public static int Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string? workingDirectory = null, bool useTab = false,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
@@ -76,7 +76,7 @@ public static class MacTerminalLauncher
         psi.ArgumentList.Add("-e");
         psi.ArgumentList.Add(script);
 
-        processStarter.Start(psi);
+        return processStarter.Start(psi);
     }
 
     public static string GetITermTabScript(string shellCommand, string postCheck)

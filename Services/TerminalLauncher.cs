@@ -126,42 +126,52 @@ public class TerminalLauncher
 
     public static IProcessStarter? ProcessStarterOverride { get; set; }
 
-    public static void LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public static int LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
-        new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        return new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
     }
 
-    public void Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public int Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+                return WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
-            else if (!LinuxTerminalLauncher.TryLaunch(_processStarter, LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot))
+                return MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+
+            var pid = LinuxTerminalLauncher.TryLaunch(_processStarter, LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+            if (pid == 0)
                 throw new InvalidOperationException("No terminal found");
+            return pid;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
             Console.WriteLine($"  {GetClaudeCommand(agentName)}");
+            return 0;
         }
     }
 
-    public void LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public int LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
-    public void LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public int LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
-    public bool TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public int TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => LinuxTerminalLauncher.TryLaunch(_processStarter, terminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
     private class DefaultProcessStarter : IProcessStarter
     {
-        public void Start(ProcessStartInfo psi) => Process.Start(psi);
+        public int Start(ProcessStartInfo psi)
+        {
+            var process = Process.Start(psi);
+            if (process == null) return 0;
+            try { return process.Id; }
+            catch { return 0; }
+        }
     }
 
     private class DefaultTerminalDetector : ITerminalDetector

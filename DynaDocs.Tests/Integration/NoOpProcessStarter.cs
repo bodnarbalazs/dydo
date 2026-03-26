@@ -8,5 +8,5 @@ using DynaDocs.Services;
 /// </summary>
 internal class NoOpProcessStarter : IProcessStarter
 {
-    public void Start(ProcessStartInfo psi) { }
+    public int Start(ProcessStartInfo psi) => Environment.ProcessId;
 }

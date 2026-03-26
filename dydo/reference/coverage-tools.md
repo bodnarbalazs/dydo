@@ -18,7 +18,10 @@ python DynaDocs.Tests/coverage/gap_check.py                    # run tests and c
 python DynaDocs.Tests/coverage/gap_check.py --skip-tests       # analyze existing coverage data only
 python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines in failures
 python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect modules matching 'Guard'
+python DynaDocs.Tests/coverage/gap_check.py --skip-tests --force-stale  # skip tests even if data is stale
 ```
+
+**Note:** `--skip-tests` will error if source files have changed since the last coverage run. A plain `dotnet test` does not produce coverage data — only gap_check's own test invocation (with Coverlet flags) does. Use `--force-stale` to override the staleness check when you intentionally want to analyze old data.
 
 ### What it checks (per module, against assigned tier)
 

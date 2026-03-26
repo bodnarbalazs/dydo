@@ -28,6 +28,9 @@ public class DydoConfig
     [JsonPropertyName("tasks")]
     public TasksConfig Tasks { get; set; } = new();
 
+    [JsonPropertyName("queues")]
+    public List<string> Queues { get; set; } = new();
+
     [JsonPropertyName("nudges")]
     public List<NudgeConfig> Nudges { get; set; } = new();
 

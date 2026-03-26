@@ -12,7 +12,7 @@ async function install() {
   if (!platformInfo.supported) {
     console.error(`\n[dydo] ${platformInfo.error}`);
     console.error('[dydo] You can still use dydo if you have .NET installed:');
-    console.error('       dotnet tool install -g DynaDocs');
+    console.error('       dotnet tool install -g dydo');
     process.exit(0); // Don't fail npm install, just warn
   }
 
@@ -31,7 +31,7 @@ async function install() {
     console.error('[dydo] You can manually download from:');
     console.error(`       https://github.com/bodnarbalazs/dydo/releases/tag/v${pkg.version}`);
     console.error('[dydo] Or install via .NET:');
-    console.error('       dotnet tool install -g DynaDocs');
+    console.error('       dotnet tool install -g dydo');
     process.exit(1);
   }
 }

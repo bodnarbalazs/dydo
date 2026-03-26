@@ -373,25 +373,6 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void ResolveWtExe_ReturnsNonNullOnWindowsWithTerminal()
-    {
-        if (!OperatingSystem.IsWindows()) return;
-
-        // On a Windows dev machine with Windows Terminal, this should find wt.exe
-        var result = WatchdogService.ResolveWtExe();
-        // Can't assert non-null (CI may not have it), but if found it must be a real file
-        if (result != null)
-            Assert.True(File.Exists(result));
-    }
-
-    [Fact]
-    public void TryCloseWindow_InvalidWindowId_DoesNotThrow()
-    {
-        // Bogus window ID should not throw — return value depends on wt behavior
-        _ = WatchdogService.TryCloseWindow("nonexistent-window-id-12345");
-    }
-
-    [Fact]
     public void PollAndCleanup_FreeAutoCloseAgent_NoProcesses_ClearsAutoClose()
     {
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: "abc12345");

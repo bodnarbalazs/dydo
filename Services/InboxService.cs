@@ -151,8 +151,10 @@ public static class InboxService
         var item = InboxItemParser.ParseInboxItem(file);
         if (item != null && item.ReplyRequired && !string.IsNullOrEmpty(item.Task))
         {
-            registry.CreateReplyPendingMarker(agentName, item.Task, item.From);
-            Console.WriteLine($"  Reply required: message {item.From} about '{item.Task}' before releasing.");
+            // Marker is created at dispatch time. If it still exists, the reply hasn't been sent yet.
+            var markers = registry.GetReplyPendingMarkers(agentName);
+            if (markers.Any(m => m.Task.Equals(item.Task, StringComparison.OrdinalIgnoreCase)))
+                Console.WriteLine($"  Reply required: message {item.From} about '{item.Task}' before releasing.");
         }
     }
 

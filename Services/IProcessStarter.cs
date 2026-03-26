@@ -7,5 +7,5 @@ using System.Diagnostics;
 /// </summary>
 public interface IProcessStarter
 {
-    void Start(ProcessStartInfo psi);
+    int Start(ProcessStartInfo psi);
 }

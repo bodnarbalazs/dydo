@@ -30,6 +30,7 @@ rootCommand.Subcommands.Add(RolesCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
 rootCommand.Subcommands.Add(WatchdogCommand.Create());
 rootCommand.Subcommands.Add(WorktreeCommand.Create());
+rootCommand.Subcommands.Add(QueueCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>
@@ -124,6 +125,12 @@ helpCommand.SetAction(_ =>
     Console.WriteLine();
     Console.WriteLine("Inquisition Commands:");
     Console.WriteLine("  inquisition coverage     Show inquisition coverage across areas");
+    Console.WriteLine();
+    Console.WriteLine("Queue Commands:");
+    Console.WriteLine("  queue create <name>    Create a transient queue");
+    Console.WriteLine("  queue show [<name>]    Show queue state (all or specific)");
+    Console.WriteLine("  queue cancel <q> <id>  Remove a pending queue entry");
+    Console.WriteLine("  queue clear <name>     Clear all entries from a queue");
     Console.WriteLine();
     Console.WriteLine("Worktree Commands:");
     Console.WriteLine("  worktree cleanup <id>  Clean up worktree (ref-counted)");

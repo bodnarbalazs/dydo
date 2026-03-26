@@ -133,7 +133,7 @@ public static class ReviewCommand
                     Console.WriteLine($"  [review-debug] Created .needs-merge with value: {taskName}");
                     Console.WriteLine();
                     Console.WriteLine("Worktree branch needs merging. Dispatch a code-writer to merge before releasing:");
-                    Console.WriteLine($"  dydo dispatch --no-wait --auto-close --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
+                    Console.WriteLine($"  dydo dispatch --no-wait --auto-close --queue merge --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
                 }
             }
         }

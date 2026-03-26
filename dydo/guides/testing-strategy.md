@@ -103,7 +103,7 @@ Everything else — services, command handlers, validators, utilities — needs 
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py                    # run tests and check
-python DynaDocs.Tests/coverage/gap_check.py --skip-tests       # analyze existing data only
+python DynaDocs.Tests/coverage/gap_check.py --skip-tests       # analyze existing data (errors if stale)
 python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines
 python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect matching modules
 ```

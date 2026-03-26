@@ -81,6 +81,11 @@ public static class DispatchCommand
             Description = "Run dispatched agent in a git worktree for isolated work"
         };
 
+        var queueOption = new Option<string?>("--queue")
+        {
+            Description = "Named queue to serialize terminal launch (e.g., --queue merge)"
+        };
+
         var command = new Command("dispatch", "Dispatch work to another agent");
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
@@ -96,6 +101,7 @@ public static class DispatchCommand
         command.Options.Add(waitOption);
         command.Options.Add(noWaitOption);
         command.Options.Add(worktreeOption);
+        command.Options.Add(queueOption);
 
         command.SetAction(parseResult =>
         {
@@ -113,6 +119,25 @@ public static class DispatchCommand
             var wait = parseResult.GetValue(waitOption);
             var noWait = parseResult.GetValue(noWaitOption);
             var worktree = parseResult.GetValue(worktreeOption);
+            var queue = parseResult.GetValue(queueOption);
+
+            // Validate --queue
+            if (!string.IsNullOrEmpty(queue))
+            {
+                var queueService = new QueueService();
+                if (!queueService.QueueExists(queue))
+                {
+                    var available = string.Join(", ", queueService.ListQueues());
+                    ConsoleOutput.WriteError($"No queue '{queue}'. Available: {available}");
+                    return ExitCodes.ToolError;
+                }
+
+                if (noLaunch)
+                {
+                    ConsoleOutput.WriteError("Cannot specify both --queue and --no-launch.");
+                    return ExitCodes.ToolError;
+                }
+            }
 
             // Validate --worktree / --no-launch
             if (worktree && noLaunch)
@@ -162,7 +187,7 @@ public static class DispatchCommand
                 }
             }
 
-            return DispatchService.Execute(role, task, brief, files, noLaunch, to, escalate, useTab, useNewWindow, autoClose, wait, worktree);
+            return DispatchService.Execute(role, task, brief, files, noLaunch, to, escalate, useTab, useNewWindow, autoClose, wait, worktree, queue);
         });
 
         return command;

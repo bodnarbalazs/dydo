@@ -440,17 +440,17 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void BuiltInNudges_NpxDydo_Matches()
+    public void DefaultNudges_NpxDydo_Matches()
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("npx dydo whoami"));
         Assert.True(matched);
     }
 
     [Fact]
-    public void BuiltInNudges_DirectDydo_NoMatch()
+    public void DefaultNudges_DirectDydo_NoMatch()
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dydo whoami"));
         Assert.False(matched);
     }
@@ -520,33 +520,33 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void BuiltInNudges_DotnetDydo_Matches()
+    public void DefaultNudges_DotnetDydo_Matches()
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dotnet dydo whoami"));
         Assert.True(matched);
     }
 
     [Fact]
-    public void BuiltInNudges_BashDydo_Matches()
+    public void DefaultNudges_BashDydo_Matches()
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("bash -c \"dydo whoami\""));
         Assert.True(matched);
     }
 
     [Fact]
-    public void BuiltInNudges_DotnetRunDydo_Matches()
+    public void DefaultNudges_DotnetRunDydo_Matches()
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dotnet run -- agent claim auto"));
         Assert.True(matched);
     }
 
     [Fact]
-    public void BuiltInNudges_PythonDydo_Matches()
+    public void DefaultNudges_PythonDydo_Matches()
     {
-        var matched = GuardCommand.BuiltInNudges.Any(n =>
+        var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("python dydo whoami"));
         Assert.True(matched);
     }

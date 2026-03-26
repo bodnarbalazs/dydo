@@ -52,7 +52,7 @@ You maintain your project's intent, architecture, and conventions in structured 
 npm install -g dydo
 
 # if you have .NET installed
-dotnet tool install -g DynaDocs
+dotnet tool install -g dydo
 ```
 
 **Note:** The setup will prompt you to set the `DYDO_HUMAN` environment variable. Agents use this to know which human they belong to.

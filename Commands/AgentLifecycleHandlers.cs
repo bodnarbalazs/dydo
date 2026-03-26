@@ -1,5 +1,6 @@
 namespace DynaDocs.Commands;
 
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -76,7 +77,34 @@ internal static class AgentLifecycleHandlers
         Console.WriteLine($"Agent identity released: {current.Name}");
         Console.WriteLine("  Status: free");
 
+        DequeueIfActive(current.Name, registry.Config);
+
         return ExitCodes.Success;
+    }
+
+    internal static void DequeueIfActive(string agentName, DydoConfig? config)
+    {
+        var queueService = new QueueService(null, config);
+        var activeQueues = queueService.FindQueuesWithActiveAgent(agentName);
+
+        foreach (var queueName in activeQueues)
+        {
+            queueService.ClearActive(queueName);
+            var next = queueService.DequeueNext(queueName);
+            if (next != null)
+            {
+                queueService.ClearQueuedMarker(next.Agent);
+                var projectRoot = next.WorkingDirOverride ?? next.MainProjectRoot ?? PathUtils.FindProjectRoot();
+                var pid = TerminalLauncher.LaunchNewTerminal(next.Agent, projectRoot, next.LaunchInTab,
+                    next.AutoClose, next.WorktreeId, next.WindowName, next.CleanupWorktreeId, next.MainProjectRoot);
+                queueService.SetActive(queueName, next.Agent, next.Task, pid);
+                Console.WriteLine($"  Dequeued {next.Agent} from '{queueName}' — terminal launched.");
+            }
+            else
+            {
+                queueService.CleanupIfEmptyTransient(queueName);
+            }
+        }
     }
 
     public static int ExecuteStatus(string? name)

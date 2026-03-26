@@ -6,7 +6,9 @@ public static class WorkspaceArchiver
     {
         "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox",
         ".worktree", ".worktree-path", ".worktree-base", ".worktree-root", ".worktree-hold",
-        ".merge-source", ".needs-merge"
+        ".merge-source", ".needs-merge",
+        ".reply-pending",
+        ".queued"
     };
 
     /// <summary>

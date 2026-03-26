@@ -262,6 +262,105 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nVersion bump and dispatch cleanup worktree fix\n\nCo-Authored-By: Claude ..."
+    },
+    {
+      "ts": "2026-03-26T19:57:29.8734938Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T19:57:38.9727419Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/inbox/71a0a110-fix-merge-discoverability-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:57:42.6787745Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T19:57:46.9203699Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls dydo/agents/Frank/inbox/",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T19:57:56.2817846Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dir dydo\\agents\\Frank\\inbox\\",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T19:57:59.8120167Z",
+      "event": "Blocked",
+      "tool": "glob",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T19:58:10.5368209Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/inbox/71a0a110-fix-merge-discoverability-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:58:18.3760922Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "find dydo/agents/Frank/inbox -name \u002271a0a110*\u0022 2\u003E/dev/null",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T19:58:28.3610147Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/inbox/msg-71a0a110-fix-merge-discoverability-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:58:32.1062677Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/inbox/71a0a110.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:58:35.8324395Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/inbox/msg-71a0a110.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:58:59.7524742Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/messages/71a0a110-fix-merge-discoverability-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T19:59:04.8269768Z",
+      "event": "Blocked",
+      "tool": "agent",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-26T20:03:20.8260911Z",
+      "event": "Read",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Frank/inbox/71a0a110-msg-fix-merge-discoverability-merge.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T20:03:31.8783931Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
+    },
+    {
+      "ts": "2026-03-26T20:06:00.5255837Z",
+      "event": "Release",
+      "agent": "Frank"
     }
   ],
   "snapshot": {

@@ -1,1510 +1,224 @@
 {
-  "session": "d3553fc9-a9a7-4bc5-8656-4cd60c99d5ad",
-  "agent": "Brian",
+  "session": "79321850-be58-4a60-a482-36a7725df089",
+  "agent": "Emma",
   "human": "balazs",
-  "started": "2026-03-26T15:35:41.9205739Z",
-  "git_head": "57e2557",
+  "started": "2026-03-26T20:05:58.4392423Z",
+  "git_head": "5f85082",
   "events": [
     {
-      "ts": "2026-03-26T15:35:41.9198534Z",
+      "ts": "2026-03-26T20:05:58.4384986Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T15:35:42.7092267Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md",
-      "tool": "read",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-26T15:35:48.310495Z",
+      "ts": "2026-03-26T20:06:02.2680802Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T15:35:55.4533631Z",
+      "ts": "2026-03-26T20:06:09.5657909Z",
       "event": "Claim",
-      "agent": "Brian"
+      "agent": "Emma"
     },
     {
-      "ts": "2026-03-26T15:36:05.5760868Z",
+      "ts": "2026-03-26T20:06:19.2310402Z",
       "event": "Role",
-      "role": "co-thinker",
-      "task": "smoke-comp-postmortem"
+      "role": "reviewer",
+      "task": "fix-queue-defaults-merge"
     },
     {
-      "ts": "2026-03-26T15:36:13.3510119Z",
+      "ts": "2026-03-26T20:06:27.4221884Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\co-thinker.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\reviewer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T15:36:17.8955577Z",
+      "ts": "2026-03-26T20:06:31.7657541Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T15:36:18.3303044Z",
+      "ts": "2026-03-26T20:06:32.1938101Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T15:36:38.1161677Z",
+      "ts": "2026-03-26T20:06:32.6529799Z",
       "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T15:36:40.5440411Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022dydo.json\u0022 -o -name \u0022dydo.json.sample\u0022 | head -2..."
-    },
-    {
-      "ts": "2026-03-26T15:36:42.2253546Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/ | grep -E \u0022^d\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:36:43.3778908Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T15:36:44.6871276Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:45.1036314Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T15:36:45.7869289Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*merge*\u0022 | head -20"
-    },
-    {
-      "ts": "2026-03-26T15:36:45.8184138Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:36:46.3042878Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T15:36:49.0721052Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*how-to-merge*\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:36:49.7254023Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T15:36:49.8221353Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/ConfigFactory.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:50.0399021Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:50.1500061Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/QueueService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:51.1599976Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T15:36:52.6995607Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 | grep -E \u0022(Service|Command)\u0022 | he..."
-    },
-    {
-      "ts": "2026-03-26T15:36:52.829819Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:52.877642Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo -type d -name \u0022Services\u0022 | head -5"
-    },
-    {
-      "ts": "2026-03-26T15:36:53.2923015Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:36:54.0214543Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T15:36:54.6742954Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/ | head -20"
-    },
-    {
-      "ts": "2026-03-26T15:36:55.333517Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:36:55.6957089Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T15:36:55.745873Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type d -name \u0022.claude\u0022 -o -type d -name \u0022worktrees\u0022 2\u003E..."
-    },
-    {
-      "ts": "2026-03-26T15:36:55.8495054Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/Templates/"
-    },
-    {
-      "ts": "2026-03-26T15:36:56.1296209Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/ 2\u003E/dev/null | head -50"
-    },
-    {
-      "ts": "2026-03-26T15:36:56.532503Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:36:57.029021Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type d -name \u0022roles\u0022 | grep -v \u0022.git\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:36:58.0609134Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:58.4997276Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -1 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/ | grep \u00222026-03-26\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:36:58.8606744Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:36:59.3559473Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/TemplateCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:36:59.5135708Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:01.2944207Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 | xargs grep -l \u0022merge-source\\|\\.m..."
-    },
-    {
-      "ts": "2026-03-26T15:37:01.454434Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-0087be41-ae1f-46de-8a0a-98909ad90b1f.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:01.7296487Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-2052e53d-45f3-4848-94db-b5832bd7fd10.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:01.9397208Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-262d14a3-ad58-497d-b5c9-eda4debdba22.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:02.0917107Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:02.1659415Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Models/DydoConfig.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:02.4750306Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*Dispatch*Service*\u0022 -o -name \u0022*Queue*Service*\u0022 |..."
-    },
-    {
-      "ts": "2026-03-26T15:37:02.5265895Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:02.6242453Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-5ea1bbdd-58a5-42a5-b7fc-ff9a353bbeec.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:02.7874712Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-604ebd09-7905-473d-a833-ba72f9fba7a9.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:03.2012513Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-717b5a8b-0304-4ab7-a159-8fe0c687b8d7.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:03.4277607Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:03.8329304Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-804d9f1f-0657-4d8a-8a2e-caee5c17d2c9.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:04.0733422Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-9613d2c4-b7ba-452f-8f28-39bd9fdd5147.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:04.8681379Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/guides/how-to-merge-worktrees.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:05.0439115Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/013-conditional-must-reads.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:05.3829974Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/roles -name \u0022*code-writer*\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:37:05.6988714Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/QueueCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:06.4205775Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:06.6474674Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:06.9231631Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/ReviewCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:07.015023Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:07.3886676Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:07.723584Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/roles/code-writer.role.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:07.9666768Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022MustReadTracker.cs\u0022 | grep -v \u0022.git\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:37:09.3250805Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/QueueServiceTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:09.4920802Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/DispatchCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:09.6923384Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/MustReadTracker.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:10.6978082Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.json",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:11.1450065Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:11.5597811Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.json",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:11.9787955Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:12.1832604Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*smoke*\u0022 -type f | grep -v \u0022.local\u0022 | head -10"
-    },
-    {
-      "ts": "2026-03-26T15:37:12.4958139Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:13.3327888Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022WriteAllText.*merge-source\u0022 /c/Users/User/Desktop/Projects/DynaDocs --include=\u0022*.cs\u0022 | grep..."
-    },
-    {
-      "ts": "2026-03-26T15:37:14.5813893Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Adele/.waiting/smoke-comp-postmortem.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:14.8529115Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:15.7368362Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:16.0101789Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:17.0707221Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*postmortem*\u0022 -o -name \u0022*smoke*test*\u0022 | grep -E ..."
-    },
-    {
-      "ts": "2026-03-26T15:37:17.4541684Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:19.6137476Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -i \u0022must.read\\|enforce\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03..."
-    },
-    {
-      "ts": "2026-03-26T15:37:19.8635677Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022FAILURE.*1\\|dispatch queue\\|queue.*didn\u0027t activate\u0022 /c/Users/User/Desktop/Projects/DynaDocs..."
-    },
-    {
-      "ts": "2026-03-26T15:37:20.4161561Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -i \u0022must.read\\|enforce\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03..."
-    },
-    {
-      "ts": "2026-03-26T15:37:21.2658488Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:23.5361451Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:24.3713659Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*smoke*\u0022 -type f 2\u003E/dev/null | grep -v \u0022.git\u0022 | ..."
-    },
-    {
-      "ts": "2026-03-26T15:37:24.9202632Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python3 \u003C\u003C \u0027EOF\u0027\nimport json\n\n# Read Brian\u0027s audit\nwith open(\u0027/c/Users/User/Desktop/Projects/DynaDoc..."
-    },
-    {
-      "ts": "2026-03-26T15:37:26.7723463Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:27.788178Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Adele/.waiting/smoke-comp-postmortem.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:29.9933825Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/*/workspace/ 2\u003E/dev/null | head -50"
-    },
-    {
-      "ts": "2026-03-26T15:37:30.2877242Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:32.5465396Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -type f -name \u0022.worktree*\u0022 -o -name \u0022.merge..."
-    },
-    {
-      "ts": "2026-03-26T15:37:33.1327006Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/f71bc916-smoke-comp-postmortem.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:34.8556478Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T15:37:34.9706092Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.merge-source /c/Users/User/Desktop/Pr..."
-    },
-    {
-      "ts": "2026-03-26T15:37:37.2913938Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.merge-source",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:37.3927434Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/ConditionalMustReadTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:37.4639759Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.worktree-base",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:37.6662719Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.worktree-hold",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:39.8219279Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/"
-    },
-    {
-      "ts": "2026-03-26T15:37:40.7756611Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/smoke-comp-b-merge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:42.2090085Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git branch -a | grep worktree"
-    },
-    {
-      "ts": "2026-03-26T15:37:43.2375664Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline | grep -i merge | head -10"
-    },
-    {
-      "ts": "2026-03-26T15:37:45.2835345Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/.git/worktrees/ 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-26T15:37:45.8100214Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*smoke*\u0022 -type f | grep -i postmortem"
-    },
-    {
-      "ts": "2026-03-26T15:37:48.0466429Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022smoke-comp-a\\|smoke-comp-b\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents --include=\u0022..."
-    },
-    {
-      "ts": "2026-03-26T15:37:48.0946697Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/smoke-comp-postmortem.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:49.9674414Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Adele/brief-investigate-smoke-comp-postmortem.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:37:50.4622684Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -type f \\( -name \u0022.worktree\u0022 -o -name \u0022.wor..."
-    },
-    {
-      "ts": "2026-03-26T15:37:52.3496233Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show 57e2557 --stat"
-    },
-    {
-      "ts": "2026-03-26T15:37:54.4842004Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit -name \u0022*.json\u0022 | xargs grep -l \u0022Char..."
-    },
-    {
-      "ts": "2026-03-26T15:37:56.646515Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -t /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/*.json | head -5"
-    },
-    {
-      "ts": "2026-03-26T15:37:58.8634876Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -name \u0022state.md\u0022 | xargs grep -l \u0022Charlie\u0022 ..."
-    },
-    {
-      "ts": "2026-03-26T15:38:00.8507866Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Charlie/state.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:38:05.5411794Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022DispatchService.cs\u0022 | grep -v \u0022.git\u0022"
-    },
-    {
-      "ts": "2026-03-26T15:38:08.3952503Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022merge\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs | head -20"
-    },
-    {
-      "ts": "2026-03-26T15:38:10.9512222Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022\\.merge-source\\|See .\\.merge\u0022 /c/Users/User/Desktop/Projects/DynaDocs --include=\u0022*.cs\u0022 | he..."
-    },
-    {
-      "ts": "2026-03-26T15:38:14.7954417Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -B5 -A5 \u0022See .\\.merge-source\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/ReviewCommand.cs"
-    },
-    {
-      "ts": "2026-03-26T15:38:19.887157Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022Merge worktree branch into base\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/ReviewCom..."
-    },
-    {
-      "ts": "2026-03-26T15:38:21.861993Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/ReviewCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T15:38:26.4438113Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo -name \u0022mode-code-writer*\u0022 | head -1 | xargs cat"
-    },
-    {
-      "ts": "2026-03-26T18:34:29.0081333Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\n# Read Brian\u0027s audit\nwith open(\u0027/c/Users/User/Desktop/Projects/DynaDocs..."
-    },
-    {
-      "ts": "2026-03-26T18:34:29.9388176Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*mode-code-writer.template*\u0022 | xargs grep -l \u0022me..."
-    },
-    {
-      "ts": "2026-03-26T18:34:30.7407638Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-comp-b.txt",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:34:32.6655355Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/changelog/2026/2026-03-13/worktree-merge-enforcement.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:34:33.594748Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*smoke*\u0022 -type f \\( -name \u0022*.cs\u0022 -o -name \u0022*.md\u0022..."
-    },
-    {
-      "ts": "2026-03-26T18:34:35.3394055Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Charlie -name \u0022.merge-source\u0022 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-26T18:34:35.7391153Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/smoke-comp-a-merge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:34:35.9272925Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/smoke-comp-b-merge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:34:37.4959175Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Charlie/ | grep -E \u0022^\\.\u0022"
-    },
-    {
-      "ts": "2026-03-26T18:34:38.5556818Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -1 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-*.json | head -5"
-    },
-    {
-      "ts": "2026-03-26T18:34:39.2348578Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline | head -20"
-    },
-    {
-      "ts": "2026-03-26T18:34:39.8709676Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/ 2\u003E/dev/null | head -20"
-    },
-    {
-      "ts": "2026-03-26T18:34:41.9351234Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\n# Read Brian\u0027s audit\nwith open(\u0027dydo/_system/audit/2026/2026-03-26-7f57..."
-    },
-    {
-      "ts": "2026-03-26T18:34:42.1271467Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents -type f -path \u0022*/archive/*\u0022 -name \u0022.worktre..."
-    },
-    {
-      "ts": "2026-03-26T18:34:42.1657953Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/smoke-comp-b/dydo/agent..."
-    },
-    {
-      "ts": "2026-03-26T18:34:44.8796199Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022smoke-comp-b\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents --include=\u0022.merge-source\u0022..."
-    },
-    {
-      "ts": "2026-03-26T18:34:45.1539918Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/smoke-comp-b/"
-    },
-    {
-      "ts": "2026-03-26T18:34:48.2158128Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git worktree list"
-    },
-    {
-      "ts": "2026-03-26T18:34:51.6042597Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026 -name \u0022*2026-03-26*\u0022 -type f | ..."
-    },
-    {
-      "ts": "2026-03-26T18:34:52.6677269Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022ExecuteCleanup\\|worktree cleanup\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands --includ..."
-    },
-    {
-      "ts": "2026-03-26T18:34:54.9141459Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022worktree cleanup\u0022 /c/Users/User/Desktop/Projects/DynaDocs --include=\u0022*.cs\u0022 | grep -v \u0022.loca..."
-    },
-    {
-      "ts": "2026-03-26T18:34:57.3832987Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022TerminalLauncher.cs\u0022 | grep -v \u0022.local/worktrees..."
-    },
-    {
-      "ts": "2026-03-26T18:34:59.9595374Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/TerminalLauncher.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:35:03.2189696Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022cleanupWorktreeId\\|WorktreeCleanupScript\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/..."
-    },
-    {
-      "ts": "2026-03-26T18:35:05.7087566Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022class WindowsTerminalLauncher\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Services/TerminalLau..."
-    },
-    {
-      "ts": "2026-03-26T18:35:08.3789553Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*TerminalLauncher*\u0022 -type f | grep -v \u0022.local/wo..."
-    },
-    {
-      "ts": "2026-03-26T18:35:11.2392667Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/WindowsTerminalLauncher.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:35:21.2128642Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:35:27.842888Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/smoke-test-v15/"
-    },
-    {
-      "ts": "2026-03-26T18:35:28.525622Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\n# Read Charlie\u0027s audit\nwith open(\u0027dydo/_system/audit/2026/2026-03-26-59..."
-    },
-    {
-      "ts": "2026-03-26T18:35:29.0495383Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026 -name \u0022*2026-03-26*\u0022 -type f | ..."
-    },
-    {
-      "ts": "2026-03-26T18:35:46.0150937Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -r \u0022smoke-test-v15\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/agents --include=\u0022.worktree*\u0022 ..."
-    },
-    {
-      "ts": "2026-03-26T18:35:48.7651305Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/smoke-test-v15/.git",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:35:51.3794953Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:35:53.8283105Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\n# Read Brian\u0027s audit\nwith open(\u0027dydo/_system/audit/2026/2026-03-26-7f57..."
-    },
-    {
-      "ts": "2026-03-26T18:35:54.4681252Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026 -name \u0022*2026-03-26*\u0022 -type f | ..."
-    },
-    {
-      "ts": "2026-03-26T18:36:01.1989648Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026 -name \u0022*2026-03-26*\u0022 -type f | ..."
-    },
-    {
-      "ts": "2026-03-26T18:36:01.6657278Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\n# Read Charlie\u0027s audit\nwith open(\u0027dydo/_system/audit/2026/2026-03-26-59..."
-    },
-    {
-      "ts": "2026-03-26T18:36:04.3725281Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026 -name \u0022*2026-03-26*\u0022 -type f | ..."
-    },
-    {
-      "ts": "2026-03-26T18:36:19.9881801Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nfiles_to_check = [\n    \u0027dydo/_system/audit/2026/2026-03-26-7f57963f-5b2..."
-    },
-    {
-      "ts": "2026-03-26T18:36:21.4745342Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:36:25.2103623Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022unread-must-reads\\|unread_must_reads\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/..."
-    },
-    {
-      "ts": "2026-03-26T18:36:27.8848729Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022snapshot\u0022 /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf70..."
-    },
-    {
-      "ts": "2026-03-26T18:36:30.4443633Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:36:45.5621365Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nfiles_to_check = [\n    (\u0027Brian\u0027, \u0027dydo/_system/audit/2026/2026-03-26-7f..."
-    },
-    {
-      "ts": "2026-03-26T18:36:51.7091037Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nfiles_to_check = [\n    (\u0027Brian\u0027, \u0027dydo/_system/audit/2026/2026-03-26-7f..."
-    },
-    {
-      "ts": "2026-03-26T18:36:56.1034724Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -i \u0022queue\\|deferred\u0022 dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.js..."
-    },
-    {
-      "ts": "2026-03-26T18:36:56.3668538Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -i \u0022queue\\|deferred\u0022 dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.js..."
-    },
-    {
-      "ts": "2026-03-26T18:36:58.3949794Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find dydo -name \u0022*merge*guide*\u0022 -o -name \u0022*merge-guide*\u0022 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-26T18:37:00.9087722Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/010-baton-passing-and-review-enforcement.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:37:03.9863011Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/decisions/013-conditional-must-reads.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:37:06.6731279Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find dydo -name \u0022*how-to-merge*\u0022 -o -name \u0022*review*merge*\u0022 2\u003E/dev/null"
-    },
-    {
-      "ts": "2026-03-26T18:37:09.464799Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la dydo/agents/Brian/.merge-source dydo/agents/Charlie/.merge-source 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T18:37:11.7357555Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/.merge-source",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:37:17.5898717Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nwith open(\u0027dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1..."
-    },
-    {
-      "ts": "2026-03-26T18:37:36.039244Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nwith open(\u0027dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1..."
-    },
-    {
-      "ts": "2026-03-26T18:42:36.3246162Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/project/tasks/smoke-comp-b-merge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:42:39.5124339Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find dydo/agents/Charlie -name \u0022*smoke-comp-b*\u0022 -type f 2\u003E/dev/null | head -10"
-    },
-    {
-      "ts": "2026-03-26T18:42:42.4253935Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Charlie/archive/inbox/171d25cf-smoke-comp-b-merge.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
       "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:42:45.0537045Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find dydo/agents/Brian -name \u0022*smoke-comp-a*\u0022 -type f 2\u003E/dev/null"
     },
     {
-      "ts": "2026-03-26T18:42:47.2476698Z",
+      "ts": "2026-03-26T20:06:32.7647046Z",
       "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/archive/inbox/a76d2317-smoke-comp-a-merge.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-queue-defaults-merge.md",
       "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:42:52.140019Z",
-      "event": "Blocked",
-      "path": "Uses:",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nfiles = [\n    (\u0027Brian\u0027, \u0027dydo/_system/audit/2026/2026-03-26-7f57963f-5b...",
-      "reason": "Agent Brian (co-thinker) cannot write Uses:. Co-thinker role can edit own workspace and decisions."
     },
     {
-      "ts": "2026-03-26T18:42:55.8164922Z",
+      "ts": "2026-03-26T20:06:40.63231Z",
       "event": "Bash",
-      "tool": "bash",
-      "cmd": "python \u003C\u003C \u0027EOF\u0027\nimport json\n\nfiles = [\n    (\u0027Brian\u0027, \u0027dydo/_system/audit/2026/2026-03-26-7f57963f-5b..."
-    },
-    {
-      "ts": "2026-03-26T18:46:32.7385433Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\smoke-comp-postmortem.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:46:37.2669279Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\.merge-source",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:46:37.3914498Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\.worktree-hold",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:37.5482526Z",
-      "event": "Role",
-      "role": "planner",
-      "task": "smoke-comp-postmortem"
-    },
-    {
-      "ts": "2026-03-26T18:58:40.3772975Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\planner.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:48.3405376Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigFactory.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:48.9804011Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:49.2579824Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:49.5895028Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:58.1730558Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:58.6306283Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MustReadTracker.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:58:58.9613838Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:59:07.1546641Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:59:08.6795636Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:59:09.2537317Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\QueueServiceTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:59:12.4617563Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:59:25.3427405Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:59:26.2631416Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:59:26.8966288Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:59:41.7349674Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchQueueTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T18:59:43.07614Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T18:59:46.240584Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ConfigFactoryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T19:01:39.3412085Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-fix-queue-defaults.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-26T19:02:48.644202Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-fix-merge-cleanup.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-26T19:02:48.9807709Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-fix-merge-discoverability.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-26T19:02:53.8505893Z",
-      "event": "Role",
-      "role": "orchestrator",
-      "task": "smoke-comp-postmortem"
-    },
-    {
-      "ts": "2026-03-26T19:02:58.1598109Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\orchestrator.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:20:18.9294527Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "git log --oneline -20",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:20:41.6076859Z",
-      "event": "Blocked",
-      "tool": "glob",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:20:50.2624473Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\e0f350ab-fix-merge-cleanup.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:20:50.7098727Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\278bf3fd-fix-merge-discoverability.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:20:51.0548528Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\213de48a-fix-queue-defaults.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:20:55.1104938Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "ls dydo/agents/Brian/inbox/",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:21:01.0399046Z",
-      "event": "Blocked",
-      "tool": "glob",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:21:18.813623Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "find dydo/agents/Brian/inbox -name \u0022*.md\u0022 -type f 2\u003E/dev/null",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:21:23.0594008Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "dir dydo\\agents\\Brian\\inbox\\ 2\u003E\u00261",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:21:35.7864112Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/e0f350ab-fix-merge-cleanup.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:21:36.249243Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/278bf3fd-fix-merge-discoverability.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:21:36.5707743Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/213de48a-fix-queue-defaults.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:21:58.3722892Z",
-      "event": "Blocked",
-      "tool": "agent",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:22:34.5009589Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "ls -la dydo/agents/Brian/inbox/",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:23:18.5304048Z",
-      "event": "Blocked",
       "tool": "bash",
-      "cmd": "for f in dydo/agents/Brian/inbox/*.md; do echo \u0022$f\u0022; done",
-      "reason": "Unread messages"
-    },
-    {
-      "ts": "2026-03-26T20:27:50.9734384Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/e0f350ab-msg-fix-merge-cleanup.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:27:51.8779756Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/278bf3fd-msg-fix-merge-discoverability.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:27:52.0418851Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Brian/inbox/213de48a-msg-fix-queue-defaults.md",
-      "tool": "read"
+      "cmd": "git log --oneline -10"
     },
     {
-      "ts": "2026-03-26T20:28:02.6348013Z",
+      "ts": "2026-03-26T20:06:41.5171979Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git log --oneline -20"
+      "cmd": "git log --oneline 5f85082^..5f85082 --first-parent"
     },
     {
-      "ts": "2026-03-26T20:28:20.975894Z",
+      "ts": "2026-03-26T20:06:45.249524Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git branch -a | grep -E \u0022fix-merge|worktree/\u0022"
+      "cmd": "git diff 57e2557..5f85082 --stat"
     },
     {
-      "ts": "2026-03-26T20:28:21.4233022Z",
+      "ts": "2026-03-26T20:06:52.6124349Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git diff 57e2557..HEAD --stat"
+      "cmd": "git diff 57e2557..5f85082 -- Commands/ Services/ Models/ DynaDocs.csproj npm/package.json"
     },
     {
-      "ts": "2026-03-26T20:28:36.3481006Z",
+      "ts": "2026-03-26T20:06:57.809592Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git show --stat d32dcca \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 git show --stat dd91d0c"
-    },
-    {
-      "ts": "2026-03-26T20:28:50.1041578Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:28:50.754875Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:28:51.3087545Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:29:05.6282825Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigFactory.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:29:06.4739349Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "read"
+      "cmd": "git diff 57e2557..5f85082 -- DynaDocs.Tests/"
     },
     {
-      "ts": "2026-03-26T20:29:06.6591422Z",
+      "ts": "2026-03-26T20:07:05.3838651Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\QueueResult.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:29:14.7988531Z",
+      "ts": "2026-03-26T20:07:05.7292487Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "read"
+      "tool": "glob"
     },
     {
-      "ts": "2026-03-26T20:29:21.6957081Z",
+      "ts": "2026-03-26T20:07:14.036197Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:29:28.6756246Z",
+      "ts": "2026-03-26T20:07:14.8417706Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\TemplateCommand.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:29:30.3692614Z",
+      "ts": "2026-03-26T20:07:20.2983348Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:07:20.7954157Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:07:21.5238917Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:07:32.2438404Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T20:07:42.1227634Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:07:47.1922806Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "dotnet test --filter \u0022ConfigFactory|QueueService|GuardIntegration.*Merge|WorktreeCommand.*Cleanup|Wo..."
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
     },
     {
-      "ts": "2026-03-26T20:29:47.4483084Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test 2\u003E\u00261 | tail -10"
+      "ts": "2026-03-26T20:10:09.0080536Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigFactory.cs",
+      "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:32:49.188816Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "git stash \u0026\u0026 dotnet test --filter \u0022PollAndCleanup_ProcessesRunning_ShellProcess_SkipsKill\u0022 --no-buil...",
-      "reason": "git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."
+      "ts": "2026-03-26T20:10:31.9107826Z",
+      "event": "Read",
+      "tool": "grep"
     },
     {
-      "ts": "2026-03-26T20:32:56.7203488Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --filter \u0022PollAndCleanup_ProcessesRunning_ShellProcess_SkipsKill\u0022 2\u003E\u00261 | tail -15"
+      "ts": "2026-03-26T20:10:35.3735771Z",
+      "event": "Read",
+      "tool": "grep"
     },
     {
-      "ts": "2026-03-26T20:34:38.6140131Z",
+      "ts": "2026-03-26T20:10:43.5215484Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T20:10:57.627132Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:10:58.0148714Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigFactory.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:11:02.1880334Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:11:05.6222536Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:11:12.0822584Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:11:16.412439Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\tier_registry.json",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-26T20:16:17.654082Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:16:26.7711674Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-26T20:17:04.994576Z",
       "event": "Release",
-      "agent": "Brian"
+      "agent": "Emma"
     }
   ],
   "snapshot": {
-    "git_commit": "57e25576bc0f112ca07e8e039def1894f4827435",
+    "git_commit": "5f85082e2b5b93f7f6f9e210474201295c06da03",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -2134,12 +848,28 @@
       "dydo/_system/audit/2026/2026-03-25-f4ed9800-a37f-4e5e-811b-2cb896a48207.json",
       "dydo/_system/audit/2026/2026-03-25-fd40d0e9-bbdd-478c-9f7c-ec523fef8cc8.json",
       "dydo/_system/audit/2026/2026-03-26-0087be41-ae1f-46de-8a0a-98909ad90b1f.json",
+      "dydo/_system/audit/2026/2026-03-26-0a54bf19-5787-402b-bf42-95dc262546f0.json",
+      "dydo/_system/audit/2026/2026-03-26-2052e53d-45f3-4848-94db-b5832bd7fd10.json",
       "dydo/_system/audit/2026/2026-03-26-262d14a3-ad58-497d-b5c9-eda4debdba22.json",
+      "dydo/_system/audit/2026/2026-03-26-2ce5dff3-df71-4f75-9594-d976ea2d145b.json",
+      "dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
+      "dydo/_system/audit/2026/2026-03-26-5ea1bbdd-58a5-42a5-b7fc-ff9a353bbeec.json",
       "dydo/_system/audit/2026/2026-03-26-604ebd09-7905-473d-a833-ba72f9fba7a9.json",
       "dydo/_system/audit/2026/2026-03-26-717b5a8b-0304-4ab7-a159-8fe0c687b8d7.json",
+      "dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.json",
+      "dydo/_system/audit/2026/2026-03-26-804d9f1f-0657-4d8a-8a2e-caee5c17d2c9.json",
       "dydo/_system/audit/2026/2026-03-26-9613d2c4-b7ba-452f-8f28-39bd9fdd5147.json",
+      "dydo/_system/audit/2026/2026-03-26-9b4c3b63-9a01-407c-a75d-a7adf223d5bb.json",
       "dydo/_system/audit/2026/2026-03-26-afef3922-8d98-4408-b782-490fc2ceefe7.json",
+      "dydo/_system/audit/2026/2026-03-26-bc479165-549f-4107-93bc-3f792e556bfb.json",
+      "dydo/_system/audit/2026/2026-03-26-bc512ab0-7df1-479d-bd52-74edad95e071.json",
+      "dydo/_system/audit/2026/2026-03-26-bfbc4e8f-1b41-423e-a573-26282ef1a02c.json",
+      "dydo/_system/audit/2026/2026-03-26-d3553fc9-a9a7-4bc5-8656-4cd60c99d5ad.json",
+      "dydo/_system/audit/2026/2026-03-26-dad1107a-e916-483b-a21e-e71eddb0a05c.json",
+      "dydo/_system/audit/2026/2026-03-26-ec1c6367-9aa5-4ba6-b2e8-a7b16311f052.json",
       "dydo/_system/audit/2026/2026-03-26-ec568f6a-427d-444c-b2b6-2b71f208f027.json",
+      "dydo/_system/audit/2026/2026-03-26-f2b8d8c4-3d62-4202-9894-4aa604ed41f3.json",
+      "dydo/_system/audit/2026/2026-03-26-f9f5c588-b689-4d17-81f9-91b99c273f4c.json",
       "dydo/_system/compact-counter",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
@@ -2466,7 +1196,13 @@
       "dydo/project/tasks/dispatch-queue-design.md",
       "dydo/project/tasks/fix-ci-linux-round2.md",
       "dydo/project/tasks/fix-default-nudges.md",
+      "dydo/project/tasks/fix-merge-cleanup-merge.md",
+      "dydo/project/tasks/fix-merge-cleanup.md",
+      "dydo/project/tasks/fix-merge-discoverability-merge.md",
+      "dydo/project/tasks/fix-merge-discoverability.md",
       "dydo/project/tasks/fix-phantom-close.md",
+      "dydo/project/tasks/fix-queue-defaults-merge.md",
+      "dydo/project/tasks/fix-queue-defaults.md",
       "dydo/project/tasks/fix-reviewer-queue-hint.md",
       "dydo/project/tasks/fix-wait-process-leak.md",
       "dydo/project/tasks/gap-check-freshness.md",
@@ -2474,6 +1210,9 @@
       "dydo/project/tasks/investigate-phantom-close.md",
       "dydo/project/tasks/investigate-process-leak.md",
       "dydo/project/tasks/investigate-reply-pending-race.md",
+      "dydo/project/tasks/smoke-comp-a-merge.md",
+      "dydo/project/tasks/smoke-comp-b-merge.md",
+      "dydo/project/tasks/smoke-comp-postmortem.md",
       "dydo/project/v1.3-release.md",
       "dydo/reference/_index.md",
       "dydo/reference/_reference.md",
@@ -2904,6 +1643,7 @@
       "Models/ProjectSnapshot.cs",
       "Models/QueueActiveEntry.cs",
       "Models/QueueEntry.cs",
+      "Models/QueueResult.cs",
       "Models/ReplyPendingMarker.cs",
       "Models/RoleConstraint.cs",
       "Models/RoleDefinition.cs",
@@ -3360,16 +2100,16 @@
         "dydo/agents/brian/modes/reviewer.md",
         "dydo/agents/brian/modes/test-writer.md"
       ],
-      "dydo/agents/frank/workflow.md": [
-        "dydo/agents/frank/modes/co-thinker.md",
-        "dydo/agents/frank/modes/code-writer.md",
-        "dydo/agents/frank/modes/docs-writer.md",
-        "dydo/agents/frank/modes/inquisitor.md",
-        "dydo/agents/frank/modes/judge.md",
-        "dydo/agents/frank/modes/orchestrator.md",
-        "dydo/agents/frank/modes/planner.md",
-        "dydo/agents/frank/modes/reviewer.md",
-        "dydo/agents/frank/modes/test-writer.md"
+      "dydo/agents/emma/workflow.md": [
+        "dydo/agents/emma/modes/co-thinker.md",
+        "dydo/agents/emma/modes/code-writer.md",
+        "dydo/agents/emma/modes/docs-writer.md",
+        "dydo/agents/emma/modes/inquisitor.md",
+        "dydo/agents/emma/modes/judge.md",
+        "dydo/agents/emma/modes/orchestrator.md",
+        "dydo/agents/emma/modes/planner.md",
+        "dydo/agents/emma/modes/reviewer.md",
+        "dydo/agents/emma/modes/test-writer.md"
       ],
       "dydo/agents/grace/workflow.md": [
         "dydo/agents/grace/modes/co-thinker.md",
@@ -3851,47 +2591,47 @@
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/co-thinker.md": [
+      "dydo/agents/emma/modes/co-thinker.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/project/decisions/_index.md",
-        "dydo/agents/frank/modes/code-writer.md"
+        "dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/agents/frank/modes/code-writer.md": [
+      "dydo/agents/emma/modes/code-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/docs-writer.md": [
+      "dydo/agents/emma/modes/docs-writer.md": [
         "dydo/understand/about.md",
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/frank/modes/inquisitor.md": [
+      "dydo/agents/emma/modes/inquisitor.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/judge.md": [
+      "dydo/agents/emma/modes/judge.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/orchestrator.md": [
+      "dydo/agents/emma/modes/orchestrator.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
-      "dydo/agents/frank/modes/planner.md": [
+      "dydo/agents/emma/modes/planner.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
-        "dydo/agents/frank/modes/code-writer.md"
+        "dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/agents/frank/modes/reviewer.md": [
+      "dydo/agents/emma/modes/reviewer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/frank/modes/test-writer.md": [
+      "dydo/agents/emma/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
@@ -5514,16 +4254,16 @@
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/reviewer.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/test-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/test-writer.md"
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/workflow.md": [
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/judge.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/planner.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/test-writer.md"
       ],
       "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/grace/workflow.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/grace/modes/co-thinker.md",
@@ -5894,16 +4634,16 @@
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/reviewer.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/test-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/test-writer.md"
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/workflow.md": [
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/judge.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/planner.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/test-writer.md"
       ],
       "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/grace/workflow.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/grace/modes/co-thinker.md",
@@ -6334,47 +5074,47 @@
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/co-thinker.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/co-thinker.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/code-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/code-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/docs-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/docs-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/inquisitor.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/inquisitor.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/judge.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/judge.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/orchestrator.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/orchestrator.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/planner.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/planner.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/reviewer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/reviewer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/frank/modes/test-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/emma/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
@@ -7376,47 +6116,47 @@
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/co-thinker.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/co-thinker.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/code-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/code-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/docs-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/docs-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/how-to-use-docs.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/inquisitor.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/inquisitor.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/judge.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/judge.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/orchestrator.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/orchestrator.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/planner.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/planner.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/reviewer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/reviewer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/frank/modes/test-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/emma/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"

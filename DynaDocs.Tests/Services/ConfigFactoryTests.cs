@@ -131,4 +131,45 @@ public class ConfigFactoryTests
         Assert.Equal(ConfigFactory.DefaultNudges.Count + 1, config.Nudges.Count);
         Assert.Contains(config.Nudges, n => n.Pattern == "custom-pattern");
     }
+
+    [Fact]
+    public void CreateDefault_IncludesDefaultQueues()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+
+        Assert.Contains("merge", config.Queues);
+    }
+
+    [Fact]
+    public void EnsureDefaultQueues_AddsToEmptyList()
+    {
+        var config = new DydoConfig();
+
+        var added = ConfigFactory.EnsureDefaultQueues(config);
+
+        Assert.Equal(ConfigFactory.DefaultQueues.Count, added);
+        Assert.Equal(ConfigFactory.DefaultQueues.Count, config.Queues.Count);
+    }
+
+    [Fact]
+    public void EnsureDefaultQueues_SkipsAlreadyPresent()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+
+        var added = ConfigFactory.EnsureDefaultQueues(config);
+
+        Assert.Equal(0, added);
+    }
+
+    [Fact]
+    public void EnsureDefaultQueues_PreservesCustomQueues()
+    {
+        var config = new DydoConfig { Queues = ["hotfix"] };
+
+        var added = ConfigFactory.EnsureDefaultQueues(config);
+
+        Assert.Equal(ConfigFactory.DefaultQueues.Count, added);
+        Assert.Equal(ConfigFactory.DefaultQueues.Count + 1, config.Queues.Count);
+        Assert.Contains("hotfix", config.Queues);
+    }
 }

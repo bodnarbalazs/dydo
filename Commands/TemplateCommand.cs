@@ -101,6 +101,13 @@ public static class TemplateCommand
             updated += nudgesAdded;
         }
 
+        var queuesAdded = diff ? 0 : ConfigFactory.EnsureDefaultQueues(config);
+        if (queuesAdded > 0)
+        {
+            Console.WriteLine($"  Added {queuesAdded} default queue(s)");
+            updated += queuesAdded;
+        }
+
         if (!diff)
             configService.SaveConfig(config, configPath);
 

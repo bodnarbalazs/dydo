@@ -4,6 +4,8 @@ using DynaDocs.Models;
 
 public static class ConfigFactory
 {
+    public static readonly List<string> DefaultQueues = ["merge"];
+
     public static readonly List<NudgeConfig> DefaultNudges =
     [
         new()
@@ -64,7 +66,8 @@ public static class ConfigFactory
                 Pattern = n.Pattern,
                 Message = n.Message,
                 Severity = n.Severity
-            }).ToList()
+            }).ToList(),
+            Queues = DefaultQueues.ToList()
         };
     }
 
@@ -88,6 +91,23 @@ public static class ConfigFactory
                 Message = nudge.Message,
                 Severity = nudge.Severity
             });
+            added++;
+        }
+
+        return added;
+    }
+
+    public static int EnsureDefaultQueues(DydoConfig config)
+    {
+        var existing = new HashSet<string>(config.Queues, StringComparer.OrdinalIgnoreCase);
+        var added = 0;
+
+        foreach (var queue in DefaultQueues)
+        {
+            if (existing.Contains(queue))
+                continue;
+
+            config.Queues.Add(queue);
             added++;
         }
 

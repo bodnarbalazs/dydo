@@ -119,6 +119,11 @@
       "pattern": "(?:^|[;\u0026|]\\s*)(python3?|py)\\s\u002B(?:(?:-\\w\u002B|--[\\w-]\u002B(?:\\s\u002B\\S\u002B)?)\\s\u002B)*(?:[\u0022\u0027])?dydo(?=[\\s\u0022\u0027]|$)(.*?)(?:[\u0022\u0027])?$",
       "message": "Don\u0027t use \u0027$1\u0027 to run dydo \u2014 it\u0027s already on your PATH. Just use: dydo $2",
       "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s+test\\b(.*)",
+      "message": "Use the worktree-isolated test runner instead: python DynaDocs.Tests/coverage/run_tests.py $1\nThis avoids DLL lock contention when multiple agents run tests concurrently.",
+      "severity": "warn"
     }
   ],
   "frameworkHashes": {

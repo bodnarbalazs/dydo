@@ -1890,6 +1890,69 @@ public class TerminalLauncherTests
         Assert.Contains("dydo worktree init-settings --main-root '/Users/dev/project'", args);
     }
 
+    [Fact]
+    public void GetWindowsArguments_InheritedWorktree_SetLocationBeforeInitSettings()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: TestWorktreeId,
+            mainProjectRoot: @"C:\project", workingDirectory: @"C:\project\dydo\_system\.local\worktrees\my-task");
+        var setLocIdx = args.IndexOf("Set-Location");
+        var initIdx = args.IndexOf("init-settings");
+        Assert.True(setLocIdx >= 0, "Set-Location not found");
+        Assert.True(setLocIdx < initIdx, "Set-Location should come before init-settings");
+        Assert.Contains(@"Set-Location 'C:\project\dydo\_system\.local\worktrees\my-task'", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_InheritedWorktree_ContainsSleepBeforeClaude()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", cleanupWorktreeId: TestWorktreeId, mainProjectRoot: @"C:\project");
+        var sleepIdx = args.IndexOf("Start-Sleep -Seconds 1");
+        var claudeIdx = args.IndexOf("claude '");
+        Assert.True(sleepIdx >= 0, "Start-Sleep not found");
+        Assert.True(sleepIdx < claudeIdx, "Start-Sleep should come before claude");
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_InheritedWorktree_ContainsCdToWorktree(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian",
+            workingDirectory: "/home/user/project/dydo/_system/.local/worktrees/my-task",
+            cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/user/project");
+        Assert.Contains("cd '/home/user/project/dydo/_system/.local/worktrees/my-task'", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_InheritedWorktree_ContainsSleepBeforeClaude(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian",
+            cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/user/project");
+        var sleepIdx = args.IndexOf("sleep 1");
+        var claudeIdx = args.IndexOf("claude '");
+        Assert.True(sleepIdx >= 0, "sleep 1 not found");
+        Assert.True(sleepIdx < claudeIdx, "sleep 1 should come before claude");
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_ContainsCdToWorktree()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian",
+            workingDirectory: "/Users/dev/project/dydo/_system/.local/worktrees/my-task",
+            cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/dev/project");
+        Assert.Contains("cd '/Users/dev/project/dydo/_system/.local/worktrees/my-task'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_ContainsSleepBeforeClaude()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian",
+            cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/dev/project");
+        Assert.Contains("sleep 1", args);
+    }
+
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]

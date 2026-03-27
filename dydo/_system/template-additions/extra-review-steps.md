@@ -1,4 +1,12 @@
-4. **Coverage gate** — Verify tier compliance
+4. **Run tests** — Use the worktree-isolated runner
+
+```bash
+python DynaDocs.Tests/coverage/run_tests.py
+```
+
+Do **not** run `dotnet test` directly — use the worktree runner to avoid DLL lock contention.
+
+5. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py

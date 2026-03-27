@@ -116,7 +116,7 @@ public class QueueService
 
     /// <summary>
     /// Atomically checks whether the queue slot is free. If free, marks the caller as active
-    /// (with placeholder PID=0) and returns Acquired. If occupied, writes a pending entry and
+    /// (with dispatching process PID) and returns Acquired. If occupied, writes a pending entry and
     /// returns Queued. File lock prevents two dispatches from both acquiring the slot.
     /// </summary>
     public QueueResult TryAcquireOrEnqueue(string queueName, string agentName, string task,
@@ -157,12 +157,14 @@ public class QueueService
             }
             else
             {
-                // Queue free — write placeholder _active.json; caller updates PID after launch
+                // Queue free — write _active.json with dispatching process PID;
+                // caller updates with terminal PID after launch.
+                // Must use a live PID so the watchdog doesn't clear it as stale.
                 var active = new QueueActiveEntry
                 {
                     Agent = agentName,
                     Task = task,
-                    Pid = 0,
+                    Pid = Environment.ProcessId,
                     Started = DateTime.UtcNow
                 };
                 var json = JsonSerializer.Serialize(active, DydoDefaultJsonContext.Default.QueueActiveEntry);

@@ -7,7 +7,7 @@ public static class WindowsTerminalLauncher
     // Disable focus event reporting that Claude Code leaves enabled on exit
     private const string TerminalReset = "; [Console]::Write([char]27 + '[?1004l')";
 
-    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null)
     {
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
         var escapedPrompt = prompt.Replace("'", "''");
@@ -52,12 +52,17 @@ public static class WindowsTerminalLauncher
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
-        // Inherited worktree: no creation, but init-settings + cleanup on exit
+        // Inherited worktree: no creation, but cd to worktree, init-settings, sleep, cleanup on exit
         if (worktreeId == null && cleanupWorktreeId != null && mainProjectRoot != null)
         {
             var escapedRoot = mainProjectRoot.Replace("'", "''");
+            var setLocation = workingDirectory != null
+                ? $"Set-Location '{workingDirectory.Replace("'", "''")}'; "
+                : "";
             return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
+                   $"{setLocation}" +
                    $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{}}; " +
+                   $"Start-Sleep -Seconds 1; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
         }
@@ -90,7 +95,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -106,7 +111,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot),
+            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory),
             UseShellExecute = true
         };
         if (workingDirectory != null)

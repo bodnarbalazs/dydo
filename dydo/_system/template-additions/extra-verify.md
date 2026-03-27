@@ -1,4 +1,14 @@
-5. **Coverage gate** — Verify tier compliance
+5. **Run tests** — Use the worktree-isolated runner
+
+```bash
+python DynaDocs.Tests/coverage/run_tests.py
+```
+
+This runs `dotnet test` in a temporary git worktree, avoiding DLL lock contention when multiple agents test concurrently. Do **not** run `dotnet test` directly.
+
+Pass extra args after `--`: `python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~MyTest`
+
+6. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py

@@ -29,7 +29,7 @@ public static class LinuxTerminalLauncher
         }
         else if (cleanupWorktreeId != null && mainProjectRoot != null)
         {
-            args = args.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeInitSettingsScript(mainProjectRoot) + "unset CLAUDECODE");
+            args = args.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeInheritedSetupScript(mainProjectRoot, workingDirectory) + "unset CLAUDECODE");
             var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
             args = args.Replace("exec bash", cleanup + "; exec bash");
         }
@@ -64,7 +64,7 @@ public static class LinuxTerminalLauncher
                 }
                 else if (cleanupWorktreeId != null && mainProjectRoot != null)
                 {
-                    arguments = arguments.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeInitSettingsScript(mainProjectRoot) + "unset CLAUDECODE");
+                    arguments = arguments.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeInheritedSetupScript(mainProjectRoot, workingDirectory) + "unset CLAUDECODE");
                     var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
                     arguments = arguments.Replace("exec bash", cleanup + "; exec bash");
                 }

@@ -103,27 +103,13 @@ public static class WorktreeCommand
         permissions["allow"] = allow;
 
         var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
-        var readAbsoluteEntry = $"Read({normalizedRoot}/**)";
+        var backslashRoot = mainRoot.Replace('/', '\\').TrimEnd('\\');
+        var readForwardEntry = $"Read({normalizedRoot}/**)";
+        var readBackslashEntry = $"Read({backslashRoot}/**)";
         var readWildcardEntry = "Read(**)";
         var readTildeEntry = "Read(~/**)";
 
-        var hasAbsolute = false;
-        var hasWildcard = false;
-        var hasTilde = false;
-        foreach (var item in allow)
-        {
-            var value = item?.GetValue<string>();
-            if (value == readAbsoluteEntry) hasAbsolute = true;
-            if (value == readWildcardEntry) hasWildcard = true;
-            if (value == readTildeEntry) hasTilde = true;
-        }
-
-        if (!hasAbsolute)
-            allow.Add((JsonNode)readAbsoluteEntry);
-        if (!hasWildcard)
-            allow.Add((JsonNode)readWildcardEntry);
-        if (!hasTilde)
-            allow.Add((JsonNode)readTildeEntry);
+        AddMissingEntries(allow, readForwardEntry, readBackslashEntry, readWildcardEntry, readTildeEntry);
 
         var claudeDir = Path.Combine(Directory.GetCurrentDirectory(), ".claude");
         Directory.CreateDirectory(claudeDir);
@@ -131,7 +117,37 @@ public static class WorktreeCommand
         var targetPath = Path.Combine(claudeDir, "settings.local.json");
         File.WriteAllText(targetPath, settings.ToJsonString(WriteOptions));
 
+        // Also update main repo settings — Claude Code may load from there instead of worktree
+        try
+        {
+            var mainSettings = JsonNode.Parse(File.ReadAllText(sourcePath)) ?? new JsonObject();
+            var mainPerms = mainSettings["permissions"]?.AsObject() ?? new JsonObject();
+            mainSettings["permissions"] = mainPerms;
+            var mainAllow = mainPerms["allow"]?.AsArray() ?? new JsonArray();
+            mainPerms["allow"] = mainAllow;
+
+            AddMissingEntries(mainAllow, readForwardEntry, readBackslashEntry, readWildcardEntry, readTildeEntry);
+            File.WriteAllText(sourcePath, mainSettings.ToJsonString(WriteOptions));
+        }
+        catch { /* best-effort */ }
+
         return ExitCodes.Success;
+    }
+
+    private static void AddMissingEntries(JsonArray allow, params string[] entries)
+    {
+        var existing = new HashSet<string>();
+        foreach (var item in allow)
+        {
+            var value = item?.GetValue<string>();
+            if (value != null) existing.Add(value);
+        }
+
+        foreach (var entry in entries)
+        {
+            if (!existing.Contains(entry))
+                allow.Add((JsonNode)entry);
+        }
     }
 
     internal static int ExecuteCleanup(string worktreeId, string agentName)

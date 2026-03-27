@@ -5,8 +5,8 @@
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(dotnet build:*)",
-      "Bash(dotnet test:*)",
       "Bash(dotnet run:*)",
+      "Bash(dotnet test:*)",
       "Bash(dotnet publish:*)",
       "Bash(dydo agent claim:*)",
       "Bash(dydo agent --help:*)",
@@ -14,7 +14,7 @@
       "Bash(dydo agent:*)",
       "Bash(dydo dispatch:*)",
       "Bash(dydo --help:*)",
-      "Bash(dydo task create:*)",
+      "Bash(dydo task:*)",
       "Bash(dydo fix:*)",
       "Bash(dydo check:*)",
       "Bash(dydo inbox clear:*)",
@@ -26,7 +26,8 @@
       "Bash(dydo wait:*)",
       "Read(C:\\Users\\User\\Desktop\\Projects\\DynaDocs/**)",
       "Read(**)",
-      "Read(~/**)"
+      "Read(~/**)",
+      "Read(C:/Users/User/Desktop/Projects/DynaDocs/**)"
     ]
   },
   "hooks": {

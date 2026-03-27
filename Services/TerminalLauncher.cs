@@ -97,6 +97,16 @@ public class TerminalLauncher
         return $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
     }
 
+    internal static string WorktreeInheritedSetupScript(string? mainProjectRoot, string? workingDirectory)
+    {
+        if (mainProjectRoot == null) return "";
+        var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
+        var cdPrefix = workingDirectory != null
+            ? $"cd '{workingDirectory.Replace("'", "'\\''")}' && "
+            : "";
+        return $"{cdPrefix}(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && sleep 1 && ";
+    }
+
     internal static string WorktreeCleanupScript(string worktreeId, string agentName) =>
         $"dydo worktree cleanup {worktreeId} --agent {agentName}";
 
@@ -112,8 +122,8 @@ public class TerminalLauncher
         return $"cd '{workingDirectory}' && ";
     }
 
-    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-        => WindowsTerminalLauncher.GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null)
+        => WindowsTerminalLauncher.GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
 
     public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => LinuxTerminalLauncher.GetArguments(terminalName, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);

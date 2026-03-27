@@ -822,6 +822,74 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void InitSettings_AddsBothSlashVariants()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "{}");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+            var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+            var allow = json["permissions"]!["allow"]!.AsArray();
+            var entries = allow.Select(i => i?.GetValue<string>()).Where(v => v != null).ToList();
+
+            var forwardRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+            var backslashRoot = mainRoot.Replace('/', '\\').TrimEnd('\\');
+
+            Assert.Contains($"Read({forwardRoot}/**)", entries);
+            Assert.Contains($"Read({backslashRoot}/**)", entries);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_UpdatesMainRepoSettings()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        var sourcePath = Path.Combine(sourceClaudeDir, "settings.local.json");
+        File.WriteAllText(sourcePath, """{"permissions": {"allow": ["Bash(*)"]}}""");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            // Main repo settings should now contain the Read entries
+            var mainJson = JsonNode.Parse(File.ReadAllText(sourcePath))!;
+            var mainAllow = mainJson["permissions"]!["allow"]!.AsArray();
+            var entries = mainAllow.Select(i => i?.GetValue<string>()).Where(v => v != null).ToList();
+
+            Assert.Contains("Read(**)", entries);
+            Assert.Contains("Read(~/**)", entries);
+            // Original entry preserved
+            Assert.Contains("Bash(*)", entries);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
     public void Merge_OutputsProgressMessage()
     {
         SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
@@ -1134,6 +1202,7 @@ public class WorktreeCommandTests : IDisposable
         var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
         Directory.CreateDirectory(sourceClaudeDir);
         var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+        var backslashRoot = mainRoot.Replace('/', '\\').TrimEnd('\\');
 
         // Build settings JSON programmatically to avoid backslash escaping issues
         var sourceSettings = new JsonObject
@@ -1142,6 +1211,7 @@ public class WorktreeCommandTests : IDisposable
             {
                 ["allow"] = new JsonArray(
                     (JsonNode)$"Read({normalizedRoot}/**)",
+                    (JsonNode)$"Read({backslashRoot}/**)",
                     (JsonNode)"Read(**)",
                     (JsonNode)"Read(~/**)")
             }
@@ -1163,8 +1233,8 @@ public class WorktreeCommandTests : IDisposable
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
 
-            // Should not add duplicates — count should remain 3
-            Assert.Equal(3, allow.Count(item => item?.GetValue<string>() != null));
+            // Should not add duplicates — count should remain 4
+            Assert.Equal(4, allow.Count(item => item?.GetValue<string>() != null));
         }
         finally
         {
@@ -1201,7 +1271,7 @@ public class WorktreeCommandTests : IDisposable
             var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
-            Assert.Equal(3, allow.Count);
+            Assert.Equal(4, allow.Count);
             // deny should still be preserved
             Assert.NotNull(json["permissions"]!["deny"]);
         }
@@ -1245,8 +1315,8 @@ public class WorktreeCommandTests : IDisposable
             var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
-            // Original 2 + 2 new (wildcard and tilde)
-            Assert.Equal(4, allow.Count);
+            // Original 2 + 3 new (backslash variant, wildcard, tilde)
+            Assert.Equal(5, allow.Count);
         }
         finally
         {
@@ -1288,8 +1358,8 @@ public class WorktreeCommandTests : IDisposable
             var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
-            // null + Bash(git *) + 3 Read entries = 5
-            Assert.Equal(5, allow.Count);
+            // null + Bash(git *) + 4 Read entries = 6
+            Assert.Equal(6, allow.Count);
         }
         finally
         {

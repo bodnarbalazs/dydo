@@ -69,6 +69,9 @@ If something is still unclear do a brief search and if the answer is not found s
 4. **Verify** — Run tests, ensure they pass
 {{include:extra-verify}}
 
+**Important:** When fixing known issues, bugs, always start with writing a test to catch the problem whenever possible.
+After the test fails, implement the fix and if the test passes you have the best indicator that you've actually solved the issue. And we get a high quality test for free!
+
 ### Out-of-Scope Issues
 
 If you encounter a bug or problem outside your current task scope, propose it to the human before filing:

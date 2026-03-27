@@ -340,7 +340,7 @@ public class QueueServiceTests : IDisposable
         Assert.NotNull(active);
         Assert.Equal("Brian", active.Agent);
         Assert.Equal("task-1", active.Task);
-        Assert.Equal(0, active.Pid);
+        Assert.Equal(Environment.ProcessId, active.Pid);
     }
 
     [Fact]
@@ -387,7 +387,7 @@ public class QueueServiceTests : IDisposable
         _service.TryAcquireOrEnqueue("merge", "Brian", "task-1",
             true, false, null, null, null, null, null);
 
-        Assert.Equal(0, _service.GetActive("merge")!.Pid);
+        Assert.Equal(Environment.ProcessId, _service.GetActive("merge")!.Pid);
 
         _service.UpdateActivePid("merge", 42);
 
@@ -395,6 +395,35 @@ public class QueueServiceTests : IDisposable
         Assert.NotNull(active);
         Assert.Equal(42, active.Pid);
         Assert.Equal("Brian", active.Agent);
+    }
+
+    [Fact]
+    public void TryAcquireOrEnqueue_PlaceholderPid_SurvivesStaleDetection()
+    {
+        // Regression: placeholder PID 0 was treated as dead by the watchdog,
+        // causing it to clear _active.json before the real PID was written.
+        // Fix: use Environment.ProcessId so the entry stays alive.
+        var originalOverride = ProcessUtils.IsProcessRunningOverride;
+        try
+        {
+            // Use real PID checking (no override) so the test process is seen as alive
+            ProcessUtils.IsProcessRunningOverride = null;
+
+            _service.TryAcquireOrEnqueue("merge", "Brian", "task-1",
+                true, false, null, null, null, null, null);
+
+            var stale = _service.FindStaleActiveEntries();
+            Assert.Empty(stale);
+
+            // Active entry must still exist
+            var active = _service.GetActive("merge");
+            Assert.NotNull(active);
+            Assert.Equal("Brian", active.Agent);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = originalOverride;
+        }
     }
 
     [Fact]

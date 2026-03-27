@@ -2216,6 +2216,232 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\53e338ff-msg-gap-check-skip-optimization.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:37:03.9745292Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\ReviewCommand.cs",
+      "tool": "grep",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-27T13:37:14.3374862Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\541c6a41-msg-smoke-final2-b.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:37:36.128533Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\ReviewCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:37:45.6341628Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:38:00.2320318Z",
+      "event": "Blocked",
+      "path": "dydo/agents/Brian/modes/reviewer.md",
+      "tool": "bash",
+      "cmd": "grep -r \u0022queue\u0022 dydo/agents/Brian/modes/reviewer.md 2\u003E/dev/null || echo \u0022Not found in reviewer mode\u0022",
+      "reason": "Off-limits: dydo/agents/*/modes/**"
+    },
+    {
+      "ts": "2026-03-27T13:38:07.1978269Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:41:28.8183924Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-27T13:41:29.947163Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-final2-a.txt \u0026\u0026 echo \u0022A: EXISTS\u0022 || echo \u0022A: NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-27T13:41:30.5003207Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-final2-b.txt \u0026\u0026 echo \u0022B: EXISTS\u0022 || echo \u0022B: NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-27T13:44:37.1331413Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/"
+    },
+    {
+      "ts": "2026-03-27T13:44:46.3469093Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:44:54.1203722Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:45:02.9463703Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:45:09.7412177Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:45:20.7777116Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:45:29.2538681Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T13:45:37.6147024Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:46:33.9374716Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-queue-broken.md",
+      "tool": "write",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-27T13:46:40.2074742Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3df55409-msg-queue-test-1.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:46:40.8144394Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\14425192-msg-queue-test-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T13:47:02.2960396Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-queue-broken.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-03-27T17:46:24.4996257Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bcikahchl.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T17:46:31.0765716Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\442afecc-msg-fix-queue-broken.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T17:46:52.9291153Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\24726481-msg-fix-read-permissions-final.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T17:46:54.1170669Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3fe36abb-msg-queue-test-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T17:46:54.3882654Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\adf6ae14-msg-queue-test-1.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T17:48:56.1309149Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bvvu72wz9.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T17:49:03.5610281Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5e17b5ef-msg-fix-ci-linux-round3.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T18:02:13.5424706Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bqz1b9evp.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T18:02:20.7341386Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\fecc0f19-msg-investigate-charlie-autoclose.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T18:02:41.0016262Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a02df20b-msg-fix-read-permissions-final.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T18:44:21.5855223Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b75ynq8gb.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T18:44:28.454895Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8b2bd3ef-msg-fix-autoclose-race.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T19:01:45.5184858Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\badfj3fn1.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T19:01:52.3836324Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\31a944aa-msg-speed-up-tests.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T19:18:50.1494489Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b6cccn82u.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T19:18:56.8369164Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\24b400b6-msg-fix-guard-lift-negative.md",
+      "tool": "read"
     }
   ],
   "snapshot_ref": {

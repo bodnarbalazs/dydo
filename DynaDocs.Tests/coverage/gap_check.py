@@ -19,7 +19,6 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
@@ -27,21 +26,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from run_tests import run_tests as worktree_run_tests
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 COVERAGE_DIR = ROOT / "DynaDocs.Tests" / "coverage"
-RUNSETTINGS = COVERAGE_DIR / "coverage.runsettings"
 TIER_REGISTRY_PATH = COVERAGE_DIR / "tier_registry.json"
 
 XML_PATTERN = "DynaDocs.Tests/**/coverage.cobertura.xml"
 
-TEST_COMMAND = [
-    "dotnet", "test", "DynaDocs.sln",
+COVERAGE_ARGS = [
     "--collect:XPlat Code Coverage",
-    f"--settings:{RUNSETTINGS}",
+    "--settings:DynaDocs.Tests/coverage/coverage.runsettings",
 ]
 
 EXCLUDED_CLASSES = {"Program"}
@@ -341,11 +340,10 @@ def clean_stale_coverage():
 
 def run_tests() -> bool:
     clean_stale_coverage()
-    print("\n--- Running tests ---")
-    print(f"  {' '.join(TEST_COMMAND)}")
-    result = subprocess.run(TEST_COMMAND, cwd=ROOT)
-    if result.returncode != 0:
-        print(f"  Tests failed (exit code {result.returncode})")
+    print("\n--- Running tests (worktree-isolated) ---")
+    rc = worktree_run_tests(extra_args=COVERAGE_ARGS, coverage=True)
+    if rc != 0:
+        print(f"  Tests failed (exit code {rc})")
         return False
     return True
 

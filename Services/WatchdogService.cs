@@ -50,7 +50,7 @@ public static class WatchdogService
                     ProcessUtils.IsProcessRunning(existingPid))
                     return false;
             }
-            catch { }
+            catch { return false; } // File locked — another thread/process is handling startup
             // Stale PID — remove so we can re-create atomically
             try { File.Delete(pidFile); } catch { return false; }
         }

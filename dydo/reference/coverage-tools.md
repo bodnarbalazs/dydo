@@ -14,14 +14,13 @@ An in-house Python script for measuring and enforcing test coverage. Located in 
 Self-contained tier compliance checker. Runs tests via `dotnet test`, collects Cobertura XML coverage from Coverlet, and checks every source module against its tier's requirements. Exits with code 0 (all pass) or 1 (failures).
 
 ```bash
-python DynaDocs.Tests/coverage/gap_check.py                    # run tests and check
-python DynaDocs.Tests/coverage/gap_check.py --skip-tests       # analyze existing coverage data only
+python DynaDocs.Tests/coverage/gap_check.py                    # auto-detect: skip or run tests
+python DynaDocs.Tests/coverage/gap_check.py --force-run        # always run tests
 python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines in failures
 python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect modules matching 'Guard'
-python DynaDocs.Tests/coverage/gap_check.py --skip-tests --force-stale  # skip tests even if data is stale
 ```
 
-**Note:** `--skip-tests` will error if source files have changed since the last coverage run. A plain `dotnet test` does not produce coverage data — only gap_check's own test invocation (with Coverlet flags) does. Use `--force-stale` to override the staleness check when you intentionally want to analyze old data.
+**Auto-skip:** gap_check automatically skips tests when no source or test files have changed since the last coverage run. When skipping, it reuses existing coverage data. Use `--force-run` to override this and always run tests. A plain `dotnet test` does not produce coverage data — only gap_check's own test invocation (with Coverlet flags) does.
 
 ### What it checks (per module, against assigned tier)
 

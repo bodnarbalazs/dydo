@@ -23,7 +23,10 @@
       "Bash(dydo inbox:*)",
       "Bash(dydo message:*)",
       "Bash(dydo msg:*)",
-      "Bash(dydo wait:*)"
+      "Bash(dydo wait:*)",
+      "Read(C:\\Users\\User\\Desktop\\Projects\\DynaDocs/**)",
+      "Read(**)",
+      "Read(~/**)"
     ]
   },
   "hooks": {

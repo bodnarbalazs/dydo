@@ -102,8 +102,8 @@ Everything else — services, command handlers, validators, utilities — needs 
 `gap_check.py` in `DynaDocs.Tests/coverage/` enforces these tiers:
 
 ```bash
-python DynaDocs.Tests/coverage/gap_check.py                    # run tests and check
-python DynaDocs.Tests/coverage/gap_check.py --skip-tests       # analyze existing data (errors if stale)
+python DynaDocs.Tests/coverage/gap_check.py                    # auto-detect: skip or run tests
+python DynaDocs.Tests/coverage/gap_check.py --force-run        # always run tests
 python DynaDocs.Tests/coverage/gap_check.py --detail           # show uncovered lines
 python DynaDocs.Tests/coverage/gap_check.py --inspect Guard    # inspect matching modules
 ```

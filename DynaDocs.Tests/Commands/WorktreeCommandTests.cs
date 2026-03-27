@@ -388,6 +388,34 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void Merge_Finalize_RemovesZombieWorktreeDirectory()
+    {
+        var worktreeId = "Adele-20260316";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+        SetupMergeAgent("Adele", "main", $"worktree/{worktreeId}");
+
+        // Set up worktree-path so ResolveWorktreePath finds the directory
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+
+        // RunProcessOverride is no-op: git worktree remove won't actually delete the dir
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            WorktreeCommand.ExecuteMerge(true, _registry);
+
+            // RemoveZombieDirectory should clean up the leftover directory
+            Assert.False(Directory.Exists(worktreePath));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
     public void Merge_NoAgentClaimed_ReturnsError()
     {
         // Set up session context but no agent claimed for it
@@ -688,8 +716,8 @@ public class WorktreeCommandTests : IDisposable
             var allow = json["permissions"]?["allow"]?.AsArray();
             Assert.NotNull(allow);
 
-            var trimmedRoot = mainRoot.TrimEnd('/', '\\');
-            var expectedAbsolute = $"Read({trimmedRoot}/**)";
+            var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+            var expectedAbsolute = $"Read({normalizedRoot}/**)";
             Assert.Contains(allow, item => item?.GetValue<string>() == expectedAbsolute);
             Assert.Contains(allow, item => item?.GetValue<string>() == "Read(**)");
 
@@ -724,8 +752,8 @@ public class WorktreeCommandTests : IDisposable
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
 
-            var trimmedRoot = mainRoot.TrimEnd('/', '\\');
-            var expectedAbsolute = $"Read({trimmedRoot}/**)";
+            var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+            var expectedAbsolute = $"Read({normalizedRoot}/**)";
             Assert.Equal(1, allow.Count(item => item?.GetValue<string>() == expectedAbsolute));
             Assert.Equal(1, allow.Count(item => item?.GetValue<string>() == "Read(**)"));
         }
@@ -758,7 +786,7 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
-    public void InitSettings_PreservesBackslashes_OnWindowsPaths()
+    public void InitSettings_NormalizesBackslashesToForwardSlashes()
     {
         var mainRoot = Path.Combine(_testDir, "main-repo");
         var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
@@ -777,15 +805,15 @@ public class WorktreeCommandTests : IDisposable
             var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
             var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
             var allow = json["permissions"]!["allow"]!.AsArray();
-            var entry = allow[0]!.GetValue<string>();
+            var absoluteEntry = allow
+                .Select(i => i?.GetValue<string>())
+                .First(v => v != null && v.StartsWith("Read(") && v != "Read(**)" && v != "Read(~/**)");
 
-            // The Read entry must preserve the path format as-is (backslashes on Windows)
-            Assert.StartsWith("Read(", entry);
-            Assert.EndsWith("/**)", entry);
-            Assert.Contains(mainRoot.TrimEnd('/', '\\'), entry);
-            // Must NOT convert backslashes to forward slashes
-            if (mainRoot.Contains('\\'))
-                Assert.Contains("\\", entry);
+            Assert.NotNull(absoluteEntry);
+            // Backslashes must be normalized to forward slashes for glob matching
+            Assert.DoesNotContain("\\", absoluteEntry);
+            Assert.StartsWith("Read(", absoluteEntry);
+            Assert.EndsWith("/**)", absoluteEntry);
         }
         finally
         {
@@ -1105,7 +1133,7 @@ public class WorktreeCommandTests : IDisposable
         var mainRoot = Path.Combine(_testDir, "main-repo");
         var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
         Directory.CreateDirectory(sourceClaudeDir);
-        var trimmedRoot = mainRoot.TrimEnd('/', '\\');
+        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
 
         // Build settings JSON programmatically to avoid backslash escaping issues
         var sourceSettings = new JsonObject
@@ -1113,7 +1141,7 @@ public class WorktreeCommandTests : IDisposable
             ["permissions"] = new JsonObject
             {
                 ["allow"] = new JsonArray(
-                    (JsonNode)$"Read({trimmedRoot}/**)",
+                    (JsonNode)$"Read({normalizedRoot}/**)",
                     (JsonNode)"Read(**)",
                     (JsonNode)"Read(~/**)")
             }
@@ -1189,7 +1217,7 @@ public class WorktreeCommandTests : IDisposable
         var mainRoot = Path.Combine(_testDir, "main-repo");
         var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
         Directory.CreateDirectory(sourceClaudeDir);
-        var trimmedRoot = mainRoot.TrimEnd('/', '\\');
+        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
 
         // Only include the absolute entry — wildcard and tilde are missing
         var sourceSettings = new JsonObject
@@ -1197,7 +1225,7 @@ public class WorktreeCommandTests : IDisposable
             ["permissions"] = new JsonObject
             {
                 ["allow"] = new JsonArray(
-                    (JsonNode)$"Read({trimmedRoot}/**)",
+                    (JsonNode)$"Read({normalizedRoot}/**)",
                     (JsonNode)"Bash(git *)")
             }
         };

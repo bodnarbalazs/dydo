@@ -102,7 +102,7 @@ public static class WorktreeCommand
         var allow = permissions["allow"]?.AsArray() ?? new JsonArray();
         permissions["allow"] = allow;
 
-        var normalizedRoot = mainRoot.TrimEnd('/', '\\');
+        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
         var readAbsoluteEntry = $"Read({normalizedRoot}/**)";
         var readWildcardEntry = "Read(**)";
         var readTildeEntry = "Read(~/**)";
@@ -498,6 +498,7 @@ public static class WorktreeCommand
             RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
             try { RunProcess("git", $"-C \"{mainRoot}\" worktree remove \"{worktreePath}\" --force"); }
             catch { Console.Error.WriteLine($"WARNING: Failed to remove worktree at {worktreePath}"); }
+            RemoveZombieDirectory(worktreePath);
         }
 
         // Prune stale worktree references before branch deletion

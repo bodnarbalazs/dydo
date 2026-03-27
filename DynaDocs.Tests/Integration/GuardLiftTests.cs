@@ -289,6 +289,23 @@ public class GuardLiftTests : IntegrationTestBase
         result.AssertStderrContains("not currently claimed");
     }
 
+    [Theory]
+    [InlineData("-5")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public async Task GuardLiftCommand_Lift_NegativeOrZeroMinutes_Errors(string minutes)
+    {
+        await SetupClaimedAgent();
+        StoreSessionContext();
+
+        var command = GuardCommand.Create();
+        var result = await RunAsync(command, "lift", "Adele", minutes);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Minutes must be a positive number");
+        Assert.False(IsLifted("Adele"));
+    }
+
     [Fact]
     public async Task GuardLiftCommand_Restore_RemovesLift()
     {

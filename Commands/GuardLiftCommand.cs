@@ -55,6 +55,12 @@ public static class GuardLiftCommand
 
     private static int ExecuteLift(string agentName, int? minutes)
     {
+        if (minutes.HasValue && minutes.Value <= 0)
+        {
+            Console.Error.WriteLine("Error: Minutes must be a positive number.");
+            return ExitCodes.ToolError;
+        }
+
         var registry = new AgentRegistry();
         var auditService = new AuditService();
 

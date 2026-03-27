@@ -74,6 +74,7 @@ public static class WaitCommand
     private static int WaitGeneral(AgentRegistry registry, string agentName, string inboxPath)
     {
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
+        var claudePid = ProcessUtils.FindAncestorProcess("claude");
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
@@ -102,6 +103,10 @@ public static class WaitCommand
                 if (parentPid.HasValue && !ProcessUtils.IsProcessRunning(parentPid.Value))
                     return ExitCodes.ToolError;
 
+                // Background bash survives Claude exit on Windows — check Claude ancestor too
+                if (claudePid.HasValue && !ProcessUtils.IsProcessRunning(claudePid.Value))
+                    return ExitCodes.ToolError;
+
                 Thread.Sleep(10_000);
             }
             return ExitCodes.ToolError;
@@ -115,6 +120,7 @@ public static class WaitCommand
     private static int WaitForTask(AgentRegistry registry, string agentName, string inboxPath, string task)
     {
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
+        var claudePid = ProcessUtils.FindAncestorProcess("claude");
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
@@ -135,6 +141,9 @@ public static class WaitCommand
                 }
 
                 if (parentPid.HasValue && !ProcessUtils.IsProcessRunning(parentPid.Value))
+                    return ExitCodes.ToolError;
+
+                if (claudePid.HasValue && !ProcessUtils.IsProcessRunning(claudePid.Value))
                     return ExitCodes.ToolError;
 
                 Thread.Sleep(10_000);

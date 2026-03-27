@@ -351,6 +351,68 @@ public class WaitCommandTests : IntegrationTestBase
         }
     }
 
+    [Fact]
+    public async Task WaitForTask_ExitsWhenClaudeAncestorDies()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "my-task", "Brian");
+
+        // Parent alive, but Claude ancestor dead
+        ProcessUtils.FindAncestorProcessOverride = (name, _) =>
+            name.Contains("claude", StringComparison.OrdinalIgnoreCase) ? 9999 : null;
+        ProcessUtils.IsProcessRunningOverride = pid => pid != 9999;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command, "--task", "my-task");
+
+            result.AssertExitCode(2);
+
+            registry = new AgentRegistry(TestDir);
+            var markers = registry.GetWaitMarkers("Adele");
+            Assert.Single(markers);
+            Assert.False(markers[0].Listening);
+            Assert.Null(markers[0].Pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_ExitsWhenClaudeAncestorDies()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        ProcessUtils.FindAncestorProcessOverride = (name, _) =>
+            name.Contains("claude", StringComparison.OrdinalIgnoreCase) ? 9999 : null;
+        ProcessUtils.IsProcessRunningOverride = pid => pid != 9999;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+
+            var registry = new AgentRegistry(TestDir);
+            var markers = registry.GetWaitMarkers("Adele");
+            Assert.Empty(markers);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
     #endregion
 
     #region Helper Methods

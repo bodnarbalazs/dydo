@@ -209,6 +209,11 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nAdd EnterPlanMode|ExitPlanMode to PreToolUse hook matcher\n\nThe guard ha..."
+    },
+    {
+      "ts": "2026-03-26T22:38:12.4305417Z",
+      "event": "Release",
+      "agent": "Brian"
     }
   ],
   "snapshot": {

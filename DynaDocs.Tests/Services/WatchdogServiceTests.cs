@@ -625,6 +625,146 @@ public class WatchdogServiceTests : IDisposable
         return null;
     }
 
+    #region PollOrphanedWaits Tests
+
+    [Fact]
+    public void PollOrphanedWaits_FreeAgent_KillsOrphanedWaitProcess()
+    {
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: false);
+        WriteWaitMarker("Adele", "my-task", dummy.Id);
+
+        ProcessUtils.IsProcessRunningOverride = pid => pid == dummy.Id && !dummy.HasExited;
+        try
+        {
+            WatchdogService.PollOrphanedWaits(_testDir);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+
+        dummy.WaitForExit(5000);
+        Assert.True(dummy.HasExited);
+
+        var markerPath = Path.Combine(_testDir, "agents", "Adele", ".waiting", "my-task.json");
+        Assert.False(File.Exists(markerPath));
+    }
+
+    [Fact]
+    public void PollOrphanedWaits_WorkingAgent_LeavesWaitAlone()
+    {
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "working", autoClose: true);
+        WriteWaitMarker("Adele", "my-task", dummy.Id);
+
+        ProcessUtils.IsProcessRunningOverride = pid => pid == dummy.Id && !dummy.HasExited;
+        try
+        {
+            WatchdogService.PollOrphanedWaits(_testDir);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+
+        Assert.False(dummy.HasExited);
+
+        var markerPath = Path.Combine(_testDir, "agents", "Adele", ".waiting", "my-task.json");
+        Assert.True(File.Exists(markerPath));
+        dummy.Kill();
+    }
+
+    [Fact]
+    public void PollOrphanedWaits_FreeAgent_NotListening_NoAction()
+    {
+        WriteAgentState("Adele", status: "free", autoClose: false);
+        WriteWaitMarker("Adele", "my-task", pid: null, listening: false);
+
+        WatchdogService.PollOrphanedWaits(_testDir);
+
+        var markerPath = Path.Combine(_testDir, "agents", "Adele", ".waiting", "my-task.json");
+        Assert.True(File.Exists(markerPath));
+    }
+
+    private void WriteWaitMarker(string agentName, string task, int? pid, bool listening = true)
+    {
+        var dir = Path.Combine(_testDir, "agents", agentName, ".waiting");
+        Directory.CreateDirectory(dir);
+        var json = $$"""{"target":"Brian","task":"{{task}}","since":"2026-03-26T00:00:00Z","listening":{{listening.ToString().ToLowerInvariant()}},"pid":{{(pid.HasValue ? pid.Value.ToString() : "null")}}}""";
+        File.WriteAllText(Path.Combine(dir, $"{task}.json"), json);
+    }
+
+    #endregion
+
+    #region EnsureRunning Atomicity Tests
+
+    [Fact]
+    public void EnsureRunning_ConcurrentCalls_StartsOnlyOneWatchdog()
+    {
+        // Create stale PID file to trigger the race path
+        WritePidFile(99999);
+        ProcessUtils.IsProcessRunningOverride = pid => pid != 99999;
+
+        var startCount = 0;
+        WatchdogService.StartProcessOverride = _ =>
+        {
+            Interlocked.Increment(ref startCount);
+            Thread.Sleep(50); // Widen the race window
+            return StartDummyProcess();
+        };
+
+        try
+        {
+            var results = new bool[10];
+            Parallel.For(0, 10, i =>
+            {
+                results[i] = WatchdogService.EnsureRunning(_testDir);
+            });
+
+            Assert.Equal(1, startCount);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            // Clean up any spawned dummy processes
+            var pidFile = WatchdogService.GetPidFilePath(_testDir);
+            if (File.Exists(pidFile) &&
+                int.TryParse(File.ReadAllText(pidFile).Trim(), out var pid))
+            {
+                try { Process.GetProcessById(pid).Kill(); } catch { }
+            }
+        }
+    }
+
+    [Fact]
+    public void EnsureRunning_LivePid_DoesNotStartProcess()
+    {
+        using var proc = StartDummyProcess();
+        WritePidFile(proc.Id);
+
+        var started = false;
+        WatchdogService.StartProcessOverride = _ =>
+        {
+            started = true;
+            return null;
+        };
+
+        try
+        {
+            var result = WatchdogService.EnsureRunning(_testDir);
+
+            Assert.False(result);
+            Assert.False(started);
+        }
+        finally
+        {
+            proc.Kill();
+        }
+    }
+
+    #endregion
+
     private void WriteAgentState(string agentName, string status, bool autoClose, string? windowId = null)
     {
         var agentDir = Path.Combine(_testDir, "agents", agentName);

@@ -6,6 +6,11 @@ using System.Runtime.InteropServices;
 public static partial class ProcessUtils
 {
     /// <summary>
+    /// When set, FindAncestorProcess uses this instead of walking the real process tree.
+    /// </summary>
+    public static Func<string, int, int?>? FindAncestorProcessOverride { get; set; }
+
+    /// <summary>
     /// Gets the parent process ID for a given PID.
     /// Uses .NET's Process class on Windows; parses /proc on Linux; ps on macOS.
     /// </summary>
@@ -31,6 +36,8 @@ public static partial class ProcessUtils
     /// </summary>
     public static int? FindAncestorProcess(string nameContains, int maxDepth = 10)
     {
+        if (FindAncestorProcessOverride != null) return FindAncestorProcessOverride(nameContains, maxDepth);
+
         var pid = Environment.ProcessId;
 
         for (var i = 0; i < maxDepth; i++)

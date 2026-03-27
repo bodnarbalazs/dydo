@@ -1,1058 +1,95 @@
 {
-  "session": "b6c6d94c-a4da-49f6-9bbc-a4f6d4a6c873",
-  "agent": "Charlie",
+  "session": "58fb8f33-5aa6-4e50-b824-824ba5401e44",
+  "agent": "Emma",
   "human": "balazs",
-  "started": "2026-03-26T20:50:15.2969902Z",
-  "git_head": "25df9c6",
+  "started": "2026-03-26T23:19:29.0867531Z",
+  "git_head": "22b2c5a",
   "events": [
     {
-      "ts": "2026-03-26T20:50:15.2960473Z",
+      "ts": "2026-03-26T23:19:29.086024Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:50:16.0730893Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md",
-      "tool": "read",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-26T20:50:21.8272456Z",
+      "ts": "2026-03-26T23:19:33.8419603Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:50:30.0944237Z",
+      "ts": "2026-03-26T23:19:41.3896884Z",
       "event": "Claim",
-      "agent": "Charlie"
+      "agent": "Emma"
     },
     {
-      "ts": "2026-03-26T20:50:39.6268066Z",
+      "ts": "2026-03-26T23:20:01.0024183Z",
       "event": "Role",
-      "role": "co-thinker",
+      "role": "reviewer",
       "task": "fix-zombie-worktrees"
     },
     {
-      "ts": "2026-03-26T20:50:49.4059541Z",
+      "ts": "2026-03-26T23:20:06.4690955Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\co-thinker.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\reviewer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:50:54.0032735Z",
+      "ts": "2026-03-26T23:20:13.0335526Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:50:54.1852872Z",
+      "ts": "2026-03-26T23:20:13.2652675Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T20:51:03.007317Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git worktree list"
-    },
-    {
-      "ts": "2026-03-26T20:51:08.395217Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T20:51:08.9692884Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-zombie-worktrees.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:10.4226891Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.ts\u0022 -o -name \u0022*.js\u0022 -o -name \u0022*.json\u0022 ..."
-    },
-    {
-      "ts": "2026-03-26T20:51:12.1494244Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T20:51:13.8494536Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:15.2104836Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:16.6087119Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:18.2326038Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:19.7431468Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:21.6115011Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:25.0262977Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/CleanCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:26.5930167Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:27.967184Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/WorkspaceCleaner.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:29.9602889Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/WatchdogService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:31.5721325Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/WatchdogCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:33.0696049Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:34.5435622Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/TerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:36.7327223Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:38.4425265Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/WindowsTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:40.0739408Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/LinuxTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:42.2118421Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/MacTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:43.7971012Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:45.5956587Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/QueueService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:47.5291701Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:48.8534533Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:50.5884372Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/WorkspaceCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:52.6684558Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/AgentCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:54.4482481Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/AgentLifecycleHandlers.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:51:57.2604479Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:51:58.9731605Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:52:00.8070852Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/WorkspaceArchiver.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:52:02.3221734Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:52:03.9697749Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Commands/ReviewCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:52:06.1742702Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022\\.worktree\\|worktree-hold\\|worktree-base\\|needs-merge\u0022 /c/Users/User/Desktop/Projects/DynaD..."
-    },
-    {
-      "ts": "2026-03-26T20:52:08.0572956Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:52:09.7301035Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:52:11.7577198Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:52:14.5348404Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:53:01.4139314Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/\u0022"
-    },
-    {
-      "ts": "2026-03-26T20:53:02.9259997Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:53:03.4330013Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:53:11.9972546Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git branch -a | grep worktree"
-    },
-    {
-      "ts": "2026-03-26T20:53:13.0707539Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:53:13.2926609Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:54:08.0900914Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:54:08.9811145Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T20:54:10.9650687Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/fix-merge-cleanup\u0022 2\u003E/..."
-    },
-    {
-      "ts": "2026-03-26T20:54:16.9964526Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:54:19.8312198Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\ReviewCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T20:55:03.0190055Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:24.2403385Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T22:20:26.1926324Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:20:26.3727112Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:20:26.5277531Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:20:26.5756985Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:20:28.4752203Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Program.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:28.5273859Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T22:20:28.6228022Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:29.9034396Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\CleanCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:30.1837269Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:31.8556772Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:31.9420615Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:20:32.0002979Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:20:34.0241018Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:34.1148471Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CleanCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:34.5142159Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:34.5947749Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorktreeDispatchTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:37.1677613Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:37.4066638Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:39.9619181Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:40.1959224Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:42.3905295Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:44.571642Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wc -l \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs\u0022"
-    },
-    {
-      "ts": "2026-03-26T22:20:46.2793627Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:48.3039034Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022private.*void\\|private.*static\u0022 \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Com..."
-    },
-    {
-      "ts": "2026-03-26T22:20:50.0429122Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:52.2162633Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:20:52.4453282Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:20:54.2172313Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -rn \u0022class CommandResult\u0022 \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\u0022"
-    },
-    {
-      "ts": "2026-03-26T22:21:02.2583668Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022CommandResult\u0022 \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\Integrat..."
-    },
-    {
-      "ts": "2026-03-26T22:21:03.9404854Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "wc -l \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs\u0022"
-    },
-    {
-      "ts": "2026-03-26T22:21:05.6767968Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:21:59.9709036Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-03-26T22:22:06.0177951Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:22:06.5238167Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls -la \u0022C:/Users/User/Desktop/Projects/DynaDocs/\u0022"
-    },
-    {
-      "ts": "2026-03-26T22:22:10.117581Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Commands/WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:10.9763943Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:22:11.0670252Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-03-26T22:22:14.7856048Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:15.6971255Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:15.814302Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:20.5819824Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:21.0219324Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:24.3413307Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:24.9537747Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:29.5397009Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:30.0479925Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Commands/CleanCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:33.954097Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:34.5001863Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:22:38.4147303Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/WorkspaceCleaner.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:38.8072482Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:54.8309988Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:22:56.120941Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:22:56.6920265Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:02.2063482Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:23:03.4537256Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:09.138078Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:23:10.248683Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:15.5605955Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/IntegrationTestBase.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:23:17.0970504Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:21.8215445Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:22.4357006Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:28.8443581Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:29.6863997Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:33.8873196Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:40.4215973Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:41.1220793Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:44.380281Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Utils/ExitCodes.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:23:45.2795791Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:48.76775Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Models/PresetAgentNames.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:23:55.0188516Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:23:59.9252761Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:26:10.2199261Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:11.1439601Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:11.5887375Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:16.9927323Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:17.3010317Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:22.1429999Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:22.9189457Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:29.7063924Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:26:30.7114851Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/DispatchService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:26:36.1098459Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:26:37.0581087Z",
-      "event": "Read",
-      "path": "C:/Users/User/Desktop/Projects/DynaDocs/Services/ConfigService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:27:46.8782474Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\.claude\\plans\\deep-scribbling-sloth.md",
-      "tool": "write",
-      "reason": "Agent Charlie (co-thinker) cannot write ../../../.claude/plans/deep-scribbling-sloth.md. Co-thinker role can edit own workspace and decisions."
-    },
-    {
-      "ts": "2026-03-26T22:27:54.0715448Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Charlie/\u0022"
-    },
-    {
-      "ts": "2026-03-26T22:28:11.7977176Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\plan.md",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-03-26T22:30:49.043428Z",
-      "event": "Role",
-      "role": "code-writer",
-      "task": "fix-zombie-worktrees"
-    },
-    {
-      "ts": "2026-03-26T22:30:53.536353Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\code-writer.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:30:58.170943Z",
+      "ts": "2026-03-26T23:20:13.7102125Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T22:31:11.3049866Z",
+      "ts": "2026-03-26T23:20:14.1189538Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-zombie-worktrees.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T22:31:21.0500406Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:31:31.4766771Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:31:50.5051769Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:31:55.3689342Z",
+      "ts": "2026-03-26T23:20:31.3605966Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-03-26T22:32:02.3881816Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:32:15.8804791Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:32:20.9382003Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "cd \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 \u0026\u0026 dotnet build --no-restore 2\u003E\u00261 | tail -5",
-      "reason": "Needless cd compound"
-    },
-    {
-      "ts": "2026-03-26T22:32:25.4444912Z",
+      "ts": "2026-03-26T23:20:31.6689085Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -5"
+      "cmd": "git diff Services/WorkspaceCleaner.cs"
     },
     {
-      "ts": "2026-03-26T22:32:36.4434611Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:33:04.1763454Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:33:13.1374369Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:33:19.9550627Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-26T22:33:25.4673437Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:33:26.0700115Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:33:30.4855177Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:33:35.6892791Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-26T22:33:47.4680511Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-03-26T22:33:52.4922475Z",
+      "ts": "2026-03-26T23:20:39.6192981Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "dotnet build --no-restore 2\u003E\u00261 | tail -5"
+      "cmd": "git diff --stat"
     },
     {
-      "ts": "2026-03-26T22:33:59.218677Z",
+      "ts": "2026-03-26T23:20:56.0081028Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "dotnet test --no-build --filter \u0022Prune_\u0022 2\u003E\u00261"
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
     },
     {
-      "ts": "2026-03-26T22:34:06.1633579Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --no-build --filter \u0022Clean_All_RemovesWorktreeMarkers|Clean_SingleAgent_PreservesWorktre..."
-    },
-    {
-      "ts": "2026-03-26T22:34:12.2928584Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --no-build 2\u003E\u00261 | tail -3"
-    },
-    {
-      "ts": "2026-03-26T22:36:24.3810028Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "dotnet test --no-build 2\u003E\u00261 | grep -A5 \u0022Failed\u0022"
-    },
-    {
-      "ts": "2026-03-26T22:38:45.134582Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T22:52:46.2536218Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T22:53:20.3695909Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "taskkill //F //PID 65852 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T22:54:54.4273274Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --skip-tests 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T22:56:48.2050546Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T22:59:53.6148623Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-03-26T23:02:59.1836677Z",
+      "ts": "2026-03-26T23:23:28.1980975Z",
       "event": "Release",
-      "agent": "Charlie"
+      "agent": "Emma"
     }
   ],
   "snapshot": {
-    "git_commit": "25df9c6f38efa11868985473a55e3066427b940a",
+    "git_commit": "22b2c5a438682e28c0be04320062254454225288",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -1683,12 +720,15 @@
       "dydo/_system/audit/2026/2026-03-25-fd40d0e9-bbdd-478c-9f7c-ec523fef8cc8.json",
       "dydo/_system/audit/2026/2026-03-26-0087be41-ae1f-46de-8a0a-98909ad90b1f.json",
       "dydo/_system/audit/2026/2026-03-26-0a54bf19-5787-402b-bf42-95dc262546f0.json",
+      "dydo/_system/audit/2026/2026-03-26-1f2f5b5d-26de-4f8f-b5e4-5d024d766840.json",
       "dydo/_system/audit/2026/2026-03-26-2052e53d-45f3-4848-94db-b5832bd7fd10.json",
       "dydo/_system/audit/2026/2026-03-26-262d14a3-ad58-497d-b5c9-eda4debdba22.json",
       "dydo/_system/audit/2026/2026-03-26-2ce5dff3-df71-4f75-9594-d976ea2d145b.json",
+      "dydo/_system/audit/2026/2026-03-26-4330c19f-c7d7-40fb-9a26-b35f4267c246.json",
       "dydo/_system/audit/2026/2026-03-26-59cf7094-3bf9-43e1-b35f-1680a0fae467.json",
       "dydo/_system/audit/2026/2026-03-26-5ea1bbdd-58a5-42a5-b7fc-ff9a353bbeec.json",
       "dydo/_system/audit/2026/2026-03-26-604ebd09-7905-473d-a833-ba72f9fba7a9.json",
+      "dydo/_system/audit/2026/2026-03-26-69c0187e-1b82-43c6-8e86-714c668df760.json",
       "dydo/_system/audit/2026/2026-03-26-717b5a8b-0304-4ab7-a159-8fe0c687b8d7.json",
       "dydo/_system/audit/2026/2026-03-26-79321850-be58-4a60-a482-36a7725df089.json",
       "dydo/_system/audit/2026/2026-03-26-7f57963f-5b25-47ec-9303-1d07ba97b070.json",
@@ -1697,9 +737,11 @@
       "dydo/_system/audit/2026/2026-03-26-9613d2c4-b7ba-452f-8f28-39bd9fdd5147.json",
       "dydo/_system/audit/2026/2026-03-26-9b4c3b63-9a01-407c-a75d-a7adf223d5bb.json",
       "dydo/_system/audit/2026/2026-03-26-afef3922-8d98-4408-b782-490fc2ceefe7.json",
+      "dydo/_system/audit/2026/2026-03-26-b6c6d94c-a4da-49f6-9bbc-a4f6d4a6c873.json",
       "dydo/_system/audit/2026/2026-03-26-bc479165-549f-4107-93bc-3f792e556bfb.json",
       "dydo/_system/audit/2026/2026-03-26-bc512ab0-7df1-479d-bd52-74edad95e071.json",
       "dydo/_system/audit/2026/2026-03-26-bfbc4e8f-1b41-423e-a573-26282ef1a02c.json",
+      "dydo/_system/audit/2026/2026-03-26-cb90f25a-d061-4fab-a2a5-d702a7d240c2.json",
       "dydo/_system/audit/2026/2026-03-26-d3553fc9-a9a7-4bc5-8656-4cd60c99d5ad.json",
       "dydo/_system/audit/2026/2026-03-26-d624b3d4-64bc-40e6-85dd-00e29a4e4c03.json",
       "dydo/_system/audit/2026/2026-03-26-dad1107a-e916-483b-a21e-e71eddb0a05c.json",
@@ -1707,6 +749,7 @@
       "dydo/_system/audit/2026/2026-03-26-ec568f6a-427d-444c-b2b6-2b71f208f027.json",
       "dydo/_system/audit/2026/2026-03-26-f2b8d8c4-3d62-4202-9894-4aa604ed41f3.json",
       "dydo/_system/audit/2026/2026-03-26-f9f5c588-b689-4d17-81f9-91b99c273f4c.json",
+      "dydo/_system/audit/2026/2026-03-26-fc7c1928-c6db-4d08-a52a-390f88db4920.json",
       "dydo/_system/compact-counter",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
@@ -2033,23 +1076,28 @@
       "dydo/project/tasks/dispatch-queue-design.md",
       "dydo/project/tasks/fix-ci-linux-round2.md",
       "dydo/project/tasks/fix-default-nudges.md",
+      "dydo/project/tasks/fix-inbox-discoverability.md",
       "dydo/project/tasks/fix-merge-cleanup-merge.md",
       "dydo/project/tasks/fix-merge-cleanup.md",
       "dydo/project/tasks/fix-merge-discoverability-merge.md",
       "dydo/project/tasks/fix-merge-discoverability.md",
       "dydo/project/tasks/fix-phantom-close.md",
+      "dydo/project/tasks/fix-plan-mode-matcher.md",
       "dydo/project/tasks/fix-queue-defaults-merge.md",
       "dydo/project/tasks/fix-queue-defaults.md",
       "dydo/project/tasks/fix-reviewer-queue-hint.md",
       "dydo/project/tasks/fix-wait-process-leak.md",
+      "dydo/project/tasks/fix-zombie-worktrees.md",
       "dydo/project/tasks/gap-check-freshness.md",
       "dydo/project/tasks/implement-dispatch-queue.md",
       "dydo/project/tasks/investigate-phantom-close.md",
+      "dydo/project/tasks/investigate-plan-mode-block.md",
       "dydo/project/tasks/investigate-process-leak.md",
       "dydo/project/tasks/investigate-reply-pending-race.md",
       "dydo/project/tasks/smoke-comp-a-merge.md",
       "dydo/project/tasks/smoke-comp-b-merge.md",
       "dydo/project/tasks/smoke-comp-postmortem.md",
+      "dydo/project/tasks/verify-process-leak-fix.md",
       "dydo/project/v1.3-release.md",
       "dydo/reference/_index.md",
       "dydo/reference/_reference.md",
@@ -2419,6 +1467,7 @@
       "DynaDocs.Tests/Services/FolderScaffolderTests.cs",
       "DynaDocs.Tests/Services/InboxItemParserTests.cs",
       "DynaDocs.Tests/Services/InboxMetadataReaderTests.cs",
+      "DynaDocs.Tests/Services/InboxServiceTests.cs",
       "DynaDocs.Tests/Services/IncludeReanchorTests.cs",
       "DynaDocs.Tests/Services/IndexGeneratorTests.cs",
       "DynaDocs.Tests/Services/LinkResolverTests.cs",
@@ -2926,28 +1975,6 @@
         "dydo/agents/adele/modes/reviewer.md",
         "dydo/agents/adele/modes/test-writer.md"
       ],
-      "dydo/agents/brian/workflow.md": [
-        "dydo/agents/brian/modes/co-thinker.md",
-        "dydo/agents/brian/modes/code-writer.md",
-        "dydo/agents/brian/modes/docs-writer.md",
-        "dydo/agents/brian/modes/inquisitor.md",
-        "dydo/agents/brian/modes/judge.md",
-        "dydo/agents/brian/modes/orchestrator.md",
-        "dydo/agents/brian/modes/planner.md",
-        "dydo/agents/brian/modes/reviewer.md",
-        "dydo/agents/brian/modes/test-writer.md"
-      ],
-      "dydo/agents/charlie/workflow.md": [
-        "dydo/agents/charlie/modes/co-thinker.md",
-        "dydo/agents/charlie/modes/code-writer.md",
-        "dydo/agents/charlie/modes/docs-writer.md",
-        "dydo/agents/charlie/modes/inquisitor.md",
-        "dydo/agents/charlie/modes/judge.md",
-        "dydo/agents/charlie/modes/orchestrator.md",
-        "dydo/agents/charlie/modes/planner.md",
-        "dydo/agents/charlie/modes/reviewer.md",
-        "dydo/agents/charlie/modes/test-writer.md"
-      ],
       "dydo/agents/dexter/workflow.md": [
         "dydo/agents/dexter/modes/co-thinker.md",
         "dydo/agents/dexter/modes/code-writer.md",
@@ -3412,96 +2439,6 @@
         "dydo/guides/coding-standards.md"
       ],
       "dydo/agents/adele/modes/test-writer.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/brian/modes/co-thinker.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/project/decisions/_index.md",
-        "dydo/agents/brian/modes/code-writer.md"
-      ],
-      "dydo/agents/brian/modes/code-writer.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/brian/modes/docs-writer.md": [
-        "dydo/understand/about.md",
-        "dydo/guides/how-to-use-docs.md",
-        "dydo/reference/writing-docs.md"
-      ],
-      "dydo/agents/brian/modes/inquisitor.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/brian/modes/judge.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/brian/modes/orchestrator.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md"
-      ],
-      "dydo/agents/brian/modes/planner.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/agents/brian/modes/code-writer.md"
-      ],
-      "dydo/agents/brian/modes/reviewer.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/brian/modes/test-writer.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/charlie/modes/co-thinker.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/project/decisions/_index.md",
-        "dydo/agents/charlie/modes/code-writer.md"
-      ],
-      "dydo/agents/charlie/modes/code-writer.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/charlie/modes/docs-writer.md": [
-        "dydo/understand/about.md",
-        "dydo/guides/how-to-use-docs.md",
-        "dydo/reference/writing-docs.md"
-      ],
-      "dydo/agents/charlie/modes/inquisitor.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/charlie/modes/judge.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/charlie/modes/orchestrator.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md"
-      ],
-      "dydo/agents/charlie/modes/planner.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/agents/charlie/modes/code-writer.md"
-      ],
-      "dydo/agents/charlie/modes/reviewer.md": [
-        "dydo/understand/about.md",
-        "dydo/understand/architecture.md",
-        "dydo/guides/coding-standards.md"
-      ],
-      "dydo/agents/charlie/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
@@ -5248,28 +4185,6 @@
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/adele/modes/reviewer.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/adele/modes/test-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/test-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/test-writer.md"
-      ],
       "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/workflow.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/co-thinker.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/code-writer.md",
@@ -5660,28 +4575,6 @@
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/adele/modes/planner.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/adele/modes/reviewer.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/adele/modes/test-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/test-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/workflow.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/co-thinker.md",
@@ -6096,96 +4989,6 @@
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
       "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/adele/modes/test-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/co-thinker.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/code-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/docs-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/inquisitor.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/judge.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/orchestrator.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/planner.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/reviewer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/test-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/co-thinker.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/docs-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/inquisitor.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/judge.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/orchestrator.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/planner.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/reviewer.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
@@ -7273,96 +6076,6 @@
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
       "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/adele/modes/test-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/co-thinker.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/code-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/docs-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/how-to-use-docs.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/writing-docs.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/inquisitor.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/judge.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/orchestrator.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/planner.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/reviewer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/test-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/co-thinker.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/docs-writer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/how-to-use-docs.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/writing-docs.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/inquisitor.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/judge.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/orchestrator.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/planner.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/reviewer.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
-      ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"

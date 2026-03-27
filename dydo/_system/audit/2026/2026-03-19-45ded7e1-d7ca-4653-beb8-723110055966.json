@@ -2442,6 +2442,93 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\24b400b6-msg-fix-guard-lift-negative.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T20:36:12.8976528Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/ 2\u003E/dev/null",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-27T20:36:19.5388206Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1ecfe4af-msg-speed-up-tests.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T20:36:36.9674287Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/"
+    },
+    {
+      "ts": "2026-03-27T20:36:48.1536459Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T20:36:55.2384436Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T20:37:10.0202261Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/ \u0026\u0026 cat dydo/_system/.local/queues/merge/.lock 2\u003E/dev/null |...",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-27T20:37:16.2429929Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\34b3595e-msg-queue-verify-2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T20:37:29.9968063Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-27T20:37:36.7271484Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\389da747-msg-queue-verify-1.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T20:37:50.6870884Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/"
+    },
+    {
+      "ts": "2026-03-27T20:38:01.6237319Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Serialization",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T20:38:09.4840661Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-27T21:09:08.1772038Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b6x2tg6yj.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-27T21:09:16.5462065Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\18cf79da-msg-fix-queue-debug.md",
+      "tool": "read"
     }
   ],
   "snapshot_ref": {

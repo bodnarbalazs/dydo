@@ -121,14 +121,14 @@
       "severity": "block"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s+test\\b(.*)",
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Btest\\b(.*)",
       "message": "Use the worktree-isolated test runner instead: python DynaDocs.Tests/coverage/run_tests.py $1\nThis avoids DLL lock contention when multiple agents run tests concurrently.",
       "severity": "warn"
     }
   ],
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",
-    "_system/templates/mode-code-writer.template.md": "3f2f0ee2bb41df33785a593917cb89faf6e388915dbe3bfccae0d29719c2efbd",
+    "_system/templates/mode-code-writer.template.md": "3b302adb8dd75bfdc92ad47673c36a3e3991f602622d429e46320e7d38037271",
     "_system/templates/mode-reviewer.template.md": "dac6b7e83cf0c9ed50d18983f50b0dea6ad5c15cf1fdc1b6ccfdd21ee066a321",
     "_system/templates/mode-co-thinker.template.md": "a32d83f42719f262a67f47165950bad4c99c72881ec7ddab5ca77574a6e11795",
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",

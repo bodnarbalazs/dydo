@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Diagnostics;
+using DynaDocs.Models;
 using DynaDocs.Utils;
 
 public static class WatchdogService
@@ -223,8 +224,18 @@ public static class WatchdogService
 
         // Stale active detection
         var staleEntries = queueService.FindStaleActiveEntries();
-        foreach (var (queueName, _) in staleEntries)
+
+        // On Windows, wt.exe exits immediately after spawning a tab — the PID in
+        // _active.json dies even though the terminal is still running. Check agent
+        // state before clearing: a working/reviewing/dispatched agent is not stale.
+        AgentRegistry? registry = null;
+        foreach (var (queueName, entry) in staleEntries)
         {
+            registry ??= new AgentRegistry(configService.GetProjectRoot());
+            var agentState = registry.GetAgentState(entry.Agent);
+            if (agentState?.Status is AgentStatus.Working or AgentStatus.Reviewing or AgentStatus.Dispatched)
+                continue;
+
             queueService.ClearActive(queueName);
             var next = queueService.DequeueNext(queueName);
             if (next != null)

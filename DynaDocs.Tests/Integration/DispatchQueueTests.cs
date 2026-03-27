@@ -161,6 +161,112 @@ public class DispatchQueueTests : IntegrationTestBase
     }
 
     [Fact]
+    public void WatchdogPollQueues_PreservesActiveEntry_WhenAgentStillWorking()
+    {
+        // Reproduces the Windows wt.exe race: PID dies immediately (wt.exe is a
+        // launcher that exits after sending IPC to the running WT instance) but the
+        // agent is still actively working. The watchdog must NOT clear the entry.
+        var dydoRoot = Path.Combine(TestDir, "dydo");
+        Directory.CreateDirectory(dydoRoot);
+
+        File.WriteAllText(Path.Combine(TestDir, "dydo.json"),
+            """{"version":1,"structure":{"root":"dydo"},"paths":{"source":[],"tests":[]},"agents":{"pool":["Adele","Brian"],"assignments":{"testuser":["Adele","Brian"]}},"queues":["merge"]}""");
+
+        // Create Adele's workspace with "working" status
+        var workspace = Path.Combine(dydoRoot, "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            role: code-writer
+            task: task-1
+            status: working
+            assigned: testuser
+            dispatched-by: null
+            dispatched-by-role: null
+            window-id: null
+            auto-close: false
+            started: 2026-03-27T20:00:00Z
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            unread-messages: []
+            task-role-history: []
+            ---
+
+            # Adele — Session State
+            """);
+
+        var service = new QueueService(dydoRoot);
+        service.SetActive("merge", "Adele", "task-1", 99999999); // Dead PID (simulates wt.exe)
+
+        var originalProcOverride = ProcessUtils.IsProcessRunningOverride;
+        var originalTerminalOverride = TerminalLauncher.ProcessStarterOverride;
+        try
+        {
+            ProcessUtils.IsProcessRunningOverride = _ => false;
+            TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
+
+            WatchdogService.PollQueues(dydoRoot);
+
+            // Active entry must still be present — agent is working, PID is just unreliable
+            var active = service.GetActive("merge");
+            Assert.NotNull(active);
+            Assert.Equal("Adele", active.Agent);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = originalProcOverride;
+            TerminalLauncher.ProcessStarterOverride = originalTerminalOverride;
+        }
+    }
+
+    [Fact]
+    public void WatchdogPollQueues_ClearsStaleEntry_WhenAgentIsFree()
+    {
+        // When the agent has released (Free status) but DequeueIfActive didn't
+        // fire (crash recovery), the watchdog should clear the stale entry.
+        var dydoRoot = Path.Combine(TestDir, "dydo");
+        Directory.CreateDirectory(dydoRoot);
+
+        File.WriteAllText(Path.Combine(TestDir, "dydo.json"),
+            """{"version":1,"structure":{"root":"dydo"},"paths":{"source":[],"tests":[]},"agents":{"pool":["Adele","Brian"],"assignments":{"testuser":["Adele","Brian"]}},"queues":["merge"]}""");
+
+        // Adele is free (no state file = free)
+        var adeleWorkspace = Path.Combine(dydoRoot, "agents", "Adele");
+        Directory.CreateDirectory(adeleWorkspace);
+
+        // Brian workspace for pending entry
+        var brianWorkspace = Path.Combine(dydoRoot, "agents", "Brian");
+        Directory.CreateDirectory(brianWorkspace);
+
+        var service = new QueueService(dydoRoot);
+        service.SetActive("merge", "Adele", "task-1", 99999999); // Dead PID
+        service.TryEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
+
+        var originalProcOverride = ProcessUtils.IsProcessRunningOverride;
+        var originalTerminalOverride = TerminalLauncher.ProcessStarterOverride;
+        try
+        {
+            ProcessUtils.IsProcessRunningOverride = _ => false;
+            TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
+
+            WatchdogService.PollQueues(dydoRoot);
+
+            // Adele cleared, Brian promoted
+            var active = service.GetActive("merge");
+            Assert.NotNull(active);
+            Assert.Equal("Brian", active.Agent);
+            Assert.Empty(service.GetPending("merge"));
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = originalProcOverride;
+            TerminalLauncher.ProcessStarterOverride = originalTerminalOverride;
+        }
+    }
+
+    [Fact]
     public void WatchdogPollQueues_CleansUpEmptyTransient()
     {
         var dydoRoot = Path.Combine(TestDir, "dydo");

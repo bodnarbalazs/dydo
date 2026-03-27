@@ -10,10 +10,6 @@ public static class WatchdogService
         "powershell", "pwsh", "bash", "sh", "cmd", "zsh"
     };
 
-    // Agents seen as "free + auto-close + processes still running" on a previous poll.
-    // On first sighting we defer (let natural exit work). On the next poll, if still running, we intervene.
-    internal static readonly HashSet<string> PendingCleanup = new(StringComparer.OrdinalIgnoreCase);
-
     /// <summary>
     /// When set, EnsureRunning uses this instead of Process.Start.
     /// Enables testing without spawning real watchdog processes.
@@ -169,8 +165,6 @@ public static class WatchdogService
         var agentsDir = Path.Combine(dydoRoot, "agents");
         if (!Directory.Exists(agentsDir)) return;
 
-        var activeAgents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
         foreach (var agentDir in Directory.GetDirectories(agentsDir))
         {
             var statePath = Path.Combine(agentDir, "state.md");
@@ -179,26 +173,16 @@ public static class WatchdogService
             var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
             if (!autoClose || !isFree || agentName == null) continue;
 
-            activeAgents.Add(agentName);
-
             var pattern = $"{agentName} --inbox";
             var pids = FindProcessesOverride != null
                 ? FindProcessesOverride(pattern)
                 : ProcessUtils.FindProcessesByCommandLine(pattern);
 
-            if (pids.Count == 0)
-            {
-                // Tab already closed naturally. Clear the flag.
-                PendingCleanup.Remove(agentName);
-                ClearAutoClose(statePath);
-                continue;
-            }
-
-            // Processes still running — defer on first sighting to let natural exit work.
-            if (PendingCleanup.Add(agentName))
-                continue;
-
-            // Second consecutive poll with processes still running — kill non-shell processes.
+            // Kill non-shell processes immediately — no deferral.
+            // The phantom close issue that originally motivated a two-poll
+            // deferral is fixed separately; killing on first sighting
+            // prevents the race where re-dispatch between polls leaves
+            // old sessions alive.
             foreach (var pid in pids)
             {
                 try
@@ -211,12 +195,8 @@ public static class WatchdogService
                 catch { }
             }
 
-            PendingCleanup.Remove(agentName);
             ClearAutoClose(statePath);
         }
-
-        // Evict stale entries for agents no longer in free+auto-close state
-        PendingCleanup.IntersectWith(activeAgents);
     }
 
     internal static void ClearAutoClose(string statePath)

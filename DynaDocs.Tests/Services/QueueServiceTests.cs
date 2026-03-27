@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Models;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public class QueueServiceTests : IDisposable
 {
@@ -394,5 +395,75 @@ public class QueueServiceTests : IDisposable
         Assert.NotNull(active);
         Assert.Equal(42, active.Pid);
         Assert.Equal("Brian", active.Agent);
+    }
+
+    [Fact]
+    public void Constructor_NormalizesWorktreeRoot_ToMainProject()
+    {
+        var projectRoot = Path.Combine(Path.GetTempPath(), "dydo-wt-test-" + Guid.NewGuid().ToString("N")[..8]);
+        try
+        {
+            // Main project: <projectRoot>/dydo.json and <projectRoot>/dydo/
+            Directory.CreateDirectory(projectRoot);
+            File.WriteAllText(Path.Combine(projectRoot, "dydo.json"), "{}");
+            var mainDydoRoot = Path.Combine(projectRoot, "dydo");
+            Directory.CreateDirectory(mainDydoRoot);
+
+            // Worktree: <projectRoot>/dydo/_system/.local/worktrees/<id>/ with its own dydo.json and dydo/
+            var worktreeRoot = Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees", "wt-abc");
+            Directory.CreateDirectory(worktreeRoot);
+            File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), "{}");
+            var worktreeDydoRoot = Path.Combine(worktreeRoot, "dydo");
+            Directory.CreateDirectory(worktreeDydoRoot);
+
+            var mainService = new QueueService(mainDydoRoot);
+            var worktreeService = new QueueService(worktreeDydoRoot);
+
+            // Both must resolve to the same queues directory (the main project's)
+            Assert.Equal(
+                PathUtils.NormalizePath(mainService.QueuesDir),
+                PathUtils.NormalizePath(worktreeService.QueuesDir));
+        }
+        finally
+        {
+            if (Directory.Exists(projectRoot))
+                Directory.Delete(projectRoot, true);
+        }
+    }
+
+    [Fact]
+    public void WorktreeService_SharesQueueState_WithMainService()
+    {
+        var projectRoot = Path.Combine(Path.GetTempPath(), "dydo-wt-test-" + Guid.NewGuid().ToString("N")[..8]);
+        try
+        {
+            Directory.CreateDirectory(projectRoot);
+            File.WriteAllText(Path.Combine(projectRoot, "dydo.json"), "{}");
+            var mainDydoRoot = Path.Combine(projectRoot, "dydo");
+            Directory.CreateDirectory(mainDydoRoot);
+
+            var worktreeRoot = Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees", "wt-abc");
+            Directory.CreateDirectory(worktreeRoot);
+            File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), "{}");
+            var worktreeDydoRoot = Path.Combine(worktreeRoot, "dydo");
+            Directory.CreateDirectory(worktreeDydoRoot);
+
+            var config = new DydoConfig { Queues = ["merge"] };
+            var mainService = new QueueService(mainDydoRoot, config);
+            var worktreeService = new QueueService(worktreeDydoRoot, config);
+
+            // Enqueue from main
+            mainService.SetActive("merge", "Charlie", "task-0", 1);
+
+            // Worktree service must see the active entry set by main
+            var active = worktreeService.GetActive("merge");
+            Assert.NotNull(active);
+            Assert.Equal("Charlie", active.Agent);
+        }
+        finally
+        {
+            if (Directory.Exists(projectRoot))
+                Directory.Delete(projectRoot, true);
+        }
     }
 }

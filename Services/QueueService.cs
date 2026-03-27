@@ -20,6 +20,8 @@ public class QueueService
     public QueueService(string? dydoRoot = null, DydoConfig? config = null)
     {
         var root = dydoRoot ?? PathUtils.FindDydoRoot() ?? ".";
+        // Worktree agents must share one queue — normalize to the main project root
+        root = PathUtils.NormalizeWorktreePath(root) ?? root;
         _queuesDir = Path.Combine(root, "_system", ".local", "queues");
         _config = config;
     }

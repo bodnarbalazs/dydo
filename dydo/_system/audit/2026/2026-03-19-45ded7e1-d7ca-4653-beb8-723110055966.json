@@ -2529,6 +2529,49 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\18cf79da-msg-fix-queue-debug.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-28T14:10:17.1879207Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bgii4jt9t.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-28T14:10:25.8381693Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-28T14:10:34.730284Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3f689832-msg-smoke-final3-a.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-28T14:10:47.6598752Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/_system/.local/queues/merge/"
+    },
+    {
+      "ts": "2026-03-28T14:18:59.0708571Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-03-28T14:18:59.9401477Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-final3-a.txt \u0026\u0026 echo \u0022A: EXISTS\u0022 || echo \u0022A: NOT on master\u0022"
+    },
+    {
+      "ts": "2026-03-28T14:19:00.1400492Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "test -f Commands/smoke-final3-b.txt \u0026\u0026 echo \u0022B: EXISTS\u0022 || echo \u0022B: NOT on master\u0022"
     }
   ],
   "snapshot_ref": {

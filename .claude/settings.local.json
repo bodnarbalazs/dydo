@@ -7,7 +7,6 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet run:*)",
       "Bash(dotnet test:*)",
-      
       "Bash(dydo agent claim:*)",
       "Bash(dydo agent --help:*)",
       "Bash(dydo whoami:*)",
@@ -27,7 +26,6 @@
       "Read(C:\\Users\\User\\Desktop\\Projects\\DynaDocs/**)",
       "Read(**)",
       "Read(~/**)",
-      
       "Read(C:/Users/User/Desktop/Projects/DynaDocs/**)",
       "Bash(python DynaDocs.Tests/coverage/run_tests.py)",
       "Bash(python DynaDocs.Tests/coverage/gap_check.py)"

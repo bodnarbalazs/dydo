@@ -359,7 +359,7 @@ public class AgentCrudOperations
     {
         var state = _getAgentState(name);
         var session = _getSession(name);
-        return !((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched);
+        return !((state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued);
     }
 
     private string NormalizeFromPool(string name)

@@ -1770,6 +1770,37 @@ public class AgentRegistryTests : IDisposable
         Assert.Contains(freeAgents, a => a.Name == "Adele");
     }
 
+    [Fact]
+    public void GetFreeAgents_IncludesStaleQueuedAgent()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+
+        // Write a dispatched state with old timestamp (stale) + .queued marker
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        var staleTime = DateTime.UtcNow.AddMinutes(-5);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: Adele
+            status: dispatched
+            assigned: testuser
+            started: {{staleTime:o}}
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            task-role-history: {}
+            ---
+            # Adele — Session State
+            """);
+        File.WriteAllText(Path.Combine(workspace, ".queued"), "");
+
+        var registry = new AgentRegistry(_testDir);
+
+        var freeAgents = registry.GetFreeAgents();
+
+        Assert.Contains(freeAgents, a => a.Name == "Adele");
+    }
+
     #endregion
 
     #region DispatchedBy Persistence
@@ -2596,6 +2627,95 @@ public class AgentRegistryTests : IDisposable
         var statePath = Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md");
         var stateContent = File.ReadAllText(statePath);
         Assert.Contains("dispatched-by-role: null", stateContent);
+    }
+
+    #endregion
+
+    #region Queued Status Tests
+
+    [Fact]
+    public void GetAgentState_DispatchedWithQueuedMarker_ReturnsQueued()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: dispatched
+            assigned: testuser
+            ---
+            """);
+        File.WriteAllText(Path.Combine(workspace, ".queued"), "default:1");
+
+        var registry = new AgentRegistry(_testDir);
+        var state = registry.GetAgentState("Adele");
+
+        Assert.Equal(AgentStatus.Queued, state!.Status);
+    }
+
+    [Fact]
+    public void GetAgentState_DispatchedWithoutQueuedMarker_RemainsDispatched()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: dispatched
+            assigned: testuser
+            ---
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+        var state = registry.GetAgentState("Adele");
+
+        Assert.Equal(AgentStatus.Dispatched, state!.Status);
+    }
+
+    [Fact]
+    public void GetAgentState_WorkingWithQueuedMarker_RemainsWorking()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            ---
+            """);
+        // Stale .queued marker shouldn't affect non-dispatched status
+        File.WriteAllText(Path.Combine(workspace, ".queued"), "default:1");
+
+        var registry = new AgentRegistry(_testDir);
+        var state = registry.GetAgentState("Adele");
+
+        Assert.Equal(AgentStatus.Working, state!.Status);
+    }
+
+    [Fact]
+    public void GetFreeAgents_ExcludesQueuedAgents()
+    {
+        SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+
+        var adeleWorkspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(adeleWorkspace);
+        File.WriteAllText(Path.Combine(adeleWorkspace, "state.md"), """
+            ---
+            agent: Adele
+            status: dispatched
+            assigned: testuser
+            ---
+            """);
+        File.WriteAllText(Path.Combine(adeleWorkspace, ".queued"), "default:1");
+
+        var registry = new AgentRegistry(_testDir);
+        var freeAgents = registry.GetFreeAgents();
+
+        Assert.DoesNotContain(freeAgents, a => a.Name == "Adele");
     }
 
     #endregion

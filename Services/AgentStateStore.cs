@@ -179,6 +179,7 @@ public class AgentStateStore
     private static AgentStatus ParseStatus(string value) => value switch
     {
         "dispatched" => AgentStatus.Dispatched,
+        "queued" => AgentStatus.Queued,
         "working" => AgentStatus.Working,
         "reviewing" => AgentStatus.Reviewing,
         _ => AgentStatus.Free

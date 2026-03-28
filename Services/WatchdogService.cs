@@ -233,7 +233,7 @@ public static class WatchdogService
         {
             registry ??= new AgentRegistry(configService.GetProjectRoot());
             var agentState = registry.GetAgentState(entry.Agent);
-            if (agentState?.Status is AgentStatus.Working or AgentStatus.Reviewing or AgentStatus.Dispatched)
+            if (agentState?.Status is AgentStatus.Working or AgentStatus.Reviewing or AgentStatus.Dispatched or AgentStatus.Queued)
                 continue;
 
             queueService.ClearActive(queueName);

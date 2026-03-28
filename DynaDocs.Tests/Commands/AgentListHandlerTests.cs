@@ -190,6 +190,56 @@ public class AgentListHandlerTests : IDisposable
         Assert.Contains("? = stale worktree", stdout);
     }
 
+    [Fact]
+    public void ShowAllAgents_DispatchedWithQueuedMarker_ShowsQueued()
+    {
+        WriteAgentState("Adele", "dispatched");
+        File.WriteAllText(Path.Combine(_registry.GetAgentWorkspace("Adele"), ".queued"), "default:1");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        Assert.Contains("queued", stdout);
+    }
+
+    [Fact]
+    public void ShowAllAgents_DispatchedWithoutQueuedMarker_ShowsDispatched()
+    {
+        WriteAgentState("Adele", "dispatched");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        Assert.Contains("dispatched", stdout);
+        Assert.DoesNotContain("queued", stdout);
+    }
+
+    [Fact]
+    public void ShowAllAgents_QueuedAgents_SummaryIncludesQueuedCount()
+    {
+        WriteAgentState("Adele", "dispatched");
+        File.WriteAllText(Path.Combine(_registry.GetAgentWorkspace("Adele"), ".queued"), "default:1");
+        WriteAgentState("Brian", "dispatched");
+        File.WriteAllText(Path.Combine(_registry.GetAgentWorkspace("Brian"), ".queued"), "default:2");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        Assert.Contains("2 queued", stdout);
+    }
+
+    [Fact]
+    public void ShowHumanAgents_DispatchedWithQueuedMarker_ShowsQueued()
+    {
+        WriteAgentState("Adele", "dispatched");
+        File.WriteAllText(Path.Combine(_registry.GetAgentWorkspace("Adele"), ".queued"), "default:1");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowHumanAgents(_registry, false, "testuser"));
+
+        Assert.Contains("queued", stdout);
+    }
+
     private void CreateAgentWorkspace(string name)
     {
         Directory.CreateDirectory(_registry.GetAgentWorkspace(name));

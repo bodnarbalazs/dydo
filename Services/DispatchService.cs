@@ -529,7 +529,7 @@ public static class DispatchService
                     return agent.Name;
             }
 
-            if (agent.Status == AgentStatus.Dispatched)
+            if (agent.Status == AgentStatus.Dispatched || agent.Status == AgentStatus.Queued)
             {
                 var agentInbox = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
                 if (Directory.Exists(agentInbox))

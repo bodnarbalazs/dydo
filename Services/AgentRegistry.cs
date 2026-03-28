@@ -141,10 +141,10 @@ public partial class AgentRegistry : IAgentRegistry
 
     private bool IsEffectivelyFree(AgentState state) =>
         state.Status == AgentStatus.Free ||
-        (state.Status == AgentStatus.Dispatched && IsStaleDispatch(state));
+        (state.Status is AgentStatus.Dispatched or AgentStatus.Queued && IsStaleDispatch(state));
 
     private static bool IsStaleDispatch(AgentState state) =>
-        state.Status == AgentStatus.Dispatched &&
+        state.Status is AgentStatus.Dispatched or AgentStatus.Queued &&
         state.Since.HasValue &&
         (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleDispatchMinutes;
 
@@ -181,11 +181,10 @@ public partial class AgentRegistry : IAgentRegistry
 
             // HandleExistingSession returns true for both "proceed" and "idempotent reclaim";
             // if the error string is empty and we got a match, it was idempotent.
-            if (existingSession?.SessionId == sessionId &&
-                state?.Status != AgentStatus.Free && state?.Status != AgentStatus.Dispatched)
+            if (IsIdempotentReclaim(existingSession, state, sessionId))
                 return true;
 
-            SetupAgentWorkspace(agentName, sessionId, human, state?.Status == AgentStatus.Dispatched);
+            SetupAgentWorkspace(agentName, sessionId, human, IsDispatchedOrQueued(state));
             return true;
         }
         finally
@@ -193,6 +192,15 @@ public partial class AgentRegistry : IAgentRegistry
             ReleaseLock(agentName);
         }
     }
+
+    private static bool IsIdempotentReclaim(AgentSession? existingSession, AgentState? state, string sessionId) =>
+        existingSession?.SessionId == sessionId && !IsUnclaimedStatus(state?.Status);
+
+    private static bool IsUnclaimedStatus(AgentStatus? status) =>
+        status is null or AgentStatus.Free or AgentStatus.Dispatched or AgentStatus.Queued;
+
+    private static bool IsDispatchedOrQueued(AgentState? state) =>
+        state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued;
 
     private string? ResolveSessionId(string agentName)
     {
@@ -228,7 +236,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         error = string.Empty;
 
-        if (state?.Status == AgentStatus.Free || state?.Status == AgentStatus.Dispatched || existingSession == null)
+        if (state?.Status == AgentStatus.Free || state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued || existingSession == null)
             return true;
 
         if (existingSession.SessionId == sessionId)
@@ -322,7 +330,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var humanAgents = GetAgentsForHuman(human);
             var hasDispatchedWithInbox = GetAllAgentStates()
-                .Any(a => a.Status == AgentStatus.Dispatched
+                .Any(a => (a.Status == AgentStatus.Dispatched || a.Status == AgentStatus.Queued)
                     && humanAgents.Contains(a.Name, StringComparer.OrdinalIgnoreCase)
                     && HasPendingInbox(a.Name));
 
@@ -698,7 +706,14 @@ public partial class AgentRegistry : IAgentRegistry
             };
         }
 
-        return ParseStateFile(agentName, statePath);
+        var state = ParseStateFile(agentName, statePath);
+        if (state?.Status == AgentStatus.Dispatched &&
+            File.Exists(Path.Combine(GetAgentWorkspace(agentName), ".queued")))
+        {
+            state.Status = AgentStatus.Queued;
+        }
+
+        return state;
     }
 
     public List<AgentState> GetAllAgentStates()
@@ -1409,6 +1424,7 @@ public partial class AgentRegistry : IAgentRegistry
     private static AgentStatus ParseStatus(string value) => value switch
     {
         "dispatched" => AgentStatus.Dispatched,
+        "queued" => AgentStatus.Queued,
         "working" => AgentStatus.Working,
         "reviewing" => AgentStatus.Reviewing,
         _ => AgentStatus.Free
@@ -1627,7 +1643,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         var state = GetAgentState(agentName);
         var session = GetSession(agentName);
-        return (state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched;
+        return (state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued;
     }
 
     /// <summary>

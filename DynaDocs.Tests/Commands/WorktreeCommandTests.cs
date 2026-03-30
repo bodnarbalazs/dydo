@@ -1492,7 +1492,8 @@ public class WorktreeCommandTests : IDisposable
         var entries = WorktreeCommand.BuildPermissionEntries("/home/user/project");
 
         // Unix paths don't start with a drive letter — no MSYS variant even on Windows
-        Assert.DoesNotContain(entries, e => e.Contains("/h/") && e.Contains("MSYS"));
+        // 4 patterns (forward, backslash, wildcard, tilde) x 2 permissions (Read, Write) = 8
+        Assert.Equal(8, entries.Length);
         Assert.Contains("Read(/home/user/project/**)", entries);
         Assert.Contains("Write(/home/user/project/**)", entries);
         Assert.Contains("Read(**)", entries);

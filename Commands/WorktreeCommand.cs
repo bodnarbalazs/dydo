@@ -102,14 +102,8 @@ public static class WorktreeCommand
         var allow = permissions["allow"]?.AsArray() ?? new JsonArray();
         permissions["allow"] = allow;
 
-        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
-        var backslashRoot = mainRoot.Replace('/', '\\').TrimEnd('\\');
-        var readForwardEntry = $"Read({normalizedRoot}/**)";
-        var readBackslashEntry = $"Read({backslashRoot}/**)";
-        var readWildcardEntry = "Read(**)";
-        var readTildeEntry = "Read(~/**)";
-
-        AddMissingEntries(allow, readForwardEntry, readBackslashEntry, readWildcardEntry, readTildeEntry);
+        var entries = BuildPermissionEntries(mainRoot);
+        AddMissingEntries(allow, entries);
 
         var claudeDir = Path.Combine(Directory.GetCurrentDirectory(), ".claude");
         Directory.CreateDirectory(claudeDir);
@@ -126,12 +120,43 @@ public static class WorktreeCommand
             var mainAllow = mainPerms["allow"]?.AsArray() ?? new JsonArray();
             mainPerms["allow"] = mainAllow;
 
-            AddMissingEntries(mainAllow, readForwardEntry, readBackslashEntry, readWildcardEntry, readTildeEntry);
+            AddMissingEntries(mainAllow, entries);
             File.WriteAllText(sourcePath, mainSettings.ToJsonString(WriteOptions));
         }
         catch { /* best-effort */ }
 
         return ExitCodes.Success;
+    }
+
+    internal static string[] BuildPermissionEntries(string mainRoot)
+    {
+        var normalizedRoot = mainRoot.Replace('\\', '/').TrimEnd('/');
+        var backslashRoot = mainRoot.Replace('/', '\\').TrimEnd('\\');
+
+        var pathPatterns = new List<string>
+        {
+            $"{normalizedRoot}/**",
+            $"{backslashRoot}/**",
+            "**",
+            "~/**"
+        };
+
+        // MSYS/Git Bash format: C:/Users/... -> /c/Users/...
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            && normalizedRoot.Length >= 2 && char.IsLetter(normalizedRoot[0]) && normalizedRoot[1] == ':')
+        {
+            var msysRoot = "/" + char.ToLowerInvariant(normalizedRoot[0]) + normalizedRoot[2..];
+            pathPatterns.Add($"{msysRoot}/**");
+        }
+
+        var entries = new List<string>(pathPatterns.Count * 2);
+        foreach (var pattern in pathPatterns)
+        {
+            entries.Add($"Read({pattern})");
+            entries.Add($"Write({pattern})");
+        }
+
+        return entries.ToArray();
     }
 
     private static void AddMissingEntries(JsonArray allow, params string[] entries)

@@ -88,18 +88,6 @@ public class OffLimitsService : IOffLimitsService
         return null;
     }
 
-    public (bool IsBlocked, string? MatchedPath, string? MatchedPattern) CheckCommand(string command)
-    {
-        var paths = ExtractPathsFromCommand(command);
-        foreach (var path in paths)
-        {
-            var pattern = IsPathOffLimits(path);
-            if (pattern != null)
-                return (true, path, pattern);
-        }
-        return (false, null, null);
-    }
-
     public IEnumerable<string> ValidateLiteralPaths(string basePath)
     {
         var missing = new List<string>();
@@ -203,25 +191,7 @@ public class OffLimitsService : IOffLimitsService
         return string.IsNullOrWhiteSpace(candidate) ? null : candidate;
     }
 
-    /// <summary>
-    /// Convert a glob pattern to a compiled regex.
-    /// Supports: ** (any path), * (within segment), ? (single char)
-    /// </summary>
-    private static Regex CompileGlobToRegex(string pattern)
-    {
-        // Normalize to forward slashes for matching
-        pattern = PathUtils.NormalizePath(pattern);
-
-        // Build regex pattern
-        var regexPattern = "^" + Regex.Escape(pattern)
-            .Replace(@"\*\*/", "(.*/)?")     // **/ matches any path or empty
-            .Replace(@"\*\*", ".*")          // ** matches anything
-            .Replace(@"\*", "[^/]*")         // * matches within a segment
-            .Replace(@"\?", ".")             // ? matches single char
-            + "$";
-
-        return new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    }
+    private static Regex CompileGlobToRegex(string pattern) => GlobMatcher.CompileGlob(pattern);
 
     private static bool ContainsWildcard(string pattern)
     {
@@ -247,83 +217,6 @@ public class OffLimitsService : IOffLimitsService
                text.Contains('?') ||
                text.StartsWith('.') ||  // .env, .gitignore, etc.
                (text.Contains('.') && !text.Contains(' '));  // file.ext but not "a sentence."
-    }
-
-    /// <summary>
-    /// Extract potential file paths from a shell command.
-    /// This is a simplified extraction for quick checking.
-    /// </summary>
-    private static readonly string[] CommandPathPatterns =
-    [
-        @"['""]([^'""]+)['""]",
-        @"(?:cat|head|tail|less|more|type|Get-Content|gc)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
-        @"(?:>|>>)\s*([^\s|;&]+)",
-        @"(?:<)\s*([^\s|;&]+)",
-        @"(?:rm|del|Remove-Item|ri)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
-        @"(?:cp|mv|copy|move|Copy-Item|Move-Item)\s+(?:-[^\s]+\s+)*([^\s|;&>-][^\s|;&>]*)",
-        @"(?:chmod|chown|icacls)\s+(?:[^\s]+\s+)*([^\s|;&>]+)",
-        @"(?:touch|truncate|tee)\s+([^\s|;&>]+)",
-        @"echo\s+[^>]*>>\s*([^\s|;&]+)",
-        @"echo\s+[^>]*>\s*([^\s|;&]+)",
-    ];
-
-    private static IEnumerable<string> ExtractPathsFromCommand(string command)
-    {
-        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var pattern in CommandPathPatterns)
-        {
-            foreach (var path in GetFirstMatchedGroup(command, pattern))
-            {
-                if (LooksLikePath(path))
-                    paths.Add(path);
-            }
-        }
-
-        return paths;
-    }
-
-    private static IEnumerable<string> GetFirstMatchedGroup(string input, string pattern)
-    {
-        var matches = Regex.Matches(input, pattern, RegexOptions.IgnoreCase);
-        foreach (Match m in matches)
-        {
-            // Find the first captured group that has a value
-            for (int g = 1; g < m.Groups.Count; g++)
-            {
-                if (m.Groups[g].Success)
-                {
-                    yield return m.Groups[g].Value.Trim('"', '\'');
-                    break;
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Heuristic to determine if a string looks like a file path.
-    /// </summary>
-    private static readonly HashSet<string> ShellBuiltins = new(StringComparer.OrdinalIgnoreCase)
-        { "echo", "printf", "true", "false", "exit", "return" };
-
-    private static bool LooksLikePath(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return false;
-
-        if (value.StartsWith('-') || value.StartsWith("&"))
-            return false;
-
-        if (ShellBuiltins.Contains(value))
-            return false;
-
-        if (value.Contains('.') || value.Contains('/') || value.Contains('\\'))
-            return true;
-
-        if (!value.Contains(' '))
-            return true;
-
-        return false;
     }
 
     /// <summary>

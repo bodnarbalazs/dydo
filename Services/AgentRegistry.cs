@@ -1308,15 +1308,7 @@ public partial class AgentRegistry : IAgentRegistry
         return PathUtils.NormalizePath(path);
     }
 
-    private static bool MatchesGlob(string path, string pattern)
-    {
-        // Simple glob matching: ** matches any path, * matches within segment
-        var regexPattern = "^" + Regex.Escape(pattern)
-            .Replace(@"\*\*", ".*")
-            .Replace(@"\*", "[^/]*") + "$";
-
-        return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
-    }
+    private static bool MatchesGlob(string path, string pattern) => GlobMatcher.IsMatch(path, pattern);
 
     public void SetDispatchMetadata(string agentName, string? windowId, bool autoClose)
     {

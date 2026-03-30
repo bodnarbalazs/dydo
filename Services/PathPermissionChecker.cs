@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -101,10 +100,6 @@ public class PathPermissionChecker
 
     public static bool MatchesGlob(string path, string pattern)
     {
-        var regexPattern = "^" + Regex.Escape(pattern)
-            .Replace(@"\*\*", ".*")
-            .Replace(@"\*", "[^/]*") + "$";
-
-        return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
+        return GlobMatcher.IsMatch(path, pattern);
     }
 }

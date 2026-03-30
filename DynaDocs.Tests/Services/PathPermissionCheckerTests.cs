@@ -166,6 +166,13 @@ public class PathPermissionCheckerTests
     [InlineData("other/file.cs", "src/**", false)]
     [InlineData("Commands/Foo.cs", "Commands/*", true)]
     [InlineData("Commands/Sub/Foo.cs", "Commands/*", false)]
+    // **/ prefix should optionally match root-level paths
+    [InlineData("secrets.json", "**/secrets.json", true)]
+    [InlineData("config/secrets.json", "**/secrets.json", true)]
+    [InlineData("deep/nested/secrets.json", "**/secrets.json", true)]
+    // ? should match a single character
+    [InlineData("file1.cs", "file?.cs", true)]
+    [InlineData("fileAB.cs", "file?.cs", false)]
     public void MatchesGlob_VariousPatterns(string path, string pattern, bool expected)
     {
         Assert.Equal(expected, PathPermissionChecker.MatchesGlob(path, pattern));

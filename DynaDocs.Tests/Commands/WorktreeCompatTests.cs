@@ -660,6 +660,45 @@ public class WorktreeCompatTests : IDisposable
         Assert.Null(result);
     }
 
+    [Fact]
+    public void CheckBashFileOperation_ReadOp_NoAgent_BlocksNonBootstrapPath()
+    {
+        // An unclaimed agent should not be able to read non-bootstrap files via bash
+        var op = new FileOperation { Type = FileOperationType.Read, Path = "Commands/GuardCommand.cs", Command = "cat" };
+        var offLimits = new OffLimitsService();
+        var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-read"));
+        var audit = new AuditService();
+
+        var result = GuardCommand.CheckBashFileOperation(op, "cat Commands/GuardCommand.cs", null, offLimits, registry, audit);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Value);
+    }
+
+    [Fact]
+    public void CheckBashFileOperation_ReadOp_NoAgent_AllowsBootstrapFile()
+    {
+        // Bootstrap files (root-level) should still be readable without identity
+        var op = new FileOperation { Type = FileOperationType.Read, Path = "README.md", Command = "cat" };
+        var offLimits = new OffLimitsService();
+        var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-bootstrap"));
+        var audit = new AuditService();
+
+        var result = GuardCommand.CheckBashFileOperation(op, "cat README.md", null, offLimits, registry, audit);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void CheckBashFileOperation_ReadOp_NoAgent_AllowsDydoIndex()
+    {
+        var op = new FileOperation { Type = FileOperationType.Read, Path = "dydo/index.md", Command = "cat" };
+        var offLimits = new OffLimitsService();
+        var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-index"));
+        var audit = new AuditService();
+
+        var result = GuardCommand.CheckBashFileOperation(op, "cat dydo/index.md", null, offLimits, registry, audit);
+        Assert.Null(result);
+    }
+
     #endregion
 
     #region InitCommand refuses inside worktree

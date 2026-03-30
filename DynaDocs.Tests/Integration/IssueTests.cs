@@ -245,6 +245,42 @@ public class IssueTests : IntegrationTestBase
         AssertFileExists("dydo/project/issues/0002-second-issue.md");
     }
 
+    [Fact]
+    public async Task Issue_Create_CleansUpLockFile()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        await IssueCreateAsync("Lock test issue", area: "general", severity: "low");
+
+        // Lock file should exist but not be held (no exclusive lock after create returns)
+        var lockPath = Path.Combine(TestDir, "dydo", "project", "issues", ".lock");
+        Assert.True(File.Exists(lockPath));
+        // Verify the lock is not held — we should be able to open it exclusively
+        using var fs = new FileStream(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        Assert.NotNull(fs);
+    }
+
+    [Fact]
+    public async Task Issue_Create_UnderContention_RetriesAndSucceeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        var issuesDir = Path.Combine(TestDir, "dydo", "project", "issues");
+        Directory.CreateDirectory(issuesDir);
+        var lockPath = Path.Combine(issuesDir, ".lock");
+
+        // Hold the lock briefly, then release before retries exhaust
+        using var holdLock = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        var createTask = Task.Run(async () => await IssueCreateAsync("Contended issue", area: "general", severity: "low"));
+
+        // Release lock after 300ms — within the 5 * 200ms retry window
+        await Task.Delay(300);
+        holdLock.Dispose();
+
+        var result = await createTask;
+        result.AssertSuccess();
+        result.AssertStdoutContains("Created issue #1");
+    }
+
     #endregion
 
     #region Helper Methods

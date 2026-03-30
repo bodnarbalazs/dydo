@@ -48,7 +48,7 @@ public class CompleteCommandTests : IDisposable
         Assert.Contains("init", completions);
         Assert.Contains("dispatch", completions);
         Assert.Contains("review", completions);
-        Assert.Contains("clean", completions);
+        Assert.DoesNotContain("clean", completions);
         Assert.Contains("completions", completions);
     }
 
@@ -190,11 +190,11 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void Clean_ReturnsAgentNames()
+    public void AgentClean_ReturnsAgentNames()
     {
         SetupProject(["Adele"]);
 
-        var completions = CompleteCommand.GetCompletions(2, ["dydo", "clean"]).ToList();
+        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "clean"]).ToList();
 
         Assert.Contains("Adele", completions);
     }

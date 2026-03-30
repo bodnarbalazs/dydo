@@ -35,7 +35,7 @@ Nine built-in roles ship with dydo, marked `"base": true` in their definitions:
 | **test-writer** | Writes and maintains test suites | Tests, own workspace |
 | **orchestrator** | Coordinates multi-agent workflows | Documentation, own workspace |
 | **inquisitor** | Conducts documentation and knowledge audits | Documentation, own workspace |
-| **judge** | Arbitrates disputes between agents | Documentation, own workspace |
+| **judge** | Evaluates inquisition reports and arbitrates disputes | Documentation, own workspace |
 
 Base roles are immutable — they cannot be deleted or renamed, and `dydo roles reset` regenerates them from defaults.
 

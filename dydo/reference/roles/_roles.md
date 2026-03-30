@@ -28,7 +28,7 @@ Each role defines what an agent can do and what it can't. Roles are enforced by 
 | **test-writer** | Specialist | Writes and maintains test suites |
 | **orchestrator** | Oversight | Coordinates multi-agent workflows and task dispatch |
 | **inquisitor** | Oversight | Conducts adversarial QA and knowledge audits |
-| **judge** | Oversight | Arbitrates disputes between agents |
+| **judge** | Oversight | Evaluates inquisition reports and arbitrates disputes |
 
 ## When to Add Docs Here
 

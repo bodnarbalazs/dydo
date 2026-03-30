@@ -7,7 +7,7 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
-        "dispatch", "inbox", "task", "review", "clean", "workspace",
+        "dispatch", "inbox", "task", "review", "workspace",
         "whoami", "audit", "version", "help", "completions"
     ];
 
@@ -15,7 +15,7 @@ public static class CompletionProvider
         ["approve", "create", "list", "ready-for-review", "reject"];
 
     private static readonly string[] AgentSubcommands =
-        ["claim", "release", "status", "list", "role", "new", "rename", "remove", "reassign"];
+        ["claim", "release", "status", "list", "role", "new", "rename", "remove", "reassign", "clean"];
 
     private static readonly string[] ReviewSubcommands = ["complete"];
 
@@ -58,7 +58,6 @@ public static class CompletionProvider
         ["agent"] = (pos, words) => GetAgentCompletions(pos, words),
         ["review"] = (pos, words) => GetReviewCompletions(pos, words),
         ["dispatch"] = (_, _) => [],
-        ["clean"] = (pos, _) => GetCleanCompletions(pos),
         ["init"] = (pos, _) => GetInitCompletions(pos),
         ["completions"] = (pos, _) => GetCompletionsShellCompletions(pos),
         ["inbox"] = (pos, _) => GetInboxCompletions(pos),
@@ -72,9 +71,6 @@ public static class CompletionProvider
             ? handler(position, words)
             : [];
     }
-
-    private static IEnumerable<string> GetCleanCompletions(int position)
-        => position == 2 ? GetAgentNames() : [];
 
     private static IEnumerable<string> GetInitCompletions(int position)
         => position == 2 ? Integrations : [];
@@ -146,7 +142,7 @@ public static class CompletionProvider
             {
                 "claim" => GetAgentNames().Prepend("auto"),
                 "role" => Roles,
-                "status" or "rename" or "remove" or "reassign" => GetAgentNames(),
+                "status" or "rename" or "remove" or "reassign" or "clean" => GetAgentNames(),
                 _ => []
             };
         }

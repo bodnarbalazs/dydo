@@ -4,39 +4,36 @@ Documentation-driven context and agent orchestration for AI coding assistants.
 
 100% local, 100% under your control.
 
-## The Problem
+**Built for Claude Code.** DynaDocs uses Claude Code's `PreToolUse` hook system for guard enforcement. Support for other AI coding tools may come in the future, but right now this is designed for and tested with Claude Code.
 
-**Is your project too large for LLMs to understand? Then this is for you.**
+## Stop Doing Agent Work Yourself
 
-AI code editors forget everything between sessions. Every time you start, the agent wakes up with amnesia — no memory of your architecture, your conventions, or the context from yesterday.
+Your time is the most precious resource in the equation. You should focus on your comparative advantage: deciding **what** should be done and **why** — articulating intent, making value choices, choosing direction. Everything that *can* be done by an agent *should* be.
 
-So you explain the same things. Again. And again.
+Agents write code. Agents review code. Agents write tests. Agents write documentation. Agents coordinate other agents. The human is the last step, not the first reviewer. If it can be done by an agent, why waste your time on it?
 
-Claude Code and Cursor don't have memory built in. Tools like Windsurf and Antigravity have some form of it, but you don't control it.
+DynaDocs makes this possible. It gives AI coding agents persistent memory (through documentation), enforced identity and permissions (through a guard hook), and multi-agent coordination (through dispatch, messaging, and orchestration). You describe what you want. Agents figure out the rest.
 
-## The Solution
+![Simple workflow: three agents collaborating on a task](https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo_diagram_simple_workflow.svg)
 
-DynaDocs is a documentation-based approach. Your docs **ARE** the memory.
+### The context problem
 
-Think of it like Groundhog Day: the AI wakes up fresh each session, but you've left it a note explaining everything it needs to know. It reads the note, onboards itself, and gets to work.
+AI coding tools have memory features — Claude Code has CLAUDE.md and persistent memory, others are adding similar capabilities. But this memory is unstructured, opaque, and not under your control. You can't organize it, version it, or enforce who reads what.
 
-You maintain your project's intent, architecture, and conventions in structured documentation. Each session, the AI follows an onboarding funnel — reading just what it needs for the current task. A CLI tool enforces roles and permissions, so the AI stays in its lane.
-
-![DynaDocs Architecture](https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo_diagram.svg)
+DynaDocs gives you explicit, structured control over project context. Your documentation is the versioned, human-readable source of truth. Agents onboard themselves each session by reading it. You decide what's documented, how it's organized, and what each role needs to know.
 
 ### What you get
 
 - **Documentation as memory** — Your docs are the source of truth; AI re-reads them each session
-- **Self-documenting folders** — Meta files describe folder purposes; summaries appear in hub links
-- **Self-onboarding** — AI follows the funnel, no manual context-setting
-- **Role-based permissions** — Reviewer can't edit code, code-writer can't touch docs
+- **Self-onboarding** — Agents follow a documentation funnel, no manual context-setting
+- **Role-based permissions** — Reviewer can't edit code, code-writer can't touch docs — enforced, not suggested
 - **No self-review** — The agent that wrote the code cannot review it
-- **Multi-agent workflows** — Run parallel agents on different tasks
+- **Multi-agent orchestration** — Orchestrators coordinate swarms of agents across parallel tasks
+- **Dispatch and messaging** — Agents hand off work, communicate results, and wait for responses
+- **Worktree isolation** — Parallel agents work on separate git branches without conflicts
+- **Issue tracking** — Lightweight issue management tied to inquisitions and reviews
 - **Team support** — Each team member gets their own pool of agents
-- **Platform-agnostic** — Works across AI tools (Claude, Cursor, etc.) and operating systems
 - **Your process, your rules** — Modify templates, roles, and workflows to match how you work
-- **Useful history** — Need fixing a bug caused by a change three days ago?
-  - No problem, the agent will have a record of each finished task and the files touched.
 
 ---
 
@@ -52,110 +49,100 @@ dotnet tool install -g dydo
 
 **Note:** The setup will prompt you to set the `DYDO_HUMAN` environment variable. Agents use this to know which human they belong to.
 
-## Quick Start (2 min)
+## Quick Start
 
 ### 1. Set up dydo in your project
 
 Run from your project's root directory:
 
 ```bash
-# If you use Claude Code
 dydo init claude
-
-# If you use something else
-dydo init none
 ```
 
 This creates the `dydo/` folder structure, templates, and configures Claude Code hooks automatically.
 
 ### 2. Link your AI entry point
 
-Add this to your `CLAUDE.md` (or equivalent for other AI tools):
+Add this to your `CLAUDE.md`:
 
 ```markdown
 This project uses an agent orchestration framework (dydo).
 Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
 ```
 
-### 3. For non-Claude Code users
-
-If you're using a different AI tool, wire up a hook that calls `dydo guard` before file edits:
-
-```bash
-# CLI mode (simpler)
-dydo guard --action edit --path src/file.cs
-
-# Or pipe JSON via stdin (for tools that send structured data)
-echo '{"tool_name":"Edit","tool_input":{"file_path":"src/file.cs"}}' | dydo guard
-```
-
-Exit code `0` = allowed, `2` = blocked (reason in stderr).
-
-### 4. Validate your documentation
-
-Dydo expects a certain format — relative links, frontmatter, consistent structure. Run these periodically:
+### 3. Validate your documentation
 
 ```bash
 dydo check    # Find issues
 dydo fix      # Auto-fix what's possible
 ```
 
-**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward. The fix command also generates missing hub files and folder meta files.
+**Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward.
 
-### 5. Customize the templates
+### 4. Customize the templates
 
-Edit templates in `dydo/_system/templates/` to fit your project. Changes take effect when agents are claimed.
+Edit templates in `dydo/_system/templates/` to fit your project. Fill out the `about.md` and modify the `coding-standards.md` to your taste.
 
-Fill out the `about.md` and modify the `coding-standards.md` to your taste.
-
-You're ready to go. For best results, keep docs up to date and accurate to match your intent. Not everything needs documenting—just what you wouldn't know from reading the code.
+You're ready to go. For best results, keep docs up to date and accurate to match your intent.
 
 ---
 
 ## How It Works
 
-**Example prompt:** `Hey Adele, help me implement authentication --feature`
+**Example prompt:** `Hey Adele, help me fix this bug in the auth service`
 
 1. The agent reads `CLAUDE.md`, gets redirected to `dydo/index.md`
 2. From `index.md`, it navigates to its workspace: `dydo/agents/Adele/workflow.md`
 3. It claims its identity: `dydo agent claim Adele`
-4. The `--feature` flag tells it to follow: **interview → plan → code → review**
-5. It sets its role: `dydo agent role interviewer --task auth`
-6. On every file operation, the `dydo guard` hook enforces permissions based on the current role
+4. It reads the prompt, infers the appropriate role, and sets it: `dydo agent role code-writer --task auth-fix`
+5. On every file operation, the `dydo guard` hook enforces permissions based on the current role
+6. When done, it dispatches to a *different* agent for review — fresh eyes, enforced
 
-**What's happening:** The AI onboards itself by following the documentation funnel — you don't have to re-explain what's already documented. Permissions aren't suggestions; the hook blocks unauthorized edits. When the code-writer finishes, it dispatches to a *different* agent for review. Fresh eyes, enforced.
+The AI onboards itself by following the documentation funnel — you don't have to re-explain what's already documented. Permissions aren't suggestions; the hook blocks unauthorized edits.
+
+For orchestrated work, the prompt includes `--inbox`, telling the agent to check its inbox for dispatched work items.
 
 ---
 
-## Workflow Flags
+## Multi-Agent Orchestration
 
-| Flag | Workflow |
-|------|----------|
-| `--feature` | Interview → Plan → Code → Review |
-| `--task` | Plan → Code → Review |
-| `--quick` | Code only (simple changes) |
-| `--think` | Co-thinker mode |
-| `--review` | Reviewer mode |
-| `--docs` | Docs-writer mode |
-| `--test` | Tester mode |
+For complex work, an orchestrator agent coordinates multiple agents working in parallel:
+
+![Multi-agent orchestration with worktrees, inquisitors, and judges](https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo_diagram_complex_workflow.svg)
+
+Key capabilities:
+
+- **Dispatch chains** — orchestrator dispatches code-writer, code-writer dispatches reviewer, reviewer reports back
+- **Worktree isolation** — `dispatch --worktree` gives each agent an isolated git branch
+- **Dispatch queues** — `--queue` serializes terminal launches to avoid resource contention
+- **Inquisition** — adversarial QA agents audit code quality and documentation coverage
+- **Dispute resolution** — judge agents arbitrate when agents disagree
 
 ---
 
 ## Agent Roles
 
-| Role | Can Edit | Purpose |
-|------|----------|---------|
-| `code-writer` | `src/**`, `tests/**` | Implement features |
-| `reviewer` | agent workspace | Review code |
-| `planner` | `tasks/**`, agent workspace | Design implementation |
-| `tester` | `tests/**`, `pitfalls/**`, agent workspace | Write tests, report bugs |
-| `docs-writer` | `dydo/**` (except agents/) | Write documentation |
-| `co-thinker` | `decisions/**`, agent workspace | Explore ideas |
-| `interviewer` | agent workspace | Gather requirements |
+Nine roles, each with enforced permissions:
+
+| Role | Purpose | Can Edit |
+|------|---------|----------|
+| **code-writer** | Implements features and fixes bugs | Source code, tests |
+| **reviewer** | Reviews code for quality and correctness | Own workspace (read-only access to code) |
+| **co-thinker** | Collaborates on design decisions and architecture | Decisions, own workspace |
+| **planner** | Creates implementation plans and task breakdowns | Tasks, own workspace |
+| **docs-writer** | Creates and maintains documentation | Documentation tree |
+| **test-writer** | Writes and maintains test suites | Tests, pitfalls |
+| **orchestrator** | Coordinates multi-agent workflows | Tasks, decisions, own workspace |
+| **inquisitor** | Conducts adversarial QA and knowledge audits | Inquisition reports |
+| **judge** | Evaluates inquisition reports and arbitrates disputes | Issues, own workspace |
+
+Roles are data-driven — defined in `.role.json` files. Projects can add custom roles with `dydo roles create <name>`.
 
 ---
 
 ## Folder Structure
+
+![DynaDocs folder structure](https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo-diagram.svg)
 
 ```
 project/
@@ -163,37 +150,15 @@ project/
 ├── CLAUDE.md                    # AI entry point
 └── dydo/
     ├── index.md                 # Documentation root
-    ├── welcome.md               # Human entry point
-    ├── glossary.md              # Project glossary
-    ├── files-off-limits.md      # Security boundaries
-    │
     ├── understand/              # Domain concepts, architecture
-    │   ├── _index.md            # Hub file (auto-generated)
-    │   ├── about.md             # Project context
-    │   └── architecture.md      # Architecture overview
-    │
     ├── guides/                  # How-to guides
-    │   ├── _index.md            # Hub file (auto-generated)
-    │   ├── coding-standards.md  # Development standards
-    │   └── how-to-use-docs.md   # Documentation usage
-    │
     ├── reference/               # API docs, specs
-    │   ├── _index.md            # Hub file (auto-generated)
-    │   ├── writing-docs.md      # Documentation guide
-    │   └── about-dynadocs.md    # About DynaDocs
-    │
-    ├── project/                 # Decisions, pitfalls, changelog
-    │   ├── _index.md            # Hub file (auto-generated)
-    │   ├── tasks/               # Task tracking
-    │   ├── decisions/           # Decision records
-    │   ├── changelog/           # Change history
-    │   └── pitfalls/            # Known issues
-    │
+    ├── project/                 # Decisions, issues, changelog
     ├── _system/templates/       # Customizable templates
+    ├── _system/template-additions/  # Template extension points
+    ├── _system/roles/           # Role definitions (.role.json)
     ├── _assets/                 # Images, diagrams
-    │   └── dydo-diagram.svg
     └── agents/                  # Agent workspaces (gitignored)
-        └── [Adele, Brian, ...]  # Per-agent folders
 ```
 
 ---
@@ -208,21 +173,16 @@ dydo init claude --join
 
 ---
 
-## Get Started
+## Self-Documentation
 
-```bash
-npm install -g dydo
-cd your-project
-dydo init claude
-```
-
-Then tell your AI to read `dydo/index.md`. That's it.
+DynaDocs documents itself using its own system. Agents can learn about dydo by reading the `dydo/` folder in the [dydo GitHub repo](https://github.com/bodnarbalazs/dydo) — it's a living example of documentation-driven orchestration in action.
 
 ---
 
 ## Command Reference
 
 **Note:** Agents call most of these commands themselves.
+Commands frequently used by humans are **bold**.
 
 ### Setup
 | Command | Description |
@@ -234,20 +194,20 @@ Then tell your AI to read `dydo/index.md`. That's it.
 ### Documentation
 | Command | Description |
 |---------|-------------|
-| `dydo check [path]` | Validate documentation |
-| `dydo fix [path]` | Auto-fix issues |
+| **`dydo check [path]`** | Validate documentation |
+| **`dydo fix [path]`** | Auto-fix issues |
 | `dydo index [path]` | Regenerate index.md from structure |
 | `dydo graph <file>` | Show graph connections for a file |
 | `dydo graph stats [--top N]` | Show top docs by incoming links |
 
 ### Agent Lifecycle
-
 | Command | Description |
 |---------|-------------|
 | `dydo agent claim <name\|auto>` | Claim an agent identity |
 | `dydo agent release` | Release current agent |
 | `dydo agent status [name]` | Show agent status |
-| `dydo agent list [--free]` | List all agents |
+| **`dydo agent list [--free] [--all]`** | List agents (default: current human's) |
+| **`dydo agent tree`** | Show dispatch hierarchy of active agents |
 | `dydo agent role <role> [--task X]` | Set role and permissions |
 
 ### Agent Management
@@ -261,40 +221,83 @@ Then tell your AI to read `dydo/index.md`. That's it.
 ### Workflow
 | Command | Description |
 |---------|-------------|
-| `dydo dispatch --role <role> --task <name>` | Hand off work (`--tab`, `--new-window`) |
+| `dydo dispatch --wait/--no-wait --role <role> --task <name>` | Hand off work to another agent |
+| `dydo dispatch --worktree ...` | Dispatch into an isolated git worktree |
+| `dydo dispatch --queue <name> ...` | Serialize launches via named queue |
 | `dydo inbox list` | List agents with inbox items |
 | `dydo inbox show` | Show current agent's inbox |
-| `dydo inbox clear` | Clear processed items |
+| `dydo inbox clear --all` | Archive processed items |
+
+### Messaging
+| Command | Description |
+|---------|-------------|
+| `dydo msg --to <agent> --body "..."` | Send message to another agent |
+| `dydo msg --to <agent> --subject <task> --body "..."` | Message with task context |
+| `dydo wait --task <name>` | Wait for task-specific message |
+| `dydo wait --cancel` | Cancel active waits |
 
 ### Tasks
 | Command | Description |
 |---------|-------------|
 | `dydo task create <name>` | Create a new task |
 | `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review |
-| `dydo task approve <name>` | Approve task (human only) |
+| **`dydo task approve <name>`** / **`--all`** | Approve task(s) (human only) |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |
+| `dydo task compact` | Compact audit snapshots |
 | `dydo review complete <task>` | Complete a code review |
+
+### Issues
+| Command | Description |
+|---------|-------------|
+| `dydo issue create --title "..." --area <area> --severity <level>` | Create an issue |
+| `dydo issue list [--area <area>] [--all]` | List issues |
+| `dydo issue resolve <id> --summary "..."` | Resolve an issue |
+
+### Inquisition
+| Command | Description |
+|---------|-------------|
+| `dydo inquisition coverage` | Show inquisition coverage across areas |
+
+### Roles
+| Command | Description |
+|---------|-------------|
+| `dydo roles list` | List all role definitions |
+| `dydo roles create <name>` | Scaffold a custom role |
+| `dydo roles reset` | Regenerate base role files |
+| `dydo validate` | Validate configuration and roles |
 
 ### Workspace
 | Command | Description |
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-| `dydo clean <agent>` | Clean agent workspace |
+| **`dydo guard lift <agent> [minutes]`** | Temporarily lift guard restrictions |
+| `dydo guard restore <agent>` | Restore guard restrictions |
+| **`dydo clean <agent>`** | Clean agent workspace |
 | `dydo workspace init` | Initialize agent workspaces |
 | `dydo workspace check` | Verify workflow before session end |
 
 ### Audit
 | Command | Description |
 |---------|-------------|
-| `dydo audit` | Generate activity replay visualization |
+| **`dydo audit`** | Generate activity replay visualization |
 | `dydo audit --list` | List available sessions |
 | `dydo audit --session <id>` | Show details for a session |
+| `dydo audit compact [year]` | Compact audit snapshots |
+
+### Template
+| Command | Description |
+|---------|-------------|
+| **`dydo template update`** | Update framework templates and docs |
+| `dydo template update --diff` | Preview changes without writing |
+
+### Utility
+| Command | Description |
+|---------|-------------|
+| `dydo completions <shell>` | Generate shell completions |
+| `dydo version` | Display version |
 
 ---
-
-### Limitations
-Currently it's tested to work with Claude Code (hooks setup), but the principle should be the same for all coding agents.
 
 ## License
 

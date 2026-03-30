@@ -9,6 +9,8 @@ Documentation-driven context and agent orchestration for AI coding assistants.
 
 100% local, 100% under your control.
 
+**Built for Claude Code.** DynaDocs uses Claude Code's `PreToolUse` hook system for guard enforcement. Support for other AI coding tools may come in the future, but right now this is designed for and tested with Claude Code.
+
 ## Stop Doing Agent Work Yourself
 
 Your time is the most precious resource in the equation. You should focus on your comparative advantage: deciding **what** should be done and **why** — articulating intent, making value choices, choosing direction. Everything that *can* be done by an agent *should* be.
@@ -19,9 +21,11 @@ DynaDocs makes this possible. It gives AI coding agents persistent memory (throu
 
 ![Simple workflow: three agents collaborating on a task](../_assets/dydo_diagram_simple_workflow.svg)
 
-### The amnesia problem
+### The context problem
 
-AI agents forget everything between sessions. DynaDocs solves this by making your project documentation the persistent memory. Think of it like Groundhog Day: the AI wakes up fresh, but you've left it a note explaining everything it needs to know. It reads the note, onboards itself, and gets to work.
+AI coding tools have memory features — Claude Code has CLAUDE.md and persistent memory, others are adding similar capabilities. But this memory is unstructured, opaque, and not under your control. You can't organize it, version it, or enforce who reads what.
+
+DynaDocs gives you explicit, structured control over project context. Your documentation is the versioned, human-readable source of truth. Agents onboard themselves each session by reading it. You decide what's documented, how it's organized, and what each role needs to know.
 
 ### What you get
 
@@ -34,7 +38,6 @@ AI agents forget everything between sessions. DynaDocs solves this by making you
 - **Worktree isolation** — Parallel agents work on separate git branches without conflicts
 - **Issue tracking** — Lightweight issue management tied to inquisitions and reviews
 - **Team support** — Each team member gets their own pool of agents
-- **Platform-agnostic** — Works across AI tools (Claude Code, Cursor, etc.) and operating systems
 - **Your process, your rules** — Modify templates, roles, and workflows to match how you work
 
 ---
@@ -58,39 +61,21 @@ dotnet tool install -g dydo
 Run from your project's root directory:
 
 ```bash
-# If you use Claude Code
 dydo init claude
-
-# If you use something else
-dydo init none
 ```
 
 This creates the `dydo/` folder structure, templates, and configures Claude Code hooks automatically.
 
 ### 2. Link your AI entry point
 
-Add this to your `CLAUDE.md` (or equivalent for other AI tools):
+Add this to your `CLAUDE.md`:
 
 ```markdown
 This project uses an agent orchestration framework (dydo).
 Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
 ```
 
-### 3. For non-Claude Code users
-
-If you're using a different AI tool, wire up a hook that calls `dydo guard` before file edits:
-
-```bash
-# CLI mode (simpler)
-dydo guard --action edit --path src/file.cs
-
-# Or pipe JSON via stdin (for tools that send structured data)
-echo '{"tool_name":"Edit","tool_input":{"file_path":"src/file.cs"}}' | dydo guard
-```
-
-Exit code `0` = allowed, `2` = blocked (reason in stderr).
-
-### 4. Validate your documentation
+### 3. Validate your documentation
 
 Dydo expects a certain format — relative links, frontmatter, consistent structure. Run these periodically:
 
@@ -101,7 +86,7 @@ dydo fix      # Auto-fix what's possible
 
 **Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward. The fix command also generates missing hub files and folder meta files.
 
-### 5. Customize the templates
+### 4. Customize the templates
 
 Edit templates in `dydo/_system/templates/` to fit your project. Changes take effect when agents are claimed.
 
@@ -181,7 +166,7 @@ Nine roles, each with enforced permissions:
 | **test-writer** | Writes and maintains test suites | Tests, pitfalls |
 | **orchestrator** | Coordinates multi-agent workflows | Tasks, decisions, own workspace |
 | **inquisitor** | Conducts adversarial QA and knowledge audits | Inquisition reports |
-| **judge** | Arbitrates disputes between agents | Issues, own workspace |
+| **judge** | Evaluates inquisition reports and arbitrates disputes | Issues, own workspace |
 
 Roles are data-driven — defined in `.role.json` files. Projects can add custom roles with `dydo roles create <name>`.
 
@@ -223,9 +208,11 @@ project/
     │   ├── changelog/           # Change history
     │   ├── issues/              # Issue tracker
     │   ├── inquisitions/        # Inquisition reports
-    │   └── pitfalls/            # Known issues
+    │   ├── pitfalls/            # Known issues
+    │   └── future-features/     # Feature proposals
     │
     ├── _system/templates/       # Customizable templates
+    ├── _system/template-additions/  # Template extension points
     ├── _system/roles/           # Role definitions (.role.json)
     ├── _assets/                 # Images, diagrams
     └── agents/                  # Agent workspaces (gitignored)
@@ -250,21 +237,10 @@ DynaDocs documents itself using its own system. Agents can learn about dydo by r
 
 ---
 
-## Get Started
-
-```bash
-npm install -g dydo
-cd your-project
-dydo init claude
-```
-
-Then tell your AI to read `dydo/index.md`. That's it.
-
----
-
 ## Command Reference
 
 **Note:** Agents call most of these commands themselves.
+Commands frequently used by humans are **bold**.
 
 ### Setup
 | Command | Description |
@@ -276,8 +252,8 @@ Then tell your AI to read `dydo/index.md`. That's it.
 ### Documentation
 | Command | Description |
 |---------|-------------|
-| `dydo check [path]` | Validate documentation |
-| `dydo fix [path]` | Auto-fix issues |
+| **`dydo check [path]`** | Validate documentation |
+| **`dydo fix [path]`** | Auto-fix issues |
 | `dydo index [path]` | Regenerate index.md from structure |
 | `dydo graph <file>` | Show graph connections for a file |
 | `dydo graph stats [--top N]` | Show top docs by incoming links |
@@ -288,8 +264,8 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo agent claim <name\|auto>` | Claim an agent identity |
 | `dydo agent release` | Release current agent |
 | `dydo agent status [name]` | Show agent status |
-| `dydo agent list [--free] [--all]` | List agents (default: current human's) |
-| `dydo agent tree` | Show dispatch hierarchy of active agents |
+| **`dydo agent list [--free] [--all]`** | List agents (default: current human's) |
+| **`dydo agent tree`** | Show dispatch hierarchy of active agents |
 | `dydo agent role <role> [--task X]` | Set role and permissions |
 
 ### Agent Management
@@ -323,7 +299,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 |---------|-------------|
 | `dydo task create <name>` | Create a new task |
 | `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review |
-| `dydo task approve <name>` / `--all` | Approve task(s) (human only) |
+| **`dydo task approve <name>`** / **`--all`** | Approve task(s) (human only) |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |
 | `dydo task compact` | Compact audit snapshots |
@@ -353,16 +329,16 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | Command | Description |
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-| `dydo guard lift <agent>` | Temporarily lift guard restrictions |
+| **`dydo guard lift <agent> [minutes]`** | Temporarily lift guard restrictions |
 | `dydo guard restore <agent>` | Restore guard restrictions |
-| `dydo clean <agent>` | Clean agent workspace |
+| **`dydo clean <agent>`** | Clean agent workspace |
 | `dydo workspace init` | Initialize agent workspaces |
 | `dydo workspace check` | Verify workflow before session end |
 
 ### Audit
 | Command | Description |
 |---------|-------------|
-| `dydo audit` | Generate activity replay visualization |
+| **`dydo audit`** | Generate activity replay visualization |
 | `dydo audit --list` | List available sessions |
 | `dydo audit --session <id>` | Show details for a session |
 | `dydo audit compact [year]` | Compact audit snapshots |
@@ -370,7 +346,7 @@ Then tell your AI to read `dydo/index.md`. That's it.
 ### Template
 | Command | Description |
 |---------|-------------|
-| `dydo template update` | Update framework templates and docs |
+| **`dydo template update`** | Update framework templates and docs |
 | `dydo template update --diff` | Preview changes without writing |
 
 ### Utility
@@ -380,9 +356,6 @@ Then tell your AI to read `dydo/index.md`. That's it.
 | `dydo version` | Display version |
 
 ---
-
-### Limitations
-Currently it's tested to work with Claude Code (hooks setup), but the principle should be the same for all coding agents.
 
 ## License
 

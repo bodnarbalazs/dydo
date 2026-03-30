@@ -81,7 +81,7 @@ Bash commands go through multi-stage analysis:
 
 **3. File operation extraction**: Commands are tokenized and categorized — reads (`cat`, `grep`), writes (`tee`, `>`, `>>`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`). `sed -i` is classified as a write.
 
-**4. File operation validation**: Each extracted file operation is checked against off-limits patterns and role permissions, just like direct file tool calls.
+**4. File operation validation**: Each extracted file operation is checked individually — off-limits patterns are enforced for all operations, staged access control (read gating by onboarding stage) is enforced for reads, and RBAC (role permission matching) is enforced for writes, deletes, moves, copies, and permission changes. The same rules apply as for direct tool calls, but the mechanism differs: bash commands are first split and each file operation is checked separately, whereas direct tool calls check the path in the tool input directly.
 
 **Special blocks:**
 - Chained `cd` (`cd /path && command`) — breaks path analysis; run `cd` separately

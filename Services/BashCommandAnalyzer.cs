@@ -71,7 +71,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         // PowerShell
         ["set-content"] = FileOperationType.Write,
-        ["sc"] = FileOperationType.Write,        // Note: sc is also Windows service control
         ["out-file"] = FileOperationType.Write,
         ["add-content"] = FileOperationType.Write,
         ["ac"] = FileOperationType.Write,        // Alias
@@ -369,6 +368,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return 2;
         if (c == '|' && i + 1 < command.Length && command[i + 1] == '|')
             return 2;
+        if (c == '|')
+            return 1;
         return 0;
     }
 

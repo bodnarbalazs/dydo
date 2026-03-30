@@ -414,13 +414,12 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ContainsWorkflowFlags()
+    public void GenerateAboutDynadocsMd_ContainsInboxFlag()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
 
-        Assert.Contains("--feature", content);
-        Assert.Contains("--task", content);
-        Assert.Contains("--quick", content);
+        Assert.Contains("--inbox", content);
+        Assert.Contains("dydo inbox show", content);
     }
 
     [Fact]

@@ -1422,10 +1422,10 @@ public class TerminalLauncherTests
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
-    public void GetLinuxArguments_Worktree_DoesNotContainMkdirP(string terminal)
+    public void GetLinuxArguments_Worktree_DoesNotContainGitWorktreeAdd(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.DoesNotContain("mkdir -p", args);
+        Assert.DoesNotContain("git worktree add", args);
     }
 
     [Theory]
@@ -2143,7 +2143,7 @@ public class TerminalLauncherTests
     #region Worktree Directory Safety Tests
 
     [Fact]
-    public void GetWindowsArguments_Worktree_NoMkdirOrStaleCleanup()
+    public void GetWindowsArguments_Worktree_NoWorktreeDirCreationOrStaleCleanup()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
         // Worktree directory creation is handled by DispatchService, not terminal script
@@ -2153,36 +2153,61 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetWindowsArguments_Worktree_WithMainProjectRoot_NoMkdirOrStaleCleanup()
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_NoWorktreeDirCreationOrStaleCleanup()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
-        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path", args);
+        // No worktree directory creation (handled by DispatchService)
+        Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees", args);
         Assert.DoesNotContain("Remove-Item -Recurse -Force", args);
     }
 
     [Fact]
-    public void WorktreeSetupScript_NoGitOrMkdirOperations()
+    public void GetWindowsArguments_Worktree_WithMainProjectRoot_CreatesSharedStateJunctions()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+        Assert.Contains("Junction", args);
+        Assert.Contains("dydo/project/issues", args);
+        Assert.Contains("dydo/project/inquisitions", args);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_NoGitWorktreeOperations()
     {
         var script = TerminalLauncher.WorktreeSetupScript(TestWorktreeId);
-        Assert.DoesNotContain("mkdir -p", script);
         Assert.DoesNotContain("git worktree", script);
     }
 
     [Fact]
-    public void WorktreeSetupScript_WithMainProjectRoot_NoGitOrMkdirOperations()
+    public void WorktreeSetupScript_WithMainProjectRoot_NoGitWorktreeOperations()
     {
         var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
-        Assert.DoesNotContain("mkdir -p", script);
         Assert.DoesNotContain("git worktree", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_CreatesSharedStateJunctions()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript(TestWorktreeId);
+        Assert.Contains("ln -s", script);
+        Assert.Contains("dydo/project/issues", script);
+        Assert.Contains("dydo/project/inquisitions", script);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithMainProjectRoot_CreatesSharedStateJunctions()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
+        Assert.Contains("ln -s '/repo/dydo/project/issues' dydo/project/issues", script);
+        Assert.Contains("ln -s '/repo/dydo/project/inquisitions' dydo/project/inquisitions", script);
     }
 
     [Theory]
     [InlineData("gnome-terminal")]
     [InlineData("konsole")]
-    public void GetLinuxArguments_Worktree_NoMkdirInScript(string terminal)
+    public void GetLinuxArguments_Worktree_NoGitWorktreeInScript(string terminal)
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
-        Assert.DoesNotContain("mkdir -p", args);
+        Assert.DoesNotContain("git worktree", args);
     }
 
     #endregion

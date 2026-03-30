@@ -16,7 +16,7 @@ You need one of:
 - **Node.js** (v18+) — for the npm package
 - **.NET 10** — for the dotnet tool
 
-And an AI coding assistant (Claude Code recommended, others supported).
+And **Claude Code** — DynaDocs uses Claude Code's `PreToolUse` hook system for guard enforcement.
 
 ---
 
@@ -59,11 +59,7 @@ Use a short, consistent identifier (e.g., first name, username). This ties agent
 Run from your project's root directory:
 
 ```bash
-# For Claude Code (hooks wired automatically)
 dydo init claude
-
-# For other AI tools (manual hook setup needed)
-dydo init none
 ```
 
 This creates:
@@ -83,7 +79,7 @@ dydo init claude --name "alice" --agents 3   # Non-interactive setup
 
 ## Step 4: Link your AI entry point
 
-Add this to your `CLAUDE.md` (or equivalent for other tools):
+Add this to your `CLAUDE.md`:
 
 ```markdown
 This project uses an agent orchestration framework (dydo).
@@ -94,23 +90,7 @@ This is how the AI discovers dydo on each session.
 
 ---
 
-## Step 5: For non-Claude Code users
-
-If your AI tool isn't Claude Code, wire up a hook that calls `dydo guard` before file edits:
-
-```bash
-# CLI mode
-dydo guard --action edit --path src/file.cs
-
-# Or pipe JSON via stdin
-echo '{"tool_name":"Edit","tool_input":{"file_path":"src/file.cs"}}' | dydo guard
-```
-
-Exit code `0` = allowed, `2` = blocked (reason in stderr).
-
----
-
-## Step 6: Verify the setup
+## Step 5: Verify the setup
 
 ```bash
 dydo check          # Validate documentation structure
@@ -157,9 +137,9 @@ This assigns you a pool of agents without overwriting the existing `dydo/` struc
 
 ---
 
-## Configuring your AI tool
+## Configuring Claude Code
 
-The `CLAUDE.md` pointer is the bridge between your AI tool and dydo. For tools other than Claude Code, the equivalent is whatever file your tool reads at session start. Point it to `dydo/index.md`.
+The `CLAUDE.md` pointer is the bridge between Claude Code and dydo. It tells the AI to read `dydo/index.md` at session start, which kicks off the onboarding process.
 
 **Tip:** [Obsidian](https://obsidian.md) makes navigating the documentation easier. If Obsidian converts links when you move files, run `dydo fix` afterward.
 

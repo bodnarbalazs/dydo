@@ -1,6 +1,6 @@
 {
   "name": "judge",
-  "description": "Arbitrates disputes between agents.",
+  "description": "Evaluates inquisition reports and arbitrates disputes.",
   "base": true,
   "writablePaths": [
     "dydo/agents/{self}/**",

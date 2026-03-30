@@ -937,6 +937,42 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void Cleanup_LastAgent_RemovesIssuesAndInquisitionsJunctions()
+    {
+        var worktreeId = "Adele-20260314120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        var issuesJunction = Path.Combine(worktreePath, "dydo", "project", "issues");
+        var inquisitionsJunction = Path.Combine(worktreePath, "dydo", "project", "inquisitions");
+        Directory.CreateDirectory(issuesJunction);
+        Directory.CreateDirectory(inquisitionsJunction);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir") && c.Arguments.Contains("issues"));
+                Assert.Contains(calls, c => c.FileName == "cmd" && c.Arguments.Contains("rmdir") && c.Arguments.Contains("inquisitions"));
+            }
+            else
+            {
+                Assert.False(Directory.Exists(issuesJunction));
+                Assert.False(Directory.Exists(inquisitionsJunction));
+            }
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
     public void WorktreeSetupScript_ContainsInitSettings()
     {
         var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");

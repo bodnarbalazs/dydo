@@ -17,7 +17,7 @@
         <PackageTags>claude;orchestration;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>A platform-agnostic AI orchestration and context-management framework.</PackageReleaseNotes>
+        <PackageReleaseNotes>An AI orchestration and context-management framework for Claude Code.</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>

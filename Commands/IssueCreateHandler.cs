@@ -33,39 +33,67 @@ internal static partial class IssueCreateHandler
         var issuesPath = IssueCommand.GetIssuesPath();
         Directory.CreateDirectory(issuesPath);
 
-        var newId = ScanMaxId(issuesPath) + 1;
-        var slug = Slugify(title);
-        var fileName = $"{newId:D4}-{slug}.md";
-        var filePath = Path.Combine(issuesPath, fileName);
+        var lockPath = Path.Combine(issuesPath, ".lock");
+        FileStream? lockFile = null;
+        try
+        {
+            for (var attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    lockFile = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                    break;
+                }
+                catch (IOException) when (attempt < 4)
+                {
+                    Thread.Sleep(200);
+                }
+            }
 
-        var content = $"""
-            ---
-            id: {newId}
-            area: {area}
-            type: issue
-            severity: {parsedSeverity.ToString().ToLowerInvariant()}
-            status: {IssueStatus.Open.ToString().ToLowerInvariant()}
-            found-by: {parsedFoundBy.ToString().ToLowerInvariant()}
-            date: {DateTime.UtcNow:yyyy-MM-dd}
-            ---
+            if (lockFile == null)
+            {
+                ConsoleOutput.WriteError("Could not acquire issue lock. Another process may be creating an issue. Try again.");
+                return ExitCodes.ToolError;
+            }
 
-            # {title}
+            var newId = ScanMaxId(issuesPath) + 1;
+            var slug = Slugify(title);
+            var fileName = $"{newId:D4}-{slug}.md";
+            var filePath = Path.Combine(issuesPath, fileName);
 
-            ## Description
+            var content = $"""
+                ---
+                id: {newId}
+                area: {area}
+                type: issue
+                severity: {parsedSeverity.ToString().ToLowerInvariant()}
+                status: {IssueStatus.Open.ToString().ToLowerInvariant()}
+                found-by: {parsedFoundBy.ToString().ToLowerInvariant()}
+                date: {DateTime.UtcNow:yyyy-MM-dd}
+                ---
 
-            (Describe the issue)
+                # {title}
 
-            ## Reproduction
+                ## Description
 
-            (Steps to reproduce, if applicable)
+                (Describe the issue)
 
-            ## Resolution
+                ## Reproduction
 
-            (Filled when resolved)
-            """;
+                (Steps to reproduce, if applicable)
 
-        File.WriteAllText(filePath, content);
-        Console.WriteLine($"Created issue #{newId}: {fileName}");
+                ## Resolution
+
+                (Filled when resolved)
+                """;
+
+            File.WriteAllText(filePath, content);
+            Console.WriteLine($"Created issue #{newId}: {fileName}");
+        }
+        finally
+        {
+            lockFile?.Dispose();
+        }
 
         return ExitCodes.Success;
     }

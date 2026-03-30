@@ -6,7 +6,7 @@ must-read: true
 
 # About This Project
 
-DynaDocs (dydo) is a documentation-driven agent orchestration framework for AI coding assistants. It solves the "amnesia problem" — AI agents forget everything between sessions. DyDo makes your project documentation the persistent memory, with a CLI that enforces identity, roles, and permissions so agents stay on track.
+DynaDocs (dydo) is a documentation-driven agent orchestration framework for AI coding assistants. AI tools have memory features, but that memory is unstructured, opaque, and not under your control. DyDo gives you explicit, structured control over project context — your documentation is the versioned source of truth, with a CLI that enforces identity, roles, and permissions so agents stay on track.
 
 This is the DyDo project itself. If you're an agent, this is the framework that orchestrates you — and this documentation tree is both the project's knowledge base and a living example of the system.
 

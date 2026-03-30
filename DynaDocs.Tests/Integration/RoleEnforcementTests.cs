@@ -70,6 +70,60 @@ public class RoleEnforcementTests : IntegrationTestBase
 
     #endregion
 
+    #region Bash Staged Access Control
+
+    [Fact]
+    public async Task Guard_Bash_NoIdentity_BlocksReadOfSourceFile()
+    {
+        await InitProjectAsync();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"cat src/Foo.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_Bash_NoIdentity_AllowsBootstrapFile()
+    {
+        await InitProjectAsync();
+
+        // README.md is a root-level bootstrap file, not off-limits
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"cat README.md\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_Bash_IdentityNoRole_BlocksReadOfSourceFile()
+    {
+        await InitProjectAsync();
+        await ClaimAgentAsync("Adele");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"cat src/Foo.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+    }
+
+    [Fact]
+    public async Task Guard_Bash_IdentityWithRole_AllowsReadOfSourceFile()
+    {
+        await InitProjectAsync();
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"cat src/Foo.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region Write Enforcement Through Guard
 
     [Fact]

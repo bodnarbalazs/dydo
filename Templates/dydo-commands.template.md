@@ -168,6 +168,22 @@ dydo agent role code-writer --task auth-login  # Set role with task
 
 **Roles:** `code-writer`, `reviewer`, `co-thinker`, `docs-writer`, `planner`, `test-writer`, `orchestrator`, `inquisitor`, `judge`
 
+### dydo agent clean
+
+Clean agent workspace.
+
+```bash
+dydo agent clean Adele              # Clean specific agent
+dydo agent clean --all              # Clean all agent workspaces
+dydo agent clean --task auth-login  # Clean workspaces for a task
+dydo agent clean --all --force      # Force clean even if working
+```
+
+**Options:**
+- `--all` - Clean all agent workspaces
+- `--force` - Force clean even if agents are working
+- `--task <name>` - Clean workspaces associated with a task
+
 ---
 
 ## Agent Management Commands
@@ -364,22 +380,6 @@ dydo guard --command "cat secrets.json"
 - `--command <cmd>` - Bash command to analyze
 
 **Exit codes:** 0 = allowed, 2 = blocked.
-
-### dydo clean
-
-Clean agent workspace.
-
-```bash
-dydo clean Adele              # Clean specific agent
-dydo clean --all              # Clean all agent workspaces
-dydo clean --task auth-login  # Clean workspaces for a task
-dydo clean --all --force      # Force clean even if working
-```
-
-**Options:**
-- `--all` - Clean all agent workspaces
-- `--force` - Force clean even if agents are working
-- `--task <name>` - Clean workspaces associated with a task
 
 ### dydo workspace init
 

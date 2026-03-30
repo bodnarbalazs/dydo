@@ -2680,6 +2680,97 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git -C dydo/_system/.local/worktrees/inquisition-guard-system-v2 status --short 2\u003E/dev/null | head -..."
+    },
+    {
+      "ts": "2026-03-30T18:03:02.3654177Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\be4j2zpu9.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T18:03:16.8507708Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ad0e1e3e-msg-fix-guard-inquisition-batch1.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T18:07:25.3795155Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\becyrgg70.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T18:07:43.8568372Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a733bbab-msg-fix-inquisition-state-isolation.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:22:12.4113523Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bjw1a40ng.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:22:26.6223908Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\eb0bf775-msg-fix-inquisition-state-isolation.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:28:45.1340571Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bmlv8nilu.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:28:54.2389208Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\2ae74328-msg-fix-guard-inquisition-batch2.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:44:49.5025206Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bsjfut3re.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:44:57.6407181Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f880b73f-msg-fix-guard-inquisition-batch3.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:45:36.0254805Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b47uamgml.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T19:45:44.6194928Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\797945df-msg-docs-v13-update.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T20:04:46.3376625Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bg2nwlj01.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T20:04:54.5747981Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9c2928ee-msg-cli-design-questions.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T20:06:34.2584182Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dydo msg --to Brian --subject docs-v13-update --body \u0022CLI decisions made: (1) dydo clean renamed to ...",
+      "reason": "Pending wait markers"
     }
   ],
   "snapshot_ref": {

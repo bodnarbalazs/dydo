@@ -144,7 +144,7 @@ public class RoleDefinitionService : IRoleDefinitionService
             new RoleDefinition
             {
                 Name = "judge",
-                Description = "Arbitrates disputes between agents.",
+                Description = "Evaluates inquisition reports and arbitrates disputes.",
                 Base = true,
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/issues/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],

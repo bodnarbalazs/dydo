@@ -210,6 +210,8 @@ public static class WorktreeCommand
         PreserveAuditFiles(worktreePath);
         RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
         RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
+        RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "issues"));
+        RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "inquisitions"));
         RemoveGitWorktree(worktreePath);
         DeleteWorktreeBranch(worktreeId);
         RemoveZombieDirectory(worktreePath);
@@ -537,6 +539,8 @@ public static class WorktreeCommand
             PreserveAuditFiles(worktreePath);
             RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
             RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
+            RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "issues"));
+            RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "inquisitions"));
             try { RunProcess("git", $"-C \"{mainRoot}\" worktree remove \"{worktreePath}\" --force"); }
             catch { Console.Error.WriteLine($"WARNING: Failed to remove worktree at {worktreePath}"); }
             RemoveZombieDirectory(worktreePath);
@@ -583,6 +587,8 @@ public static class WorktreeCommand
                 PreserveAuditFiles(dirPath);
                 RemoveJunction(Path.Combine(dirPath, "dydo", "agents"));
                 RemoveJunction(Path.Combine(dirPath, "dydo", "_system", "roles"));
+                RemoveJunction(Path.Combine(dirPath, "dydo", "project", "issues"));
+                RemoveJunction(Path.Combine(dirPath, "dydo", "project", "inquisitions"));
                 RemoveGitWorktree(dirPath);
                 DeleteWorktreeBranch(worktreeId);
                 RemoveZombieDirectory(dirPath);

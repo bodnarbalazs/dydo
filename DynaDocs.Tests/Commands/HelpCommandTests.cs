@@ -55,6 +55,7 @@ public class HelpCommandTests
         Console.WriteLine("  agent status [name]    Show agent status");
         Console.WriteLine("  agent list [--free] [--all]  List agents (default: current human's)");
         Console.WriteLine("  agent role <role>      Set current agent's role");
+        Console.WriteLine("  agent clean <agent>    Clean agent workspace");
         Console.WriteLine();
         Console.WriteLine("Agent Management Commands:");
         Console.WriteLine("  agent new <name> <human>       Create new agent and assign to human");
@@ -74,7 +75,6 @@ public class HelpCommandTests
         Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
-        Console.WriteLine("  clean <agent>          Clean agent workspace");
         Console.WriteLine("  workspace init         Initialize agent workspaces");
         Console.WriteLine("  workspace check        Verify workflow before session end");
         Console.WriteLine();
@@ -152,6 +152,7 @@ public class HelpCommandTests
         Assert.Contains("agent rename", output);
         Assert.Contains("agent remove", output);
         Assert.Contains("agent reassign", output);
+        Assert.Contains("agent clean", output);
     }
 
     [Fact]

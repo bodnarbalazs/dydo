@@ -80,6 +80,8 @@ public class TerminalLauncher
             return $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
                    $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
                    $"rm -rf dydo/_system/roles && ln -s '{escapedRoot}/dydo/_system/roles' dydo/_system/roles && " +
+                   $"mkdir -p '{escapedRoot}/dydo/project/issues' && rm -rf dydo/project/issues && ln -s '{escapedRoot}/dydo/project/issues' dydo/project/issues && " +
+                   $"mkdir -p '{escapedRoot}/dydo/project/inquisitions' && rm -rf dydo/project/inquisitions && ln -s '{escapedRoot}/dydo/project/inquisitions' dydo/project/inquisitions && " +
                    $"(dydo worktree init-settings --main-root '{escapedRoot}' 2>/dev/null || true) && ";
         }
 
@@ -87,6 +89,8 @@ public class TerminalLauncher
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
                $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
                $"rm -rf dydo/_system/roles && ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles && " +
+               $"mkdir -p \"$_wt_root/dydo/project/issues\" && rm -rf dydo/project/issues && ln -s \"$_wt_root/dydo/project/issues\" dydo/project/issues && " +
+               $"mkdir -p \"$_wt_root/dydo/project/inquisitions\" && rm -rf dydo/project/inquisitions && ln -s \"$_wt_root/dydo/project/inquisitions\" dydo/project/inquisitions && " +
                $"(dydo worktree init-settings --main-root \"$_wt_root\" 2>/dev/null || true) && ";
     }
 

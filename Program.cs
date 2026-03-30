@@ -19,7 +19,6 @@ rootCommand.Subcommands.Add(TaskCommand.Create());
 rootCommand.Subcommands.Add(IssueCommand.Create());
 rootCommand.Subcommands.Add(ReviewCommand.Create());
 rootCommand.Subcommands.Add(InquisitionCommand.Create());
-rootCommand.Subcommands.Add(CleanCommand.Create());
 rootCommand.Subcommands.Add(WorkspaceCommand.Create());
 rootCommand.Subcommands.Add(WhoamiCommand.Create());
 rootCommand.Subcommands.Add(AuditCommand.Create());
@@ -66,6 +65,7 @@ helpCommand.SetAction(_ =>
     Console.WriteLine("  agent list [--free] [--all]  List agents (default: current human's)");
     Console.WriteLine("  agent tree               Show dispatch hierarchy");
     Console.WriteLine("  agent role <role>      Set current agent's role");
+    Console.WriteLine("  agent clean <agent>    Clean agent workspace");
     Console.WriteLine();
     Console.WriteLine("Agent Management Commands:");
     Console.WriteLine("  agent new <name> <human>       Create new agent and assign to human");
@@ -85,7 +85,6 @@ helpCommand.SetAction(_ =>
     Console.WriteLine();
     Console.WriteLine("Workspace Commands:");
     Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
-    Console.WriteLine("  clean <agent>          Clean agent workspace");
     Console.WriteLine("  workspace init         Initialize agent workspaces");
     Console.WriteLine("  workspace check        Verify workflow before session end");
     Console.WriteLine();

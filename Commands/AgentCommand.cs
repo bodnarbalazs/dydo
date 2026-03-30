@@ -18,6 +18,7 @@ public static class AgentCommand
         command.Subcommands.Add(CreateRemoveCommand());
         command.Subcommands.Add(CreateReassignCommand());
         command.Subcommands.Add(CreateTreeCommand());
+        command.Subcommands.Add(CleanCommand.Create());
 
         return command;
     }

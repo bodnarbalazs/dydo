@@ -10,6 +10,7 @@ public static class GlobMatcher
 {
     public static bool IsMatch(string path, string pattern)
     {
+        path = PathUtils.NormalizePath(path);
         var regex = CompileGlob(pattern);
         return regex.IsMatch(path);
     }

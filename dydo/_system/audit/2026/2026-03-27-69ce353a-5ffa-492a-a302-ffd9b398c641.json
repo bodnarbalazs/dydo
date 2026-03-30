@@ -59,6 +59,11 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-30T14:36:19.3597472Z",
+      "event": "Release",
+      "agent": "Brian"
     }
   ],
   "snapshot": {

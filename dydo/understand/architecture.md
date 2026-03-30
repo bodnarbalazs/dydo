@@ -78,6 +78,76 @@ Every agent session produces a JSON audit file in `dydo/_system/audit/YYYY/`. Se
 
 ---
 
+## Worktree Dispatch
+
+`dispatch --worktree` creates an isolated git worktree so agents work on separate branches without interfering with each other or the main working tree. The lifecycle:
+
+1. A branch `worktree/{id}` is created from the current HEAD
+2. A worktree directory is set up at `dydo/_system/.local/worktrees/{id}`
+3. A junction/symlink to `dydo/agents/` shares the agent registry across worktrees
+4. Workspace markers (`.worktree`, `.worktree-path`, `.worktree-base`) track the worktree state
+
+Child dispatches from within a worktree inherit the same worktree instead of creating a new one. Worktrees are cleaned up on agent release via `dydo worktree cleanup`, with `git worktree prune` handling orphans.
+
+---
+
+## Dispatch Queue
+
+The `--queue <name>` flag on dispatch serializes terminal launches through named queues. When a queue already has an active item, new dispatches are deferred — agent selection and inbox delivery happen immediately, but the terminal launch waits until the active item completes.
+
+A watchdog process monitors queue state, advancing deferred items when the active agent releases. This prevents resource contention when orchestrators dispatch multiple agents that need sequential access (e.g., a merge queue).
+
+---
+
+## Custom Nudges
+
+Projects can define coaching hints in `dydo.json` that trigger when agent actions match configurable patterns. Each nudge has:
+
+- A **regex pattern** matched against tool inputs
+- A **severity** level: `block` (exit 2, hard stop) or `warn` (exit 0, guidance injected)
+- A **message** explaining the correct approach
+
+Nudges are evaluated in the guard pipeline alongside built-in rules. They're useful for project-specific conventions that aren't covered by base guardrails — e.g., blocking direct database writes or warning about deprecated API patterns.
+
+---
+
+## Conditional Must-Reads
+
+Some documentation is only relevant for specific roles or contexts. Conditional must-reads are dynamic — they're injected into an agent's required reading list based on:
+
+- **Role**: Merge guides are required for code-writers working in worktrees
+- **Task context**: Reviewers are required to read the task file for the task they're reviewing
+
+This extends the base `must-read: true` frontmatter mechanism with runtime conditions evaluated by the guard.
+
+---
+
+## Issue Tracker
+
+A lightweight issue management system at `dydo/project/issues/`. Issues are Markdown files with YAML frontmatter tracking title, area, severity, status, and provenance.
+
+Issues integrate with the inquisition pipeline — confirmed findings from inquisitor agents are promoted to issues via `dydo issue create --found-by inquisition`. Judges can also create issues during dispute arbitration. Issues are resolved with `dydo issue resolve <id> --summary "..."`.
+
+---
+
+## Inquisition Coverage
+
+File-level heatmaps tracking which areas of the codebase have been audited by inquisitor agents. Rolling per-area reports live at `dydo/project/inquisitions/`. The `dydo inquisition coverage` command provides a summary view of coverage across project areas, highlighting gaps and staleness.
+
+---
+
+## Watchdog
+
+A background monitoring process that handles lifecycle events for dispatched agents:
+
+- **Auto-close**: When `--auto-close` is set on dispatch, the watchdog polls the target agent's state every 10 seconds. When the agent releases, the watchdog closes its terminal.
+- **Queue advancement**: Monitors named dispatch queues and launches deferred terminals when the active item completes.
+- **Orphan detection**: Identifies agents that are stuck in Working state without an active process (parent PID liveness checks).
+
+The watchdog runs as a background process spawned by the dispatch command. It's stateless — all state is derived from the filesystem (agent state files, queue markers).
+
+---
+
 ## Key Design Choices
 
 - **Hook enforcement over trust** — every file operation is checked before execution, not after

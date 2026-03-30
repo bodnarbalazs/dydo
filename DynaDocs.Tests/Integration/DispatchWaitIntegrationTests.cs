@@ -633,7 +633,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         // Brian tries to release without dispatching a judge
         var releaseResult = ReleaseInSeparateSession("Brian");
 
-        Assert.Contains("dispatched inquisitors must dispatch a judge", releaseResult);
+        Assert.Contains("dispatched inquisitors must dispatch a judge or another inquisitor", releaseResult);
         Assert.Contains("--role judge", releaseResult);
     }
 
@@ -653,7 +653,26 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Brian releases — should succeed
         var releaseResult = ReleaseInSeparateSession("Brian");
-        Assert.DoesNotContain("dispatched inquisitors must dispatch a judge", releaseResult);
+        Assert.DoesNotContain("dispatched inquisitors must dispatch a judge or another inquisitor", releaseResult);
+    }
+
+    [Fact]
+    public async Task Release_SucceedsForDispatchedInquisitor_AfterInquisitorRedispatch()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches inquisitor task to Brian
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit-docs", "Audit documentation");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "inquisitor", "audit-docs");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian re-dispatches another inquisitor (instead of a judge)
+        DispatchInSeparateSession("Brian", "inquisitor", "audit-docs", "Re-dispatch to worktree");
+
+        // Brian releases — should succeed (requireAll=false, inquisitor satisfies the constraint)
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("dispatched inquisitors must dispatch a judge or another inquisitor", releaseResult);
     }
 
     #endregion

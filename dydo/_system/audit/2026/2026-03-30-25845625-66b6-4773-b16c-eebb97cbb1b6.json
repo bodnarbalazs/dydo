@@ -1,180 +1,53 @@
 {
-  "session": "885487af-e82c-4e35-8b75-2fe77915155c",
-  "agent": "Dexter",
+  "session": "25845625-66b6-4773-b16c-eebb97cbb1b6",
+  "agent": "Charlie",
   "human": "balazs",
-  "started": "2026-03-30T14:28:59.1824963Z",
-  "git_head": "92d25f6",
+  "started": "2026-03-30T14:50:31.4763585Z",
+  "git_head": "dfdd66b",
   "events": [
     {
-      "ts": "2026-03-30T14:28:59.1817405Z",
+      "ts": "2026-03-30T14:50:31.4756054Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-30T14:28:59.3105589Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\CLAUDE.md",
-      "tool": "read",
-      "reason": "No agent identity"
-    },
-    {
-      "ts": "2026-03-30T14:29:07.011345Z",
+      "ts": "2026-03-30T14:50:37.2342625Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\workflow.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-30T14:29:14.0936288Z",
+      "ts": "2026-03-30T14:50:43.2330689Z",
       "event": "Claim",
-      "agent": "Dexter"
+      "agent": "Charlie"
     },
     {
-      "ts": "2026-03-30T14:29:23.7024753Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\3f7ccf69-fix-all-path-formats-merge.md",
-      "tool": "read",
-      "reason": "No role set"
-    },
-    {
-      "ts": "2026-03-30T14:29:24.2411814Z",
+      "ts": "2026-03-30T14:50:52.4586298Z",
       "event": "Role",
-      "role": "reviewer",
-      "task": "fix-all-path-formats-merge"
+      "role": "inquisitor",
+      "task": "inquisition-guard-system-v2"
     },
     {
-      "ts": "2026-03-30T14:29:29.9479925Z",
+      "ts": "2026-03-30T14:50:56.5180446Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\modes\\reviewer.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\inquisitor.md",
       "tool": "read"
     },
     {
-      "ts": "2026-03-30T14:29:30.0568844Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\3f7ccf69-fix-all-path-formats-merge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:29:34.2320802Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:29:34.6897068Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:29:35.1982192Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:29:44.1504767Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-all-path-formats-merge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:29:44.3908103Z",
+      "ts": "2026-03-30T14:51:02.9084003Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git log --oneline -10"
+      "cmd": "ls dydo/agents/Charlie/.worktree 2\u003E/dev/null \u0026\u0026 echo \u0022OK\u0022 || echo \u0022NO_WORKTREE\u0022"
     },
     {
-      "ts": "2026-03-30T14:29:48.1097941Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show 92d25f6 --stat"
-    },
-    {
-      "ts": "2026-03-30T14:29:48.7667657Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff 92d25f6^1..92d25f6"
-    },
-    {
-      "ts": "2026-03-30T14:29:56.4365959Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:29:57.0574842Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log 44ecd7b..1e3b9a6 --oneline"
-    },
-    {
-      "ts": "2026-03-30T14:30:07.4951854Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-30T14:30:13.3625155Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-03-30T14:30:17.7881799Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:30:28.9840155Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff 44ecd7b...1e3b9a6"
-    },
-    {
-      "ts": "2026-03-30T14:30:38.9787846Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/run_tests.py"
-    },
-    {
-      "ts": "2026-03-30T14:34:32.0369873Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:34:32.6083551Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-03-30T14:34:38.382025Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline --all -- DynaDocs.Tests/Commands/WorktreeCommandTests.cs | head -5"
-    },
-    {
-      "ts": "2026-03-30T14:34:39.816479Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff 44ecd7b...1e3b9a6 -- DynaDocs.Tests/Commands/WorktreeCommandTests.cs | grep -c \u0022CaptureAll\\..."
-    },
-    {
-      "ts": "2026-03-30T14:34:44.3725319Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run"
-    },
-    {
-      "ts": "2026-03-30T14:38:31.7038565Z",
+      "ts": "2026-03-30T14:51:53.9174395Z",
       "event": "Release",
-      "agent": "Dexter"
+      "agent": "Charlie"
     }
   ],
   "snapshot": {
-    "git_commit": "92d25f6b55de196455896dd46e9b7204ca69863a",
+    "git_commit": "dfdd66bc8cbaf9754a027f59636d0df18f7dad1d",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -931,6 +804,7 @@
       "dydo/_system/audit/2026/2026-03-30-4e5ffb0d-d6ed-4028-98b0-55dbd75cb705.json",
       "dydo/_system/audit/2026/2026-03-30-6ea97419-cd12-4307-9823-85f4e200910c.json",
       "dydo/_system/audit/2026/2026-03-30-79677006-4dda-4fcb-8cb3-2e4b400806d4.json",
+      "dydo/_system/audit/2026/2026-03-30-885487af-e82c-4e35-8b75-2fe77915155c.json",
       "dydo/_system/audit/2026/2026-03-30-8de84706-a6e7-4ef1-a9a9-4f37d62795df.json",
       "dydo/_system/audit/2026/2026-03-30-b7410bbb-f984-4c5e-9877-4832005bf806.json",
       "dydo/_system/audit/2026/2026-03-30-f69db925-9bf0-402d-add3-62077d71f7c4.json",
@@ -2208,16 +2082,16 @@
         "dydo/agents/brian/modes/reviewer.md",
         "dydo/agents/brian/modes/test-writer.md"
       ],
-      "dydo/agents/dexter/workflow.md": [
-        "dydo/agents/dexter/modes/co-thinker.md",
-        "dydo/agents/dexter/modes/code-writer.md",
-        "dydo/agents/dexter/modes/docs-writer.md",
-        "dydo/agents/dexter/modes/inquisitor.md",
-        "dydo/agents/dexter/modes/judge.md",
-        "dydo/agents/dexter/modes/orchestrator.md",
-        "dydo/agents/dexter/modes/planner.md",
-        "dydo/agents/dexter/modes/reviewer.md",
-        "dydo/agents/dexter/modes/test-writer.md"
+      "dydo/agents/charlie/workflow.md": [
+        "dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/agents/charlie/modes/code-writer.md",
+        "dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/agents/charlie/modes/judge.md",
+        "dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/agents/charlie/modes/planner.md",
+        "dydo/agents/charlie/modes/reviewer.md",
+        "dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/agents/henry/workflow.md": [
         "dydo/agents/henry/modes/co-thinker.md",
@@ -2688,47 +2562,47 @@
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/dexter/modes/co-thinker.md": [
+      "dydo/agents/charlie/modes/co-thinker.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/project/decisions/_index.md",
-        "dydo/agents/dexter/modes/code-writer.md"
+        "dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/agents/dexter/modes/code-writer.md": [
+      "dydo/agents/charlie/modes/code-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/dexter/modes/docs-writer.md": [
+      "dydo/agents/charlie/modes/docs-writer.md": [
         "dydo/understand/about.md",
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/dexter/modes/inquisitor.md": [
+      "dydo/agents/charlie/modes/inquisitor.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/dexter/modes/judge.md": [
+      "dydo/agents/charlie/modes/judge.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/dexter/modes/orchestrator.md": [
+      "dydo/agents/charlie/modes/orchestrator.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
-      "dydo/agents/dexter/modes/planner.md": [
+      "dydo/agents/charlie/modes/planner.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
-        "dydo/agents/dexter/modes/code-writer.md"
+        "dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/agents/dexter/modes/reviewer.md": [
+      "dydo/agents/charlie/modes/reviewer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/dexter/modes/test-writer.md": [
+      "dydo/agents/charlie/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
@@ -4341,16 +4215,16 @@
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/reviewer.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/brian/modes/test-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/test-writer.md"
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/workflow.md": [
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/judge.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/planner.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/henry/workflow.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/henry/modes/co-thinker.md",
@@ -4710,16 +4584,16 @@
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/reviewer.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/brian/modes/test-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/workflow.md": [
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/judge.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/planner.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/test-writer.md"
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/workflow.md": [
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/judge.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/planner.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/henry/workflow.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/henry/modes/co-thinker.md",
@@ -5139,47 +5013,47 @@
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/co-thinker.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/co-thinker.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/code-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/docs-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/docs-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/inquisitor.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/inquisitor.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/judge.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/judge.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/orchestrator.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/orchestrator.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/planner.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/planner.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/reviewer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/reviewer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/dexter/modes/test-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-comp-a/dydo/agents/charlie/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
@@ -6136,47 +6010,47 @@
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/co-thinker.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/co-thinker.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/code-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/docs-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/docs-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/how-to-use-docs.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/inquisitor.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/inquisitor.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/judge.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/judge.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/orchestrator.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/orchestrator.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/planner.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/planner.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/reviewer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/reviewer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/dexter/modes/test-writer.md": [
+      "dydo/_system/.local/worktrees/smoke-test-v15/dydo/agents/charlie/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md"

@@ -625,6 +625,83 @@ public class RoleConstraintEvaluatorTests
     }
 
     [Fact]
+    public void CanRelease_RequireAllFalse_AllowsWhenAnyMarkerPresent()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["inquisitor"] = MakeRole("inquisitor", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["judge", "inquisitor"],
+                    RequireAll = false,
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch judge or inquisitor."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        // Only inquisitor dispatched → should pass (ANY semantics)
+        Assert.True(evaluator.CanRelease("Alice", "inquisitor", "task1", true, null,
+            (task, role) => role == "inquisitor", out _));
+
+        // Only judge dispatched → should also pass
+        Assert.True(evaluator.CanRelease("Alice", "inquisitor", "task1", true, null,
+            (task, role) => role == "judge", out _));
+    }
+
+    [Fact]
+    public void CanRelease_RequireAllFalse_BlocksWhenNoMarkerPresent()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["inquisitor"] = MakeRole("inquisitor", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["judge", "inquisitor"],
+                    RequireAll = false,
+                    OnlyWhenDispatched = true,
+                    Message = "Must dispatch judge or inquisitor."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        var result = evaluator.CanRelease("Alice", "inquisitor", "task1", true, null,
+            (_, _) => false, out var reason);
+
+        Assert.False(result);
+        Assert.Contains("judge or inquisitor", reason);
+    }
+
+    [Fact]
+    public void CanRelease_RequireAllDefault_StillRequiresAll()
+    {
+        // Verifies that omitting RequireAll preserves ALL semantics
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["multi-role"] = MakeRole("multi-role", [
+                new RoleConstraint
+                {
+                    Type = "requires-dispatch",
+                    RequiredRoles = ["reviewer", "judge"],
+                    Message = "Must dispatch both."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        // Only reviewer → should fail (ALL semantics by default)
+        Assert.False(evaluator.CanRelease("Alice", "multi-role", "task1", true, null,
+            (task, role) => role == "reviewer", out _));
+    }
+
+    [Fact]
     public void CanRelease_UnknownRole_ReturnsTrue()
     {
         var evaluator = new RoleConstraintEvaluator(

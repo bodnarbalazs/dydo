@@ -19,11 +19,13 @@
       "fromRole": null,
       "targetRole": null,
       "requiredRoles": [
-        "judge"
+        "judge",
+        "inquisitor"
       ],
       "maxCount": null,
+      "requireAll": false,
       "onlyWhenDispatched": true,
-      "message": "Cannot release: dispatched inquisitors must dispatch a judge before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \u0022Judge findings for {task}\u0022"
+      "message": "Cannot release: dispatched inquisitors must dispatch a judge or another inquisitor before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \u0022Judge findings for {task}\u0022"
     }
   ]
 }

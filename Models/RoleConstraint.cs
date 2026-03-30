@@ -7,6 +7,7 @@ public class RoleConstraint
     public string? TargetRole { get; init; }
     public List<string>? RequiredRoles { get; init; }
     public int? MaxCount { get; init; }
+    public bool RequireAll { get; init; } = true;
     public bool OnlyWhenDispatched { get; init; }
     public required string Message { get; init; }
 }

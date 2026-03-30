@@ -644,6 +644,20 @@ public class RoleDefinitionServiceTests : IDisposable
         var dispatchConstraint = codeWriter.Constraints.Single(c => c.Type == "requires-dispatch");
         Assert.True(dispatchConstraint.OnlyWhenDispatched);
         Assert.Equal(["reviewer"], dispatchConstraint.RequiredRoles);
+        Assert.True(dispatchConstraint.RequireAll);
+    }
+
+    [Fact]
+    public void WriteBaseRoleDefinitions_RoundTrips_RequireAll()
+    {
+        _service.WriteBaseRoleDefinitions(_testDir);
+
+        var loaded = _service.LoadRoleDefinitions(_testDir);
+
+        var inquisitor = loaded.Single(r => r.Name == "inquisitor");
+        var constraint = inquisitor.Constraints.Single(c => c.Type == "requires-dispatch");
+        Assert.False(constraint.RequireAll);
+        Assert.Equal(["judge", "inquisitor"], constraint.RequiredRoles);
     }
 
     #endregion

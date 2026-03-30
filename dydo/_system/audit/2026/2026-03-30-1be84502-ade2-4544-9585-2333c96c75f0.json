@@ -1,0 +1,19 @@
+{
+  "session": "1be84502-ade2-4544-9585-2333c96c75f0",
+  "agent": "Charlie",
+  "human": "balazs",
+  "started": "2026-03-30T16:22:04.8624653Z",
+  "git_head": "dfdd66b",
+  "events": [
+    {
+      "ts": "2026-03-30T16:22:04.8616178Z",
+      "event": "GuardLift",
+      "agent": "Iris"
+    },
+    {
+      "ts": "2026-03-30T16:25:01.5054863Z",
+      "event": "GuardLift",
+      "agent": "Frank"
+    }
+  ]
+}

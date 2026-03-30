@@ -130,7 +130,7 @@ dydo fix            # Auto-fix what's possible
 Start a session by naming an agent in your prompt:
 
 ```
-Hey Adele, help me implement user authentication --feature
+Hey Adele, help me fix this bug in the auth service
 ```
 
 What happens:
@@ -138,10 +138,10 @@ What happens:
 1. The AI reads `CLAUDE.md`, gets redirected to `dydo/index.md`
 2. It navigates to `dydo/agents/Adele/workflow.md`
 3. Claims its identity: `dydo agent claim Adele`
-4. The workflow flag (`--feature`) determines the flow
+4. Reads the prompt, infers the appropriate role, and sets it
 5. The guard hook enforces role-based permissions on every file operation
 
-The agent onboards itself — no manual context-setting needed.
+The agent onboards itself — no manual context-setting needed. The only workflow flag is `--inbox`, used when agents are dispatched by other agents to check their inbox for work items.
 
 ---
 

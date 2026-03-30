@@ -28,7 +28,13 @@
       "Read(~/**)",
       "Read(C:/Users/User/Desktop/Projects/DynaDocs/**)",
       "Bash(python DynaDocs.Tests/coverage/run_tests.py)",
-      "Bash(python DynaDocs.Tests/coverage/gap_check.py)"
+      "Bash(python DynaDocs.Tests/coverage/gap_check.py)",
+      "Write(C:/Users/User/Desktop/Projects/DynaDocs/**)",
+      "Write(C:\\Users\\User\\Desktop\\Projects\\DynaDocs/**)",
+      "Write(**)",
+      "Write(~/**)",
+      "Read(/c/Users/User/Desktop/Projects/DynaDocs/**)",
+      "Write(/c/Users/User/Desktop/Projects/DynaDocs/**)"
     ]
   },
   "hooks": {

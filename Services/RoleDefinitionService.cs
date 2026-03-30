@@ -134,9 +134,10 @@ public class RoleDefinitionService : IRoleDefinitionService
                     new RoleConstraint
                     {
                         Type = "requires-dispatch",
-                        RequiredRoles = ["judge"],
+                        RequiredRoles = ["judge", "inquisitor"],
+                        RequireAll = false,
                         OnlyWhenDispatched = true,
-                        Message = "Cannot release: dispatched inquisitors must dispatch a judge before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \"Judge findings for {task}\""
+                        Message = "Cannot release: dispatched inquisitors must dispatch a judge or another inquisitor before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \"Judge findings for {task}\""
                     }
                 ]
             },

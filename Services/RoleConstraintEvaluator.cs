@@ -122,9 +122,20 @@ public class RoleConstraintEvaluator
                 constraint.RequiredRoles!.Contains(dispatchedByRole, StringComparer.OrdinalIgnoreCase))
                 continue;
 
-            foreach (var requiredRole in constraint.RequiredRoles!)
+            if (constraint.RequireAll)
             {
-                if (!hasDispatchMarker(task, requiredRole))
+                foreach (var requiredRole in constraint.RequiredRoles!)
+                {
+                    if (!hasDispatchMarker(task, requiredRole))
+                    {
+                        reason = SubstituteConstraintVars(constraint.Message, agentName, task, role);
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                if (!constraint.RequiredRoles!.Any(r => hasDispatchMarker(task, r)))
                 {
                     reason = SubstituteConstraintVars(constraint.Message, agentName, task, role);
                     return false;

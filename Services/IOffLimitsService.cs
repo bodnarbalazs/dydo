@@ -26,12 +26,6 @@ public interface IOffLimitsService
     string? IsPathOffLimits(string path);
 
     /// <summary>
-    /// Check if a command contains any off-limits file references.
-    /// Used for Bash command analysis.
-    /// </summary>
-    (bool IsBlocked, string? MatchedPath, string? MatchedPattern) CheckCommand(string command);
-
-    /// <summary>
     /// Get all configured off-limits patterns (for diagnostics).
     /// </summary>
     IReadOnlyList<string> Patterns { get; }

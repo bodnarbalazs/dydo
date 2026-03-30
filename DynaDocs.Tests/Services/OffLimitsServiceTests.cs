@@ -421,101 +421,6 @@ public class OffLimitsServiceTests : IDisposable
 
     #endregion
 
-    #region Check Command
-
-    [Theory]
-    [InlineData("cat secrets.json", "secrets.json")]
-    [InlineData("cat ./secrets.json", "secrets.json")]
-    [InlineData("head .env", ".env")]
-    [InlineData("tail .env.local", ".env.local")]
-    [InlineData("type secrets.json", "secrets.json")]
-    [InlineData("Get-Content secrets.json", "secrets.json")]
-    public void CheckCommand_DetectsOffLimitsInReadCommands(string command, string expectedPath)
-    {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ```
-            secrets.json
-            .env
-            .env.*
-            ```
-            """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
-
-        var (isBlocked, matchedPath, _) = service.CheckCommand(command);
-
-        Assert.True(isBlocked);
-        Assert.Contains(expectedPath, matchedPath!);
-    }
-
-    [Theory]
-    [InlineData("echo 'data' > secrets.json")]
-    [InlineData("rm secrets.json")]
-    [InlineData("rm -f .env.local")]
-    [InlineData("tee secrets.json")]
-    public void CheckCommand_DetectsOffLimitsInWriteDeleteCommands(string command)
-    {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ```
-            secrets.json
-            .env
-            .env.*
-            ```
-            """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
-
-        var (isBlocked, _, _) = service.CheckCommand(command);
-
-        Assert.True(isBlocked);
-    }
-
-    [Theory]
-    [InlineData("cat README.md")]
-    [InlineData("echo hello > output.txt")]
-    [InlineData("rm temp.log")]
-    [InlineData("ls -la")]
-    [InlineData("dotnet build")]
-    public void CheckCommand_AllowsSafeCommands(string command)
-    {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ```
-            secrets.json
-            .env
-            ```
-            """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
-
-        var (isBlocked, _, _) = service.CheckCommand(command);
-
-        Assert.False(isBlocked);
-    }
-
-    [Fact]
-    public void CheckCommand_DetectsQuotedPaths()
-    {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ```
-            secrets.json
-            ```
-            """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
-
-        var (isBlocked1, _, _) = service.CheckCommand("cat 'secrets.json'");
-        var (isBlocked2, _, _) = service.CheckCommand("cat \"secrets.json\"");
-
-        Assert.True(isBlocked1);
-        Assert.True(isBlocked2);
-    }
-
-    #endregion
-
     #region File Existence
 
     [Fact]
@@ -613,30 +518,6 @@ public class OffLimitsServiceTests : IDisposable
         Assert.Null(service.IsPathOffLimits("tests/fixtures/secrets.json"));
     }
 
-    [Fact]
-    public void CheckCommand_RespectsWhitelist()
-    {
-        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
-            ## Off-Limits
-            ```
-            .env.*
-            ```
-
-            ## Whitelist
-            ```
-            .env.example
-            ```
-            """);
-
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
-
-        var (blocked1, _, _) = service.CheckCommand("cat .env.local");
-        var (blocked2, _, _) = service.CheckCommand("cat .env.example");
-
-        Assert.True(blocked1);   // .env.local blocked
-        Assert.False(blocked2);  // .env.example allowed
-    }
 
     [Fact]
     public void LoadPatterns_HandlesFileWithoutWhitelistSection()

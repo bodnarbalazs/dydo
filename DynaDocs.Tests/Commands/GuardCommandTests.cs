@@ -120,7 +120,7 @@ public class GuardCommandTests : IDisposable
 
     #endregion
 
-    #region Bash Command Integration Tests
+    #region Bash Command Integration Tests (Production Path)
 
     [Theory]
     [InlineData("cat .env")]
@@ -129,14 +129,16 @@ public class GuardCommandTests : IDisposable
     [InlineData("tail .env.production")]
     [InlineData("type credentials.json")]
     [InlineData("Get-Content secrets.json")]
-    public void OffLimitsService_BlocksBashReadOfSensitiveFiles(string command)
+    public void ProductionPath_BlocksBashReadOfSensitiveFiles(string command)
     {
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
+        var offLimits = new OffLimitsService();
+        offLimits.LoadPatterns(_testDir);
+        var analyzer = new BashCommandAnalyzer();
 
-        var (isBlocked, _, _) = service.CheckCommand(command);
+        var analysis = analyzer.Analyze(command);
+        var blocked = analysis.Operations.Any(op => offLimits.IsPathOffLimits(op.Path) != null);
 
-        Assert.True(isBlocked, $"Command should be blocked: {command}");
+        Assert.True(blocked, $"Command should be blocked via production path: {command}");
     }
 
     [Theory]
@@ -144,14 +146,16 @@ public class GuardCommandTests : IDisposable
     [InlineData("rm secrets.json")]
     [InlineData("rm -f .env.local")]
     [InlineData("tee credentials.json")]
-    public void OffLimitsService_BlocksBashWriteToSensitiveFiles(string command)
+    public void ProductionPath_BlocksBashWriteToSensitiveFiles(string command)
     {
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
+        var offLimits = new OffLimitsService();
+        offLimits.LoadPatterns(_testDir);
+        var analyzer = new BashCommandAnalyzer();
 
-        var (isBlocked, _, _) = service.CheckCommand(command);
+        var analysis = analyzer.Analyze(command);
+        var blocked = analysis.Operations.Any(op => offLimits.IsPathOffLimits(op.Path) != null);
 
-        Assert.True(isBlocked, $"Command should be blocked: {command}");
+        Assert.True(blocked, $"Command should be blocked via production path: {command}");
     }
 
     [Theory]
@@ -162,14 +166,16 @@ public class GuardCommandTests : IDisposable
     [InlineData("ls -la")]
     [InlineData("dotnet build")]
     [InlineData("npm install")]
-    public void OffLimitsService_AllowsSafeCommands(string command)
+    public void ProductionPath_AllowsSafeCommands(string command)
     {
-        var service = new OffLimitsService();
-        service.LoadPatterns(_testDir);
+        var offLimits = new OffLimitsService();
+        offLimits.LoadPatterns(_testDir);
+        var analyzer = new BashCommandAnalyzer();
 
-        var (isBlocked, _, _) = service.CheckCommand(command);
+        var analysis = analyzer.Analyze(command);
+        var blocked = analysis.Operations.Any(op => offLimits.IsPathOffLimits(op.Path) != null);
 
-        Assert.False(isBlocked, $"Command should be allowed: {command}");
+        Assert.False(blocked, $"Command should be allowed via production path: {command}");
     }
 
     #endregion

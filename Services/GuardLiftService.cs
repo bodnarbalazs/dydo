@@ -67,10 +67,5 @@ public class GuardLiftService
         }
     }
 
-    public void ClearLift(string agentName)
-    {
-        var path = MarkerPath(agentName);
-        if (File.Exists(path))
-            File.Delete(path);
-    }
+    public void ClearLift(string agentName) => Restore(agentName);
 }

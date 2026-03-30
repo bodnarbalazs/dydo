@@ -696,18 +696,6 @@ public static partial class GuardCommand
         foreach (var warning in analysis.Warnings)
             Console.Error.WriteLine($"WARNING: {warning}");
 
-        if (analysis.HasDangerousPattern)
-        {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {analysis.DangerousPatternReason}"
-            });
-            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
-            Console.Error.WriteLine($"  Reason: {analysis.DangerousPatternReason}");
-            return ExitCodes.ToolError;
-        }
-
         foreach (var op in analysis.Operations)
         {
             var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService);
@@ -738,6 +726,23 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
             Console.Error.WriteLine($"  Detected: {op.Type} via {op.Command}");
             return ExitCodes.ToolError;
+        }
+
+        // Staged access control for read operations (mirrors HandleReadOperation)
+        if (op.Type is FileOperationType.Read)
+        {
+            var agent = registry.GetCurrentAgent(sessionId);
+            if (!IsReadAllowed(op.Path, agent))
+            {
+                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+                {
+                    EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
+                    Command = TruncateCommand(command),
+                    BlockReason = agent == null ? "No agent identity" : "No role set"
+                });
+                WriteAccessDeniedError(agent?.Name, null);
+                return ExitCodes.ToolError;
+            }
         }
 
         if (op.Type is FileOperationType.Write or FileOperationType.Delete
@@ -1038,7 +1043,7 @@ public static partial class GuardCommand
             return true;
 
         // dydo/agents/*/workflow.md
-        if (Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase))
+        if (AgentWorkflowRegex().IsMatch(normalizedPath))
             return true;
 
         return false;
@@ -1065,7 +1070,7 @@ public static partial class GuardCommand
     internal static bool IsOtherAgentWorkflow(string filePath, string agentName)
     {
         var normalizedPath = filePath.Replace('\\', '/');
-        if (!Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase))
+        if (!AgentWorkflowRegex().IsMatch(normalizedPath))
             return false; // Not a workflow file at all
         // It IS a workflow file — check if it's for a different agent
         return !normalizedPath.Contains($"dydo/agents/{agentName}/", StringComparison.OrdinalIgnoreCase);
@@ -1081,7 +1086,7 @@ public static partial class GuardCommand
         var normalizedPath = filePath.Replace('\\', '/');
 
         // dydo/agents/*/modes/*.md
-        return Regex.IsMatch(normalizedPath, @"dydo/agents/[^/]+/modes/[^/]+\.md$", RegexOptions.IgnoreCase);
+        return AgentModeFileRegex().IsMatch(normalizedPath);
     }
 
     /// <summary>
@@ -1092,9 +1097,7 @@ public static partial class GuardCommand
     {
         // Match: dydo agent claim <name> or ./dydo agent claim <name>
         // Account for command chaining with ; && ||
-        var match = Regex.Match(command,
-            @"(?:^|[;&|]\s*)(?:\./)?dydo\s+agent\s+claim\s+(\S+)",
-            RegexOptions.IgnoreCase);
+        var match = DydoClaimCommandRegex().Match(command);
 
         return match.Success ? (true, match.Groups[1].Value) : (false, null);
     }
@@ -1104,11 +1107,11 @@ public static partial class GuardCommand
     /// </summary>
     internal static bool IsDydoWaitCommand(string command)
     {
-        if (!Regex.IsMatch(command, @"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b", RegexOptions.IgnoreCase))
+        if (!DydoWaitCommandRegex().IsMatch(command))
             return false;
 
         // Allow 'dydo wait --cancel' and 'dydo wait --task foo --cancel'
-        return !Regex.IsMatch(command, @"--cancel\b", RegexOptions.IgnoreCase);
+        return !CancelFlagRegex().IsMatch(command);
     }
 
     /// <summary>
@@ -1116,10 +1119,7 @@ public static partial class GuardCommand
     /// </summary>
     internal static bool IsDydoCommand(string command)
     {
-        // Match: dydo ... or ./dydo ...
-        return Regex.IsMatch(command,
-            @"(?:^|[;&|]\s*)(?:\./)?dydo\s",
-            RegexOptions.IgnoreCase);
+        return DydoCommandRegex().IsMatch(command);
     }
 
     /// <summary>
@@ -1127,9 +1127,7 @@ public static partial class GuardCommand
     /// </summary>
     private static bool IsDydoDispatchCommand(string command)
     {
-        return Regex.IsMatch(command,
-            @"(?:^|[;&|]\s*)(?:\./)?dydo\s+dispatch\b",
-            RegexOptions.IgnoreCase);
+        return DydoDispatchCommandRegex().IsMatch(command);
     }
 
     /// <summary>
@@ -1145,9 +1143,7 @@ public static partial class GuardCommand
     /// </summary>
     private static bool IsDydoWaitAnyForm(string command)
     {
-        return Regex.IsMatch(command,
-            @"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b",
-            RegexOptions.IgnoreCase);
+        return DydoWaitCommandRegex().IsMatch(command);
     }
 
     /// <summary>
@@ -1191,6 +1187,30 @@ public static partial class GuardCommand
     // Matches human-only dydo subcommands: task approve, task reject, roles reset, guard lift, guard restore
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:task\s+(?:approve|reject)|roles\s+reset|guard\s+(?:lift|restore))\b", RegexOptions.IgnoreCase)]
     private static partial Regex HumanOnlyDydoCommandRegex();
+
+    [GeneratedRegex(@"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase)]
+    private static partial Regex AgentWorkflowRegex();
+
+    [GeneratedRegex(@"dydo/agents/[^/]+/modes/[^/]+\.md$", RegexOptions.IgnoreCase)]
+    private static partial Regex AgentModeFileRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+agent\s+claim\s+(\S+)", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoClaimCommandRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoWaitCommandRegex();
+
+    [GeneratedRegex(@"--cancel\b", RegexOptions.IgnoreCase)]
+    private static partial Regex CancelFlagRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoCommandRegex();
+
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+dispatch\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoDispatchCommandRegex();
+
+    [GeneratedRegex(@"/inbox/([a-f0-9]+)-msg-[^/]+\.md$", RegexOptions.IgnoreCase)]
+    private static partial Regex InboxMessageIdRegex();
 
     /// <summary>
     /// Normalizes a file path for must-read comparison by extracting the project-relative
@@ -1253,7 +1273,7 @@ public static partial class GuardCommand
     internal static string? ExtractMessageIdFromPath(string filePath)
     {
         var normalized = filePath.Replace('\\', '/');
-        var match = Regex.Match(normalized, @"/inbox/([a-f0-9]+)-msg-[^/]+\.md$", RegexOptions.IgnoreCase);
+        var match = InboxMessageIdRegex().Match(normalized);
         return match.Success ? match.Groups[1].Value : null;
     }
 

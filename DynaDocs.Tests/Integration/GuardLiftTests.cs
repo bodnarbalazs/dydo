@@ -223,6 +223,19 @@ public class GuardLiftTests : IntegrationTestBase
     }
 
     [Fact]
+    public void GuardLiftService_ClearLift_RemovesMarker()
+    {
+        var service = new GuardLiftService(TestDir);
+        Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "agents", "TestAgent"));
+
+        service.Lift("TestAgent", "testuser", null);
+        Assert.True(service.IsLifted("TestAgent"));
+
+        service.ClearLift("TestAgent");
+        Assert.False(service.IsLifted("TestAgent"));
+    }
+
+    [Fact]
     public void GuardLiftService_ClearLift_IdempotentWhenNoMarker()
     {
         var service = new GuardLiftService(TestDir);

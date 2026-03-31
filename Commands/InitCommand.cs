@@ -311,6 +311,8 @@ public static class InitCommand
         };
     }
 
+    private const string DydoAllowEntry = "Bash(dydo:*)";
+
     private static void ConfigureClaudeHooks(string projectRoot)
     {
         var claudeDir = Path.Combine(projectRoot, ".claude");
@@ -319,6 +321,15 @@ public static class InitCommand
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
         var settings = LoadJsonSettings(settingsPath);
 
+        ConfigureGuardHook(settings);
+        ConfigureAllowList(settings);
+
+        var json = settings.ToJsonString(WriteOptions);
+        File.WriteAllText(settingsPath, json);
+    }
+
+    private static void ConfigureGuardHook(JsonNode settings)
+    {
         var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
         settings["hooks"] = hooks;
 
@@ -341,9 +352,19 @@ public static class InitCommand
             ["hooks"] = hooksArray
         };
         preToolUse.Add((JsonNode)guardEntry);
+    }
 
-        var json = settings.ToJsonString(WriteOptions);
-        File.WriteAllText(settingsPath, json);
+    private static void ConfigureAllowList(JsonNode settings)
+    {
+        var permissions = settings["permissions"]?.AsObject() ?? new JsonObject();
+        settings["permissions"] = permissions;
+
+        var allow = permissions["allow"]?.AsArray() ?? new JsonArray();
+        permissions["allow"] = allow;
+
+        var hasEntry = allow.Any(entry => entry?.GetValue<string>() == DydoAllowEntry);
+        if (!hasEntry)
+            allow.Add((JsonNode)DydoAllowEntry);
     }
 
     private static JsonNode LoadJsonSettings(string settingsPath)

@@ -257,6 +257,81 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Equal(1, count);
     }
 
+    [Fact]
+    public async Task Init_Claude_AddsDydoAllowEntry()
+    {
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        Assert.Contains("Bash(dydo:*)", content);
+    }
+
+    [Fact]
+    public async Task Init_Claude_AllowMergesWithExistingEntries()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.local.json", """
+            {
+              "permissions": {
+                "allow": [
+                  "Bash(git:*)",
+                  "Read(**)"
+                ]
+              }
+            }
+            """);
+
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        Assert.Contains("Bash(git:*)", content);
+        Assert.Contains("Read(**)", content);
+        Assert.Contains("Bash(dydo:*)", content);
+    }
+
+    [Fact]
+    public async Task Init_Claude_DoesNotDuplicateAllowEntry()
+    {
+        await InitProjectAsync("claude", "balazs", 3);
+
+        // Re-run via join
+        var result = await JoinProjectAsync("claude", "alice", 2);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        var count = content.Split("Bash(dydo:*)").Length - 1;
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task Init_Claude_CreatesAllowArrayWhenMissing()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.local.json", """
+            {
+              "hooks": {}
+            }
+            """);
+
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        Assert.Contains("Bash(dydo:*)", content);
+        Assert.Contains("permissions", content);
+    }
+
+    [Fact]
+    public async Task Init_None_DoesNotCreateAllowEntry()
+    {
+        var result = await InitProjectAsync("none", "balazs", 3);
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(Path.Combine(TestDir, ".claude/settings.local.json")));
+    }
+
     #endregion
 
     #region Init Join

@@ -163,6 +163,17 @@ Prepare your ruling with reasoning. Don't file issues without discussing with th
 
 ---
 
+## Worktree Cleanup
+
+If you're working in an inquisition worktree, include the following in your verdict presentation to the user:
+
+- **If scouts or test-writers made code changes worth preserving** (e.g., a test that reproduces a confirmed bug), suggest merging the worktree before cleanup.
+- **Otherwise**, suggest discarding the worktree: `dydo worktree cleanup <worktree-id> --agent {{AGENT_NAME}}`
+
+Check for a worktree marker: `ls dydo/agents/{{AGENT_NAME}}/.worktree 2>/dev/null`. If present, read it to get the worktree ID and include the cleanup recommendation alongside your verdict.
+
+---
+
 ## Complete
 
 How you finish depends on how you were dispatched.

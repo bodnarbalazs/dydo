@@ -30,7 +30,6 @@ public class CommandDocConsistencyTests
         root.Subcommands.Add(InboxCommand.Create());
         root.Subcommands.Add(TaskCommand.Create());
         root.Subcommands.Add(ReviewCommand.Create());
-        root.Subcommands.Add(CleanCommand.Create());
         root.Subcommands.Add(WorkspaceCommand.Create());
         root.Subcommands.Add(WhoamiCommand.Create());
         root.Subcommands.Add(AuditCommand.Create());

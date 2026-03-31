@@ -223,7 +223,7 @@ Classify each tested hypothesis:
 
 ### 4. Report — The Prosecution's Case
 
-Write the inquisition report at `dydo/project/inquisitions/{area}.md`. Append a new section if the file exists. Create it if it doesn't.
+Write the inquisition report at `dydo/project/inquisitions/{area}.md`. Append a new section if the file exists. Create it if it doesn't. In a worktree, this path is junctioned to the main repo — your report goes directly to the shared project state.
 
 This is your complete case. Every finding, every piece of evidence, ready for the judge to review.
 

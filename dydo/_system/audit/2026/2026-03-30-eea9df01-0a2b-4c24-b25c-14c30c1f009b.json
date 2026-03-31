@@ -899,6 +899,324 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\c18a2dd5-msg-docs-v13-readme-round2.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T11:59:43.5475361Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T11:59:48.026643Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T11:59:53.0049819Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T11:59:59.8101156Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T12:00:10.9590356Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "reason": "Unread messages"
+    },
+    {
+      "ts": "2026-03-31T12:00:16.9635193Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\a11cede5-msg-docs-v13-update.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T12:00:25.4428445Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "reason": "Agent Brian (orchestrator) cannot edit README.md. "
+    },
+    {
+      "ts": "2026-03-31T12:01:26.9358969Z",
+      "event": "GuardLift",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-31T12:01:40.1512567Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:01:46.5232286Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:01:52.3874195Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:01:59.5212537Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T12:02:08.3983672Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:02:14.7110778Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:02:25.2538337Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-31T12:02:30.580496Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-03-31T12:06:33.3691291Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "powershell -Command \u0027[Environment]::SetEnvironmentVariable(\u0022DYDO_HUMAN\u0022, \u0022test\u0022, \u0022User\u0022); [Environme..."
+    },
+    {
+      "ts": "2026-03-31T12:12:49.4635004Z",
+      "event": "GuardLift",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-31T12:13:03.6955878Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:32:35.620815Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T12:32:42.0732962Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T12:32:48.0714194Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "reason": "Agent Brian (orchestrator) cannot edit README.md. "
+    },
+    {
+      "ts": "2026-03-31T12:32:56.3078226Z",
+      "event": "GuardLift",
+      "agent": "Brian"
+    },
+    {
+      "ts": "2026-03-31T12:33:04.7442512Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:09.2431811Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:13.5138578Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:20.5576586Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:27.8678456Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:33.0023182Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:39.3937854Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:45.184931Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:48.7929153Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:52.6841836Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:33:57.6130693Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-03-31T12:34:09.5520307Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:34:35.4544098Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:34:41.1761458Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:34:44.6940331Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:34:50.2132386Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:34:58.8631572Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:05.553584Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:11.0005224Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:18.0710974Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:23.8014251Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:27.8005928Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:31.9797846Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:35:38.1872938Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-03-31T12:41:15.284262Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-allowlist-init.md",
+      "tool": "write",
+      "lifted": true
     }
   ],
   "snapshot": {

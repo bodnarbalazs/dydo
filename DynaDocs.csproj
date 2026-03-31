@@ -7,8 +7,8 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.2.51</Version>
-        <Description>Documentation-driven context and agent orchestration for AI coding assistants.</Description>
+        <Version>1.2.52</Version>
+        <Description>An AI orchestration and context-management framework for Claude Code.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/bodnarbalazs/dydo</PackageProjectUrl>

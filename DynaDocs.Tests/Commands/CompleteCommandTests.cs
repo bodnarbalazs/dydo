@@ -89,6 +89,16 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
+    public void AgentSubcommands_IncludesClean()
+    {
+        var completions = CompleteCommand.GetCompletions(2, ["dydo", "agent"]).ToList();
+
+        Assert.Contains("clean", completions);
+        Assert.Contains("claim", completions);
+        Assert.Contains("release", completions);
+    }
+
+    [Fact]
     public void AgentClaim_ReturnsAgentNamesWithAuto()
     {
         SetupProject(["Adele", "Boris"]);
@@ -197,6 +207,89 @@ public class CompleteCommandTests : IDisposable
         var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "clean"]).ToList();
 
         Assert.Contains("Adele", completions);
+    }
+
+    [Fact]
+    public void Inbox_ReturnsSubcommands()
+    {
+        var completions = CompleteCommand.GetCompletions(2, ["dydo", "inbox"]).ToList();
+
+        Assert.Contains("list", completions);
+        Assert.Contains("show", completions);
+        Assert.Contains("clear", completions);
+    }
+
+    [Fact]
+    public void Workspace_ReturnsSubcommands()
+    {
+        var completions = CompleteCommand.GetCompletions(2, ["dydo", "workspace"]).ToList();
+
+        Assert.Contains("init", completions);
+        Assert.Contains("check", completions);
+    }
+
+    [Fact]
+    public void Graph_ReturnsSubcommands()
+    {
+        var completions = CompleteCommand.GetCompletions(2, ["dydo", "graph"]).ToList();
+
+        Assert.Contains("stats", completions);
+    }
+
+    [Fact]
+    public void AgentUnknownSubcommand_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "unknown"]).ToList();
+
+        Assert.Empty(completions);
+    }
+
+    [Fact]
+    public void AgentPosition4_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(4, ["dydo", "agent", "claim", "Adele"]).ToList();
+
+        Assert.Empty(completions);
+    }
+
+    [Fact]
+    public void TaskUnknownSubcommand_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "list"]).ToList();
+
+        Assert.Empty(completions);
+    }
+
+    [Fact]
+    public void TaskPosition4_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(4, ["dydo", "task", "approve", "my-task"]).ToList();
+
+        Assert.Empty(completions);
+    }
+
+    [Fact]
+    public void ReviewUnknownSubcommand_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(3, ["dydo", "review", "unknown"]).ToList();
+
+        Assert.Empty(completions);
+    }
+
+    [Fact]
+    public void ReviewPosition4_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(4, ["dydo", "review", "complete", "task"]).ToList();
+
+        Assert.Empty(completions);
+    }
+
+    [Fact]
+    public void UnknownTopCommand_ReturnsEmpty()
+    {
+        var completions = CompleteCommand.GetCompletions(2, ["dydo", "nonexistent"]).ToList();
+
+        Assert.Empty(completions);
     }
 
     [Fact]

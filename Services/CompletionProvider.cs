@@ -11,20 +11,6 @@ public static class CompletionProvider
         "whoami", "audit", "version", "help", "completions"
     ];
 
-    private static readonly string[] TaskSubcommands =
-        ["approve", "create", "list", "ready-for-review", "reject"];
-
-    private static readonly string[] AgentSubcommands =
-        ["claim", "release", "status", "list", "role", "new", "rename", "remove", "reassign", "clean"];
-
-    private static readonly string[] ReviewSubcommands = ["complete"];
-
-    private static readonly string[] InboxSubcommands = ["list", "show", "clear"];
-
-    private static readonly string[] WorkspaceSubcommands = ["init", "check"];
-
-    private static readonly string[] GraphSubcommands = ["stats"];
-
     private static readonly string[] Roles =
         ["code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer"];
 
@@ -32,60 +18,34 @@ public static class CompletionProvider
 
     private static readonly string[] GuardActions = ["edit", "write", "delete", "read"];
 
-    private static readonly string[] Integrations = ["claude", "none"];
-
-    private static readonly string[] Shells = ["bash", "zsh", "powershell"];
-
-    public static IEnumerable<string> GetCompletions(int position, string[] words)
+    // Position 2: command → list of subcommands
+    private static readonly Dictionary<string, string[]> SubcommandLists = new()
     {
-        if (position >= 1 && position <= words.Length)
-        {
-            var prevWord = words[position - 1];
-            var optionCompletions = GetOptionValueCompletions(prevWord);
-            if (optionCompletions != null)
-                return optionCompletions;
-        }
-
-        if (position <= 1 || words.Length < 2)
-            return TopLevelCommands;
-
-        return GetSubcommandCompletions(words[1].ToLowerInvariant(), position, words);
-    }
-
-    private static readonly Dictionary<string, Func<int, string[], IEnumerable<string>>> SubcommandHandlers = new()
-    {
-        ["task"] = (pos, words) => GetTaskCompletions(pos, words),
-        ["agent"] = (pos, words) => GetAgentCompletions(pos, words),
-        ["review"] = (pos, words) => GetReviewCompletions(pos, words),
-        ["dispatch"] = (_, _) => [],
-        ["init"] = (pos, _) => GetInitCompletions(pos),
-        ["completions"] = (pos, _) => GetCompletionsShellCompletions(pos),
-        ["inbox"] = (pos, _) => GetInboxCompletions(pos),
-        ["workspace"] = (pos, _) => GetWorkspaceCompletions(pos),
-        ["graph"] = (pos, _) => GetGraphCompletions(pos),
+        ["agent"] = ["claim", "release", "status", "list", "role", "new", "rename", "remove", "reassign", "clean"],
+        ["task"] = ["approve", "create", "list", "ready-for-review", "reject"],
+        ["review"] = ["complete"],
+        ["init"] = ["claude", "none"],
+        ["completions"] = ["bash", "zsh", "powershell"],
+        ["inbox"] = ["list", "show", "clear"],
+        ["workspace"] = ["init", "check"],
+        ["graph"] = ["stats"],
     };
 
-    public static IEnumerable<string> GetSubcommandCompletions(string command, int position, string[] words)
+    // Position 3: (command, subcommand) → dynamic completion source
+    private static readonly Dictionary<(string Cmd, string Sub), Func<IEnumerable<string>>> ArgCompletions = new()
     {
-        return SubcommandHandlers.TryGetValue(command, out var handler)
-            ? handler(position, words)
-            : [];
-    }
-
-    private static IEnumerable<string> GetInitCompletions(int position)
-        => position == 2 ? Integrations : [];
-
-    private static IEnumerable<string> GetCompletionsShellCompletions(int position)
-        => position == 2 ? Shells : [];
-
-    private static IEnumerable<string> GetInboxCompletions(int position)
-        => position == 2 ? InboxSubcommands : [];
-
-    private static IEnumerable<string> GetWorkspaceCompletions(int position)
-        => position == 2 ? WorkspaceSubcommands : [];
-
-    private static IEnumerable<string> GetGraphCompletions(int position)
-        => position == 2 ? GraphSubcommands : [];
+        [("agent", "claim")] = () => GetAgentNames().Prepend("auto"),
+        [("agent", "role")] = () => Roles,
+        [("agent", "status")] = GetAgentNames,
+        [("agent", "rename")] = GetAgentNames,
+        [("agent", "remove")] = GetAgentNames,
+        [("agent", "reassign")] = GetAgentNames,
+        [("agent", "clean")] = GetAgentNames,
+        [("task", "approve")] = GetTaskNames,
+        [("task", "reject")] = GetTaskNames,
+        [("task", "ready-for-review")] = GetTaskNames,
+        [("review", "complete")] = GetTaskNames,
+    };
 
     private static readonly Dictionary<string, Func<IEnumerable<string>>> OptionValueHandlers = new()
     {
@@ -97,73 +57,43 @@ public static class CompletionProvider
         ["--to"] = GetAgentNames,
     };
 
+    public static IEnumerable<string> GetCompletions(int position, string[] words)
+    {
+        if (position >= 1 && position <= words.Length)
+        {
+            var optionCompletions = GetOptionValueCompletions(words[position - 1]);
+            if (optionCompletions != null)
+                return optionCompletions;
+        }
+
+        if (position <= 1 || words.Length < 2)
+            return TopLevelCommands;
+
+        return GetSubcommandCompletions(words[1].ToLowerInvariant(), position, words);
+    }
+
+    public static IEnumerable<string> GetSubcommandCompletions(string command, int position, string[] words)
+    {
+        if (!SubcommandLists.TryGetValue(command, out var subcommands))
+            return [];
+
+        if (position == 2)
+            return subcommands;
+
+        if (position == 3 && words.Length >= 3)
+        {
+            var key = (command, words[2].ToLowerInvariant());
+            return ArgCompletions.TryGetValue(key, out var handler) ? handler() : [];
+        }
+
+        return [];
+    }
+
     public static IEnumerable<string>? GetOptionValueCompletions(string option)
     {
         return OptionValueHandlers.TryGetValue(option, out var handler)
             ? handler()
             : null;
-    }
-
-    private static IEnumerable<string> GetTaskCompletions(int position, string[] words)
-    {
-        if (position == 2)
-            return TaskSubcommands;
-
-        if (words.Length < 3)
-            return [];
-
-        var subcommand = words[2].ToLowerInvariant();
-
-        if (position == 3)
-        {
-            return subcommand switch
-            {
-                "approve" or "reject" or "ready-for-review" => GetTaskNames(),
-                _ => []
-            };
-        }
-
-        return [];
-    }
-
-    private static IEnumerable<string> GetAgentCompletions(int position, string[] words)
-    {
-        if (position == 2)
-            return AgentSubcommands;
-
-        if (words.Length < 3)
-            return [];
-
-        var subcommand = words[2].ToLowerInvariant();
-
-        if (position == 3)
-        {
-            return subcommand switch
-            {
-                "claim" => GetAgentNames().Prepend("auto"),
-                "role" => Roles,
-                "status" or "rename" or "remove" or "reassign" or "clean" => GetAgentNames(),
-                _ => []
-            };
-        }
-
-        return [];
-    }
-
-    private static IEnumerable<string> GetReviewCompletions(int position, string[] words)
-    {
-        if (position == 2)
-            return ReviewSubcommands;
-
-        if (words.Length < 3)
-            return [];
-
-        var subcommand = words[2].ToLowerInvariant();
-
-        if (position == 3 && subcommand == "complete")
-            return GetTaskNames();
-
-        return [];
     }
 
     public static IEnumerable<string> GetTaskNames()

@@ -36,6 +36,7 @@ DynaDocs gives you explicit, structured control over project context. Your docum
 - **Worktree isolation** — Parallel agents work on separate git branches without conflicts
 - **Issue tracking** — Lightweight issue management tied to inquisitions and reviews
 - **Team support** — Each team member gets their own pool of agents
+- **Custom nudges** — Project-specific guardrails: regex patterns that block or warn agents with custom messages
 - **Your process, your rules** — Modify templates, roles, and workflows to match how you work
 
 ---
@@ -50,7 +51,17 @@ npm install -g dydo
 dotnet tool install -g dydo
 ```
 
-**Note:** The setup will prompt you to set the `DYDO_HUMAN` environment variable. Agents use this to know which human they belong to.
+**Note:** Set the `DYDO_HUMAN` environment variable so agents know who they belong to:
+
+```powershell
+# Windows (PowerShell)
+[Environment]::SetEnvironmentVariable("DYDO_HUMAN", "YourName", "User")
+```
+
+```bash
+# macOS / Linux (add to ~/.bashrc or ~/.zshrc)
+export DYDO_HUMAN="YourName"
+```
 
 ## Quick Start
 
@@ -84,19 +95,27 @@ dydo fix      # Auto-fix what's possible
 
 **Tip:** [Obsidian](https://obsidian.md) makes navigating the docs easier, but it converts links when you move files. Run `dydo fix` afterward. The fix command also generates missing hub files and folder meta files.
 
-### 4. Customize the templates
+### 4. Configure paths and roles
 
-Edit templates in `dydo/_system/templates/` to fit your project. Changes take effect when agents are claimed.
+Edit `dydo.json` to set your project's source and test paths — not every project uses the same folder conventions. Role permissions reference these paths, so agents know where they can write.
 
-Fill out the `about.md` and modify the `coding-standards.md` to your taste.
+You can also customize roles in `dydo/_system/roles/` or create entirely new ones with `dydo roles create <name>`.
 
-#### Template Additions
+### 5. Customize agent workflows
 
-Templates ship with `{{include:name}}` tags at natural extension points. These resolve to markdown files in `dydo/_system/template-additions/`. This lets you inject project-specific steps into agent workflows without editing the templates directly.
+Two options for customizing what agents read and do:
 
-**The proper path:** Create a file like `extra-verify.md` in `template-additions/`. Any template with `{{include:extra-verify}}` will include its content. Templates stay stock, so `dydo template update` works seamlessly.
+- **Template additions** (recommended) — drop markdown files in `dydo/_system/template-additions/`. Templates have `{{include:name}}` hooks at natural extension points. (You can also add your own.) Your additions survive `dydo template update`.
+- **Edit templates directly** — modify files in `dydo/_system/templates/`. More flexible, but `dydo template update` won't update the edited files.
 
-**The quick path:** Edit the template directly — add `{{include:whatever}}` anywhere. On `dydo template update`, user-added tags are detected, anchored by surrounding content, and re-inserted into the new template automatically.
+Fill out `about.md` with your project context and adjust `coding-standards.md` to your conventions — agents read these during onboarding.
+
+**Tip:** If you want to customize roles, custom nudges (regex pattern with warn or block behaviour with custom message), or something advanced in general, don't write the files manually. Find out what you want with a co-thinker, direct them to DynaDocs's dydo folder on github to learn a bit about the system, lift the guard for them with `dydo guard lift <agent name> 5` and have them do it.
+Then run `dydo validate` to make sure it works.
+
+#### Template Addition Details
+
+Templates ship with `{{include:name}}` tags at natural extension points. These resolve to markdown files in `dydo/_system/template-additions/`.
 
 **Shipped hooks:**
 
@@ -109,7 +128,7 @@ Templates ship with `{{include:name}}` tags at natural extension points. These r
 
 Any `{{include:whatever}}` works — not limited to shipped hooks.
 
-You're ready to go. For best results, keep docs up to date and accurate to match your intent. Not everything needs documenting—just what you wouldn't know from reading the code.
+You're ready to go. Keep docs up to date and accurate to match your intent — they're the memory your agents rely on.
 
 ---
 
@@ -142,7 +161,7 @@ Key capabilities:
 - **Worktree isolation** — `dispatch --worktree` gives each agent an isolated git branch
 - **Dispatch queues** — `--queue` serializes terminal launches to avoid resource contention
 - **Inquisition** — adversarial QA agents audit code quality and documentation coverage
-- **Dispute resolution** — judge agents arbitrate when agents disagree
+- **Dispute resolution** — judge agents review inquisitions and help evaluate evidence
 
 ---
 
@@ -235,19 +254,20 @@ DynaDocs documents itself using its own system. Agents can learn about dydo by r
 
 **Note:** Agents call most of these commands themselves.
 Commands frequently used by humans are **bold**.
+Commands meant to be called only by agents are *italic*.
 
 ### Setup
 | Command | Description |
 |---------|-------------|
 | `dydo init <integration>` | Initialize project (`claude`, `none`) |
 | `dydo init <integration> --join` | Join existing project as new team member |
-| `dydo whoami` | Show current agent identity |
+| *`dydo whoami`* | *Show current agent identity* |
 
 ### Documentation
 | Command | Description |
 |---------|-------------|
-| **`dydo check [path]`** | Validate documentation |
-| **`dydo fix [path]`** | Auto-fix issues |
+| **`dydo check [path]`** | **Validate documentation** |
+| **`dydo fix [path]`** | **Auto-fix issues** |
 | `dydo index [path]` | Regenerate index.md from structure |
 | `dydo graph <file>` | Show graph connections for a file |
 | `dydo graph stats [--top N]` | Show top docs by incoming links |
@@ -255,13 +275,13 @@ Commands frequently used by humans are **bold**.
 ### Agent Lifecycle
 | Command | Description |
 |---------|-------------|
-| `dydo agent claim <name\|auto>` | Claim an agent identity |
-| `dydo agent release` | Release current agent |
-| `dydo agent status [name]` | Show agent status |
-| **`dydo agent list [--free] [--all]`** | List agents (default: current human's) |
-| **`dydo agent tree`** | Show dispatch hierarchy of active agents |
-| `dydo agent role <role> [--task X]` | Set role and permissions |
-| **`dydo agent clean <agent>`** | Clean agent workspace |
+| *`dydo agent claim <name\|auto>`* | *Claim an agent identity* |
+| *`dydo agent release`* | *Release current agent* |
+| *`dydo agent status [name]`* | *Show agent status* |
+| **`dydo agent list [--free] [--all]`** | **List agents (default: current human's)** |
+| **`dydo agent tree`** | **Show dispatch hierarchy of active agents** |
+| *`dydo agent role <role> [--task X]`* | *Set role and permissions* |
+| **`dydo agent clean <agent>`** | **Clean agent workspace** |
 
 ### Agent Management
 | Command | Description |
@@ -274,31 +294,31 @@ Commands frequently used by humans are **bold**.
 ### Workflow
 | Command | Description |
 |---------|-------------|
-| `dydo dispatch --wait/--no-wait --role <role> --task <name>` | Hand off work to another agent |
-| `dydo dispatch --worktree ...` | Dispatch into an isolated git worktree |
-| `dydo dispatch --queue <name> ...` | Serialize launches via named queue |
-| `dydo inbox list` | List agents with inbox items |
-| `dydo inbox show` | Show current agent's inbox |
-| `dydo inbox clear --all` | Archive processed items |
+| *`dydo dispatch --wait/--no-wait --role <role> --task <name>`* | *Hand off work to another agent* |
+| *`dydo dispatch --worktree ...`* | *Dispatch into an isolated git worktree* |
+| *`dydo dispatch --queue <name> ...`* | *Serialize launches via named queue* |
+| *`dydo inbox list`* | *List agents with inbox items* |
+| *`dydo inbox show`* | *Show current agent's inbox* |
+| *`dydo inbox clear --all`* | *Archive processed items* |
 
 ### Messaging
 | Command | Description |
 |---------|-------------|
-| `dydo msg --to <agent> --body "..."` | Send message to another agent |
-| `dydo msg --to <agent> --subject <task> --body "..."` | Message with task context |
-| `dydo wait --task <name>` | Wait for task-specific message |
-| `dydo wait --cancel` | Cancel active waits |
+| *`dydo msg --to <agent> --body "..."`* | *Send message to another agent* |
+| *`dydo msg --to <agent> --subject <task> --body "..."`* | *Message with task context* |
+| *`dydo wait --task <name>`* | *Wait for task-specific message* |
+| *`dydo wait --cancel`* | *Cancel active waits* |
 
 ### Tasks
 | Command | Description |
 |---------|-------------|
 | `dydo task create <name>` | Create a new task |
-| `dydo task ready-for-review <name> --summary "..."` | Mark task ready for review |
-| **`dydo task approve <name>`** / **`--all`** | Approve task(s) (human only) |
+| *`dydo task ready-for-review <name> --summary "..."`* | *Mark task ready for review* |
+| **`dydo task approve <name>`** / **`--all`** | **Approve task(s) (human only)** |
 | `dydo task reject <name>` | Reject task (human only) |
 | `dydo task list` | List tasks |
 | `dydo task compact` | Compact audit snapshots |
-| `dydo review complete <task>` | Complete a code review |
+| *`dydo review complete <task>`* | *Complete a code review* |
 
 ### Issues
 | Command | Description |
@@ -324,15 +344,15 @@ Commands frequently used by humans are **bold**.
 | Command | Description |
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-| **`dydo guard lift <agent> [minutes]`** | Temporarily lift guard restrictions |
+| **`dydo guard lift <agent> [minutes]`** | **Temporarily lift guard restrictions** |
 | `dydo guard restore <agent>` | Restore guard restrictions |
-| `dydo workspace init` | Initialize agent workspaces |
-| `dydo workspace check` | Verify workflow before session end |
+| *`dydo workspace init`* | *Initialize agent workspaces* |
+| *`dydo workspace check`* | *Verify workflow before session end* |
 
 ### Audit
 | Command | Description |
 |---------|-------------|
-| **`dydo audit`** | Generate activity replay visualization |
+| **`dydo audit`** | **Generate activity replay visualization** |
 | `dydo audit --list` | List available sessions |
 | `dydo audit --session <id>` | Show details for a session |
 | `dydo audit compact [year]` | Compact audit snapshots |
@@ -340,13 +360,12 @@ Commands frequently used by humans are **bold**.
 ### Template
 | Command | Description |
 |---------|-------------|
-| **`dydo template update`** | Update framework templates and docs |
+| **`dydo template update`** | **Update framework templates and docs** |
 | `dydo template update --diff` | Preview changes without writing |
 
 ### Utility
 | Command | Description |
 |---------|-------------|
-| `dydo completions <shell>` | Generate shell completions |
 | `dydo version` | Display version |
 
 ---

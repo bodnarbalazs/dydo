@@ -441,6 +441,88 @@ public class CommandDocConsistencyTests
             $"License section inconsistencies (README.md is source of truth):\n\n{string.Join("\n\n", mismatches)}");
     }
 
+    // ──────────────────────────────────────────────
+    // Test 9: README clones stay in sync with their sources
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void ReadmeClones_ContentInSync()
+    {
+        var readme = File.ReadAllText(FindRepoFile("README.md")).ReplaceLineEndings("\n").TrimEnd();
+        var aboutDynadocs = File.ReadAllText(
+                FindRepoFile(Path.Combine("dydo", "reference", "about-dynadocs.md")))
+            .ReplaceLineEndings("\n").TrimEnd();
+        var aboutTemplate = File.ReadAllText(
+                FindRepoFile(Path.Combine("Templates", "about-dynadocs.template.md")))
+            .ReplaceLineEndings("\n").TrimEnd();
+
+        var mismatches = new List<string>();
+
+        // about-dynadocs.md and template should be identical
+        if (aboutDynadocs != aboutTemplate)
+            mismatches.Add(
+                $"Templates/about-dynadocs.template.md differs from dydo/reference/about-dynadocs.md:\n" +
+                FirstDiff(aboutDynadocs, aboutTemplate));
+
+        // README.md and about-dynadocs.md should have the same ## section headings
+        var readmeHeadings = ExtractLevel2Headings(readme);
+        var aboutHeadings = ExtractLevel2Headings(StripFrontmatter(aboutDynadocs));
+        var missingFromAbout = readmeHeadings.Except(aboutHeadings).ToList();
+        var extraInAbout = aboutHeadings.Except(readmeHeadings).ToList();
+        foreach (var h in missingFromAbout)
+            mismatches.Add($"about-dynadocs.md missing section: '{h}'");
+        foreach (var h in extraInAbout)
+            mismatches.Add($"about-dynadocs.md has extra section: '{h}'");
+
+        // Sections that must be identical after image path normalization
+        string[] sharedSections = ["## Agent Roles", "## For Teams", "## Self-Documentation"];
+        var normalizedReadme = NormalizeImagePaths(readme);
+        var normalizedAbout = NormalizeImagePaths(StripFrontmatter(aboutDynadocs));
+        foreach (var heading in sharedSections)
+        {
+            var fromReadme = ExtractSection(normalizedReadme, heading);
+            var fromAbout = ExtractSection(normalizedAbout, heading);
+            if (fromReadme != fromAbout)
+                mismatches.Add(
+                    $"'{heading}' differs between README.md and about-dynadocs.md:\n" +
+                    FirstDiff(fromReadme, fromAbout));
+        }
+
+        Assert.True(mismatches.Count == 0,
+            $"README clone sync issues:\n\n{string.Join("\n\n", mismatches)}");
+    }
+
+    private static string StripFrontmatter(string content)
+    {
+        if (!content.StartsWith("---\n")) return content;
+        var endIdx = content.IndexOf("\n---\n", 4);
+        return endIdx < 0 ? content : content[(endIdx + 5)..];
+    }
+
+    private static string NormalizeImagePaths(string content) =>
+        content
+            .Replace("https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/", "_ASSETS_/")
+            .Replace("../_assets/", "_ASSETS_/");
+
+    private static List<string> ExtractLevel2Headings(string content) =>
+        Regex.Matches(content, @"^## .+$", RegexOptions.Multiline)
+            .Select(m => m.Value.Trim())
+            .ToList();
+
+    private static string FirstDiff(string a, string b)
+    {
+        var linesA = a.Split('\n');
+        var linesB = b.Split('\n');
+        for (var i = 0; i < Math.Max(linesA.Length, linesB.Length); i++)
+        {
+            var la = i < linesA.Length ? linesA[i] : "<EOF>";
+            var lb = i < linesB.Length ? linesB[i] : "<EOF>";
+            if (la != lb)
+                return $"  Line {i + 1}:\n    Expected: {la}\n    Actual:   {lb}";
+        }
+        return "  (no visible difference)";
+    }
+
     /// <summary>
     /// Extract a section from markdown starting at the given heading and ending
     /// at the next heading of the same or higher level, or end of file.

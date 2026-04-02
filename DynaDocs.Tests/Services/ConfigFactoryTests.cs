@@ -191,6 +191,20 @@ public class ConfigFactoryTests
     }
 
     [Theory]
+    [InlineData("digit worktree add foo")]
+    [InlineData("digit worktree remove bar")]
+    public void DefaultNudges_DoesNotMatchWordsContainingGit(string command)
+    {
+        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+        {
+            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return regex.IsMatch(command);
+        });
+
+        Assert.Null(matchingNudge);
+    }
+
+    [Theory]
     [InlineData("rm -rf dydo/_system/.local/worktrees/abc123")]
     [InlineData("rm -r dydo/_system/.local/worktrees/")]
     public void DefaultNudges_ContainsRmWorktreeBlockNudge(string command)

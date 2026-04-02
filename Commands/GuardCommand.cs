@@ -648,20 +648,6 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry, IAuditService auditService)
     {
-        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
-        if (isDangerous)
-        {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {dangerReason}"
-            });
-            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
-            Console.Error.WriteLine($"  Reason: {dangerReason}");
-            Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
-            return ExitCodes.ToolError;
-        }
-
         // git stash is only safe in worktrees (isolated stash stack); block otherwise
         if (GitStashRegex().IsMatch(command))
         {

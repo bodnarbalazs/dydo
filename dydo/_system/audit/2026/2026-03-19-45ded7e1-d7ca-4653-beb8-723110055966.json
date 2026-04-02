@@ -3116,6 +3116,73 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1999f530-msg-investigate-worktree-remove-bypass.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T19:04:43.8206195Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-worktree-remove-bypass.md",
+      "tool": "write"
+    },
+    {
+      "ts": "2026-04-02T19:22:04.8159047Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bicfjzq9f.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T19:22:20.7208556Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1da6137d-msg-fix-worktree-remove-bypass.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T19:45:01.0392086Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b2ljsup8d.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T19:45:23.2449998Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ec9527ba-msg-fix-worktree-remove-bypass.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T19:46:42.1421984Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-04-02T20:04:10.2663354Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dydo agent list | head -10",
+      "reason": "Pending wait markers"
+    },
+    {
+      "ts": "2026-04-02T20:08:44.7158496Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-02T20:08:54.4989177Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T20:09:02.6679918Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T20:11:09.2475603Z",
+      "event": "Write",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-init-settings-timing.md",
+      "tool": "write"
     }
   ],
   "snapshot_ref": {

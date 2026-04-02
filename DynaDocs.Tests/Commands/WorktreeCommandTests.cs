@@ -1867,7 +1867,8 @@ public class WorktreeCommandTests : IDisposable
     {
         var original = Console.Out;
         var sw = new StringWriter();
-        Console.SetOut(sw);
+        // Synchronized wrapper prevents StringBuilder corruption from parallel xUnit test classes
+        Console.SetOut(TextWriter.Synchronized(sw));
         try
         {
             action();
@@ -1885,8 +1886,9 @@ public class WorktreeCommandTests : IDisposable
         var originalErr = Console.Error;
         var outWriter = new StringWriter();
         var errWriter = new StringWriter();
-        Console.SetOut(outWriter);
-        Console.SetError(errWriter);
+        // Synchronized wrappers prevent StringBuilder corruption from parallel xUnit test classes
+        Console.SetOut(TextWriter.Synchronized(outWriter));
+        Console.SetError(TextWriter.Synchronized(errWriter));
         try
         {
             var code = action();

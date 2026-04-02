@@ -424,6 +424,15 @@ public class BashCommandAnalyzerTests
         Assert.False(isDangerous);
     }
 
+    [Theory]
+    [InlineData("digit worktree add foo")]
+    [InlineData("digit worktree remove bar")]
+    public void CheckDangerousPatterns_IgnoresWordsContainingGit(string command)
+    {
+        var (isDangerous, _) = _analyzer.CheckDangerousPatterns(command);
+        Assert.False(isDangerous, $"Should not match 'git' inside other words: {command}");
+    }
+
     #endregion
 
     #region Bypass Detection (Warnings)

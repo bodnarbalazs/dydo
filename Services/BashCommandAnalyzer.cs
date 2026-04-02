@@ -265,10 +265,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd")]
     private static partial Regex PasswdModifyRegex();
 
-    [GeneratedRegex(@"git\b[^;|&]*\bworktree\s+add(?:\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bgit\b[^;|&]*\bworktree\s+add(?:\s|$)", RegexOptions.IgnoreCase)]
     private static partial Regex GitWorktreeAddRegex();
 
-    [GeneratedRegex(@"git\b[^;|&]*\bworktree\s+remove(?:\s|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bgit\b[^;|&]*\bworktree\s+remove(?:\s|$)", RegexOptions.IgnoreCase)]
     private static partial Regex GitWorktreeRemoveRegex();
 
     // Coaching: detect needless cd+command compounds

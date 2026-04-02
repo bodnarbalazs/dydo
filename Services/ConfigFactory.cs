@@ -40,7 +40,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"git\b[^;|&]*\bworktree\s+(add|remove)\b",
+            Pattern = @"\bgit\b[^;|&]*\bworktree\s+(add|remove)\b",
             Message = "Use dydo worktree commands instead of git worktree directly.",
             Severity = "block"
         },

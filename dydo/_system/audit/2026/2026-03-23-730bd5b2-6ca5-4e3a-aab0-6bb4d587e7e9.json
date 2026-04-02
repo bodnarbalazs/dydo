@@ -1354,31 +1354,83 @@
       "folders_added": [],
       "folders_removed": [],
       "doc_links_added": {
-        "dydo/_system/.local/worktrees/smoke-test-v4/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/roles-and-permissions.md"
+        "dydo/agents/charlie/workflow.md": [
+          "dydo/agents/charlie/modes/co-thinker.md",
+          "dydo/agents/charlie/modes/code-writer.md",
+          "dydo/agents/charlie/modes/docs-writer.md",
+          "dydo/agents/charlie/modes/inquisitor.md",
+          "dydo/agents/charlie/modes/judge.md",
+          "dydo/agents/charlie/modes/orchestrator.md",
+          "dydo/agents/charlie/modes/planner.md",
+          "dydo/agents/charlie/modes/reviewer.md",
+          "dydo/agents/charlie/modes/test-writer.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v11/dydo/welcome.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/about.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/glossary.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/project/_index.md",
+        "dydo/agents/charlie/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/charlie/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v10/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v11/claude.md": [
           "dydo/_system/.local/worktrees/smoke-test-v11/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v11/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/roles-and-permissions.md"
+        "dydo/_system/.local/worktrees/smoke-test-v4/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v8/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v8/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v9/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v9/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v10/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/roles-and-permissions.md"
         ],
         "dydo/_system/.local/worktrees/smoke-test-v10/dydo/welcome.md": [
           "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/about.md",
@@ -1392,83 +1444,31 @@
           "dydo/_system/.local/worktrees/smoke-test-v10/dydo/project/_index.md",
           "dydo/_system/.local/worktrees/smoke-test-v10/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v10/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/understand/roles-and-permissions.md"
+        "dydo/_system/.local/worktrees/smoke-test-v11/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/roles-and-permissions.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v9/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v9/dydo/index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-test-v8/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v8/dydo/index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-test-v4/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-test-v11/claude.md": [
+        "dydo/_system/.local/worktrees/smoke-test-v11/dydo/welcome.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/about.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/glossary.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/reference/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v11/dydo/project/_index.md",
           "dydo/_system/.local/worktrees/smoke-test-v11/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v10/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v10/dydo/index.md"
-        ],
-        "dydo/agents/charlie/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/charlie/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/charlie/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/workflow.md": [
-          "dydo/agents/charlie/modes/co-thinker.md",
-          "dydo/agents/charlie/modes/code-writer.md",
-          "dydo/agents/charlie/modes/docs-writer.md",
-          "dydo/agents/charlie/modes/inquisitor.md",
-          "dydo/agents/charlie/modes/judge.md",
-          "dydo/agents/charlie/modes/orchestrator.md",
-          "dydo/agents/charlie/modes/planner.md",
-          "dydo/agents/charlie/modes/reviewer.md",
-          "dydo/agents/charlie/modes/test-writer.md"
+        "dydo/_system/.local/worktrees/smoke-test-v4/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v4/dydo/understand/roles-and-permissions.md"
         ],
         "dydo/project/changelog/2026/2026-03-19/_index.md": [
           "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",

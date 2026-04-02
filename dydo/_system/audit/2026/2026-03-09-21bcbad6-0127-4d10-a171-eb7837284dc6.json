@@ -1311,39 +1311,81 @@
           "dydo/agents/leo/modes/interviewer.md",
           "dydo/agents/leo/modes/tester.md"
         ],
-        "dydo/agents/adele/v1.3-release-plan.md": [
-          "dydo/project/decisions/004-terminal-grouping-over-dashboard.md"
-        ],
-        "dydo/_system/templates/mode-interviewer.template.md": [
+        "dydo/agents/leo/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/_system/templates/mode-tester.template.md": [
+        "dydo/agents/noah/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/adele/modes/interviewer.md": [
+        "dydo/agents/noah/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/adele/modes/planner.md"
+          "dydo/agents/noah/modes/planner.md"
         ],
-        "dydo/agents/adele/modes/tester.md": [
+        "dydo/agents/mia/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/brian/modes/interviewer.md": [
+        "dydo/agents/mia/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/brian/modes/planner.md"
+          "dydo/agents/mia/modes/planner.md"
         ],
-        "dydo/agents/brian/modes/tester.md": [
+        "dydo/agents/kate/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/leo/modes/interviewer.md": [
+        "dydo/agents/kate/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/leo/modes/planner.md"
+          "dydo/agents/kate/modes/planner.md"
+        ],
+        "dydo/agents/jack/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/jack/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/jack/modes/planner.md"
+        ],
+        "dydo/agents/iris/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/iris/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/iris/modes/planner.md"
+        ],
+        "dydo/agents/frank/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/frank/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/frank/modes/planner.md"
+        ],
+        "dydo/agents/emma/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/emma/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/emma/modes/planner.md"
+        ],
+        "dydo/agents/dexter/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/dexter/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/dexter/modes/planner.md"
         ],
         "dydo/project/tasks/_index.md": [
           "dydo/project/tasks/auto-close-fix.md",
@@ -1363,81 +1405,39 @@
           "dydo/project/tasks/v1.3-workflow-role-revamp-2.md",
           "dydo/project/tasks/v1.3-workflow-role-revamp.md"
         ],
-        "dydo/agents/dexter/modes/interviewer.md": [
+        "dydo/agents/leo/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/dexter/modes/planner.md"
+          "dydo/agents/leo/modes/planner.md"
         ],
-        "dydo/agents/dexter/modes/tester.md": [
+        "dydo/agents/brian/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/emma/modes/interviewer.md": [
+        "dydo/agents/brian/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/emma/modes/planner.md"
+          "dydo/agents/brian/modes/planner.md"
         ],
-        "dydo/agents/emma/modes/tester.md": [
+        "dydo/agents/adele/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/frank/modes/interviewer.md": [
+        "dydo/agents/adele/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/frank/modes/planner.md"
+          "dydo/agents/adele/modes/planner.md"
         ],
-        "dydo/agents/frank/modes/tester.md": [
+        "dydo/_system/templates/mode-tester.template.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/iris/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/iris/modes/planner.md"
-        ],
-        "dydo/agents/iris/modes/tester.md": [
+        "dydo/_system/templates/mode-interviewer.template.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/jack/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/jack/modes/planner.md"
-        ],
-        "dydo/agents/jack/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/kate/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/kate/modes/planner.md"
-        ],
-        "dydo/agents/kate/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/mia/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/mia/modes/planner.md"
-        ],
-        "dydo/agents/mia/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/noah/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/noah/modes/planner.md"
-        ],
-        "dydo/agents/noah/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/leo/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/agents/adele/v1.3-release-plan.md": [
+          "dydo/project/decisions/004-terminal-grouping-over-dashboard.md"
         ]
       },
       "doc_links_removed": {

@@ -188,9 +188,10 @@ public static class WatchdogService
             {
                 try
                 {
-                    using var proc = Process.GetProcessById(pid);
-                    if (ShellProcessNames.Contains(proc.ProcessName))
+                    var procName = ProcessUtils.GetProcessName(pid);
+                    if (procName != null && ShellProcessNames.Contains(procName))
                         continue;
+                    using var proc = Process.GetProcessById(pid);
                     proc.Kill();
                 }
                 catch { }

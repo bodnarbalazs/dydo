@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Services;
 using System.Diagnostics;
 using DynaDocs.Services;
 
+[Collection("ProcessUtils")]
 public class WatchdogServiceTests : IDisposable
 {
     private readonly string _testDir;
@@ -19,6 +20,7 @@ public class WatchdogServiceTests : IDisposable
     {
         WatchdogService.StartProcessOverride = null;
         WatchdogService.FindProcessesOverride = null;
+        ProcessUtils.GetProcessNameOverride = null;
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
     }
@@ -509,21 +511,22 @@ public class WatchdogServiceTests : IDisposable
     [Fact]
     public void PollAndCleanup_ProcessesRunning_ShellProcess_SkipsKill()
     {
+        using var dummy = StartDummyProcess();
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
-        var shellPid = FindShellParentPid();
-        if (shellPid == null) return; // Skip if no shell process found
-
-        WatchdogService.FindProcessesOverride = _ => [shellPid.Value];
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "bash" : null;
 
         try
         {
             WatchdogService.PollAndCleanup(_testDir);
-            Assert.True(ProcessUtils.IsProcessRunning(shellPid.Value));
+            Assert.False(dummy.HasExited);
         }
         finally
         {
             WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            dummy.Kill();
         }
     }
 
@@ -556,21 +559,6 @@ public class WatchdogServiceTests : IDisposable
 
         dummy.WaitForExit(5000);
         Assert.True(dummy.HasExited);
-    }
-
-    private static int? FindShellParentPid()
-    {
-        try
-        {
-            foreach (var name in WatchdogService.ShellProcessNames)
-            {
-                var procs = Process.GetProcessesByName(name);
-                if (procs.Length > 0)
-                    return procs[0].Id;
-            }
-        }
-        catch { }
-        return null;
     }
 
     #region PollOrphanedWaits Tests
@@ -648,34 +636,42 @@ public class WatchdogServiceTests : IDisposable
     #region EnsureRunning Atomicity Tests
 
     [Fact]
-    public void EnsureRunning_ConcurrentCalls_StartsOnlyOneWatchdog()
+    public async Task EnsureRunning_ConcurrentCalls_StartsOnlyOneWatchdog()
     {
-        // Create stale PID file to trigger the race path
-        WritePidFile(99999);
-        ProcessUtils.IsProcessRunningOverride = pid => pid != 99999;
-
+        // No stale PID — clean start ensures the race is purely on
+        // FileMode.CreateNew, which is atomic on all platforms.
         var startCount = 0;
         WatchdogService.StartProcessOverride = _ =>
         {
             Interlocked.Increment(ref startCount);
-            Thread.Sleep(50); // Widen the race window
             return StartDummyProcess();
         };
 
         try
         {
-            var results = new bool[10];
-            Parallel.For(0, 10, i =>
+            // Synchronize all threads to start simultaneously
+            var ready = new CountdownEvent(10);
+            var go = new ManualResetEventSlim(false);
+            var tasks = new Task<bool>[10];
+
+            for (var i = 0; i < 10; i++)
             {
-                results[i] = WatchdogService.EnsureRunning(_testDir);
-            });
+                tasks[i] = Task.Run(() =>
+                {
+                    ready.Signal();
+                    go.Wait();
+                    return WatchdogService.EnsureRunning(_testDir);
+                });
+            }
+
+            ready.Wait();
+            go.Set();
+            await Task.WhenAll(tasks);
 
             Assert.Equal(1, startCount);
         }
         finally
         {
-            ProcessUtils.IsProcessRunningOverride = null;
-            // Clean up any spawned dummy processes
             var pidFile = WatchdogService.GetPidFilePath(_testDir);
             if (File.Exists(pidFile) &&
                 int.TryParse(File.ReadAllText(pidFile).Trim(), out var pid))

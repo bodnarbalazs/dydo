@@ -34,10 +34,16 @@ public static partial class ProcessUtils
     }
 
     /// <summary>
+    /// When set, GetProcessName uses this instead of probing the system.
+    /// </summary>
+    public static Func<int, string?>? GetProcessNameOverride { get; set; }
+
+    /// <summary>
     /// Gets the process name for a given PID.
     /// </summary>
     public static string? GetProcessName(int processId)
     {
+        if (GetProcessNameOverride != null) return GetProcessNameOverride(processId);
         if (processId <= 0) return null;
 
         try

@@ -4,6 +4,7 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
+[Collection("ProcessUtils")]
 public class QueueServiceTests : IDisposable
 {
     private readonly string _testDir;
@@ -257,19 +258,12 @@ public class QueueServiceTests : IDisposable
     [Fact]
     public void FindStaleActiveEntries_IgnoresRunningPid()
     {
-        var originalOverride = ProcessUtils.IsProcessRunningOverride;
-        try
-        {
-            ProcessUtils.IsProcessRunningOverride = _ => true;
-            _service.SetActive("merge", "Brian", "task-1", 42);
+        // Use the test process's own PID — guaranteed to be running,
+        // no static override needed.
+        _service.SetActive("merge", "Brian", "task-1", Environment.ProcessId);
 
-            var stale = _service.FindStaleActiveEntries();
-            Assert.Empty(stale);
-        }
-        finally
-        {
-            ProcessUtils.IsProcessRunningOverride = originalOverride;
-        }
+        var stale = _service.FindStaleActiveEntries();
+        Assert.Empty(stale);
     }
 
     [Fact]

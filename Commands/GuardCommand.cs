@@ -428,6 +428,21 @@ public static partial class GuardCommand
         if (IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId))
             return HandleDydoBashCommand(command, sessionId, registry, auditService, runInBackground);
 
+        // Dangerous patterns first — security reason takes priority over coaching
+        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
+        if (isDangerous)
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {dangerReason}"
+            });
+            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
+            Console.Error.WriteLine($"  Reason: {dangerReason}");
+            Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
+            return ExitCodes.ToolError;
+        }
+
         // COACHING: Block needless cd+command compounds
         var (isCdChain, cdPath, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
         if (isCdChain)

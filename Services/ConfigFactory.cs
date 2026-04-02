@@ -38,6 +38,18 @@ public static class ConfigFactory
             Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
             Severity = "block"
         },
+        new()
+        {
+            Pattern = @"git\b[^;|&]*\bworktree\s+(add|remove)\b",
+            Message = "Use dydo worktree commands instead of git worktree directly.",
+            Severity = "block"
+        },
+        new()
+        {
+            Pattern = @"rm\b[^;|&]*dydo/_system/\.local/worktrees/",
+            Message = "Use dydo worktree cleanup instead of deleting worktree directories directly.",
+            Severity = "block"
+        },
     ];
 
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

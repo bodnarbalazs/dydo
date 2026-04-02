@@ -172,4 +172,36 @@ public class ConfigFactoryTests
         Assert.Equal(ConfigFactory.DefaultQueues.Count + 1, config.Queues.Count);
         Assert.Contains("hotfix", config.Queues);
     }
+
+    [Theory]
+    [InlineData("git worktree add my-wt")]
+    [InlineData("git worktree remove my-wt")]
+    [InlineData("git -C repo worktree add feature")]
+    [InlineData("git -C repo worktree remove feature")]
+    public void DefaultNudges_ContainsGitWorktreeBlockNudge(string command)
+    {
+        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+        {
+            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return regex.IsMatch(command);
+        });
+
+        Assert.NotNull(matchingNudge);
+        Assert.Equal("block", matchingNudge.Severity);
+    }
+
+    [Theory]
+    [InlineData("rm -rf dydo/_system/.local/worktrees/abc123")]
+    [InlineData("rm -r dydo/_system/.local/worktrees/")]
+    public void DefaultNudges_ContainsRmWorktreeBlockNudge(string command)
+    {
+        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+        {
+            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return regex.IsMatch(command);
+        });
+
+        Assert.NotNull(matchingNudge);
+        Assert.Equal("block", matchingNudge.Severity);
+    }
 }

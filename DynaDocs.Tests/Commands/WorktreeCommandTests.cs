@@ -1863,6 +1863,162 @@ public class WorktreeCommandTests : IDisposable
         File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
     }
 
+    #region FIX: init-settings timing
+
+    [Fact]
+    public void InitSettings_WithWorktreePath_WritesToSpecifiedPath()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "{}");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var exitCode = WorktreeCommand.ExecuteInitSettings(mainRoot, worktreeDir);
+
+        Assert.Equal(0, exitCode);
+        var targetPath = Path.Combine(worktreeDir, ".claude", "settings.local.json");
+        Assert.True(File.Exists(targetPath));
+
+        var json = JsonNode.Parse(File.ReadAllText(targetPath))!;
+        var allow = json["permissions"]?["allow"]?.AsArray();
+        Assert.NotNull(allow);
+        Assert.True(allow.Count > 0);
+    }
+
+    [Fact]
+    public void InitSettings_WithWorktreePath_DoesNotWriteToCwd()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "{}");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var otherDir = Path.Combine(_testDir, "other");
+        Directory.CreateDirectory(otherDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(otherDir);
+            WorktreeCommand.ExecuteInitSettings(mainRoot, worktreeDir);
+
+            // Settings written to worktreeDir, not CWD
+            Assert.True(File.Exists(Path.Combine(worktreeDir, ".claude", "settings.local.json")));
+            Assert.False(File.Exists(Path.Combine(otherDir, ".claude", "settings.local.json")));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void InitSettings_NullWorktreePath_FallsBackToCwd()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-repo");
+        var sourceClaudeDir = Path.Combine(mainRoot, ".claude");
+        Directory.CreateDirectory(sourceClaudeDir);
+        File.WriteAllText(Path.Combine(sourceClaudeDir, "settings.local.json"), "{}");
+
+        var worktreeDir = Path.Combine(_testDir, "worktree");
+        Directory.CreateDirectory(worktreeDir);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(worktreeDir);
+            WorktreeCommand.ExecuteInitSettings(mainRoot);
+
+            Assert.True(File.Exists(Path.Combine(worktreeDir, ".claude", "settings.local.json")));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_ContainsSleepAfterInitSettings()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
+        // init-settings should be followed by sleep
+        Assert.Contains("init-settings", script);
+        Assert.Contains("sleep 1", script);
+        // sleep must come after init-settings
+        var initIdx = script.IndexOf("init-settings");
+        var sleepIdx = script.IndexOf("sleep 1");
+        Assert.True(sleepIdx > initIdx, "sleep must come after init-settings");
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_WithoutMainRoot_ContainsSleepAfterInitSettings()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task");
+        Assert.Contains("sleep 1", script);
+        var initIdx = script.IndexOf("init-settings");
+        var sleepIdx = script.IndexOf("sleep 1");
+        Assert.True(sleepIdx > initIdx);
+    }
+
+    [Fact]
+    public void WorktreeSetupScript_DoesNotSwallowErrors()
+    {
+        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
+        Assert.DoesNotContain("2>/dev/null", script);
+        Assert.Contains("WARNING: init-settings failed", script);
+    }
+
+    [Fact]
+    public void WorktreeInheritedSetupScript_DoesNotSwallowErrors()
+    {
+        var script = TerminalLauncher.WorktreeInheritedSetupScript("/home/user/project", null);
+        Assert.DoesNotContain("2>/dev/null", script);
+        Assert.Contains("WARNING: init-settings failed", script);
+    }
+
+    [Fact]
+    public void WorktreeInitSettingsScript_DoesNotSwallowErrors()
+    {
+        var script = TerminalLauncher.WorktreeInitSettingsScript("/home/user/project");
+        Assert.DoesNotContain("2>/dev/null", script);
+        Assert.Contains("WARNING: init-settings failed", script);
+        Assert.Contains("sleep 1", script);
+    }
+
+    [Fact]
+    public void WindowsArguments_ContainSleepAfterInitSettings()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
+        Assert.Contains("Start-Sleep -Seconds 1", args);
+        var initIdx = args.IndexOf("init-settings");
+        var sleepIdx = args.IndexOf("Start-Sleep");
+        Assert.True(sleepIdx > initIdx, "Start-Sleep must come after init-settings");
+    }
+
+    [Fact]
+    public void WindowsArguments_LogInitSettingsError()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
+        Assert.Contains("Write-Warning", args);
+        Assert.DoesNotContain("catch {}", args);
+    }
+
+    [Fact]
+    public void WindowsArguments_Inherited_ContainSleepAndWarning()
+    {
+        var args = WindowsTerminalLauncher.GetArguments("Adele", cleanupWorktreeId: "parent-task", mainProjectRoot: @"C:\Projects\MyApp");
+        Assert.Contains("Start-Sleep -Seconds 1", args);
+        Assert.Contains("Write-Warning", args);
+    }
+
+    #endregion
+
     private static string CaptureStdout(Action action)
     {
         var original = Console.Out;

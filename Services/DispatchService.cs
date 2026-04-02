@@ -311,6 +311,7 @@ public static class DispatchService
 
         var branchName = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
         CreateGitWorktree(projectRoot, worktreePath, branchName);
+        RunInitSettings(projectRoot, worktreePath);
 
         return (worktreeId, projectRoot);
     }
@@ -336,6 +337,7 @@ public static class DispatchService
 
         var branchName = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
         CreateGitWorktree(parentWorktreeRoot, worktreePath, branchName);
+        RunInitSettings(parentWorktreeRoot, worktreePath);
 
         return (worktreeId, parentWorktreeRoot);
     }
@@ -589,6 +591,18 @@ public static class DispatchService
             """;
 
         File.WriteAllText(path, content);
+    }
+
+    internal static void RunInitSettings(string mainRoot, string worktreePath)
+    {
+        try
+        {
+            Commands.WorktreeCommand.ExecuteInitSettings(mainRoot, worktreePath);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"WARNING: init-settings failed for worktree: {ex.Message}");
+        }
     }
 
     // Serializes worktree creation across processes using a file lock

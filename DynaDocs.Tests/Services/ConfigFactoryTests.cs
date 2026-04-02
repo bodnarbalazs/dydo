@@ -205,6 +205,57 @@ public class ConfigFactoryTests
     }
 
     [Theory]
+    [InlineData("dydo dispatch --role inquisitor --task audit-auth --no-wait --brief test")]
+    [InlineData("dydo dispatch --task audit-auth --role inquisitor --no-wait --brief test")]
+    [InlineData("dydo dispatch --no-wait --role inquisitor --task foo --brief bar")]
+    public void DefaultNudges_MatchesInquisitorDispatchWithoutNewWindow(string command)
+    {
+        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+        {
+            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return regex.IsMatch(command);
+        });
+
+        Assert.NotNull(matchingNudge);
+        Assert.Equal("warn", matchingNudge.Severity);
+    }
+
+    [Theory]
+    [InlineData("dydo dispatch --role inquisitor --new-window --task audit-auth --no-wait --brief test")]
+    [InlineData("dydo dispatch --new-window --role inquisitor --task audit-auth --no-wait --brief test")]
+    [InlineData("dydo dispatch --role inquisitor --task foo --new-window --no-wait --brief bar")]
+    public void DefaultNudges_DoesNotMatchInquisitorDispatchWithNewWindow(string command)
+    {
+        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+        {
+            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return regex.IsMatch(command);
+        });
+
+        // Should not match the inquisitor nudge (may match other nudges, but not the inquisitor one)
+        var inquisitorNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+            n.Pattern.Contains("inquisitor"));
+        Assert.NotNull(inquisitorNudge);
+
+        var inquisitorRegex = new System.Text.RegularExpressions.Regex(inquisitorNudge.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        Assert.False(inquisitorRegex.IsMatch(command));
+    }
+
+    [Theory]
+    [InlineData("dydo dispatch --role code-writer --task fix-bug --no-wait --brief test")]
+    [InlineData("dydo dispatch --role reviewer --task fix-bug --no-wait --brief test")]
+    [InlineData("dydo dispatch --role orchestrator --task plan --no-wait --brief test")]
+    public void DefaultNudges_DoesNotMatchNonInquisitorDispatch(string command)
+    {
+        var inquisitorNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+            n.Pattern.Contains("inquisitor"));
+        Assert.NotNull(inquisitorNudge);
+
+        var regex = new System.Text.RegularExpressions.Regex(inquisitorNudge.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        Assert.False(regex.IsMatch(command));
+    }
+
+    [Theory]
     [InlineData("rm -rf dydo/_system/.local/worktrees/abc123")]
     [InlineData("rm -r dydo/_system/.local/worktrees/")]
     public void DefaultNudges_ContainsRmWorktreeBlockNudge(string command)

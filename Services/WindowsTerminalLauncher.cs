@@ -41,7 +41,8 @@ public static class WindowsTerminalLauncher
                        $"if (-not (Test-Path '{escapedRoot}/dydo/project/inquisitions')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/inquisitions' -Force | Out-Null; }} " +
                        $"if (Test-Path 'dydo/project/inquisitions') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/project/inquisitions').Path, $true); }} " +
                        $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target '{escapedRoot}/dydo/project/inquisitions' | Out-Null; " +
-                       $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{}}; " +
+                       $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
+                       $"Start-Sleep -Seconds 1; " +
                        $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                        $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
             }
@@ -61,7 +62,8 @@ public static class WindowsTerminalLauncher
                    $"if (-not (Test-Path $_inqTarget)) {{ New-Item -ItemType Directory -Path $_inqTarget -Force | Out-Null; }} " +
                    $"if (Test-Path 'dydo/project/inquisitions') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/project/inquisitions').Path, $true); }} " +
                    $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target $_inqTarget | Out-Null; " +
-                   $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{}}; " +
+                   $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
+                   $"Start-Sleep -Seconds 1; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
@@ -75,7 +77,7 @@ public static class WindowsTerminalLauncher
                 : "";
             return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
                    $"{setLocation}" +
-                   $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{}}; " +
+                   $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";

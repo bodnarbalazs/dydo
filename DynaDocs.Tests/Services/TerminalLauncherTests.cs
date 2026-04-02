@@ -1988,7 +1988,8 @@ public class TerminalLauncherTests
     {
         var script = TerminalLauncher.WorktreeInitSettingsScript("/home/user/project");
         Assert.Contains("dydo worktree init-settings --main-root '/home/user/project'", script);
-        Assert.Contains("2>/dev/null || true", script);
+        Assert.Contains("WARNING: init-settings failed", script);
+        Assert.DoesNotContain("2>/dev/null", script);
     }
 
     [Fact]
@@ -2094,7 +2095,8 @@ public class TerminalLauncherTests
     public void WorktreeSetupScript_InitSettingsIsNonFatal()
     {
         var script = TerminalLauncher.WorktreeSetupScript("my-task");
-        Assert.Contains("|| true)", script);
+        // init-settings failure is caught and logged, not fatal
+        Assert.Contains("|| echo 'WARNING: init-settings failed'", script);
     }
 
     [Fact]

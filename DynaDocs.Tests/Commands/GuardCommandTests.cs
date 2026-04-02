@@ -488,10 +488,10 @@ public class GuardCommandTests : IDisposable
     }
 
     [Fact]
-    public void DefaultNudges_AllHaveBlockSeverity()
+    public void DefaultNudges_AllHaveValidSeverity()
     {
         Assert.All(ConfigFactory.DefaultNudges, n =>
-            Assert.Equal("block", n.Severity));
+            Assert.Contains(n.Severity, new[] { "block", "warn" }));
     }
 
     #endregion

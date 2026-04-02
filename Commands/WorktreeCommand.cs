@@ -74,7 +74,7 @@ public static class WorktreeCommand
 
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
-    internal static int ExecuteInitSettings(string mainRoot)
+    internal static int ExecuteInitSettings(string mainRoot, string? worktreePath = null)
     {
         var sourcePath = Path.Combine(mainRoot, ".claude", "settings.local.json");
 
@@ -105,7 +105,8 @@ public static class WorktreeCommand
         var entries = BuildPermissionEntries(mainRoot);
         AddMissingEntries(allow, entries);
 
-        var claudeDir = Path.Combine(Directory.GetCurrentDirectory(), ".claude");
+        var targetRoot = worktreePath ?? Directory.GetCurrentDirectory();
+        var claudeDir = Path.Combine(targetRoot, ".claude");
         Directory.CreateDirectory(claudeDir);
 
         var targetPath = Path.Combine(claudeDir, "settings.local.json");

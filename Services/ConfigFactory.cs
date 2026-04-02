@@ -40,6 +40,12 @@ public static class ConfigFactory
         },
         new()
         {
+            Pattern = @"dydo\s+dispatch\b(?=.*--role\s+inquisitor\b)(?!.*--new-window)",
+            Message = "Inquisitor dispatches should use --new-window to avoid tab conflicts. Add --new-window or re-run to proceed.",
+            Severity = "warn"
+        },
+        new()
+        {
             Pattern = @"\bgit\b[^;|&]*\bworktree\s+(add|remove)\b",
             Message = "Use dydo worktree commands instead of git worktree directly.",
             Severity = "block"

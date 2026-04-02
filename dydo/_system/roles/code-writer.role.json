@@ -27,5 +27,15 @@
       "onlyWhenDispatched": true,
       "message": "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --no-wait --auto-close --role reviewer --task {task} --brief \u0022Review changes for {task}\u0022"
     }
+  ],
+  "conditionalMustReads": [
+    {
+      "when": {
+        "markerExists": ".merge-source",
+        "taskNameMatches": null,
+        "dispatchedByRole": null
+      },
+      "path": "dydo/guides/how-to-merge-worktrees.md"
+    }
   ]
 }

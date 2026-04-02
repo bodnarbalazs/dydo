@@ -34,5 +34,27 @@
       "onlyWhenDispatched": true,
       "message": "Reviewers can only dispatch a code-writer when dispatched by a code-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \u0022Review findings: ...\u0022"
     }
+  ],
+  "conditionalMustReads": [
+    {
+      "when": {
+        "markerExists": null,
+        "taskNameMatches": "*-merge",
+        "dispatchedByRole": null
+      },
+      "path": "dydo/guides/how-to-review-worktree-merges.md"
+    },
+    {
+      "when": null,
+      "path": "dydo/project/tasks/{task}.md"
+    },
+    {
+      "when": {
+        "markerExists": null,
+        "taskNameMatches": null,
+        "dispatchedByRole": "docs-writer"
+      },
+      "path": "dydo/reference/writing-docs.md"
+    }
   ]
 }

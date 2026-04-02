@@ -24,5 +24,6 @@
       "onlyWhenDispatched": false,
       "message": "Maximum 3 judges already active on task \u0027{task}\u0027. Escalate to the human."
     }
-  ]
+  ],
+  "conditionalMustReads": []
 }

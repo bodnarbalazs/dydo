@@ -2999,6 +2999,49 @@
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\aad7cec0-msg-fix-template-hash-matching.md",
       "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T14:00:37.6109893Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bsczgujtq.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T14:00:57.406124Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\15974097-msg-check-merge-guide-diffs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T14:13:14.6549621Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\bz0awsthc.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T14:13:21.5452555Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5b87d3a7-msg-investigate-flaky-ci.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T14:16:40.6559273Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "dydo agent list | grep Charlie",
+      "reason": "Pending wait markers"
+    },
+    {
+      "ts": "2026-04-02T14:35:26.2579073Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\45ded7e1-d7ca-4653-beb8-723110055966\\tasks\\b4qdrebxz.output",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T14:35:35.3924553Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\820c8bc2-msg-fix-template-sync.md",
+      "tool": "read"
     }
   ],
   "snapshot_ref": {

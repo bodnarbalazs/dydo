@@ -19,5 +19,6 @@
   "templateFile": "mode-docs-writer.template.md",
   "denialHint": "Docs-writer role can only edit dydo/** (except other agents\u0027 workspaces) and own workspace.",
   "canOrchestrate": false,
-  "constraints": []
+  "constraints": [],
+  "conditionalMustReads": []
 }

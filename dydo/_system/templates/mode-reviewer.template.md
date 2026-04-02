@@ -77,6 +77,7 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 - [ ] No security vulnerabilities introduced
 - [ ] No unnecessary complexity
 - [ ] Changes match the task requirements
+- [ ] If reviewing documentation, verify against [writing-docs.md](../../../reference/writing-docs.md)
 {{include:extra-review-checklist}}
 
 ### Out-of-Scope Issues

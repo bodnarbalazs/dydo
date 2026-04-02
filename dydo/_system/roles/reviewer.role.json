@@ -18,6 +18,7 @@
       "targetRole": null,
       "requiredRoles": null,
       "maxCount": null,
+      "requireAll": true,
       "onlyWhenDispatched": false,
       "message": "Agent {agent} was code-writer on task \u0027{task}\u0027 and cannot be reviewer on the same task. Dispatch to a different agent for review."
     },
@@ -29,6 +30,7 @@
         "code-writer"
       ],
       "maxCount": null,
+      "requireAll": true,
       "onlyWhenDispatched": true,
       "message": "Reviewers can only dispatch a code-writer when dispatched by a code-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \u0022Review findings: ...\u0022"
     }

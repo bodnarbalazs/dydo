@@ -129,7 +129,7 @@
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "89be0a534170c0c3e81ca105c28b15b9ee3212e25cb644c71e13b3582243c91b",
     "_system/templates/mode-code-writer.template.md": "3b302adb8dd75bfdc92ad47673c36a3e3991f602622d429e46320e7d38037271",
-    "_system/templates/mode-reviewer.template.md": "dac6b7e83cf0c9ed50d18983f50b0dea6ad5c15cf1fdc1b6ccfdd21ee066a321",
+    "_system/templates/mode-reviewer.template.md": "f57afa6a73bb1051b918bd50236e5af8f794a057205d9df22738cd4c97af9594",
     "_system/templates/mode-co-thinker.template.md": "a32d83f42719f262a67f47165950bad4c99c72881ec7ddab5ca77574a6e11795",
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
     "_system/templates/mode-docs-writer.template.md": "12bf4f89057c9ba99fac943633827dfa9b2384ae60b9ac718a9ebd5783e3dab8",

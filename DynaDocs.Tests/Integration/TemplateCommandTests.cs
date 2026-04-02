@@ -253,6 +253,25 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task TemplateUpdate_CrlfOnDisk_NotDetectedAsUserEdited()
+    {
+        await InitProjectAsync();
+
+        // Simulate CRLF conversion on a doc file (e.g., git autocrlf)
+        var relativePath = "reference/dydo-commands.md";
+        var docPath = Path.Combine(TestDir, "dydo", relativePath);
+        var originalContent = File.ReadAllText(docPath);
+        var crlfContent = originalContent.Replace("\n", "\r\n");
+        File.WriteAllText(docPath, crlfContent);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        // Should NOT be reported as user-edited
+        Assert.DoesNotContain("user-edited", result.Stderr);
+    }
+
+    [Fact]
     public async Task TemplateUpdate_UserEditedDocFile_Skipped()
     {
         await InitProjectAsync();

@@ -20,6 +20,7 @@
       "targetRole": null,
       "requiredRoles": null,
       "maxCount": 3,
+      "requireAll": true,
       "onlyWhenDispatched": false,
       "message": "Maximum 3 judges already active on task \u0027{task}\u0027. Escalate to the human."
     }

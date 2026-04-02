@@ -74,6 +74,7 @@ public static class TemplateCommand
 
         var config = configService.LoadConfig()!;
         var dydoRoot = configService.GetDydoRoot();
+        MigrateHashFormat(config, dydoRoot);
         var updated = 0;
         var skipped = 0;
         var warnings = new List<string>();
@@ -204,7 +205,7 @@ public static class TemplateCommand
 
         var onDisk = File.ReadAllText(fullPath);
 
-        if (onDisk == embeddedContent)
+        if (NormalizeForHash(onDisk) == NormalizeForHash(embeddedContent))
         {
             config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
             return new UpdateResult.Skipped();
@@ -212,7 +213,7 @@ public static class TemplateCommand
 
         var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
         var onDiskHash = ComputeHash(onDisk);
-        var isUserEdited = storedHash != null ? storedHash != onDiskHash : onDisk != embeddedContent;
+        var isUserEdited = storedHash != null ? storedHash != onDiskHash : true;
 
         if (!isUserEdited)
             return WriteUpdate(fullPath, relativePath, embeddedContent, config, diff);
@@ -332,7 +333,7 @@ public static class TemplateCommand
             return CreateFile(fullPath, relativePath, embeddedContent, config, diff);
 
         var onDisk = File.ReadAllText(fullPath);
-        if (onDisk == embeddedContent)
+        if (NormalizeForHash(onDisk) == NormalizeForHash(embeddedContent))
         {
             config.FrameworkHashes[relativePath] = ComputeHash(embeddedContent);
             return new UpdateResult.Skipped();
@@ -419,9 +420,18 @@ public static class TemplateCommand
         return ComputeHash(onDisk) == storedHash ? onDisk : embeddedContent;
     }
 
+    public static string NormalizeForHash(string content)
+    {
+        // Strip UTF-8 BOM
+        if (content.Length > 0 && content[0] == '\uFEFF')
+            content = content[1..];
+
+        return content.Replace("\r\n", "\n");
+    }
+
     public static string ComputeHash(string content)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(content));
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(NormalizeForHash(content)));
         return Convert.ToHexStringLower(bytes);
     }
 
@@ -429,6 +439,30 @@ public static class TemplateCommand
     {
         var bytes = SHA256.HashData(content);
         return Convert.ToHexStringLower(bytes);
+    }
+
+    /// <summary>
+    /// Migrates stored hashes from pre-normalization format to normalized format.
+    /// Safe to call on every update — no-ops when hashes are already current.
+    /// </summary>
+    public static void MigrateHashFormat(DydoConfig config, string dydoRoot)
+    {
+        foreach (var relativePath in config.FrameworkHashes.Keys.ToList())
+        {
+            var fullPath = Path.Combine(dydoRoot, relativePath);
+            if (!File.Exists(fullPath)) continue;
+
+            var onDisk = File.ReadAllText(fullPath);
+            var normalizedHash = ComputeHash(onDisk);
+            var storedHash = config.FrameworkHashes[relativePath];
+            if (storedHash == normalizedHash) continue;
+
+            // Check if stored hash matches raw (un-normalized) content
+            var rawHash = Convert.ToHexStringLower(
+                SHA256.HashData(Encoding.UTF8.GetBytes(onDisk)));
+            if (storedHash == rawHash)
+                config.FrameworkHashes[relativePath] = normalizedHash;
+        }
     }
 
     private abstract record UpdateResult

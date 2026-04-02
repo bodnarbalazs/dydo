@@ -23,6 +23,7 @@
         "planner"
       ],
       "maxCount": null,
+      "requireAll": true,
       "onlyWhenDispatched": false,
       "message": "You are a {current_role}. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification."
     }

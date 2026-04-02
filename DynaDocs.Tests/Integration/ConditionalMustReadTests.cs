@@ -279,6 +279,66 @@ public class ConditionalMustReadTests : IntegrationTestBase
 
     #endregion
 
+    #region Conditional Must-Read: Dispatched By Role
+
+    [Fact]
+    public async Task Guard_ReviewerDispatchedByDocsWriter_MustReadWritingDocs()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await TaskCreateAsync("docs-update");
+
+        // Create writing-docs.md (the conditional must-read target)
+        var writingDocsPath = Path.Combine(TestDir, "dydo/reference/writing-docs.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(writingDocsPath)!);
+        File.WriteAllText(writingDocsPath, "---\narea: reference\ntype: guide\n---\n# Writing Docs Guide");
+
+        // Simulate inbox item from docs-writer
+        var inboxDir = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxDir);
+        File.WriteAllText(Path.Combine(inboxDir, "abc12345-docs-update.md"),
+            "---\nid: abc12345\nfrom: Brian\nfrom_role: docs-writer\nrole: reviewer\ntask: docs-update\nreceived: 2026-04-01T12:00:00Z\n---\n# Review docs-update\n");
+
+        await SetRoleAsync("reviewer", "docs-update");
+
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+
+        Assert.Contains(state.UnreadMustReads,
+            p => p.Contains("writing-docs.md"));
+    }
+
+    [Fact]
+    public async Task Guard_ReviewerDispatchedByCodeWriter_NoWritingDocsMustRead()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await TaskCreateAsync("code-fix");
+
+        // Create writing-docs.md
+        var writingDocsPath = Path.Combine(TestDir, "dydo/reference/writing-docs.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(writingDocsPath)!);
+        File.WriteAllText(writingDocsPath, "---\narea: reference\ntype: guide\n---\n# Writing Docs Guide");
+
+        // Simulate inbox item from code-writer (NOT docs-writer)
+        var inboxDir = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        Directory.CreateDirectory(inboxDir);
+        File.WriteAllText(Path.Combine(inboxDir, "def67890-code-fix.md"),
+            "---\nid: def67890\nfrom: Brian\nfrom_role: code-writer\nrole: reviewer\ntask: code-fix\nreceived: 2026-04-01T12:00:00Z\n---\n# Review code-fix\n");
+
+        await SetRoleAsync("reviewer", "code-fix");
+
+        var registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+
+        Assert.DoesNotContain(state.UnreadMustReads,
+            p => p.Contains("writing-docs.md"));
+    }
+
+    #endregion
+
     #region Scaffolding Tests
 
     [Fact]

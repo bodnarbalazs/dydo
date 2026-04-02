@@ -661,4 +661,187 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     #endregion
+
+    #region ConditionalMustReads
+
+    [Fact]
+    public void GetBaseRoleDefinitions_CodeWriter_HasConditionalMustReads()
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var codeWriter = roles.Single(r => r.Name == "code-writer");
+
+        Assert.Single(codeWriter.ConditionalMustReads);
+        Assert.Equal(".merge-source", codeWriter.ConditionalMustReads[0].When!.MarkerExists);
+        Assert.Contains("how-to-merge-worktrees.md", codeWriter.ConditionalMustReads[0].Path);
+    }
+
+    [Fact]
+    public void GetBaseRoleDefinitions_Reviewer_HasConditionalMustReads()
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var reviewer = roles.Single(r => r.Name == "reviewer");
+
+        Assert.Equal(3, reviewer.ConditionalMustReads.Count);
+
+        // Task name match for merge review
+        var mergeEntry = reviewer.ConditionalMustReads.Single(c => c.Path.Contains("how-to-review-worktree-merges"));
+        Assert.Equal("*-merge", mergeEntry.When!.TaskNameMatches);
+
+        // Always-apply task file
+        var taskEntry = reviewer.ConditionalMustReads.Single(c => c.Path.Contains("{task}"));
+        Assert.Null(taskEntry.When);
+
+        // Dispatched-by-role for docs-writer
+        var docsEntry = reviewer.ConditionalMustReads.Single(c => c.Path.Contains("writing-docs"));
+        Assert.Equal("docs-writer", docsEntry.When!.DispatchedByRole);
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_InvalidConditionalMustRead_ReportsError()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            ConditionalMustReads =
+            [
+                new ConditionalMustRead
+                {
+                    When = new ConditionalMustReadCondition(), // no conditions set
+                    Path = "some/file.md"
+                }
+            ]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("at least one condition"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_EmptyConditionalMustReadPath_ReportsError()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            ConditionalMustReads =
+            [
+                new ConditionalMustRead { Path = "" }
+            ]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("path"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_MarkerExistsWithPathSeparator_ReportsError()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            ConditionalMustReads =
+            [
+                new ConditionalMustRead
+                {
+                    When = new ConditionalMustReadCondition { MarkerExists = "sub/dir/.marker" },
+                    Path = "some/file.md"
+                }
+            ]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("filename"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_EmptyTaskNameMatches_ReportsError()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            ConditionalMustReads =
+            [
+                new ConditionalMustRead
+                {
+                    When = new ConditionalMustReadCondition { TaskNameMatches = "  " },
+                    Path = "some/file.md"
+                }
+            ]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("taskNameMatches"));
+    }
+
+    [Fact]
+    public void ValidateRoleDefinition_EmptyDispatchedByRole_ReportsError()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            ConditionalMustReads =
+            [
+                new ConditionalMustRead
+                {
+                    When = new ConditionalMustReadCondition { DispatchedByRole = "" },
+                    Path = "some/file.md"
+                }
+            ]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.False(valid);
+        Assert.Contains(errors, e => e.Contains("dispatchedByRole"));
+    }
+
+    [Fact]
+    public void ConditionalMustReads_RoundTripsViaJson()
+    {
+        _service.WriteBaseRoleDefinitions(_testDir);
+
+        var loaded = _service.LoadRoleDefinitions(_testDir);
+        var original = RoleDefinitionService.GetBaseRoleDefinitions();
+
+        foreach (var orig in original)
+        {
+            var match = loaded.Single(r => r.Name == orig.Name);
+            Assert.Equal(orig.ConditionalMustReads.Count, match.ConditionalMustReads.Count);
+
+            for (int i = 0; i < orig.ConditionalMustReads.Count; i++)
+            {
+                Assert.Equal(orig.ConditionalMustReads[i].Path, match.ConditionalMustReads[i].Path);
+
+                if (orig.ConditionalMustReads[i].When == null)
+                {
+                    Assert.Null(match.ConditionalMustReads[i].When);
+                }
+                else
+                {
+                    Assert.Equal(orig.ConditionalMustReads[i].When!.MarkerExists, match.ConditionalMustReads[i].When?.MarkerExists);
+                    Assert.Equal(orig.ConditionalMustReads[i].When!.TaskNameMatches, match.ConditionalMustReads[i].When?.TaskNameMatches);
+                    Assert.Equal(orig.ConditionalMustReads[i].When!.DispatchedByRole, match.ConditionalMustReads[i].When?.DispatchedByRole);
+                }
+            }
+        }
+    }
+
+    #endregion
 }

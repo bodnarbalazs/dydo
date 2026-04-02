@@ -11,4 +11,5 @@ public class RoleDefinition
     public string? DenialHint { get; init; }
     public bool CanOrchestrate { get; init; }
     public List<RoleConstraint> Constraints { get; init; } = [];
+    public List<ConditionalMustRead> ConditionalMustReads { get; init; } = [];
 }

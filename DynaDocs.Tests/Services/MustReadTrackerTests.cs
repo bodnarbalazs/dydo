@@ -3,6 +3,36 @@ namespace DynaDocs.Tests.Services;
 using DynaDocs.Models;
 using DynaDocs.Services;
 
+file static class TestConditionalMustReads
+{
+    public static readonly List<ConditionalMustRead> CodeWriter =
+    [
+        new()
+        {
+            When = new ConditionalMustReadCondition { MarkerExists = ".merge-source" },
+            Path = "dydo/guides/how-to-merge-worktrees.md"
+        }
+    ];
+
+    public static readonly List<ConditionalMustRead> Reviewer =
+    [
+        new()
+        {
+            When = new ConditionalMustReadCondition { TaskNameMatches = "*-merge" },
+            Path = "dydo/guides/how-to-review-worktree-merges.md"
+        },
+        new()
+        {
+            Path = "dydo/project/tasks/{task}.md"
+        },
+        new()
+        {
+            When = new ConditionalMustReadCondition { DispatchedByRole = "docs-writer" },
+            Path = "dydo/reference/writing-docs.md"
+        }
+    ];
+}
+
 public class MustReadTrackerTests : IDisposable
 {
     private readonly string _testDir;
@@ -138,15 +168,14 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "code-writer", "# Code Writer\nNo links here.");
 
-        // Create .merge-source marker in workspace
         var workspace = Path.Combine(_testDir, "agents", "Alice");
         File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
 
-        // Create the merge guide doc
         CreateLinkedFile("dydo/guides/how-to-merge-worktrees.md",
             "---\nmust-read: true\n---\n# How to Merge");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", null);
+        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", null,
+            conditionalMustReads: TestConditionalMustReads.CodeWriter);
 
         Assert.Contains(result, r => r.Contains("how-to-merge-worktrees.md"));
     }
@@ -156,11 +185,11 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "code-writer", "# Code Writer\nNo links here.");
 
-        // No .merge-source marker
         CreateLinkedFile("dydo/guides/how-to-merge-worktrees.md",
             "---\nmust-read: true\n---\n# How to Merge");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", null);
+        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", null,
+            conditionalMustReads: TestConditionalMustReads.CodeWriter);
 
         Assert.DoesNotContain(result, r => r.Contains("how-to-merge-worktrees.md"));
     }
@@ -173,7 +202,8 @@ public class MustReadTrackerTests : IDisposable
         CreateLinkedFile("dydo/guides/how-to-review-worktree-merges.md",
             "---\nmust-read: true\n---\n# How to Review Merges");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x-merge");
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x-merge",
+            conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.Contains(result, r => r.Contains("how-to-review-worktree-merges.md"));
     }
@@ -186,7 +216,8 @@ public class MustReadTrackerTests : IDisposable
         CreateLinkedFile("dydo/guides/how-to-review-worktree-merges.md",
             "---\nmust-read: true\n---\n# How to Review Merges");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x");
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x",
+            conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.DoesNotContain(result, r => r.Contains("how-to-review-worktree-merges.md"));
     }
@@ -196,11 +227,11 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
-        // Create the task file
         CreateLinkedFile("dydo/project/tasks/feature-x.md",
             "---\nname: feature-x\nstatus: review-pending\n---\n# Task: feature-x\n\nImplement feature X.");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x");
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x",
+            conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.Contains(result, r => r.Contains("feature-x.md"));
     }
@@ -210,9 +241,9 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: null);
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: null,
+            conditionalMustReads: TestConditionalMustReads.Reviewer);
 
-        // Should only have the mode file itself
         Assert.Single(result);
     }
 
@@ -221,10 +252,9 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
-        // Don't create the task file
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "nonexistent-task");
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "nonexistent-task",
+            conditionalMustReads: TestConditionalMustReads.Reviewer);
 
-        // Should only have the mode file itself
         Assert.Single(result);
     }
 
@@ -233,7 +263,6 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
-        // Create .merge-source marker (shouldn't matter for reviewer role)
         var workspace = Path.Combine(_testDir, "agents", "Alice");
         Directory.CreateDirectory(workspace);
         File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
@@ -241,7 +270,9 @@ public class MustReadTrackerTests : IDisposable
         CreateLinkedFile("dydo/guides/how-to-merge-worktrees.md",
             "---\nmust-read: true\n---\n# How to Merge");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null);
+        // Reviewer role does not have markerExists conditional — so no merge guide
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null,
+            conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.DoesNotContain(result, r => r.Contains("how-to-merge-worktrees.md"));
     }
@@ -251,18 +282,18 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "code-writer", "# Code Writer\nNo links here.");
 
-        // Create .merge-source marker but NOT the merge guide file
         var workspace = Path.Combine(_testDir, "agents", "Alice");
         File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", null);
+        // Don't create the merge guide file
+        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", null,
+            conditionalMustReads: TestConditionalMustReads.CodeWriter);
 
-        // Should not crash, just skip the missing file
         Assert.DoesNotContain(result, r => r.Contains("how-to-merge-worktrees.md"));
     }
 
     [Fact]
-    public void AddConditionalMustReads_MergeCodeWriter_AddsMergeGuide()
+    public void AddConditionalMustReads_MarkerExists_AddsMustRead()
     {
         var workspace = Path.Combine(_testDir, "workspace");
         Directory.CreateDirectory(workspace);
@@ -272,15 +303,24 @@ public class MustReadTrackerTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(guidePath)!);
         File.WriteAllText(guidePath, "# Guide");
 
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new()
+            {
+                When = new ConditionalMustReadCondition { MarkerExists = ".merge-source" },
+                Path = "dydo/guides/how-to-merge-worktrees.md"
+            }
+        };
+
         var mustReads = new List<string>();
-        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "code-writer", null, _testDir);
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, null, _testDir, "Alice", conditionals, null);
 
         Assert.Single(mustReads);
         Assert.Contains("how-to-merge-worktrees.md", mustReads[0]);
     }
 
     [Fact]
-    public void AddConditionalMustReads_MergeReviewer_AddsBothGuideAndTaskFile()
+    public void AddConditionalMustReads_TaskNameMatchAndNoWhen_AddsBoth()
     {
         var workspace = Path.Combine(_testDir, "workspace");
         Directory.CreateDirectory(workspace);
@@ -293,12 +333,204 @@ public class MustReadTrackerTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(taskPath)!);
         File.WriteAllText(taskPath, "# Task");
 
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new()
+            {
+                When = new ConditionalMustReadCondition { TaskNameMatches = "*-merge" },
+                Path = "dydo/guides/how-to-review-worktree-merges.md"
+            },
+            new()
+            {
+                Path = "dydo/project/tasks/{task}.md"
+            }
+        };
+
         var mustReads = new List<string>();
-        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "reviewer", "feat-merge", _testDir);
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "feat-merge", _testDir, "Alice", conditionals, null);
 
         Assert.Equal(2, mustReads.Count);
         Assert.Contains(mustReads, r => r.Contains("how-to-review-worktree-merges.md"));
         Assert.Contains(mustReads, r => r.Contains("feat-merge.md"));
+    }
+
+    [Fact]
+    public void ConditionalMustRead_EmptyList_NoEffect()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "some-task", _testDir, "Alice", [], null);
+
+        Assert.Empty(mustReads);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_NoWhen_AlwaysApplies()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var taskPath = Path.Combine(_testDir, "dydo", "project", "tasks", "my-task.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(taskPath)!);
+        File.WriteAllText(taskPath, "# Task");
+
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new() { Path = "dydo/project/tasks/{task}.md" }
+        };
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "my-task", _testDir, "Alice", conditionals, null);
+
+        Assert.Single(mustReads);
+        Assert.Contains("my-task.md", mustReads[0]);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_PathInterpolation_NullTask_Skipped()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new() { Path = "dydo/project/tasks/{task}.md" }
+        };
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, null, _testDir, "Alice", conditionals, null);
+
+        Assert.Empty(mustReads);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_FileDoesNotExist_Skipped()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new() { Path = "dydo/nonexistent/file.md" }
+        };
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, null, _testDir, "Alice", conditionals, null);
+
+        Assert.Empty(mustReads);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_MultipleConditions_AllMustMatch()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "branch");
+
+        var guidePath = Path.Combine(_testDir, "dydo", "guides", "how-to-merge-worktrees.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(guidePath)!);
+        File.WriteAllText(guidePath, "# Guide");
+
+        // Both markerExists AND taskNameMatches must pass
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new()
+            {
+                When = new ConditionalMustReadCondition
+                {
+                    MarkerExists = ".merge-source",
+                    TaskNameMatches = "*-merge"
+                },
+                Path = "dydo/guides/how-to-merge-worktrees.md"
+            }
+        };
+
+        // Task matches pattern AND marker exists → should pass
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "feat-merge", _testDir, "Alice", conditionals, null);
+        Assert.Single(mustReads);
+
+        // Task does NOT match pattern → should fail (AND logic)
+        mustReads = [];
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "feat-impl", _testDir, "Alice", conditionals, null);
+        Assert.Empty(mustReads);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_InboxReaderNull_DispatchedByRoleSkipped()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var docPath = Path.Combine(_testDir, "dydo", "reference", "writing-docs.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(docPath)!);
+        File.WriteAllText(docPath, "# Writing Docs");
+
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new()
+            {
+                When = new ConditionalMustReadCondition { DispatchedByRole = "docs-writer" },
+                Path = "dydo/reference/writing-docs.md"
+            }
+        };
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "my-task", _testDir, "Alice", conditionals, null);
+
+        Assert.Empty(mustReads);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_TaskNameDoesNotMatch_Skipped()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var guidePath = Path.Combine(_testDir, "dydo", "guides", "how-to-review-worktree-merges.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(guidePath)!);
+        File.WriteAllText(guidePath, "# Guide");
+
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new()
+            {
+                When = new ConditionalMustReadCondition { TaskNameMatches = "*-merge" },
+                Path = "dydo/guides/how-to-review-worktree-merges.md"
+            }
+        };
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, "feat-impl", _testDir, "Alice", conditionals, null);
+
+        Assert.Empty(mustReads);
+    }
+
+    [Fact]
+    public void ConditionalMustRead_MarkerDoesNotExist_Skipped()
+    {
+        var workspace = Path.Combine(_testDir, "workspace");
+        Directory.CreateDirectory(workspace);
+
+        var guidePath = Path.Combine(_testDir, "dydo", "guides", "how-to-merge-worktrees.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(guidePath)!);
+        File.WriteAllText(guidePath, "# Guide");
+
+        var conditionals = new List<ConditionalMustRead>
+        {
+            new()
+            {
+                When = new ConditionalMustReadCondition { MarkerExists = ".merge-source" },
+                Path = "dydo/guides/how-to-merge-worktrees.md"
+            }
+        };
+
+        var mustReads = new List<string>();
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, null, _testDir, "Alice", conditionals, null);
+
+        Assert.Empty(mustReads);
     }
 
     #endregion

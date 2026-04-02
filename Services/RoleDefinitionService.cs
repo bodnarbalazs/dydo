@@ -28,6 +28,14 @@ public class RoleDefinitionService : IRoleDefinitionService
                         OnlyWhenDispatched = true,
                         Message = "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --no-wait --auto-close --role reviewer --task {task} --brief \"Review changes for {task}\""
                     }
+                ],
+                ConditionalMustReads =
+                [
+                    new ConditionalMustRead
+                    {
+                        When = new ConditionalMustReadCondition { MarkerExists = ".merge-source" },
+                        Path = "dydo/guides/how-to-merge-worktrees.md"
+                    }
                 ]
             },
             new RoleDefinition
@@ -54,6 +62,23 @@ public class RoleDefinitionService : IRoleDefinitionService
                         RequiredRoles = ["code-writer"],
                         OnlyWhenDispatched = true,
                         Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
+                    }
+                ],
+                ConditionalMustReads =
+                [
+                    new ConditionalMustRead
+                    {
+                        When = new ConditionalMustReadCondition { TaskNameMatches = "*-merge" },
+                        Path = "dydo/guides/how-to-review-worktree-merges.md"
+                    },
+                    new ConditionalMustRead
+                    {
+                        Path = "dydo/project/tasks/{task}.md"
+                    },
+                    new ConditionalMustRead
+                    {
+                        When = new ConditionalMustReadCondition { DispatchedByRole = "docs-writer" },
+                        Path = "dydo/reference/writing-docs.md"
                     }
                 ]
             },
@@ -228,6 +253,9 @@ public class RoleDefinitionService : IRoleDefinitionService
         foreach (var constraint in role.Constraints)
             ValidateConstraint(constraint, errors);
 
+        foreach (var cmr in role.ConditionalMustReads ?? [])
+            ValidateConditionalMustRead(cmr, errors);
+
         return errors.Count == 0;
     }
 
@@ -260,6 +288,31 @@ public class RoleDefinitionService : IRoleDefinitionService
             default:
                 errors.Add($"Unknown constraint type: '{constraint.Type}'.");
                 break;
+        }
+    }
+
+    private static void ValidateConditionalMustRead(ConditionalMustRead cmr, List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(cmr.Path))
+            errors.Add("Conditional must-read 'path' is required.");
+
+        if (cmr.When != null)
+        {
+            var hasAny = cmr.When.MarkerExists != null
+                || cmr.When.TaskNameMatches != null
+                || cmr.When.DispatchedByRole != null;
+            if (!hasAny)
+                errors.Add("Conditional must-read 'when' must have at least one condition.");
+
+            if (cmr.When.MarkerExists != null
+                && (cmr.When.MarkerExists.Contains('/') || cmr.When.MarkerExists.Contains('\\')))
+                errors.Add("Conditional must-read 'markerExists' must be a filename, not a path.");
+
+            if (cmr.When.TaskNameMatches != null && string.IsNullOrWhiteSpace(cmr.When.TaskNameMatches))
+                errors.Add("Conditional must-read 'taskNameMatches' must not be empty.");
+
+            if (cmr.When.DispatchedByRole != null && string.IsNullOrWhiteSpace(cmr.When.DispatchedByRole))
+                errors.Add("Conditional must-read 'dispatchedByRole' must not be empty.");
         }
     }
 

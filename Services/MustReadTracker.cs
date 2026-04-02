@@ -1,5 +1,6 @@
 namespace DynaDocs.Services;
 
+using System.IO.Enumeration;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -26,7 +27,9 @@ public class MustReadTracker
     /// Computes the list of must-read files for a given role by inspecting the mode file's links.
     /// Filters out files already read in the current audit session.
     /// </summary>
-    public List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId, string? task = null)
+    public List<string> ComputeUnreadMustReads(
+        string agentName, string role, string? sessionId, string? task = null,
+        List<ConditionalMustRead>? conditionalMustReads = null, InboxMetadataReader? inboxReader = null)
     {
         var workspace = _getAgentWorkspace(agentName);
         var modeFilePath = Path.Combine(workspace, "modes", $"{role}.md");
@@ -64,8 +67,9 @@ public class MustReadTracker
         var modeRelative = PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, modeFilePath));
         mustReads.Add(modeRelative);
 
-        // Conditional must-reads (Decision 013: hardcoded for now, move to role JSON if more cases emerge)
-        AddConditionalMustReads(mustReads, workspace, role, task, projectRoot);
+        // Conditional must-reads (Decision 013: data-driven via role JSON)
+        AddConditionalMustReads(mustReads, workspace, task, projectRoot, agentName,
+            conditionalMustReads ?? [], inboxReader);
 
         mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
@@ -95,37 +99,66 @@ public class MustReadTracker
     }
 
     /// <summary>
-    /// Adds conditional must-reads based on workspace markers and task context.
-    /// Decision 013: hardcoded checks — move to conditionalMustReads in role JSON if a third case emerges.
+    /// Evaluates conditional must-reads from role definition data.
+    /// Decision 013: data-driven — conditions defined in role JSON via conditionalMustReads entries.
     /// </summary>
-    internal static void AddConditionalMustReads(List<string> mustReads, string workspace, string role, string? task, string projectRoot)
+    internal static void AddConditionalMustReads(
+        List<string> mustReads, string workspace, string? task, string projectRoot,
+        string agentName, List<ConditionalMustRead> conditionalMustReads, InboxMetadataReader? inboxReader)
     {
-        // Merge code-writers must read the merge workflow guide
-        if (role.Equals("code-writer", StringComparison.OrdinalIgnoreCase)
-            && File.Exists(Path.Combine(workspace, ".merge-source")))
+        foreach (var entry in conditionalMustReads)
         {
-            var mergeGuide = Path.Combine(projectRoot, "dydo", "guides", "how-to-merge-worktrees.md");
-            if (File.Exists(mergeGuide))
-                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, mergeGuide)));
+            if (!EvaluateCondition(entry.When, workspace, task, agentName, inboxReader))
+                continue;
+
+            var resolvedPath = InterpolatePath(entry.Path, task);
+            if (resolvedPath == null)
+                continue;
+
+            var fullPath = Path.Combine(projectRoot, resolvedPath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(fullPath))
+                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, fullPath)));
+        }
+    }
+
+    private static bool EvaluateCondition(
+        ConditionalMustReadCondition? condition, string workspace, string? task,
+        string agentName, InboxMetadataReader? inboxReader)
+    {
+        if (condition == null)
+            return true;
+
+        if (condition.MarkerExists != null
+            && !File.Exists(Path.Combine(workspace, condition.MarkerExists)))
+            return false;
+
+        if (condition.TaskNameMatches != null)
+        {
+            if (string.IsNullOrEmpty(task))
+                return false;
+            if (!FileSystemName.MatchesSimpleExpression(condition.TaskNameMatches, task))
+                return false;
         }
 
-        // Merge reviewers must read the merge review guide
-        if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase)
-            && !string.IsNullOrEmpty(task)
-            && task.EndsWith("-merge", StringComparison.OrdinalIgnoreCase))
+        if (condition.DispatchedByRole != null)
         {
-            var mergeReviewGuide = Path.Combine(projectRoot, "dydo", "guides", "how-to-review-worktree-merges.md");
-            if (File.Exists(mergeReviewGuide))
-                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, mergeReviewGuide)));
+            if (inboxReader == null || string.IsNullOrEmpty(task))
+                return false;
+            var fromRole = inboxReader.GetDispatchedFromRole(agentName, task);
+            if (!condition.DispatchedByRole.Equals(fromRole, StringComparison.OrdinalIgnoreCase))
+                return false;
         }
 
-        // All reviewers must read the task file to understand what was supposed to be done
-        if (role.Equals("reviewer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(task))
-        {
-            var taskFile = Path.Combine(projectRoot, "dydo", "project", "tasks", $"{task}.md");
-            if (File.Exists(taskFile))
-                mustReads.Add(PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, taskFile)));
-        }
+        return true;
+    }
+
+    private static string? InterpolatePath(string path, string? task)
+    {
+        if (!path.Contains("{task}"))
+            return path;
+        if (string.IsNullOrEmpty(task))
+            return null;
+        return path.Replace("{task}", task);
     }
 
     public static string NormalizeMustReadPath(string path)

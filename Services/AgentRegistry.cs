@@ -1867,8 +1867,11 @@ public partial class AgentRegistry : IAgentRegistry
         var modeRelative = PathUtils.NormalizePath(Path.GetRelativePath(projectRoot, modeFilePath));
         mustReads.Add(modeRelative);
 
-        // Conditional must-reads (Decision 013)
-        MustReadTracker.AddConditionalMustReads(mustReads, workspace, role, task, projectRoot);
+        // Conditional must-reads (Decision 013: data-driven via role JSON)
+        var conditionalMustReads = _roleDefinitions.TryGetValue(role, out var roleDef)
+            ? roleDef.ConditionalMustReads : [];
+        MustReadTracker.AddConditionalMustReads(mustReads, workspace, task, projectRoot,
+            agentName, conditionalMustReads, _inboxReader);
 
         // Deduplicate
         mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();

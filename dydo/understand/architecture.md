@@ -101,38 +101,29 @@ A watchdog process monitors queue state, advancing deferred items when the activ
 
 ## Custom Nudges
 
-Projects can define coaching hints in `dydo.json` that trigger when agent actions match configurable patterns. Each nudge has:
+Project-defined regex patterns evaluated in the guard pipeline alongside built-in rules. Each nudge matches against tool inputs and either blocks the operation (exit 2) or injects a warning (exit 0), extending the guard's enforcement model without modifying dydo's source code.
 
-- A **regex pattern** matched against tool inputs
-- A **severity** level: `block` (exit 2, hard stop) or `warn` (exit 0, guidance injected)
-- A **message** explaining the correct approach
-
-Nudges are evaluated in the guard pipeline alongside built-in rules. They're useful for project-specific conventions that aren't covered by base guardrails — e.g., blocking direct database writes or warning about deprecated API patterns.
+See [Configuration Reference](../reference/configuration.md) for nudge format and [Guardrails](../reference/guardrails.md) for the full enforcement tier model.
 
 ---
 
 ## Conditional Must-Reads
 
-Some documentation is only relevant for specific roles or contexts. Conditional must-reads are dynamic — they're injected into an agent's required reading list based on:
-
-- **Role**: Merge guides are required for code-writers working in worktrees
-- **Task context**: Reviewers are required to read the task file for the task they're reviewing
-
-This extends the base `must-read: true` frontmatter mechanism with runtime conditions evaluated by the guard.
+An extension of the guard's must-read enforcement that injects documents into an agent's required reading list based on runtime conditions (role, task context, worktree state). Conditions are evaluated during the guard check alongside static `must-read: true` frontmatter enforcement.
 
 ---
 
 ## Issue Tracker
 
-A lightweight issue management system at `dydo/project/issues/`. Issues are Markdown files with YAML frontmatter tracking title, area, severity, status, and provenance.
+Issues are Markdown files with YAML frontmatter stored at `dydo/project/issues/`, following the same filesystem-as-database pattern as tasks and inbox items.
 
-Issues integrate with the inquisition pipeline — confirmed findings from inquisitor agents are promoted to issues via `dydo issue create --found-by inquisition`. Judges can also create issues during dispute arbitration. Issues are resolved with `dydo issue resolve <id> --summary "..."`.
+See [DynaDocs](../reference/about-dynadocs.md) for issue workflow details and [dydo Commands Reference](../reference/dydo-commands.md) for command usage.
 
 ---
 
 ## Inquisition Coverage
 
-File-level heatmaps tracking which areas of the codebase have been audited by inquisitor agents. Rolling per-area reports live at `dydo/project/inquisitions/`. The `dydo inquisition coverage` command provides a summary view of coverage across project areas, highlighting gaps and staleness.
+Coverage metrics derived from audit session data, tracking which codebase areas have been audited. Reports stored as Markdown at `dydo/project/inquisitions/`.
 
 ---
 
@@ -167,3 +158,6 @@ The watchdog runs as a background process spawned by the dispatch command. It's 
 - [Roles and Permissions](./roles-and-permissions.md) — Role system in depth
 - [Dispatch and Messaging](./dispatch-and-messaging.md) — Agent communication
 - [Audit System](../reference/audit-system.md) — Audit trail reference
+- [DynaDocs](../reference/about-dynadocs.md) — Full feature overview and installation
+- [Configuration Reference](../reference/configuration.md) — Configuration, nudges, and customization
+- [Guardrails](../reference/guardrails.md) — Enforcement tier model

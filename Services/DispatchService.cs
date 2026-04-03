@@ -6,11 +6,9 @@ using DynaDocs.Utils;
 
 public static class DispatchService
 {
-    public static int Execute(string role, string task, string brief, string? files, bool noLaunch,
-        string? to, bool escalate, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree,
-        string? queue = null)
+    public static int Execute(DispatchOptions opts)
     {
-        if (useTab && useNewWindow)
+        if (opts.UseTab && opts.UseNewWindow)
         {
             ConsoleOutput.WriteError("Cannot specify both --tab and --new-window.");
             return ExitCodes.ToolError;
@@ -20,9 +18,9 @@ public static class DispatchService
         var sessionId = registry.GetSessionContext();
         var currentHuman = registry.GetCurrentHuman();
 
-        if (noLaunch)
+        if (opts.NoLaunch)
         {
-            var nudgeError = CheckNoLaunchNudge(registry, sessionId, task);
+            var nudgeError = CheckNoLaunchNudge(registry, sessionId, opts.Task);
             if (nudgeError != null)
             {
                 ConsoleOutput.WriteError(nudgeError);
@@ -33,7 +31,7 @@ public static class DispatchService
         var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
 
-        var waitError = CheckWaitPrivilege(wait, sender, registry);
+        var waitError = CheckWaitPrivilege(opts.Wait, sender, registry);
         if (waitError != null)
         {
             ConsoleOutput.WriteError(waitError);
@@ -42,7 +40,7 @@ public static class DispatchService
 
         if (sender != null && !string.IsNullOrEmpty(sender.Role))
         {
-            var dispatchError = CheckDispatchRestriction(registry, sender, role, task);
+            var dispatchError = CheckDispatchRestriction(registry, sender, opts.Role, opts.Task);
             if (dispatchError != null)
             {
                 ConsoleOutput.WriteError(dispatchError);
@@ -50,23 +48,23 @@ public static class DispatchService
             }
         }
 
-        var origin = GetOriginForTask(registry, sender, task) ?? senderName;
+        var origin = GetOriginForTask(registry, sender, opts.Task) ?? senderName;
 
         // Baton-passing: if sender has a reply-pending marker for this task, inherit it
         var inheritReply = sender != null && registry.GetReplyPendingMarkers(senderName)
-            .Any(m => string.Equals(m.Task, task, StringComparison.OrdinalIgnoreCase));
+            .Any(m => string.Equals(m.Task, opts.Task, StringComparison.OrdinalIgnoreCase));
 
-        var existing = FindAgentWorkingOnTask(registry, task, senderName);
+        var existing = FindAgentWorkingOnTask(registry, opts.Task, senderName);
         if (existing != null)
         {
-            ConsoleOutput.WriteError($"{existing} is already working on task '{task}'. If you need to re-dispatch, have them release first.");
+            ConsoleOutput.WriteError($"{existing} is already working on task '{opts.Task}'. If you need to re-dispatch, have them release first.");
             return ExitCodes.ToolError;
         }
 
         // Select target agent
-        var (selection, selectionError) = !string.IsNullOrEmpty(to)
-            ? AgentSelector.SelectExplicit(registry, to, currentHuman, role, task)
-            : AgentSelector.SelectAutomatic(registry, currentHuman, role, task, senderName, origin);
+        var (selection, selectionError) = !string.IsNullOrEmpty(opts.To)
+            ? AgentSelector.SelectExplicit(registry, opts.To, currentHuman, opts.Role, opts.Task)
+            : AgentSelector.SelectAutomatic(registry, currentHuman, opts.Role, opts.Task, senderName, origin);
 
         if (selection == null)
         {
@@ -76,10 +74,9 @@ public static class DispatchService
 
         var targetAgentName = selection.AgentName;
 
-        WriteAndLaunch(registry, targetAgentName, senderName, origin, role, task, brief,
-            files, escalate, noLaunch, useTab, useNewWindow, autoClose, wait, worktree, inheritReply, queue);
+        WriteAndLaunch(registry, targetAgentName, senderName, origin, opts, inheritReply);
 
-        return CompleteDispatch(registry, sender, senderName, targetAgentName, role, task, inheritReply, wait);
+        return CompleteDispatch(registry, sender, senderName, targetAgentName, opts.Role, opts.Task, inheritReply, opts.Wait);
     }
 
     private static int CompleteDispatch(AgentRegistry registry, AgentState? sender, string senderName,
@@ -122,17 +119,16 @@ public static class DispatchService
     }
 
     private static void WriteAndLaunch(AgentRegistry registry, string targetAgentName, string senderName,
-        string origin, string role, string task, string brief, string? files, bool escalate,
-        bool noLaunch, bool useTab, bool useNewWindow, bool autoClose, bool wait, bool worktree,
-        bool inheritReply = false, string? queue = null)
+        string origin, DispatchOptions opts, bool inheritReply)
     {
-        var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin, role, task, brief, files, escalate, wait, inheritReply);
+        var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin,
+            opts.Role, opts.Task, opts.Brief, opts.Files, opts.Escalate, opts.Wait, inheritReply);
 
-        InjectBriefIntoTaskFile(task, brief);
-        HandleReviewerTransition(role, task, brief);
-        PrintDispatchSummary(targetAgentName, role, task, itemPath, escalate);
+        InjectBriefIntoTaskFile(opts.Task, opts.Brief);
+        HandleReviewerTransition(opts.Role, opts.Task, opts.Brief);
+        PrintDispatchSummary(targetAgentName, opts.Role, opts.Task, itemPath, opts.Escalate);
 
-        var effectiveAutoClose = autoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
+        var effectiveAutoClose = opts.AutoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
 
         string? worktreeId;
         string? workingDirOverride = null;
@@ -142,10 +138,10 @@ public static class DispatchService
         string? cleanupWorktreeId = null;
         string? mainProjectRoot = null;
 
-        if (senderWorktreeId != null && !needsMerge && worktree)
+        if (senderWorktreeId != null && !needsMerge && opts.Worktree)
         {
             // Create child worktree (nested dispatch with --worktree from within a worktree)
-            (worktreeId, mainProjectRoot) = SetupChildWorktree(registry, targetAgentName, senderName, senderWorktreeId, task);
+            (worktreeId, mainProjectRoot) = SetupChildWorktree(registry, targetAgentName, senderName, senderWorktreeId, opts.Task);
         }
         else if (senderWorktreeId != null && !needsMerge)
         {
@@ -167,36 +163,36 @@ public static class DispatchService
         }
         else
         {
-            (worktreeId, mainProjectRoot) = SetupWorktree(registry, targetAgentName, worktree, task);
+            (worktreeId, mainProjectRoot) = SetupWorktree(registry, targetAgentName, opts.Worktree, opts.Task);
         }
 
-        var (windowName, launchInTab) = ConfigureWindowSettings(registry, useTab, useNewWindow);
+        var (windowName, launchInTab) = ConfigureWindowSettings(registry, opts.UseTab, opts.UseNewWindow);
 
         registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
 
-        if (!string.IsNullOrEmpty(queue))
+        if (!string.IsNullOrEmpty(opts.Queue))
         {
             var queueService = new QueueService(null, registry.Config);
-            var queueResult = queueService.TryAcquireOrEnqueue(queue, targetAgentName, task,
+            var queueResult = queueService.TryAcquireOrEnqueue(opts.Queue, targetAgentName, opts.Task,
                 launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride,
                 cleanupWorktreeId, mainProjectRoot);
 
             if (queueResult == QueueResult.Queued)
             {
-                var pending = queueService.GetPending(queue);
-                queueService.WriteQueuedMarker(targetAgentName, queue, pending.Count);
-                Console.WriteLine($"  Queued in '{queue}' (position {pending.Count}). Terminal launch deferred.");
+                var pending = queueService.GetPending(opts.Queue);
+                queueService.WriteQueuedMarker(targetAgentName, opts.Queue, pending.Count);
+                Console.WriteLine($"  Queued in '{opts.Queue}' (position {pending.Count}). Terminal launch deferred.");
             }
             else
             {
-                var pid = LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose,
+                var pid = LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose,
                     worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
-                queueService.UpdateActivePid(queue, pid);
+                queueService.UpdateActivePid(opts.Queue, pid);
             }
         }
         else
         {
-            LaunchTerminalIfNeeded(targetAgentName, noLaunch, launchInTab, effectiveAutoClose,
+            LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose,
                 worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
         }
 

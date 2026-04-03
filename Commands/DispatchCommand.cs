@@ -1,6 +1,7 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -187,7 +188,7 @@ public static class DispatchCommand
                 }
             }
 
-            return DispatchService.Execute(role, task, brief, files, noLaunch, to, escalate, useTab, useNewWindow, autoClose, wait, worktree, queue);
+            return DispatchService.Execute(new DispatchOptions(role, task, brief, files, to, queue, noLaunch, escalate, useTab, useNewWindow, autoClose, wait, worktree));
         });
 
         return command;

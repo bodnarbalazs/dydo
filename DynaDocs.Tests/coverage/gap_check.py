@@ -245,7 +245,13 @@ def resolve_filename(source_dir: str, raw_filename: str) -> str:
         rel = os.path.relpath(abs_path, ROOT)
     except ValueError:
         rel = normalize_to_forward_slash(raw_filename)
-    return normalize_to_forward_slash(rel)
+    rel = normalize_to_forward_slash(rel)
+    # Worktree temp dirs produce paths that escape ROOT (e.g.
+    # ../../../AppData/Local/Temp/dydo-test-xxx/Utils/File.cs).
+    # Fall back to the raw filename which is already project-relative.
+    if rel.startswith(".."):
+        rel = normalize_to_forward_slash(raw_filename)
+    return rel
 
 
 # ---------------------------------------------------------------------------

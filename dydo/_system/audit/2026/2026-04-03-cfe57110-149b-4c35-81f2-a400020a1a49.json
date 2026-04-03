@@ -1,787 +1,155 @@
 {
-  "session": "14dc944a-8178-47f1-94e2-4423c280d091",
-  "agent": "Emma",
+  "session": "cfe57110-149b-4c35-81f2-a400020a1a49",
+  "agent": "Charlie",
   "human": "balazs",
-  "started": "2026-04-03T15:46:44.8824116Z",
-  "git_head": "a89d1c2",
+  "started": "2026-04-03T17:35:43.8806683Z",
+  "git_head": "5bd3418",
   "events": [
     {
-      "ts": "2026-04-03T15:46:44.8816075Z",
+      "ts": "2026-04-03T17:35:43.8798522Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:46:48.9584334Z",
+      "ts": "2026-04-03T17:35:47.5725219Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workflow.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:46:53.6398926Z",
+      "ts": "2026-04-03T17:35:53.026136Z",
       "event": "Claim",
-      "agent": "Emma"
+      "agent": "Charlie"
     },
     {
-      "ts": "2026-04-03T15:47:04.0360264Z",
+      "ts": "2026-04-03T17:36:01.4053259Z",
       "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\1a429416-fix-inquisition-issues-dedup.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\42bbee6c-fix-gap-check-blockers.md",
       "tool": "read",
       "reason": "No role set"
     },
     {
-      "ts": "2026-04-03T15:47:08.8133322Z",
+      "ts": "2026-04-03T17:36:06.1934033Z",
       "event": "Role",
-      "role": "code-writer",
-      "task": "fix-inquisition-issues-dedup"
+      "role": "reviewer",
+      "task": "fix-gap-check-blockers"
     },
     {
-      "ts": "2026-04-03T15:47:13.4627759Z",
+      "ts": "2026-04-03T17:36:10.1588387Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\code-writer.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\reviewer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:47:13.589974Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\1a429416-fix-inquisition-issues-dedup.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:47:18.3629162Z",
+      "ts": "2026-04-03T17:36:14.4375311Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:47:18.6977537Z",
+      "ts": "2026-04-03T17:36:14.8887969Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:47:18.7453687Z",
+      "ts": "2026-04-03T17:36:15.494678Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:47:44.4299286Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline -10"
-    },
-    {
-      "ts": "2026-04-03T15:47:45.0411201Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git status"
-    },
-    {
-      "ts": "2026-04-03T15:47:45.5526999Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --stat HEAD"
-    },
-    {
-      "ts": "2026-04-03T15:48:03.7755967Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show --stat a89d1c2"
-    },
-    {
-      "ts": "2026-04-03T15:48:04.1677664Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- Commands/DispatchCommand.cs"
-    },
-    {
-      "ts": "2026-04-03T15:48:08.6125818Z",
+      "ts": "2026-04-03T17:36:15.6850149Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\DispatchOptions.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\42bbee6c-fix-gap-check-blockers.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:48:08.8619688Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- Commands/WorktreeCommand.cs"
+      "ts": "2026-04-03T17:36:22.1525292Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-gap-check-blockers.md",
+      "tool": "read"
     },
     {
-      "ts": "2026-04-03T15:48:13.1474063Z",
+      "ts": "2026-04-03T17:36:23.4291092Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git diff HEAD -- Services/WindowsTerminalLauncher.cs"
+      "cmd": "git diff HEAD -- Templates/about-dynadocs.template.md"
     },
     {
-      "ts": "2026-04-03T15:48:13.7404757Z",
+      "ts": "2026-04-03T17:36:23.7463663Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git diff HEAD -- Services/RoleDefinitionService.cs"
+      "cmd": "git diff HEAD -- Services/DispatchService.cs"
     },
     {
-      "ts": "2026-04-03T15:48:14.1920813Z",
+      "ts": "2026-04-03T17:36:29.0596859Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-03T17:36:29.7677405Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-03T17:36:30.114937Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-03T17:36:36.435499Z",
       "event": "Bash",
       "tool": "bash",
       "cmd": "git diff HEAD -- DynaDocs.csproj"
     },
     {
-      "ts": "2026-04-03T15:48:23.8212629Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show a89d1c2 -- Commands/GuardCommand.cs"
-    },
-    {
-      "ts": "2026-04-03T15:48:24.3103537Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show a89d1c2 -- Services/WatchdogService.cs"
-    },
-    {
-      "ts": "2026-04-03T15:48:24.7307166Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show a89d1c2 -- Services/MessageFinder.cs"
-    },
-    {
-      "ts": "2026-04-03T15:48:25.1234123Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show a89d1c2 -- Services/QueueService.cs"
-    },
-    {
-      "ts": "2026-04-03T15:49:44.4584221Z",
+      "ts": "2026-04-03T17:36:36.5246626Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-inquisition-issues-dedup.md",
-      "tool": "read"
+      "tool": "glob"
     },
     {
-      "ts": "2026-04-03T15:49:45.6275451Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- DynaDocs.Tests/Services/WatchdogServiceTests.cs"
-    },
-    {
-      "ts": "2026-04-03T15:49:45.7758855Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- DynaDocs.Tests/Services/QueueServiceTests.cs"
-    },
-    {
-      "ts": "2026-04-03T15:49:56.1159095Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:49:56.4504326Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- DynaDocs.Tests/Commands/WorktreeCommandTests.cs"
-    },
-    {
-      "ts": "2026-04-03T15:49:57.5596759Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- DynaDocs.Tests/Services/RoleBehaviorTests.cs DynaDocs.Tests/Services/RoleDefinition..."
-    },
-    {
-      "ts": "2026-04-03T15:50:02.6873716Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- DynaDocs.Tests/Integration/DispatchQueueTests.cs DynaDocs.Tests/Integration/WaitCom..."
-    },
-    {
-      "ts": "2026-04-03T15:50:03.7996553Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat DynaDocs.Tests/Integration/GuardWorktreeAllowTests.cs"
-    },
-    {
-      "ts": "2026-04-03T15:51:50.3811091Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show a89d1c2 -- Services/DispatchService.cs | head -120"
-    },
-    {
-      "ts": "2026-04-03T15:51:54.7394437Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show a89d1c2 -- Services/DispatchService.cs | tail -120"
-    },
-    {
-      "ts": "2026-04-03T15:52:27.6235636Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:52:28.3447451Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:52:33.3792975Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:52:39.2737648Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:52:44.9085745Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022tier\u0022 DynaDocs.Tests/coverage/gap_check.py | head -30"
-    },
-    {
-      "ts": "2026-04-03T15:52:51.2330664Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "grep -n \u0022TIER_ANNOTATION_RE\\|@test-tier\u0022 DynaDocs.Tests/coverage/gap_check.py | head -5"
-    },
-    {
-      "ts": "2026-04-03T15:52:51.2838717Z",
-      "event": "Read",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:52:58.2424446Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "head -3 DynaDocs.Tests/Utils/FileLockTests.cs DynaDocs.Tests/Utils/FileReadRetryTests.cs DynaDocs.Te..."
-    },
-    {
-      "ts": "2026-04-03T15:53:10.3506624Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git reset HEAD~1"
-    },
-    {
-      "ts": "2026-04-03T15:53:31.1853805Z",
-      "event": "Blocked",
-      "path": "/tmp/guard_original.cs",
-      "tool": "bash",
-      "cmd": "git show HEAD:Commands/GuardCommand.cs \u003E /tmp/guard_original.cs \u0026\u0026 git show HEAD:Services/WatchdogSe...",
-      "reason": "Agent Emma (code-writer) cannot write ../../../../../tmp/guard_original.cs. Code-writer role can only edit configured source/test paths and own workspace."
-    },
-    {
-      "ts": "2026-04-03T15:53:37.0273743Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "mkdir -p dydo/agents/Emma/workspace"
-    },
-    {
-      "ts": "2026-04-03T15:53:50.2434571Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show HEAD:Commands/GuardCommand.cs \u003E dydo/agents/Emma/workspace/guard_original.cs \u0026\u0026 git show HE..."
-    },
-    {
-      "ts": "2026-04-03T15:53:56.1005722Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp Commands/GuardCommand.cs dydo/agents/Emma/workspace/guard_full.cs \u0026\u0026 cp Services/WatchdogService...."
-    },
-    {
-      "ts": "2026-04-03T15:54:06.6329146Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workspace\\guard_original.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:54:12.6508302Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workspace\\guard_original.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:54:18.3317905Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/guard_original.cs Commands/GuardCommand.cs"
-    },
-    {
-      "ts": "2026-04-03T15:55:11.4411753Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:55:19.24572Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:55:47.4218875Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/watchdog_original.cs Services/WatchdogService.cs"
-    },
-    {
-      "ts": "2026-04-03T15:55:51.6260425Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:55:56.6907738Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:56:05.8727071Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:56:11.1058068Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/messagefinder_original.cs Services/MessageFinder.cs"
-    },
-    {
-      "ts": "2026-04-03T15:56:16.0463035Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageFinder.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:56:22.7695919Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageFinder.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:56:31.3352002Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageFinder.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:56:40.5045364Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/queue_original.cs Services/QueueService.cs"
-    },
-    {
-      "ts": "2026-04-03T15:56:45.2591769Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:56:50.7485457Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:56:57.4682289Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:57:07.4940024Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:57:13.2813432Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/dispatch_original.cs Services/DispatchService.cs"
-    },
-    {
-      "ts": "2026-04-03T15:57:17.5664257Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:57:22.9127281Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:57:27.9049363Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:57:39.2362935Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:57:47.7133139Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:57:53.101769Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-03T15:57:59.5621413Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:58:07.3924332Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:58:13.9575301Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FileLockTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:58:14.7564793Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FileReadRetryTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:58:15.0668536Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FrontmatterParserTests.cs",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:58:21.2765175Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\testing-strategy.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T15:58:35.0457349Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FileLockTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:58:40.2302158Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FileReadRetryTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:58:45.654125Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FrontmatterParserTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T15:58:52.2366292Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Utils/FileLock.cs Utils/FileReadRetry.cs Utils/FrontmatterParser.cs DynaDocs.Tests/Utils/Fil..."
-    },
-    {
-      "ts": "2026-04-03T16:01:05.4888424Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Commands/GuardCommand.cs Services/WatchdogService.cs Services/MessageFinder.cs Services/Queu..."
-    },
-    {
-      "ts": "2026-04-03T16:02:18.3168903Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --cached --stat"
-    },
-    {
-      "ts": "2026-04-03T16:02:27.1193029Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nExtract shared FileLock, FileReadRetry, and FrontmatterParser utilities..."
-    },
-    {
-      "ts": "2026-04-03T16:03:05.251476Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/guard_full.cs Commands/GuardCommand.cs"
-    },
-    {
-      "ts": "2026-04-03T16:03:10.1585218Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Commands/GuardCommand.cs DynaDocs.Tests/Integration/GuardWorktreeAllowTests.cs"
-    },
-    {
-      "ts": "2026-04-03T16:05:35.7961495Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --cached --stat"
-    },
-    {
-      "ts": "2026-04-03T16:05:43.6694653Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nAdd worktree read-allow decision to guard command\n\nWhen the guard appro..."
-    },
-    {
-      "ts": "2026-04-03T16:06:08.9757941Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/watchdog_full.cs Services/WatchdogService.cs"
-    },
-    {
-      "ts": "2026-04-03T16:06:18.2589836Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --stat HEAD -- Services/WatchdogService.cs"
-    },
-    {
-      "ts": "2026-04-03T16:06:24.8086397Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- DynaDocs.Tests/Services/WatchdogServiceTests.cs"
-    },
-    {
-      "ts": "2026-04-03T16:06:30.8255936Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Services/WatchdogService.cs DynaDocs.Tests/Services/WatchdogServiceTests.cs"
-    },
-    {
-      "ts": "2026-04-03T16:14:44.4860237Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nFix watchdog auto-close timing when only shell processes remain\n\nOnly c..."
-    },
-    {
-      "ts": "2026-04-03T16:15:26.2985612Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show --stat HEAD"
-    },
-    {
-      "ts": "2026-04-03T16:15:38.2548344Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/messagefinder_full.cs Services/MessageFinder.cs"
-    },
-    {
-      "ts": "2026-04-03T16:15:44.3613701Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --stat HEAD -- Services/MessageFinder.cs DynaDocs.Tests/Integration/WaitCommandTests.cs"
-    },
-    {
-      "ts": "2026-04-03T16:15:51.7701014Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Services/MessageFinder.cs DynaDocs.Tests/Integration/WaitCommandTests.cs \u0026\u0026 git commit -m \u0022$..."
-    },
-    {
-      "ts": "2026-04-03T16:17:41.8855278Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/queue_full.cs Services/QueueService.cs"
-    },
-    {
-      "ts": "2026-04-03T16:17:49.2328346Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --stat HEAD -- Services/QueueService.cs"
-    },
-    {
-      "ts": "2026-04-03T16:17:59.001083Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Services/QueueService.cs DynaDocs.Tests/Services/QueueServiceTests.cs DynaDocs.Tests/Command..."
-    },
-    {
-      "ts": "2026-04-03T16:18:19.7415037Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cp dydo/agents/Emma/workspace/dispatch_full.cs Services/DispatchService.cs"
-    },
-    {
-      "ts": "2026-04-03T16:18:26.73778Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --stat HEAD -- Services/DispatchService.cs"
-    },
-    {
-      "ts": "2026-04-03T16:18:34.1206897Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff HEAD -- Commands/DispatchCommand.cs"
-    },
-    {
-      "ts": "2026-04-03T16:18:40.6051745Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git add Services/DispatchService.cs Commands/DispatchCommand.cs Models/DispatchOptions.cs \u0026\u0026 git com..."
-    },
-    {
-      "ts": "2026-04-03T16:19:05.7155861Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline -8"
-    },
-    {
-      "ts": "2026-04-03T16:19:15.1815487Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "rm -f dydo/agents/Emma/workspace/guard_original.cs dydo/agents/Emma/workspace/guard_full.cs dydo/age..."
-    },
-    {
-      "ts": "2026-04-03T16:19:20.2583794Z",
+      "ts": "2026-04-03T17:36:42.4221099Z",
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/run_tests.py"
     },
     {
-      "ts": "2026-04-03T16:22:50.0839749Z",
-      "event": "Blocked",
-      "tool": "bash",
-      "cmd": "git stash \u0026\u0026 python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~ReadmeClones...",
-      "reason": "git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."
-    },
-    {
-      "ts": "2026-04-03T16:22:56.0807309Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline --all -- Templates/about-dynadocs.template.md | head -3"
-    },
-    {
-      "ts": "2026-04-03T16:23:01.9050963Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline -5 -- dydo/reference/about-dynadocs.md"
-    },
-    {
-      "ts": "2026-04-03T16:23:08.6417047Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-04-03T16:26:41.2704153Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --inspect FileLock 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-04-03T16:28:51.8006581Z",
+      "ts": "2026-04-03T17:39:50.9849127Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Utils\\FileLock.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T16:29:03.4590912Z",
+      "ts": "2026-04-03T17:39:51.5534288Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FileLockTests.cs",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
       "tool": "read"
     },
     {
-      "ts": "2026-04-03T16:29:15.7401705Z",
-      "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Utils\\FileLockTests.cs",
-      "tool": "edit"
-    },
-    {
-      "ts": "2026-04-03T16:29:23.9646136Z",
+      "ts": "2026-04-03T17:40:04.4063041Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~FileLockTests\u0022"
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
     },
     {
-      "ts": "2026-04-03T16:31:47.5248733Z",
+      "ts": "2026-04-03T17:40:16.3057448Z",
       "event": "Bash",
       "tool": "bash",
-      "cmd": "git add DynaDocs.Tests/Utils/FileLockTests.cs \u0026\u0026 git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nAdd coverage tests for..."
+      "cmd": "git diff HEAD -- DynaDocs.Tests/coverage/tier_registry.json"
     },
     {
-      "ts": "2026-04-03T16:35:28.9672847Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-04-03T16:41:19.6776699Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "ls DynaDocs.Tests/TestResults/"
-    },
-    {
-      "ts": "2026-04-03T16:41:27.7757753Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "rm -rf DynaDocs.Tests/TestResults/25a96e25* DynaDocs.Tests/TestResults/274fd77f* DynaDocs.Tests/Test..."
-    },
-    {
-      "ts": "2026-04-03T16:43:32.5342813Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-04-03T16:43:42.3609671Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\tier_registry.json",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-03T16:43:50.0227725Z",
-      "event": "Write",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\tier_registry.json",
-      "tool": "write"
-    },
-    {
-      "ts": "2026-04-03T16:43:58.1835723Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261"
-    },
-    {
-      "ts": "2026-04-03T16:44:06.685971Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git log --oneline -10"
-    },
-    {
-      "ts": "2026-04-03T16:44:06.8216848Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git diff --stat HEAD"
-    },
-    {
-      "ts": "2026-04-03T16:44:17.405671Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "git show --stat 940ba9c"
-    },
-    {
-      "ts": "2026-04-03T16:45:18.209409Z",
+      "ts": "2026-04-03T17:40:56.3218289Z",
       "event": "Release",
-      "agent": "Emma"
+      "agent": "Charlie"
     }
   ],
   "snapshot": {
-    "git_commit": "a89d1c26ede6cb9782a8c98626d6b1f2ce9dee76",
+    "git_commit": "5bd3418eb3c2a84fc45a0a7bf53fde6fd6846f2f",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -1626,9 +994,38 @@
       "dydo/_system/audit/2026/2026-04-02-f1c12bb2-2559-4939-a899-9a86eaadcc52.json",
       "dydo/_system/audit/2026/2026-04-02-f58edf51-45e5-462c-a642-e07a1fd88698.json",
       "dydo/_system/audit/2026/2026-04-03-04cbe89c-6dfc-4d66-81ec-4be01ab1750f.json",
+      "dydo/_system/audit/2026/2026-04-03-0b0acb1d-cdcd-4762-9e0b-feafac5786e8.json",
+      "dydo/_system/audit/2026/2026-04-03-1181f415-9b0a-42bf-bd06-cac59fb1d486.json",
+      "dydo/_system/audit/2026/2026-04-03-14dc944a-8178-47f1-94e2-4423c280d091.json",
+      "dydo/_system/audit/2026/2026-04-03-1659c2c8-3dda-4278-8b1d-0111ef59f2d7.json",
+      "dydo/_system/audit/2026/2026-04-03-2c35ccd3-16ef-417a-a156-6f30110124db.json",
+      "dydo/_system/audit/2026/2026-04-03-2d222a13-b502-4df6-962f-85925b5dd9f3.json",
+      "dydo/_system/audit/2026/2026-04-03-3782aff6-77c2-4593-914b-e94272bfd5d4.json",
+      "dydo/_system/audit/2026/2026-04-03-39124691-db17-4b31-a5c9-d453fcc14a7f.json",
+      "dydo/_system/audit/2026/2026-04-03-46367db2-0ec6-4eb9-98eb-fa9272e4e35b.json",
+      "dydo/_system/audit/2026/2026-04-03-4bbf6abb-e0e2-4001-81d7-80d7234cc112.json",
+      "dydo/_system/audit/2026/2026-04-03-4c737998-4d3b-48a5-a1d5-aafa1630cfe1.json",
+      "dydo/_system/audit/2026/2026-04-03-54ca746e-279e-4e81-9d2e-83700398f7f8.json",
+      "dydo/_system/audit/2026/2026-04-03-6954b37a-a5a8-4610-9444-392698108706.json",
+      "dydo/_system/audit/2026/2026-04-03-6b04f7b8-d5d0-47c6-9e24-0406f6fcdc2e.json",
+      "dydo/_system/audit/2026/2026-04-03-72e8fce5-8d95-414f-9d2f-67396839eea9.json",
+      "dydo/_system/audit/2026/2026-04-03-854a9d84-eabe-4635-95d2-7e2542637107.json",
+      "dydo/_system/audit/2026/2026-04-03-8c1cfc98-2af1-4342-898e-cdedc040a646.json",
+      "dydo/_system/audit/2026/2026-04-03-94312aad-8a38-47a3-b7ed-f4f87dddd42e.json",
       "dydo/_system/audit/2026/2026-04-03-a698b374-11d2-4ef0-804a-2014e28a013e.json",
+      "dydo/_system/audit/2026/2026-04-03-a6d73bf1-e51d-4665-abb4-6ebc0a019cfd.json",
+      "dydo/_system/audit/2026/2026-04-03-a832ec4b-b76e-4a65-97c5-89f609b97217.json",
       "dydo/_system/audit/2026/2026-04-03-aade8dd5-8c81-450b-913f-25430eebef10.json",
+      "dydo/_system/audit/2026/2026-04-03-ac7529c4-6b04-422b-8e65-6dab473102af.json",
+      "dydo/_system/audit/2026/2026-04-03-b3f1326b-ceb4-4864-b173-90f548375f89.json",
       "dydo/_system/audit/2026/2026-04-03-b968771b-1ef2-4385-adeb-02eaeb9173dd.json",
+      "dydo/_system/audit/2026/2026-04-03-bd764c6e-1043-4001-a771-39a3750a557b.json",
+      "dydo/_system/audit/2026/2026-04-03-d0ae971b-3bee-4c9b-b305-573a1344e4e6.json",
+      "dydo/_system/audit/2026/2026-04-03-e39a4d50-0634-41d1-9c18-d1001ee28760.json",
+      "dydo/_system/audit/2026/2026-04-03-e963f02e-fa9f-46ed-a85a-244ac7b50539.json",
+      "dydo/_system/audit/2026/2026-04-03-f0f3fbc9-f74d-4d45-ba05-e76bd2aa7c35.json",
+      "dydo/_system/audit/2026/2026-04-03-f51d34aa-1360-4245-b668-7ef1f2b036ff.json",
+      "dydo/_system/audit/2026/2026-04-03-f5b8397b-6d16-4202-95f3-c2a82014ae61.json",
       "dydo/_system/compact-counter",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
@@ -2047,20 +1444,39 @@
       "dydo/project/future-features/agent-graph-metrics.md",
       "dydo/project/future-features/coverage.py-update.md",
       "dydo/project/future-features/doc-coverage.md",
+      "dydo/project/inquisitions/agent-lifecycle.md",
+      "dydo/project/inquisitions/dispatch-and-messaging.md",
       "dydo/project/issues/_index.md",
       "dydo/project/issues/_issues.md",
       "dydo/project/issues/.lock",
       "dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
       "dydo/project/issues/0002-agents-default-to-creating-decision-docs-unnecessarily.md",
       "dydo/project/issues/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md",
+      "dydo/project/issues/0004-dead-code-markerstore-duplicates-agentregistry-marker-logic.md",
+      "dydo/project/issues/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md",
+      "dydo/project/issues/0006-duplicated-file-lock-pattern-in-dispatchservice-and-queueservice.md",
+      "dydo/project/issues/0007-five-separate-hand-rolled-yaml-frontmatter-parsers.md",
+      "dydo/project/issues/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md",
+      "dydo/project/issues/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md",
+      "dydo/project/issues/0010-excessive-parameter-counts-on-dispatchservice-methods.md",
+      "dydo/project/issues/0011-judge-role-missing-write-permission-for-dydo-project-inquisitions.md",
       "dydo/project/pitfalls/_index.md",
       "dydo/project/pitfalls/_pitfalls.md",
       "dydo/project/tasks/_index.md",
       "dydo/project/tasks/_tasks.md",
       "dydo/project/tasks/add-terminal-requirements.md",
+      "dydo/project/tasks/fix-autoclose-worktree-hang.md",
       "dydo/project/tasks/fix-init-settings-timing.md",
+      "dydo/project/tasks/fix-inquisition-issues-bugs.md",
+      "dydo/project/tasks/fix-inquisition-issues-dead-code-merge-merge.md",
+      "dydo/project/tasks/fix-inquisition-issues-dead-code-merge.md",
+      "dydo/project/tasks/fix-inquisition-issues-dead-code.md",
+      "dydo/project/tasks/fix-inquisition-issues-dedup.md",
+      "dydo/project/tasks/fix-read-permissions-definitive.md",
       "dydo/project/tasks/fix-terminal-launcher-tests.md",
       "dydo/project/tasks/fix-worktree-remove-bypass.md",
+      "dydo/project/tasks/investigate-autoclose-regression.md",
+      "dydo/project/tasks/update-verify-template.md",
       "dydo/project/tasks/verify-test-suite.md",
       "dydo/project/v1.3-release.md",
       "dydo/reference/_index.md",
@@ -2378,6 +1794,7 @@
       "DynaDocs.Tests/Integration/FixCommandIntegrationTests.cs",
       "DynaDocs.Tests/Integration/GuardIntegrationTests.cs",
       "DynaDocs.Tests/Integration/GuardLiftTests.cs",
+      "DynaDocs.Tests/Integration/GuardWorktreeAllowTests.cs",
       "DynaDocs.Tests/Integration/InitCheckIntegrationTests.cs",
       "DynaDocs.Tests/Integration/InitCommandTests.cs",
       "DynaDocs.Tests/Integration/InquisitionTests.cs",
@@ -2437,7 +1854,6 @@
       "DynaDocs.Tests/Services/IndexGeneratorTests.cs",
       "DynaDocs.Tests/Services/LinkResolverTests.cs",
       "DynaDocs.Tests/Services/MarkdownParserTests.cs",
-      "DynaDocs.Tests/Services/MarkerStoreTests.cs",
       "DynaDocs.Tests/Services/MustReadTrackerTests.cs",
       "DynaDocs.Tests/Services/OffLimitsServiceTests.cs",
       "DynaDocs.Tests/Services/PathPermissionCheckerTests.cs",
@@ -2478,6 +1894,7 @@
       "Models/ConditionalMustReadCondition.cs",
       "Models/DispatchConfig.cs",
       "Models/DispatchMarker.cs",
+      "Models/DispatchOptions.cs",
       "Models/DocFile.cs",
       "Models/DydoConfig.cs",
       "Models/FileCoverageEntry.cs",
@@ -2591,7 +2008,6 @@
       "Services/LinuxTerminalLauncher.cs",
       "Services/MacTerminalLauncher.cs",
       "Services/MarkdownParser.cs",
-      "Services/MarkerStore.cs",
       "Services/MessageFinder.cs",
       "Services/MessageService.cs",
       "Services/MustReadTracker.cs",
@@ -2694,6 +2110,7 @@
       "dydo/project/changelog/2026/2026-04-02",
       "dydo/project/decisions",
       "dydo/project/future-features",
+      "dydo/project/inquisitions",
       "dydo/project/issues",
       "dydo/project/pitfalls",
       "dydo/project/tasks",
@@ -2957,16 +2374,16 @@
         "dydo/agents/adele/modes/reviewer.md",
         "dydo/agents/adele/modes/test-writer.md"
       ],
-      "dydo/agents/emma/workflow.md": [
-        "dydo/agents/emma/modes/co-thinker.md",
-        "dydo/agents/emma/modes/code-writer.md",
-        "dydo/agents/emma/modes/docs-writer.md",
-        "dydo/agents/emma/modes/inquisitor.md",
-        "dydo/agents/emma/modes/judge.md",
-        "dydo/agents/emma/modes/orchestrator.md",
-        "dydo/agents/emma/modes/planner.md",
-        "dydo/agents/emma/modes/reviewer.md",
-        "dydo/agents/emma/modes/test-writer.md"
+      "dydo/agents/charlie/workflow.md": [
+        "dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/agents/charlie/modes/code-writer.md",
+        "dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/agents/charlie/modes/judge.md",
+        "dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/agents/charlie/modes/planner.md",
+        "dydo/agents/charlie/modes/reviewer.md",
+        "dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/project/changelog/_changelog.md": [
         "dydo/project/tasks/_index.md",
@@ -3185,48 +2602,48 @@
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/emma/modes/co-thinker.md": [
+      "dydo/agents/charlie/modes/co-thinker.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/project/decisions/_index.md",
-        "dydo/agents/emma/modes/code-writer.md"
+        "dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/agents/emma/modes/code-writer.md": [
+      "dydo/agents/charlie/modes/code-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/emma/modes/docs-writer.md": [
+      "dydo/agents/charlie/modes/docs-writer.md": [
         "dydo/understand/about.md",
         "dydo/guides/how-to-use-docs.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/emma/modes/inquisitor.md": [
+      "dydo/agents/charlie/modes/inquisitor.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/emma/modes/judge.md": [
+      "dydo/agents/charlie/modes/judge.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
       ],
-      "dydo/agents/emma/modes/orchestrator.md": [
+      "dydo/agents/charlie/modes/orchestrator.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md"
       ],
-      "dydo/agents/emma/modes/planner.md": [
+      "dydo/agents/charlie/modes/planner.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
-        "dydo/agents/emma/modes/code-writer.md"
+        "dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/agents/emma/modes/reviewer.md": [
+      "dydo/agents/charlie/modes/reviewer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md",
         "dydo/reference/writing-docs.md"
       ],
-      "dydo/agents/emma/modes/test-writer.md": [
+      "dydo/agents/charlie/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
@@ -3826,16 +3243,16 @@
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/adele/modes/reviewer.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/adele/modes/test-writer.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/workflow.md": [
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/co-thinker.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/docs-writer.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/inquisitor.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/judge.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/orchestrator.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/planner.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/reviewer.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/test-writer.md"
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/workflow.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/judge.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/planner.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/test-writer.md"
       ],
       "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/changelog/_changelog.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/tasks/_index.md",
@@ -4010,48 +3427,48 @@
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/co-thinker.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/co-thinker.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/decisions/_index.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/code-writer.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/docs-writer.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/docs-writer.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/how-to-use-docs.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/inquisitor.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/inquisitor.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/judge.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/judge.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/orchestrator.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/orchestrator.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/planner.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/planner.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/code-writer.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/reviewer.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/reviewer.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/reference/writing-docs.md"
       ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/test-writer.md": [
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"

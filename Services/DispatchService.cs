@@ -54,29 +54,33 @@ public static class DispatchService
         var inheritReply = sender != null && registry.GetReplyPendingMarkers(senderName)
             .Any(m => string.Equals(m.Task, opts.Task, StringComparison.OrdinalIgnoreCase));
 
-        var existing = FindAgentWorkingOnTask(registry, opts.Task, senderName);
-        if (existing != null)
+        var (targetAgentName, targetError) = SelectTargetAgent(registry, opts, currentHuman, senderName, origin);
+        if (targetError != null)
         {
-            ConsoleOutput.WriteError($"{existing} is already working on task '{opts.Task}'. If you need to re-dispatch, have them release first.");
+            ConsoleOutput.WriteError(targetError);
             return ExitCodes.ToolError;
         }
 
-        // Select target agent
+        WriteAndLaunch(registry, targetAgentName!, senderName, origin, opts, inheritReply);
+
+        return CompleteDispatch(registry, sender, senderName, targetAgentName!, opts.Role, opts.Task, inheritReply, opts.Wait);
+    }
+
+    private static (string? agentName, string? error) SelectTargetAgent(
+        AgentRegistry registry, DispatchOptions opts, string? currentHuman, string senderName, string origin)
+    {
+        var existing = FindAgentWorkingOnTask(registry, opts.Task, senderName);
+        if (existing != null)
+            return (null, $"{existing} is already working on task '{opts.Task}'. If you need to re-dispatch, have them release first.");
+
         var (selection, selectionError) = !string.IsNullOrEmpty(opts.To)
             ? AgentSelector.SelectExplicit(registry, opts.To, currentHuman, opts.Role, opts.Task)
             : AgentSelector.SelectAutomatic(registry, currentHuman, opts.Role, opts.Task, senderName, origin);
 
         if (selection == null)
-        {
-            ConsoleOutput.WriteError(selectionError!);
-            return ExitCodes.ToolError;
-        }
+            return (null, selectionError!);
 
-        var targetAgentName = selection.AgentName;
-
-        WriteAndLaunch(registry, targetAgentName, senderName, origin, opts, inheritReply);
-
-        return CompleteDispatch(registry, sender, senderName, targetAgentName, opts.Role, opts.Task, inheritReply, opts.Wait);
+        return (selection.AgentName, null);
     }
 
     private static int CompleteDispatch(AgentRegistry registry, AgentState? sender, string senderName,

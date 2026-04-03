@@ -136,6 +136,23 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "dotnet build DynaDocs.sln --no-restore 2\u003E\u00261 | tail -5"
+    },
+    {
+      "ts": "2026-04-03T16:20:57.8274315Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py"
+    },
+    {
+      "ts": "2026-04-03T16:24:14.1848736Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
+    },
+    {
+      "ts": "2026-04-03T16:45:39.3770922Z",
+      "event": "Release",
+      "agent": "Grace"
     }
   ],
   "snapshot": {

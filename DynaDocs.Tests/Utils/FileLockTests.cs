@@ -100,6 +100,26 @@ public class FileLockTests : IDisposable
     }
 
     [Fact]
+    public void TryRemoveStaleLock_PidNoClosingDelimiter_ReturnsFalse()
+    {
+        var lockPath = Path.Combine(_testDir, "trunc.lock");
+        File.WriteAllText(lockPath, "{\"Pid\":12345");
+
+        Assert.False(FileLock.TryRemoveStaleLock(lockPath));
+        Assert.True(File.Exists(lockPath));
+    }
+
+    [Fact]
+    public void TryRemoveStaleLock_NonNumericPid_ReturnsFalse()
+    {
+        var lockPath = Path.Combine(_testDir, "badpid.lock");
+        File.WriteAllText(lockPath, "{\"Pid\":\"abc\"}");
+
+        Assert.False(FileLock.TryRemoveStaleLock(lockPath));
+        Assert.True(File.Exists(lockPath));
+    }
+
+    [Fact]
     public void TryRemoveStaleLock_MissingFile_ReturnsFalse()
     {
         var lockPath = Path.Combine(_testDir, "nonexistent.lock");

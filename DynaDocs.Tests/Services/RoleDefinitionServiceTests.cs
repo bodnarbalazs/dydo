@@ -660,6 +660,14 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Equal(["judge", "inquisitor"], constraint.RequiredRoles);
     }
 
+    [Fact]
+    public void GetBaseRoleDefinitions_Judge_CanWriteInquisitions()
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var judge = roles.Single(r => r.Name == "judge");
+        Assert.Contains("dydo/project/inquisitions/**", judge.WritablePaths);
+    }
+
     #endregion
 
     #region ConditionalMustReads

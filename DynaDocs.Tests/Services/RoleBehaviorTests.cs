@@ -252,9 +252,10 @@ public class RoleBehaviorTests : IDisposable
         var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["judge"];
 
-        Assert.Equal(2, writable.Count);
+        Assert.Equal(3, writable.Count);
         Assert.Contains("dydo/agents/{self}/**", writable);
         Assert.Contains("dydo/project/issues/**", writable);
+        Assert.Contains("dydo/project/inquisitions/**", writable);
         Assert.Contains("src/**", readOnly);
         Assert.Contains("tests/**", readOnly);
     }

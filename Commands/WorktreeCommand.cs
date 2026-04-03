@@ -344,6 +344,8 @@ public static class WorktreeCommand
         return Directory.Exists(conventionPath) ? conventionPath : null;
     }
 
+    internal const int ProcessTimeoutMs = 30_000;
+
     private static void RunProcess(string fileName, string arguments)
     {
         if (RunProcessOverride != null)
@@ -363,7 +365,10 @@ public static class WorktreeCommand
         psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
         var proc = Process.Start(psi);
         proc?.StandardInput.Close();
-        proc?.WaitForExit();
+        if (proc != null && !proc.WaitForExit(ProcessTimeoutMs))
+        {
+            try { proc.Kill(); } catch { }
+        }
     }
 
     internal static int RunProcessWithExitCode(string fileName, string arguments)
@@ -388,7 +393,11 @@ public static class WorktreeCommand
         psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
         var p = Process.Start(psi);
         p?.StandardInput.Close();
-        p?.WaitForExit();
+        if (p != null && !p.WaitForExit(ProcessTimeoutMs))
+        {
+            try { p.Kill(); } catch { }
+            return 1;
+        }
         return p?.ExitCode ?? 1;
     }
 

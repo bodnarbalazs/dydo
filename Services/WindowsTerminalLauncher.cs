@@ -31,15 +31,15 @@ public static class WindowsTerminalLauncher
                 var wtDir = $"'{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'";
                 return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
                        $"Set-Location {wtDir}; " +
-                       $"if (Test-Path dydo/agents) {{ [IO.Directory]::Delete((Resolve-Path dydo/agents).Path, $true); }} " +
+                       $"if (Test-Path dydo/agents) {{ cmd /c rmdir /s /q (Resolve-Path dydo/agents).Path; }} " +
                        $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
-                       $"if (Test-Path 'dydo/_system/roles') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/_system/roles').Path, $true); }} " +
+                       $"if (Test-Path 'dydo/_system/roles') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/_system/roles').Path; }} " +
                        $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target '{escapedRoot}/dydo/_system/roles' | Out-Null; " +
                        $"if (-not (Test-Path '{escapedRoot}/dydo/project/issues')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/issues' -Force | Out-Null; }} " +
-                       $"if (Test-Path 'dydo/project/issues') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/project/issues').Path, $true); }} " +
+                       $"if (Test-Path 'dydo/project/issues') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/issues').Path; }} " +
                        $"New-Item -ItemType Junction -Path 'dydo/project/issues' -Target '{escapedRoot}/dydo/project/issues' | Out-Null; " +
                        $"if (-not (Test-Path '{escapedRoot}/dydo/project/inquisitions')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/inquisitions' -Force | Out-Null; }} " +
-                       $"if (Test-Path 'dydo/project/inquisitions') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/project/inquisitions').Path, $true); }} " +
+                       $"if (Test-Path 'dydo/project/inquisitions') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/inquisitions').Path; }} " +
                        $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target '{escapedRoot}/dydo/project/inquisitions' | Out-Null; " +
                        $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                        $"Start-Sleep -Seconds 1; " +
@@ -50,17 +50,17 @@ public static class WindowsTerminalLauncher
             var wtDirRel = $"dydo/_system/.local/worktrees/{worktreeId}";
             return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}$_wt_root = Get-Location; " +
                    $"Set-Location {wtDirRel}; " +
-                   $"if (Test-Path dydo/agents) {{ [IO.Directory]::Delete((Resolve-Path dydo/agents).Path, $true); }} " +
+                   $"if (Test-Path dydo/agents) {{ cmd /c rmdir /s /q (Resolve-Path dydo/agents).Path; }} " +
                    $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
-                   $"if (Test-Path 'dydo/_system/roles') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/_system/roles').Path, $true); }} " +
+                   $"if (Test-Path 'dydo/_system/roles') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/_system/roles').Path; }} " +
                    $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target (Join-Path $_wt_root.Path 'dydo/_system/roles') | Out-Null; " +
                    $"$_issuesTarget = Join-Path $_wt_root.Path 'dydo/project/issues'; " +
                    $"if (-not (Test-Path $_issuesTarget)) {{ New-Item -ItemType Directory -Path $_issuesTarget -Force | Out-Null; }} " +
-                   $"if (Test-Path 'dydo/project/issues') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/project/issues').Path, $true); }} " +
+                   $"if (Test-Path 'dydo/project/issues') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/issues').Path; }} " +
                    $"New-Item -ItemType Junction -Path 'dydo/project/issues' -Target $_issuesTarget | Out-Null; " +
                    $"$_inqTarget = Join-Path $_wt_root.Path 'dydo/project/inquisitions'; " +
                    $"if (-not (Test-Path $_inqTarget)) {{ New-Item -ItemType Directory -Path $_inqTarget -Force | Out-Null; }} " +
-                   $"if (Test-Path 'dydo/project/inquisitions') {{ [IO.Directory]::Delete((Resolve-Path 'dydo/project/inquisitions').Path, $true); }} " +
+                   $"if (Test-Path 'dydo/project/inquisitions') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/inquisitions').Path; }} " +
                    $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target $_inqTarget | Out-Null; " +
                    $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +

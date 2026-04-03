@@ -170,10 +170,11 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Contains("src/**", perms["inquisitor"].ReadOnly);
         Assert.Contains("tests/**", perms["inquisitor"].ReadOnly);
 
-        // Judge: writes workspace + issues; reads source + tests
+        // Judge: writes workspace + issues + inquisitions; reads source + tests
         Assert.Contains("dydo/agents/{self}/**", perms["judge"].Writable);
         Assert.Contains("dydo/project/issues/**", perms["judge"].Writable);
-        Assert.Equal(2, perms["judge"].Writable.Count);
+        Assert.Contains("dydo/project/inquisitions/**", perms["judge"].Writable);
+        Assert.Equal(3, perms["judge"].Writable.Count);
         Assert.Contains("src/**", perms["judge"].ReadOnly);
         Assert.Contains("tests/**", perms["judge"].ReadOnly);
     }

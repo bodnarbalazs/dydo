@@ -169,21 +169,21 @@ public class AgentSessionManagerTests : IDisposable
 
     #endregion
 
-    #region FileReadWithRetry
+    #region FileReadRetry (moved to Utils/FileReadRetry)
 
     [Fact]
-    public void FileReadWithRetry_ValidFile_ReturnsContent()
+    public void FileReadRetry_ValidFile_ReturnsContent()
     {
         var filePath = Path.Combine(_testDir, "test.txt");
         File.WriteAllText(filePath, "hello");
 
-        Assert.Equal("hello", AgentSessionManager.FileReadWithRetry(filePath));
+        Assert.Equal("hello", DynaDocs.Utils.FileReadRetry.Read(filePath));
     }
 
     [Fact]
-    public void FileReadWithRetry_MissingFile_ReturnsNull()
+    public void FileReadRetry_MissingFile_ReturnsNull()
     {
-        Assert.Null(AgentSessionManager.FileReadWithRetry(Path.Combine(_testDir, "nope.txt")));
+        Assert.Null(DynaDocs.Utils.FileReadRetry.Read(Path.Combine(_testDir, "nope.txt")));
     }
 
     #endregion

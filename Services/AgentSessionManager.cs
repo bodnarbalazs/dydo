@@ -3,6 +3,7 @@ namespace DynaDocs.Services;
 using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
+using DynaDocs.Utils;
 
 public class AgentSessionManager
 {
@@ -43,7 +44,7 @@ public class AgentSessionManager
 
         try
         {
-            var json = FileReadWithRetry(sessionPath);
+            var json = FileReadRetry.Read(sessionPath);
             if (json == null) return null;
             return JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AgentSession);
         }
@@ -68,7 +69,7 @@ public class AgentSessionManager
         {
             try
             {
-                var hint = FileReadWithRetry(hintPath)?.Trim();
+                var hint = FileReadRetry.Read(hintPath)?.Trim();
                 if (!string.IsNullOrEmpty(hint) && _isValidAgentName(hint))
                 {
                     var session = GetSession(hint);
@@ -112,7 +113,7 @@ public class AgentSessionManager
 
         try
         {
-            var sessionId = FileReadWithRetry(path)?.Trim();
+            var sessionId = FileReadRetry.Read(path)?.Trim();
             File.Delete(path);
             return sessionId;
         }
@@ -155,7 +156,7 @@ public class AgentSessionManager
 
         try
         {
-            return FileReadWithRetry(path)?.Trim();
+            return FileReadRetry.Read(path)?.Trim();
         }
         catch
         {
@@ -184,33 +185,5 @@ public class AgentSessionManager
                 Thread.Sleep(10 * (i + 1));
             }
         }
-    }
-
-    /// <summary>
-    /// Reads a file with FileShare.ReadWrite and retry on IOException.
-    /// </summary>
-    public static string? FileReadWithRetry(string path, int maxRetries = 3)
-    {
-        for (var attempt = 0; attempt < maxRetries; attempt++)
-        {
-            try
-            {
-                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var sr = new StreamReader(fs);
-                return sr.ReadToEnd();
-            }
-            catch (IOException)
-            {
-                if (attempt < maxRetries - 1)
-                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                if (attempt < maxRetries - 1)
-                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
-            }
-        }
-
-        return null;
     }
 }

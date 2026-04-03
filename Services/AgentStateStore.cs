@@ -2,6 +2,7 @@ namespace DynaDocs.Services;
 
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 public class AgentStateStore
 {
@@ -118,29 +119,18 @@ public class AgentStateStore
     {
         try
         {
-            var content = AgentSessionManager.FileReadWithRetry(statePath);
+            var content = FileReadRetry.Read(statePath);
             if (content == null)
                 return new AgentState { Name = agentName };
-            if (!content.StartsWith("---"))
+
+            var fields = FrontmatterParser.ParseFields(content);
+            if (fields == null)
                 return new AgentState { Name = agentName };
 
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0)
-                return new AgentState { Name = agentName };
-
-            var yaml = content[3..endIndex].Trim();
             var state = new AgentState { Name = agentName };
 
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                var value = line[(colonIndex + 1)..].Trim();
-
+            foreach (var (key, value) in fields)
                 ApplyStateField(state, key, value);
-            }
 
             return state;
         }

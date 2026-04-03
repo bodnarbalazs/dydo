@@ -647,72 +647,8 @@ public static class DispatchService
         return proc?.ExitCode ?? 1;
     }
 
-    private static void WithWorktreeLock(string lockPath, Action action)
-    {
-        const int maxAttempts = 30;
-        const int retryDelayMs = 1000;
-
-        for (var attempt = 0; attempt < maxAttempts; attempt++)
-        {
-            try
-            {
-                using var stream = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                var lockInfo = $"{{\"Pid\":{Environment.ProcessId},\"Acquired\":\"{DateTime.UtcNow:o}\"}}";
-                var bytes = System.Text.Encoding.UTF8.GetBytes(lockInfo);
-                stream.Write(bytes, 0, bytes.Length);
-                stream.Flush();
-
-                try
-                {
-                    action();
-                }
-                finally
-                {
-                    stream.Close();
-                    try { File.Delete(lockPath); } catch { }
-                }
-                return;
-            }
-            catch (IOException) when (File.Exists(lockPath))
-            {
-                // Lock held by another process — check for staleness
-                if (TryRemoveStaleLock(lockPath))
-                    continue; // Removed stale lock, retry immediately
-
-                if (attempt < maxAttempts - 1)
-                    Thread.Sleep(retryDelayMs);
-            }
-        }
-
-        throw new TimeoutException($"Could not acquire worktree lock after {maxAttempts}s. Lock file: {lockPath}");
-    }
-
-    private static bool TryRemoveStaleLock(string lockPath)
-    {
-        try
-        {
-            var json = File.ReadAllText(lockPath);
-            var pidStart = json.IndexOf("\"Pid\":", StringComparison.Ordinal);
-            if (pidStart < 0) return false;
-
-            pidStart += 6;
-            var pidEnd = json.IndexOfAny([',', '}'], pidStart);
-            if (pidEnd < 0) return false;
-
-            if (!int.TryParse(json[pidStart..pidEnd].Trim(), out var pid))
-                return false;
-
-            if (ProcessUtils.IsProcessRunning(pid))
-                return false;
-
-            File.Delete(lockPath);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    private static void WithWorktreeLock(string lockPath, Action action) =>
+        FileLock.WithExclusiveLock(lockPath, action);
 
     internal static string? GetOriginForTask(AgentRegistry registry, AgentState? sender, string task)
     {
@@ -739,28 +675,11 @@ public static class DispatchService
         try
         {
             var content = File.ReadAllText(filePath);
-            if (!content.StartsWith("---")) return (null, null);
+            var fields = FrontmatterParser.ParseFields(content);
+            if (fields == null) return (null, null);
 
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return (null, null);
-
-            var yaml = content[3..endIndex];
-            string? origin = null, from = null;
-
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                var value = line[(colonIndex + 1)..].Trim();
-
-                switch (key)
-                {
-                    case "origin": origin = value; break;
-                    case "from": from = value; break;
-                }
-            }
+            fields.TryGetValue("origin", out var origin);
+            fields.TryGetValue("from", out var from);
 
             return (origin, from);
         }

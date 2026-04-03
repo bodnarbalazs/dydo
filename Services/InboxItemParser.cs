@@ -2,6 +2,7 @@ namespace DynaDocs.Services;
 
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 public static class InboxItemParser
 {
@@ -28,15 +29,11 @@ public static class InboxItemParser
         try
         {
             var content = File.ReadAllText(filePath);
-            if (!content.StartsWith("---"))
+            var rawFields = FrontmatterParser.ParseFields(content);
+            if (rawFields == null)
                 return null;
 
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0)
-                return null;
-
-            var yaml = content[3..endIndex].Trim();
-            var fields = ParseYamlFields(yaml);
+            var fields = ParseYamlFields(rawFields);
 
             if (fields.Id == null || fields.From == null)
                 return null;
@@ -98,20 +95,12 @@ public static class InboxItemParser
         public bool ReplyRequired { get; init; }
     }
 
-    private static YamlFields ParseYamlFields(string yaml)
+    private static YamlFields ParseYamlFields(Dictionary<string, string> rawFields)
     {
         var state = new YamlParseState();
 
-        foreach (var line in yaml.Split('\n'))
-        {
-            var colonIndex = line.IndexOf(':');
-            if (colonIndex < 0) continue;
-
-            var key = line[..colonIndex].Trim();
-            var value = line[(colonIndex + 1)..].Trim();
-
+        foreach (var (key, value) in rawFields)
             ApplyYamlField(state, key, value);
-        }
 
         return new YamlFields
         {

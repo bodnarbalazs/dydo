@@ -774,7 +774,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             try
             {
-                var hint = FileReadWithRetry(hintPath)?.Trim();
+                var hint = FileReadRetry.Read(hintPath)?.Trim();
                 if (!string.IsNullOrEmpty(hint) && IsValidAgentName(hint))
                 {
                     var session = GetSession(hint);
@@ -820,34 +820,6 @@ public partial class AgentRegistry : IAgentRegistry
     private string GetAgentHintPath() =>
         Path.Combine(WorkspacePath, ".session-agent");
 
-    /// <summary>
-    /// Reads a file with FileShare.ReadWrite and retry on IOException.
-    /// Prevents concurrent readers/writers from blocking each other.
-    /// </summary>
-    private static string? FileReadWithRetry(string path, int maxRetries = 3)
-    {
-        for (var attempt = 0; attempt < maxRetries; attempt++)
-        {
-            try
-            {
-                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var sr = new StreamReader(fs);
-                return sr.ReadToEnd();
-            }
-            catch (IOException)
-            {
-                if (attempt < maxRetries - 1)
-                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                if (attempt < maxRetries - 1)
-                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
-            }
-        }
-
-        return null;
-    }
 
     /// <summary>
     /// Gets and clears the pending session ID for an agent.
@@ -860,7 +832,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         try
         {
-            var sessionId = FileReadWithRetry(path)?.Trim();
+            var sessionId = FileReadRetry.Read(path)?.Trim();
             File.Delete(path);  // Clean up after reading
             return sessionId;
         }
@@ -913,7 +885,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         try
         {
-            return FileReadWithRetry(path)?.Trim();
+            return FileReadRetry.Read(path)?.Trim();
         }
         catch
         {
@@ -1194,7 +1166,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         try
         {
-            var json = FileReadWithRetry(sessionPath);
+            var json = FileReadRetry.Read(sessionPath);
             if (json == null) return null;
             return JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AgentSession);
         }
@@ -1426,25 +1398,18 @@ public partial class AgentRegistry : IAgentRegistry
     {
         try
         {
-            var content = FileReadWithRetry(statePath);
-            if (content == null || !content.StartsWith("---"))
+            var content = FileReadRetry.Read(statePath);
+            if (content == null)
                 return new AgentState { Name = agentName };
 
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0)
+            var rawFields = FrontmatterParser.ParseFields(content);
+            if (rawFields == null)
                 return new AgentState { Name = agentName };
 
-            var yaml = content[3..endIndex].Trim();
             var state = new AgentState { Name = agentName };
 
-            foreach (var line in yaml.Split('\n'))
+            foreach (var (key, value) in rawFields)
             {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                var value = line[(colonIndex + 1)..].Trim();
-
                 if (StateFieldParsers.TryGetValue(key, out var parser))
                     parser(state, value);
             }

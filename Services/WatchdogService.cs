@@ -333,33 +333,15 @@ public static class WatchdogService
         try
         {
             var content = File.ReadAllText(statePath);
-            if (!content.StartsWith("---")) return (false, false, null, null);
+            var fields = FrontmatterParser.ParseFields(content);
+            if (fields == null) return (false, false, null, null);
 
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0) return (false, false, null, null);
-
-            var yaml = content[3..endIndex];
-            bool autoClose = false, isFree = false;
-            string? agentName = null, windowId = null;
-
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                var value = line[(colonIndex + 1)..].Trim();
-
-                switch (key)
-                {
-                    case "agent": agentName = value; break;
-                    case "status": isFree = value == "free"; break;
-                    case "auto-close": autoClose = value == "true"; break;
-                    case "window-id":
-                        windowId = value is "null" or "" ? null : value;
-                        break;
-                }
-            }
+            fields.TryGetValue("agent", out var agentName);
+            var isFree = fields.TryGetValue("status", out var status) && status == "free";
+            var autoClose = fields.TryGetValue("auto-close", out var ac) && ac == "true";
+            string? windowId = null;
+            if (fields.TryGetValue("window-id", out var wid) && wid is not ("null" or ""))
+                windowId = wid;
 
             return (autoClose, isFree, agentName, windowId);
         }

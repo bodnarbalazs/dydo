@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Text.RegularExpressions;
+using DynaDocs.Utils;
 
 public static class MessageFinder
 {
@@ -39,31 +40,12 @@ public static class MessageFinder
         try
         {
             var content = File.ReadAllText(filePath);
-            if (!content.StartsWith("---"))
-                return null;
+            var fields = FrontmatterParser.ParseFields(content);
+            if (fields == null) return null;
 
-            var endIndex = content.IndexOf("---", 3);
-            if (endIndex < 0)
-                return null;
-
-            var yaml = content[3..endIndex].Trim();
-            string? from = null, subject = null, type = null;
-
-            foreach (var line in yaml.Split('\n'))
-            {
-                var colonIndex = line.IndexOf(':');
-                if (colonIndex < 0) continue;
-
-                var key = line[..colonIndex].Trim();
-                var value = line[(colonIndex + 1)..].Trim();
-
-                switch (key)
-                {
-                    case "type": type = value; break;
-                    case "from": from = value; break;
-                    case "subject": subject = value; break;
-                }
-            }
+            fields.TryGetValue("type", out var type);
+            fields.TryGetValue("from", out var from);
+            fields.TryGetValue("subject", out var subject);
 
             if (type != "message" || from == null)
                 return null;

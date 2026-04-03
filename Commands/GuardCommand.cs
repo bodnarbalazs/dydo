@@ -1238,25 +1238,11 @@ public static partial class GuardCommand
             try
             {
                 var content = File.ReadAllText(file);
-                if (!content.StartsWith("---")) continue;
-                var endIndex = content.IndexOf("---", 3);
-                if (endIndex < 0) continue;
+                var fields = FrontmatterParser.ParseFields(content);
+                if (fields == null) continue;
 
-                var yaml = content[3..endIndex];
-                string? from = null, subject = null;
-
-                foreach (var line in yaml.Split('\n'))
-                {
-                    var colonIndex = line.IndexOf(':');
-                    if (colonIndex < 0) continue;
-                    var key = line[..colonIndex].Trim();
-                    var value = line[(colonIndex + 1)..].Trim();
-                    switch (key)
-                    {
-                        case "from": from = value; break;
-                        case "subject": subject = value; break;
-                    }
-                }
+                fields.TryGetValue("from", out var from);
+                fields.TryGetValue("subject", out var subject);
 
                 if (from != null)
                     return (from, subject, file);

@@ -37,26 +37,13 @@ public class InboxMetadataReader
             try
             {
                 var content = File.ReadAllText(file);
-                if (!content.StartsWith("---")) continue;
+                var fields = FrontmatterParser.ParseFields(content);
+                if (fields == null) continue;
 
-                var endIndex = content.IndexOf("---", 3);
-                if (endIndex < 0) continue;
-
-                var yaml = content[3..endIndex];
-                string? fieldValue = null;
+                fields.TryGetValue(fieldName, out var fieldValue);
                 var received = DateTime.MinValue;
-
-                foreach (var line in yaml.Split('\n'))
-                {
-                    var colonIndex = line.IndexOf(':');
-                    if (colonIndex < 0) continue;
-
-                    var key = line[..colonIndex].Trim();
-                    if (key == fieldName)
-                        fieldValue = line[(colonIndex + 1)..].Trim();
-                    else if (key == "received" && DateTime.TryParse(line[(colonIndex + 1)..].Trim(), out var dt))
-                        received = dt;
-                }
+                if (fields.TryGetValue("received", out var receivedStr))
+                    DateTime.TryParse(receivedStr, out received);
 
                 if (fieldValue != null && received >= bestReceived)
                 {

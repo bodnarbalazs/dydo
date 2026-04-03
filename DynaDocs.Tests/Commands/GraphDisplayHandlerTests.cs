@@ -124,7 +124,7 @@ public class GraphDisplayHandlerTests
     {
         var original = Console.Out;
         using var writer = new StringWriter();
-        Console.SetOut(writer);
+        Console.SetOut(TextWriter.Synchronized(writer));
         try
         {
             action();

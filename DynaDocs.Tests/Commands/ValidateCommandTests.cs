@@ -140,8 +140,8 @@ public class ValidateCommandTests : IDisposable
         var originalErr = Console.Error;
         using var outWriter = new StringWriter();
         using var errWriter = new StringWriter();
-        Console.SetOut(outWriter);
-        Console.SetError(errWriter);
+        Console.SetOut(TextWriter.Synchronized(outWriter));
+        Console.SetError(TextWriter.Synchronized(errWriter));
         try
         {
             action();

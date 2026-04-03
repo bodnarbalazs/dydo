@@ -65,7 +65,7 @@ public class InboxServiceTests
     {
         var original = Console.Out;
         using var sw = new StringWriter();
-        Console.SetOut(sw);
+        Console.SetOut(TextWriter.Synchronized(sw));
         try
         {
             action();

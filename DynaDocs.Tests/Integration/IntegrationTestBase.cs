@@ -109,8 +109,8 @@ public abstract class IntegrationTestBase : IDisposable
         var stdoutWriter = new StringWriter();
         var stderrWriter = new StringWriter();
 
-        Console.SetOut(stdoutWriter);
-        Console.SetError(stderrWriter);
+        Console.SetOut(TextWriter.Synchronized(stdoutWriter));
+        Console.SetError(TextWriter.Synchronized(stderrWriter));
 
         try
         {
@@ -305,8 +305,8 @@ public abstract class IntegrationTestBase : IDisposable
         var stderrWriter = new StringWriter();
         var stdinReader = new StringReader(json);
 
-        Console.SetOut(stdoutWriter);
-        Console.SetError(stderrWriter);
+        Console.SetOut(TextWriter.Synchronized(stdoutWriter));
+        Console.SetError(TextWriter.Synchronized(stderrWriter));
         Console.SetIn(stdinReader);
 
         try

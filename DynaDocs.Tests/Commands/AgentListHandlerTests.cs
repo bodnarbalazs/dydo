@@ -284,7 +284,7 @@ public class AgentListHandlerTests : IDisposable
     {
         var original = Console.Out;
         var sw = new StringWriter();
-        Console.SetOut(sw);
+        Console.SetOut(TextWriter.Synchronized(sw));
         try
         {
             action();
@@ -300,7 +300,7 @@ public class AgentListHandlerTests : IDisposable
     {
         var original = Console.Error;
         var sw = new StringWriter();
-        Console.SetError(sw);
+        Console.SetError(TextWriter.Synchronized(sw));
         try
         {
             action();

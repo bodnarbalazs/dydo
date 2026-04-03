@@ -19,7 +19,7 @@ public class HelpCommandTests
         try
         {
             var writer = new StringWriter();
-            Console.SetOut(writer);
+            Console.SetOut(TextWriter.Synchronized(writer));
 
             // Replicate the help command handler from Program.cs
             PrintHelp();

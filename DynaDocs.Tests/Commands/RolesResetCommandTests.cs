@@ -123,7 +123,7 @@ public class RolesResetCommandTests : IDisposable
     {
         var originalOut = Console.Out;
         using var writer = new StringWriter();
-        Console.SetOut(writer);
+        Console.SetOut(TextWriter.Synchronized(writer));
         try
         {
             var command = DynaDocs.Commands.RolesCommand.Create();
@@ -148,7 +148,7 @@ public class RolesResetCommandTests : IDisposable
 
         var originalOut = Console.Out;
         using var writer = new StringWriter();
-        Console.SetOut(writer);
+        Console.SetOut(TextWriter.Synchronized(writer));
         try
         {
             var command = DynaDocs.Commands.RolesCommand.Create();

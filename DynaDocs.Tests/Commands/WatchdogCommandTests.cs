@@ -120,7 +120,7 @@ public class WatchdogCommandTests : IDisposable
     {
         var originalOut = Console.Out;
         using var writer = new StringWriter();
-        Console.SetOut(writer);
+        Console.SetOut(TextWriter.Synchronized(writer));
         try
         {
             var command = WatchdogCommand.Create();

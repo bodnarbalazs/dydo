@@ -315,7 +315,7 @@ public class CompleteCommandTests : IDisposable
     public void Command_WritesCompletionsToStdout()
     {
         var stdout = new StringWriter();
-        Console.SetOut(stdout);
+        Console.SetOut(TextWriter.Synchronized(stdout));
         try
         {
             var command = CompleteCommand.Create();

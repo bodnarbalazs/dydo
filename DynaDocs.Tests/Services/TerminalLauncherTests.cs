@@ -736,7 +736,7 @@ public class TerminalLauncherTests
         var launcher = new TerminalLauncher(recorder, detector);
 
         var output = new StringWriter();
-        Console.SetOut(output);
+        Console.SetOut(TextWriter.Synchronized(output));
         try
         {
             launcher.LaunchMac("Adele", useTab: true);
@@ -774,7 +774,7 @@ public class TerminalLauncherTests
         var launcher = new TerminalLauncher(recorder, detector);
 
         var output = new StringWriter();
-        Console.SetOut(output);
+        Console.SetOut(TextWriter.Synchronized(output));
         try
         {
             launcher.LaunchMac("Adele", useTab: false);

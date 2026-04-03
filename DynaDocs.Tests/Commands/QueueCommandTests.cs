@@ -147,8 +147,8 @@ public class QueueCommandTests : IDisposable
         var originalOut = Console.Out;
         var originalErr = Console.Error;
 
-        Console.SetOut(stdoutWriter);
-        Console.SetError(stderrWriter);
+        Console.SetOut(TextWriter.Synchronized(stdoutWriter));
+        Console.SetError(TextWriter.Synchronized(stderrWriter));
 
         try
         {

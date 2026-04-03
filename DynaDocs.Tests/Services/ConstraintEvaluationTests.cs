@@ -302,7 +302,7 @@ public class ConstraintEvaluationTests : IDisposable
         CreateStateFile("Adele", taskRoleHistory: new() { ["my-task"] = ["code-writer"] });
 
         var stderr = new StringWriter();
-        Console.SetError(stderr);
+        Console.SetError(TextWriter.Synchronized(stderr));
         var registry = new AgentRegistry(_testDir);
         Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
 

@@ -1,1 +1,14 @@
-{}
+{
+  "../../../AppData/Local/Temp/dydo-test-e431ea2d/Utils/FileLock.cs": {
+    "test_file": "DynaDocs.Tests/Utils/FileLockTests.cs",
+    "tier": 2
+  },
+  "../../../AppData/Local/Temp/dydo-test-e431ea2d/Utils/FileReadRetry.cs": {
+    "test_file": "DynaDocs.Tests/Utils/FileReadRetryTests.cs",
+    "tier": 2
+  },
+  "../../../AppData/Local/Temp/dydo-test-e431ea2d/Utils/FrontmatterParser.cs": {
+    "test_file": "DynaDocs.Tests/Utils/FrontmatterParserTests.cs",
+    "tier": 2
+  }
+}

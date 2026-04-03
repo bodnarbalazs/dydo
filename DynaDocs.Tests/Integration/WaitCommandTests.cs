@@ -228,6 +228,77 @@ public class WaitCommandTests : IntegrationTestBase
         Assert.Null(result);
     }
 
+    [Fact]
+    public void MessageFinder_FindMessage_OrdersByReceivedTimestamp_NotCreationTime()
+    {
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            // Write the NEWER message first (earlier creation time on disk)
+            var now = DateTime.UtcNow;
+            WriteMessageFileDirect(inboxPath, "aaa", "Brian", "task-a", "Newer message", now);
+            Thread.Sleep(50);
+            // Write the OLDER message second (later creation time on disk)
+            WriteMessageFileDirect(inboxPath, "bbb", "Charlie", "task-b", "Older message", now.AddMinutes(-10));
+
+            // Should return the message with the earliest received timestamp, not earliest creation time
+            var result = MessageFinder.FindMessage(inboxPath, null);
+            Assert.NotNull(result);
+            Assert.Equal("Charlie", result.From);
+        }
+        finally
+        {
+            Directory.Delete(inboxPath, true);
+        }
+    }
+
+    [Fact]
+    public void MessageFinder_FindMessage_FallsBackToCreationTime_WhenNoReceivedField()
+    {
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            // Write messages without received field — should fall back to creation time order
+            var content1 = """
+                ---
+                id: aaa
+                type: message
+                from: Brian
+                subject: task-a
+                ---
+
+                ## Body
+
+                First
+                """;
+            File.WriteAllText(Path.Combine(inboxPath, "aaa-msg-task-a.md"), content1);
+            Thread.Sleep(50);
+            var content2 = """
+                ---
+                id: bbb
+                type: message
+                from: Charlie
+                subject: task-b
+                ---
+
+                ## Body
+
+                Second
+                """;
+            File.WriteAllText(Path.Combine(inboxPath, "bbb-msg-task-b.md"), content2);
+
+            var result = MessageFinder.FindMessage(inboxPath, null);
+            Assert.NotNull(result);
+            Assert.Equal("Brian", result.From); // Earlier creation time
+        }
+        finally
+        {
+            Directory.Delete(inboxPath, true);
+        }
+    }
+
     #endregion
 
     #region Parent Liveness Tests
@@ -443,6 +514,24 @@ public class WaitCommandTests : IntegrationTestBase
             {body}
             """;
 
+        File.WriteAllText(Path.Combine(inboxPath, $"{id}-msg-{subject}.md"), content);
+    }
+
+    private static void WriteMessageFileDirect(string inboxPath, string id, string from, string subject, string body, DateTime received)
+    {
+        var content = $"""
+            ---
+            id: {id}
+            type: message
+            from: {from}
+            subject: {subject}
+            received: {received:o}
+            ---
+
+            ## Body
+
+            {body}
+            """;
         File.WriteAllText(Path.Combine(inboxPath, $"{id}-msg-{subject}.md"), content);
     }
 

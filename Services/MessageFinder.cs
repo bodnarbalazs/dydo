@@ -10,9 +10,8 @@ public static class MessageFinder
         if (!Directory.Exists(inboxPath))
             return null;
 
-        var files = Directory.GetFiles(inboxPath, "*-msg-*.md")
-            .OrderBy(f => File.GetCreationTimeUtc(f))
-            .ToArray();
+        var files = Directory.GetFiles(inboxPath, "*-msg-*.md");
+        var parsed = new List<MessageInfo>();
 
         foreach (var file in files)
         {
@@ -23,16 +22,18 @@ public static class MessageFinder
                 !string.Equals(info.Subject, taskFilter, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            // Channel isolation: skip messages whose subject is claimed by a wait marker
             if (excludeSubjects != null &&
                 !string.IsNullOrEmpty(info.Subject) &&
                 excludeSubjects.Contains(info.Subject))
                 continue;
 
-            return info;
+            parsed.Add(info);
         }
 
-        return null;
+        // Sort by received timestamp from frontmatter, falling back to file creation time
+        return parsed
+            .OrderBy(m => m.Received ?? File.GetCreationTimeUtc(m.FilePath))
+            .FirstOrDefault();
     }
 
     private static MessageInfo? ParseMessageFile(string filePath)
@@ -47,6 +48,11 @@ public static class MessageFinder
             fields.TryGetValue("from", out var from);
             fields.TryGetValue("subject", out var subject);
 
+            DateTime? received = null;
+            if (fields.TryGetValue("received", out var receivedStr) &&
+                DateTime.TryParse(receivedStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+                received = dt.ToUniversalTime();
+
             if (type != "message" || from == null)
                 return null;
 
@@ -59,7 +65,8 @@ public static class MessageFinder
                 From = from,
                 Subject = subject,
                 Body = body,
-                FilePath = filePath
+                FilePath = filePath,
+                Received = received
             };
         }
         catch
@@ -74,5 +81,6 @@ public static class MessageFinder
         public string? Subject { get; init; }
         public required string Body { get; init; }
         public required string FilePath { get; init; }
+        public DateTime? Received { get; init; }
     }
 }

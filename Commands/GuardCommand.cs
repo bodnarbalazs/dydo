@@ -67,6 +67,23 @@ public static partial class GuardCommand
 
     // Data-driven lookups to reduce cyclomatic complexity
     private static readonly HashSet<string> SearchTools = new(StringComparer.OrdinalIgnoreCase) { "glob", "grep", "agent" };
+
+    // Claude Code hook response that explicitly approves a tool call, bypassing the permission prompt.
+    // Used in worktree contexts where Read(**) permission patterns fail to match worktree-resolved paths.
+    private const string WorktreeReadAllowJson =
+        """{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}""";
+
+    private const string WorktreePathMarker = "dydo/_system/.local/worktrees/";
+
+    internal static Func<bool>? IsWorktreeContextOverride;
+
+    internal static bool IsWorktreeContext()
+    {
+        if (IsWorktreeContextOverride != null)
+            return IsWorktreeContextOverride();
+        var cwd = Directory.GetCurrentDirectory().Replace('\\', '/');
+        return cwd.Contains(WorktreePathMarker);
+    }
     private static readonly HashSet<string> WriteActions = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
     private static readonly Dictionary<string, AuditEventType> ActionAuditMap = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -206,7 +223,8 @@ public static partial class GuardCommand
         // For Read operations, apply staged access control
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
         {
-            return HandleReadOperation(filePath, toolName, agent, sessionId, registry, auditService);
+            var isWorktree = IsWorktreeContext();
+            return HandleReadOperation(filePath, toolName, agent, sessionId, registry, auditService, isWorktree);
         }
 
         // For write/edit operations
@@ -318,7 +336,7 @@ public static partial class GuardCommand
 
     private static int HandleReadOperation(
         string? filePath, string? toolName, AgentState? agent, string? sessionId,
-        AgentRegistry registry, IAuditService auditService)
+        AgentRegistry registry, IAuditService auditService, bool isWorktree = false)
     {
         if (!IsReadAllowed(filePath, agent))
         {
@@ -343,6 +361,9 @@ public static partial class GuardCommand
         });
 
         TrackReadCompletion(agent, filePath, sessionId, registry);
+
+        if (isWorktree)
+            Console.WriteLine(WorktreeReadAllowJson);
 
         return ExitCodes.Success;
     }

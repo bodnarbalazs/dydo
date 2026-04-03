@@ -106,7 +106,7 @@ public class QueueCommandTests : IDisposable
 
         // Set up active + pending items
         service.SetActive("merge", "Adele", "task-1", Environment.ProcessId);
-        service.TryEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
+        service.TryAcquireOrEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
 
         var (stdout, _, exitCode) = await RunQueueCommand("show", "merge");
         Assert.Equal(0, exitCode);

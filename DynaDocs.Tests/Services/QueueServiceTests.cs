@@ -64,22 +64,22 @@ public class QueueServiceTests : IDisposable
     }
 
     [Fact]
-    public void TryEnqueue_ReturnsFalse_WhenNoActiveItem()
+    public void TryAcquireOrEnqueue_NoActive_Acquires()
     {
-        // No _active.json → should launch immediately
-        var enqueued = _service.TryEnqueue("merge", "Brian", "my-task",
+        var result = _service.TryAcquireOrEnqueue("merge", "Brian", "my-task",
             true, false, null, null, null, null, null);
-        Assert.False(enqueued);
+        Assert.Equal(QueueResult.Acquired, result);
+        Assert.NotNull(_service.GetActive("merge"));
     }
 
     [Fact]
-    public void TryEnqueue_ReturnsTrue_WhenActiveItemExists()
+    public void TryAcquireOrEnqueue_WithActive_EnqueuesWithAllParams()
     {
         _service.SetActive("merge", "Charlie", "other-task", 12345);
 
-        var enqueued = _service.TryEnqueue("merge", "Brian", "my-task",
+        var result = _service.TryAcquireOrEnqueue("merge", "Brian", "my-task",
             true, true, "wt-123", "win1", null, null, "/project");
-        Assert.True(enqueued);
+        Assert.Equal(QueueResult.Queued, result);
 
         var pending = _service.GetPending("merge");
         Assert.Single(pending);
@@ -120,8 +120,8 @@ public class QueueServiceTests : IDisposable
     {
         _service.SetActive("merge", "Charlie", "task-0", 1);
 
-        _service.TryEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
-        _service.TryEnqueue("merge", "Dexter", "task-2", false, true, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Dexter", "task-2", false, true, null, null, null, null, null);
 
         var first = _service.DequeueNext("merge");
         Assert.NotNull(first);
@@ -161,7 +161,7 @@ public class QueueServiceTests : IDisposable
     public void CancelEntry_RemovesPendingEntry()
     {
         _service.SetActive("merge", "Charlie", "task-0", 1);
-        _service.TryEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
 
         var pending = _service.GetPending("merge");
         var seq = pending[0].FileName.Split('-')[0]; // e.g. "0001"
@@ -183,7 +183,7 @@ public class QueueServiceTests : IDisposable
     public void ClearQueue_RemovesAllEntries()
     {
         _service.SetActive("merge", "Charlie", "task-0", 1);
-        _service.TryEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
 
         Assert.True(_service.ClearQueue("merge", out _));
         Assert.Null(_service.GetActive("merge"));
@@ -271,9 +271,9 @@ public class QueueServiceTests : IDisposable
     {
         _service.SetActive("merge", "Charlie", "task-0", 1);
 
-        _service.TryEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
-        _service.TryEnqueue("merge", "Dexter", "task-2", true, false, null, null, null, null, null);
-        _service.TryEnqueue("merge", "Emma", "task-3", true, false, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Brian", "task-1", true, false, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Dexter", "task-2", true, false, null, null, null, null, null);
+        _service.TryAcquireOrEnqueue("merge", "Emma", "task-3", true, false, null, null, null, null, null);
 
         var pending = _service.GetPending("merge");
         Assert.Equal(3, pending.Count);
@@ -303,7 +303,7 @@ public class QueueServiceTests : IDisposable
     {
         _service.SetActive("merge", "Charlie", "task-0", 1);
 
-        _service.TryEnqueue("merge", "Brian", "task-1",
+        _service.TryAcquireOrEnqueue("merge", "Brian", "task-1",
             launchInTab: true, autoClose: true,
             worktreeId: "wt-abc", windowName: "win-1",
             workingDirOverride: "/custom/dir",

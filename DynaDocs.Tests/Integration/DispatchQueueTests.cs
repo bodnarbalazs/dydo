@@ -134,7 +134,7 @@ public class DispatchQueueTests : IntegrationTestBase
         service.SetActive("merge", "Adele", "task-1", 99999999); // Dead PID
 
         // Enqueue a pending item
-        service.TryEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
+        service.TryAcquireOrEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
 
         var originalProcOverride = ProcessUtils.IsProcessRunningOverride;
         var originalTerminalOverride = TerminalLauncher.ProcessStarterOverride;
@@ -242,7 +242,7 @@ public class DispatchQueueTests : IntegrationTestBase
 
         var service = new QueueService(dydoRoot);
         service.SetActive("merge", "Adele", "task-1", 99999999); // Dead PID
-        service.TryEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
+        service.TryAcquireOrEnqueue("merge", "Brian", "task-2", true, false, null, null, null, null, null);
 
         var originalProcOverride = ProcessUtils.IsProcessRunningOverride;
         var originalTerminalOverride = TerminalLauncher.ProcessStarterOverride;

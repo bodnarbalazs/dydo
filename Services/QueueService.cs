@@ -186,44 +186,6 @@ public class QueueService
     }
 
     /// <summary>
-    /// Tries to enqueue a terminal launch. If the queue has no active item,
-    /// returns false (caller should launch immediately). If an active item exists,
-    /// writes the pending entry and returns true (launch deferred).
-    /// </summary>
-    public bool TryEnqueue(string queueName, string agentName, string task,
-        bool launchInTab, bool autoClose, string? worktreeId, string? windowName,
-        string? workingDirOverride, string? cleanupWorktreeId, string? mainProjectRoot)
-    {
-        var dir = GetQueueDir(queueName);
-        Directory.CreateDirectory(dir);
-
-        var activePath = Path.Combine(dir, "_active.json");
-        if (!File.Exists(activePath))
-            return false;
-
-        var entry = new QueueEntry
-        {
-            Agent = agentName,
-            Task = task,
-            LaunchInTab = launchInTab,
-            AutoClose = autoClose,
-            WorktreeId = worktreeId,
-            WindowName = windowName,
-            WorkingDirOverride = workingDirOverride,
-            CleanupWorktreeId = cleanupWorktreeId,
-            MainProjectRoot = mainProjectRoot,
-            Enqueued = DateTime.UtcNow
-        };
-
-        var seq = GetNextSequenceNumber(dir);
-        var sanitizedTask = PathUtils.SanitizeForFilename(task);
-        var fileName = $"{seq:D4}-{sanitizedTask}.json";
-        var json = JsonSerializer.Serialize(entry, DydoDefaultJsonContext.Default.QueueEntry);
-        File.WriteAllText(Path.Combine(dir, fileName), json);
-        return true;
-    }
-
-    /// <summary>
     /// Marks an agent as the active item in a queue. Called when a dispatch
     /// goes through (no existing active item) or when dequeuing the next entry.
     /// </summary>

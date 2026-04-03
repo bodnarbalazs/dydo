@@ -49,7 +49,7 @@ Dispatch launches a new terminal with `claude "<agentName> --inbox"`:
 - **New window** (`--new-window`): Creates a new window with a fresh ID
 - **Inherited window**: Child dispatches inherit the parent's `DYDO_WINDOW` environment variable, grouping related agents in the same window
 
-Platform support: Windows Terminal, macOS Terminal.app/iTerm2, and Linux terminals (gnome-terminal, konsole, alacritty, kitty, wezterm, and others).
+Platform support: Windows Terminal (Windows 11), iTerm2 (macOS recommended).
 
 ### Worktree Dispatch
 

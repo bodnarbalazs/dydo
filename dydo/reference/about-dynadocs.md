@@ -63,6 +63,13 @@ dotnet tool install -g dydo
 export DYDO_HUMAN="YourName"
 ```
 
+### Terminal Compatibility
+
+Multi-agent dispatch opens new terminal tabs/windows. Supported terminals:
+
+- **Windows:** Windows Terminal (Windows 11)
+- **macOS:** iTerm2 recommended
+
 ## Quick Start
 
 ### 1. Set up dydo in your project

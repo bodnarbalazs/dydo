@@ -226,19 +226,12 @@ public class ConfigFactoryTests
     [InlineData("dydo dispatch --role inquisitor --task foo --new-window --no-wait --brief bar")]
     public void DefaultNudges_DoesNotMatchInquisitorDispatchWithNewWindow(string command)
     {
-        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
-        {
-            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            return regex.IsMatch(command);
-        });
-
         // Should not match the inquisitor nudge (may match other nudges, but not the inquisitor one)
         var inquisitorNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
             n.Pattern.Contains("inquisitor"));
         Assert.NotNull(inquisitorNudge);
 
-        var inquisitorRegex = new System.Text.RegularExpressions.Regex(inquisitorNudge.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        Assert.False(inquisitorRegex.IsMatch(command));
+        Assert.DoesNotMatch(inquisitorNudge.Pattern, command);
     }
 
     [Theory]
@@ -251,8 +244,7 @@ public class ConfigFactoryTests
             n.Pattern.Contains("inquisitor"));
         Assert.NotNull(inquisitorNudge);
 
-        var regex = new System.Text.RegularExpressions.Regex(inquisitorNudge.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        Assert.False(regex.IsMatch(command));
+        Assert.DoesNotMatch(inquisitorNudge.Pattern, command);
     }
 
     [Theory]

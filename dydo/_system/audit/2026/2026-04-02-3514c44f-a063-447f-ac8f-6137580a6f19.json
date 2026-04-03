@@ -106,6 +106,65 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/gap_check.py"
+    },
+    {
+      "ts": "2026-04-02T20:14:48.3731578Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T20:14:55.0023572Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-02T20:14:59.3402593Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-02T20:15:04.4509473Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T20:15:15.2869521Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-02T20:15:21.8208946Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T20:15:30.1177982Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-02T20:15:34.4265207Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-02T20:15:47.0519406Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~Merge_CleanMerge_AutoFin..."
+    },
+    {
+      "ts": "2026-04-02T20:16:16.3157825Z",
+      "event": "Release",
+      "agent": "Dexter"
     }
   ],
   "snapshot": {

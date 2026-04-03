@@ -184,6 +184,7 @@ public static class WatchdogService
             // deferral is fixed separately; killing on first sighting
             // prevents the race where re-dispatch between polls leaves
             // old sessions alive.
+            var killedOrAttempted = false;
             foreach (var pid in pids)
             {
                 try
@@ -191,13 +192,19 @@ public static class WatchdogService
                     var procName = ProcessUtils.GetProcessName(pid);
                     if (procName != null && ShellProcessNames.Contains(procName))
                         continue;
+                    killedOrAttempted = true;
                     using var proc = Process.GetProcessById(pid);
                     proc.Kill();
                 }
                 catch { }
             }
 
-            ClearAutoClose(statePath);
+            // Only clear auto-close when a non-shell process was found and
+            // killed, or when no processes remain at all (terminal already
+            // closed). When only shell processes remain the cleanup finally
+            // block may still be running — retry on the next poll.
+            if (killedOrAttempted || pids.Count == 0)
+                ClearAutoClose(statePath);
         }
     }
 

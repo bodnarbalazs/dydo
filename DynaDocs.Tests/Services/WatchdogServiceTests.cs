@@ -531,6 +531,65 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
+    public void PollAndCleanup_OnlyShellProcesses_DoesNotClearAutoClose()
+    {
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "pwsh" : null;
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+
+            var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
+            var content = File.ReadAllText(statePath);
+            Assert.Contains("auto-close: true", content);
+            Assert.DoesNotContain("auto-close: false", content);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            dummy.Kill();
+        }
+    }
+
+    [Fact]
+    public void PollAndCleanup_MixedProcesses_KillsNonShellAndClearsAutoClose()
+    {
+        using var dummy1 = StartDummyProcess();
+        using var dummy2 = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
+
+        WatchdogService.FindProcessesOverride = _ => [dummy1.Id, dummy2.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy1.Id ? "pwsh" : null;
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+
+            // Shell process (dummy1) should not be killed
+            Assert.False(dummy1.HasExited);
+            // Non-shell process (dummy2) should be killed
+            dummy2.WaitForExit(5000);
+            Assert.True(dummy2.HasExited);
+
+            var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
+            var content = File.ReadAllText(statePath);
+            Assert.Contains("auto-close: false", content);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            if (!dummy1.HasExited) dummy1.Kill();
+            if (!dummy2.HasExited) dummy2.Kill();
+        }
+    }
+
+    [Fact]
     public void PollAndCleanup_RedispatchedDuringDeferral_KillsOldProcesses()
     {
         // Reproduces the race: agent releases (free+auto-close), watchdog sees it,

@@ -32,6 +32,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_NoAuditData_AllFilesShowAsGap()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         var result = await RunFileCoverageAsync();
 
@@ -48,6 +49,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_NoInquisitorSessions_AllFilesShowAsGap()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         // Create audit session without inquisitor role
         CreateAuditSession("code-writer", "some-task", DateTime.UtcNow.AddDays(-5),
@@ -67,6 +69,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_WithInquisitorSession_ShowsScores()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         CreateAuditSession("inquisitor", "test-inq", DateTime.UtcNow.AddDays(-5),
             (Path.Combine(TestDir, "Commands", "Foo.cs"), AuditEventType.Read),
@@ -87,6 +90,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_ProducesMarkdownFile()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         CreateAuditSession("inquisitor", "test-inq", DateTime.UtcNow.AddDays(-5),
             (Path.Combine(TestDir, "Commands", "Foo.cs"), AuditEventType.Read));
@@ -112,6 +116,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_PathFilter_OnlyMatchingFiles()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         CreateAuditSession("inquisitor", "test-inq", DateTime.UtcNow.AddDays(-5),
             (Path.Combine(TestDir, "Commands", "Foo.cs"), AuditEventType.Read),
@@ -127,6 +132,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_GapsOnly_ExcludesCovered()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         // Read Foo.cs enough times across groups to make it "covered" (7+)
         CreateAuditSession("inquisitor", "t1", DateTime.UtcNow.AddDays(-30),
@@ -153,6 +159,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_Summary_FolderAggregatesOnly()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         var result = await RunFileCoverageAsync("--summary");
 
@@ -168,6 +175,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_Since_ExcludesOldSessions()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         CreateAuditSession("inquisitor", "recent", DateTime.UtcNow.AddDays(-10),
             (Path.Combine(TestDir, "Commands", "Foo.cs"), AuditEventType.Read));
@@ -189,6 +197,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_WithAgent_WritesToAgentWorkspace()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
         await ClaimAgentAsync("A");
         await SetRoleAsync("inquisitor", "test-task");
 
@@ -204,6 +213,7 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     public async Task FileCoverage_NoAgent_WritesToProjectPath()
     {
         await InitProjectAsync("none", "balazs", 3);
+        PatchSourcePaths("Commands/**", "Services/**", "Models/**");
 
         var result = await RunFileCoverageAsync();
 
@@ -230,6 +240,16 @@ public class FileCoverageTests : IntegrationTestBase, IDisposable
     #endregion
 
     #region Helpers
+
+    private void PatchSourcePaths(params string[] patterns)
+    {
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = JsonSerializer.Deserialize(File.ReadAllText(configPath),
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+        config.Paths.Source = [..patterns];
+        File.WriteAllText(configPath, JsonSerializer.Serialize(config,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig));
+    }
 
     private async Task<CommandResult> RunFileCoverageAsync(params string[] extraArgs)
     {

@@ -1,14 +1,14 @@
 ---
-id: 2
-area: general
+id: 27
+area: backend
 type: issue
 severity: low
 status: open
-found-by: manual
-date: 2026-03-16
+found-by: inquisition
+date: 2026-04-07
 ---
 
-# Agents default to creating decision docs unnecessarily
+# RunGitForWorktree has no timeout unlike WorktreeCommand.RunProcess
 
 ## Description
 

@@ -1,14 +1,15 @@
 ---
-id: 10
+id: 7
 area: backend
 type: issue
-severity: low
-status: open
+severity: medium
+status: resolved
 found-by: inquisition
 date: 2026-04-03
+resolved-date: 2026-04-07
 ---
 
-# Excessive parameter counts on DispatchService methods
+# Five separate hand-rolled YAML frontmatter parsers
 
 ## Description
 
@@ -20,4 +21,4 @@ date: 2026-04-03
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in recent code quality work

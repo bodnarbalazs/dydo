@@ -1,14 +1,15 @@
 ---
-id: 8
-area: understand
+id: 11
+area: platform
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-03
+resolved-date: 2026-04-07
 ---
 
-# Doc/code mismatch: worktree inheritance vs child worktree creation
+# Judge role missing write permission for dydo/project/inquisitions/**
 
 ## Description
 
@@ -20,4 +21,4 @@ date: 2026-04-03
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in recent code quality work

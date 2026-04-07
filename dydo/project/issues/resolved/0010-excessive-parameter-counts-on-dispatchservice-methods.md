@@ -1,14 +1,15 @@
 ---
-id: 4
+id: 10
 area: backend
 type: issue
-severity: medium
-status: open
+severity: low
+status: resolved
 found-by: inquisition
 date: 2026-04-03
+resolved-date: 2026-04-07
 ---
 
-# Dead code: MarkerStore duplicates AgentRegistry marker logic
+# Excessive parameter counts on DispatchService methods
 
 ## Description
 
@@ -20,4 +21,4 @@ date: 2026-04-03
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in recent code quality work

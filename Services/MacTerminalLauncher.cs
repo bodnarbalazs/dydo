@@ -8,33 +8,8 @@ public static class MacTerminalLauncher
     // Double-escaped: \\\" → \" in output → " after AppleScript; \\\\ → \\ → \ after AppleScript
     private const string TerminalReset = "; printf \\\"\\\\e[?1004l\\\"";
 
-    public static string GetArguments(string agentName, string? workingDirectory = null,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-    {
-        var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
-        var agentExport = $"export DYDO_AGENT={agentName}; ";
-        var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
-
-        string wtSetup = "", wtCleanup = "";
-        if (worktreeId != null)
-        {
-            wtSetup = TerminalLauncher.WorktreeSetupScript(worktreeId, mainProjectRoot);
-            wtCleanup = "; " + TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
-        }
-        else if (cleanupWorktreeId != null && mainProjectRoot != null)
-        {
-            wtSetup = TerminalLauncher.WorktreeInheritedSetupScript(mainProjectRoot, workingDirectory);
-            wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
-        }
-
-        var postClaude = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
-
-        return $"-e 'tell app \"Terminal\" to do script \"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}{postClaude}\"'";
-    }
-
-    public static int Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
-        string agentName, string? workingDirectory = null, bool useTab = false,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    private static (string shellCommand, string postCheck) BuildShellComponents(string agentName, string? workingDirectory,
+        bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var agentExport = $"export DYDO_AGENT={agentName}; ";
@@ -53,7 +28,23 @@ public static class MacTerminalLauncher
         }
 
         var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}";
-        var postCheck = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
+        var postCheck = wtCleanup + (autoClose ? $"; {TerminalLauncher.BashPostClaudeCheck(agentName)}" : "");
+
+        return (shellCommand, postCheck);
+    }
+
+    public static string GetArguments(string agentName, string? workingDirectory = null,
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    {
+        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
+    }
+
+    public static int Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
+        string agentName, string? workingDirectory = null, bool useTab = false,
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    {
+        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
         var runningTerminal = terminalDetector.GetRunningTerminal();
         var useITerm = runningTerminal == "iTerm"
@@ -117,7 +108,4 @@ public static class MacTerminalLauncher
                "  activate\n" +
                "end tell";
     }
-
-    private static string BashPostClaudeCheck(string agentName) =>
-        $"if dydo agent status {agentName} 2>/dev/null | grep -q 'free'; then exit 0; fi; exec bash";
 }

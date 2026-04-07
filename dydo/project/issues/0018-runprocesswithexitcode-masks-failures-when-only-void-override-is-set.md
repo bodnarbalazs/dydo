@@ -1,14 +1,14 @@
 ---
-id: 3
-area: general
+id: 18
+area: backend
 type: issue
 severity: medium
 status: open
-found-by: manual
-date: 2026-04-01
+found-by: inquisition
+date: 2026-04-07
 ---
 
-# Reviewer role lacks docs-review guidance - prompt engineering debt
+# RunProcessWithExitCode masks failures when only void override is set
 
 ## Description
 

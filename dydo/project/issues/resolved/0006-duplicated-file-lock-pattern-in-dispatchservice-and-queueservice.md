@@ -1,14 +1,15 @@
 ---
-id: 11
-area: platform
+id: 6
+area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-03
+resolved-date: 2026-04-07
 ---
 
-# Judge role missing write permission for dydo/project/inquisitions/**
+# Duplicated file-lock pattern in DispatchService and QueueService
 
 ## Description
 
@@ -20,4 +21,4 @@ date: 2026-04-03
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in recent code quality work

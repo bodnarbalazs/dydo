@@ -1,14 +1,14 @@
 ---
-id: 1
-area: general
+id: 26
+area: backend
 type: issue
 severity: low
 status: open
-found-by: manual
-date: 2026-03-12
+found-by: inquisition
+date: 2026-04-07
 ---
 
-# Code-writers don't get nudges on release attempts if they haven't dispatched to a code-reviewer
+# Unescaped agentName in PowerShell env var assignment (inconsistent escaping)
 
 ## Description
 

@@ -1,14 +1,15 @@
 ---
-id: 6
-area: backend
+id: 8
+area: understand
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-03
+resolved-date: 2026-04-07
 ---
 
-# Duplicated file-lock pattern in DispatchService and QueueService
+# Doc/code mismatch: worktree inheritance vs child worktree creation
 
 ## Description
 
@@ -20,4 +21,4 @@ date: 2026-04-03
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in recent code quality work

@@ -1,14 +1,14 @@
 ---
-id: 7
+id: 19
 area: backend
 type: issue
 severity: medium
 status: open
 found-by: inquisition
-date: 2026-04-03
+date: 2026-04-07
 ---
 
-# Five separate hand-rolled YAML frontmatter parsers
+# Missing '--' separator in git commands allows theoretical flag injection
 
 ## Description
 

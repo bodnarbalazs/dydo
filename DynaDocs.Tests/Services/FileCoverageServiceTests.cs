@@ -28,11 +28,11 @@ public class FileCoverageServiceTests : IDisposable
         }
     }
 
-    private FileCoverageService CreateService(List<AuditSession>? sessions = null)
+    private FileCoverageService CreateService(List<AuditSession>? sessions = null, DydoConfig? config = null)
     {
         return new FileCoverageService(
             new StubAuditService(sessions ?? []),
-            new StubConfigService(_testDir));
+            new StubConfigService(_testDir, config));
     }
 
     private static AuditSession MakeSession(string task, string role, DateTime started, params (string Path, AuditEventType Type)[] events)
@@ -465,6 +465,121 @@ public class FileCoverageServiceTests : IDisposable
 
     #endregion
 
+    #region Source Filtering
+
+    [Fact]
+    public void SourceFilter_ExcludesNonSourceFiles()
+    {
+        FileCoverageService.GitLsFilesOverride = _ =>
+        [
+            "Commands/Foo.cs",
+            "Services/Bar.cs",
+            "Models/Baz.cs",
+            "dydo/_system/audit/2026/session.json",
+            "DynaDocs.Tests/SomeTest.cs",
+            "Templates/template.md",
+            "npm/package.json",
+            ".gitignore",
+            "DynaDocs.csproj"
+        ];
+
+        var config = new DydoConfig
+        {
+            Paths = new PathsConfig
+            {
+                Source = ["Commands/**", "Services/**", "Models/**"]
+            }
+        };
+
+        var service = CreateService(config: config);
+        var report = service.GenerateReport(new FileCoverageOptions());
+
+        Assert.Equal(3, report.TotalFiles);
+    }
+
+    [Fact]
+    public void SourceFilter_NoConfig_IncludesAllFiles()
+    {
+        FileCoverageService.GitLsFilesOverride = _ =>
+        [
+            "Commands/Foo.cs",
+            "dydo/some-doc.md",
+            "npm/package.json"
+        ];
+
+        var service = CreateService();
+        var report = service.GenerateReport(new FileCoverageOptions());
+
+        Assert.Equal(3, report.TotalFiles);
+    }
+
+    [Fact]
+    public void SourceFilter_EmptySourcePaths_IncludesAllFiles()
+    {
+        FileCoverageService.GitLsFilesOverride = _ =>
+        [
+            "Commands/Foo.cs",
+            "dydo/some-doc.md"
+        ];
+
+        var config = new DydoConfig { Paths = new PathsConfig { Source = [] } };
+        var service = CreateService(config: config);
+        var report = service.GenerateReport(new FileCoverageOptions());
+
+        Assert.Equal(2, report.TotalFiles);
+    }
+
+    [Fact]
+    public void SourceFilter_RootLevelFile_MatchesExactPattern()
+    {
+        FileCoverageService.GitLsFilesOverride = _ =>
+        [
+            "Program.cs",
+            "DynaDocs.csproj",
+            "Commands/Foo.cs"
+        ];
+
+        var config = new DydoConfig
+        {
+            Paths = new PathsConfig
+            {
+                Source = ["Program.cs", "Commands/**"]
+            }
+        };
+
+        var service = CreateService(config: config);
+        var report = service.GenerateReport(new FileCoverageOptions());
+
+        Assert.Equal(2, report.TotalFiles);
+    }
+
+    [Fact]
+    public void SourceFilter_CombinesWithPathFilter()
+    {
+        FileCoverageService.GitLsFilesOverride = _ =>
+        [
+            "Commands/Foo.cs",
+            "Commands/Bar.cs",
+            "Services/Baz.cs",
+            "dydo/doc.md"
+        ];
+
+        var config = new DydoConfig
+        {
+            Paths = new PathsConfig
+            {
+                Source = ["Commands/**", "Services/**"]
+            }
+        };
+
+        var service = CreateService(config: config);
+        var report = service.GenerateReport(new FileCoverageOptions(PathFilter: "Commands"));
+
+        Assert.Equal(2, report.TotalFiles);
+    }
+
+    #endregion
+
     #region Helpers
 
     private static FileCoverageEntry FindEntry(FileCoverageReport report, string fileName)
@@ -500,11 +615,11 @@ public class FileCoverageServiceTests : IDisposable
         public void EnsureAuditFolder() { }
     }
 
-    private class StubConfigService(string projectRoot) : IConfigService
+    private class StubConfigService(string projectRoot, DydoConfig? config = null) : IConfigService
     {
         public string? GetProjectRoot(string? startPath = null) => projectRoot;
         public string? FindConfigFile(string? startPath = null) => null;
-        public DydoConfig? LoadConfig(string? startPath = null) => null;
+        public DydoConfig? LoadConfig(string? startPath = null) => config;
         public void SaveConfig(DydoConfig config, string path) { }
         public string? GetHumanFromEnv() => null;
         public string GetDydoRoot(string? startPath = null) => Path.Combine(projectRoot, "dydo");

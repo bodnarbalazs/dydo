@@ -34,9 +34,33 @@ public class TerminalLauncher
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(taskName, @"^[a-zA-Z0-9_.\-]+$"))
             throw new ArgumentException($"Task name contains unsafe characters (allowed: a-zA-Z0-9_.-): {taskName}", nameof(taskName));
+        if (taskName is "." or "..")
+            throw new ArgumentException($"Task name cannot be '{taskName}' (path traversal): {taskName}", nameof(taskName));
         if (taskName.Contains(".+."))
             throw new ArgumentException($"Task name cannot contain '.+.' sequence (reserved for branch encoding): {taskName}", nameof(taskName));
         return parentWorktreeId != null ? $"{parentWorktreeId}/{taskName}" : taskName;
+    }
+
+    /// <summary>
+    /// Validates a worktree ID received from external input (e.g. CLI arguments).
+    /// Rejects path traversal components and unsafe characters.
+    /// </summary>
+    public static void ValidateWorktreeId(string worktreeId)
+    {
+        if (string.IsNullOrEmpty(worktreeId))
+            throw new ArgumentException("Worktree ID cannot be empty.", nameof(worktreeId));
+
+        // Reject backslashes — worktree IDs use forward slash for hierarchy
+        if (worktreeId.Contains('\\'))
+            throw new ArgumentException($"Worktree ID contains backslash (use '/' for hierarchy): {worktreeId}", nameof(worktreeId));
+
+        foreach (var component in worktreeId.Split('/'))
+        {
+            if (component is "" or "." or "..")
+                throw new ArgumentException($"Worktree ID contains path traversal component: {worktreeId}", nameof(worktreeId));
+            if (!System.Text.RegularExpressions.Regex.IsMatch(component, @"^[a-zA-Z0-9_.\-]+$"))
+                throw new ArgumentException($"Worktree ID contains unsafe characters (allowed: a-zA-Z0-9_.-/): {worktreeId}", nameof(worktreeId));
+        }
     }
 
     public static string WorktreeIdToBranchSuffix(string worktreeId) =>
@@ -113,6 +137,9 @@ public class TerminalLauncher
 
     internal static string WorktreeCleanupScript(string worktreeId, string agentName) =>
         $"dydo worktree cleanup {worktreeId} --agent {agentName}";
+
+    internal static string BashPostClaudeCheck(string agentName) =>
+        $"if dydo agent status {agentName} 2>/dev/null | grep -q 'free'; then exit 0; fi; exec bash";
 
     internal static string CdPrefix(string? workingDirectory)
     {

@@ -1632,6 +1632,21 @@ public class TerminalLauncherTests
         Assert.Equal(taskName, id);
     }
 
+    [Theory]
+    [InlineData("..")]
+    [InlineData(".")]
+    public void GenerateWorktreeId_RejectsPathTraversalNames(string taskName)
+    {
+        Assert.Throws<ArgumentException>(() => TerminalLauncher.GenerateWorktreeId(taskName));
+    }
+
+    [Fact]
+    public void GenerateWorktreeId_RejectsDoubleDotWithParent()
+    {
+        // ".." with a parent would produce "parent/.." — escaping the worktree directory
+        Assert.Throws<ArgumentException>(() => TerminalLauncher.GenerateWorktreeId("..", "parent-task"));
+    }
+
     [Fact]
     public void WorktreeIdToBranchSuffix_EncodesSlashAsDotPlusDot()
     {

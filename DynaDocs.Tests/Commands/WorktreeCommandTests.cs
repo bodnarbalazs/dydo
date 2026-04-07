@@ -95,6 +95,20 @@ public class WorktreeCommandTests : IDisposable
         Assert.Equal(0, exitCode);
     }
 
+    [Theory]
+    [InlineData("../..")]
+    [InlineData("..")]
+    [InlineData("valid/../escape")]
+    [InlineData("..\\windows-escape")]
+    public void Cleanup_RejectsPathTraversalInWorktreeId(string worktreeId)
+    {
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+
+        var exitCode = WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+        Assert.NotEqual(0, exitCode);
+    }
+
     [Fact]
     public void Cleanup_DoesNotMatchPartialWorktreeId()
     {

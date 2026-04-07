@@ -184,6 +184,16 @@ public static class WorktreeCommand
 
     internal static int ExecuteCleanup(string worktreeId, string agentName, AgentRegistry registry)
     {
+        try
+        {
+            TerminalLauncher.ValidateWorktreeId(worktreeId);
+        }
+        catch (ArgumentException ex)
+        {
+            ConsoleOutput.WriteError(ex.Message);
+            return ExitCodes.ToolError;
+        }
+
         var childCount = CountChildWorktrees(registry, worktreeId);
         if (childCount > 0)
         {
@@ -208,14 +218,8 @@ public static class WorktreeCommand
             return ExitCodes.Success;
         }
 
-        PreserveAuditFiles(worktreePath);
-        RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
-        RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
-        RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "issues"));
-        RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "inquisitions"));
-        RemoveGitWorktree(worktreePath);
+        TeardownWorktree(worktreePath);
         DeleteWorktreeBranch(worktreeId);
-        RemoveZombieDirectory(worktreePath);
 
         Console.WriteLine($"Worktree {worktreeId}: cleaned up.");
         return ExitCodes.Success;
@@ -401,6 +405,28 @@ public static class WorktreeCommand
         return p?.ExitCode ?? 1;
     }
 
+    private static readonly string[] JunctionSubpaths =
+    [
+        Path.Combine("dydo", "agents"),
+        Path.Combine("dydo", "_system", "roles"),
+        Path.Combine("dydo", "project", "issues"),
+        Path.Combine("dydo", "project", "inquisitions"),
+    ];
+
+    /// <summary>
+    /// Shared teardown: preserve audit files, remove junctions, remove git worktree, delete zombie directory.
+    /// When mainRoot is provided, git commands run via -C mainRoot (needed when executing from a worktree context).
+    /// Branch deletion is intentionally excluded — callers handle it since FinalizeMerge uses mergeSource directly.
+    /// </summary>
+    internal static void TeardownWorktree(string worktreePath, string? mainRoot = null)
+    {
+        PreserveAuditFiles(worktreePath);
+        foreach (var sub in JunctionSubpaths)
+            RemoveJunction(Path.Combine(worktreePath, sub));
+        RemoveGitWorktree(worktreePath, mainRoot);
+        RemoveZombieDirectory(worktreePath);
+    }
+
     internal static void RemoveJunction(string junctionPath)
     {
         if (!Path.Exists(junctionPath)) return;
@@ -423,11 +449,12 @@ public static class WorktreeCommand
         }
     }
 
-    internal static void RemoveGitWorktree(string worktreePath)
+    internal static void RemoveGitWorktree(string worktreePath, string? mainRoot = null)
     {
         try
         {
-            RunProcess("git", $"worktree remove \"{worktreePath}\" --force");
+            var gitPrefix = mainRoot != null ? $"-C \"{mainRoot}\" " : "";
+            RunProcess("git", $"{gitPrefix}worktree remove \"{worktreePath}\" --force");
         }
         catch
         {
@@ -450,11 +477,12 @@ public static class WorktreeCommand
         }
     }
 
-    internal static void DeleteWorktreeBranch(string worktreeId)
+    internal static void DeleteWorktreeBranch(string worktreeId, string? mainRoot = null)
     {
         try
         {
-            RunProcess("git", $"branch -D worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}");
+            var gitPrefix = mainRoot != null ? $"-C \"{mainRoot}\" " : "";
+            RunProcess("git", $"{gitPrefix}branch -D worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}");
         }
         catch
         {
@@ -545,18 +573,9 @@ public static class WorktreeCommand
 
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
-        {
-            PreserveAuditFiles(worktreePath);
-            RemoveJunction(Path.Combine(worktreePath, "dydo", "agents"));
-            RemoveJunction(Path.Combine(worktreePath, "dydo", "_system", "roles"));
-            RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "issues"));
-            RemoveJunction(Path.Combine(worktreePath, "dydo", "project", "inquisitions"));
-            try { RunProcess("git", $"-C \"{mainRoot}\" worktree remove \"{worktreePath}\" --force"); }
-            catch { Console.Error.WriteLine($"WARNING: Failed to remove worktree at {worktreePath}"); }
-            RemoveZombieDirectory(worktreePath);
-        }
+            TeardownWorktree(worktreePath, mainRoot);
 
-        // Prune stale worktree references before branch deletion
+        // Prune stale worktree references after teardown
         try { RunProcess("git", $"-C \"{mainRoot}\" worktree prune"); }
         catch { /* best-effort */ }
 
@@ -594,14 +613,8 @@ public static class WorktreeCommand
                 }
 
                 Console.WriteLine($"Pruning orphaned worktree: {worktreeId}");
-                PreserveAuditFiles(dirPath);
-                RemoveJunction(Path.Combine(dirPath, "dydo", "agents"));
-                RemoveJunction(Path.Combine(dirPath, "dydo", "_system", "roles"));
-                RemoveJunction(Path.Combine(dirPath, "dydo", "project", "issues"));
-                RemoveJunction(Path.Combine(dirPath, "dydo", "project", "inquisitions"));
-                RemoveGitWorktree(dirPath);
+                TeardownWorktree(dirPath);
                 DeleteWorktreeBranch(worktreeId);
-                RemoveZombieDirectory(dirPath);
                 orphansRemoved++;
             }
         }

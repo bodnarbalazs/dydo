@@ -25,6 +25,15 @@ public class FileCoverageService : IFileCoverageService
 
         var trackedFiles = GetGitTrackedFiles(projectRoot);
 
+        // Filter to source code files only using paths.source from dydo.json
+        var config = _configService.LoadConfig();
+        if (config?.Paths.Source is { Count: > 0 } sourcePatterns)
+        {
+            trackedFiles = trackedFiles
+                .Where(f => sourcePatterns.Any(p => GlobMatcher.IsMatch(f, p)))
+                .ToList();
+        }
+
         if (options.PathFilter != null)
         {
             var filter = PathUtils.NormalizeForKey(options.PathFilter);

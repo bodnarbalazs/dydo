@@ -4,19 +4,10 @@ using System.Diagnostics;
 
 public static class LinuxTerminalLauncher
 {
-    private static string BashPostClaudeCheck(string agentName) =>
-        $"if dydo agent status {agentName} 2>/dev/null | grep -q 'free'; then exit 0; fi; exec bash";
-
-    public static string GetArguments(string terminalName, string agentName, string? workingDirectory = null,
-        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    private static string ApplyOverrides(string baseArgs, string agentName,
+        bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot, string? workingDirectory)
     {
-        var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
-        if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
-
-        var args = (useTab && config.GetTabArguments != null)
-            ? config.GetTabArguments(agentName, workingDirectory)
-            : config.GetArguments(agentName, workingDirectory);
-
+        var args = baseArgs;
         args = args.Replace("unset CLAUDECODE", $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE");
 
         if (windowName != null)
@@ -35,9 +26,22 @@ public static class LinuxTerminalLauncher
         }
 
         if (autoClose)
-            args = args.Replace("exec bash", BashPostClaudeCheck(agentName));
+            args = args.Replace("exec bash", TerminalLauncher.BashPostClaudeCheck(agentName));
 
         return args;
+    }
+
+    public static string GetArguments(string terminalName, string agentName, string? workingDirectory = null,
+        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    {
+        var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
+        if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
+
+        var baseArgs = (useTab && config.GetTabArguments != null)
+            ? config.GetTabArguments(agentName, workingDirectory)
+            : config.GetArguments(agentName, workingDirectory);
+
+        return ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
     }
 
     public static int TryLaunch(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
@@ -48,29 +52,11 @@ public static class LinuxTerminalLauncher
         {
             try
             {
-                var arguments = useTab && terminal.GetTabArguments != null
+                var baseArgs = useTab && terminal.GetTabArguments != null
                     ? terminal.GetTabArguments(agentName, workingDirectory)
                     : terminal.GetArguments(agentName, workingDirectory);
 
-                arguments = arguments.Replace("unset CLAUDECODE", $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE");
-
-                if (windowName != null)
-                    arguments = arguments.Replace("unset CLAUDECODE", $"export DYDO_WINDOW='{windowName}'; unset CLAUDECODE");
-
-                if (worktreeId != null)
-                {
-                    arguments = arguments.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeSetupScript(worktreeId, mainProjectRoot) + "unset CLAUDECODE");
-                    arguments = arguments.Replace("exec bash", TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName) + "; exec bash");
-                }
-                else if (cleanupWorktreeId != null && mainProjectRoot != null)
-                {
-                    arguments = arguments.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeInheritedSetupScript(mainProjectRoot, workingDirectory) + "unset CLAUDECODE");
-                    var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
-                    arguments = arguments.Replace("exec bash", cleanup + "; exec bash");
-                }
-
-                if (autoClose)
-                    arguments = arguments.Replace("exec bash", BashPostClaudeCheck(agentName));
+                var arguments = ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
 
                 return processStarter.Start(new ProcessStartInfo
                 {

@@ -152,6 +152,8 @@ public static class InitCommand
             ConfigureClaudeHooks(projectRoot);
             Console.WriteLine("  ✓ Claude Code hooks configured");
         }
+
+        GenerateRoleFilesIfMissing(projectRoot);
     }
 
     private static void PrintInitSummary(DydoConfig config, string humanName)
@@ -260,6 +262,8 @@ public static class InitCommand
             ConfigureClaudeHooks(projectRoot);
             Console.WriteLine("  ✓ Claude Code hooks configured");
         }
+
+        GenerateRoleFilesIfMissing(projectRoot);
 
         Console.WriteLine();
         Console.WriteLine($"Agents assigned to {humanName}: {string.Join(", ", assignedAgents)}");
@@ -390,6 +394,16 @@ public static class InitCommand
             var entryHooks = preToolUse[i]?["hooks"];
             if (entryHooks != null && entryHooks.ToJsonString().Contains("dydo guard"))
                 preToolUse.RemoveAt(i);
+        }
+    }
+
+    private static void GenerateRoleFilesIfMissing(string projectRoot)
+    {
+        var rolesDir = Path.Combine(projectRoot, "dydo", "_system", "roles");
+        if (!Directory.Exists(rolesDir) || Directory.GetFiles(rolesDir, "*.role.json").Length == 0)
+        {
+            new RoleDefinitionService().WriteBaseRoleDefinitions(projectRoot);
+            Console.WriteLine("  ✓ Base role definitions generated");
         }
     }
 

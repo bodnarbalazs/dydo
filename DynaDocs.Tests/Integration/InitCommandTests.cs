@@ -324,6 +324,33 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Init_Claude_GeneratesRoleFiles()
+    {
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        AssertDirectoryExists("dydo/_system/roles");
+
+        var rolesDir = Path.Combine(TestDir, "dydo/_system/roles");
+        var files = Directory.GetFiles(rolesDir, "*.role.json");
+        Assert.Equal(9, files.Length);
+        Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
+        Assert.Contains(files, f => Path.GetFileName(f) == "judge.role.json");
+    }
+
+    [Fact]
+    public async Task Init_None_GeneratesRoleFiles()
+    {
+        var result = await InitProjectAsync("none", "balazs", 3);
+
+        result.AssertSuccess();
+
+        var rolesDir = Path.Combine(TestDir, "dydo/_system/roles");
+        var files = Directory.GetFiles(rolesDir, "*.role.json");
+        Assert.Equal(9, files.Length);
+    }
+
+    [Fact]
     public async Task Init_None_DoesNotCreateAllowEntry()
     {
         var result = await InitProjectAsync("none", "balazs", 3);

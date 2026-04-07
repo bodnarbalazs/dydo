@@ -454,6 +454,28 @@ public class RoleConstraintEvaluatorTests
     }
 
     [Fact]
+    public void CanDispatch_AllowsWhenDispatchedByInquisitor()
+    {
+        // Uses the actual base role definition to verify the fix for
+        // the circular deadlock: reviewer dispatched by inquisitor
+        // must be able to dispatch a code-writer for merge.
+        var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var reviewerDef = baseRoles.Single(r => r.Name == "reviewer");
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = reviewerDef
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "inquisitor";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        Assert.True(evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out _));
+    }
+
+    [Fact]
     public void CanDispatch_MessageSubstitution()
     {
         var roles = new Dictionary<string, RoleDefinition>

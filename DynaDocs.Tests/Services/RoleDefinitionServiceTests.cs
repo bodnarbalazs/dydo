@@ -668,6 +668,37 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("dydo/project/inquisitions/**", judge.WritablePaths);
     }
 
+    [Fact]
+    public void GetBaseRoleDefinitions_Judge_CanWriteIssues()
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var judge = roles.Single(r => r.Name == "judge");
+        Assert.Contains("dydo/project/issues/**", judge.WritablePaths);
+    }
+
+    [Fact]
+    public void WriteBaseRoleDefinitions_RoundTrips_JudgeWritablePaths()
+    {
+        _service.WriteBaseRoleDefinitions(_testDir);
+
+        var loaded = _service.LoadRoleDefinitions(_testDir);
+        var judge = loaded.Single(r => r.Name == "judge");
+
+        Assert.Contains("dydo/project/inquisitions/**", judge.WritablePaths);
+        Assert.Contains("dydo/project/issues/**", judge.WritablePaths);
+    }
+
+    [Fact]
+    public void GetBaseRoleDefinitions_ReviewerDispatchRestriction_AllowsInquisitorDispatcher()
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var reviewer = roles.Single(r => r.Name == "reviewer");
+        var constraint = reviewer.Constraints.Single(c => c.Type == "dispatch-restriction");
+
+        Assert.Contains("inquisitor", constraint.RequiredRoles!);
+        Assert.Contains("code-writer", constraint.RequiredRoles!);
+    }
+
     #endregion
 
     #region ConditionalMustReads

@@ -623,8 +623,20 @@ dydo template update --force   # Overwrite even if re-anchoring fails (backs up 
 Show inquisition coverage across project areas.
 
 ```bash
-dydo inquisition coverage
+dydo inquisition coverage                    # Folder-level overview
+dydo inquisition coverage --files            # File-level coverage heatmap
+dydo inquisition coverage --files --gaps-only # Only gap and low-coverage files
+dydo inquisition coverage --summary          # Folder-level aggregates only
+dydo inquisition coverage --path Commands/   # Scope to a subtree
+dydo inquisition coverage --since 90         # Only consider last 90 days
 ```
+
+**Options:**
+- `--files` - File-level coverage heatmap (shows per-file scores)
+- `--gaps-only` - Only show gap (never inspected) and low-coverage files
+- `--summary` - Folder-level aggregates only
+- `--path <path>` - Scope output to a subtree
+- `--since <days>` - Days lookback (default: 365)
 
 **Output:** Lists project areas with their inquisition coverage status based on reports in `dydo/project/inquisitions/`.
 

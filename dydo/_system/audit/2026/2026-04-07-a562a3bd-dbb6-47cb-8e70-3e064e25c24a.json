@@ -241,6 +241,256 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~FileCoverageTests\u0022"
+    },
+    {
+      "ts": "2026-04-07T19:54:55.5878471Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T19:55:14.8170299Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T19:55:23.9131565Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T19:55:32.0221051Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T19:55:34.6402495Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T19:55:38.6631223Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T19:55:47.2302834Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T19:56:05.2614115Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:56:09.3980754Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T19:56:43.9717135Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:56:47.0071205Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T19:56:53.7417791Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:01.1109704Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:07.204644Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:16.1450324Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:21.8403309Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:26.5862932Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:31.3465732Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:35.5749388Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:40.0428523Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\FileCoverageTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T19:57:43.5614758Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~FileCoverage\u0022"
+    },
+    {
+      "ts": "2026-04-07T20:26:15.4618533Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run"
+    },
+    {
+      "ts": "2026-04-07T20:30:24.6863712Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git stash \u0026\u0026 python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~CommandDocC...",
+      "reason": "git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."
+    },
+    {
+      "ts": "2026-04-07T20:30:39.8886164Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -1 -- Templates/about-dynadocs.template.md dydo/reference/about-dynadocs.md"
+    },
+    {
+      "ts": "2026-04-07T20:30:43.3876341Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -1 -- DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs"
+    },
+    {
+      "ts": "2026-04-07T20:30:48.5347622Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git status"
+    },
+    {
+      "ts": "2026-04-07T20:30:56.0317382Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff Services/FileCoverageService.cs"
+    },
+    {
+      "ts": "2026-04-07T20:31:00.5849469Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff DynaDocs.Tests/Services/FileCoverageServiceTests.cs"
+    },
+    {
+      "ts": "2026-04-07T20:31:07.4349255Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:31:07.6987646Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:31:12.5932106Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --stat"
+    },
+    {
+      "ts": "2026-04-07T20:31:19.5492383Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\FileCoverageService.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:24.0040147Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff Services/FileCoverageService.cs DynaDocs.Tests/Services/FileCoverageServiceTests.cs 2\u003E\u00261 | ..."
+    },
+    {
+      "ts": "2026-04-07T20:31:28.118696Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- Services/FileCoverageService.cs | head -30"
+    },
+    {
+      "ts": "2026-04-07T20:31:34.9113878Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -3 -- Services/FileCoverageService.cs"
+    },
+    {
+      "ts": "2026-04-07T20:31:38.466903Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show HEAD:Services/FileCoverageService.cs | head -40"
+    },
+    {
+      "ts": "2026-04-07T20:31:47.6369296Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show --stat 82604ed"
+    },
+    {
+      "ts": "2026-04-07T20:31:54.208231Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git show 82604ed -- Services/FileCoverageService.cs | head -30"
+    },
+    {
+      "ts": "2026-04-07T20:32:04.5310612Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff HEAD -- DynaDocs.Tests/Integration/FileCoverageTests.cs"
+    },
+    {
+      "ts": "2026-04-07T20:32:10.6404402Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git log --oneline -5"
+    },
+    {
+      "ts": "2026-04-07T20:32:22.5018399Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add DynaDocs.Tests/Integration/FileCoverageTests.cs"
+    },
+    {
+      "ts": "2026-04-07T20:32:35.9099045Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nFix integration tests for inquisition coverage source filtering\n\nThe so..."
+    },
+    {
+      "ts": "2026-04-07T20:33:15.3249377Z",
+      "event": "Release",
+      "agent": "Emma"
     }
   ],
   "snapshot": {

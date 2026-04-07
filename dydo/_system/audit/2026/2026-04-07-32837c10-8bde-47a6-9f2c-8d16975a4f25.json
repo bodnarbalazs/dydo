@@ -1,325 +1,482 @@
 {
-  "session": "8daf82b4-8dae-4f66-808e-a6b8efa8cad4",
-  "agent": "Charlie",
+  "session": "32837c10-8bde-47a6-9f2c-8d16975a4f25",
+  "agent": "Henry",
   "human": "balazs",
-  "started": "2026-04-07T19:17:15.5078405Z",
-  "git_head": "57f217c",
+  "started": "2026-04-07T20:26:42.1444968Z",
+  "git_head": "82604ed",
   "events": [
     {
-      "ts": "2026-04-07T19:17:15.5069753Z",
+      "ts": "2026-04-07T20:26:42.143674Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    },
+    {
+      "ts": "2026-04-07T20:26:42.1875017Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-07T19:17:18.4916028Z",
+      "ts": "2026-04-07T20:26:45.9790991Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Henry\\workflow.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-07T19:17:22.7591354Z",
+      "ts": "2026-04-07T20:26:50.5586148Z",
       "event": "Claim",
-      "agent": "Charlie"
+      "agent": "Henry"
     },
     {
-      "ts": "2026-04-07T19:17:29.0826865Z",
+      "ts": "2026-04-07T20:26:58.0054167Z",
       "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\15805c60-prompt-engineering-tweaks.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Henry\\inbox\\4283bedf-fix-commands-doc-consistency.md",
       "tool": "read",
       "reason": "No role set"
     },
     {
-      "ts": "2026-04-07T19:17:32.5197653Z",
-      "event": "Role",
-      "role": "co-thinker",
-      "task": "prompt-engineering-tweaks"
-    },
-    {
-      "ts": "2026-04-07T19:17:36.751906Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\15805c60-prompt-engineering-tweaks.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:17:36.820548Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\co-thinker.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:17:52.9432519Z",
-      "event": "Read",
-      "tool": "agent"
-    },
-    {
-      "ts": "2026-04-07T19:17:54.6710819Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -type d -name Templates -o -type d -name modes -o -type..."
-    },
-    {
-      "ts": "2026-04-07T19:17:56.4948791Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-04-07T19:17:56.9106065Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-04-07T19:17:57.1106083Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-04-07T19:17:57.2519013Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-04-07T19:17:59.3477112Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "grep"
-    },
-    {
-      "ts": "2026-04-07T19:18:01.9023269Z",
-      "event": "Read",
-      "path": "/c/Users/User/Desktop/Projects/DynaDocs",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-04-07T19:18:02.2613159Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*verify*\u0022 -o -name \u0022*review*\u0022 | grep -i template..."
-    },
-    {
-      "ts": "2026-04-07T19:18:05.1923696Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/project/inquisitions -type f -name \u0022*.md\u0022 2\u003E/dev/n..."
-    },
-    {
-      "ts": "2026-04-07T19:18:07.1681602Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:07.3706062Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-inquisitor.template.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:07.5794808Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\template-additions\\extra-verify.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:08.0703654Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\template-additions\\extra-review-steps.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:08.1237016Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\template-additions\\extra-review-checklist.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:10.0532921Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\judge.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:10.7475433Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\inquisitor.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:10.9049509Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\agent-lifecycle.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:13.5341977Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\dispatch-and-messaging.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:13.7038852Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\worktree-system.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:16.3988508Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "find /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/templates -type f -name \u0022*.md\u0022 2\u003E/dev/null..."
-    },
-    {
-      "ts": "2026-04-07T19:18:19.2720316Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\templates\\mode-judge.template.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:19.389961Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\template-additions\\extra-review-checklist.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:21.0544903Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/template-additions/extra-review-checklist.m..."
-    },
-    {
-      "ts": "2026-04-07T19:18:23.0728705Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/template-additions/extra-verify.md"
-    },
-    {
-      "ts": "2026-04-07T19:18:23.1083044Z",
-      "event": "Bash",
-      "tool": "bash",
-      "cmd": "cat /c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/template-additions/extra-review-steps.md"
-    },
-    {
-      "ts": "2026-04-07T19:18:44.4708538Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:45.2853557Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\template-additions\\extra-verify.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:45.4607255Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\template-additions\\extra-review-steps.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:18:49.6225849Z",
-      "event": "Read",
-      "tool": "glob"
-    },
-    {
-      "ts": "2026-04-07T19:18:53.7829704Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\dispatch-and-messaging.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:45:00.409726Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-reviewer.template.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T19:45:00.9578878Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-orchestrator.template.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T20:29:24.0576129Z",
+      "ts": "2026-04-07T20:27:02.0220909Z",
       "event": "Role",
       "role": "code-writer",
-      "task": "prompt-engineering-tweaks"
+      "task": "fix-commands-doc-consistency"
     },
     {
-      "ts": "2026-04-07T20:29:26.9567466Z",
+      "ts": "2026-04-07T20:27:05.3950043Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Henry\\modes\\code-writer.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-07T20:29:38.2239573Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
-      "tool": "edit",
-      "reason": "Must-read files not yet read"
-    },
-    {
-      "ts": "2026-04-07T20:29:41.1463046Z",
+      "ts": "2026-04-07T20:27:05.6952437Z",
       "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\code-writer.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Henry\\inbox\\4283bedf-fix-commands-doc-consistency.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-07T20:29:47.2213921Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
-      "tool": "edit",
-      "reason": "Must-read files not yet read"
-    },
-    {
-      "ts": "2026-04-07T20:29:52.0428971Z",
-      "event": "Read",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
-      "tool": "read"
-    },
-    {
-      "ts": "2026-04-07T20:29:58.1016588Z",
-      "event": "Blocked",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
-      "tool": "edit",
-      "reason": "Must-read files not yet read"
-    },
-    {
-      "ts": "2026-04-07T20:30:01.6220005Z",
+      "ts": "2026-04-07T20:27:11.5647179Z",
       "event": "Read",
       "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md",
       "tool": "read"
     },
     {
-      "ts": "2026-04-07T20:30:07.9186484Z",
+      "ts": "2026-04-07T20:27:11.840317Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:27:12.7861969Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:27:12.9047439Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:17.2676579Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:17.7493501Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:17.8869546Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:23.665699Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:23.7138003Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-commands-doc-consistency.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:27:27.7984395Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Henry\\archive\\inbox\\5c68067b-investigate-commands-doc-gap.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:27:34.2074538Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:41.2309434Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:41.8609238Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:42.0195287Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:27:44.8465574Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\InquisitionCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:27:45.2978655Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:27:45.4576765Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:28:04.9069042Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Program.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:28:58.1371892Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\dydo-commands.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:29:08.8207129Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:29:14.1726688Z",
+      "event": "Read",
+      "tool": "glob"
+    },
+    {
+      "ts": "2026-04-07T20:30:12.1603388Z",
       "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
       "tool": "edit"
     },
     {
-      "ts": "2026-04-07T20:30:21.7006174Z",
+      "ts": "2026-04-07T20:30:49.552504Z",
       "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-judge.template.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
       "tool": "edit"
     },
     {
-      "ts": "2026-04-07T20:30:28.0448261Z",
+      "ts": "2026-04-07T20:31:04.8824795Z",
       "event": "Edit",
-      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\mode-orchestrator.template.md",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
       "tool": "edit"
     },
     {
-      "ts": "2026-04-07T20:30:52.2997652Z",
+      "ts": "2026-04-07T20:31:18.5581253Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:31:28.7035842Z",
+      "event": "Read",
+      "tool": "agent"
+    },
+    {
+      "ts": "2026-04-07T20:31:30.8434168Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:31.1001909Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\MessageCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:31.2692991Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\IssueCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:31.4645478Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\RolesCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:33.8120663Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:34.0226231Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\QueueCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:34.2408691Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\ValidateCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:34.4244647Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WatchdogCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:31:37.484052Z",
+      "event": "Read",
+      "path": "/c/Users/User/Desktop/Projects/DynaDocs/Templates/dydo-commands.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:31:46.8975533Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -i \u0022worktree\\|queue\\|watchdog\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Templates/dydo-commands...."
+    },
+    {
+      "ts": "2026-04-07T20:31:51.8007303Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "grep -E \u0022^### dydo (worktree|queue|watchdog)\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Templates/dydo..."
+    },
+    {
+      "ts": "2026-04-07T20:32:18.590982Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\dydo-commands.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:32:19.1581721Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\dydo-commands.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:32:42.507248Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:32:42.5761099Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WatchdogCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:32:42.763865Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\QueueCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:34:23.8964213Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:34:24.2478254Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:34:44.834695Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:34:54.7370815Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~CommandDocConsistencyTes..."
+    },
+    {
+      "ts": "2026-04-07T20:36:30.5728015Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:36:35.6990439Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:36:36.349171Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:37:39.9900123Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\MessageCommand.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:37:44.2239937Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\MessageCommand.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:38:07.4954442Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:38:13.1434884Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:38:18.3009818Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~CommandDocConsistencyTes..."
+    },
+    {
+      "ts": "2026-04-07T20:42:08.1080472Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:42:22.2309506Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\run_tests.py",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:42:48.2730128Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:42:55.4263565Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\CommandDocConsistencyTests.cs",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:42:59.4767409Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~CommandDocConsistencyTes..."
+    },
+    {
+      "ts": "2026-04-07T20:44:01.6157284Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\about-dynadocs.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:44:02.0890898Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-07T20:44:08.4571565Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:44:12.5915867Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~CommandDocConsistencyTes..."
+    },
+    {
+      "ts": "2026-04-07T20:45:40.0682518Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-07T20:45:45.4454516Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Templates\\about-dynadocs.template.md",
+      "tool": "edit"
+    },
+    {
+      "ts": "2026-04-07T20:45:50.896217Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~CommandDocConsistencyTes..."
+    },
+    {
+      "ts": "2026-04-07T20:52:04.1419492Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run"
+    },
+    {
+      "ts": "2026-04-07T21:12:10.1483317Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --stat"
+    },
+    {
+      "ts": "2026-04-07T21:12:19.8981106Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git add DynaDocs.Tests/Commands/CommandDocConsistencyTests.cs Templates/about-dynadocs.template.md T..."
+    },
+    {
+      "ts": "2026-04-07T21:14:35.6141176Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --cached --stat"
+    },
+    {
+      "ts": "2026-04-07T21:14:45.476567Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nFix command documentation consistency tests and template gaps\n\n- BuildR..."
+    },
+    {
+      "ts": "2026-04-07T21:15:24.3123559Z",
       "event": "Release",
-      "agent": "Charlie"
+      "agent": "Henry"
     }
   ],
   "snapshot": {
-    "git_commit": "57f217c03bc34bb1ad2908441cd59b740a4822d3",
+    "git_commit": "82604ed0d5ca02e687ccf2fbc7652c405b81ec34",
     "files": [
       ".claude/settings.local.json",
       ".github/workflows/ci.yml",
@@ -1213,8 +1370,22 @@
       "dydo/_system/audit/2026/2026-04-05-cc362030-caa4-4dc9-a6ce-8515ce085278.json",
       "dydo/_system/audit/2026/2026-04-05-dd269cc0-65bd-4df7-ab3b-d76fd83ebe04.json",
       "dydo/_system/audit/2026/2026-04-05-dd60cbe9-fe4e-46c9-ba53-4ce0d22bd924.json",
+      "dydo/_system/audit/2026/2026-04-07-0d4cc8e7-6fbe-433f-8c45-33f0d3129784.json",
+      "dydo/_system/audit/2026/2026-04-07-36e7ef52-4b4a-4e65-8815-76330de6661f.json",
+      "dydo/_system/audit/2026/2026-04-07-4d2e3e5c-0d2d-47a7-a97b-bbeef62c89c7.json",
+      "dydo/_system/audit/2026/2026-04-07-4ff4c484-ca83-4354-aada-1503b8be7a49.json",
       "dydo/_system/audit/2026/2026-04-07-7c5976bb-456d-4ffb-8e10-11f73880f64a.json",
+      "dydo/_system/audit/2026/2026-04-07-7f0d46fa-357d-405b-8313-14a993e8aec7.json",
+      "dydo/_system/audit/2026/2026-04-07-8daf82b4-8dae-4f66-808e-a6b8efa8cad4.json",
+      "dydo/_system/audit/2026/2026-04-07-9e76ac53-1bc4-4fae-8fc1-b5065d5d6b0e.json",
+      "dydo/_system/audit/2026/2026-04-07-a562a3bd-dbb6-47cb-8e70-3e064e25c24a.json",
+      "dydo/_system/audit/2026/2026-04-07-ccbdcfe7-edd7-4d03-883e-aacd3db7c054.json",
+      "dydo/_system/audit/2026/2026-04-07-d2b84d07-3140-4f83-9448-9e02e568b77a.json",
       "dydo/_system/audit/2026/2026-04-07-ddbe413c-f5cb-41c0-aa71-9345475468c2.json",
+      "dydo/_system/audit/2026/2026-04-07-e9224671-15bc-46f9-972f-be71679694af.json",
+      "dydo/_system/audit/2026/2026-04-07-f148addb-315f-489a-8160-2e9e25876df9.json",
+      "dydo/_system/audit/2026/2026-04-07-f30a5aa4-3f4f-45ec-a994-5d0313e690f2.json",
+      "dydo/_system/audit/2026/2026-04-07-ff7e1fcc-8418-42a1-8d03-fe3c1485cfbc.json",
       "dydo/_system/compact-counter",
       "dydo/_system/roles/co-thinker.role.json",
       "dydo/_system/roles/code-writer.role.json",
@@ -1654,25 +1825,51 @@
       "dydo/project/future-features/doc-coverage.md",
       "dydo/project/inquisitions/agent-lifecycle.md",
       "dydo/project/inquisitions/dispatch-and-messaging.md",
+      "dydo/project/inquisitions/worktree-system.md",
       "dydo/project/issues/_index.md",
       "dydo/project/issues/_issues.md",
       "dydo/project/issues/.lock",
-      "dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
-      "dydo/project/issues/0002-agents-default-to-creating-decision-docs-unnecessarily.md",
-      "dydo/project/issues/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md",
-      "dydo/project/issues/0004-dead-code-markerstore-duplicates-agentregistry-marker-logic.md",
-      "dydo/project/issues/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md",
-      "dydo/project/issues/0006-duplicated-file-lock-pattern-in-dispatchservice-and-queueservice.md",
-      "dydo/project/issues/0007-five-separate-hand-rolled-yaml-frontmatter-parsers.md",
-      "dydo/project/issues/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md",
-      "dydo/project/issues/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md",
-      "dydo/project/issues/0010-excessive-parameter-counts-on-dispatchservice-methods.md",
-      "dydo/project/issues/0011-judge-role-missing-write-permission-for-dydo-project-inquisitions.md",
+      "dydo/project/issues/0018-runprocesswithexitcode-masks-failures-when-only-void-override-is-set.md",
+      "dydo/project/issues/0019-missing-separator-in-git-commands-allows-theoretical-flag-injection.md",
+      "dydo/project/issues/0020-inconsistent-git-c-usage-between-cleanup-and-merge-paths.md",
+      "dydo/project/issues/0021-near-duplicate-process-runner-methods-across-worktreecommand-and-dispatchservice.md",
+      "dydo/project/issues/0022-countworktreereferences-and-countliveworktreereferences-are-near-duplicates.md",
+      "dydo/project/issues/0023-dead-code-terminallauncher-macterminals-array-never-referenced.md",
+      "dydo/project/issues/0024-test-only-pass-through-methods-on-terminallauncher-have-no-production-callers.md",
+      "dydo/project/issues/0026-unescaped-agentname-in-powershell-env-var-assignment-inconsistent-escaping.md",
+      "dydo/project/issues/0027-rungitforworktree-has-no-timeout-unlike-worktreecommand-runprocess.md",
+      "dydo/project/issues/0028-worktree-system-documentation-significantly-lags-implementation.md",
+      "dydo/project/issues/resolved/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
+      "dydo/project/issues/resolved/0002-agents-default-to-creating-decision-docs-unnecessarily.md",
+      "dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md",
+      "dydo/project/issues/resolved/0004-dead-code-markerstore-duplicates-agentregistry-marker-logic.md",
+      "dydo/project/issues/resolved/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md",
+      "dydo/project/issues/resolved/0006-duplicated-file-lock-pattern-in-dispatchservice-and-queueservice.md",
+      "dydo/project/issues/resolved/0007-five-separate-hand-rolled-yaml-frontmatter-parsers.md",
+      "dydo/project/issues/resolved/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md",
+      "dydo/project/issues/resolved/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md",
+      "dydo/project/issues/resolved/0010-excessive-parameter-counts-on-dispatchservice-methods.md",
+      "dydo/project/issues/resolved/0011-judge-role-missing-write-permission-for-dydo-project-inquisitions.md",
+      "dydo/project/issues/resolved/0012-path-traversal-via-in-task-name-allows-worktree-directory-escape.md",
+      "dydo/project/issues/resolved/0013-unvalidated-worktreeid-in-cleanup-cli-enables-arbitrary-directory-deletion.md",
+      "dydo/project/issues/resolved/0014-worktree-teardown-sequence-duplicated-3-times-rule-of-three.md",
+      "dydo/project/issues/resolved/0015-linuxterminallauncher-trylaunch-duplicates-getarguments-logic.md",
+      "dydo/project/issues/resolved/0016-macterminallauncher-launch-duplicates-getarguments-logic.md",
+      "dydo/project/issues/resolved/0017-terminal-launcher-tests-verify-getarguments-but-production-uses-trylaunch-launch.md",
+      "dydo/project/issues/resolved/0025-duplicated-bashpostclaudecheck-in-linuxterminallauncher-and-macterminallauncher.md",
       "dydo/project/pitfalls/_index.md",
       "dydo/project/pitfalls/_pitfalls.md",
       "dydo/project/tasks/_index.md",
       "dydo/project/tasks/_tasks.md",
+      "dydo/project/tasks/fix-inquisition-coverage-denominator.md",
       "dydo/project/tasks/fix-mac-iterm-detection.md",
+      "dydo/project/tasks/fix-security-path-traversal.md",
+      "dydo/project/tasks/fix-workflow-roles.md",
+      "dydo/project/tasks/fix-worktree-code-quality.md",
+      "dydo/project/tasks/investigate-commands-doc-gap.md",
+      "dydo/project/tasks/prompt-engineering-tweaks.md",
+      "dydo/project/tasks/readme-and-template-docs.md",
+      "dydo/project/tasks/resolve-issues-coverage.md",
       "dydo/project/v1.3-release.md",
       "dydo/reference/_index.md",
       "dydo/reference/_reference.md",
@@ -2308,6 +2505,7 @@
       "dydo/project/future-features",
       "dydo/project/inquisitions",
       "dydo/project/issues",
+      "dydo/project/issues/resolved",
       "dydo/project/pitfalls",
       "dydo/project/tasks",
       "dydo/reference",
@@ -2581,6 +2779,28 @@
         "dydo/agents/charlie/modes/reviewer.md",
         "dydo/agents/charlie/modes/test-writer.md"
       ],
+      "dydo/agents/emma/workflow.md": [
+        "dydo/agents/emma/modes/co-thinker.md",
+        "dydo/agents/emma/modes/code-writer.md",
+        "dydo/agents/emma/modes/docs-writer.md",
+        "dydo/agents/emma/modes/inquisitor.md",
+        "dydo/agents/emma/modes/judge.md",
+        "dydo/agents/emma/modes/orchestrator.md",
+        "dydo/agents/emma/modes/planner.md",
+        "dydo/agents/emma/modes/reviewer.md",
+        "dydo/agents/emma/modes/test-writer.md"
+      ],
+      "dydo/agents/henry/workflow.md": [
+        "dydo/agents/henry/modes/co-thinker.md",
+        "dydo/agents/henry/modes/code-writer.md",
+        "dydo/agents/henry/modes/docs-writer.md",
+        "dydo/agents/henry/modes/inquisitor.md",
+        "dydo/agents/henry/modes/judge.md",
+        "dydo/agents/henry/modes/orchestrator.md",
+        "dydo/agents/henry/modes/planner.md",
+        "dydo/agents/henry/modes/reviewer.md",
+        "dydo/agents/henry/modes/test-writer.md"
+      ],
       "dydo/project/changelog/_changelog.md": [
         "dydo/project/tasks/_index.md",
         "dydo/project/decisions/_index.md"
@@ -2630,10 +2850,6 @@
       "dydo/project/future-features/_index.md": [
         "dydo/project/future-features/coverage.py-update.md",
         "dydo/project/future-features/doc-coverage.md"
-      ],
-      "dydo/project/issues/_index.md": [
-        "dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
-        "dydo/project/issues/0002-agents-default-to-creating-decision-docs-unnecessarily.md"
       ],
       "dydo/project/issues/_issues.md": [
         "dydo/project/pitfalls/_index.md",
@@ -2840,6 +3056,98 @@
         "dydo/reference/writing-docs.md"
       ],
       "dydo/agents/charlie/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/emma/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/emma/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/emma/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/agents/emma/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/emma/modes/test-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/henry/modes/co-thinker.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/project/decisions/_index.md",
+        "dydo/agents/henry/modes/code-writer.md"
+      ],
+      "dydo/agents/henry/modes/code-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/henry/modes/docs-writer.md": [
+        "dydo/understand/about.md",
+        "dydo/guides/how-to-use-docs.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/henry/modes/inquisitor.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/henry/modes/judge.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md"
+      ],
+      "dydo/agents/henry/modes/orchestrator.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md"
+      ],
+      "dydo/agents/henry/modes/planner.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/agents/henry/modes/code-writer.md"
+      ],
+      "dydo/agents/henry/modes/reviewer.md": [
+        "dydo/understand/about.md",
+        "dydo/understand/architecture.md",
+        "dydo/guides/coding-standards.md",
+        "dydo/reference/writing-docs.md"
+      ],
+      "dydo/agents/henry/modes/test-writer.md": [
         "dydo/understand/about.md",
         "dydo/understand/architecture.md",
         "dydo/guides/coding-standards.md"
@@ -3695,6 +4003,28 @@
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/reviewer.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/charlie/modes/test-writer.md"
       ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/workflow.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/judge.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/planner.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/test-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/workflow.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/judge.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/planner.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/test-writer.md"
+      ],
       "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/changelog/_changelog.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/tasks/_index.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/decisions/_index.md"
@@ -3744,10 +4074,6 @@
       "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/future-features/_index.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/future-features/coverage.py-update.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/future-features/doc-coverage.md"
-      ],
-      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/issues/_index.md": [
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
-        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/issues/0002-agents-default-to-creating-decision-docs-unnecessarily.md"
       ],
       "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/issues/_issues.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/pitfalls/_index.md",
@@ -3844,6 +4170,28 @@
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/charlie/modes/reviewer.md",
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/charlie/modes/test-writer.md"
       ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/workflow.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/judge.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/planner.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/test-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/workflow.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/co-thinker.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/code-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/docs-writer.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/inquisitor.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/judge.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/orchestrator.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/planner.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/reviewer.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/test-writer.md"
+      ],
       "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/changelog/_changelog.md": [
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/tasks/_index.md",
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/decisions/_index.md"
@@ -3893,10 +4241,6 @@
       "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/future-features/_index.md": [
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/future-features/coverage.py-update.md",
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/future-features/doc-coverage.md"
-      ],
-      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/issues/_index.md": [
-        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/issues/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md",
-        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/issues/0002-agents-default-to-creating-decision-docs-unnecessarily.md"
       ],
       "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/issues/_issues.md": [
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/pitfalls/_index.md",
@@ -4063,6 +4407,98 @@
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
       ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/co-thinker.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/decisions/_index.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/docs-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/how-to-use-docs.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/inquisitor.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/judge.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/orchestrator.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/planner.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/reviewer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/emma/modes/test-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/co-thinker.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/decisions/_index.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/code-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/docs-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/how-to-use-docs.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/inquisitor.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/judge.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/orchestrator.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/planner.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/reviewer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/agents/henry/modes/test-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/guides/coding-standards.md"
+      ],
       "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/changelog/2026/_index.md": [
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/changelog/2026/2026-03-07/_index.md",
         "dydo/_system/.local/worktrees/inquisition-dispatch-messaging/dydo/project/changelog/2026/2026-03-08/_index.md",
@@ -4161,6 +4597,98 @@
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/reference/writing-docs.md"
       ],
       "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/charlie/modes/test-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/co-thinker.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/decisions/_index.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/code-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/docs-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/how-to-use-docs.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/inquisitor.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/judge.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/orchestrator.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/planner.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/reviewer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/emma/modes/test-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/co-thinker.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/project/decisions/_index.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/code-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/docs-writer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/how-to-use-docs.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/inquisitor.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/judge.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/orchestrator.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/planner.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/code-writer.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/reviewer.md": [
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md",
+        "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/reference/writing-docs.md"
+      ],
+      "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/agents/henry/modes/test-writer.md": [
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/about.md",
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/understand/architecture.md",
         "dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/guides/coding-standards.md"

@@ -110,6 +110,22 @@ For each claim or finding, three outcomes:
 
 If you're uncertain between confirmed and false positive, don't guess. Either gather more evidence (step 3) or escalate.
 
+#### Ruling Format
+
+Every ruling must show your work. A ruling that merely restates the inquisitor's evidence is not a ruling — it's a rubber stamp.
+
+For each finding, record:
+
+```markdown
+- **Judge ruling:** CONFIRMED / FALSE POSITIVE / INCONCLUSIVE
+- **Files examined:** [files and line ranges you independently read]
+- **Independent verification:** [what you checked beyond what the inquisitor stated]
+- **Alternative explanations considered:** [why this isn't intentional / an acceptable tradeoff / documented elsewhere]
+- **Issue:** #NNNN (confirmed only)
+```
+
+If you cannot fill in "Independent verification" with something the inquisitor didn't already say, you haven't done your job yet. Go back and read the code.
+
 #### Escalation — Split Decision
 
 If you can't reach a confident ruling on a specific finding, dispatch a second judge:
@@ -145,17 +161,22 @@ For each **confirmed** finding, file an issue:
 dydo issue create --title "..." --area <a> --severity <s> --found-by inquisition
 ```
 
-Then update the inquisition report — mark each finding's "Judge ruling" field with your ruling and any issue IDs:
+Then update the inquisition report — mark each finding with a full ruling block (see [Ruling Format](#ruling-format) above):
 
 ```markdown
-- **Judge ruling:** CONFIRMED — Issue #0003
-```
-or
-```markdown
-- **Judge ruling:** FALSE POSITIVE — This is intentional; the marker class is co-located for discoverability (see coding-standards exception in X).
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/MarkerStore.cs (lines 10-160), Services/AgentRegistry.cs (lines 955-1180)
+- **Independent verification:** Grepped for MarkerStore references across all .cs files — zero production hits. Compared method signatures line-by-line; identical except class name.
+- **Alternative explanations considered:** Could be staged for future extraction — but no TODO, no issue, and the test file only covers MarkerStore in isolation. Dead code.
+- **Issue:** #0004
 ```
 
-Include brief reasoning for each ruling, especially for false positives and inconclusive results.
+```markdown
+- **Judge ruling:** FALSE POSITIVE
+- **Files examined:** Services/Foo.cs (lines 30-45), dydo/guides/coding-standards.md (section "Exceptions")
+- **Independent verification:** Read the surrounding code — this pattern is explicitly documented as an intentional exception in coding-standards.md §Exceptions.
+- **Alternative explanations considered:** N/A — this is the correct explanation.
+```
 
 #### If evaluating a general claim
 

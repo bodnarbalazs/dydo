@@ -788,6 +788,66 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void LaunchMac_WindowMode_WithRunningITerm_UsesITerm()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetRunningTerminal("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: false);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("tell application \"iTerm\"", script);
+        Assert.Contains("create window with default profile", script);
+        Assert.DoesNotContain("create tab", script);
+    }
+
+    [Fact]
+    public void LaunchMac_TabMode_WithRunningITerm_UsesITermEvenIfNotInstalled()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetRunningTerminal("iTerm");
+        // iTerm not set as available (not found at /Applications/iTerm.app)
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("tell application \"iTerm\"", script);
+        Assert.Contains("create tab with default profile", script);
+    }
+
+    [Fact]
+    public void LaunchMac_WindowMode_WithRunningTerminalApp_UsesTerminalApp()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetRunningTerminal("Terminal");
+        detector.SetAvailable("iTerm"); // installed but not running
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: false);
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("tell app \"Terminal\" to do script", script);
+        Assert.DoesNotContain("iTerm", script);
+    }
+
+    [Fact]
+    public void GetITermWindowScript_ContainsExpectedStructure()
+    {
+        var script = TerminalLauncher.GetITermWindowScript("unset CLAUDECODE; claude \\\"Adele --inbox\\\"", "");
+
+        Assert.Contains("tell application \"iTerm\"", script);
+        Assert.Contains("create window with default profile", script);
+        Assert.DoesNotContain("create tab", script);
+        Assert.Contains("write text", script);
+        Assert.Contains("activate", script);
+    }
+
+    [Fact]
     public void TryLaunchTerminals_TabMode_UsesTabArguments_WhenAvailable()
     {
         var recorder = new RecordingProcessStarter();
@@ -2221,10 +2281,13 @@ public class TerminalLauncherTests
 public class TestTerminalDetector : ITerminalDetector
 {
     private readonly HashSet<string> _available = [];
+    private string? _runningTerminal;
 
     public void SetAvailable(string appName) => _available.Add(appName);
+    public void SetRunningTerminal(string? terminal) => _runningTerminal = terminal;
 
     public bool IsAvailable(string appName) => _available.Contains(appName);
+    public string? GetRunningTerminal() => _runningTerminal;
 }
 
 /// <summary>

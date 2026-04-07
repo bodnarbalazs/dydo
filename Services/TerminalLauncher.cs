@@ -138,6 +138,9 @@ public class TerminalLauncher
     public static string GetITermTabScript(string shellCommand, string postCheck)
         => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck);
 
+    public static string GetITermWindowScript(string shellCommand, string postCheck)
+        => MacTerminalLauncher.GetITermWindowScript(shellCommand, postCheck);
+
     public static IProcessStarter? ProcessStarterOverride { get; set; }
 
     public static int LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
@@ -193,6 +196,16 @@ public class TerminalLauncher
         public bool IsAvailable(string appName)
         {
             return Directory.Exists($"/Applications/{appName}.app");
+        }
+
+        public string? GetRunningTerminal()
+        {
+            return Environment.GetEnvironmentVariable("TERM_PROGRAM") switch
+            {
+                "iTerm.app" => "iTerm",
+                "Apple_Terminal" => "Terminal",
+                _ => null
+            };
         }
     }
 }

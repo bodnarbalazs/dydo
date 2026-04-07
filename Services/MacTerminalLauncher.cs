@@ -55,10 +55,16 @@ public static class MacTerminalLauncher
         var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}";
         var postCheck = wtCleanup + (autoClose ? $"; {BashPostClaudeCheck(agentName)}" : "");
 
+        var runningTerminal = terminalDetector.GetRunningTerminal();
+        var useITerm = runningTerminal == "iTerm"
+            || (runningTerminal == null && useTab && terminalDetector.IsAvailable("iTerm"));
+
         string script;
-        if (useTab && terminalDetector.IsAvailable("iTerm"))
+        if (useITerm)
         {
-            script = GetITermTabScript(shellCommand, postCheck);
+            script = useTab
+                ? GetITermTabScript(shellCommand, postCheck)
+                : GetITermWindowScript(shellCommand, postCheck);
         }
         else
         {
@@ -77,6 +83,18 @@ public static class MacTerminalLauncher
         psi.ArgumentList.Add(script);
 
         return processStarter.Start(psi);
+    }
+
+    public static string GetITermWindowScript(string shellCommand, string postCheck)
+    {
+        var cmd = $"{shellCommand}{postCheck}";
+        return "tell application \"iTerm\"\n" +
+               "  create window with default profile\n" +
+               "  tell current session of current window\n" +
+               $"    write text \"{cmd}\"\n" +
+               "  end tell\n" +
+               "  activate\n" +
+               "end tell";
     }
 
     public static string GetITermTabScript(string shellCommand, string postCheck)

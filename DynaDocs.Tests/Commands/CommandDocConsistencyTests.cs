@@ -13,29 +13,31 @@ public class CommandDocConsistencyTests
 {
     private static readonly HashSet<string> ExcludedFromDocs = ["_complete"];
     // Commands intentionally hidden from agent-facing quick reference
-    private static readonly HashSet<string> ExcludedPaths = ["guard lift", "guard restore", "completions"];
+    private static readonly HashSet<string> ExcludedPaths =
+    [
+        "guard lift", "guard restore", "completions",
+        "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune",
+        "watchdog", "watchdog start", "watchdog stop", "watchdog run",
+        "queue create", "queue show", "queue cancel", "queue clear"
+    ];
     private static readonly HashSet<string> BuiltInOptionNames = ["--help", "-h", "-?", "--version"];
 
     private static RootCommand BuildRootCommand()
     {
         var root = new RootCommand("Test");
-        root.Subcommands.Add(CheckCommand.Create());
-        root.Subcommands.Add(FixCommand.Create());
-        root.Subcommands.Add(IndexCommand.Create());
-        root.Subcommands.Add(InitCommand.Create());
-        root.Subcommands.Add(GraphCommand.Create());
-        root.Subcommands.Add(AgentCommand.Create());
-        root.Subcommands.Add(GuardCommand.Create());
-        root.Subcommands.Add(DispatchCommand.Create());
-        root.Subcommands.Add(InboxCommand.Create());
-        root.Subcommands.Add(TaskCommand.Create());
-        root.Subcommands.Add(ReviewCommand.Create());
-        root.Subcommands.Add(WorkspaceCommand.Create());
-        root.Subcommands.Add(WhoamiCommand.Create());
-        root.Subcommands.Add(AuditCommand.Create());
-        root.Subcommands.Add(CompletionsCommand.Create());
-        root.Subcommands.Add(CompleteCommand.Create());
-        root.Subcommands.Add(TemplateCommand.Create());
+        var programCs = File.ReadAllText(FindRepoFile("Program.cs"));
+        var assembly = typeof(CheckCommand).Assembly;
+        var pattern = new Regex(@"(\w+Command)\.Create\(\)");
+
+        foreach (Match match in pattern.Matches(programCs))
+        {
+            var type = assembly.GetType($"DynaDocs.Commands.{match.Groups[1].Value}");
+            var method = type?.GetMethod("Create", BindingFlags.Public | BindingFlags.Static);
+            if (method == null || method.GetParameters().Length != 0
+                || !typeof(Command).IsAssignableFrom(method.ReturnType)) continue;
+            root.Subcommands.Add((Command)method.Invoke(null, null)!);
+        }
+
         return root;
     }
 
@@ -122,7 +124,7 @@ public class CommandDocConsistencyTests
 
     private static HashSet<string> ExtractFlags(string text)
     {
-        var pattern = new Regex(@"`(--[\w-]+)`");
+        var pattern = new Regex(@"`(--[\w-]+)(?:\s[^`]*)?`");
         return pattern.Matches(text).Select(m => m.Groups[1].Value).ToHashSet();
     }
 
@@ -333,7 +335,9 @@ public class CommandDocConsistencyTests
                 // Parent commands match as substrings of their children
                 if (cmd.Subcommands.Any()) continue;
 
-                if (!refSection.Contains($"dydo {path}"))
+                var names = new HashSet<string>(cmd.Aliases) { cmd.Name };
+                var prefix = path.Length > cmd.Name.Length ? path[..^cmd.Name.Length] : "";
+                if (!names.Any(name => refSection.Contains($"dydo {prefix}{name}")))
                     missing.Add($"{file}: missing 'dydo {path}'");
             }
         }
@@ -442,7 +446,24 @@ public class CommandDocConsistencyTests
     }
 
     // ──────────────────────────────────────────────
-    // Test 9: README clones stay in sync with their sources
+    // Test 9: ExtractFlags handles --flag <value> patterns
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void ExtractFlags_HandlesFlagValuePatterns()
+    {
+        var text = "- `--files` - File-level coverage\n- `--path <path>` - Scope to subtree\n- `--gaps-only` - Only gaps\n- `--since <days>` - Days lookback";
+        var flags = ExtractFlags(text);
+
+        Assert.Contains("--files", flags);
+        Assert.Contains("--path", flags);
+        Assert.Contains("--gaps-only", flags);
+        Assert.Contains("--since", flags);
+        Assert.Equal(4, flags.Count);
+    }
+
+    // ──────────────────────────────────────────────
+    // Test 10: README clones stay in sync with their sources
     // ──────────────────────────────────────────────
 
     [Fact]

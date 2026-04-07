@@ -137,6 +137,8 @@ Any `{{include:whatever}}` works — not limited to shipped hooks.
 
 You're ready to go. Keep docs up to date and accurate to match your intent — they're the memory your agents rely on.
 
+> **Tip: Agent-driven test coverage.** DynaDocs doesn't ship test tooling, but the [dydo repo](https://github.com/bodnarbalazs/dydo) includes two Python scripts you can copy into your project and adapt: `run_tests.py` runs `dotnet test` in a temporary git worktree, avoiding DLL lock contention when multiple agents test concurrently. `gap_check.py` builds on it — runs tests, collects Cobertura coverage, and checks every source module against tier-based thresholds (line coverage, branch coverage, CRAP score). Together they give agents a fast feedback loop on test quality without manual intervention.
+
 ---
 
 ## How It Works
@@ -337,7 +339,7 @@ Commands meant to be called only by agents are *italic*.
 ### Inquisition
 | Command | Description |
 |---------|-------------|
-| `dydo inquisition coverage` | Show inquisition coverage across areas |
+| `dydo inquisition coverage [--files] [--gaps-only] [--summary]` | Show inquisition coverage across areas |
 
 ### Roles
 | Command | Description |

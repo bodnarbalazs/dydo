@@ -206,10 +206,10 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_RethrowsArgumentException_ForInvalidPath()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+
 
         Assert.Throws<ArgumentException>(() =>
-            launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", "/home/it's-broken"));
+            LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele", "/home/it's-broken"));
     }
 
     [Fact]
@@ -285,9 +285,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_TriesWindowsTerminalFirst()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele");
+        WindowsTerminalLauncher.Launch(recorder,"Adele");
 
         // Should try wt (Windows Terminal) first
         Assert.Single(recorder.Started);
@@ -302,9 +300,9 @@ public class TerminalLauncherTests
         {
             var recorder = new RecordingProcessStarter();
             recorder.FailOnFileName("wt"); // Simulate wt not found
-            var launcher = new TerminalLauncher(recorder);
 
-            launcher.LaunchWindows("Adele");
+
+            WindowsTerminalLauncher.Launch(recorder,"Adele");
 
             // Should have tried wt first, then fallen back to powershell
             Assert.Equal(2, recorder.Started.Count);
@@ -325,9 +323,9 @@ public class TerminalLauncherTests
         {
             var recorder = new RecordingProcessStarter();
             recorder.FailOnFileName("wt"); // Force fallback to PowerShell
-            var launcher = new TerminalLauncher(recorder);
 
-            launcher.LaunchWindows("Adele");
+
+            WindowsTerminalLauncher.Launch(recorder,"Adele");
 
             var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
             Assert.Contains("-NoExit", psCall.Arguments);
@@ -346,9 +344,9 @@ public class TerminalLauncherTests
         {
             var recorder = new RecordingProcessStarter();
             recorder.FailOnFileName("wt");
-            var launcher = new TerminalLauncher(recorder);
 
-            launcher.LaunchWindows("Adele");
+
+            WindowsTerminalLauncher.Launch(recorder,"Adele");
 
             var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
             Assert.Contains("Adele", psCall.Arguments);
@@ -364,9 +362,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_WtArgs_EscapesSemicolonsForWt()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele");
+        WindowsTerminalLauncher.Launch(recorder,"Adele");
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         // wt uses ';' as subcommand separator, so literal semicolons must be escaped as '\;'
@@ -377,10 +373,10 @@ public class TerminalLauncherTests
     public void LaunchWindows_SetsWorkingDirectory_WhenProvided()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+
         var projectRoot = "/home/user/my-project";
 
-        launcher.LaunchWindows("Adele", projectRoot);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", projectRoot);
 
         Assert.Equal(projectRoot, recorder.Started[0].WorkingDirectory);
     }
@@ -393,10 +389,10 @@ public class TerminalLauncherTests
         {
             var recorder = new RecordingProcessStarter();
             recorder.FailOnFileName("wt");
-            var launcher = new TerminalLauncher(recorder);
+
             var projectRoot = "/home/user/my-project";
 
-            launcher.LaunchWindows("Adele", projectRoot);
+            WindowsTerminalLauncher.Launch(recorder,"Adele", projectRoot);
 
             var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
             Assert.Equal(projectRoot, psCall.WorkingDirectory);
@@ -411,10 +407,10 @@ public class TerminalLauncherTests
     public void LaunchWindows_WtArgs_ContainStartingDirectory()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+
         var projectRoot = "/home/user/my-project";
 
-        launcher.LaunchWindows("Adele", projectRoot);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", projectRoot);
 
         Assert.Contains("--startingDirectory", recorder.Started[0].Arguments);
         Assert.Contains(projectRoot, recorder.Started[0].Arguments);
@@ -424,9 +420,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_WtArgs_OmitStartingDirectory_WhenNoWorkingDirectory()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele");
+        WindowsTerminalLauncher.Launch(recorder,"Adele");
 
         Assert.DoesNotContain("--startingDirectory", recorder.Started[0].Arguments);
     }
@@ -435,9 +429,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_WtArgs_HandlesPathsWithSpaces()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", @"C:\Users\Some User\My Projects\app");
+        WindowsTerminalLauncher.Launch(recorder,"Adele", @"C:\Users\Some User\My Projects\app");
 
         // Path is wrapped in double quotes inside wt args
         Assert.Contains(@"--startingDirectory ""C:\Users\Some User\My Projects\app""", recorder.Started[0].Arguments);
@@ -464,9 +456,9 @@ public class TerminalLauncherTests
     public void LaunchMac_UsesOsascript()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele");
 
         Assert.Single(recorder.Started);
         Assert.Equal("osascript", recorder.Started[0].FileName);
@@ -476,9 +468,9 @@ public class TerminalLauncherTests
     public void LaunchMac_DoesNotUseShellExecute()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele");
 
         Assert.False(recorder.Started[0].UseShellExecute);
     }
@@ -487,9 +479,9 @@ public class TerminalLauncherTests
     public void LaunchMac_PassesScriptViaArgumentList()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele");
 
         var psi = recorder.Started[0];
         Assert.Equal(2, psi.ArgumentList.Count);
@@ -502,9 +494,9 @@ public class TerminalLauncherTests
     public void LaunchMac_ScriptContainsEscapedQuotesAroundPrompt()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele");
 
         var script = recorder.Started[0].ArgumentList[1];
         // AppleScript escaped quotes wrap the prompt so Terminal runs: claude "Adele --inbox"
@@ -515,9 +507,9 @@ public class TerminalLauncherTests
     public void LaunchMac_ScriptContainsCdPrefix_WhenWorkingDirectoryProvided()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele", "/Users/dev/project");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", "/Users/dev/project");
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("cd '/Users/dev/project' &&", script);
@@ -527,9 +519,9 @@ public class TerminalLauncherTests
     public void LaunchMac_ScriptNoCdPrefix_WhenNoWorkingDirectory()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele");
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.DoesNotContain("cd ", script);
@@ -539,9 +531,9 @@ public class TerminalLauncherTests
     public void LaunchMac_ScriptClearsClaudeCodeEnvVar()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele");
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("unset CLAUDECODE", script);
@@ -552,19 +544,17 @@ public class TerminalLauncherTests
     public void LaunchMac_Throws_WhenPathContainsSingleQuote()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
         Assert.Throws<ArgumentException>(() =>
-            launcher.LaunchMac("Adele", "/Users/dev/it's-a-project"));
+            MacTerminalLauncher.Launch(recorder, detector,"Adele", "/Users/dev/it's-a-project"));
     }
 
     [Fact]
     public void TryLaunchTerminals_DoesNotUseShellExecute()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+        LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele");
 
         // UseShellExecute must be false on Unix; 'true' routes through xdg-open/open
         // which cannot launch terminal emulators.
@@ -575,9 +565,9 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_StopsOnFirstSuccess()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
 
-        var result = launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+
+        var result = LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele");
 
         Assert.NotEqual(0, result);
         // Should only try one terminal (the first one that succeeds)
@@ -590,9 +580,9 @@ public class TerminalLauncherTests
     {
         var recorder = new RecordingProcessStarter();
         recorder.FailOnFileName("gnome-terminal");
-        var launcher = new TerminalLauncher(recorder);
 
-        var result = launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+
+        var result = LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele");
 
         Assert.NotEqual(0, result);
         // Should have tried gnome-terminal first, then konsole
@@ -605,9 +595,9 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_ReturnsZero_WhenAllFail()
     {
         var recorder = new RecordingProcessStarter { FailAll = true };
-        var launcher = new TerminalLauncher(recorder);
 
-        var result = launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+
+        var result = LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele");
 
         Assert.Equal(0, result);
         // Should have tried all terminals
@@ -618,9 +608,7 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_ArgumentsContainAgentName()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Brian");
+        LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Brian");
 
         Assert.Contains("Brian", recorder.Started[0].Arguments);
         Assert.Contains("--inbox", recorder.Started[0].Arguments);
@@ -630,10 +618,10 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_ArgumentsContainCdPrefix_WhenWorkingDirectoryProvided()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+
         var projectRoot = "/home/user/my-project";
 
-        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", projectRoot);
+        LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele", projectRoot);
 
         Assert.Contains($"cd '{projectRoot}'", recorder.Started[0].Arguments);
     }
@@ -642,9 +630,7 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_NoCdPrefix_WhenNoWorkingDirectory()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele");
+        LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele");
 
         Assert.DoesNotContain("cd ", recorder.Started[0].Arguments);
     }
@@ -657,9 +643,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_TabMode_AddsWindowTarget()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: true);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: true);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.StartsWith("-w 0 new-tab", wtCall.Arguments);
@@ -669,9 +653,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_WindowMode_NoWindowTarget()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: false);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: false);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.DoesNotContain("-w 0", wtCall.Arguments);
@@ -686,9 +668,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("tell application \"iTerm\"", script);
@@ -703,9 +683,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("create window with default profile", script);
@@ -717,9 +695,7 @@ public class TerminalLauncherTests
     {
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector(); // iTerm not available
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         // Falls back to Terminal.app new window (no "in front window", no iTerm)
@@ -733,9 +709,7 @@ public class TerminalLauncherTests
     {
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        var message = ConsoleCapture.Stdout(() => launcher.LaunchMac("Adele", useTab: true));
+        var message = ConsoleCapture.Stdout(() => MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true));
         Assert.Contains("Terminal.app does not support tab creation via scripting", message);
         Assert.Contains("iTerm2", message);
     }
@@ -746,9 +720,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: false);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: false);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("tell app \"Terminal\" to do script", script);
@@ -760,9 +732,7 @@ public class TerminalLauncherTests
     {
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        var output = ConsoleCapture.Stdout(() => launcher.LaunchMac("Adele", useTab: false));
+        var output = ConsoleCapture.Stdout(() => MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: false));
         Assert.Empty(output);
     }
 
@@ -772,9 +742,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetRunningTerminal("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: false);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: false);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("tell application \"iTerm\"", script);
@@ -789,9 +757,7 @@ public class TerminalLauncherTests
         var detector = new TestTerminalDetector();
         detector.SetRunningTerminal("iTerm");
         // iTerm not set as available (not found at /Applications/iTerm.app)
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("tell application \"iTerm\"", script);
@@ -805,9 +771,7 @@ public class TerminalLauncherTests
         var detector = new TestTerminalDetector();
         detector.SetRunningTerminal("Terminal");
         detector.SetAvailable("iTerm"); // installed but not running
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: false);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: false);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("tell app \"Terminal\" to do script", script);
@@ -831,10 +795,10 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_TabMode_UsesTabArguments_WhenAvailable()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+
 
         // gnome-terminal supports tabs
-        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", useTab: true);
+        LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele", useTab: true);
 
         Assert.Contains("--tab", recorder.Started[0].Arguments);
     }
@@ -843,9 +807,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_TabMode_UsesNewTabSubcommand()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: true);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: true);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.Contains("new-tab", wtCall.Arguments);
@@ -856,9 +818,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_WindowMode_UsesGuidBasedWindow()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: false);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: false);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         // New window mode uses --window {guid} new-tab
@@ -870,9 +830,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_DefaultMode_UsesGuidBasedWindow()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele");
+        WindowsTerminalLauncher.Launch(recorder,"Adele");
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         // Default (non-tab) mode uses --window {guid} new-tab
@@ -884,9 +842,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_WindowMode_WithWorkingDirectory_UsesGuidBasedWindow()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", "/home/user/project", useTab: false);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", "/home/user/project", useTab: false);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.StartsWith("--window ", wtCall.Arguments);
@@ -897,9 +853,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_TabMode_WithWorkingDirectory_CombinesWindowTargetAndStartingDirectory()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", "/home/user/project", useTab: true);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", "/home/user/project", useTab: true);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.Contains("-w 0", wtCall.Arguments);
@@ -912,9 +866,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", "/Users/dev/project", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", "/Users/dev/project", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("cd '/Users/dev/project' &&", script);
@@ -925,9 +877,7 @@ public class TerminalLauncherTests
     {
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", "/Users/dev/project", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", "/Users/dev/project", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("cd '/Users/dev/project' &&", script);
@@ -939,9 +889,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("unset CLAUDECODE", script);
@@ -953,9 +901,7 @@ public class TerminalLauncherTests
     {
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("unset CLAUDECODE", script);
@@ -968,9 +914,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true, autoClose: true);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true, autoClose: true);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("dydo agent status Adele", script);
@@ -1092,9 +1036,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_AutoClose_WtArgs_ContainStatusCheck()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", autoClose: true);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", autoClose: true);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.Contains("dydo agent status Adele", wtCall.Arguments);
@@ -1108,9 +1050,9 @@ public class TerminalLauncherTests
         {
             var recorder = new RecordingProcessStarter();
             recorder.FailOnFileName("wt");
-            var launcher = new TerminalLauncher(recorder);
 
-            launcher.LaunchWindows("Adele", autoClose: true);
+
+            WindowsTerminalLauncher.Launch(recorder,"Adele", autoClose: true);
 
             var psCall = recorder.Started.First(p => p.FileName == "powershell.exe");
             Assert.Contains("dydo agent status Adele", psCall.Arguments);
@@ -1128,9 +1070,9 @@ public class TerminalLauncherTests
         try
         {
             var recorder = new RecordingProcessStarter();
-            var launcher = new TerminalLauncher(recorder);
 
-            launcher.LaunchWindows("Adele");
+
+            WindowsTerminalLauncher.Launch(recorder,"Adele");
 
             var wtCall = recorder.Started.First(p => p.FileName == "wt");
             Assert.Contains("pwsh.exe ", wtCall.Arguments);
@@ -1150,9 +1092,9 @@ public class TerminalLauncherTests
         {
             var recorder = new RecordingProcessStarter();
             recorder.FailOnFileName("wt");
-            var launcher = new TerminalLauncher(recorder);
 
-            launcher.LaunchWindows("Adele");
+
+            WindowsTerminalLauncher.Launch(recorder,"Adele");
 
             var psCall = recorder.Started.First(p => p.FileName != "wt");
             Assert.Equal("pwsh.exe", psCall.FileName);
@@ -1253,9 +1195,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_TabMode_WithWindowName_UsesWindowRouting()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: true, windowName: "abcd1234");
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: true, windowName: "abcd1234");
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.StartsWith("-w abcd1234 new-tab", wtCall.Arguments);
@@ -1265,9 +1205,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_TabMode_WithoutWindowName_FallsBackToW0()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: true, windowName: null);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: true, windowName: null);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.StartsWith("-w 0 new-tab", wtCall.Arguments);
@@ -1277,9 +1215,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_NewWindow_GeneratesGuidAndUsesWindowFlag()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: false);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: false);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         // Should use --window {guid} new-tab format
@@ -1292,9 +1228,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_NewWindow_WithProvidedWindowName_UsesProvidedName()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", useTab: false, windowName: "custom123");
+        WindowsTerminalLauncher.Launch(recorder,"Adele", useTab: false, windowName: "custom123");
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.StartsWith("--window custom123 new-tab", wtCall.Arguments);
@@ -1367,6 +1301,22 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetMacArguments("Adele");
 
         Assert.Contains("export DYDO_AGENT=Adele", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_EscapesSingleQuotesInAgentEnvVar()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("O'Brien");
+
+        Assert.Contains("$env:DYDO_AGENT='O''Brien'", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_EscapesSingleQuotesInWindowEnvVar()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", windowName: "win'dow");
+
+        Assert.Contains("$env:DYDO_WINDOW='win''dow'", args);
     }
 
     #endregion
@@ -1664,9 +1614,7 @@ public class TerminalLauncherTests
     public void LaunchWindows_Worktree_WtArgs_DoNotContainWorktreeAdd()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.LaunchWindows("Adele", worktreeId: TestWorktreeId);
+        WindowsTerminalLauncher.Launch(recorder,"Adele", worktreeId: TestWorktreeId);
 
         var wtCall = recorder.Started.First(p => p.FileName == "wt");
         Assert.DoesNotContain("git worktree add", wtCall.Arguments);
@@ -1676,9 +1624,9 @@ public class TerminalLauncherTests
     public void LaunchMac_Worktree_ScriptContainsWorktreeSetup()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
+        var detector = new TestTerminalDetector();
 
-        launcher.LaunchMac("Adele", worktreeId: TestWorktreeId);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", worktreeId: TestWorktreeId);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.DoesNotContain("git worktree add", script);
@@ -1691,9 +1639,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true, worktreeId: TestWorktreeId);
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true, worktreeId: TestWorktreeId);
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.DoesNotContain("git worktree add", script);
@@ -1704,9 +1650,7 @@ public class TerminalLauncherTests
     public void TryLaunchTerminals_Worktree_ArgumentsDoNotContainWorktreeAdd()
     {
         var recorder = new RecordingProcessStarter();
-        var launcher = new TerminalLauncher(recorder);
-
-        launcher.TryLaunchTerminals(TerminalLauncher.LinuxTerminals, "Adele", worktreeId: TestWorktreeId);
+        LinuxTerminalLauncher.TryLaunch(recorder,TerminalLauncher.LinuxTerminals, "Adele", worktreeId: TestWorktreeId);
 
         Assert.DoesNotContain("git worktree add", recorder.Started[0].Arguments);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", recorder.Started[0].Arguments);
@@ -2326,9 +2270,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetRunningTerminal("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: false, windowName: "abc12345");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: false, windowName: "abc12345");
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.DoesNotContain("export DYDO_WINDOW=abc12345", script);
@@ -2341,9 +2283,7 @@ public class TerminalLauncherTests
         var recorder = new RecordingProcessStarter();
         var detector = new TestTerminalDetector();
         detector.SetAvailable("iTerm");
-        var launcher = new TerminalLauncher(recorder, detector);
-
-        launcher.LaunchMac("Adele", useTab: true, windowName: "12345");
+        MacTerminalLauncher.Launch(recorder, detector,"Adele", useTab: true, windowName: "12345");
 
         var script = recorder.Started[0].ArgumentList[1];
         Assert.Contains("window id 12345", script);
@@ -2355,6 +2295,42 @@ public class TerminalLauncherTests
         var script = MacTerminalLauncher.GetITermTabScript("cmd", "", windowId: "12345");
         Assert.Contains("set newTab to (create tab with default profile)", script);
         Assert.Contains("current session of newTab", script);
+    }
+
+    #endregion
+
+    #region Validation Edge Cases
+
+    [Fact]
+    public void GenerateWorktreeId_TaskNameWithDotPlusDot_Throws()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.GenerateWorktreeId("task.+.name"));
+    }
+
+    [Fact]
+    public void ValidateWorktreeId_EmptyString_Throws()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.ValidateWorktreeId(""));
+    }
+
+    [Fact]
+    public void ValidateWorktreeId_UnsafeCharsInComponent_Throws()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.ValidateWorktreeId("valid/inv@lid"));
+    }
+
+    [Fact]
+    public void Launch_ProcessStarterThrows_PrintsFallbackMessage()
+    {
+        var failingStarter = new RecordingProcessStarter { FailAll = true };
+        var launcher = new TerminalLauncher(failingStarter);
+
+        var pid = launcher.Launch("TestAgent");
+
+        Assert.Equal(0, pid);
     }
 
     #endregion

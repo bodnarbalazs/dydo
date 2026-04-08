@@ -16,9 +16,9 @@ public static class WindowsTerminalLauncher
             : "";
         var noExitFlag = autoClose ? "" : "-NoExit ";
 
-        var agentEnv = $"$env:DYDO_AGENT='{agentName}'; ";
+        var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; ";
         var windowEnv = windowName != null
-            ? $"$env:DYDO_WINDOW='{windowName}'; "
+            ? $"$env:DYDO_WINDOW='{windowName.Replace("'", "''")}'; "
             : "";
 
         // Worktree is already created by DispatchService before terminal launch.

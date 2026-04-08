@@ -22,6 +22,9 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/mode-planner.template.md");
         AssertFileExists("dydo/_system/templates/mode-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-test-writer.template.md");
+        AssertFileExists("dydo/_system/templates/mode-inquisitor.template.md");
+        AssertFileExists("dydo/_system/templates/mode-judge.template.md");
+        AssertFileExists("dydo/_system/templates/mode-orchestrator.template.md");
     }
 
     [Fact]
@@ -213,8 +216,21 @@ public class TemplateOverrideTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var configContent = ReadFile("dydo.json");
-        Assert.Contains("frameworkHashes", configContent);
+        var json = ReadFile("dydo.json");
+        var config = System.Text.Json.JsonSerializer.Deserialize(json,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+
+        // Must have a hash for every framework template file
+        foreach (var templateFile in TemplateCommand.FrameworkTemplateFiles)
+            Assert.True(config.FrameworkHashes.ContainsKey(templateFile),
+                $"Missing hash for framework template: {templateFile}");
+
+        // Each hash must be a non-empty SHA256 hex string (64 chars)
+        foreach (var (key, hash) in config.FrameworkHashes)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(hash), $"Empty hash for {key}");
+            Assert.Equal(64, hash.Length);
+        }
     }
 
     [Fact]

@@ -34,6 +34,9 @@ public class TemplateGeneratorTests
     [InlineData("mode-planner.template.md")]
     [InlineData("mode-docs-writer.template.md")]
     [InlineData("mode-test-writer.template.md")]
+    [InlineData("mode-inquisitor.template.md")]
+    [InlineData("mode-judge.template.md")]
+    [InlineData("mode-orchestrator.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
         var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
@@ -292,6 +295,9 @@ public class TemplateGeneratorTests
     [InlineData("planner")]
     [InlineData("docs-writer")]
     [InlineData("test-writer")]
+    [InlineData("inquisitor")]
+    [InlineData("judge")]
+    [InlineData("orchestrator")]
     public void GenerateModeFile_AllModes_HaveValidFrontmatter(string mode)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
@@ -308,6 +314,9 @@ public class TemplateGeneratorTests
     [InlineData("planner", "Set Role")]
     [InlineData("docs-writer", "Set Role")]
     [InlineData("test-writer", "Set Role")]
+    [InlineData("inquisitor", "Set Role")]
+    [InlineData("judge", "Set Role")]
+    [InlineData("orchestrator", "Set Role")]
     public void GenerateModeFile_AllModes_HaveSetRoleSection(string mode, string expectedSection)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);

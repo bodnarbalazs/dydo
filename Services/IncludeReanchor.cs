@@ -40,10 +40,16 @@ public static class IncludeReanchor
 
         foreach (var include in userIncludes)
         {
-            var upperIdx = include.UpperAnchor != null
-                ? FindLineIndex(lines, include.UpperAnchor) : -1;
             var lowerIdx = include.LowerAnchor != null
                 ? FindLineIndex(lines, include.LowerAnchor) : -1;
+            // When a lower anchor exists, search backwards from it so ambiguous
+            // anchors (e.g. '---' as both frontmatter and HR) resolve to the
+            // occurrence closest to the intended insert position.
+            var upperIdx = include.UpperAnchor != null
+                ? (lowerIdx >= 0
+                    ? FindLineIndexBefore(lines, include.UpperAnchor, lowerIdx)
+                    : FindLineIndex(lines, include.UpperAnchor))
+                : -1;
 
             int insertAt;
             if (upperIdx >= 0)
@@ -78,6 +84,16 @@ public static class IncludeReanchor
     private static int FindLineIndex(List<string> lines, string anchor)
     {
         for (var i = 0; i < lines.Count; i++)
+        {
+            if (lines[i].Trim() == anchor)
+                return i;
+        }
+        return -1;
+    }
+
+    private static int FindLineIndexBefore(List<string> lines, string anchor, int beforeIndex)
+    {
+        for (var i = beforeIndex - 1; i >= 0; i--)
         {
             if (lines[i].Trim() == anchor)
                 return i;

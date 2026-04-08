@@ -280,35 +280,7 @@ public class AgentListHandlerTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId));
     }
 
-    private static string CaptureStdout(Action action)
-    {
-        var original = Console.Out;
-        var sw = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(sw));
-        try
-        {
-            action();
-            return sw.ToString();
-        }
-        finally
-        {
-            Console.SetOut(original);
-        }
-    }
+    private static string CaptureStdout(Action action) => ConsoleCapture.Stdout(action);
 
-    private static string CaptureStderr(Action action)
-    {
-        var original = Console.Error;
-        var sw = new StringWriter();
-        Console.SetError(TextWriter.Synchronized(sw));
-        try
-        {
-            action();
-            return sw.ToString();
-        }
-        finally
-        {
-            Console.SetError(original);
-        }
-    }
+    private static string CaptureStderr(Action action) => ConsoleCapture.Stderr(action);
 }

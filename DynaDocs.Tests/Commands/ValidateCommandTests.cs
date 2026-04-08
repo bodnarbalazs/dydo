@@ -136,22 +136,8 @@ public class ValidateCommandTests : IDisposable
 
     private static (string stdout, string stderr) CaptureOutput(Func<int> action)
     {
-        var originalOut = Console.Out;
-        var originalErr = Console.Error;
-        using var outWriter = new StringWriter();
-        using var errWriter = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(outWriter));
-        Console.SetError(TextWriter.Synchronized(errWriter));
-        try
-        {
-            action();
-            return (outWriter.ToString(), errWriter.ToString());
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalErr);
-        }
+        var (_, stdout, stderr) = ConsoleCapture.All(action);
+        return (stdout, stderr);
     }
 
     private void SetupValidProjectNoWarnings()

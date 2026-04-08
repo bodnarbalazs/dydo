@@ -735,18 +735,7 @@ public class TerminalLauncherTests
         var detector = new TestTerminalDetector();
         var launcher = new TerminalLauncher(recorder, detector);
 
-        var output = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(output));
-        try
-        {
-            launcher.LaunchMac("Adele", useTab: true);
-        }
-        finally
-        {
-            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
-        }
-
-        var message = output.ToString();
+        var message = ConsoleCapture.Stdout(() => launcher.LaunchMac("Adele", useTab: true));
         Assert.Contains("Terminal.app does not support tab creation via scripting", message);
         Assert.Contains("iTerm2", message);
     }
@@ -773,18 +762,8 @@ public class TerminalLauncherTests
         var detector = new TestTerminalDetector();
         var launcher = new TerminalLauncher(recorder, detector);
 
-        var output = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(output));
-        try
-        {
-            launcher.LaunchMac("Adele", useTab: false);
-        }
-        finally
-        {
-            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
-        }
-
-        Assert.Empty(output.ToString());
+        var output = ConsoleCapture.Stdout(() => launcher.LaunchMac("Adele", useTab: false));
+        Assert.Empty(output);
     }
 
     [Fact]

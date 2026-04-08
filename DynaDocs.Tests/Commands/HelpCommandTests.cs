@@ -15,21 +15,7 @@ public class HelpCommandTests
     /// </summary>
     private static string CaptureHelpOutput()
     {
-        var originalOut = Console.Out;
-        try
-        {
-            var writer = new StringWriter();
-            Console.SetOut(TextWriter.Synchronized(writer));
-
-            // Replicate the help command handler from Program.cs
-            PrintHelp();
-
-            return writer.ToString();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        return ConsoleCapture.Stdout(() => PrintHelp());
     }
 
     private static void PrintHelp()

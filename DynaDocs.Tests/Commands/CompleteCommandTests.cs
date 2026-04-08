@@ -314,22 +314,14 @@ public class CompleteCommandTests : IDisposable
     [Fact]
     public void Command_WritesCompletionsToStdout()
     {
-        var stdout = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(stdout));
-        try
+        var (exitCode, output, _) = ConsoleCapture.All(() =>
         {
             var command = CompleteCommand.Create();
-            var result = command.Parse("1 dydo").Invoke();
-            Assert.Equal(0, result);
-
-            var output = stdout.ToString();
-            Assert.Contains("task", output);
-            Assert.Contains("agent", output);
-        }
-        finally
-        {
-            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
-        }
+            return command.Parse("1 dydo").Invoke();
+        });
+        Assert.Equal(0, exitCode);
+        Assert.Contains("task", output);
+        Assert.Contains("agent", output);
     }
 
     private void SetupProject(List<string> agents)

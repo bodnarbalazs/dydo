@@ -120,19 +120,5 @@ public class GraphDisplayHandlerTests
 
     #endregion
 
-    private static string CaptureOutput(Action action)
-    {
-        var original = Console.Out;
-        using var writer = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(writer));
-        try
-        {
-            action();
-            return writer.ToString();
-        }
-        finally
-        {
-            Console.SetOut(original);
-        }
-    }
+    private static string CaptureOutput(Action action) => ConsoleCapture.Stdout(action);
 }

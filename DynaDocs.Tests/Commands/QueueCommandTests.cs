@@ -141,24 +141,8 @@ public class QueueCommandTests : IDisposable
     private async Task<(string Stdout, string Stderr, int ExitCode)> RunQueueCommand(params string[] args)
     {
         var command = QueueCommand.Create();
-        var stdoutWriter = new StringWriter();
-        var stderrWriter = new StringWriter();
-
-        var originalOut = Console.Out;
-        var originalErr = Console.Error;
-
-        Console.SetOut(TextWriter.Synchronized(stdoutWriter));
-        Console.SetError(TextWriter.Synchronized(stderrWriter));
-
-        try
-        {
-            var exitCode = await command.Parse(args).InvokeAsync();
-            return (stdoutWriter.ToString(), stderrWriter.ToString(), exitCode);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalErr);
-        }
+        var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsync(
+            async () => await command.Parse(args).InvokeAsync());
+        return (stdout, stderr, exitCode);
     }
 }

@@ -57,19 +57,10 @@ public class CompletionsCommandTests
 
     private static string CaptureOutput(string shell)
     {
-        var originalOut = Console.Out;
-        using var sw = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(sw));
-        try
+        return ConsoleCapture.Stdout(() =>
         {
             var command = CompletionsCommand.Create();
             command.Parse(shell).Invoke();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
-
-        return sw.ToString();
+        });
     }
 }

@@ -301,13 +301,11 @@ public class ConstraintEvaluationTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), config);
         CreateStateFile("Adele", taskRoleHistory: new() { ["my-task"] = ["code-writer"] });
 
-        var stderr = new StringWriter();
-        Console.SetError(TextWriter.Synchronized(stderr));
-        var registry = new AgentRegistry(_testDir);
-        Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
+        AgentRegistry registry = null!;
+        var stderrOutput = ConsoleCapture.Stderr(() => { registry = new AgentRegistry(_testDir); });
 
         // Warning should have been emitted
-        Assert.Contains("No role files found", stderr.ToString());
+        Assert.Contains("No role files found", stderrOutput);
 
         // Constraint enforcement still works via base definitions
         var canTake = registry.CanTakeRole("Adele", "reviewer", "my-task", out var reason);

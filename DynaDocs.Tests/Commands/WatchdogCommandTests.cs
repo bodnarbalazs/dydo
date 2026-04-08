@@ -118,19 +118,12 @@ public class WatchdogCommandTests : IDisposable
 
     private static (string output, int exitCode) RunSubcommand(string subcommand)
     {
-        var originalOut = Console.Out;
-        using var writer = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(writer));
-        try
+        var (exitCode, stdout, _) = ConsoleCapture.All(() =>
         {
             var command = WatchdogCommand.Create();
-            var exitCode = command.Parse(subcommand).Invoke();
-            return (writer.ToString(), exitCode);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+            return command.Parse(subcommand).Invoke();
+        });
+        return (stdout, exitCode);
     }
 
     private void WritePidFile(int pid)

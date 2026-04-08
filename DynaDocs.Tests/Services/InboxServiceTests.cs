@@ -61,19 +61,5 @@ public class InboxServiceTests
         Assert.DoesNotContain("File:", output);
     }
 
-    private static string CaptureConsoleOutput(Action action)
-    {
-        var original = Console.Out;
-        using var sw = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(sw));
-        try
-        {
-            action();
-            return sw.ToString();
-        }
-        finally
-        {
-            Console.SetOut(original);
-        }
-    }
+    private static string CaptureConsoleOutput(Action action) => ConsoleCapture.Stdout(action);
 }

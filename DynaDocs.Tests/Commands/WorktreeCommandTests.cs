@@ -2100,41 +2100,8 @@ public class WorktreeCommandTests : IDisposable
 
     #endregion
 
-    private static string CaptureStdout(Action action)
-    {
-        var original = Console.Out;
-        var sw = new StringWriter();
-        // Synchronized wrapper prevents StringBuilder corruption from parallel xUnit test classes
-        Console.SetOut(TextWriter.Synchronized(sw));
-        try
-        {
-            action();
-            return sw.ToString();
-        }
-        finally
-        {
-            Console.SetOut(original);
-        }
-    }
+    private static string CaptureStdout(Action action) => ConsoleCapture.Stdout(action);
 
-    private static (int exitCode, string stdout, string stderr) CaptureAll(Func<int> action)
-    {
-        var originalOut = Console.Out;
-        var originalErr = Console.Error;
-        var outWriter = new StringWriter();
-        var errWriter = new StringWriter();
-        // Synchronized wrappers prevent StringBuilder corruption from parallel xUnit test classes
-        Console.SetOut(TextWriter.Synchronized(outWriter));
-        Console.SetError(TextWriter.Synchronized(errWriter));
-        try
-        {
-            var code = action();
-            return (code, outWriter.ToString(), errWriter.ToString());
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalErr);
-        }
-    }
+    private static (int exitCode, string stdout, string stderr) CaptureAll(Func<int> action) =>
+        ConsoleCapture.All(action);
 }

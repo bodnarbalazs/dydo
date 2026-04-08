@@ -106,22 +106,9 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> RunAsync(Command command, params string[] args)
     {
-        var stdoutWriter = new StringWriter();
-        var stderrWriter = new StringWriter();
-
-        Console.SetOut(TextWriter.Synchronized(stdoutWriter));
-        Console.SetError(TextWriter.Synchronized(stderrWriter));
-
-        try
-        {
-            var exitCode = await command.Parse(args).InvokeAsync();
-            return new CommandResult(exitCode, stdoutWriter.ToString(), stderrWriter.ToString());
-        }
-        finally
-        {
-            Console.SetOut(_originalOut);
-            Console.SetError(_originalErr);
-        }
+        var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsync(
+            async () => await command.Parse(args).InvokeAsync());
+        return new CommandResult(exitCode, stdout, stderr);
     }
 
     /// <summary>
@@ -301,25 +288,11 @@ public abstract class IntegrationTestBase : IDisposable
     protected async Task<CommandResult> GuardWithStdinAsync(string json)
     {
         var command = GuardCommand.Create();
-        var stdoutWriter = new StringWriter();
-        var stderrWriter = new StringWriter();
         var stdinReader = new StringReader(json);
 
-        Console.SetOut(TextWriter.Synchronized(stdoutWriter));
-        Console.SetError(TextWriter.Synchronized(stderrWriter));
-        Console.SetIn(stdinReader);
-
-        try
-        {
-            var exitCode = await command.Parse(Array.Empty<string>()).InvokeAsync();
-            return new CommandResult(exitCode, stdoutWriter.ToString(), stderrWriter.ToString());
-        }
-        finally
-        {
-            Console.SetOut(_originalOut);
-            Console.SetError(_originalErr);
-            Console.SetIn(_originalIn);
-        }
+        var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsyncWithStdin(
+            stdinReader, async () => await command.Parse(Array.Empty<string>()).InvokeAsync());
+        return new CommandResult(exitCode, stdout, stderr);
     }
 
     /// <summary>

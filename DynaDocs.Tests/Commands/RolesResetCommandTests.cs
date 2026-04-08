@@ -121,22 +121,13 @@ public class RolesResetCommandTests : IDisposable
     [Fact]
     public void List_PrintsRolesWhenPresent()
     {
-        var originalOut = Console.Out;
-        using var writer = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(writer));
-        try
+        var (exitCode, output, _) = ConsoleCapture.All(() =>
         {
             var command = DynaDocs.Commands.RolesCommand.Create();
-            var result = command.Parse("list").Invoke();
-
-            Assert.Equal(0, result);
-            var output = writer.ToString();
-            Assert.Contains("base", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+            return command.Parse("list").Invoke();
+        });
+        Assert.Equal(0, exitCode);
+        Assert.Contains("base", output);
     }
 
     [Fact]
@@ -146,22 +137,13 @@ public class RolesResetCommandTests : IDisposable
         foreach (var file in Directory.GetFiles(rolesDir, "*.role.json"))
             File.Delete(file);
 
-        var originalOut = Console.Out;
-        using var writer = new StringWriter();
-        Console.SetOut(TextWriter.Synchronized(writer));
-        try
+        var (exitCode, output, _) = ConsoleCapture.All(() =>
         {
             var command = DynaDocs.Commands.RolesCommand.Create();
-            var result = command.Parse("list").Invoke();
-
-            Assert.Equal(0, result);
-            var output = writer.ToString();
-            Assert.Contains("No role definition files found", output);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+            return command.Parse("list").Invoke();
+        });
+        Assert.Equal(0, exitCode);
+        Assert.Contains("No role definition files found", output);
     }
 
     [Fact]

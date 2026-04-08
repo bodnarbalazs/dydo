@@ -85,6 +85,10 @@ public class FileReadRetryTests : IDisposable
     [Fact]
     public async Task Read_ExclusivelyLockedFile_RetriesAndSucceeds()
     {
+        // FileShare.None mandatory locking is Windows-only; Linux flock() is advisory
+        // and cross-thread release timing is unreliable on CI runners
+        if (!OperatingSystem.IsWindows()) return;
+
         var path = Path.Combine(_testDir, "locked.txt");
         File.WriteAllText(path, "locked-content");
 

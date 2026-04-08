@@ -161,7 +161,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
 
-            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains($"branch -D worktree/{worktreeId}"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains($"branch -D -- worktree/{worktreeId}"));
         }
         finally
         {
@@ -298,15 +298,21 @@ public class WorktreeCommandTests : IDisposable
 
         var calls = new List<(string FileName, string Arguments)>();
         WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
         try
         {
             WorktreeCommand.ExecuteMerge(false, _registry);
 
-            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("merge worktree/Adele-20260316 --no-edit"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit -- worktree/Adele-20260316"));
         }
         finally
         {
             WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
         }
     }
 
@@ -317,18 +323,24 @@ public class WorktreeCommandTests : IDisposable
 
         var calls = new List<(string FileName, string Arguments)>();
         WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
         try
         {
             var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
 
             Assert.Equal(0, exitCode);
             Assert.DoesNotContain(calls, c => c.FileName == "git" && c.Arguments.Contains("checkout"));
-            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/Adele-20260316"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D -- worktree/Adele-20260316"));
             Assert.Contains("finalized", stdout.ToLower());
         }
         finally
         {
             WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
         }
     }
 
@@ -343,7 +355,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.ExecuteMerge(true, _registry);
 
-            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/Adele-20260316"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D -- worktree/Adele-20260316"));
 
             var workspace = _registry.GetAgentWorkspace("Adele");
             Assert.False(File.Exists(Path.Combine(workspace, ".merge-source")));
@@ -673,7 +685,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
 
-            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D worktree/parent.+.child"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D -- worktree/parent.+.child"));
         }
         finally
         {
@@ -909,6 +921,7 @@ public class WorktreeCommandTests : IDisposable
         SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
 
         WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
         try
         {
             var (_, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
@@ -918,6 +931,7 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
         }
     }
 
@@ -1433,7 +1447,7 @@ public class WorktreeCommandTests : IDisposable
 
             Assert.Equal(0, exitCode);
             Assert.Contains("finalized", stdout.ToLower());
-            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D feature/some-branch"));
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D -- feature/some-branch"));
         }
         finally
         {
@@ -2095,6 +2109,165 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
+        }
+    }
+
+    #endregion
+
+    #region Issue #18 — RunProcessWithExitCode masks failures
+
+    [Fact]
+    public void RunProcessWithExitCode_DoesNotFallThroughToRunProcessOverride()
+    {
+        var overrideCalled = false;
+        WorktreeCommand.RunProcessOverride = (_, _) => overrideCalled = true;
+        try
+        {
+            var cmd = OperatingSystem.IsWindows() ? "cmd" : "false";
+            var args = OperatingSystem.IsWindows() ? "/c exit 1" : "";
+            var exitCode = WorktreeCommand.RunProcessWithExitCode(cmd, args);
+            Assert.False(overrideCalled, "RunProcessWithExitCode should not use RunProcessOverride");
+            Assert.NotEqual(0, exitCode);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    #endregion
+
+    #region Issue #19 — Double-dash separator in git commands
+
+    [Fact]
+    public void RemoveGitWorktree_IncludesDoubleDashSeparator()
+    {
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.RemoveGitWorktree("/some/path");
+            var gitCall = calls.Single(c => c.FileName == "git");
+            Assert.Contains("-- \"/some/path\"", gitCall.Arguments);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void DeleteWorktreeBranch_IncludesDoubleDashSeparator()
+    {
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.DeleteWorktreeBranch("test-id");
+            var gitCall = calls.Single(c => c.FileName == "git");
+            Assert.Contains("branch -D -- worktree/", gitCall.Arguments);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_GitMergeCommand_IncludesDoubleDashSeparator()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        try
+        {
+            WorktreeCommand.ExecuteMerge(false, _registry);
+            var mergeCall = calls.Single(c => c.FileName == "git" && c.Arguments.Contains("merge"));
+            Assert.Contains("merge --no-edit -- worktree/Adele-20260316", mergeCall.Arguments);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_BranchDelete_IncludesDoubleDashSeparator()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteMerge(true, _registry);
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D -- worktree/Adele-20260316"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    #endregion
+
+    #region Issue #20 — Consistent git -C usage
+
+    [Fact]
+    public void Cleanup_LastAgent_UsesGitC_WhenWorktreeRootExists()
+    {
+        var worktreeId = "Adele-20260315120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), _testDir);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            var gitCalls = calls.Where(c => c.FileName == "git").ToList();
+            Assert.True(gitCalls.Count > 0, "Expected git commands to be called");
+            Assert.All(gitCalls, c => Assert.Contains($"-C \"{_testDir}\"", c.Arguments));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_NoWorktreeRoot_OmitsGitC()
+    {
+        var worktreeId = "Adele-20260315120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            var gitCalls = calls.Where(c => c.FileName == "git").ToList();
+            Assert.True(gitCalls.Count > 0, "Expected git commands to be called");
+            Assert.All(gitCalls, c => Assert.DoesNotContain("-C ", c.Arguments));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
         }
     }
 

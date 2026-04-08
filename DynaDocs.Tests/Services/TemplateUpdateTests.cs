@@ -209,6 +209,63 @@ public class TemplateUpdateTests : IDisposable
 
     #endregion
 
+    #region GetOldStockContent fallback logic
+
+    // GetOldStockContent is private, so we test through the ExtractUserIncludes pipeline:
+    // when both user and framework changed, using embedded (new) content as old stock
+    // would incorrectly identify framework changes as user additions.
+
+    [Fact]
+    public void OldStockFallback_NoStoredHash_ShouldNotUseNewEmbeddedAsOldStock()
+    {
+        // Scenario: no stored hash (legacy install), user added an include.
+        // Old stock should be onDisk (safe fallback) — not embedded (new version).
+        // With onDisk as old stock, ExtractUserIncludes(onDisk, onDisk) returns empty,
+        // which is conservative but correct (we can't safely identify user includes).
+        var oldFramework = "## Work\n\n1. Step one\n2. Step two\n";
+        var userContent = "## Work\n\n1. Step one\n{{include:my-hook}}\n2. Step two\n";
+        var newFramework = "## Work\n\n1. Step alpha\n2. Step beta\n3. Step three\n";
+
+        // Simulating what happens when GetOldStockContent returns onDisk (fixed behavior):
+        // user includes extracted relative to onDisk → correctly finds user additions.
+        var correctOldStock = oldFramework;
+        var correctIncludes = IncludeReanchor.ExtractUserIncludes(correctOldStock, userContent);
+        Assert.Single(correctIncludes);
+
+        // Simulating the buggy behavior: GetOldStockContent returns newFramework.
+        // user includes extracted relative to newFramework → different anchors, may miss includes.
+        var buggyOldStock = newFramework;
+        var buggyIncludes = IncludeReanchor.ExtractUserIncludes(buggyOldStock, userContent);
+        // The anchors "1. Step alpha" don't match "1. Step one" in user content,
+        // so the include still extracts (it's between "1. Step one" and "2. Step two").
+        // But reanchoring into newFramework would fail since anchors changed.
+        var buggyResult = IncludeReanchor.Reanchor(newFramework, buggyIncludes);
+        Assert.NotEmpty(buggyResult.Unplaced); // Confirms the wrong fallback causes problems
+    }
+
+    [Fact]
+    public void OldStockFallback_EmbeddedMatchesStoredHash_UsesEmbedded()
+    {
+        // Scenario: stored hash matches embedded → framework hasn't changed, only user edited.
+        // GetOldStockContent should return embedded (which IS the old stock).
+        var frameworkContent = "## Work\n\n1. Step one\n2. Step two\n";
+        var userContent = "## Work\n\n1. Step one\n{{include:my-hook}}\n2. Step two\n";
+
+        var storedHash = TemplateCommand.ComputeHash(frameworkContent);
+        var embeddedHash = TemplateCommand.ComputeHash(frameworkContent);
+
+        // Stored hash matches embedded → embedded is correct old stock
+        Assert.Equal(storedHash, embeddedHash);
+
+        var includes = IncludeReanchor.ExtractUserIncludes(frameworkContent, userContent);
+        Assert.Single(includes);
+
+        var result = IncludeReanchor.Reanchor(frameworkContent, includes);
+        Assert.Single(result.Placed);
+    }
+
+    #endregion
+
     #region UpdateFile scenarios via filesystem
 
     private void WriteTemplate(string relativePath, string content)

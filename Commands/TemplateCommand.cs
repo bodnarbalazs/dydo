@@ -77,19 +77,20 @@ public static class TemplateCommand
         MigrateHashFormat(config, dydoRoot);
         var updated = 0;
         var skipped = 0;
+        var warned = 0;
         var warnings = new List<string>();
 
         foreach (var relativePath in FrameworkTemplateFiles)
             AccumulateResult(UpdateTemplateFile(relativePath, dydoRoot, config, diff, force),
-                ref updated, ref skipped, warnings, forceCountWarning: force);
+                ref updated, ref skipped, ref warned, warnings, forceCountWarning: force);
 
         foreach (var relativePath in FrameworkDocFiles)
             AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff),
-                ref updated, ref skipped, warnings);
+                ref updated, ref skipped, ref warned, warnings);
 
         foreach (var relativePath in FrameworkBinaryFiles)
             AccumulateResult(UpdateBinaryFile(relativePath, dydoRoot, config, diff),
-                ref updated, ref skipped, warnings);
+                ref updated, ref skipped, ref warned, warnings);
 
         updated += CleanStaleTemplates(dydoRoot, diff);
         PruneStaleHashes(config, diff);
@@ -112,7 +113,10 @@ public static class TemplateCommand
         if (!diff)
             configService.SaveConfig(config, configPath);
 
-        Console.WriteLine($"Template update complete: {updated} updated, {skipped} already current.");
+        var summary = $"Template update complete: {updated} updated, {skipped} already current";
+        if (warned > 0)
+            summary += $", {warned} warned";
+        Console.WriteLine(summary + ".");
 
         foreach (var warning in warnings)
             Console.Error.WriteLine($"  Warning: {warning}");
@@ -121,7 +125,8 @@ public static class TemplateCommand
     }
 
     private static void AccumulateResult(UpdateResult result,
-        ref int updated, ref int skipped, List<string> warnings, bool forceCountWarning = false)
+        ref int updated, ref int skipped, ref int warned, List<string> warnings,
+        bool forceCountWarning = false)
     {
         switch (result)
         {
@@ -133,6 +138,7 @@ public static class TemplateCommand
                 break;
             case UpdateResult.Warning warning:
                 warnings.Add(warning.Message);
+                warned++;
                 if (forceCountWarning) updated++;
                 break;
         }
@@ -415,9 +421,13 @@ public static class TemplateCommand
     {
         var storedHash = config.FrameworkHashes.GetValueOrDefault(relativePath);
         if (storedHash == null)
+            return onDisk;
+
+        if (ComputeHash(embeddedContent) == storedHash)
             return embeddedContent;
 
-        return ComputeHash(onDisk) == storedHash ? onDisk : embeddedContent;
+        // Both user and framework changed — old stock irrecoverable
+        return onDisk;
     }
 
     public static string NormalizeForHash(string content)

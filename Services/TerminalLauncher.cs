@@ -88,12 +88,6 @@ public class TerminalLauncher
         new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
     ];
 
-    public static readonly TerminalConfig[] MacTerminals =
-    [
-        new("osascript", (agentName, wd) =>
-            $"-e 'tell app \"Terminal\" to do script \"{CdPrefix(wd)}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"\"'"),
-    ];
-
     internal static string WorktreeSetupScript(string worktreeId, string? mainProjectRoot = null)
     {
         // Worktree is already created by DispatchService.CreateGitWorktree() before terminal launch.
@@ -197,15 +191,6 @@ public class TerminalLauncher
             return 0;
         }
     }
-
-    public int LaunchWindows(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-        => WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
-
-    public int LaunchMac(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-        => MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
-
-    public int TryLaunchTerminals(TerminalConfig[] terminals, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-        => LinuxTerminalLauncher.TryLaunch(_processStarter, terminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
     private class DefaultProcessStarter : IProcessStarter
     {

@@ -48,12 +48,17 @@ public static class IncludeReanchor
             var upperIdx = include.UpperAnchor != null
                 ? (lowerIdx >= 0
                     ? FindLineIndexBefore(lines, include.UpperAnchor, lowerIdx)
-                    : FindLineIndex(lines, include.UpperAnchor))
+                    : FindLineIndexLast(lines, include.UpperAnchor))
                 : -1;
 
             int insertAt;
             if (upperIdx >= 0)
+            {
                 insertAt = upperIdx + 1;
+                // Skip past any tags we already placed after this anchor
+                while (insertAt < lines.Count && placed.Contains(lines[insertAt]))
+                    insertAt++;
+            }
             else if (lowerIdx >= 0)
                 insertAt = lowerIdx;
             else
@@ -84,6 +89,16 @@ public static class IncludeReanchor
     private static int FindLineIndex(List<string> lines, string anchor)
     {
         for (var i = 0; i < lines.Count; i++)
+        {
+            if (lines[i].Trim() == anchor)
+                return i;
+        }
+        return -1;
+    }
+
+    private static int FindLineIndexLast(List<string> lines, string anchor)
+    {
+        for (var i = lines.Count - 1; i >= 0; i--)
         {
             if (lines[i].Trim() == anchor)
                 return i;

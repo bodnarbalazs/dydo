@@ -327,6 +327,39 @@ public class IncludeReanchorTests
             "FindLineIndex matched the frontmatter '---' instead of the horizontal rule '---'.");
     }
 
+    [Fact]
+    public void Reanchor_UpperOnlyAnchorIsDashes_UsesLastOccurrence()
+    {
+        // When only an upper anchor exists and it's ambiguous (e.g. '---'),
+        // the search should prefer the last occurrence (likely the HR rule)
+        // rather than the first (frontmatter opener).
+        var newContent = string.Join('\n',
+            "---",
+            "type: guide",
+            "---",
+            "# Title",
+            "Some content",
+            "---",
+            "## Section");
+
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:user-note}}", "---", null)
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Single(result.Placed);
+        var lines = result.Content.Split('\n');
+        var includeIdx = Array.IndexOf(lines, "{{include:user-note}}");
+        var frontmatterCloseIdx = Array.FindIndex(lines, 1, l => l.Trim() == "---");
+
+        // Include should be placed after the LAST '---' (the HR rule at index 5),
+        // not after the first '---' (frontmatter opener at index 0).
+        Assert.True(includeIdx > frontmatterCloseIdx,
+            $"Include at line {includeIdx} should be after frontmatter close at line {frontmatterCloseIdx}");
+    }
+
     #endregion
 
     #region Reanchor — tricky cases
@@ -449,10 +482,9 @@ public class IncludeReanchorTests
             $"Expected {{{{include:first}}}} (at {firstIdx}) before {{{{include:second}}}} (at {secondIdx}), but order was reversed");
     }
 
-    // Direct test of Reanchor with shared upper anchor — isolates the reversal
-    // behavior without ExtractUserIncludes masking it via different anchors.
+    // Direct test of Reanchor with shared upper anchor — insertion order must be preserved.
     [Fact]
-    public void Reanchor_SharedUpperAnchor_ReversesInsertionOrder()
+    public void Reanchor_SharedUpperAnchor_PreservesInsertionOrder()
     {
         var newContent = "Line A\nLine B";
         var includes = new List<IncludeReanchor.IncludeTag>
@@ -468,10 +500,8 @@ public class IncludeReanchorTests
         var firstIdx = Array.IndexOf(lines, "{{include:first}}");
         var secondIdx = Array.IndexOf(lines, "{{include:second}}");
 
-        // The hypothesis predicts reversal: second ends up before first.
-        // If this assertion passes, the reversal bug is confirmed.
-        Assert.True(secondIdx < firstIdx,
-            $"Expected reversal: {{{{include:second}}}} (at {secondIdx}) before {{{{include:first}}}} (at {firstIdx})");
+        Assert.True(firstIdx < secondIdx,
+            $"Expected {{{{include:first}}}} (at {firstIdx}) before {{{{include:second}}}} (at {secondIdx})");
     }
 
     #endregion

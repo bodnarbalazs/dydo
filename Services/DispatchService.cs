@@ -621,7 +621,7 @@ public static class DispatchService
                 Directory.Delete(worktreePath, recursive: true);
 
             RunGitForWorktree(projectRoot, "worktree prune");
-            var exitCode = RunGitForWorktree(projectRoot, $"worktree add \"{worktreePath}\" -b {branchName}");
+            var exitCode = RunGitForWorktree(projectRoot, $"worktree add -b {branchName} -- \"{worktreePath}\"");
             if (exitCode != 0)
                 throw new InvalidOperationException($"git worktree add failed (exit code {exitCode}) for {worktreePath}");
         });
@@ -643,7 +643,11 @@ public static class DispatchService
         psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
         var proc = Process.Start(psi);
         proc?.StandardInput.Close();
-        proc?.WaitForExit();
+        if (proc != null && !proc.WaitForExit(Commands.WorktreeCommand.ProcessTimeoutMs))
+        {
+            try { proc.Kill(); } catch { }
+            return 1;
+        }
         return proc?.ExitCode ?? 1;
     }
 

@@ -36,7 +36,7 @@ public class WorktreeCreationLockTests : IDisposable
         DispatchService.CreateGitWorktree(projectRoot, wtPath, "worktree/my-task");
 
         Assert.Contains(calls, c => c.Args.Contains("worktree prune"));
-        Assert.Contains(calls, c => c.Args.Contains("worktree add") && c.Args.Contains("worktree/my-task"));
+        Assert.Contains(calls, c => c.Args.Contains("worktree add -b worktree/my-task --"));
     }
 
     [Fact]

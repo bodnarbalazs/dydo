@@ -184,11 +184,19 @@ public class FolderScaffolder : IFolderScaffolder
 
     public static void StoreInitialFrameworkHashes(string basePath, DydoConfig config)
     {
-        foreach (var relativePath in TemplateCommand.FrameworkTemplateFiles)
+        foreach (var relativePath in TemplateCommand.FrameworkTemplateFiles
+            .Concat(TemplateCommand.FrameworkDocFiles))
         {
             var fullPath = Path.Combine(basePath, relativePath);
             if (File.Exists(fullPath))
                 config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHash(File.ReadAllText(fullPath));
+        }
+
+        foreach (var relativePath in TemplateCommand.FrameworkBinaryFiles)
+        {
+            var fullPath = Path.Combine(basePath, relativePath);
+            if (File.Exists(fullPath))
+                config.FrameworkHashes[relativePath] = TemplateCommand.ComputeHashBytes(File.ReadAllBytes(fullPath));
         }
     }
 

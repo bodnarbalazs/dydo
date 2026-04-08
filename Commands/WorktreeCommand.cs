@@ -202,6 +202,11 @@ public static class WorktreeCommand
         }
 
         var workspace = registry.GetAgentWorkspace(agentName);
+
+        // Read mainRoot before markers are removed so git commands use -C consistently
+        var worktreeRootMarker = Path.Combine(workspace, ".worktree-root");
+        var mainRoot = File.Exists(worktreeRootMarker) ? File.ReadAllText(worktreeRootMarker).Trim() : null;
+
         RemoveAllMarkers(workspace);
 
         var remainingRefs = CountWorktreeReferences(registry, worktreeId);
@@ -218,8 +223,8 @@ public static class WorktreeCommand
             return ExitCodes.Success;
         }
 
-        TeardownWorktree(worktreePath);
-        DeleteWorktreeBranch(worktreeId);
+        TeardownWorktree(worktreePath, mainRoot);
+        DeleteWorktreeBranch(worktreeId, mainRoot);
 
         Console.WriteLine($"Worktree {worktreeId}: cleaned up.");
         return ExitCodes.Success;
@@ -282,13 +287,14 @@ public static class WorktreeCommand
         if (File.Exists(mergeSource)) File.Delete(mergeSource);
     }
 
-    internal static int CountWorktreeReferences(AgentRegistry registry, string worktreeId)
+    internal static int CountWorktreeReferences(AgentRegistry registry, string worktreeId, bool includeHolds = true)
     {
         var count = 0;
         var childPrefix = $"{worktreeId}/";
+        var markerNames = includeHolds ? new[] { ".worktree", ".worktree-hold" } : new[] { ".worktree" };
         foreach (var agent in registry.GetAllAgentStates())
         {
-            foreach (var markerName in new[] { ".worktree", ".worktree-hold" })
+            foreach (var markerName in markerNames)
             {
                 var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), markerName);
                 if (!File.Exists(marker)) continue;
@@ -357,34 +363,13 @@ public static class WorktreeCommand
             RunProcessOverride(fileName, arguments);
             return;
         }
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true
-        };
-        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
-        var proc = Process.Start(psi);
-        proc?.StandardInput.Close();
-        if (proc != null && !proc.WaitForExit(ProcessTimeoutMs))
-        {
-            try { proc.Kill(); } catch { }
-        }
+        RunProcessWithExitCode(fileName, arguments);
     }
 
     internal static int RunProcessWithExitCode(string fileName, string arguments)
     {
         if (RunProcessWithExitCodeOverride != null)
             return RunProcessWithExitCodeOverride(fileName, arguments);
-
-        if (RunProcessOverride != null)
-        {
-            RunProcessOverride(fileName, arguments);
-            return 0;
-        }
 
         var psi = new ProcessStartInfo
         {
@@ -454,7 +439,7 @@ public static class WorktreeCommand
         try
         {
             var gitPrefix = mainRoot != null ? $"-C \"{mainRoot}\" " : "";
-            RunProcess("git", $"{gitPrefix}worktree remove \"{worktreePath}\" --force");
+            RunProcess("git", $"{gitPrefix}worktree remove --force -- \"{worktreePath}\"");
         }
         catch
         {
@@ -482,7 +467,7 @@ public static class WorktreeCommand
         try
         {
             var gitPrefix = mainRoot != null ? $"-C \"{mainRoot}\" " : "";
-            RunProcess("git", $"{gitPrefix}branch -D worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}");
+            RunProcess("git", $"{gitPrefix}branch -D -- worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}");
         }
         catch
         {
@@ -552,7 +537,7 @@ public static class WorktreeCommand
 
         Console.WriteLine($"Merging worktree branch {mergeSource} into {baseBranch}...");
 
-        var exitCode = RunProcessWithExitCode("git", $"-C \"{mainRoot}\" merge {mergeSource} --no-edit");
+        var exitCode = RunProcessWithExitCode("git", $"-C \"{mainRoot}\" merge --no-edit -- {mergeSource}");
         if (exitCode != 0)
         {
             Console.WriteLine("Merge conflicts detected. Resolve them, commit, then run:");
@@ -579,7 +564,7 @@ public static class WorktreeCommand
         try { RunProcess("git", $"-C \"{mainRoot}\" worktree prune"); }
         catch { /* best-effort */ }
 
-        try { RunProcess("git", $"-C \"{mainRoot}\" branch -D {mergeSource}"); }
+        try { RunProcess("git", $"-C \"{mainRoot}\" branch -D -- {mergeSource}"); }
         catch { Console.Error.WriteLine($"WARNING: Failed to delete branch {mergeSource}"); }
 
         RemoveAllMarkers(workspace);
@@ -597,6 +582,8 @@ public static class WorktreeCommand
     internal static int ExecutePrune(AgentRegistry registry)
     {
         var worktreesDir = Path.GetFullPath(Path.Combine(registry.WorkspacePath, "..", "_system", ".local", "worktrees"));
+        // Derive mainRoot from the known directory structure for consistent -C usage
+        var mainRoot = Path.GetFullPath(Path.Combine(registry.WorkspacePath, "..", ".."));
 
         var orphansRemoved = 0;
 
@@ -613,8 +600,8 @@ public static class WorktreeCommand
                 }
 
                 Console.WriteLine($"Pruning orphaned worktree: {worktreeId}");
-                TeardownWorktree(dirPath);
-                DeleteWorktreeBranch(worktreeId);
+                TeardownWorktree(dirPath, mainRoot);
+                DeleteWorktreeBranch(worktreeId, mainRoot);
                 orphansRemoved++;
             }
         }
@@ -623,21 +610,6 @@ public static class WorktreeCommand
 
         Console.WriteLine($"Pruned {orphansRemoved} orphaned worktree(s), cleaned {staleMarkersRemoved} stale marker(s).");
         return ExitCodes.Success;
-    }
-
-    internal static int CountLiveWorktreeReferences(AgentRegistry registry, string worktreeId)
-    {
-        var count = 0;
-        var childPrefix = $"{worktreeId}/";
-        foreach (var agent in registry.GetAllAgentStates())
-        {
-            var marker = Path.Combine(registry.GetAgentWorkspace(agent.Name), ".worktree");
-            if (!File.Exists(marker)) continue;
-            var value = File.ReadAllText(marker).Trim();
-            if (value == worktreeId || value.StartsWith(childPrefix))
-                count++;
-        }
-        return count;
     }
 
     private static int CleanStaleMarkers(AgentRegistry registry)
@@ -651,7 +623,7 @@ public static class WorktreeCommand
             if (File.Exists(holdPath))
             {
                 var holdId = File.ReadAllText(holdPath).Trim();
-                if (CountLiveWorktreeReferences(registry, holdId) == 0)
+                if (CountWorktreeReferences(registry, holdId, includeHolds: false) == 0)
                 {
                     File.Delete(holdPath);
                     Console.WriteLine($"  Removed stale .worktree-hold from {agent.Name} (referenced {holdId})");
@@ -667,7 +639,7 @@ public static class WorktreeCommand
                     ? mergeSource["worktree/".Length..]
                     : mergeSource;
                 var wtId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
-                if (CountLiveWorktreeReferences(registry, wtId) == 0)
+                if (CountWorktreeReferences(registry, wtId, includeHolds: false) == 0)
                 {
                     File.Delete(mergePath);
                     Console.WriteLine($"  Removed stale .merge-source from {agent.Name} (referenced {mergeSource})");

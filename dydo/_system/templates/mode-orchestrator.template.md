@@ -146,6 +146,7 @@ Background waits notify you as responses arrive. For each response:
 - Did the sub-agent succeed?
 - Does the output fit with other workstreams?
 - Are there emerging conflicts?
+- If the task fixed a tracked issue, propose resolving it to the user: "Task X fixed issue #NNNN — should I resolve it?"
 
 #### Merge Coordination
 

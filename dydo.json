@@ -124,24 +124,39 @@
       "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Btest\\b(.*)",
       "message": "Use the worktree-isolated test runner instead: python DynaDocs.Tests/coverage/run_tests.py $1\nThis avoids DLL lock contention when multiple agents run tests concurrently.",
       "severity": "warn"
+    },
+    {
+      "pattern": "dydo\\s\u002Bdispatch\\b(?=.*--role\\s\u002Binquisitor\\b)(?!.*--new-window)",
+      "message": "Inquisitor dispatches should use --new-window to avoid tab conflicts. Add --new-window or re-run to proceed.",
+      "severity": "warn"
+    },
+    {
+      "pattern": "\\bgit\\b[^;|\u0026]*\\bworktree\\s\u002B(add|remove)\\b",
+      "message": "Use dydo worktree commands instead of git worktree directly.",
+      "severity": "block"
+    },
+    {
+      "pattern": "rm\\b[^;|\u0026]*dydo/_system/\\.local/worktrees/",
+      "message": "Use dydo worktree cleanup instead of deleting worktree directories directly.",
+      "severity": "block"
     }
   ],
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "54420182d2241a2982dfc8dbbcfc8b127a84c733015fd4d10e541ce2b11eff8a",
     "_system/templates/mode-code-writer.template.md": "8c3dd08fac64dd104345cc45aea8de89a90d0afaa01b571e18a8022f51cab9a1",
     "_system/templates/mode-reviewer.template.md": "f57afa6a73bb1051b918bd50236e5af8f794a057205d9df22738cd4c97af9594",
-    "_system/templates/mode-co-thinker.template.md": "616b2a04f8574247f46eb1d649687fdd3e6f09bb6cfe1eaf1df0a55a4529df64",
+    "_system/templates/mode-co-thinker.template.md": "72573700c0ee0495ae69b0a1527ac857ab04df94801c08457ebb965464b37feb",
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
     "_system/templates/mode-docs-writer.template.md": "1640a887814f2b7817ff4305df8736843b47f8ae5fe0ebbb491ec82d696ffc31",
-    "reference/about-dynadocs.md": "94e59db14ecae5466bbcf50fe046ccbac03f2bc407394eb837a7fb45fbbd3367",
-    "reference/dydo-commands.md": "fb36529c482d877ecf9f605dd9655e2ba41f389c01a82c7e91af087aa087a59f",
+    "reference/about-dynadocs.md": "7f449f8fc1f364e985f0076d4471fc8c1a90c4ced77f7961b9c8c7640fac2466",
+    "reference/dydo-commands.md": "067d3633377353ec12e5a25f14eec07b57ec0fa83ccda6673b0f873060debb19",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",
     "_system/templates/mode-test-writer.template.md": "15845eb12c90f3020aee1625067c78bb8e17d00c845b42e74e79ee09965e83cf",
-    "_system/templates/mode-orchestrator.template.md": "aac249af90408d30f2ab258585e3a5e32d6fccd9496db572339d8a9f4c9cfa1b",
+    "_system/templates/mode-orchestrator.template.md": "828c63c2b704004ade3cc0cf8608ef4babdf35b900c360fbb6d62baa79faf2d1",
     "_system/templates/mode-inquisitor.template.md": "291bca4ebdcf6260c0e91812e0a3630c88f41ae9d2458a86fb5ee2b5fe7442a1",
-    "_system/templates/mode-judge.template.md": "0513ffbf62cb0cdba5a010e2fc16f6eff5803e13a09c14667c36f12d33b3be4e",
+    "_system/templates/mode-judge.template.md": "51c7927f15426818a414df7613dd14ab6fd4970a80b9dea5a7a1f9898ff9a826",
     "guides/how-to-merge-worktrees.md": "a01edead0a9e0751b4768fedf7941e460eabdc1317d76c33041f60a24da38e5c",
     "guides/how-to-review-worktree-merges.md": "6aa310868e0ce37f7f783d9bb6ba2f88fc273dfe697ad1c9b5107218ec40ea3a"
   }

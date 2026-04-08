@@ -113,6 +113,8 @@ dydo/agents/{{AGENT_NAME}}/notes-<topic>.md
 
 ## Complete
 
+Don't release until the user says so.
+
 When the thinking session is done, choose based on what emerged:
 
 ### Task Emerged → Dispatch to Planner

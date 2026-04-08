@@ -193,6 +193,101 @@
       "ts": "2026-04-08T16:58:38.5131477Z",
       "event": "GuardLift",
       "agent": "Frank"
+    },
+    {
+      "ts": "2026-04-08T17:01:10.3299293Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\.worktree",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-08T17:01:10.8042313Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\.worktree-path",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-08T17:01:11.2750232Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\.worktree-base",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-08T17:01:11.7271226Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\.worktree-root",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-08T17:01:11.8637334Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\.needs-merge",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-08T17:01:18.369026Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "rm \u0022dydo/agents/Frank/.worktree\u0022 \u0026\u0026 echo \u0022Removed .worktree\u0022",
+      "reason": "Must-read files not yet read"
+    },
+    {
+      "ts": "2026-04-08T17:01:24.8659763Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\how-to-review-worktree-merges.md",
+      "tool": "read"
+    },
+    {
+      "ts": "2026-04-08T17:01:40.2304881Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rm \u0022dydo/agents/Frank/.worktree\u0022 \u0026\u0026 echo \u0022Removed .worktree\u0022"
+    },
+    {
+      "ts": "2026-04-08T17:08:38.944968Z",
+      "event": "GuardLift",
+      "agent": "Frank"
+    },
+    {
+      "ts": "2026-04-08T17:08:48.7265242Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rm \u0022dydo/agents/Frank/.worktree-path\u0022 \u0026\u0026 echo \u0022Removed .worktree-path\u0022"
+    },
+    {
+      "ts": "2026-04-08T17:09:33.6656082Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rm \u0022dydo/agents/Frank/.worktree-base\u0022 \u0026\u0026 echo \u0022Removed .worktree-base\u0022"
+    },
+    {
+      "ts": "2026-04-08T17:09:40.2240308Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rm \u0022dydo/agents/Frank/.worktree-root\u0022 \u0026\u0026 echo \u0022Removed .worktree-root\u0022"
+    },
+    {
+      "ts": "2026-04-08T17:09:46.3235056Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rm \u0022dydo/agents/Frank/.needs-merge\u0022 \u0026\u0026 echo \u0022Removed .needs-merge\u0022"
+    },
+    {
+      "ts": "2026-04-08T17:09:52.6146146Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "rmdir \u0022dydo/_system/.local/worktrees/inquisition-template-system\u0022 \u0026\u0026 echo \u0022Removed empty directory\u0022"
+    },
+    {
+      "ts": "2026-04-08T17:09:59.427518Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -la dydo/agents/Frank/.worktree* dydo/agents/Frank/.needs-merge dydo/agents/Frank/.merge-source 2..."
+    },
+    {
+      "ts": "2026-04-08T17:10:09.7662686Z",
+      "event": "Release",
+      "agent": "Frank"
     }
   ],
   "snapshot": {

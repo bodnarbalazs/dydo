@@ -378,4 +378,60 @@ public class TemplateCommandTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("Updated: _assets/dydo-diagram.svg");
     }
+
+    // Hypothesis: StoreInitialFrameworkHashes only hashes template files, not doc files.
+    // This means doc files have no stored hash after init, so UpdateDocFile's user-edit
+    // protection (which requires storedHash != null) is bypassed on first template update.
+
+    [Fact]
+    public async Task Init_DoesNotStoreHashesForDocFiles()
+    {
+        await InitProjectAsync();
+
+        var config = new ConfigService().LoadConfig()!;
+
+        // Template files should have hashes
+        var templatePath = TemplateCommand.FrameworkTemplateFiles.First();
+        Assert.True(config.FrameworkHashes.ContainsKey(templatePath),
+            $"Expected hash for template file '{templatePath}' but none found");
+
+        // Doc files should NOT have hashes (this is the bug)
+        foreach (var docPath in TemplateCommand.FrameworkDocFiles)
+        {
+            Assert.False(config.FrameworkHashes.ContainsKey(docPath),
+                $"Expected no hash for doc file '{docPath}' but one was found — " +
+                "hypothesis disproved: StoreInitialFrameworkHashes does hash doc files");
+        }
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_UserEditedDocFile_OverwrittenWhenNoStoredHash()
+    {
+        // Hypothesis: user-edited doc files are silently overwritten on template update
+        // because StoreInitialFrameworkHashes doesn't store hashes for doc files.
+        //
+        // Verdict mapping:
+        //   Test PASSES → hypothesis CONFIRMED (the bug exists, user edit is overwritten)
+        //   Test FAILS  → hypothesis NOT REPRODUCED (user edit survived, bug absent or fixed)
+        await InitProjectAsync();
+
+        var relativePath = TemplateCommand.FrameworkDocFiles.First();
+        var docPath = Path.Combine(TestDir, "dydo", relativePath);
+        var originalContent = File.ReadAllText(docPath);
+
+        // Pre-condition: no hash stored for doc files after init
+        var config = new ConfigService().LoadConfig()!;
+        Assert.False(config.FrameworkHashes.ContainsKey(relativePath),
+            "Pre-condition failed: doc file already has a stored hash");
+
+        // User edits the doc file
+        File.WriteAllText(docPath, originalContent + "\n\n<!-- User customization -->");
+
+        await RunTemplateUpdateAsync();
+
+        // If the bug exists, the user edit was overwritten with the embedded content
+        var afterUpdate = File.ReadAllText(docPath);
+        Assert.DoesNotContain("<!-- User customization -->", afterUpdate,
+            StringComparison.Ordinal);
+    }
 }

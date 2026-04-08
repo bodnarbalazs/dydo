@@ -266,6 +266,69 @@ public class IncludeReanchorTests
 
     #endregion
 
+    #region Reanchor — ambiguous anchors (hypothesis hyp-3)
+
+    [Fact]
+    public void Reanchor_AnchorIsDashes_MatchesFrontmatterInsteadOfHorizontalRule()
+    {
+        // Hypothesis hyp-3: When '---' appears as both YAML frontmatter delimiters
+        // and a horizontal rule, FindLineIndex returns the FIRST occurrence (frontmatter),
+        // causing user includes to be misplaced at the top of the file.
+
+        // Stock template has no user includes
+        var stockContent = string.Join('\n',
+            "---",
+            "type: guide",
+            "---",
+            "# Title",
+            "Some content",
+            "---",
+            "## Section");
+
+        // User added an include between the horizontal rule '---' and '## Section'
+        var userContent = string.Join('\n',
+            "---",
+            "type: guide",
+            "---",
+            "# Title",
+            "Some content",
+            "---",
+            "{{include:user-note}}",
+            "## Section");
+
+        var extracted = IncludeReanchor.ExtractUserIncludes(stockContent, userContent);
+
+        Assert.Single(extracted);
+        Assert.Equal("{{include:user-note}}", extracted[0].Tag);
+        // The upper anchor should be '---' (the horizontal rule)
+        Assert.Equal("---", extracted[0].UpperAnchor);
+        Assert.Equal("## Section", extracted[0].LowerAnchor);
+
+        // Now re-anchor against the same template content
+        var result = IncludeReanchor.Reanchor(stockContent, extracted);
+
+        Assert.Single(result.Placed);
+        Assert.Empty(result.Unplaced);
+
+        // The include SHOULD be placed near the horizontal rule (line index 5),
+        // i.e. between '---' (hr) and '## Section'.
+        // But FindLineIndex returns the FIRST '---' (line 0, frontmatter opener),
+        // so the include lands at line 1 — inside the frontmatter block.
+        var lines = result.Content.Split('\n');
+        var includeIdx = Array.IndexOf(lines, "{{include:user-note}}");
+        var sectionIdx = Array.FindIndex(lines, l => l.Trim() == "## Section");
+        var frontmatterCloseIdx = Array.FindIndex(lines, 1, l => l.Trim() == "---");
+
+        // If the bug exists: include lands at index 1 (after first '---'), inside frontmatter
+        // If correct: include lands at index 6 (after the horizontal rule '---'), before '## Section'
+        Assert.True(includeIdx > frontmatterCloseIdx,
+            $"Include was placed at line {includeIdx}, which is inside or before the frontmatter " +
+            $"(frontmatter closes at line {frontmatterCloseIdx}). " +
+            "FindLineIndex matched the frontmatter '---' instead of the horizontal rule '---'.");
+    }
+
+    #endregion
+
     #region Reanchor — tricky cases
 
     [Fact]
@@ -356,6 +419,59 @@ public class IncludeReanchorTests
         Assert.Empty(result.Unplaced);
         Assert.Contains("{{include:hook-1}}", result.Content);
         Assert.Contains("{{include:hook-2}}", result.Content);
+    }
+
+    #endregion
+
+    #region Hypothesis: hyp-2 — insertion order with shared upper anchor
+
+    // Hypothesis: Reanchor reverses insertion order when multiple user includes
+    // share the same upper anchor. This test uses the end-to-end pipeline
+    // (ExtractUserIncludes → Reanchor) as specified in the hypothesis brief.
+    [Fact]
+    public void Reanchor_AdjacentUserIncludes_PreservesInsertionOrder()
+    {
+        var oldStock = "Line A\nLine B";
+        var userContent = "Line A\n{{include:first}}\n{{include:second}}\nLine B";
+        var newStock = "Line A\nLine B";
+
+        var userIncludes = IncludeReanchor.ExtractUserIncludes(oldStock, userContent);
+        var result = IncludeReanchor.Reanchor(newStock, userIncludes);
+
+        Assert.Equal(2, result.Placed.Count);
+        var lines = result.Content.Split('\n');
+        var firstIdx = Array.IndexOf(lines, "{{include:first}}");
+        var secondIdx = Array.IndexOf(lines, "{{include:second}}");
+        Assert.True(firstIdx >= 0, "{{include:first}} should be placed");
+        Assert.True(secondIdx >= 0, "{{include:second}} should be placed");
+        // Hypothesis check: is {{include:first}} before {{include:second}}?
+        Assert.True(firstIdx < secondIdx,
+            $"Expected {{{{include:first}}}} (at {firstIdx}) before {{{{include:second}}}} (at {secondIdx}), but order was reversed");
+    }
+
+    // Direct test of Reanchor with shared upper anchor — isolates the reversal
+    // behavior without ExtractUserIncludes masking it via different anchors.
+    [Fact]
+    public void Reanchor_SharedUpperAnchor_ReversesInsertionOrder()
+    {
+        var newContent = "Line A\nLine B";
+        var includes = new List<IncludeReanchor.IncludeTag>
+        {
+            new("{{include:first}}", "Line A", null),
+            new("{{include:second}}", "Line A", null)
+        };
+
+        var result = IncludeReanchor.Reanchor(newContent, includes);
+
+        Assert.Equal(2, result.Placed.Count);
+        var lines = result.Content.Split('\n');
+        var firstIdx = Array.IndexOf(lines, "{{include:first}}");
+        var secondIdx = Array.IndexOf(lines, "{{include:second}}");
+
+        // The hypothesis predicts reversal: second ends up before first.
+        // If this assertion passes, the reversal bug is confirmed.
+        Assert.True(secondIdx < firstIdx,
+            $"Expected reversal: {{{{include:second}}}} (at {secondIdx}) before {{{{include:first}}}} (at {firstIdx})");
     }
 
     #endregion

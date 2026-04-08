@@ -84,6 +84,12 @@ public static partial class GuardCommand
         var cwd = Directory.GetCurrentDirectory().Replace('\\', '/');
         return cwd.Contains(WorktreePathMarker);
     }
+
+    private static void EmitWorktreeAllowIfNeeded()
+    {
+        if (IsWorktreeContext())
+            Console.WriteLine(WorktreeReadAllowJson);
+    }
     private static readonly HashSet<string> WriteActions = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
     private static readonly Dictionary<string, AuditEventType> ActionAuditMap = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -223,8 +229,7 @@ public static partial class GuardCommand
         // For Read operations, apply staged access control
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
         {
-            var isWorktree = IsWorktreeContext();
-            return HandleReadOperation(filePath, toolName, agent, sessionId, registry, auditService, isWorktree);
+            return HandleReadOperation(filePath, toolName, agent, sessionId, registry, auditService);
         }
 
         // For write/edit operations
@@ -295,6 +300,8 @@ public static partial class GuardCommand
             EventType = eventType, Path = filePath, Tool = toolName
         });
 
+        EmitWorktreeAllowIfNeeded();
+
         return ExitCodes.Success;
     }
 
@@ -336,7 +343,7 @@ public static partial class GuardCommand
 
     private static int HandleReadOperation(
         string? filePath, string? toolName, AgentState? agent, string? sessionId,
-        AgentRegistry registry, IAuditService auditService, bool isWorktree = false)
+        AgentRegistry registry, IAuditService auditService)
     {
         if (!IsReadAllowed(filePath, agent))
         {
@@ -362,8 +369,7 @@ public static partial class GuardCommand
 
         TrackReadCompletion(agent, filePath, sessionId, registry);
 
-        if (isWorktree)
-            Console.WriteLine(WorktreeReadAllowJson);
+        EmitWorktreeAllowIfNeeded();
 
         return ExitCodes.Success;
     }
@@ -597,6 +603,8 @@ public static partial class GuardCommand
         var currentAgent = registry.GetCurrentAgent(sessionId);
         if (currentAgent != null)
             registry.StoreSessionContext(sessionId, currentAgent.Name);
+
+        EmitWorktreeAllowIfNeeded();
 
         return ExitCodes.Success;
     }

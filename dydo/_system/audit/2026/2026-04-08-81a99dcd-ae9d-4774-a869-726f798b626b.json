@@ -149,6 +149,22 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -20"
+    },
+    {
+      "ts": "2026-04-08T18:44:06.6947646Z",
+      "event": "Read",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-08T18:44:16.9198695Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261 | tail -40"
+    },
+    {
+      "ts": "2026-04-08T18:50:20.4727644Z",
+      "event": "Release",
+      "agent": "Henry"
     }
   ],
   "snapshot": {

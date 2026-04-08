@@ -1792,6 +1792,77 @@ public class TerminalLauncherTests
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
     }
 
+    [Fact]
+    public void GetWindowsArguments_Worktree_ChecksReparsePointBeforeRmdir()
+    {
+        // The generated PowerShell must detect whether a path is a junction (ReparsePoint)
+        // before using rmdir. Unconditional 'rmdir /s /q' on a junction follows it and
+        // destroys the target directory's contents.
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+
+        // Each junction subpath should have a ReparsePoint attribute check
+        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions" };
+        foreach (var path in junctionPaths)
+        {
+            Assert.Contains("ReparsePoint", args,
+                StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainRoot_ChecksReparsePointBeforeRmdir()
+    {
+        // Same check for the mainProjectRoot code path
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+
+        Assert.Contains("ReparsePoint", args, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_DoesNotUseUnconditionalRmdirSQ()
+    {
+        // 'rmdir /s /q' on a junction follows the junction and deletes target contents.
+        // The script must NOT use unconditional 'rmdir /s /q' for junction subpaths.
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
+
+        // Find each 'rmdir /s /q' usage and verify it's guarded by a ReparsePoint check.
+        // If any 'rmdir /s /q' appears for junction paths without a guard, the test fails.
+        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions" };
+        foreach (var path in junctionPaths)
+        {
+            var rmdirPattern = $"rmdir /s /q";
+            var pathContextStart = args.IndexOf(path);
+            if (pathContextStart < 0) continue;
+
+            // Look at the command block around this path — find the next semicolon-delimited statement
+            var blockEnd = args.IndexOf(';', pathContextStart);
+            if (blockEnd < 0) blockEnd = args.Length;
+            var block = args[pathContextStart..blockEnd];
+
+            Assert.DoesNotContain(rmdirPattern, block,
+                StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_WithMainRoot_DoesNotUseUnconditionalRmdirSQ()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
+
+        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions" };
+        foreach (var path in junctionPaths)
+        {
+            var pathContextStart = args.IndexOf(path);
+            if (pathContextStart < 0) continue;
+
+            var blockEnd = args.IndexOf(';', pathContextStart);
+            if (blockEnd < 0) blockEnd = args.Length;
+            var block = args[pathContextStart..blockEnd];
+
+            Assert.DoesNotContain("rmdir /s /q", block, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     #endregion
 
     #region Inherited Worktree Cleanup Tests
@@ -2147,9 +2218,9 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_Worktree_NoWorktreeDirCreationOrStaleCleanup()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
-        // Worktree directory creation is handled by DispatchService, not terminal script
+        // Worktree directory creation and stale cleanup are handled by DispatchService, not terminal script
         Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees", args);
-        Assert.DoesNotContain("Remove-Item -Recurse -Force", args);
+        Assert.DoesNotContain("Remove-Item -Recurse -Force 'dydo/_system/.local/worktrees", args);
         Assert.DoesNotContain("$LASTEXITCODE", args);
     }
 
@@ -2159,7 +2230,7 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
         // No worktree directory creation (handled by DispatchService)
         Assert.DoesNotContain("New-Item -ItemType Directory -Force -Path dydo/_system/.local/worktrees", args);
-        Assert.DoesNotContain("Remove-Item -Recurse -Force", args);
+        Assert.DoesNotContain("Remove-Item -Recurse -Force 'dydo/_system/.local/worktrees", args);
     }
 
     [Fact]

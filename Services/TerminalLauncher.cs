@@ -96,19 +96,19 @@ public class TerminalLauncher
         {
             var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
             return $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
-                   $"rm -rf dydo/agents && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
-                   $"rm -rf dydo/_system/roles && ln -s '{escapedRoot}/dydo/_system/roles' dydo/_system/roles && " +
-                   $"mkdir -p '{escapedRoot}/dydo/project/issues' && rm -rf dydo/project/issues && ln -s '{escapedRoot}/dydo/project/issues' dydo/project/issues && " +
-                   $"mkdir -p '{escapedRoot}/dydo/project/inquisitions' && rm -rf dydo/project/inquisitions && ln -s '{escapedRoot}/dydo/project/inquisitions' dydo/project/inquisitions && " +
+                   $"(if [ -L dydo/agents ]; then rm dydo/agents; elif [ -e dydo/agents ]; then rm -rf dydo/agents; fi) && ln -s '{escapedRoot}/dydo/agents' dydo/agents && " +
+                   $"(if [ -L dydo/_system/roles ]; then rm dydo/_system/roles; elif [ -e dydo/_system/roles ]; then rm -rf dydo/_system/roles; fi) && ln -s '{escapedRoot}/dydo/_system/roles' dydo/_system/roles && " +
+                   $"mkdir -p '{escapedRoot}/dydo/project/issues' && (if [ -L dydo/project/issues ]; then rm dydo/project/issues; elif [ -e dydo/project/issues ]; then rm -rf dydo/project/issues; fi) && ln -s '{escapedRoot}/dydo/project/issues' dydo/project/issues && " +
+                   $"mkdir -p '{escapedRoot}/dydo/project/inquisitions' && (if [ -L dydo/project/inquisitions ]; then rm dydo/project/inquisitions; elif [ -e dydo/project/inquisitions ]; then rm -rf dydo/project/inquisitions; fi) && ln -s '{escapedRoot}/dydo/project/inquisitions' dydo/project/inquisitions && " +
                    $"(dydo worktree init-settings --main-root '{escapedRoot}' || echo 'WARNING: init-settings failed' >&2) && sleep 1 && ";
         }
 
         return $"_wt_root=\"$(pwd)\" && " +
                $"cd dydo/_system/.local/worktrees/{worktreeId} && " +
-               $"rm -rf dydo/agents && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
-               $"rm -rf dydo/_system/roles && ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles && " +
-               $"mkdir -p \"$_wt_root/dydo/project/issues\" && rm -rf dydo/project/issues && ln -s \"$_wt_root/dydo/project/issues\" dydo/project/issues && " +
-               $"mkdir -p \"$_wt_root/dydo/project/inquisitions\" && rm -rf dydo/project/inquisitions && ln -s \"$_wt_root/dydo/project/inquisitions\" dydo/project/inquisitions && " +
+               $"(if [ -L dydo/agents ]; then rm dydo/agents; elif [ -e dydo/agents ]; then rm -rf dydo/agents; fi) && ln -s \"$_wt_root/dydo/agents\" dydo/agents && " +
+               $"(if [ -L dydo/_system/roles ]; then rm dydo/_system/roles; elif [ -e dydo/_system/roles ]; then rm -rf dydo/_system/roles; fi) && ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles && " +
+               $"mkdir -p \"$_wt_root/dydo/project/issues\" && (if [ -L dydo/project/issues ]; then rm dydo/project/issues; elif [ -e dydo/project/issues ]; then rm -rf dydo/project/issues; fi) && ln -s \"$_wt_root/dydo/project/issues\" dydo/project/issues && " +
+               $"mkdir -p \"$_wt_root/dydo/project/inquisitions\" && (if [ -L dydo/project/inquisitions ]; then rm dydo/project/inquisitions; elif [ -e dydo/project/inquisitions ]; then rm -rf dydo/project/inquisitions; fi) && ln -s \"$_wt_root/dydo/project/inquisitions\" dydo/project/inquisitions && " +
                $"(dydo worktree init-settings --main-root \"$_wt_root\" || echo 'WARNING: init-settings failed' >&2) && sleep 1 && ";
     }
 

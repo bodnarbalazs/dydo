@@ -2054,7 +2054,7 @@ public class WorktreeCommandTests : IDisposable
     {
         var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
         Assert.DoesNotContain("[IO.Directory]::Delete", args);
-        Assert.Contains("cmd /c rmdir /s /q", args);
+        Assert.Contains("cmd /c rmdir", args);
     }
 
     [Fact]
@@ -2062,7 +2062,7 @@ public class WorktreeCommandTests : IDisposable
     {
         var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
         Assert.DoesNotContain("[IO.Directory]::Delete", args);
-        Assert.Contains("cmd /c rmdir /s /q", args);
+        Assert.Contains("cmd /c rmdir", args);
     }
 
     #endregion

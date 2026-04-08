@@ -71,10 +71,10 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
 
     #endregion
 
-    #region Scope: Only Reads
+    #region Scope: All Permitted Operations
 
     [Fact]
-    public async Task WorktreeWrite_Approved_StdoutEmpty()
+    public async Task WorktreeWrite_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
@@ -85,11 +85,11 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
         var result = await GuardAsync("edit", "src/test.cs");
 
         result.AssertSuccess();
-        Assert.Empty(result.Stdout.Trim());
+        result.AssertStdoutContains(AllowJson);
     }
 
     [Fact]
-    public async Task WorktreeBash_Approved_StdoutEmpty()
+    public async Task WorktreeBash_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
@@ -101,7 +101,7 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
-        Assert.DoesNotContain("permissionDecision", result.Stdout);
+        result.AssertStdoutContains(AllowJson);
     }
 
     #endregion

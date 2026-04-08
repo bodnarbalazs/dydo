@@ -49,9 +49,11 @@ These tags are pre-placed at natural extension points:
 | Tag | Template | Position |
 |-----|----------|----------|
 | `{{include:extra-must-reads}}` | All mode templates | After the must-reads list |
-| `{{include:extra-verify}}` | code-writer | After the verify step |
+| `{{include:extra-verify}}` | code-writer, test-writer | After the verify step |
 | `{{include:extra-review-steps}}` | reviewer | After "Run tests" step |
 | `{{include:extra-review-checklist}}` | reviewer | End of review checklist |
+| `{{include:extra-complete-gate}}` | code-writer, reviewer | End of complete section |
+| `{{include:extra-test-guidance}}` | test-writer | After test guidance section |
 
 You can also add `{{include:whatever}}` anywhere in a template — the system isn't limited to shipped hooks.
 

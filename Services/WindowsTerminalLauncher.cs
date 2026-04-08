@@ -31,16 +31,16 @@ public static class WindowsTerminalLauncher
                 var wtDir = $"'{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'";
                 return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}" +
                        $"Set-Location {wtDir}; " +
-                       $"if (Test-Path dydo/agents) {{ cmd /c rmdir /s /q (Resolve-Path dydo/agents).Path; }} " +
-                       $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents' | Out-Null; " +
-                       $"if (Test-Path 'dydo/_system/roles') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/_system/roles').Path; }} " +
-                       $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target '{escapedRoot}/dydo/_system/roles' | Out-Null; " +
-                       $"if (-not (Test-Path '{escapedRoot}/dydo/project/issues')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/issues' -Force | Out-Null; }} " +
-                       $"if (Test-Path 'dydo/project/issues') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/issues').Path; }} " +
-                       $"New-Item -ItemType Junction -Path 'dydo/project/issues' -Target '{escapedRoot}/dydo/project/issues' | Out-Null; " +
-                       $"if (-not (Test-Path '{escapedRoot}/dydo/project/inquisitions')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/inquisitions' -Force | Out-Null; }} " +
-                       $"if (Test-Path 'dydo/project/inquisitions') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/inquisitions').Path; }} " +
-                       $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target '{escapedRoot}/dydo/project/inquisitions' | Out-Null; " +
+                       $"if (Test-Path dydo/agents) {{ if ((Get-Item dydo/agents -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path dydo/agents).Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path dydo/agents).Path }} }} " +
+                       $"New-Item -ItemType Junction -Path dydo/agents -Target '{escapedRoot}/dydo/agents'; " +
+                       $"if (Test-Path 'dydo/_system/roles') {{ if ((Get-Item 'dydo/_system/roles' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path 'dydo/_system/roles').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path 'dydo/_system/roles').Path }} }} " +
+                       $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target '{escapedRoot}/dydo/_system/roles'; " +
+                       $"if (-not (Test-Path '{escapedRoot}/dydo/project/issues')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/issues' -Force; }} " +
+                       $"if (Test-Path 'dydo/project/issues') {{ if ((Get-Item 'dydo/project/issues' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path 'dydo/project/issues').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path 'dydo/project/issues').Path }} }} " +
+                       $"New-Item -ItemType Junction -Path 'dydo/project/issues' -Target '{escapedRoot}/dydo/project/issues'; " +
+                       $"if (-not (Test-Path '{escapedRoot}/dydo/project/inquisitions')) {{ New-Item -ItemType Directory -Path '{escapedRoot}/dydo/project/inquisitions' -Force; }} " +
+                       $"if (Test-Path 'dydo/project/inquisitions') {{ if ((Get-Item 'dydo/project/inquisitions' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path 'dydo/project/inquisitions').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path 'dydo/project/inquisitions').Path }} }} " +
+                       $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target '{escapedRoot}/dydo/project/inquisitions'; " +
                        $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                        $"Start-Sleep -Seconds 1; " +
                        $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
@@ -50,18 +50,18 @@ public static class WindowsTerminalLauncher
             var wtDirRel = $"dydo/_system/.local/worktrees/{worktreeId}";
             return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}$_wt_root = Get-Location; " +
                    $"Set-Location {wtDirRel}; " +
-                   $"if (Test-Path dydo/agents) {{ cmd /c rmdir /s /q (Resolve-Path dydo/agents).Path; }} " +
-                   $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents') | Out-Null; " +
-                   $"if (Test-Path 'dydo/_system/roles') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/_system/roles').Path; }} " +
-                   $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target (Join-Path $_wt_root.Path 'dydo/_system/roles') | Out-Null; " +
+                   $"if (Test-Path dydo/agents) {{ if ((Get-Item dydo/agents -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path dydo/agents).Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path dydo/agents).Path }} }} " +
+                   $"New-Item -ItemType Junction -Path dydo/agents -Target (Join-Path $_wt_root.Path 'dydo/agents'); " +
+                   $"if (Test-Path 'dydo/_system/roles') {{ if ((Get-Item 'dydo/_system/roles' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path 'dydo/_system/roles').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path 'dydo/_system/roles').Path }} }} " +
+                   $"New-Item -ItemType Junction -Path 'dydo/_system/roles' -Target (Join-Path $_wt_root.Path 'dydo/_system/roles'); " +
                    $"$_issuesTarget = Join-Path $_wt_root.Path 'dydo/project/issues'; " +
-                   $"if (-not (Test-Path $_issuesTarget)) {{ New-Item -ItemType Directory -Path $_issuesTarget -Force | Out-Null; }} " +
-                   $"if (Test-Path 'dydo/project/issues') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/issues').Path; }} " +
-                   $"New-Item -ItemType Junction -Path 'dydo/project/issues' -Target $_issuesTarget | Out-Null; " +
+                   $"if (-not (Test-Path $_issuesTarget)) {{ New-Item -ItemType Directory -Path $_issuesTarget -Force; }} " +
+                   $"if (Test-Path 'dydo/project/issues') {{ if ((Get-Item 'dydo/project/issues' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path 'dydo/project/issues').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path 'dydo/project/issues').Path }} }} " +
+                   $"New-Item -ItemType Junction -Path 'dydo/project/issues' -Target $_issuesTarget; " +
                    $"$_inqTarget = Join-Path $_wt_root.Path 'dydo/project/inquisitions'; " +
-                   $"if (-not (Test-Path $_inqTarget)) {{ New-Item -ItemType Directory -Path $_inqTarget -Force | Out-Null; }} " +
-                   $"if (Test-Path 'dydo/project/inquisitions') {{ cmd /c rmdir /s /q (Resolve-Path 'dydo/project/inquisitions').Path; }} " +
-                   $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target $_inqTarget | Out-Null; " +
+                   $"if (-not (Test-Path $_inqTarget)) {{ New-Item -ItemType Directory -Path $_inqTarget -Force; }} " +
+                   $"if (Test-Path 'dydo/project/inquisitions') {{ if ((Get-Item 'dydo/project/inquisitions' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path 'dydo/project/inquisitions').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path 'dydo/project/inquisitions').Path }} }} " +
+                   $"New-Item -ItemType Junction -Path 'dydo/project/inquisitions' -Target $_inqTarget; " +
                    $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +
                    $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +

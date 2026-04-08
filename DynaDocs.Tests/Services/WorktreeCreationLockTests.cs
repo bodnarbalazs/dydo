@@ -150,4 +150,70 @@ public class WorktreeCreationLockTests : IDisposable
 
         Assert.False(File.Exists(Path.Combine(worktreesDir, ".lock")));
     }
+
+    [Fact]
+    public void CreateGitWorktree_StaleDirectoryWithJunctions_DoesNotDeleteJunctionTargetContents()
+    {
+        // Reproduce: stale worktree dir has junctions pointing to "main repo" dirs.
+        // Directory.Delete(recursive: true) follows junctions and destroys target contents.
+        // The fix: remove junctions before the recursive delete.
+        if (!OperatingSystem.IsWindows()) return; // Junctions are a Windows concept
+
+        DispatchService.CreateGitWorktreeOverride = (_, _, _) => 0;
+
+        var projectRoot = Path.Combine(_testDir, "project");
+        var worktreesDir = Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees");
+        var wtPath = Path.Combine(worktreesDir, "stale-junctions");
+
+        // Simulate main repo dirs with files that must survive
+        var mainAgents = Path.Combine(_testDir, "main-repo", "dydo", "agents");
+        var mainRoles = Path.Combine(_testDir, "main-repo", "dydo", "_system", "roles");
+        var mainIssues = Path.Combine(_testDir, "main-repo", "dydo", "project", "issues");
+        var mainInquisitions = Path.Combine(_testDir, "main-repo", "dydo", "project", "inquisitions");
+        Directory.CreateDirectory(mainAgents);
+        Directory.CreateDirectory(mainRoles);
+        Directory.CreateDirectory(mainIssues);
+        Directory.CreateDirectory(mainInquisitions);
+        File.WriteAllText(Path.Combine(mainAgents, "Adele.json"), "agent-data");
+        File.WriteAllText(Path.Combine(mainRoles, "code-writer.role.json"), "role-data");
+        File.WriteAllText(Path.Combine(mainIssues, "issue-1.md"), "issue-data");
+        File.WriteAllText(Path.Combine(mainInquisitions, "inq-1.md"), "inq-data");
+
+        // Create stale worktree dir with junctions pointing to main repo dirs
+        Directory.CreateDirectory(Path.Combine(wtPath, "dydo", "project"));
+        Directory.CreateDirectory(Path.Combine(wtPath, "dydo", "_system"));
+        CreateJunction(Path.Combine(wtPath, "dydo", "agents"), mainAgents);
+        CreateJunction(Path.Combine(wtPath, "dydo", "_system", "roles"), mainRoles);
+        CreateJunction(Path.Combine(wtPath, "dydo", "project", "issues"), mainIssues);
+        CreateJunction(Path.Combine(wtPath, "dydo", "project", "inquisitions"), mainInquisitions);
+
+        DispatchService.CreateGitWorktree(projectRoot, wtPath, "worktree/stale-junctions");
+
+        // Main repo files must survive — if Directory.Delete followed junctions, these are gone
+        Assert.True(File.Exists(Path.Combine(mainAgents, "Adele.json")),
+            "Main repo agents dir was destroyed by stale worktree cleanup");
+        Assert.True(File.Exists(Path.Combine(mainRoles, "code-writer.role.json")),
+            "Main repo roles dir was destroyed by stale worktree cleanup");
+        Assert.True(File.Exists(Path.Combine(mainIssues, "issue-1.md")),
+            "Main repo issues dir was destroyed by stale worktree cleanup");
+        Assert.True(File.Exists(Path.Combine(mainInquisitions, "inq-1.md")),
+            "Main repo inquisitions dir was destroyed by stale worktree cleanup");
+    }
+
+    private static void CreateJunction(string junctionPath, string targetPath)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "cmd",
+            Arguments = $"/c mklink /J \"{junctionPath}\" \"{targetPath}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        var proc = System.Diagnostics.Process.Start(psi)!;
+        proc.WaitForExit(5000);
+        if (proc.ExitCode != 0)
+            throw new InvalidOperationException($"mklink /J failed: {proc.StandardError.ReadToEnd()}");
+    }
 }

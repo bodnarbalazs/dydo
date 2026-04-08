@@ -175,6 +175,17 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/run_tests.py"
+    },
+    {
+      "ts": "2026-04-08T18:45:21.7888285Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py --force-run"
+    },
+    {
+      "ts": "2026-04-08T18:51:05.9677231Z",
+      "event": "Release",
+      "agent": "Jack"
     }
   ],
   "snapshot": {

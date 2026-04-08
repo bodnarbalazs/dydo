@@ -390,7 +390,7 @@ public static class WorktreeCommand
         return p?.ExitCode ?? 1;
     }
 
-    private static readonly string[] JunctionSubpaths =
+    internal static readonly string[] JunctionSubpaths =
     [
         Path.Combine("dydo", "agents"),
         Path.Combine("dydo", "_system", "roles"),

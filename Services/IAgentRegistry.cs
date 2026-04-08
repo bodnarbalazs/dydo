@@ -195,8 +195,9 @@ public interface IAgentRegistry
     string? GetSessionContext();
 
     /// <summary>
-    /// Stores the session ID to context file.
+    /// Stores the session ID to context file, optionally with the agent name
+    /// for cross-terminal race detection.
     /// Called by the guard hook before allowing dydo commands.
     /// </summary>
-    void StoreSessionContext(string sessionId);
+    void StoreSessionContext(string sessionId, string? agentName = null);
 }

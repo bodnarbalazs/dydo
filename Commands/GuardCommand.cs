@@ -550,6 +550,7 @@ public static partial class GuardCommand
 
     private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, IAuditService auditService, bool? runInBackground)
     {
+        // Phase 1: store session ID without agent name (backwards-compatible)
         registry.StoreSessionContext(sessionId);
 
         HandleClaimSessionStorage(command, sessionId, registry);
@@ -590,6 +591,12 @@ public static partial class GuardCommand
                 if (blocked != null) return blocked.Value;
             }
         }
+
+        // Phase 2: enrich session context with agent name for race detection.
+        // This overwrites the phase-1 write with the verified format.
+        var currentAgent = registry.GetCurrentAgent(sessionId);
+        if (currentAgent != null)
+            registry.StoreSessionContext(sessionId, currentAgent.Name);
 
         return ExitCodes.Success;
     }

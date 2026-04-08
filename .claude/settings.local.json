@@ -25,7 +25,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent",
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode",
         "hooks": [
           {
             "type": "command",

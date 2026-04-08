@@ -148,6 +148,8 @@ public class AgentSessionManager
 
     /// <summary>
     /// Gets the current session ID from context file.
+    /// Verifies against the per-agent .session file when agent name is present
+    /// to detect cross-terminal overwrites of the shared .session-context file.
     /// </summary>
     public string? GetSessionContext()
     {
@@ -156,7 +158,22 @@ public class AgentSessionManager
 
         try
         {
-            return FileReadRetry.Read(path)?.Trim();
+            var content = FileReadRetry.Read(path);
+            if (content == null) return null;
+
+            var (sessionId, agentName) = ParseSessionContext(content);
+            if (string.IsNullOrEmpty(sessionId)) return null;
+
+            // No agent name (old format or first-phase write) — return as-is
+            if (string.IsNullOrEmpty(agentName)) return sessionId;
+
+            // Verify: the agent's .session file should confirm this session ID
+            var agentSession = GetSession(agentName);
+            if (agentSession?.SessionId == sessionId) return sessionId;
+
+            // Race detected — another terminal overwrote .session-context.
+            // Fall back: find a working agent whose session is still valid.
+            return ResolveSessionFallback();
         }
         catch
         {
@@ -165,19 +182,73 @@ public class AgentSessionManager
     }
 
     /// <summary>
-    /// Stores the session ID to context file.
+    /// Parses the session context file content. Format is either:
+    /// - Legacy: "{sessionId}" (single line)
+    /// - Verified: "{sessionId}\n{agentName}" (two lines)
     /// </summary>
-    public void StoreSessionContext(string sessionId)
+    internal static (string? sessionId, string? agentName) ParseSessionContext(string content)
+    {
+        var newlineIdx = content.IndexOf('\n');
+        if (newlineIdx < 0)
+            return (content.Trim(), null);
+
+        var sessionId = content[..newlineIdx].Trim();
+        var agentName = content[(newlineIdx + 1)..].Trim();
+        return (sessionId, string.IsNullOrEmpty(agentName) ? null : agentName);
+    }
+
+    /// <summary>
+    /// Fallback when .session-context was overwritten by another terminal.
+    /// Scans all agents for a working agent assigned to the current human
+    /// and returns its session ID.
+    /// </summary>
+    private string? ResolveSessionFallback()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        string? candidateSessionId = null;
+
+        try
+        {
+            foreach (var name in _agentNames)
+            {
+                cts.Token.ThrowIfCancellationRequested();
+                var state = _getAgentState(name);
+                if (state?.Status != AgentStatus.Working) continue;
+
+                var session = GetSession(name);
+                if (session == null) continue;
+
+                // Ambiguous — multiple working agents, can't determine which is ours
+                if (candidateSessionId != null) return null;
+
+                candidateSessionId = session.SessionId;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+
+        return candidateSessionId;
+    }
+
+    /// <summary>
+    /// Stores the session ID to context file, optionally with the agent name
+    /// for cross-terminal race detection.
+    /// </summary>
+    public void StoreSessionContext(string sessionId, string? agentName = null)
     {
         var path = GetSessionContextPath();
         var dir = Path.GetDirectoryName(path);
         if (dir != null) Directory.CreateDirectory(dir);
 
+        var content = agentName != null ? $"{sessionId}\n{agentName}" : sessionId;
+
         for (var i = 0; i < 3; i++)
         {
             try
             {
-                File.WriteAllText(path, sessionId);
+                File.WriteAllText(path, content);
                 return;
             }
             catch (IOException) when (i < 2)

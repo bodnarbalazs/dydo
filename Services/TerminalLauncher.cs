@@ -162,8 +162,8 @@ public class TerminalLauncher
     public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
-    public static string GetITermTabScript(string shellCommand, string postCheck)
-        => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck);
+    public static string GetITermTabScript(string shellCommand, string postCheck, string? windowId = null)
+        => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck, windowId);
 
     public static string GetITermWindowScript(string shellCommand, string postCheck)
         => MacTerminalLauncher.GetITermWindowScript(shellCommand, postCheck);

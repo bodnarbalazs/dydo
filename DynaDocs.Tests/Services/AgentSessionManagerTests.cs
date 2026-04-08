@@ -162,9 +162,126 @@ public class AgentSessionManagerTests : IDisposable
     }
 
     [Fact]
+    public void StoreSessionContext_WithAgentName_WritesVerifiedFormat()
+    {
+        WriteSession("Alice", "ctx-789");
+        _manager.StoreSessionContext("ctx-789", "Alice");
+
+        var result = _manager.GetSessionContext();
+        Assert.Equal("ctx-789", result);
+    }
+
+    [Fact]
+    public void GetSessionContext_VerifiedFormat_ValidatesAgentSession()
+    {
+        WriteSession("Alice", "ctx-abc");
+        _manager.StoreSessionContext("ctx-abc", "Alice");
+
+        // Alice's session matches — should return the session ID
+        Assert.Equal("ctx-abc", _manager.GetSessionContext());
+    }
+
+    [Fact]
+    public void GetSessionContext_RaceDetected_FallsBackToWorkingAgent()
+    {
+        // Alice is working with session "sess-alice"
+        WriteSession("Alice", "sess-alice");
+
+        // But .session-context was overwritten by another terminal with Bob's data
+        _manager.StoreSessionContext("sess-bob", "Bob");
+        WriteSession("Bob", "sess-bob");
+
+        // Bob's verification succeeds (his data is consistent), so returns Bob's session.
+        // This simulates the case where Bob's terminal wrote last.
+        var result = _manager.GetSessionContext();
+        Assert.Equal("sess-bob", result);
+    }
+
+    [Fact]
+    public void GetSessionContext_RaceDetected_AgentSessionMismatch_FallsBack()
+    {
+        // Alice is working with session "sess-alice"
+        WriteSession("Alice", "sess-alice");
+
+        // .session-context says "sess-bob" for Alice — but Alice's .session file says "sess-alice"
+        // This is the race: another terminal wrote Bob's session ID but Alice's name
+        var contextPath = Path.Combine(_agentsPath, ".session-context");
+        File.WriteAllText(contextPath, "sess-bob\nAlice");
+
+        // Verification fails (Alice's session is "sess-alice", not "sess-bob")
+        // Fallback scans for working agents — Alice is working
+        var result = _manager.GetSessionContext();
+        Assert.Equal("sess-alice", result);
+    }
+
+    [Fact]
+    public void GetSessionContext_RaceDetected_MultipleWorkingAgents_ReturnsNull()
+    {
+        // Both Alice and Bob are working — ambiguous
+        WriteSession("Alice", "sess-alice");
+        WriteSession("Bob", "sess-bob");
+
+        // Write mismatched context to trigger fallback
+        var contextPath = Path.Combine(_agentsPath, ".session-context");
+        File.WriteAllText(contextPath, "sess-unknown\nAlice");
+
+        // Fallback finds two working agents — can't determine which is ours
+        var result = _manager.GetSessionContext();
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetSessionContext_LegacyFormat_StillWorks()
+    {
+        // Old format: just the session ID, no agent name
+        var contextPath = Path.Combine(_agentsPath, ".session-context");
+        Directory.CreateDirectory(_agentsPath);
+        File.WriteAllText(contextPath, "legacy-session-id");
+
+        var result = _manager.GetSessionContext();
+        Assert.Equal("legacy-session-id", result);
+    }
+
+    [Fact]
     public void GetSessionContext_NoFile_ReturnsNull()
     {
         Assert.Null(_manager.GetSessionContext());
+    }
+
+    #endregion
+
+    #region ParseSessionContext
+
+    [Fact]
+    public void ParseSessionContext_LegacyFormat_ReturnsSessionIdOnly()
+    {
+        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("abc-123");
+        Assert.Equal("abc-123", sessionId);
+        Assert.Null(agentName);
+    }
+
+    [Fact]
+    public void ParseSessionContext_VerifiedFormat_ReturnsBoth()
+    {
+        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("abc-123\nAlice");
+        Assert.Equal("abc-123", sessionId);
+        Assert.Equal("Alice", agentName);
+    }
+
+    [Fact]
+    public void ParseSessionContext_EmptyAgentName_ReturnsNull()
+    {
+        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("abc-123\n");
+        Assert.Equal("abc-123", sessionId);
+        Assert.Null(agentName);
+    }
+
+    [Fact]
+    public void ParseSessionContext_WhitespaceHandled()
+    {
+        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("  abc-123  \n  Alice  ");
+        Assert.Equal("abc-123", sessionId);
+        Assert.Equal("Alice", agentName);
     }
 
     #endregion

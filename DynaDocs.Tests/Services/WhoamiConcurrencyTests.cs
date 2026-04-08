@@ -281,4 +281,74 @@ public class WhoamiConcurrencyTests : IDisposable
         Assert.Empty(errors);
         Assert.True(totalCalls.Sum() > 50, $"Expected many calls but only got {totalCalls.Sum()}");
     }
+
+    [Fact]
+    public void SessionContextRace_VerificationCatchesCrossTerminalOverwrite()
+    {
+        var agents = new[] { "Adele", "Brian" };
+        SetupConfig(agents);
+
+        // Adele is working with her session
+        CreateAgent("Adele", "session-adele");
+        // Brian is free (not working)
+
+        // Simulate: guard wrote verified context for Adele
+        var contextPath = Path.Combine(AgentsPath, ".session-context");
+        File.WriteAllText(contextPath, "session-adele\nAdele");
+
+        var registry = new AgentRegistry(_testDir);
+        var sessionId = registry.GetSessionContext();
+
+        // Should resolve correctly to Adele's session
+        Assert.Equal("session-adele", sessionId);
+        var agent = registry.GetCurrentAgent(sessionId);
+        Assert.NotNull(agent);
+        Assert.Equal("Adele", agent.Name);
+    }
+
+    [Fact]
+    public void SessionContextRace_OverwrittenByOtherTerminal_FallsBackCorrectly()
+    {
+        var agents = new[] { "Adele", "Brian" };
+        SetupConfig(agents);
+
+        // Adele is working
+        CreateAgent("Adele", "session-adele");
+        // Brian is also working (dispatched terminal) with a different session
+        CreateAgent("Brian", "session-brian");
+
+        // Simulate race: guard wrote Adele's data, but Brian's terminal overwrote it
+        // The file now claims session-brian belongs to Adele — mismatch!
+        var contextPath = Path.Combine(AgentsPath, ".session-context");
+        File.WriteAllText(contextPath, "session-brian\nAdele");
+
+        var registry = new AgentRegistry(_testDir);
+        var sessionId = registry.GetSessionContext();
+
+        // Verification fails: Adele's .session says "session-adele", not "session-brian"
+        // Fallback finds multiple working agents → returns null (ambiguous)
+        // This is safe — dispatched terminals use DYDO_AGENT and never reach this path
+        Assert.Null(sessionId);
+    }
+
+    [Fact]
+    public void SessionContextRace_SingleWorkingAgent_FallbackResolves()
+    {
+        var agents = new[] { "Adele", "Brian" };
+        SetupConfig(agents);
+
+        // Only Adele is working
+        CreateAgent("Adele", "session-adele");
+        // Brian exists but is free (no session)
+
+        // Simulate race: file has mismatched data
+        var contextPath = Path.Combine(AgentsPath, ".session-context");
+        File.WriteAllText(contextPath, "session-wrong\nAdele");
+
+        var registry = new AgentRegistry(_testDir);
+        var sessionId = registry.GetSessionContext();
+
+        // Verification fails, fallback finds only Adele working
+        Assert.Equal("session-adele", sessionId);
+    }
 }

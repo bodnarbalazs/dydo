@@ -19,6 +19,7 @@ public partial class AgentRegistry : IAgentRegistry
     private readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> _rolePermissions;
     private readonly Dictionary<string, RoleDefinition> _roleDefinitions;
     private readonly InboxMetadataReader _inboxReader;
+    private readonly AgentSessionManager _sessionManager;
 
     public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
     {
@@ -28,6 +29,8 @@ public partial class AgentRegistry : IAgentRegistry
         _auditService = auditService ?? new AuditService(_configService, _basePath);
         _config = _configService.LoadConfig(_basePath);
         _inboxReader = new InboxMetadataReader(GetAgentWorkspace);
+        _sessionManager = new AgentSessionManager(
+            GetAgentWorkspace, WorkspacePath, AgentNames, IsValidAgentName, GetAgentState);
 
         var roleDefService = new RoleDefinitionService();
         var roles = roleDefService.LoadRoleDefinitions(_basePath);
@@ -814,9 +817,6 @@ public partial class AgentRegistry : IAgentRegistry
     private string GetPendingSessionPath(string agentName) =>
         Path.Combine(GetAgentWorkspace(agentName), ".pending-session");
 
-    private string GetSessionContextPath() =>
-        Path.Combine(WorkspacePath, ".session-context");
-
     private string GetAgentHintPath() =>
         Path.Combine(WorkspacePath, ".session-agent");
 
@@ -870,6 +870,7 @@ public partial class AgentRegistry : IAgentRegistry
     /// <summary>
     /// Gets the current session ID from context file.
     /// Used by commands that run as subprocesses to identify the session.
+    /// DYDO_AGENT env var bypasses the shared file entirely (set in dispatched terminals).
     /// </summary>
     public string? GetSessionContext()
     {
@@ -880,41 +881,17 @@ public partial class AgentRegistry : IAgentRegistry
             if (session != null) return session.SessionId;
         }
 
-        var path = GetSessionContextPath();
-        if (!File.Exists(path)) return null;
-
-        try
-        {
-            return FileReadRetry.Read(path)?.Trim();
-        }
-        catch
-        {
-            return null;
-        }
+        return _sessionManager.GetSessionContext();
     }
 
     /// <summary>
-    /// Stores the session ID to context file.
+    /// Stores the session ID to context file, optionally with the agent name
+    /// for cross-terminal race detection.
     /// Called by the guard hook before allowing dydo commands.
     /// </summary>
-    public void StoreSessionContext(string sessionId)
+    public void StoreSessionContext(string sessionId, string? agentName = null)
     {
-        var path = GetSessionContextPath();
-        var dir = Path.GetDirectoryName(path);
-        if (dir != null) Directory.CreateDirectory(dir);
-
-        for (var i = 0; i < 3; i++)
-        {
-            try
-            {
-                File.WriteAllText(path, sessionId);
-                return;
-            }
-            catch (IOException) when (i < 2)
-            {
-                Thread.Sleep(10 * (i + 1));
-            }
-        }
+        _sessionManager.StoreSessionContext(sessionId, agentName);
     }
 
     #endregion

@@ -253,7 +253,7 @@ public class CheckAgentValidatorTests : IDisposable
         public bool HasDispatchMarker(string agentName, string task, string targetRole) => false;
         public void ClearAllDispatchMarkers(string agentName) { }
         public string? GetSessionContext() => null;
-        public void StoreSessionContext(string sessionId) { }
+        public void StoreSessionContext(string sessionId, string? agentName = null) { }
     }
 
     #endregion

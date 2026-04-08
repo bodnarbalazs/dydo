@@ -841,7 +841,8 @@ public class TerminalLauncherTests
         var script = TerminalLauncher.GetITermWindowScript("unset CLAUDECODE; claude \\\"Adele --inbox\\\"", "");
 
         Assert.Contains("tell application \"iTerm\"", script);
-        Assert.Contains("create window with default profile", script);
+        Assert.Contains("set newWin to (create window with default profile)", script);
+        Assert.Contains("tell current session of newWin", script);
         Assert.DoesNotContain("create tab", script);
         Assert.Contains("write text", script);
         Assert.Contains("activate", script);
@@ -1000,12 +1001,12 @@ public class TerminalLauncherTests
     [Fact]
     public void GetITermTabScript_ContainsExpectedStructure()
     {
-        var script = TerminalLauncher.GetITermTabScript("unset CLAUDECODE; claude \\\"Adele --inbox\\\"", "");
+        var script = TerminalLauncher.GetITermTabScript("unset CLAUDECODE; claude \\\"Adele --inbox\\\"", "", windowId: null);
 
         Assert.Contains("tell application \"iTerm\"", script);
         Assert.Contains("create tab with default profile", script);
         Assert.Contains("create window with default profile", script);
-        Assert.Contains("tell current session", script);
+        Assert.Contains("current window", script);
         Assert.Contains("write text", script);
         Assert.Contains("activate", script);
         Assert.Contains("end tell", script);
@@ -2285,6 +2286,96 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetLinuxArguments(terminal, "Adele", worktreeId: TestWorktreeId);
         Assert.DoesNotContain("git worktree", args);
+    }
+
+    #endregion
+
+    #region iTerm2_WindowTargeting
+
+    [Fact]
+    public void GetITermWindowScript_CapturesWindowReference_NotCurrentWindow()
+    {
+        var script = MacTerminalLauncher.GetITermWindowScript("cmd", "");
+        Assert.Contains("set newWin to (create window with default profile)", script);
+        Assert.Contains("tell current session of newWin", script);
+        Assert.DoesNotContain("tell current session of current window", script);
+    }
+
+    [Fact]
+    public void GetITermWindowScript_InjectsDydoWindowExport_WithWindowId()
+    {
+        var script = MacTerminalLauncher.GetITermWindowScript("unset CLAUDECODE; claude", "");
+        Assert.Contains("id of newWin", script);
+        Assert.Contains("\"export DYDO_WINDOW=\"", script);
+        Assert.Contains("& winId &", script);
+    }
+
+    [Fact]
+    public void GetITermTabScript_WithWindowId_TargetsByWindowId()
+    {
+        var script = MacTerminalLauncher.GetITermTabScript("cmd", "", windowId: "12345");
+        Assert.Contains("window id 12345", script);
+        // "current window" appears only in the on-error fallback, not as the primary target
+        Assert.DoesNotContain("tell current window", script);
+    }
+
+    [Fact]
+    public void GetITermTabScript_WithoutWindowId_FallsBackToCurrentWindow()
+    {
+        var script = MacTerminalLauncher.GetITermTabScript("cmd", "", windowId: null);
+        Assert.Contains("current window", script);
+    }
+
+    [Fact]
+    public void GetITermTabScript_WithWindowId_InjectsDydoWindowExport()
+    {
+        var script = MacTerminalLauncher.GetITermTabScript("cmd", "", windowId: "12345");
+        Assert.Contains("\"export DYDO_WINDOW=\"", script);
+    }
+
+    [Fact]
+    public void GetITermTabScript_WithInvalidWindowId_FallsBackGracefully()
+    {
+        var script = MacTerminalLauncher.GetITermTabScript("cmd", "", windowId: "99999");
+        Assert.Contains("try", script);
+        Assert.Contains("on error", script);
+    }
+
+    [Fact]
+    public void LaunchMac_NewWindow_WithITerm_DoesNotPassWindowNameToShell()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetRunningTerminal("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: false, windowName: "abc12345");
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.DoesNotContain("export DYDO_WINDOW=abc12345", script);
+        Assert.Contains("DYDO_WINDOW", script);
+    }
+
+    [Fact]
+    public void LaunchMac_Tab_WithITerm_PassesWindowNameAsWindowId()
+    {
+        var recorder = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        detector.SetAvailable("iTerm");
+        var launcher = new TerminalLauncher(recorder, detector);
+
+        launcher.LaunchMac("Adele", useTab: true, windowName: "12345");
+
+        var script = recorder.Started[0].ArgumentList[1];
+        Assert.Contains("window id 12345", script);
+    }
+
+    [Fact]
+    public void GetITermTabScript_CapturesTabReference_NotCurrentSession()
+    {
+        var script = MacTerminalLauncher.GetITermTabScript("cmd", "", windowId: "12345");
+        Assert.Contains("set newTab to (create tab with default profile)", script);
+        Assert.Contains("current session of newTab", script);
     }
 
     #endregion

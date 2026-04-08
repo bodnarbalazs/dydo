@@ -53,9 +53,14 @@ public static class MacTerminalLauncher
         string script;
         if (useITerm)
         {
+            // For iTerm, don't bake DYDO_WINDOW into the shell command —
+            // AppleScript captures the real window ID and injects it dynamically
+            var (iTermShell, iTermPost) = BuildShellComponents(agentName, workingDirectory,
+                autoClose, worktreeId, windowName: null, cleanupWorktreeId, mainProjectRoot);
+
             script = useTab
-                ? GetITermTabScript(shellCommand, postCheck)
-                : GetITermWindowScript(shellCommand, postCheck);
+                ? GetITermTabScript(iTermShell, iTermPost, windowName)
+                : GetITermWindowScript(iTermShell, iTermPost);
         }
         else
         {
@@ -80,29 +85,56 @@ public static class MacTerminalLauncher
     {
         var cmd = $"{shellCommand}{postCheck}";
         return "tell application \"iTerm\"\n" +
-               "  create window with default profile\n" +
-               "  tell current session of current window\n" +
-               $"    write text \"{cmd}\"\n" +
+               "  set newWin to (create window with default profile)\n" +
+               "  set winId to id of newWin\n" +
+               "  tell current session of newWin\n" +
+               $"    write text \"export DYDO_WINDOW=\" & winId & \"; {cmd}\"\n" +
                "  end tell\n" +
                "  activate\n" +
                "end tell";
     }
 
-    public static string GetITermTabScript(string shellCommand, string postCheck)
+    public static string GetITermTabScript(string shellCommand, string postCheck, string? windowId = null)
     {
         var cmd = $"{shellCommand}{postCheck}";
+
+        if (windowId != null)
+        {
+            return "tell application \"iTerm\"\n" +
+                   "  try\n" +
+                   $"    set targetWin to window id {windowId}\n" +
+                   "  on error\n" +
+                   "    if (count of windows) > 0 then\n" +
+                   "      set targetWin to current window\n" +
+                   "    else\n" +
+                   "      set targetWin to (create window with default profile)\n" +
+                   "    end if\n" +
+                   "  end try\n" +
+                   "  set winId to id of targetWin\n" +
+                   "  tell targetWin\n" +
+                   "    set newTab to (create tab with default profile)\n" +
+                   "    tell current session of newTab\n" +
+                   $"      write text \"export DYDO_WINDOW=\" & winId & \"; {cmd}\"\n" +
+                   "    end tell\n" +
+                   "  end tell\n" +
+                   "  activate\n" +
+                   "end tell";
+        }
+
         return "tell application \"iTerm\"\n" +
                "  if (count of windows) > 0 then\n" +
+               "    set winId to id of current window\n" +
                "    tell current window\n" +
-               "      create tab with default profile\n" +
-               "      tell current session\n" +
-               $"        write text \"{cmd}\"\n" +
+               "      set newTab to (create tab with default profile)\n" +
+               "      tell current session of newTab\n" +
+               $"        write text \"export DYDO_WINDOW=\" & winId & \"; {cmd}\"\n" +
                "      end tell\n" +
                "    end tell\n" +
                "  else\n" +
-               "    create window with default profile\n" +
-               "    tell current session of current window\n" +
-               $"      write text \"{cmd}\"\n" +
+               "    set newWin to (create window with default profile)\n" +
+               "    set winId to id of newWin\n" +
+               "    tell current session of newWin\n" +
+               $"      write text \"export DYDO_WINDOW=\" & winId & \"; {cmd}\"\n" +
                "    end tell\n" +
                "  end if\n" +
                "  activate\n" +

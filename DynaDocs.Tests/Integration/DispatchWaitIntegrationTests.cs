@@ -711,6 +711,37 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         Assert.Contains("reserved for oversight roles", result);
     }
 
+    [Fact]
+    public async Task Dispatch_Wait_SucceedsWithVerifiedSessionContext()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Use inquisitor — has CanOrchestrate=true and no role-assignment constraints
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "deploy", "Audit deploy");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "inquisitor", "deploy");
+        ClearInboxInSeparateSession("Brian");
+
+        // Write verified format: sessionId + agentName
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = "other-session-Brian";
+        File.WriteAllText(contextPath, $"{otherSession}\nBrian");
+
+        var workspace = Path.Combine(TestDir, "dydo", "agents", "Brian");
+        var marker = Path.Combine(workspace, ".no-launch-nudge-deploy");
+        File.WriteAllText(marker, "test-bypass");
+
+        var command = DispatchCommand.Create();
+        var args = new List<string>
+            { "--role", "code-writer", "--task", "deploy", "--brief", "Deploy it", "--no-launch", "--wait" };
+        var result = await RunAsync(command, args.ToArray());
+
+        StoreSessionContext();
+        var output = result.Stdout + result.Stderr;
+
+        Assert.DoesNotContain("reserved for oversight roles", output);
+    }
+
     #endregion
 
     #region Helper Methods

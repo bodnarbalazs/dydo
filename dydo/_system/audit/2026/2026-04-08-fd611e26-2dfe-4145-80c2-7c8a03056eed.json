@@ -989,6 +989,54 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -15"
+    },
+    {
+      "ts": "2026-04-08T15:31:39.9960462Z",
+      "event": "Blocked",
+      "tool": "bash",
+      "cmd": "git stash \u0026\u0026 python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~Merge_Final...",
+      "reason": "git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."
+    },
+    {
+      "ts": "2026-04-08T15:31:44.7893238Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git diff --stat HEAD 2\u003E\u00261 | head -20"
+    },
+    {
+      "ts": "2026-04-08T15:31:54.1471617Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-08T15:32:06.6116376Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs",
+      "tool": "grep"
+    },
+    {
+      "ts": "2026-04-08T15:32:18.5153218Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~Merge_Finalize_NonWorktr..."
+    },
+    {
+      "ts": "2026-04-08T15:34:26.1673038Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -10"
+    },
+    {
+      "ts": "2026-04-08T15:37:48.6764544Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -20"
+    },
+    {
+      "ts": "2026-04-08T15:38:34.7335629Z",
+      "event": "Release",
+      "agent": "Dexter"
     }
   ],
   "snapshot": {

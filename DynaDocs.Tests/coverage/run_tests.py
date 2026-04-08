@@ -118,8 +118,11 @@ def run_tests(extra_args=None, coverage=False):
         if extra_args:
             cmd.extend(extra_args)
 
+        # Strip dydo env vars so tests run in a clean environment
+        env = {k: v for k, v in os.environ.items() if not k.startswith("DYDO_")}
+
         print(f"  Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd, cwd=worktree)
+        result = subprocess.run(cmd, cwd=worktree, env=env)
 
         if coverage:
             copy_coverage_back(worktree)

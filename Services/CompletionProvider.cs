@@ -7,12 +7,14 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
-        "dispatch", "inbox", "task", "review", "workspace",
-        "whoami", "audit", "version", "help", "completions"
+        "dispatch", "inbox", "message", "msg", "wait", "task", "issue",
+        "review", "inquisition", "workspace", "whoami", "audit",
+        "completions", "complete", "template", "roles", "validate",
+        "watchdog", "worktree", "queue", "version", "help"
     ];
 
     private static readonly string[] Roles =
-        ["code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer"];
+        ["code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer", "orchestrator", "inquisitor", "judge"];
 
     private static readonly string[] ReviewStatuses = ["pass", "fail"];
 
@@ -21,14 +23,21 @@ public static class CompletionProvider
     // Position 2: command → list of subcommands
     private static readonly Dictionary<string, string[]> SubcommandLists = new()
     {
-        ["agent"] = ["claim", "release", "status", "list", "role", "new", "rename", "remove", "reassign", "clean"],
-        ["task"] = ["approve", "create", "list", "ready-for-review", "reject"],
+        ["agent"] = ["claim", "release", "status", "list", "role", "tree", "new", "rename", "remove", "reassign", "clean"],
+        ["task"] = ["approve", "create", "list", "ready-for-review", "reject", "compact"],
         ["review"] = ["complete"],
         ["init"] = ["claude", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
         ["inbox"] = ["list", "show", "clear"],
         ["workspace"] = ["init", "check"],
         ["graph"] = ["stats"],
+        ["issue"] = ["create", "list", "resolve"],
+        ["inquisition"] = ["coverage"],
+        ["roles"] = ["list", "create", "reset"],
+        ["template"] = ["update"],
+        ["worktree"] = ["cleanup", "merge", "init-settings", "prune"],
+        ["queue"] = ["create", "show", "cancel", "clear"],
+        ["watchdog"] = ["start", "stop", "run"],
     };
 
     // Position 3: (command, subcommand) → dynamic completion source
@@ -51,6 +60,7 @@ public static class CompletionProvider
     {
         ["--role"] = () => Roles,
         ["--task"] = GetTaskNames,
+        ["--subject"] = GetTaskNames,
         ["--area"] = () => Frontmatter.ValidAreas,
         ["--status"] = () => ReviewStatuses,
         ["--action"] = () => GuardActions,

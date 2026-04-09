@@ -1,6 +1,6 @@
 namespace DynaDocs.Tests.Commands;
 
-using System.CommandLine;
+using DynaDocs.Commands;
 using Xunit;
 
 /// <summary>
@@ -10,93 +10,9 @@ using Xunit;
 [Collection("ConsoleOutput")]
 public class HelpCommandTests
 {
-    /// <summary>
-    /// Captures the output of the help command by invoking the same handler logic.
-    /// </summary>
     private static string CaptureHelpOutput()
     {
-        return ConsoleCapture.Stdout(() => PrintHelp());
-    }
-
-    private static void PrintHelp()
-    {
-        Console.WriteLine("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
-        Console.WriteLine();
-        Console.WriteLine("Setup Commands:");
-        Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");
-        Console.WriteLine("  init <int> --join      Join existing project as new team member");
-        Console.WriteLine("  whoami                 Show current agent identity");
-        Console.WriteLine();
-        Console.WriteLine("Documentation Commands:");
-        Console.WriteLine("  check [path]           Validate docs, report violations");
-        Console.WriteLine("  fix [path]             Auto-fix issues where possible");
-        Console.WriteLine("  index [path]           Regenerate index.md from structure");
-        Console.WriteLine("  graph <file>           Show graph connections for a file");
-        Console.WriteLine("  graph stats [--top N]  Show top docs by incoming links");
-        Console.WriteLine();
-        Console.WriteLine("Agent Workflow Commands:");
-        Console.WriteLine("  agent claim auto       Claim first available agent");
-        Console.WriteLine("  agent claim <name>     Claim a specific agent");
-        Console.WriteLine("  agent release          Release current agent");
-        Console.WriteLine("  agent status [name]    Show agent status");
-        Console.WriteLine("  agent list [--free] [--all]  List agents (default: current human's)");
-        Console.WriteLine("  agent role <role>      Set current agent's role");
-        Console.WriteLine("  agent clean <agent>    Clean agent workspace");
-        Console.WriteLine();
-        Console.WriteLine("Agent Management Commands:");
-        Console.WriteLine("  agent new <name> <human>       Create new agent and assign to human");
-        Console.WriteLine("  agent rename <old> <new>       Rename an agent");
-        Console.WriteLine("  agent remove <name> [--force]  Remove agent from pool");
-        Console.WriteLine("  agent reassign <name> <human>  Reassign agent to different human");
-        Console.WriteLine();
-        Console.WriteLine("Dispatch & Inbox Commands:");
-        Console.WriteLine("  dispatch               Dispatch work to another agent");
-        Console.WriteLine("  inbox list             List agents with inbox items");
-        Console.WriteLine("  inbox show             Show current agent's inbox");
-        Console.WriteLine("  inbox clear            Clear processed inbox items");
-        Console.WriteLine();
-        Console.WriteLine("Messaging Commands:");
-        Console.WriteLine("  message --to <agent>   Send message to another agent (alias: msg)");
-        Console.WriteLine("  wait [--task <name>]   Wait for incoming message");
-        Console.WriteLine();
-        Console.WriteLine("Workspace Commands:");
-        Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
-        Console.WriteLine("  workspace init         Initialize agent workspaces");
-        Console.WriteLine("  workspace check        Verify workflow before session end");
-        Console.WriteLine();
-        Console.WriteLine("Audit Commands:");
-        Console.WriteLine("  audit                  Generate activity replay visualization");
-        Console.WriteLine("  audit /2025            Filter to specific year");
-        Console.WriteLine("  audit --list           List available sessions");
-        Console.WriteLine("  audit --session <id>   Show details for a session");
-        Console.WriteLine("  audit compact [year]   Compact audit snapshots (baseline+delta)");
-        Console.WriteLine();
-        Console.WriteLine("Template Commands:");
-        Console.WriteLine("  template update        Update framework templates and docs");
-        Console.WriteLine();
-        Console.WriteLine("Task Commands:");
-        Console.WriteLine("  task create <name>     Create a new task");
-        Console.WriteLine("  task ready-for-review  Mark task ready for review");
-        Console.WriteLine("  task approve <name>    Approve task (human only)");
-        Console.WriteLine("  task reject <name>     Reject task (human only)");
-        Console.WriteLine("  task list              List tasks");
-        Console.WriteLine();
-        Console.WriteLine("  review complete <task> Complete a code review");
-        Console.WriteLine();
-        Console.WriteLine("Utility:");
-        Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");
-        Console.WriteLine("  version                Display version information");
-        Console.WriteLine("  help                   Display this help");
-        Console.WriteLine();
-        Console.WriteLine("Environment Variables:");
-        Console.WriteLine("  DYDO_HUMAN             Human identifier for agent assignment");
-        Console.WriteLine();
-        Console.WriteLine("Exit codes:");
-        Console.WriteLine("  0 - Success / Action allowed");
-        Console.WriteLine("  1 - Validation errors found");
-        Console.WriteLine("  2 - Tool error / Action blocked");
-        Console.WriteLine();
-        Console.WriteLine("For detailed command reference, see: ./dydo/reference/dydo-commands.md");
+        return ConsoleCapture.Stdout(HelpCommand.PrintHelp);
     }
 
     [Fact]
@@ -104,7 +20,6 @@ public class HelpCommandTests
     {
         var output = CaptureHelpOutput();
 
-        // All top-level commands must be mentioned
         Assert.Contains("check", output);
         Assert.Contains("fix", output);
         Assert.Contains("init", output);
@@ -116,10 +31,17 @@ public class HelpCommandTests
         Assert.Contains("inbox", output);
         Assert.Contains("task", output);
         Assert.Contains("review", output);
-        Assert.Contains("clean", output);
         Assert.Contains("workspace", output);
         Assert.Contains("whoami", output);
         Assert.Contains("audit", output);
+        Assert.Contains("completions", output);
+        Assert.Contains("template", output);
+        Assert.Contains("roles", output);
+        Assert.Contains("validate", output);
+        Assert.Contains("issue", output);
+        Assert.Contains("inquisition", output);
+        Assert.Contains("queue", output);
+        Assert.Contains("worktree", output);
         Assert.Contains("version", output);
         Assert.Contains("help", output);
     }
@@ -133,6 +55,7 @@ public class HelpCommandTests
         Assert.Contains("agent release", output);
         Assert.Contains("agent status", output);
         Assert.Contains("agent list", output);
+        Assert.Contains("agent tree", output);
         Assert.Contains("agent role", output);
         Assert.Contains("agent new", output);
         Assert.Contains("agent rename", output);
@@ -151,6 +74,7 @@ public class HelpCommandTests
         Assert.Contains("task approve", output);
         Assert.Contains("task reject", output);
         Assert.Contains("task list", output);
+        Assert.Contains("task compact", output);
     }
 
     [Fact]
@@ -210,9 +134,17 @@ public class HelpCommandTests
         Assert.Contains("Agent Workflow Commands:", output);
         Assert.Contains("Agent Management Commands:", output);
         Assert.Contains("Dispatch & Inbox Commands:", output);
+        Assert.Contains("Messaging Commands:", output);
         Assert.Contains("Workspace Commands:", output);
         Assert.Contains("Audit Commands:", output);
+        Assert.Contains("Role Commands:", output);
+        Assert.Contains("Validation Commands:", output);
+        Assert.Contains("Template Commands:", output);
         Assert.Contains("Task Commands:", output);
+        Assert.Contains("Issue Commands:", output);
+        Assert.Contains("Inquisition Commands:", output);
+        Assert.Contains("Queue Commands:", output);
+        Assert.Contains("Worktree Commands:", output);
         Assert.Contains("Utility:", output);
     }
 }

@@ -25,6 +25,7 @@ public class CommandSmokeTests
             FixCommand.Create,
             GraphCommand.Create,
             GuardCommand.Create,
+            HelpCommand.Create,
             InboxCommand.Create,
             IndexCommand.Create,
             InquisitionCommand.Create,
@@ -54,7 +55,7 @@ public class CommandSmokeTests
     [Fact]
     public void RootCommand_CanBeBuilt_WithAllSubcommands()
     {
-        // Verify the entire CLI can be constructed
+        // Verify the entire CLI can be constructed — mirrors Program.cs registrations
         var exception = Record.Exception(() =>
         {
             var rootCommand = new System.CommandLine.RootCommand("Test")
@@ -62,13 +63,13 @@ public class CommandSmokeTests
                 AgentCommand.Create(),
                 AuditCommand.Create(),
                 CheckCommand.Create(),
-                CleanCommand.Create(),
                 CompleteCommand.Create(),
                 CompletionsCommand.Create(),
                 DispatchCommand.Create(),
                 FixCommand.Create(),
                 GraphCommand.Create(),
                 GuardCommand.Create(),
+                HelpCommand.Create(),
                 InboxCommand.Create(),
                 IndexCommand.Create(),
                 InquisitionCommand.Create(),
@@ -84,11 +85,15 @@ public class CommandSmokeTests
                 WatchdogCommand.Create(),
                 WhoamiCommand.Create(),
                 WorkspaceCommand.Create(),
+                WorktreeCommand.Create(),
                 QueueCommand.Create()
             };
 
-            // Verify subcommands are present
-            Assert.True(rootCommand.Subcommands.Count >= 26);
+            // version is the only command created inline in Program.cs
+            rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
+
+            // Must match Program.cs: 27 Create() commands + 1 inline (version) = 28
+            Assert.Equal(28, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

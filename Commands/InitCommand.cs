@@ -169,7 +169,7 @@ public static class InitCommand
         Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
         Console.WriteLine();
         Console.WriteLine("Next steps:");
-        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
+        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
         Console.WriteLine("  2. Customize dydo/understand/architecture.md for your project");
         Console.WriteLine("  3. Customize dydo/guides/coding-standards.md");
         Console.WriteLine();
@@ -269,7 +269,7 @@ public static class InitCommand
         Console.WriteLine($"Agents assigned to {humanName}: {string.Join(", ", assignedAgents)}");
         Console.WriteLine();
         Console.WriteLine("Next steps:");
-        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN={humanName}");
+        Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
         Console.WriteLine("  2. Claim an agent: dydo agent claim auto");
 
         var completionResult = ShellCompletionInstaller.Install();

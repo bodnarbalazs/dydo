@@ -15,7 +15,7 @@ public class CommandDocConsistencyTests
     // Commands intentionally hidden from agent-facing quick reference
     private static readonly HashSet<string> ExcludedPaths =
     [
-        "guard lift", "guard restore", "completions",
+        "guard lift", "guard restore", "completions", "help",
         "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune",
         "watchdog", "watchdog start", "watchdog stop", "watchdog run",
         "queue create", "queue show", "queue cancel", "queue clear"
@@ -136,15 +136,16 @@ public class CommandDocConsistencyTests
     public void AllCommands_AppearInHelpText()
     {
         var commands = GetDocumentedCommands();
-        var programCs = File.ReadAllText(FindRepoFile("Program.cs"));
+        var helpSource = File.ReadAllText(
+            FindRepoFile(Path.Combine("Commands", "HelpCommand.cs")));
 
         var missing = commands
-            .Where(c => !programCs.Contains(c.Path))
+            .Where(c => !helpSource.Contains(c.Path))
             .Select(c => c.Path)
             .ToList();
 
         Assert.True(missing.Count == 0,
-            $"Commands missing from help text in Program.cs:\n  {string.Join("\n  ", missing)}");
+            $"Commands missing from help text in HelpCommand.cs:\n  {string.Join("\n  ", missing)}");
     }
 
     // ──────────────────────────────────────────────

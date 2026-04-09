@@ -2,6 +2,7 @@ namespace DynaDocs.Commands;
 
 using System.CommandLine;
 using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using DynaDocs.Models;
@@ -349,7 +350,7 @@ public static class AuditCommand
             var snapshotInfo = session.Snapshot != null
                 ? $"{session.Snapshot.Files.Count} files"
                 : "none";
-            sb.AppendLine($"        <tr><td>{session.AgentName ?? "Unknown"}</td><td>{session.Human ?? "-"}</td><td>{session.Started:yyyy-MM-dd HH:mm}</td><td>{session.Events.Count}</td><td>{snapshotInfo}</td></tr>");
+            sb.AppendLine($"        <tr><td>{WebUtility.HtmlEncode(session.AgentName ?? "Unknown")}</td><td>{WebUtility.HtmlEncode(session.Human ?? "-")}</td><td>{session.Started:yyyy-MM-dd HH:mm}</td><td>{session.Events.Count}</td><td>{snapshotInfo}</td></tr>");
         }
         sb.AppendLine("    </table>");
         sb.AppendLine();
@@ -418,6 +419,12 @@ public static class AuditCommand
     }
 
     private static string GetJavaScript() => """
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
         // Playback state
         let currentStep = 0;
         let playing = false;
@@ -469,8 +476,8 @@ public static class AuditCommand
             let html = '';
             for (const [agent, color] of Object.entries(agentColors)) {
                 html += '<span style="display:inline-block;margin-right:10px">';
-                html += '<span style="display:inline-block;width:12px;height:12px;background:' + color + ';margin-right:3px"></span>';
-                html += agent + '</span>';
+                html += '<span style="display:inline-block;width:12px;height:12px;background:' + esc(color) + ';margin-right:3px"></span>';
+                html += esc(agent) + '</span>';
             }
             legend.innerHTML = html;
         }
@@ -768,10 +775,10 @@ public static class AuditCommand
             const time = event.Timestamp.substring(11, 19);
 
             const line = document.createElement('div');
-            line.innerHTML = '<span style="background:' + agentColor + ';color:white;padding:0 3px;margin-right:3px">' +
-                event.Agent.substring(0, 8) + '</span>' +
-                time + ' ' + event.EventType + ' ' +
-                (event.Path || event.Command || event.Role || '');
+            line.innerHTML = '<span style="background:' + esc(agentColor) + ';color:white;padding:0 3px;margin-right:3px">' +
+                esc(event.Agent.substring(0, 8)) + '</span>' +
+                esc(time + ' ' + event.EventType + ' ' +
+                (event.Path || event.Command || event.Role || ''));
             log.appendChild(line);
             log.scrollTop = log.scrollHeight;
 

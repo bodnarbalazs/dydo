@@ -244,11 +244,11 @@ public class SnapshotCompactionService
             Snapshot = baselineSnapshot
         };
 
-        // Write baseline file
+        // Write baseline file atomically — write to temp, then rename
         var baselinePath = Path.Combine(yearDir, $"_baseline-{baselineId}.json");
         var baselineJson = JsonSerializer.Serialize(newBaseline, DydoDefaultJsonContext.Default.SnapshotBaseline);
         result.NewBaselineSizeBytes = Encoding.UTF8.GetByteCount(baselineJson);
-        File.WriteAllText(baselinePath, baselineJson);
+        WriteAtomic(baselinePath, baselineJson);
 
         // Phase 3: Rebuild sessions with delta references, caching deltas by snapshot content
         var deltaCache = new Dictionary<string, SnapshotDelta?>();
@@ -282,9 +282,9 @@ public class SnapshotCompactionService
                 Delta = delta
             };
 
-            // Write updated session
+            // Write updated session atomically
             var json = JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AuditSession);
-            File.WriteAllText(filePath, json);
+            WriteAtomic(filePath, json);
             result.NewTotalSizeBytes += Encoding.UTF8.GetByteCount(json);
         }
 
@@ -338,6 +338,18 @@ public class SnapshotCompactionService
     {
         var file = sessionFiles.FirstOrDefault(f => f.Contains(sessionId));
         return file != null ? LoadSession(file) : null;
+    }
+
+    /// <summary>
+    /// Write content to a file atomically: write to a temp file in the same directory,
+    /// then rename. On NTFS, same-volume renames are atomic — if the process crashes
+    /// mid-write, the original file remains intact.
+    /// </summary>
+    internal static void WriteAtomic(string targetPath, string content)
+    {
+        var tempPath = targetPath + ".tmp";
+        File.WriteAllText(tempPath, content);
+        File.Move(tempPath, targetPath, overwrite: true);
     }
 
     private static string ComputeBaselineId(ProjectSnapshot snapshot)

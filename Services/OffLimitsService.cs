@@ -62,16 +62,16 @@ public class OffLimitsService : IOffLimitsService
     {
         var normalizedPath = PathUtils.NormalizeForPattern(path);
 
-        // Check whitelist first - if whitelisted, allow
-        if (FindMatchingPattern(normalizedPath, _whitelistPatterns, _whitelistCompiled) != null)
-            return null;
-
         // Hardcoded system patterns — always enforced, not whitelistable
         foreach (var (pattern, compiled) in SystemOffLimits)
         {
             if (compiled.IsMatch(normalizedPath))
                 return pattern;
         }
+
+        // Whitelist — if matched, allow past user-defined off-limits patterns
+        if (FindMatchingPattern(normalizedPath, _whitelistPatterns, _whitelistCompiled) != null)
+            return null;
 
         return FindMatchingPattern(normalizedPath, _patterns, _compiledPatterns);
     }

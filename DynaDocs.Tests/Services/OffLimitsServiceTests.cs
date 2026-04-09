@@ -803,4 +803,33 @@ public class OffLimitsServiceTests : IDisposable
     }
 
     #endregion
+
+    #region System Off-Limits (guard-lift.json)
+
+    [Fact]
+    public void IsPathOffLimits_GuardLiftJson_BlockedEvenWhenWhitelistMatchesAgentsPath()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            ## Off-Limits
+            ```
+            .env
+            ```
+
+            ## Whitelist
+            ```
+            dydo/agents/**
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        // Whitelist allows general agent paths
+        Assert.Null(service.IsPathOffLimits("dydo/agents/Adele/inbox/task.md"));
+
+        // .guard-lift.json must STILL be blocked by SystemOffLimits
+        Assert.NotNull(service.IsPathOffLimits("dydo/agents/Adele/.guard-lift.json"));
+    }
+
+    #endregion
 }

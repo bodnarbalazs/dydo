@@ -184,11 +184,23 @@ public class PathUtilsTests
     }
 
     [Fact]
-    public void NormalizeWorktreePath_NoWorktreeRootIdentifiable_ReturnsUnchanged()
+    public void NormalizeWorktreePath_NoDydoJson_FallsBackToFirstSegment()
     {
-        // Path contains the marker but no directory has dydo.json
+        // When no directory has dydo.json, fallback uses the first segment after
+        // the marker as the worktree ID and strips accordingly
         var input = "C:/nowhere/dydo/_system/.local/worktrees/mystery/Commands/Foo.cs";
-        Assert.Equal(input, PathUtils.NormalizeWorktreePath(input));
+        var expected = "C:/nowhere/Commands/Foo.cs";
+        Assert.Equal(expected, PathUtils.NormalizeWorktreePath(input));
+    }
+
+    [Fact]
+    public void NormalizeWorktreePath_RelativeWorktreePath_StripsPrefix()
+    {
+        // Relative path containing worktree prefix — guard sees this when CWD
+        // differs from the worktree root, so File.Exists fails
+        var input = "dydo/_system/.local/worktrees/abc123/dydo/project/inquisitions/file.md";
+        var expected = "dydo/project/inquisitions/file.md";
+        Assert.Equal(expected, PathUtils.NormalizeWorktreePath(input));
     }
 
     [Fact]

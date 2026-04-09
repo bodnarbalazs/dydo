@@ -102,7 +102,15 @@ public static partial class PathUtils
         }
 
         if (bestSplitPos < 0)
-            return path;
+        {
+            // Fallback: use the first segment after the marker as the worktree ID.
+            // Handles relative paths where File.Exists can't verify the root
+            // (e.g., guard CWD differs from the worktree directory).
+            var firstSlash = afterMarker.IndexOf('/');
+            if (firstSlash < 0)
+                return path;
+            bestSplitPos = firstSlash;
+        }
 
         var projectContent = afterMarker[(bestSplitPos + 1)..];
 

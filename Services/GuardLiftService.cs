@@ -29,7 +29,10 @@ public class GuardLiftService
         };
 
         var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.GuardLiftMarker);
-        File.WriteAllText(MarkerPath(agentName), json);
+        var markerPath = MarkerPath(agentName);
+        // Ensure directory exists — in worktrees the agents junction may be absent
+        Directory.CreateDirectory(Path.GetDirectoryName(markerPath)!);
+        File.WriteAllText(markerPath, json);
     }
 
     public void Restore(string agentName)

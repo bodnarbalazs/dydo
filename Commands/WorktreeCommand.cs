@@ -434,6 +434,29 @@ public static class WorktreeCommand
         }
     }
 
+    /// <summary>
+    /// Recursively deletes a directory, safely handling junctions/symlinks at any depth.
+    /// Junctions are detected via <see cref="FileAttributes.ReparsePoint"/> and removed
+    /// without following into their target, preventing destruction of main repo files.
+    /// </summary>
+    internal static void DeleteDirectoryJunctionSafe(string path)
+    {
+        if (!Directory.Exists(path)) return;
+
+        foreach (var subDir in Directory.GetDirectories(path))
+        {
+            if ((File.GetAttributes(subDir) & FileAttributes.ReparsePoint) != 0)
+                RemoveJunction(subDir);
+            else
+                DeleteDirectoryJunctionSafe(subDir);
+        }
+
+        foreach (var file in Directory.GetFiles(path))
+            File.Delete(file);
+
+        Directory.Delete(path);
+    }
+
     internal static void RemoveGitWorktree(string worktreePath, string? mainRoot = null)
     {
         try

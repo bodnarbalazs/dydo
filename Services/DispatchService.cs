@@ -618,14 +618,10 @@ public static class DispatchService
         WithWorktreeLock(lockPath, () =>
         {
             // Remove stale directory if it exists from a previous failed run.
-            // Must remove junctions first — Directory.Delete(recursive) follows them on Windows,
-            // destroying the main repo's files.
-            if (Directory.Exists(worktreePath))
-            {
-                foreach (var sub in WorktreeCommand.JunctionSubpaths)
-                    WorktreeCommand.RemoveJunction(Path.Combine(worktreePath, sub));
-                Directory.Delete(worktreePath, recursive: true);
-            }
+            // Uses junction-safe deletion that detects reparse points at any depth,
+            // preventing Directory.Delete(recursive) from following junctions into
+            // the main repo and destroying its files.
+            WorktreeCommand.DeleteDirectoryJunctionSafe(worktreePath);
 
             RunGitForWorktree(projectRoot, "worktree prune");
             var exitCode = RunGitForWorktree(projectRoot, $"worktree add -b {branchName} -- \"{worktreePath}\"");

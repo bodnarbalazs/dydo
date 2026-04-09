@@ -200,6 +200,36 @@ public class WorktreeCreationLockTests : IDisposable
             "Main repo inquisitions dir was destroyed by stale worktree cleanup");
     }
 
+    [Fact]
+    public void CreateGitWorktree_StaleDirectoryWithUnknownJunction_DoesNotDeleteJunctionTarget()
+    {
+        // Regression: a junction NOT in the known JunctionSubpaths list must still be
+        // handled safely. The junction-safe delete should detect it via ReparsePoint flag
+        // rather than relying on a hardcoded list.
+        if (!OperatingSystem.IsWindows()) return;
+
+        DispatchService.CreateGitWorktreeOverride = (_, _, _) => 0;
+
+        var projectRoot = Path.Combine(_testDir, "project");
+        var worktreesDir = Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees");
+        var wtPath = Path.Combine(worktreesDir, "unknown-junction");
+
+        // Simulate a target directory outside the worktree that must survive
+        var externalTarget = Path.Combine(_testDir, "external-data");
+        Directory.CreateDirectory(externalTarget);
+        File.WriteAllText(Path.Combine(externalTarget, "precious.txt"), "must survive");
+
+        // Create stale worktree dir with a junction NOT in JunctionSubpaths
+        var unknownJunctionPath = Path.Combine(wtPath, "some", "unexpected", "junction");
+        Directory.CreateDirectory(Path.Combine(wtPath, "some", "unexpected"));
+        CreateJunction(unknownJunctionPath, externalTarget);
+
+        DispatchService.CreateGitWorktree(projectRoot, wtPath, "worktree/unknown-junction");
+
+        Assert.True(File.Exists(Path.Combine(externalTarget, "precious.txt")),
+            "External directory was destroyed by stale worktree cleanup — junction not detected");
+    }
+
     private static void CreateJunction(string junctionPath, string targetPath)
     {
         var psi = new System.Diagnostics.ProcessStartInfo

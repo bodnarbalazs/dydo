@@ -69,8 +69,8 @@ public static partial class GuardCommand
     private static readonly HashSet<string> SearchTools = new(StringComparer.OrdinalIgnoreCase) { "glob", "grep", "agent" };
 
     // Claude Code hook response that explicitly approves a tool call, bypassing the permission prompt.
-    // Used in worktree contexts where Read(**) permission patterns fail to match worktree-resolved paths.
-    private const string WorktreeReadAllowJson =
+    // Used in worktree contexts where permission patterns fail to match worktree-resolved paths.
+    private const string WorktreeAllowJson =
         """{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}""";
 
     private const string WorktreePathMarker = "dydo/_system/.local/worktrees/";
@@ -88,7 +88,7 @@ public static partial class GuardCommand
     private static void EmitWorktreeAllowIfNeeded()
     {
         if (IsWorktreeContext())
-            Console.WriteLine(WorktreeReadAllowJson);
+            Console.WriteLine(WorktreeAllowJson);
     }
     private static readonly HashSet<string> WriteActions = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
     private static readonly Dictionary<string, AuditEventType> ActionAuditMap = new(StringComparer.OrdinalIgnoreCase)
@@ -276,6 +276,7 @@ public static partial class GuardCommand
             {
                 EventType = liftedEventType, Path = filePath, Tool = toolName, Lifted = true
             });
+            EmitWorktreeAllowIfNeeded();
             return ExitCodes.Success;
         }
 
@@ -762,6 +763,9 @@ public static partial class GuardCommand
         {
             EventType = AuditEventType.Bash, Tool = "bash", Command = TruncateCommand(command)
         });
+
+        EmitWorktreeAllowIfNeeded();
+
         return ExitCodes.Success;
     }
 

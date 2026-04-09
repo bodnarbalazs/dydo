@@ -182,6 +182,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Worktree lifecycle — must go through dydo
         (GitWorktreeAddRegex(), "Use dydo dispatch --worktree to create worktrees"),
         (GitWorktreeRemoveRegex(), "Use dydo worktree cleanup to remove worktrees"),
+
+        // Inline interpreter execution — bypasses all file operation analysis
+        (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
     ];
 
     // Heredoc detection — strip $(cat <<'WORD'...WORD) to prevent false positives
@@ -271,6 +274,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\bgit\b[^;|&]*\bworktree\s+remove(?:\s|$)", RegexOptions.IgnoreCase)]
     private static partial Regex GitWorktreeRemoveRegex();
 
+    // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
+    // Does NOT match script file execution (python script.py) or version flags (python --version).
+    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
+    private static partial Regex InlineInterpreterRegex();
+
     // Coaching: detect needless cd+command compounds
     [GeneratedRegex(@"^\s*cd\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex CdThenCommandRegex();
@@ -355,7 +363,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         foreach (var (check, warning) in BypassChecks)
         {
             if (check(command))
+            {
                 result.Warnings.Add(warning);
+                result.HasBypassAttempt = true;
+            }
         }
     }
 

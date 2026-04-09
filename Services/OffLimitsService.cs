@@ -26,6 +26,11 @@ public class OffLimitsService : IOffLimitsService
         _configService = configService ?? new ConfigService();
     }
 
+    // Hardcoded off-limits patterns for system-critical files that must never be agent-writable,
+    // regardless of what's in files-off-limits.md. Prevents self-escalation attacks.
+    private static readonly (string Pattern, Regex Compiled)[] SystemOffLimits =
+        [("dydo/agents/*/.guard-lift.json", CompileGlobToRegex("dydo/agents/*/.guard-lift.json"))];
+
     public void LoadPatterns(string? basePath = null)
     {
         _basePath = basePath ?? Environment.CurrentDirectory;
@@ -60,6 +65,13 @@ public class OffLimitsService : IOffLimitsService
         // Check whitelist first - if whitelisted, allow
         if (FindMatchingPattern(normalizedPath, _whitelistPatterns, _whitelistCompiled) != null)
             return null;
+
+        // Hardcoded system patterns — always enforced, not whitelistable
+        foreach (var (pattern, compiled) in SystemOffLimits)
+        {
+            if (compiled.IsMatch(normalizedPath))
+                return pattern;
+        }
 
         return FindMatchingPattern(normalizedPath, _patterns, _compiledPatterns);
     }

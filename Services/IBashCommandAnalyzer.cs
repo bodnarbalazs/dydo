@@ -31,6 +31,11 @@ public class BashAnalysisResult
     public bool HasDangerousPattern { get; set; }
     public string? DangerousPatternReason { get; set; }
     public List<string> Warnings { get; } = [];
+    /// <summary>
+    /// True when command substitution, variable expansion, or other bypass techniques
+    /// make the file operation analysis unreliable.
+    /// </summary>
+    public bool HasBypassAttempt { get; set; }
 }
 
 /// <summary>

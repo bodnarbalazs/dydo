@@ -447,15 +447,12 @@ public static partial class GuardCommand
         IAuditService auditService,
         bool? runInBackground = null)
     {
-        // Check nudges from dydo.json (defaults + custom)
-        var nudged = CheckNudges(command, sessionId, registry, auditService);
-        if (nudged != null) return nudged.Value;
-
-        // Handle dydo commands
+        // Handle dydo commands first — they have their own safety checks and shouldn't be
+        // subject to nudge pattern matching on their argument text (fixes false positives)
         if (IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId))
             return HandleDydoBashCommand(command, sessionId, registry, auditService, runInBackground);
 
-        // Dangerous patterns first — security reason takes priority over coaching
+        // Hardcoded dangerous patterns — security checks before configurable nudges
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
         {
@@ -469,6 +466,10 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
             return ExitCodes.ToolError;
         }
+
+        // Configurable nudges — after hardcoded security checks
+        var nudged = CheckNudges(command, sessionId, registry, auditService);
+        if (nudged != null) return nudged.Value;
 
         // COACHING: Block needless cd+command compounds
         var (isCdChain, cdPath, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
@@ -732,6 +733,24 @@ public static partial class GuardCommand
 
         foreach (var warning in analysis.Warnings)
             Console.Error.WriteLine($"WARNING: {warning}");
+
+        // Block write/delete operations when bypass attempts make analysis unreliable
+        if (analysis.HasBypassAttempt && analysis.Operations.Any(op =>
+            op.Type is FileOperationType.Write or FileOperationType.Delete
+            or FileOperationType.Move or FileOperationType.Copy
+            or FileOperationType.PermissionChange))
+        {
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Tool = "bash",
+                Command = TruncateCommand(command),
+                BlockReason = "Write with bypass attempt (command substitution/variable expansion)"
+            });
+            Console.Error.WriteLine("BLOCKED: Command contains bypass patterns (command substitution or variable expansion) "
+                + "that make file operation analysis unreliable.");
+            Console.Error.WriteLine("  Write operations cannot be verified. Use literal paths instead.");
+            return ExitCodes.ToolError;
+        }
 
         foreach (var op in analysis.Operations)
         {

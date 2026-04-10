@@ -70,6 +70,9 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("ruby -e \"File.read('secrets.json')\"")]
     [InlineData("perl -e \"open(F,'<secrets.json')\"")]
     [InlineData("php -r \"file_get_contents('secrets.json')\"")]
+    [InlineData("bash -c \"rm -rf /tmp/secrets\"")]
+    [InlineData("sh -c \"cat /etc/passwd\"")]
+    [InlineData("zsh -c \"echo pwned > file.txt\"")]
     public void Finding2_InlineInterpreterExecution_IsDangerous(string command)
     {
         var analyzer = new BashCommandAnalyzer();
@@ -85,6 +88,9 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("ruby script.rb")]
     [InlineData("perl script.pl")]
     [InlineData("php script.php")]
+    [InlineData("bash script.sh")]
+    [InlineData("sh script.sh")]
+    [InlineData("zsh script.sh")]
     public void Finding2_InterpreterWithScriptFile_NotDangerous(string command)
     {
         var analyzer = new BashCommandAnalyzer();
@@ -150,6 +156,65 @@ public class GuardSecurityTests : IntegrationTestBase
 
         // Variable expansion + read only = allowed (with warning)
         var result = await GuardWithStdinAsync(BashJson("cat $FILENAME"));
+        result.AssertSuccess();
+    }
+
+    // ================================================================
+    // Finding 5: Command substitution hiding entire write operations
+    // ================================================================
+
+    [Fact]
+    public void Finding5_WriteInsideCommandSubstitution_DetectedAsWriteOp()
+    {
+        var analyzer = new BashCommandAnalyzer();
+        // cp is entirely inside $() — analyzer must still detect the write
+        var result = analyzer.Analyze("echo $(cp secret.txt /tmp/output.txt)");
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op =>
+            op.Type is FileOperationType.Copy or FileOperationType.Write
+            or FileOperationType.Delete or FileOperationType.Move);
+    }
+
+    [Fact]
+    public void Finding5_WriteInsideBackticks_DetectedAsWriteOp()
+    {
+        var analyzer = new BashCommandAnalyzer();
+        var result = analyzer.Analyze("echo `rm important.txt`");
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op =>
+            op.Type is FileOperationType.Delete);
+    }
+
+    [Fact]
+    public void Finding5_ReadInsideCommandSubstitution_NoWriteOp()
+    {
+        var analyzer = new BashCommandAnalyzer();
+        // cat inside $() is a read, not a write — should not produce write ops
+        var result = analyzer.Analyze("echo $(cat readme.txt)");
+        Assert.True(result.HasBypassAttempt);
+        Assert.DoesNotContain(result.Operations, op =>
+            op.Type is FileOperationType.Write or FileOperationType.Delete
+            or FileOperationType.Move or FileOperationType.Copy);
+    }
+
+    [Fact]
+    public async Task Finding5_WriteHiddenInSubstitution_Blocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            BashJson("echo $(cp secret.txt /tmp/leak.txt)"));
+        result.AssertExitCode(2);
+        result.AssertStderrContains("bypass");
+    }
+
+    [Fact]
+    public async Task Finding5_ReadOnlyInSubstitution_Allowed()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            BashJson("echo $(cat readme.txt)"));
         result.AssertSuccess();
     }
 

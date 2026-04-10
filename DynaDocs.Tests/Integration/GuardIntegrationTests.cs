@@ -633,8 +633,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dotnet run -- myarg1 myarg2")]
     [InlineData("dotnet tool run other-tool --flag")]
     [InlineData("bash script.sh")]
-    [InlineData("sh -c \\\"echo hello\\\"")]
-    [InlineData("bash -c \\\"npm install\\\"")]
     [InlineData("python script.py")]
     [InlineData("python3 -m pytest")]
     [InlineData("py -3 script.py")]

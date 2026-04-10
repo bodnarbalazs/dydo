@@ -1674,6 +1674,41 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void RemoveZombieDirectory_DoesNotFollowJunctions()
+    {
+        var targetDir = Path.Combine(_testDir, "junction-target-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(targetDir);
+        File.WriteAllText(Path.Combine(targetDir, "precious.txt"), "must survive");
+
+        var zombieDir = Path.Combine(_testDir, "zombie-junction-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(zombieDir);
+        File.WriteAllText(Path.Combine(zombieDir, "local.txt"), "local file");
+
+        var junctionPath = Path.Combine(zombieDir, "link");
+        if (OperatingSystem.IsWindows())
+        {
+            var p = System.Diagnostics.Process.Start("cmd", $"/c mklink /J \"{junctionPath}\" \"{targetDir}\"");
+            p.WaitForExit();
+        }
+        else
+        {
+            var p = System.Diagnostics.Process.Start("ln", $"-s \"{targetDir}\" \"{junctionPath}\"");
+            p.WaitForExit();
+        }
+
+        // Verify junction was created and points to target
+        Assert.True(Directory.Exists(junctionPath));
+        Assert.True(File.Exists(Path.Combine(junctionPath, "precious.txt")));
+
+        WorktreeCommand.RemoveZombieDirectory(zombieDir);
+
+        Assert.False(Directory.Exists(zombieDir));
+        // Target directory and its contents must survive
+        Assert.True(Directory.Exists(targetDir));
+        Assert.True(File.Exists(Path.Combine(targetDir, "precious.txt")));
+    }
+
+    [Fact]
     public void Cleanup_RemovesZombieDirectory_AfterGitWorktreeRemoveFails()
     {
         var worktreeId = "zombie-" + Guid.NewGuid().ToString("N")[..8];

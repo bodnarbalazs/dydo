@@ -276,7 +276,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
     // Does NOT match script file execution (python script.py) or version flags (python --version).
-    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl|bash|sh|zsh)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
     private static partial Regex InlineInterpreterRegex();
 
     // Coaching: detect needless cd+command compounds
@@ -336,7 +336,30 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             AnalyzeSubCommand(subCmd.Trim(), result);
         }
 
+        // Analyze contents of command substitutions so hidden operations are detected
+        if (result.HasBypassAttempt)
+            AnalyzeCommandSubstitutions(strippedCommand, result);
+
         return result;
+    }
+
+    private void AnalyzeCommandSubstitutions(string command, BashAnalysisResult result)
+    {
+        foreach (Match match in CommandSubstitutionRegex().Matches(command))
+        {
+            var raw = match.Value;
+            // Extract inner content: $(inner) or `inner`
+            string inner;
+            if (raw.StartsWith("$(") && raw.EndsWith(")"))
+                inner = raw[2..^1];
+            else if (raw.StartsWith("`") && raw.EndsWith("`"))
+                inner = raw[1..^1];
+            else
+                continue;
+
+            foreach (var subCmd in SplitCommand(inner))
+                AnalyzeSubCommand(subCmd.Trim(), result);
+        }
     }
 
     public (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command)

@@ -474,10 +474,11 @@ public static class WorktreeCommand
     {
         // git worktree remove only works for registered worktrees.
         // Zombie directories (unregistered) need direct deletion.
+        // Uses junction-safe deletion to avoid following junctions into the main repo.
         if (!Directory.Exists(worktreePath)) return;
         try
         {
-            Directory.Delete(worktreePath, recursive: true);
+            DeleteDirectoryJunctionSafe(worktreePath);
         }
         catch (Exception ex)
         {

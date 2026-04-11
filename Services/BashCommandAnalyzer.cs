@@ -142,6 +142,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (RecursiveDeleteRootRegex(), "Recursive delete of root or home directory"),
         (RecursiveDeleteGlobRegex(), "Recursive delete with dangerous glob pattern"),
 
+        // PowerShell recursive delete of root
+        (PowerShellRecursiveDeleteRegex(), "PowerShell recursive delete of root directory"),
+
         // Fork bomb patterns
         (ForkBombClassicRegex(), "Fork bomb detected"),
         (ForkBombAltRegex(), "Fork bomb variant detected"),
@@ -205,11 +208,14 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex VariableExpansionRegex();
 
     // Dangerous pattern regexes (generated for performance)
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)")]
+    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)")]
     private static partial Regex RecursiveDeleteRootRegex();
 
     [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)")]
     private static partial Regex RecursiveDeleteGlobRegex();
+
+    [GeneratedRegex(@"Remove-Item\b(?=.*-Recurse\b)(?=.*-Force\b).*(\s[/~]|\s[A-Z]:\\)\s*($|;|&&|\|\|)", RegexOptions.IgnoreCase)]
+    private static partial Regex PowerShellRecursiveDeleteRegex();
 
     [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:")]
     private static partial Regex ForkBombClassicRegex();
@@ -217,10 +223,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\.\s*/\s*\.:")]
     private static partial Regex ForkBombAltRegex();
 
-    [GeneratedRegex(@">\s*/dev/sd[a-z]")]
+    [GeneratedRegex(@">\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)")]
     private static partial Regex DirectDiskWriteRegex();
 
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/sd[a-z]", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase)]
     private static partial Regex DdDiskWriteRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase)]
@@ -275,8 +281,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex GitWorktreeRemoveRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
+    // Does NOT include bash/sh/zsh -c — those are handled by shell -c subcommand extraction
+    // in AnalyzeSubCommand, which analyzes the inner command's file operations instead of
+    // blocking outright (blocking all bash -c would cause massive false positives).
     // Does NOT match script file execution (python script.py) or version flags (python --version).
-    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl|bash|sh|zsh)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
     private static partial Regex InlineInterpreterRegex();
 
     // Coaching: detect needless cd+command compounds
@@ -471,76 +480,143 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return parts;
     }
 
+    private static readonly HashSet<string> ShellInterpreters =
+        new(StringComparer.OrdinalIgnoreCase) { "bash", "sh", "zsh" };
+
     private void AnalyzeSubCommand(string command, BashAnalysisResult result)
     {
         if (string.IsNullOrWhiteSpace(command))
             return;
 
-        // Extract the command name
         var tokens = TokenizeCommand(command);
         if (tokens.Count == 0)
             return;
 
         var cmdName = tokens[0];
 
-        // Check for sed -i (in-place edit) - special case
-        if (cmdName.Equals("sed", StringComparison.OrdinalIgnoreCase))
+        // Shell -c: extract and analyze the inner command string
+        if (TryAnalyzeShellC(tokens, result))
+            return;
+
+        AnalyzeSedCommand(cmdName, tokens, result);
+        AnalyzeAwkCommand(cmdName, tokens, result);
+
+        // Redirection operators apply to all commands
+        AnalyzeRedirection(command, result);
+
+        if (AllCommands.TryGetValue(cmdName, out var opType))
+            AddPathOperations(result, tokens.Skip(1), opType, cmdName);
+        else
+            AnalyzeUncertainCommand(cmdName, tokens, result);
+    }
+
+    /// <summary>
+    /// Detect bash/sh/zsh -c and recursively analyze the inner command.
+    /// Returns true if the command was a shell -c invocation (caller should return).
+    /// </summary>
+    private bool TryAnalyzeShellC(List<string> tokens, BashAnalysisResult result)
+    {
+        if (!ShellInterpreters.Contains(tokens[0]))
+            return false;
+
+        var cArgIndex = FindShellCArgument(tokens);
+        if (cArgIndex < 0 || cArgIndex + 1 >= tokens.Count)
+            return false;
+
+        var innerCommand = tokens[cArgIndex + 1];
+        foreach (var subCmd in SplitCommand(innerCommand))
+            AnalyzeSubCommand(subCmd.Trim(), result);
+        AnalyzeRedirection(innerCommand, result);
+        return true;
+    }
+
+    private static void AnalyzeSedCommand(string cmdName, List<string> tokens, BashAnalysisResult result)
+    {
+        if (!cmdName.Equals("sed", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (tokens.Any(t => t == "-i" || t.StartsWith("-i") || t == "--in-place"))
         {
-            if (tokens.Any(t => t == "-i" || t.StartsWith("-i") || t == "--in-place"))
+            var lastToken = tokens.LastOrDefault();
+            if (lastToken != null && !lastToken.StartsWith("-") && LooksLikePath(lastToken))
             {
-                // Check for files at the end (after the pattern)
-                var lastToken = tokens.LastOrDefault();
-                if (lastToken != null && !lastToken.StartsWith("-") && LooksLikePath(lastToken))
+                result.Operations.Add(new FileOperation
                 {
-                    result.Operations.Add(new FileOperation
-                    {
-                        Type = FileOperationType.Write,
-                        Path = lastToken,
-                        Command = "sed -i"
-                    });
-                }
-            }
-            else
-            {
-                // Regular sed without -i is a read operation
-                var files = ExtractPaths(tokens.Skip(1));
-                foreach (var file in files)
-                {
-                    result.Operations.Add(new FileOperation
-                    {
-                        Type = FileOperationType.Read,
-                        Path = file,
-                        Command = "sed"
-                    });
-                }
+                    Type = FileOperationType.Write,
+                    Path = lastToken,
+                    Command = "sed -i"
+                });
             }
         }
-
-        // Check for awk with redirection
-        if (cmdName.Equals("awk", StringComparison.OrdinalIgnoreCase) ||
-            cmdName.Equals("gawk", StringComparison.OrdinalIgnoreCase))
+        else
         {
-            // awk itself reads files
-            var inputFiles = ExtractPaths(tokens.Skip(1).Where(t => !t.StartsWith("'") && !t.StartsWith("\"")));
-            foreach (var file in inputFiles)
+            foreach (var file in ExtractPaths(tokens.Skip(1)))
             {
                 result.Operations.Add(new FileOperation
                 {
                     Type = FileOperationType.Read,
                     Path = file,
-                    Command = cmdName
+                    Command = "sed"
                 });
             }
         }
+    }
 
-        // Check redirection operators (applies to all commands)
-        AnalyzeRedirection(command, result);
+    private static void AnalyzeAwkCommand(string cmdName, List<string> tokens, BashAnalysisResult result)
+    {
+        if (!cmdName.Equals("awk", StringComparison.OrdinalIgnoreCase) &&
+            !cmdName.Equals("gawk", StringComparison.OrdinalIgnoreCase))
+            return;
 
-        // Check all known command dictionaries with single unified lookup
-        if (AllCommands.TryGetValue(cmdName, out var opType))
+        var inputFiles = ExtractPaths(tokens.Skip(1).Where(t => !t.StartsWith("'") && !t.StartsWith("\"")));
+        foreach (var file in inputFiles)
         {
-            AddPathOperations(result, tokens.Skip(1), opType, cmdName);
+            result.Operations.Add(new FileOperation
+            {
+                Type = FileOperationType.Read,
+                Path = file,
+                Command = cmdName
+            });
         }
+    }
+
+    /// <summary>
+    /// When the command name is a variable ($CMD) or substitution (`cmd`), the actual
+    /// command is unknown — flag path-like arguments as uncertain writes.
+    /// </summary>
+    private static void AnalyzeUncertainCommand(string cmdName, List<string> tokens, BashAnalysisResult result)
+    {
+        if (!cmdName.StartsWith('$') && !cmdName.StartsWith('`'))
+            return;
+
+        foreach (var path in ExtractPaths(tokens.Skip(1)))
+        {
+            result.Operations.Add(new FileOperation
+            {
+                Type = FileOperationType.Write,
+                Path = path,
+                Command = cmdName,
+                IsUncertain = true
+            });
+        }
+    }
+
+    /// <summary>
+    /// Find the -c flag in shell interpreter tokens (handles both -c and combined flags like -xc).
+    /// Returns the index of the token containing -c, or -1 if not found.
+    /// </summary>
+    private static int FindShellCArgument(List<string> tokens)
+    {
+        for (int i = 1; i < tokens.Count; i++)
+        {
+            var token = tokens[i];
+            if (token == "-c")
+                return i;
+            // Combined flags: -xc, -exc, etc. — if starts with - (not --) and contains 'c'
+            if (token.Length > 1 && token[0] == '-' && token[1] != '-' && token.Contains('c'))
+                return i;
+        }
+        return -1;
     }
 
     private static readonly Dictionary<string, FileOperationType> AllCommands = BuildAllCommands();

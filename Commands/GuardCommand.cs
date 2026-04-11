@@ -246,6 +246,7 @@ public static partial class GuardCommand
         var identityBlock = RequireWriteIdentity(agent, filePath, toolName, auditService, sessionId, registry);
         if (identityBlock != null) return identityBlock.Value;
 
+        // Re-read agent once after identity check (identity check may have modified state)
         agent = registry.GetCurrentAgent(sessionId);
         if (agent != null)
         {
@@ -256,7 +257,6 @@ public static partial class GuardCommand
             if (blocked != null) return blocked.Value;
         }
 
-        agent = registry.GetCurrentAgent(sessionId);
         if (agent != null && agent.UnreadMustReads.Count > 0)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
@@ -493,7 +493,10 @@ public static partial class GuardCommand
 
     internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry, IAuditService auditService)
     {
-        if (registry.Config?.Nudges is not { Count: > 0 } nudges)
+        // Always include block-severity default nudges (H19/H20) even if removed from config.
+        // These are security-critical and must not be removable via dydo.json editing.
+        var nudges = MergeSystemNudges(registry.Config?.Nudges);
+        if (nudges.Count == 0)
             return null;
 
         foreach (var nudge in nudges)
@@ -556,6 +559,28 @@ public static partial class GuardCommand
         return Convert.ToHexString(bytes)[..8].ToLowerInvariant();
     }
 
+    /// <summary>
+    /// Merge block-severity default nudges into the config nudges list.
+    /// Ensures security-critical nudges (H19 indirect invocation, H20 worktree lifecycle)
+    /// are always enforced even if removed from dydo.json.
+    /// </summary>
+    internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
+    {
+        var nudges = configNudges?.ToList() ?? [];
+        var existingPatterns = new HashSet<string>(nudges.Select(n => n.Pattern));
+
+        foreach (var defaultNudge in ConfigFactory.DefaultNudges)
+        {
+            if (string.Equals(defaultNudge.Severity, "block", StringComparison.OrdinalIgnoreCase)
+                && !existingPatterns.Contains(defaultNudge.Pattern))
+            {
+                nudges.Add(defaultNudge);
+            }
+        }
+
+        return nudges;
+    }
+
     private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, IAuditService auditService, bool? runInBackground)
     {
         // Phase 1: store session ID without agent name (backwards-compatible)
@@ -563,9 +588,10 @@ public static partial class GuardCommand
 
         HandleClaimSessionStorage(command, sessionId, registry);
 
+        var agent = registry.GetCurrentAgent(sessionId);
+
         if (IsHumanOnlyDydoCommand(command))
         {
-            var agent = registry.GetCurrentAgent(sessionId);
             if (agent != null)
             {
                 LogAuditEvent(auditService, sessionId, registry, new AuditEvent
@@ -592,7 +618,6 @@ public static partial class GuardCommand
 
         if (!IsDydoDispatchCommand(command) && !IsDydoWaitAnyForm(command))
         {
-            var agent = registry.GetCurrentAgent(sessionId);
             if (agent != null)
             {
                 var blocked = CheckPendingState(agent, null, "bash", TruncateCommand(command), auditService, sessionId, registry);
@@ -601,10 +626,8 @@ public static partial class GuardCommand
         }
 
         // Phase 2: enrich session context with agent name for race detection.
-        // This overwrites the phase-1 write with the verified format.
-        var currentAgent = registry.GetCurrentAgent(sessionId);
-        if (currentAgent != null)
-            registry.StoreSessionContext(sessionId, currentAgent.Name);
+        if (agent != null)
+            registry.StoreSessionContext(sessionId, agent.Name);
 
         EmitWorktreeAllowIfNeeded();
 
@@ -678,18 +701,17 @@ public static partial class GuardCommand
             }
         }
 
-        return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+        return AnalyzeAndCheckBashOperations(command, sessionId, agent, offLimitsService, bashAnalyzer, registry, auditService);
     }
 
     private static int AnalyzeAndCheckBashOperations(
-        string command, string? sessionId,
+        string command, string? sessionId, AgentState? agent,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry, IAuditService auditService)
     {
         // git stash is only safe in worktrees (isolated stash stack); block otherwise
         if (GitStashRegex().IsMatch(command))
         {
-            var agent = registry.GetCurrentAgent(sessionId);
             if (agent == null || registry.GetWorktreeId(agent.Name) == null)
             {
                 const string reason = "git stash is unsafe in multi-agent environments. "
@@ -708,7 +730,6 @@ public static partial class GuardCommand
         // git merge must go through dydo worktree merge
         if (GitMergeRegex().IsMatch(command))
         {
-            var agent = registry.GetCurrentAgent(sessionId);
             if (agent != null)
             {
                 var inWorktree = registry.GetWorktreeId(agent.Name) != null;
@@ -755,7 +776,7 @@ public static partial class GuardCommand
 
         foreach (var op in analysis.Operations)
         {
-            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService);
+            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService, agent);
             if (blocked != null) return blocked.Value;
         }
 
@@ -771,9 +792,14 @@ public static partial class GuardCommand
 
     internal static int? CheckBashFileOperation(
         FileOperation op, string command, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService,
+        AgentState? cachedAgent = null)
     {
-        var offLimitsPattern = offLimitsService.IsPathOffLimits(op.Path);
+        // For reads, apply the same bootstrap/mode file bypass as direct reads (#60)
+        var agent = cachedAgent ?? registry.GetCurrentAgent(sessionId);
+        var skipOffLimits = op.Type is FileOperationType.Read && ShouldBypassOffLimits(op.Path, agent);
+
+        var offLimitsPattern = skipOffLimits ? null : offLimitsService.IsPathOffLimits(op.Path);
         if (offLimitsPattern != null)
         {
             LogAuditEvent(auditService, sessionId, registry, new AuditEvent
@@ -791,7 +817,6 @@ public static partial class GuardCommand
         // Staged access control for read operations (mirrors HandleReadOperation)
         if (op.Type is FileOperationType.Read)
         {
-            var agent = registry.GetCurrentAgent(sessionId);
             if (!IsReadAllowed(op.Path, agent))
             {
                 LogAuditEvent(auditService, sessionId, registry, new AuditEvent
@@ -805,33 +830,37 @@ public static partial class GuardCommand
             }
         }
 
-        if (op.Type is FileOperationType.Write or FileOperationType.Delete
+        return CheckBashWriteRbac(op, command, agent, sessionId, registry, auditService);
+    }
+
+    private static int? CheckBashWriteRbac(
+        FileOperation op, string command, AgentState? agent,
+        string? sessionId, AgentRegistry registry, IAuditService auditService)
+    {
+        if (op.Type is not (FileOperationType.Write or FileOperationType.Delete
             or FileOperationType.Move or FileOperationType.Copy
-            or FileOperationType.PermissionChange)
+            or FileOperationType.PermissionChange))
+            return null;
+
+        if (agent == null || string.IsNullOrEmpty(agent.Role))
+            return null;
+
+        if (IsGuardLifted(agent.Name))
+            return null;
+
+        var actionName = op.Type.ToString().ToLowerInvariant();
+        if (registry.IsPathAllowed(sessionId, op.Path, actionName, out var error))
+            return null;
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
-            var agent = registry.GetCurrentAgent(sessionId);
-            if (agent != null && !string.IsNullOrEmpty(agent.Role))
-            {
-                if (IsGuardLifted(agent.Name))
-                    return null;
-
-                var actionName = op.Type.ToString().ToLowerInvariant();
-                if (!registry.IsPathAllowed(sessionId, op.Path, actionName, out var error))
-                {
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
-                        Command = TruncateCommand(command), BlockReason = error
-                    });
-                    Console.Error.WriteLine($"BLOCKED: {error}");
-                    Console.Error.WriteLine($"  Detected {op.Type} operation on: {op.Path}");
-                    Console.Error.WriteLine($"  Via command: {op.Command}");
-                    return ExitCodes.ToolError;
-                }
-            }
-        }
-
-        return null;
+            EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
+            Command = TruncateCommand(command), BlockReason = error
+        });
+        Console.Error.WriteLine($"BLOCKED: {error}");
+        Console.Error.WriteLine($"  Detected {op.Type} operation on: {op.Path}");
+        Console.Error.WriteLine($"  Via command: {op.Command}");
+        return ExitCodes.ToolError;
     }
 
     /// <summary>

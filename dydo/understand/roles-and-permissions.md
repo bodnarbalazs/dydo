@@ -81,13 +81,14 @@ Role definitions live at `dydo/_system/roles/<name>.role.json`:
 
 ## How Permissions Map to File Paths
 
-When an agent attempts a write, the guard resolves permissions in this order:
+The guard pipeline checks off-limits patterns and role permissions as separate stages. Off-limits checking happens first in the guard pipeline (see [Guard System](./guard-system.md)). The role permission check (`IsPathAllowed`) then resolves in this order:
 
-1. **Off-limits check** — Does the path match a global off-limits pattern? If yes, block (regardless of role).
-2. **WritablePaths match** — Does the path match any pattern in the role's `WritablePaths`? If yes, allow.
-3. **Denial** — No match found. Block with the role's `denialHint` appended to the error.
+1. **No-role check** — Agent must have a role set, otherwise block.
+2. **ReadOnlyPaths check** — If the path matches a `ReadOnlyPaths` pattern and is NOT also in `WritablePaths`, block. This is how roles like reviewer get read-only access to source code — the path is in ReadOnlyPaths but not WritablePaths.
+3. **Empty-writable check** — If the role has no `WritablePaths` defined at all, block.
+4. **WritablePaths match** — Does the path match any pattern in the role's `WritablePaths`? If yes, allow. If no match, block with the role's `denialHint` appended to the error.
 
-Path matching converts glob patterns to regex (`**` → `.*`, `*` → `[^/]*`) and performs case-insensitive comparison.
+Path matching converts glob patterns to regex (`**/` → `(.*/)?`, `**` → `.*`, `*` → `[^/]*`, `?` → `.`) and performs case-insensitive comparison.
 
 ---
 
@@ -107,17 +108,33 @@ The orchestrator role has a `requires-prior` constraint: the agent must have bee
 
 The judge role has a `panel-limit` constraint: maximum 3 judges can be active on the same task simultaneously. Beyond that, escalate to the human.
 
+### Review Enforcement (H25)
+
+The code-writer role has a `requires-dispatch` constraint: dispatched code-writers must dispatch a reviewer before releasing. This ensures every orchestrated code change goes through review. Code-writers started directly by a human are exempt (`onlyWhenDispatched: true`).
+
+### Inquisitor Escalation
+
+The inquisitor role has a `requires-dispatch` constraint: dispatched inquisitors must dispatch either a judge or another inquisitor before releasing. This ensures inquisition findings are reviewed.
+
+### Reviewer Dispatch Restriction
+
+The reviewer role has a `dispatch-restriction` constraint: reviewers can only dispatch a code-writer when they were dispatched by a code-writer or inquisitor. This prevents reviewers from self-initiating code work.
+
 ### Dispatch --wait Restriction
 
 The `--wait` flag on dispatch is reserved for oversight roles only (orchestrator, inquisitor, judge). All other roles must use `--no-wait`.
 
 ### Constraint Types
 
-| Type | Checks | Example |
-|------|--------|---------|
-| `role-transition` | Agent held `fromRole` on same task | code-writer → reviewer blocked |
-| `requires-prior` | Agent held one of `requiredRoles` on same task | orchestrator requires co-thinker or planner |
-| `panel-limit` | Fewer than `maxCount` agents in role on task | max 3 judges |
+| Type | Checks | Evaluated In | Example |
+|------|--------|-------------|---------|
+| `role-transition` | Agent held `fromRole` on same task | `CanTakeRole` | code-writer → reviewer blocked |
+| `requires-prior` | Agent held one of `requiredRoles` on same task | `CanTakeRole` | orchestrator requires co-thinker or planner |
+| `panel-limit` | Fewer than `maxCount` agents in role on task | `CanTakeRole` | max 3 judges |
+| `requires-dispatch` | Agent must dispatch to one of `requiredRoles` before releasing | `CanRelease` | dispatched code-writer must dispatch reviewer |
+| `dispatch-restriction` | Sender must have been dispatched by one of `requiredRoles` to dispatch `targetRole` | `CanDispatch` | reviewer can only dispatch code-writer when dispatched by code-writer or inquisitor |
+
+Both `requires-dispatch` and `dispatch-restriction` support `onlyWhenDispatched: true` to apply only when the agent was dispatched (not started directly by a human). `requires-dispatch` also supports `requireAll: true` to require dispatching to all listed roles.
 
 Constraints are data-driven — adding new constraints to a `.role.json` does not require code changes.
 

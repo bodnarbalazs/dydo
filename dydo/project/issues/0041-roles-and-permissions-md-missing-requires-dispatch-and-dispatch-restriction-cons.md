@@ -3,7 +3,7 @@ id: 41
 area: understand
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-08
 ---
@@ -20,4 +20,4 @@ date: 2026-04-08
 
 ## Resolution
 
-(Filled when resolved)
+Added `requires-dispatch` and `dispatch-restriction` constraint types to the Constraint Types table in roles-and-permissions.md with their evaluation context (CanRelease/CanDispatch). Added three new subsections under Role Transitions and Restrictions documenting Review Enforcement (H25), Inquisitor Escalation, and Reviewer Dispatch Restriction with concrete examples from the role definitions.

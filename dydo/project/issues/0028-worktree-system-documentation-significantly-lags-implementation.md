@@ -3,7 +3,7 @@ id: 28
 area: general
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-07
 ---
@@ -20,4 +20,4 @@ date: 2026-04-07
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in architecture.md and dispatch-and-messaging.md: updated junction list from 1 to 4 directories, added all 7 workspace markers, corrected child dispatch behavior to document all three paths (nested child, inheritance, merge dispatch), replaced `git worktree prune` reference with `dydo worktree prune`, and added merge-related markers.

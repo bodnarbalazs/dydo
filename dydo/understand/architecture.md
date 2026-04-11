@@ -84,10 +84,12 @@ Every agent session produces a JSON audit file in `dydo/_system/audit/YYYY/`. Se
 
 1. A branch `worktree/{id}` is created from the current HEAD
 2. A worktree directory is set up at `dydo/_system/.local/worktrees/{id}`
-3. A junction/symlink to `dydo/agents/` shares the agent registry across worktrees
-4. Workspace markers (`.worktree`, `.worktree-path`, `.worktree-base`) track the worktree state
+3. Four junctions/symlinks share state across worktrees: `dydo/agents/`, `dydo/_system/roles/`, `dydo/project/issues/`, `dydo/project/inquisitions/`
+4. Workspace markers track the worktree state: `.worktree` (ID), `.worktree-path` (directory), `.worktree-base` (target branch), `.worktree-root` (main project root)
 
-Child dispatches from within a worktree inherit the same worktree instead of creating a new one. Worktrees are cleaned up on agent release via `dydo worktree cleanup`, with `git worktree prune` handling orphans.
+Child dispatches from within a worktree have three paths: creating a nested child worktree (`--worktree`, producing hierarchical IDs like `parent/child`), inheriting the parent's worktree (default), or launching a merge dispatch back into the main repo. Worktrees are cleaned up on agent release via `dydo worktree cleanup`, with `dydo worktree prune` handling orphans.
+
+Additional worktree markers used during merge: `.worktree-hold` (holds worktree during merge), `.merge-source` (branch to merge from), `.needs-merge` (signals merge is required).
 
 ---
 

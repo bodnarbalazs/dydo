@@ -23,6 +23,8 @@ Every agent action is recorded as a JSON audit trail. Sessions capture file oper
 | `Bash` | Bash command executed |
 | `Commit` | Git commit made |
 | `Blocked` | Guard blocks an action |
+| `GuardLift` | Guard RBAC temporarily lifted for an agent |
+| `GuardRestore` | Guard RBAC restored for an agent |
 
 Events are logged by the guard hook on every tool call.
 
@@ -83,8 +85,9 @@ Each session captures the project state at start:
 | `task` | Role | Task name |
 | `hash` | Commit | Git commit hash |
 | `msg` | Commit | Commit message |
-| `agent` | Claim | Agent name |
+| `agent` | Claim, GuardLift, GuardRestore | Agent name |
 | `reason` | Blocked | Why the action was blocked |
+| `lifted` | File ops | `true` when the action was allowed because guard was lifted (RBAC bypassed) |
 
 ---
 

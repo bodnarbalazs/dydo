@@ -57,10 +57,15 @@ Platform support: Windows Terminal (Windows 11), iTerm2 (macOS recommended).
 
 1. A new branch `worktree/{id}` is created
 2. The worktree directory is set up at `dydo/_system/.local/worktrees/{id}`
-3. A junction/symlink to `dydo/agents/` is created so the agent registry is shared
-4. Markers (`.worktree`, `.worktree-path`, `.worktree-base`) are stored in the agent's workspace
+3. Four junctions/symlinks share state: `dydo/agents/`, `dydo/_system/roles/`, `dydo/project/issues/`, `dydo/project/inquisitions/`
+4. Markers are stored in the agent's workspace: `.worktree` (ID), `.worktree-path` (directory), `.worktree-base` (target branch), `.worktree-root` (main project root)
 
-If the sender is already in a worktree, the child inherits the same worktree instead of creating a new one (a nudge is emitted). Worktrees are cleaned up via `dydo worktree cleanup` on release.
+Child dispatches from within a worktree have three paths:
+- **Nested child** (`--worktree`): Creates a new child worktree with a hierarchical ID (e.g., `parent/child`)
+- **Inheritance** (default): Child inherits the parent's worktree markers and works in the same worktree
+- **Merge dispatch**: When the agent has a `.needs-merge` marker, the child launches in the main repo to perform the merge, receiving `.merge-source` and `.worktree-hold` markers
+
+Worktrees are cleaned up via `dydo worktree cleanup` on release, with `dydo worktree prune` handling orphans.
 
 ### Double-Dispatch Protection
 

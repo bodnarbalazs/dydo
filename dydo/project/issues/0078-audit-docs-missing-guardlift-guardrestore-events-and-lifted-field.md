@@ -3,7 +3,7 @@ id: 78
 area: reference
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-09
 ---
@@ -20,4 +20,4 @@ date: 2026-04-09
 
 ## Resolution
 
-(Filled when resolved)
+Added `GuardLift` and `GuardRestore` event types to the "What Gets Audited" table in audit-system.md. Updated the Event Fields table: expanded the `agent` field's "Present" column to include GuardLift and GuardRestore events, and added the `lifted` field documenting the boolean flag set on file operations that succeed because the guard was lifted.

@@ -1,6 +1,6 @@
 ---
 type: decision
-status: proposed
+status: accepted
 date: 2026-03-07
 area: project
 ---
@@ -111,6 +111,16 @@ Templates ship with these tags at natural extension points. These are starting p
 {{include:extra-review-checklist}}
 ```
 
+**code-writer, reviewer** — end of complete section:
+```markdown
+{{include:extra-complete-gate}}
+```
+
+**test-writer** — after test guidance section:
+```markdown
+{{include:extra-test-guidance}}
+```
+
 ### Default example
 
 `dydo init` creates `_system/template-additions/` with:
@@ -189,6 +199,19 @@ Insert tags in the embedded resource templates:
 ```markdown
 - [ ] Changes match the task requirements
 {{include:extra-review-checklist}}
+```
+
+**mode-code-writer.template.md, mode-reviewer.template.md** — end of complete section:
+```markdown
+{{include:extra-complete-gate}}
+```
+
+**mode-test-writer.template.md** — after verify step and after test guidance:
+```markdown
+{{include:extra-verify}}
+```
+```markdown
+{{include:extra-test-guidance}}
 ```
 
 ### 3. `Models/DydoConfig.cs` — hash tracking

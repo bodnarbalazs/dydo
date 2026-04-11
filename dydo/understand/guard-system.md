@@ -47,13 +47,13 @@ See [Agent Lifecycle](./agent-lifecycle.md) for the full stage progression.
 
 ## Role-Based Permission Checking
 
-When an agent attempts a write operation, the guard checks the file path against the role's permission set:
+When an agent attempts a write operation, the guard checks the file path against the role's permission set. Off-limits checking is a separate, earlier stage in the guard pipeline (see above). The role permission check (`IsPathAllowed`) resolves in this order:
 
-1. **Off-limits check first** — if the path matches a global off-limits pattern, the operation is blocked regardless of role.
+1. **ReadOnlyPaths check** — if the path matches a `ReadOnlyPaths` pattern and is NOT also in `WritablePaths`, block. This gives roles like reviewer read-only access to source code.
 2. **WritablePaths match** — if the path matches any pattern in the role's `WritablePaths`, the write is allowed.
 3. **Denial** — if no pattern matches, the write is blocked. The role's `denialHint` is appended to the error message to guide the agent.
 
-Path patterns use glob syntax (`**` for any path, `*` within a segment) and support tokens like `{self}`, `{source}`, and `{tests}` that are expanded at role assignment time.
+Path patterns use glob syntax (`**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for single character) and support tokens like `{self}`, `{source}`, and `{tests}` that are expanded at role assignment time.
 
 ---
 
@@ -88,6 +88,37 @@ Bash commands go through multi-stage analysis:
 - Indirect dydo invocation (`npx dydo`, `dotnet dydo`) — use `dydo` directly
 - `dydo wait` without `run_in_background: true` — would block the terminal
 - `git stash` outside worktrees — global stash interferes in multi-agent setups
+
+---
+
+## Guard Lift
+
+The guard lift temporarily bypasses RBAC permission checking for a specific agent. This is a human-only administrative mechanism — agents cannot lift their own guard.
+
+### Usage
+
+```bash
+dydo guard lift <agent>          # Lift indefinitely
+dydo guard lift <agent> 30       # Lift for 30 minutes (auto-expires)
+dydo guard restore <agent>       # Restore guard enforcement
+```
+
+### How It Works
+
+1. `dydo guard lift` writes a marker file at `dydo/agents/{agent}/.guard-lift.json` containing the agent name, who lifted it, the timestamp, and an optional expiration time.
+2. On every write operation, the guard checks `IsGuardLifted()` before RBAC. If the marker exists and hasn't expired, RBAC is skipped entirely and the write is allowed.
+3. Off-limits enforcement (Layer 1) is NOT bypassed — system files like `state.md`, mode files, and `files-off-limits.md` remain protected.
+4. All actions performed while lifted are logged to the audit trail with a `lifted: true` flag.
+5. Expired markers are automatically deleted on the next guard check.
+
+### Protection
+
+- The `dydo guard lift` and `dydo guard restore` commands are blocked for agents by the human-only command restriction.
+- The marker file `dydo/agents/*/.guard-lift.json` is protected by system off-limits, preventing agents from writing their own lift markers.
+
+### When to Use
+
+Guard lift is intended for situations where a human needs to temporarily grant an agent broader write access — for example, during a complex refactoring that spans role boundaries. Use the time-limited form (`dydo guard lift <agent> 30`) when possible.
 
 ---
 

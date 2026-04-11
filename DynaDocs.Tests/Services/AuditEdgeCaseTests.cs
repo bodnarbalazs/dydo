@@ -45,10 +45,8 @@ public class AuditEdgeCaseTests : IDisposable
     #region 1. ListSessionFiles includes baseline files
 
     [Fact]
-    public void ListSessionFiles_IncludesBaselineFiles_WhenPresent()
+    public void ListSessionFiles_ExcludesBaselineFiles()
     {
-        // Hypothesis: ListSessionFiles uses Directory.GetFiles(yearDir, "*.json") which
-        // matches _baseline-*.json files too. Compact filters them out, but ListSessionFiles does not.
         var year = DateTime.UtcNow.Year.ToString();
         var yearDir = Path.Combine(_auditDir, year);
         Directory.CreateDirectory(yearDir);
@@ -79,14 +77,56 @@ public class AuditEdgeCaseTests : IDisposable
         var service = new AuditService(basePath: _testDir);
         var files = service.ListSessionFiles();
 
-        // BUG: ListSessionFiles returns 2 files — the baseline is included.
-        // It should return only 1 (the real session).
-        var filenames = files.Select(Path.GetFileName).ToList();
-        var containsBaseline = filenames.Any(f => f!.StartsWith("_baseline-"));
+        Assert.Single(files);
+        Assert.DoesNotContain(files, f => Path.GetFileName(f).StartsWith("_baseline-"));
+    }
 
-        Assert.True(containsBaseline,
-            "ListSessionFiles includes baseline files — *.json glob matches _baseline-*.json");
-        Assert.Equal(2, files.Count);
+    #endregion
+
+    #region LoadSessionFile surfaces corruption warning
+
+    [Fact]
+    public void LoadSessions_CorruptFile_WritesWarningToStderr()
+    {
+        var year = DateTime.UtcNow.Year.ToString();
+        var yearDir = Path.Combine(_auditDir, year);
+        Directory.CreateDirectory(yearDir);
+
+        // Create a valid session file
+        File.WriteAllText(Path.Combine(yearDir, $"{DateTime.UtcNow:yyyy-MM-dd}-good-session.json"),
+            JsonSerializer.Serialize(new AuditSession
+            {
+                SessionId = "good-session",
+                Started = DateTime.UtcNow,
+                Events = [new AuditEvent { EventType = AuditEventType.Read, Path = "a.md" }]
+            }, JsonOpts));
+
+        // Create a corrupt file
+        File.WriteAllText(Path.Combine(yearDir, $"{DateTime.UtcNow:yyyy-MM-dd}-corrupt-session.json"),
+            "NOT VALID JSON {{{");
+
+        var service = new AuditService(basePath: _testDir);
+
+        var oldStderr = Console.Error;
+        var stderrWriter = new StringWriter();
+        Console.SetError(stderrWriter);
+        try
+        {
+            var (sessions, _) = service.LoadSessions();
+
+            // Good session is still loaded
+            Assert.Single(sessions);
+            Assert.Equal("good-session", sessions[0].SessionId);
+
+            // Warning was written to stderr
+            var stderr = stderrWriter.ToString();
+            Assert.Contains("WARNING", stderr);
+            Assert.Contains("corrupt-session", stderr);
+        }
+        finally
+        {
+            Console.SetError(oldStderr);
+        }
     }
 
     #endregion
@@ -190,22 +230,13 @@ public class AuditEdgeCaseTests : IDisposable
     #region 4. Concurrent LogEvent data loss
 
     [Fact]
-    public void LogEvent_StaleCacheAcrossInstances_CausesDataLoss()
+    public void LogEvent_CrossInstanceWrites_PreservesAllEvents()
     {
-        // BUG: Each AuditService has its own in-memory cache. Once a service caches a
-        // session via LogEvent, subsequent LogEvent calls use the cache without re-reading
-        // from disk. If another service instance writes to the same session in between,
-        // the first service's stale cache overwrites those events.
-        //
-        // Timeline:
-        // 1. service0 creates session with event0 (disk: [event0])
-        // 2. serviceA.LogEvent(eventA) — loads [event0] from disk, caches, writes [event0, eventA]
-        // 3. serviceB.LogEvent(eventB) — loads [event0, eventA] from disk, caches, writes [event0, eventA, eventB]
-        // 4. serviceA.LogEvent(eventA2) — uses STALE cache [event0, eventA], writes [event0, eventA, eventA2]
-        //    → eventB is lost!
-
+        // Sidecar-based append prevents data loss across service instances.
+        // Cross-process writes append to a sidecar file instead of rewriting the session,
+        // so no events are overwritten regardless of stale caches.
         var service0 = new AuditService(basePath: _testDir);
-        var sessionId = "stale-cache-test";
+        var sessionId = "cross-instance-test";
 
         // Step 1: Create session
         service0.LogEvent(sessionId, new AuditEvent
@@ -214,7 +245,7 @@ public class AuditEdgeCaseTests : IDisposable
             Path = "event0.md"
         });
 
-        // Step 2: ServiceA logs event — caches session with [event0, eventA]
+        // Steps 2-4: Cross-instance writes append to sidecar
         var serviceA = new AuditService(basePath: _testDir);
         serviceA.LogEvent(sessionId, new AuditEvent
         {
@@ -222,7 +253,6 @@ public class AuditEdgeCaseTests : IDisposable
             Path = "eventA.md"
         });
 
-        // Step 3: ServiceB logs event — loads [event0, eventA] from disk, caches, writes [event0, eventA, eventB]
         var serviceB = new AuditService(basePath: _testDir);
         serviceB.LogEvent(sessionId, new AuditEvent
         {
@@ -230,30 +260,18 @@ public class AuditEdgeCaseTests : IDisposable
             Path = "eventB.md"
         });
 
-        // Verify disk has 3 events at this point
-        var midService = new AuditService(basePath: _testDir);
-        var midSession = midService.GetSession(sessionId);
-        Assert.NotNull(midSession);
-        Assert.Equal(3, midSession.Events.Count);
-
-        // Step 4: ServiceA logs again — uses STALE cache [event0, eventA], adds eventA2
         serviceA.LogEvent(sessionId, new AuditEvent
         {
             EventType = AuditEventType.Edit,
             Path = "eventA2.md"
         });
 
-        // Read final state from disk
+        // All 4 events preserved — sidecar append doesn't overwrite
         var finalService = new AuditService(basePath: _testDir);
         var finalSession = finalService.GetSession(sessionId);
         Assert.NotNull(finalSession);
-
-        // DATA LOSS: eventB is gone. ServiceA's stale cache overwrote it.
-        Assert.Equal(3, finalSession.Events.Count);
-        Assert.Equal("event0.md", finalSession.Events[0].Path);
-        Assert.Equal("eventA.md", finalSession.Events[1].Path);
-        Assert.Equal("eventA2.md", finalSession.Events[2].Path);
-        Assert.DoesNotContain(finalSession.Events, e => e.Path == "eventB.md");
+        Assert.Equal(4, finalSession.Events.Count);
+        Assert.Contains(finalSession.Events, e => e.Path == "eventB.md");
     }
 
     #endregion
@@ -346,6 +364,95 @@ public class AuditEdgeCaseTests : IDisposable
 
         Assert.Equal(3, result.SessionsProcessed);
         Assert.Empty(Directory.GetFiles(yearDir, "_baseline-*.json"));
+    }
+
+    #endregion
+
+    #region Append-only event writes (O(n²) fix)
+
+    [Fact]
+    public void LogEvent_SubsequentCalls_CreateSidecarFile()
+    {
+        var service1 = new AuditService(basePath: _testDir);
+        var sessionId = "sidecar-test";
+
+        // First event — writes full session JSON
+        service1.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "first.md"
+        });
+
+        // Second event from new service instance (simulates separate guard invocation)
+        var service2 = new AuditService(basePath: _testDir);
+        service2.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Edit,
+            Path = "second.md"
+        });
+
+        // Sidecar file should exist
+        var year = DateTime.UtcNow.Year.ToString();
+        var yearDir = Path.Combine(_auditDir, year);
+        var sidecarPath = Path.Combine(yearDir, $"{sessionId}.events");
+        Assert.True(File.Exists(sidecarPath));
+    }
+
+    [Fact]
+    public void GetSession_MergesSidecarEvents()
+    {
+        var service1 = new AuditService(basePath: _testDir);
+        var sessionId = "merge-sidecar-test";
+
+        // First event
+        service1.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "first.md"
+        });
+
+        // Subsequent events from separate service instances
+        for (int i = 2; i <= 5; i++)
+        {
+            var svc = new AuditService(basePath: _testDir);
+            svc.LogEvent(sessionId, new AuditEvent
+            {
+                EventType = AuditEventType.Edit,
+                Path = $"file{i}.md"
+            });
+        }
+
+        // Verify sidecar exists and has content
+        var year = DateTime.UtcNow.Year.ToString();
+        var yearDir = Path.Combine(_auditDir, year);
+        var sidecarPath = Path.Combine(yearDir, $"{sessionId}.events");
+        Assert.True(File.Exists(sidecarPath), $"Sidecar not at {sidecarPath}");
+        var sidecarContent = File.ReadAllText(sidecarPath);
+        Assert.Contains("file2.md", sidecarContent);
+
+        // Verify audit path consistency
+        var reader = new AuditService(basePath: _testDir);
+        var readerAuditPath = reader.GetAuditPath();
+        Assert.Equal(Path.GetFullPath(_auditDir), Path.GetFullPath(readerAuditPath));
+
+        // Verify session can be found
+        var session = reader.GetSession(sessionId);
+        Assert.NotNull(session);
+        Assert.Equal(sessionId, session.SessionId);
+
+        // Check sidecar from reader's perspective
+        var readerYearDir = Path.Combine(readerAuditPath, year);
+        var readerSidecar = Path.Combine(readerYearDir, $"{sessionId}.events");
+        Assert.True(File.Exists(readerSidecar), $"Reader sidecar not at {readerSidecar}");
+
+        // Test direct merge on a copy of the session
+        var sessionCopy = new AuditSession { SessionId = sessionId, Started = DateTime.UtcNow, Events = [] };
+        AuditService.MergeSidecarEvents(readerYearDir, sessionId, sessionCopy);
+        Assert.Equal(4, sessionCopy.Events.Count);
+
+        Assert.Equal(5, session.Events.Count);
+        Assert.Equal("first.md", session.Events[0].Path);
+        Assert.Equal("file5.md", session.Events[4].Path);
     }
 
     #endregion

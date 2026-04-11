@@ -399,6 +399,55 @@ public static class WorktreeCommand
     ];
 
     /// <summary>
+    /// Generate bash symlink setup commands for all junction subpaths.
+    /// <paramref name="rootExpr"/> is the target root — either a literal path (single-quoted)
+    /// or a shell variable reference (double-quoted).
+    /// </summary>
+    internal static string GenerateBashJunctionScript(string rootExpr, bool isVariable)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var sub in JunctionSubpaths)
+        {
+            var fwd = sub.Replace('\\', '/');
+            var target = isVariable ? $"\"{rootExpr}/{fwd}\"" : $"'{rootExpr}/{fwd}'";
+            sb.Append($"mkdir -p {target} && ");
+            sb.Append($"(if [ -L {fwd} ]; then rm {fwd}; elif [ -e {fwd} ]; then rm -rf {fwd}; fi) && ln -s {target} {fwd} && ");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Generate PowerShell junction setup commands for all junction subpaths.
+    /// <paramref name="rootExpr"/> is either a literal root path or a PS variable like <c>$_wt_root.Path</c>.
+    /// </summary>
+    internal static string GeneratePsJunctionScript(string rootExpr, bool isVariable)
+    {
+        var sb = new System.Text.StringBuilder();
+        int idx = 0;
+        foreach (var sub in JunctionSubpaths)
+        {
+            var fwd = sub.Replace('\\', '/');
+            string targetExpr;
+            if (isVariable)
+            {
+                var varName = $"$_jt{idx}";
+                sb.Append($"{varName} = Join-Path {rootExpr} '{fwd}'; ");
+                sb.Append($"if (-not (Test-Path {varName})) {{ New-Item -ItemType Directory -Path {varName} -Force; }} ");
+                targetExpr = varName;
+            }
+            else
+            {
+                targetExpr = $"'{rootExpr}/{fwd}'";
+                sb.Append($"if (-not (Test-Path {targetExpr})) {{ New-Item -ItemType Directory -Path {targetExpr} -Force; }} ");
+            }
+            sb.Append($"if (Test-Path '{fwd}') {{ if ((Get-Item '{fwd}' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path '{fwd}').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path '{fwd}').Path }} }} ");
+            sb.Append($"New-Item -ItemType Junction -Path '{fwd}' -Target {targetExpr}; ");
+            idx++;
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
     /// Shared teardown: preserve audit files, remove junctions, remove git worktree, delete zombie directory.
     /// When mainRoot is provided, git commands run via -C mainRoot (needed when executing from a worktree context).
     /// Branch deletion is intentionally excluded — callers handle it since FinalizeMerge uses mergeSource directly.

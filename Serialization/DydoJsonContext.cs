@@ -56,3 +56,10 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(QueueEntry))]
 [JsonSerializable(typeof(QueueActiveEntry))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
+
+/// <summary>
+/// Compact (non-indented) JSON context for sidecar event files (one event per line).
+/// </summary>
+[JsonSourceGenerationOptions(WriteIndented = false)]
+[JsonSerializable(typeof(AuditEvent))]
+internal partial class CompactJsonContext : JsonSerializerContext { }

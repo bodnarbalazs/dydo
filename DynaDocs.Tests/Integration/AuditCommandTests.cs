@@ -528,6 +528,90 @@ public class AuditCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region ShowSession with compacted snapshot
+
+    [Fact]
+    public async Task ShowSession_CompactedSnapshot_ResolvesFileCount()
+    {
+        await InitProjectAsync();
+        var started = new DateTime(2026, 2, 10, 14, 30, 0, DateTimeKind.Utc);
+        var yearDir = Path.Combine(AuditPath, "2026");
+        Directory.CreateDirectory(yearDir);
+
+        // Create baseline
+        var baseline = new SnapshotBaseline
+        {
+            Id = "test-baseline-001",
+            Created = started,
+            Snapshot = MakeSnapshot()
+        };
+        File.WriteAllText(
+            Path.Combine(yearDir, "_baseline-test-baseline-001.json"),
+            JsonSerializer.Serialize(baseline, DydoDefaultJsonContext.Default.SnapshotBaseline));
+
+        // Create session with SnapshotRef instead of inline Snapshot
+        var session = new AuditSession
+        {
+            SessionId = "compacted-session",
+            AgentName = "Mia",
+            Human = "alice",
+            Started = started,
+            Events = [],
+            SnapshotRef = new SnapshotRef
+            {
+                BaseId = "test-baseline-001",
+                Depth = 1
+            }
+        };
+        File.WriteAllText(
+            Path.Combine(yearDir, "2026-02-10-compacted-session.json"),
+            JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AuditSession));
+
+        var command = AuditCommand.Create();
+        var result = await RunAsync(command, "--session", "compacted-session");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("3 files");
+    }
+
+    #endregion
+
+    #region Visualization SRI hash
+
+    [Fact]
+    public async Task Visualization_HtmlContainsSriIntegrityAttribute()
+    {
+        await InitProjectAsync();
+        CreateAuditSession("sri-check", snapshot: MakeSnapshot());
+
+        var command = AuditCommand.Create();
+        await RunAsync(command);
+
+        var replayPath = Path.Combine(AuditPath, "reports", "replay.html");
+        var html = File.ReadAllText(replayPath);
+
+        Assert.Contains("integrity=", html);
+        Assert.Contains("crossorigin=", html);
+    }
+
+    [Fact]
+    public async Task Visualization_HtmlPinsVisNetworkVersion()
+    {
+        await InitProjectAsync();
+        CreateAuditSession("version-check", snapshot: MakeSnapshot());
+
+        var command = AuditCommand.Create();
+        await RunAsync(command);
+
+        var replayPath = Path.Combine(AuditPath, "reports", "replay.html");
+        var html = File.ReadAllText(replayPath);
+
+        // Should have a pinned version, not just "vis-network/standalone"
+        Assert.Matches(@"vis-network@\d+\.\d+\.\d+", html);
+    }
+
+    #endregion
+
     #region Edge cases
 
     [Fact]

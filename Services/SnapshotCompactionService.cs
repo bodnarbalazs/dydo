@@ -282,10 +282,17 @@ public class SnapshotCompactionService
                 Delta = delta
             };
 
-            // Write updated session atomically
+            // Write updated session atomically (events are now in the main file)
             var json = JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AuditSession);
             WriteAtomic(filePath, json);
             result.NewTotalSizeBytes += Encoding.UTF8.GetByteCount(json);
+
+            // Clean up sidecar events file if present
+            var sidecarPath = Path.Combine(Path.GetDirectoryName(filePath)!, $"{sessionId}.events");
+            if (File.Exists(sidecarPath))
+            {
+                try { File.Delete(sidecarPath); } catch { }
+            }
         }
 
         result.NewTotalSizeBytes += result.NewBaselineSizeBytes;
@@ -329,7 +336,13 @@ public class SnapshotCompactionService
         try
         {
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AuditSession);
+            var session = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AuditSession);
+            if (session != null)
+            {
+                var yearDir = Path.GetDirectoryName(filePath)!;
+                AuditService.MergeSidecarEvents(yearDir, session.SessionId, session);
+            }
+            return session;
         }
         catch { return null; }
     }

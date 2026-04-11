@@ -43,23 +43,40 @@ public partial class AuditService : IAuditService
         if (@event.Timestamp == default)
             @event.Timestamp = DateTime.UtcNow;
 
-        // Get or create session
-        var session = GetOrCreateSession(sessionId, agentName, human);
+        // If session is in our in-memory cache (same process, multiple calls), use full write
+        if (_sessionCache.TryGetValue(sessionId, out var cached))
+        {
+            if (!string.IsNullOrEmpty(agentName) && string.IsNullOrEmpty(cached.AgentName))
+                cached.AgentName = agentName;
+            if (!string.IsNullOrEmpty(human) && string.IsNullOrEmpty(cached.Human))
+                cached.Human = human;
+            if (snapshot != null && cached.Snapshot == null)
+                cached.Snapshot = snapshot;
+            cached.Events.Add(@event);
+            WriteSession(cached);
+            return;
+        }
 
-        // Update session metadata if provided
-        if (!string.IsNullOrEmpty(agentName) && string.IsNullOrEmpty(session.AgentName))
-            session.AgentName = agentName;
-        if (!string.IsNullOrEmpty(human) && string.IsNullOrEmpty(session.Human))
-            session.Human = human;
+        // Cross-process fast path: session file exists on disk, append only the new event (O(1))
+        var yearDir = FindSessionYearDir(sessionId);
+        if (yearDir != null)
+        {
+            AppendEventToSidecar(yearDir, sessionId, @event);
+            return;
+        }
 
-        // Store snapshot only on first event (when session was just created)
-        if (snapshot != null && session.Snapshot == null)
-            session.Snapshot = snapshot;
-
-        // Add event
-        session.Events.Add(@event);
-
-        // Write session file
+        // New session — create full session and write it
+        var session = new AuditSession
+        {
+            SessionId = sessionId,
+            AgentName = agentName,
+            Human = human,
+            Started = DateTime.UtcNow,
+            GitHead = GetCurrentGitHead(),
+            Snapshot = snapshot,
+            Events = [@event]
+        };
+        _sessionCache[sessionId] = session;
         WriteSession(session);
     }
 
@@ -84,7 +101,10 @@ public partial class AuditService : IAuditService
             var files = Directory.GetFiles(yearDir, pattern);
             if (files.Length > 0)
             {
-                return LoadSessionFile(files[0]);
+                var session = LoadSessionFile(files[0]);
+                if (session != null)
+                    MergeSidecarEvents(yearDir, sessionId, session);
+                return session;
             }
         }
 
@@ -101,7 +121,11 @@ public partial class AuditService : IAuditService
         {
             var session = LoadSessionFile(file);
             if (session != null)
+            {
+                var yearDir = Path.GetDirectoryName(file)!;
+                MergeSidecarEvents(yearDir, session.SessionId, session);
                 sessions.Add(session);
+            }
         }
 
         return (sessions, limitReached);
@@ -132,41 +156,53 @@ public partial class AuditService : IAuditService
 
         foreach (var yearDir in yearDirs)
         {
-            files.AddRange(Directory.GetFiles(yearDir, "*.json"));
+            files.AddRange(Directory.GetFiles(yearDir, "*.json")
+                .Where(f => !Path.GetFileName(f).StartsWith("_baseline-")));
         }
 
         // Sort by filename (which includes date) in descending order (newest first)
         return files.OrderByDescending(f => Path.GetFileName(f)).ToList();
     }
 
-    private AuditSession GetOrCreateSession(string sessionId, string? agentName, string? human)
+    private string? FindSessionYearDir(string sessionId)
     {
-        // Check cache
-        if (_sessionCache.TryGetValue(sessionId, out var cached))
-            return cached;
+        var auditPath = GetAuditPath();
+        if (!Directory.Exists(auditPath))
+            return null;
 
-        // Try to load existing session
-        var existing = GetSession(sessionId);
-        if (existing != null)
+        foreach (var yearDir in Directory.GetDirectories(auditPath))
         {
-            _sessionCache[sessionId] = existing;
-            return existing;
+            if (Directory.GetFiles(yearDir, $"*-{sessionId}.json").Length > 0)
+                return yearDir;
         }
+        return null;
+    }
 
-        // Create new session
-        var now = DateTime.UtcNow;
-        var session = new AuditSession
+    private static string SidecarPath(string yearDir, string sessionId)
+        => Path.Combine(yearDir, $"{sessionId}.events");
+
+    private static void AppendEventToSidecar(string yearDir, string sessionId, AuditEvent @event)
+    {
+        var json = JsonSerializer.Serialize(@event, CompactJsonContext.Default.AuditEvent);
+        File.AppendAllText(SidecarPath(yearDir, sessionId), json + "\n");
+    }
+
+    internal static void MergeSidecarEvents(string yearDir, string sessionId, AuditSession session)
+    {
+        var sidecarPath = SidecarPath(yearDir, sessionId);
+        if (!File.Exists(sidecarPath)) return;
+
+        foreach (var line in File.ReadLines(sidecarPath))
         {
-            SessionId = sessionId,
-            AgentName = agentName,
-            Human = human,
-            Started = now,
-            GitHead = GetCurrentGitHead(),
-            Events = []
-        };
-
-        _sessionCache[sessionId] = session;
-        return session;
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            try
+            {
+                var evt = JsonSerializer.Deserialize(line, CompactJsonContext.Default.AuditEvent);
+                if (evt != null)
+                    session.Events.Add(evt);
+            }
+            catch { }
+        }
     }
 
     private void WriteSession(AuditSession session)
@@ -190,6 +226,13 @@ public partial class AuditService : IAuditService
             var json = JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AuditSession);
             File.WriteAllText(tempPath, json);
             File.Move(tempPath, filePath, overwrite: true);
+
+            // Clean up sidecar — events are now in the main file
+            var sidecarPath = SidecarPath(yearPath, session.SessionId);
+            if (File.Exists(sidecarPath))
+            {
+                try { File.Delete(sidecarPath); } catch { }
+            }
         }
         catch
         {
@@ -202,15 +245,22 @@ public partial class AuditService : IAuditService
         }
     }
 
-    private AuditSession? LoadSessionFile(string filePath)
+    private static AuditSession? LoadSessionFile(string filePath, bool mergeSidecar = false)
     {
         try
         {
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AuditSession);
+            var session = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.AuditSession);
+            if (session != null && mergeSidecar)
+            {
+                var yearDir = Path.GetDirectoryName(filePath)!;
+                MergeSidecarEvents(yearDir, session.SessionId, session);
+            }
+            return session;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.Error.WriteLine($"[dydo] WARNING: Failed to load audit session {Path.GetFileName(filePath)}: {ex.Message}");
             return null;
         }
     }

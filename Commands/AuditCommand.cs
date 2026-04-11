@@ -121,12 +121,15 @@ public static class AuditCommand
                 return ExitCodes.ToolError;
             }
 
+            // Resolve snapshot (handles both inline and compacted/delta refs)
+            var snapshot = ResolveSessionSnapshot(session, auditService);
+
             Console.WriteLine($"Session: {session.SessionId}");
             Console.WriteLine($"Agent: {session.AgentName ?? "(none)"}");
             Console.WriteLine($"Human: {session.Human ?? "(none)"}");
             Console.WriteLine($"Started: {session.Started:yyyy-MM-dd HH:mm:ss}");
             Console.WriteLine($"Git HEAD: {session.GitHead ?? "(none)"}");
-            Console.WriteLine($"Snapshot: {(session.Snapshot != null ? $"{session.Snapshot.Files.Count} files" : "(none)")}");
+            Console.WriteLine($"Snapshot: {(snapshot != null ? $"{snapshot.Files.Count} files" : "(none)")}");
             Console.WriteLine($"Events: {session.Events.Count}");
             Console.WriteLine();
 
@@ -143,6 +146,39 @@ public static class AuditCommand
             ConsoleOutput.WriteError($"Error showing session: {ex.Message}");
             return ExitCodes.ToolError;
         }
+    }
+
+    private static ProjectSnapshot? ResolveSessionSnapshot(AuditSession session, AuditService auditService)
+    {
+        if (session.Snapshot != null)
+            return session.Snapshot;
+
+        if (session.SnapshotRef == null)
+            return null;
+
+        var baselineCache = new Dictionary<string, SnapshotBaseline>();
+        var auditPath = auditService.GetAuditPath();
+        foreach (var yearDir in Directory.GetDirectories(auditPath))
+        {
+            foreach (var file in Directory.GetFiles(yearDir, "_baseline-*.json"))
+            {
+                try
+                {
+                    var baseline = JsonSerializer.Deserialize(
+                        File.ReadAllText(file),
+                        DydoDefaultJsonContext.Default.SnapshotBaseline);
+                    if (baseline != null)
+                        baselineCache[baseline.Id] = baseline;
+                }
+                catch { }
+            }
+        }
+
+        var sessionLookup = new Dictionary<string, AuditSession> { [session.SessionId] = session };
+        return SnapshotCompactionService.ResolveSnapshot(
+            session,
+            id => baselineCache.GetValueOrDefault(id),
+            id => sessionLookup.GetValueOrDefault(id) ?? auditService.GetSession(id));
     }
 
     private static int ExecuteCompact(string? year)
@@ -272,7 +308,7 @@ public static class AuditCommand
         sb.AppendLine("<html>");
         sb.AppendLine("<head>");
         sb.AppendLine("    <title>Audit Visualization - DynaDocs</title>");
-        sb.AppendLine("    <script src=\"https://unpkg.com/vis-network/standalone/umd/vis-network.min.js\"></script>");
+        sb.AppendLine("    <script src=\"https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js\" integrity=\"sha384-yxKDWWf0wwdUj/gPeuL11czrnKFQROnLgY8ll7En9NYoXibgg3C6NK/UDHNtUgWJ\" crossorigin=\"anonymous\"></script>");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
         sb.AppendLine("    <h1>Project Audit Visualization</h1>");

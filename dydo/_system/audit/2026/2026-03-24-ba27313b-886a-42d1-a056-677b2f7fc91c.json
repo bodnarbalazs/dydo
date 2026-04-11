@@ -403,6 +403,51 @@
       "folders_added": [],
       "folders_removed": [],
       "doc_links_added": {
+        "dydo/agents/charlie/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/charlie/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
         "dydo/agents/charlie/workflow.md": [
           "dydo/agents/charlie/modes/co-thinker.md",
           "dydo/agents/charlie/modes/code-writer.md",
@@ -413,51 +458,6 @@
           "dydo/agents/charlie/modes/planner.md",
           "dydo/agents/charlie/modes/reviewer.md",
           "dydo/agents/charlie/modes/test-writer.md"
-        ],
-        "dydo/agents/charlie/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/charlie/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/charlie/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
         ],
         "dydo/project/changelog/2026/2026-03-19/_index.md": [
           "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",

@@ -806,14 +806,11 @@
           "dydo/agents/brian/modes/interviewer.md",
           "dydo/agents/brian/modes/tester.md"
         ],
-        "dydo/project/tasks/_index.md": [
-          "dydo/project/tasks/agent-messaging.md",
-          "dydo/project/tasks/audit-compaction-investigation.md",
-          "dydo/project/tasks/command-resiliency.md",
-          "dydo/project/tasks/help-meta-audit.md",
-          "dydo/project/tasks/template-update-system.md"
+        "dydo/_system/templates/mode-interviewer.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/agents/brian/modes/tester.md": [
+        "dydo/_system/templates/mode-tester.template.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
@@ -822,13 +819,16 @@
           "dydo/understand/architecture.md",
           "dydo/agents/brian/modes/planner.md"
         ],
-        "dydo/_system/templates/mode-tester.template.md": [
+        "dydo/agents/brian/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/_system/templates/mode-interviewer.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/project/tasks/_index.md": [
+          "dydo/project/tasks/agent-messaging.md",
+          "dydo/project/tasks/audit-compaction-investigation.md",
+          "dydo/project/tasks/command-resiliency.md",
+          "dydo/project/tasks/help-meta-audit.md",
+          "dydo/project/tasks/template-update-system.md"
         ]
       },
       "doc_links_removed": {

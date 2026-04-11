@@ -925,25 +925,6 @@
           "dydo/reference/guardrails.md",
           "dydo/reference/about-dynadocs.md"
         ],
-        "dydo/agents/henry/workflow.md": [
-          "dydo/agents/henry/modes/co-thinker.md",
-          "dydo/agents/henry/modes/code-writer.md",
-          "dydo/agents/henry/modes/docs-writer.md",
-          "dydo/agents/henry/modes/inquisitor.md",
-          "dydo/agents/henry/modes/judge.md",
-          "dydo/agents/henry/modes/orchestrator.md",
-          "dydo/agents/henry/modes/planner.md",
-          "dydo/agents/henry/modes/reviewer.md",
-          "dydo/agents/henry/modes/test-writer.md"
-        ],
-        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
-          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
-          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
-        ],
-        "dydo/project/future-features/agent-graph-metrics.md": [
-          "dydo/reference/audit-system.md",
-          "dydo/understand/dispatch-and-messaging.md"
-        ],
         "dydo/_system/templates/mode-reviewer.template.md": [
           "dydo/reference/writing-docs.md"
         ],
@@ -962,8 +943,104 @@
         "dydo/agents/frank/modes/reviewer.md": [
           "dydo/reference/writing-docs.md"
         ],
+        "dydo/agents/iris/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/jack/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/kate/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/mia/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/noah/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/project/changelog/2026/_index.md": [
+          "dydo/project/changelog/2026/2026-03-25/_index.md",
+          "dydo/project/changelog/2026/2026-03-27/_index.md",
+          "dydo/project/changelog/2026/2026-03-30/_index.md"
+        ],
         "dydo/agents/grace/modes/reviewer.md": [
           "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/leo/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/olivia/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/paul/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/quinn/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/rose/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/sam/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/tara/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/uma/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/victor/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/wendy/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/xavier/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/yara/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/zelda/modes/reviewer.md": [
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/project/changelog/2026/2026-03-19/_index.md": [
+          "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-coverage-excludes.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-dispatched-by-role-resolution.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-gap-check-prompt.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inactive-agent-messaging.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inactive-messaging-rework.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inbox-clear-bypass.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-source-generator-errors.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-worktree-path-resolution.md",
+          "dydo/project/changelog/2026/2026-03-19/gap-check-method-flag.md",
+          "dydo/project/changelog/2026/2026-03-19/guard-lift-command.md",
+          "dydo/project/changelog/2026/2026-03-19/human-only-commands.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-autoclose-escape-bug.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-dispatch.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-inbox-clear-bypass.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-reviewer-dispatch-block.md"
+        ],
+        "dydo/agents/henry/workflow.md": [
+          "dydo/agents/henry/modes/co-thinker.md",
+          "dydo/agents/henry/modes/code-writer.md",
+          "dydo/agents/henry/modes/docs-writer.md",
+          "dydo/agents/henry/modes/inquisitor.md",
+          "dydo/agents/henry/modes/judge.md",
+          "dydo/agents/henry/modes/orchestrator.md",
+          "dydo/agents/henry/modes/planner.md",
+          "dydo/agents/henry/modes/reviewer.md",
+          "dydo/agents/henry/modes/test-writer.md"
+        ],
+        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
+          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
+          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
+        ],
+        "dydo/project/future-features/agent-graph-metrics.md": [
+          "dydo/reference/audit-system.md",
+          "dydo/understand/dispatch-and-messaging.md"
         ],
         "dydo/agents/henry/modes/co-thinker.md": [
           "dydo/understand/about.md",
@@ -1010,83 +1087,6 @@
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
           "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/iris/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/jack/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/kate/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/leo/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/mia/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/noah/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/olivia/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/paul/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/quinn/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/rose/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/sam/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/tara/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/uma/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/victor/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/wendy/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/xavier/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/yara/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/zelda/modes/reviewer.md": [
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/project/changelog/2026/_index.md": [
-          "dydo/project/changelog/2026/2026-03-25/_index.md",
-          "dydo/project/changelog/2026/2026-03-27/_index.md",
-          "dydo/project/changelog/2026/2026-03-30/_index.md"
-        ],
-        "dydo/project/changelog/2026/2026-03-19/_index.md": [
-          "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-coverage-excludes.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-dispatched-by-role-resolution.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-gap-check-prompt.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inactive-agent-messaging.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inactive-messaging-rework.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inbox-clear-bypass.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-source-generator-errors.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-worktree-path-resolution.md",
-          "dydo/project/changelog/2026/2026-03-19/gap-check-method-flag.md",
-          "dydo/project/changelog/2026/2026-03-19/guard-lift-command.md",
-          "dydo/project/changelog/2026/2026-03-19/human-only-commands.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-autoclose-escape-bug.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-dispatch.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-inbox-clear-bypass.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-reviewer-dispatch-block.md"
         ],
         "dydo/project/changelog/2026/2026-03-25/_index.md": [
           "dydo/project/changelog/2026/2026-03-25/agent-graph-metrics.md",

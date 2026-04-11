@@ -208,3 +208,116 @@
 
 ### Confidence: high
 The guard system's core files were read thoroughly. Five scouts covered security, quality, docs, and edge cases. The critical guard lift bypass was confirmed by independent test. Bash analyzer coverage is thorough for the file analyzed. Areas not examined: audit trail integration (AuditService), conditional must-reads in depth, worktree-specific guard paths, integration tests. The nudge false-positive was observed firsthand.
+
+---
+
+## 2026-04-10 — Brian
+
+### Scope
+- **Entry point:** Feature investigation — verify fixes for 6 guard security findings from 2026-04-09 inquisition, then look for remaining gaps
+- **Files investigated:** Commands/GuardCommand.cs (~1400 lines), Services/BashCommandAnalyzer.cs (~700 lines), Services/OffLimitsService.cs (~400 lines), Services/GuardLiftService.cs (74 lines), Commands/GuardLiftCommand.cs (147 lines), Commands/WorktreeCommand.cs (junction handling, ~490 lines), Services/DispatchService.cs (worktree creation, line 615-630), Services/PathPermissionChecker.cs (105 lines), Utils/PathUtils.cs (NormalizeWorktreePath, ResolveWorktreePath), DynaDocs.Tests/Integration/GuardSecurityTests.cs (187 lines), DynaDocs.Tests/Integration/GuardIntegrationTests.cs (bash -c tests, lines 555-653), Services/ConfigFactory.cs (159 lines), dydo/files-off-limits.md
+- **Docs cross-checked:** dydo/understand/guard-system.md, dydo/project/changelog/2026/2026-04-09/fix-guard-security.md, dydo/project/changelog/2026/2026-04-09/fix-junction-guard-paths.md, dydo/project/changelog/2026/2026-04-09/fix-bash-write-allow.md
+- **Scouts dispatched:** 3 reviewers (Dexter security-1, Emma security-2, Frank security-3)
+
+### Fix Verification
+
+All 6 fixes mentioned in the brief are correctly implemented:
+
+1. **Self-escalation bypass (#55):** `SystemOffLimits` in `OffLimitsService.cs:31-32` hardcodes `dydo/agents/*/.guard-lift.json`. Check runs at line 66 BEFORE whitelist at line 73 — not whitelistable. Tests at `GuardSecurityTests.cs:29-60` verify both direct write and bash redirect are blocked, and service-level lift still works.
+
+2. **Interpreter bypass (#56):** `InlineInterpreterRegex` at `BashCommandAnalyzer.cs:279` catches `python[23]?`, `node`, `ruby`, `perl` with `-c/-e/-E`, and `php -r`. Added to `DangerousPatterns` at line 187. Tests at `GuardSecurityTests.cs:67-103` verify 6 languages blocked, script-file execution and version checks allowed.
+
+3. **Command substitution evasion (#57):** `GuardCommand.cs:738-754` blocks write/delete/move/copy/permchange when `analysis.HasBypassAttempt` AND write operations detected. Tests at `GuardSecurityTests.cs:134-154` verify tainted writes blocked, tainted reads allowed (by design).
+
+4. **Nudge false positives (#59):** `GuardCommand.cs:451-454` routes dydo commands FIRST via `IsDydoCommand()` before nudge matching. Test at `GuardSecurityTests.cs:161-175` verifies `--brief` text doesn't trigger nudges.
+
+5. **Nudge order (#62):** `GuardCommand.cs:456-473` checks dangerous patterns BEFORE configurable nudges. Prevents nudges from shadowing security checks. Test at `GuardSecurityTests.cs:178-185`.
+
+6. **Junction-safe deletion + worktree path normalization + worktree allow JSON:**
+   - `DeleteDirectoryJunctionSafe` at `WorktreeCommand.cs:442` recursively detects junctions via `FileAttributes.ReparsePoint`. Used by `DispatchService.cs:624` for creation cleanup.
+   - `ResolveWorktreePath` at `GuardCommand.cs:991` resolves relative→absolute in worktrees, normalizes via `PathUtils.NormalizeWorktreePath` with fallback at line 106-112 for paths where `File.Exists` can't verify the root.
+   - `WorktreeAllowJson` at `GuardCommand.cs:73` and `EmitWorktreeAllowIfNeeded` at lines 89-92 emit explicit `permissionDecision:"allow"` in worktree contexts for all allow paths.
+
+### Findings
+
+#### 1. RemoveZombieDirectory uses junction-unsafe Directory.Delete
+- **Category:** security
+- **Severity:** high
+- **Type:** obvious
+- **Evidence:** `WorktreeCommand.RemoveZombieDirectory` (`Commands/WorktreeCommand.cs:473-486`) uses `Directory.Delete(worktreePath, recursive: true)` which follows junctions into their targets, potentially destroying main repo files. `TeardownWorktree` (line 406-413) calls `RemoveJunction` for known junction subpaths first (line 409-410), but `RemoveJunction` (line 415-435) silently swallows exceptions via a bare `catch` block. If any junction removal fails (e.g., permission error, locked file), the subsequent `Directory.Delete(recursive: true)` follows into the remaining junction and deletes main repo files.
+
+  The junction-safe alternative `DeleteDirectoryJunctionSafe` exists at line 442-458 (detects `FileAttributes.ReparsePoint` at any depth) and IS used by `DispatchService.cs:624` for worktree creation failure cleanup. The comment at `DispatchService.cs:620-623` explicitly warns: "preventing Directory.Delete(recursive) from following junctions into the main repo and destroying its files."
+
+  Two independent code reviewers (Charlie and Dexter) flagged this in their reviews:
+  - Charlie: "TeardownWorktree still uses hardcoded JunctionSubpaths + RemoveZombieDirectory with Directory.Delete(recursive:true) — same vulnerability pattern" (`fix-junction-guard-paths.md:35`)
+  - Dexter: "RemoveZombieDirectory still uses Directory.Delete(recursive) without junction-safe handling" (`fix-bash-write-allow.md:30`)
+
+  **Fix:** Replace `Directory.Delete(worktreePath, recursive: true)` in `RemoveZombieDirectory` with `DeleteDirectoryJunctionSafe(worktreePath)`.
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Commands/WorktreeCommand.cs (lines 400-500, focusing on TeardownWorktree, RemoveJunction, DeleteDirectoryJunctionSafe, RemoveZombieDirectory), Services/DispatchService.cs (lines 615-630)
+- **Independent verification:** Confirmed `RemoveZombieDirectory` at line 480 uses `Directory.Delete(worktreePath, recursive: true)`. Confirmed `DeleteDirectoryJunctionSafe` at line 442-458 exists and IS used by `DispatchService.cs:624` with an explicit comment warning about junction following. Confirmed `RemoveJunction` has a bare `catch` block at line 431 that silently swallows failures — if any junction removal fails, the subsequent recursive delete follows into the remaining junction target. The two paths in the same codebase use different deletion strategies for the same class of risk.
+- **Alternative explanations considered:** Could `RemoveZombieDirectory` only be called on directories without junctions? No — `TeardownWorktree` at line 406-413 calls `RemoveJunction` first, then `RemoveZombieDirectory`. If junction removal fails silently (bare catch), the zombie directory still contains junctions when `Directory.Delete` runs. The `JunctionSubpaths` list could also be incomplete if new junctions are added without updating it.
+- **Issue:** #0084
+
+#### 2. Shell subcommand execution bypasses file operation analysis
+- **Category:** security
+- **Severity:** medium
+- **Type:** obvious
+- **Evidence:** `bash -c "cmd"`, `sh -c "cmd"`, `zsh -c "cmd"` execute arbitrary shell commands whose inner file operations are invisible to the guard. `InlineInterpreterRegex` (`BashCommandAnalyzer.cs:279`) catches `python/node/ruby/perl/php` inline execution but NOT `bash/sh/zsh -c`.
+
+  The `BashCommandAnalyzer.TokenizeCommand` (line 585) processes `bash -c "cat state.md"` as tokens: `bash`, `-c`, `cat state.md`. The command name `bash` is absent from all command dictionaries (`ReadCommands`, `WriteCommands`, `DeleteCommands`, `PermissionCommands`, `CopyMoveCommands`), so no file operations are extracted. Without extracted operations:
+  - Off-limits checks never run on the inner paths
+  - RBAC checks never run on inner write targets
+  - The `HasBypassAttempt` write block at `GuardCommand.cs:739` doesn't trigger (no operations detected)
+
+  **Mitigating factors:** (1) Dangerous patterns match on the full command string, so truly dangerous inner commands like `rm -rf /` are still caught. (2) Redirection analysis (`AnalyzeRedirection`) runs on the full string, so `bash -c "echo x > file"` detects the redirect. (3) Tests at `GuardIntegrationTests.cs:636-637` show this is a deliberate design tradeoff to avoid false positives on legitimate `bash -c` usage. (4) `bash -c "dydo ..."` IS blocked by the indirect dydo invocation nudge at `ConfigFactory.cs:31-34`.
+
+  **Remaining gap:** `bash -c "cat dydo/agents/Brian/state.md"` bypasses off-limits. `bash -c "tee sensitive-file"` (without redirection) bypasses RBAC. Inner commands not using shell redirection or matching dangerous patterns are invisible.
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/BashCommandAnalyzer.cs (lines 1-60 command dictionaries, lines 270-280 InlineInterpreterRegex, lines 180-188 DangerousPatterns), Commands/GuardCommand.cs (lines 730-770 HandleNonDydoBash file operation checks), DynaDocs.Tests/Integration/GuardIntegrationTests.cs (lines 625-653 false positive safety tests)
+- **Independent verification:** Grepped for `bash`, `sh`, `zsh` in all command dictionaries — zero matches. Confirmed `InlineInterpreterRegex` at line 279 covers `python[23]?|node|ruby|perl` with `-[ceE]` and `php -r` but NOT `bash/sh/zsh`. Confirmed tests at lines 636-637 show `sh -c "echo hello"` and `bash -c "npm install"` are explicitly kept as allowed (false positive safety), confirming this is a deliberate design tradeoff. The gap is real but narrower than it appears: dangerous patterns still match on the full string, redirections are detected by `AnalyzeRedirection`, and `bash -c "dydo ..."` is caught by the indirect invocation nudge.
+- **Alternative explanations considered:** Blocking all `bash -c` / `sh -c` would cause massive false positives — these are extremely common in legitimate CI/CD and build tool usage (the test suite itself documents this). The issue is not that they're allowed, but that the inner commands' file operations are invisible to off-limits and RBAC checks. A targeted approach (parsing the -c argument string as a subcommand) would be more appropriate than a blanket block.
+- **Issue:** #0085
+
+#### 3. Command substitution hiding entire write operations
+- **Category:** security
+- **Severity:** medium
+- **Type:** obvious
+- **Evidence:** The bypass-attempt write block at `GuardCommand.cs:738-754` requires BOTH `analysis.HasBypassAttempt` AND write operations in `analysis.Operations`. When variable expansion or command substitution completely hides the write command, no operations are extracted, and the block doesn't trigger.
+
+  Example: `$CMD dydo/files-off-limits.md` where `$CMD=tee` at runtime.
+  - `VariableExpansionRegex` sets `HasBypassAttempt = true`
+  - Tokenizer produces `$CMD`, `dydo/files-off-limits.md` — `$CMD` is not in any command dictionary
+  - No file operations extracted → `analysis.Operations` is empty
+  - Block condition at line 739 is false (no write ops) → command allowed
+  - RBAC and off-limits checks at line 756-760 have no operations to check → pass
+
+  Similarly: `$(echo tee) file.cs` — command substitution hides `tee` entirely.
+
+  **Mitigating factors:** Warnings are emitted to stderr. The agent would need to intentionally construct such commands. If redirection IS used alongside the variable expansion (e.g., `echo $PAYLOAD > target`), the redirect IS detected and the block triggers (tested at `GuardSecurityTests.cs:135-144`).
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Commands/GuardCommand.cs (lines 738-760), Services/BashCommandAnalyzer.cs (lines 352-370 BypassChecks, lines 309-340 Analyze flow), DynaDocs.Tests/Integration/GuardSecurityTests.cs (lines 134-154)
+- **Independent verification:** Confirmed the block condition at GuardCommand.cs:739 requires `analysis.HasBypassAttempt && analysis.Operations.Any(op => op.Type is Write or Delete or Move or Copy or PermissionChange)`. Confirmed that when variable expansion completely hides the command name (e.g., `$CMD file.md`), the tokenizer produces `$CMD` which is not in any command dictionary, so `analysis.Operations` is empty and the condition evaluates to false. Confirmed test at GuardSecurityTests.cs:134-144 covers the case where redirection IS present (blocked correctly), and test at lines 146-154 covers tainted reads (allowed by design). The gap exists specifically when variable expansion hides the command name AND no shell redirection is used.
+- **Alternative explanations considered:** Could the guard block ALL commands with `HasBypassAttempt`? That would be too aggressive — variable expansion in read-only contexts (e.g., `cat $FILENAME`) is legitimate and the test at line 146-154 explicitly keeps this allowed. The issue is the asymmetry: when the write command itself is hidden, the guard has no operations to evaluate. This is an inherent limitation of static analysis — the guard can't resolve runtime variable values.
+- **Issue:** #0086
+
+#### 4. Off-limits bypass inconsistency for bash reads (still present from prior finding #6)
+- **Category:** bug
+- **Severity:** low
+- **Type:** obvious
+- **Evidence:** `CheckBashFileOperation` (`GuardCommand.cs:776`) calls `offLimitsService.IsPathOffLimits(op.Path)` directly — no `ShouldBypassOffLimits` call for bootstrap/mode files. `CheckDirectFileOffLimits` (line 315) DOES bypass off-limits for mode files via `ShouldBypassOffLimits` (line 334). Result: `Read dydo/agents/Kate/modes/reviewer.md` succeeds (bootstrap bypass), but `cat dydo/agents/Kate/modes/reviewer.md` is blocked by off-limits pattern `dydo/agents/*/modes/**`.
+
+  This was reported as finding #6 in the 2026-04-09 inquisition (issue #0060). Still present.
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Commands/GuardCommand.cs (lines 309-342 CheckDirectFileOffLimits and ShouldBypassOffLimits, lines 772-806 CheckBashFileOperation)
+- **Independent verification:** Confirmed `CheckDirectFileOffLimits` at line 315 calls `ShouldBypassOffLimits(filePath, agentForOffLimits)` which at line 340 calls `IsAnyModeFile(filePath)` for Stage 2 agents — allowing reads of mode files. Confirmed `CheckBashFileOperation` at line 776 calls `offLimitsService.IsPathOffLimits(op.Path)` directly with no `ShouldBypassOffLimits` call anywhere in the function. The two code paths handle the same semantic operation (reading a file) with different off-limits logic. This is the same issue as #0060 from the 2026-04-09 inquisition — it was not addressed in the fix batch.
+- **Alternative explanations considered:** Could this be intentional — forcing agents to use the Read tool instead of `cat` for mode files? Plausible, but the guard should be consistent regardless of the tool used. An agent using `cat` in a `bash -c` subcommand or a piped workflow would hit a confusing failure. The inconsistency erodes trust in the guard's predictability.
+- **Issue:** #0087
+
+### Hypotheses Not Reproduced
+- **Worktree path normalization exploitable via crafted paths:** Tested whether a path containing the marker string `dydo/_system/.local/worktrees/` at a non-worktree location could trick the normalizer. The function remaps to the main project root, which makes the resulting path MORE restrictive (maps to protected paths). No exploitable path found.
+- **GuardLift TOCTOU race:** `IsLifted()` reads the marker file and checks expiration. Between the check and the RBAC bypass at `GuardCommand.cs:272`, a human could delete the marker. But this narrows the window (fewer lifted operations), which is the safer direction. No privilege escalation vector.
+- **SystemOffLimits whitelist override:** Verified `OffLimitsService.IsPathOffLimits` checks SystemOffLimits at line 66 BEFORE whitelist at line 73. Adding a whitelist pattern matching `dydo/agents/*/.guard-lift.json` (e.g., `dydo/agents/**` or `**/*.json`) does NOT bypass the system check. The fix from the Frank review is correctly applied.
+
+### Confidence: high
+All 6 fixes verified correct with evidence from source code and test suites. Three new findings identified — one high (junction-unsafe delete), two medium (shell subcommand bypass, command substitution hiding operations). One low-severity carryover (off-limits bash read inconsistency). Core guard files read thoroughly (~2700 lines of guard-related code). Three security scouts dispatched (Dexter, Emma, Frank) — still working at time of filing; their reports may add additional findings. Areas not examined in this pass: audit trail, conditional must-reads, non-security findings from prior inquisition.

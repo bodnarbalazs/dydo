@@ -1862,91 +1862,213 @@
       ],
       "folders_removed": [],
       "doc_links_added": {
-        "dydo/agents/henry/workflow.md": [
-          "dydo/agents/henry/modes/co-thinker.md",
-          "dydo/agents/henry/modes/code-writer.md",
-          "dydo/agents/henry/modes/docs-writer.md",
-          "dydo/agents/henry/modes/inquisitor.md",
-          "dydo/agents/henry/modes/judge.md",
-          "dydo/agents/henry/modes/orchestrator.md",
-          "dydo/agents/henry/modes/planner.md",
-          "dydo/agents/henry/modes/reviewer.md",
-          "dydo/agents/henry/modes/test-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_reference.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md"
         ],
-        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
-          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
-          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/coverage-tools.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/guardrails.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/roles/_index.md"
         ],
-        "dydo/project/future-features/agent-graph-metrics.md": [
-          "dydo/reference/audit-system.md",
-          "dydo/understand/dispatch-and-messaging.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
         ],
-        "dydo/agents/henry/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/henry/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/guardrails.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
         ],
-        "dydo/agents/henry/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/coverage-tools.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/testing-strategy.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/009-crap-per-method-metric.md"
         ],
-        "dydo/agents/henry/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/getting-started.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/templates-and-customization.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md"
         ],
-        "dydo/agents/henry/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/audit-system.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md"
         ],
-        "dydo/agents/henry/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_project.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md"
         ],
-        "dydo/agents/henry/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/docs-upgrade-sprint.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/v1.3-release.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/changelog/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/future-features/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/issues/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/pitfalls/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/tasks/_index.md"
         ],
-        "dydo/agents/henry/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/henry/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/v1.3-release.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/006-drop-interviewer-role.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/003-agent-messaging.md"
         ],
-        "dydo/agents/henry/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/docs-upgrade-sprint.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/v1.3-release.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md"
         ],
-        "dydo/agents/henry/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/customizing-roles.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/getting-started.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/testing-strategy.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/writing-good-briefs.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_guides.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/writing-good-briefs.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/multi-agent-workflows.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/testing-strategy.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/009-crap-per-method-metric.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/coverage-tools.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/getting-started.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/customizing-roles.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/roles/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
         ],
         "dydo/project/changelog/2026/_index.md": [
           "dydo/project/changelog/2026/2026-03-25/_index.md",
           "dydo/project/changelog/2026/2026-03-27/_index.md"
         ],
-        "dydo/project/changelog/2026/2026-03-19/_index.md": [
-          "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-coverage-excludes.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-dispatched-by-role-resolution.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-gap-check-prompt.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inactive-agent-messaging.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inactive-messaging-rework.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inbox-clear-bypass.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-source-generator-errors.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-worktree-path-resolution.md",
-          "dydo/project/changelog/2026/2026-03-19/gap-check-method-flag.md",
-          "dydo/project/changelog/2026/2026-03-19/guard-lift-command.md",
-          "dydo/project/changelog/2026/2026-03-19/human-only-commands.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-autoclose-escape-bug.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-dispatch.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-inbox-clear-bypass.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-reviewer-dispatch-block.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/welcome.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/glossary.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/project/_index.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/roles-and-permissions.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/welcome.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/glossary.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-test-v15/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/smoke-comp-a/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/index.md"
+        ],
+        "dydo/project/changelog/2026/2026-03-27/_index.md": [
+          "dydo/project/changelog/2026/2026-03-27/dispatch-queue-design.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-ci-linux-round2.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-default-nudges.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-inbox-discoverability.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue-impl.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-path-backslash-glob.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-phantom-close.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-plan-mode-matcher.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-reviewer-queue-hint.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-wait-process-leak.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-zombie-worktrees.md",
+          "dydo/project/changelog/2026/2026-03-27/gap-check-freshness.md",
+          "dydo/project/changelog/2026/2026-03-27/gap-check-skip-optimization.md",
+          "dydo/project/changelog/2026/2026-03-27/implement-dispatch-queue.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-phantom-close.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-plan-mode-block.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-process-leak.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-reply-pending-race.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-tilde-read-regression.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-postmortem.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-final-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-final-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/verify-process-leak-fix.md"
         ],
         "dydo/project/changelog/2026/2026-03-25/_index.md": [
           "dydo/project/changelog/2026/2026-03-25/agent-graph-metrics.md",
@@ -2006,209 +2128,87 @@
           "dydo/project/changelog/2026/2026-03-25/worktree-compat-fixes.md",
           "dydo/project/changelog/2026/2026-03-25/worktree-compat-tests.md"
         ],
-        "dydo/project/changelog/2026/2026-03-27/_index.md": [
-          "dydo/project/changelog/2026/2026-03-27/dispatch-queue-design.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-ci-linux-round2.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-default-nudges.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-inbox-discoverability.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue-impl.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-path-backslash-glob.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-phantom-close.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-plan-mode-matcher.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-reviewer-queue-hint.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-wait-process-leak.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-zombie-worktrees.md",
-          "dydo/project/changelog/2026/2026-03-27/gap-check-freshness.md",
-          "dydo/project/changelog/2026/2026-03-27/gap-check-skip-optimization.md",
-          "dydo/project/changelog/2026/2026-03-27/implement-dispatch-queue.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-phantom-close.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-plan-mode-block.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-process-leak.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-reply-pending-race.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-tilde-read-regression.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-postmortem.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-final-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-final-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/verify-process-leak-fix.md"
+        "dydo/agents/henry/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/index.md"
+        "dydo/agents/henry/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v15/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/index.md"
+        "dydo/agents/henry/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/henry/modes/code-writer.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md"
+        "dydo/agents/henry/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/welcome.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/glossary.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/index.md"
+        "dydo/agents/henry/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/roles-and-permissions.md"
+        "dydo/agents/henry/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v15/dydo/welcome.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/about.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/glossary.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/project/_index.md",
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/index.md"
+        "dydo/agents/henry/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md"
+        "dydo/agents/henry/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/customizing-roles.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/roles/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
+        "dydo/agents/henry/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/henry/modes/code-writer.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/getting-started.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md"
+        "dydo/project/future-features/agent-graph-metrics.md": [
+          "dydo/reference/audit-system.md",
+          "dydo/understand/dispatch-and-messaging.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
+        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
+          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
+          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/testing-strategy.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/009-crap-per-method-metric.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/coverage-tools.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md"
+        "dydo/agents/henry/workflow.md": [
+          "dydo/agents/henry/modes/co-thinker.md",
+          "dydo/agents/henry/modes/code-writer.md",
+          "dydo/agents/henry/modes/docs-writer.md",
+          "dydo/agents/henry/modes/inquisitor.md",
+          "dydo/agents/henry/modes/judge.md",
+          "dydo/agents/henry/modes/orchestrator.md",
+          "dydo/agents/henry/modes/planner.md",
+          "dydo/agents/henry/modes/reviewer.md",
+          "dydo/agents/henry/modes/test-writer.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/writing-good-briefs.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/multi-agent-workflows.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_guides.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/customizing-roles.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/getting-started.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/testing-strategy.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/writing-good-briefs.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/docs-upgrade-sprint.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/v1.3-release.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/v1.3-release.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/006-drop-interviewer-role.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/003-agent-messaging.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/docs-upgrade-sprint.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/v1.3-release.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/changelog/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/future-features/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/issues/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/pitfalls/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/tasks/_index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_project.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/audit-system.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/getting-started.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/templates-and-customization.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/coverage-tools.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/testing-strategy.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/009-crap-per-method-metric.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/guardrails.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/roles-and-permissions.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/troubleshooting.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_index.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/configuration.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/coverage-tools.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/dydo-commands.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/guardrails.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/roles/_index.md"
-        ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/_reference.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/project/_index.md"
+        "dydo/project/changelog/2026/2026-03-19/_index.md": [
+          "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-coverage-excludes.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-dispatched-by-role-resolution.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-gap-check-prompt.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inactive-agent-messaging.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inactive-messaging-rework.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inbox-clear-bypass.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-source-generator-errors.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-worktree-path-resolution.md",
+          "dydo/project/changelog/2026/2026-03-19/gap-check-method-flag.md",
+          "dydo/project/changelog/2026/2026-03-19/guard-lift-command.md",
+          "dydo/project/changelog/2026/2026-03-19/human-only-commands.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-autoclose-escape-bug.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-dispatch.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-inbox-clear-bypass.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-reviewer-dispatch-block.md"
         ],
         "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/about.md": [
           "dydo/_system/.local/worktrees/smoke-comp-a/dydo/understand/architecture.md",

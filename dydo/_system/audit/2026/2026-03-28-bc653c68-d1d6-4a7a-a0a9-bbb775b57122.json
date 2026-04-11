@@ -588,147 +588,39 @@
       ],
       "folders_removed": [],
       "doc_links_added": {
-        "dydo/agents/charlie/workflow.md": [
-          "dydo/agents/charlie/modes/co-thinker.md",
-          "dydo/agents/charlie/modes/code-writer.md",
-          "dydo/agents/charlie/modes/docs-writer.md",
-          "dydo/agents/charlie/modes/inquisitor.md",
-          "dydo/agents/charlie/modes/judge.md",
-          "dydo/agents/charlie/modes/orchestrator.md",
-          "dydo/agents/charlie/modes/planner.md",
-          "dydo/agents/charlie/modes/reviewer.md",
-          "dydo/agents/charlie/modes/test-writer.md"
-        ],
-        "dydo/agents/henry/workflow.md": [
-          "dydo/agents/henry/modes/co-thinker.md",
-          "dydo/agents/henry/modes/code-writer.md",
-          "dydo/agents/henry/modes/docs-writer.md",
-          "dydo/agents/henry/modes/inquisitor.md",
-          "dydo/agents/henry/modes/judge.md",
-          "dydo/agents/henry/modes/orchestrator.md",
-          "dydo/agents/henry/modes/planner.md",
-          "dydo/agents/henry/modes/reviewer.md",
-          "dydo/agents/henry/modes/test-writer.md"
-        ],
-        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
-          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
-          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
-        ],
-        "dydo/project/future-features/agent-graph-metrics.md": [
-          "dydo/reference/audit-system.md",
-          "dydo/understand/dispatch-and-messaging.md"
-        ],
-        "dydo/agents/charlie/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/charlie/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/charlie/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/henry/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/henry/modes/code-writer.md"
-        ],
-        "dydo/agents/henry/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/henry/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/henry/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/henry/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/henry/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/henry/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/henry/modes/code-writer.md"
-        ],
-        "dydo/agents/henry/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/henry/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/project/changelog/2026/_index.md": [
-          "dydo/project/changelog/2026/2026-03-25/_index.md",
-          "dydo/project/changelog/2026/2026-03-27/_index.md"
-        ],
-        "dydo/project/changelog/2026/2026-03-19/_index.md": [
-          "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-coverage-excludes.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-dispatched-by-role-resolution.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-gap-check-prompt.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inactive-agent-messaging.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inactive-messaging-rework.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-inbox-clear-bypass.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-source-generator-errors.md",
-          "dydo/project/changelog/2026/2026-03-19/fix-worktree-path-resolution.md",
-          "dydo/project/changelog/2026/2026-03-19/gap-check-method-flag.md",
-          "dydo/project/changelog/2026/2026-03-19/guard-lift-command.md",
-          "dydo/project/changelog/2026/2026-03-19/human-only-commands.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-autoclose-escape-bug.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-dispatch.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-inbox-clear-bypass.md",
-          "dydo/project/changelog/2026/2026-03-19/investigate-reviewer-dispatch-block.md"
+        "dydo/project/changelog/2026/2026-03-27/_index.md": [
+          "dydo/project/changelog/2026/2026-03-27/dispatch-queue-design.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-ci-linux-round2.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-default-nudges.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-inbox-discoverability.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue-impl.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-path-backslash-glob.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-phantom-close.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-plan-mode-matcher.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-reviewer-queue-hint.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-wait-process-leak.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-zombie-worktrees.md",
+          "dydo/project/changelog/2026/2026-03-27/gap-check-freshness.md",
+          "dydo/project/changelog/2026/2026-03-27/gap-check-skip-optimization.md",
+          "dydo/project/changelog/2026/2026-03-27/implement-dispatch-queue.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-phantom-close.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-plan-mode-block.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-process-leak.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-reply-pending-race.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-tilde-read-regression.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-postmortem.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-final-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-final-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/verify-process-leak-fix.md"
         ],
         "dydo/project/changelog/2026/2026-03-25/_index.md": [
           "dydo/project/changelog/2026/2026-03-25/agent-graph-metrics.md",
@@ -788,39 +680,147 @@
           "dydo/project/changelog/2026/2026-03-25/worktree-compat-fixes.md",
           "dydo/project/changelog/2026/2026-03-25/worktree-compat-tests.md"
         ],
-        "dydo/project/changelog/2026/2026-03-27/_index.md": [
-          "dydo/project/changelog/2026/2026-03-27/dispatch-queue-design.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-ci-linux-round2.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-default-nudges.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-inbox-discoverability.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue-impl.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-path-backslash-glob.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-phantom-close.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-plan-mode-matcher.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-reviewer-queue-hint.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-wait-process-leak.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-zombie-worktrees.md",
-          "dydo/project/changelog/2026/2026-03-27/gap-check-freshness.md",
-          "dydo/project/changelog/2026/2026-03-27/gap-check-skip-optimization.md",
-          "dydo/project/changelog/2026/2026-03-27/implement-dispatch-queue.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-phantom-close.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-plan-mode-block.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-process-leak.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-reply-pending-race.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-tilde-read-regression.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-postmortem.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-final-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-final-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/verify-process-leak-fix.md"
+        "dydo/agents/henry/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/project/changelog/2026/_index.md": [
+          "dydo/project/changelog/2026/2026-03-25/_index.md",
+          "dydo/project/changelog/2026/2026-03-27/_index.md"
+        ],
+        "dydo/agents/henry/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/henry/modes/code-writer.md"
+        ],
+        "dydo/agents/henry/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/henry/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/henry/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/henry/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/henry/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/charlie/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/project/future-features/agent-graph-metrics.md": [
+          "dydo/reference/audit-system.md",
+          "dydo/understand/dispatch-and-messaging.md"
+        ],
+        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
+          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
+          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
+        ],
+        "dydo/agents/henry/workflow.md": [
+          "dydo/agents/henry/modes/co-thinker.md",
+          "dydo/agents/henry/modes/code-writer.md",
+          "dydo/agents/henry/modes/docs-writer.md",
+          "dydo/agents/henry/modes/inquisitor.md",
+          "dydo/agents/henry/modes/judge.md",
+          "dydo/agents/henry/modes/orchestrator.md",
+          "dydo/agents/henry/modes/planner.md",
+          "dydo/agents/henry/modes/reviewer.md",
+          "dydo/agents/henry/modes/test-writer.md"
+        ],
+        "dydo/agents/charlie/workflow.md": [
+          "dydo/agents/charlie/modes/co-thinker.md",
+          "dydo/agents/charlie/modes/code-writer.md",
+          "dydo/agents/charlie/modes/docs-writer.md",
+          "dydo/agents/charlie/modes/inquisitor.md",
+          "dydo/agents/charlie/modes/judge.md",
+          "dydo/agents/charlie/modes/orchestrator.md",
+          "dydo/agents/charlie/modes/planner.md",
+          "dydo/agents/charlie/modes/reviewer.md",
+          "dydo/agents/charlie/modes/test-writer.md"
+        ],
+        "dydo/project/changelog/2026/2026-03-19/_index.md": [
+          "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-coverage-excludes.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-dispatched-by-role-resolution.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-gap-check-prompt.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inactive-agent-messaging.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inactive-messaging-rework.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-inbox-clear-bypass.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-source-generator-errors.md",
+          "dydo/project/changelog/2026/2026-03-19/fix-worktree-path-resolution.md",
+          "dydo/project/changelog/2026/2026-03-19/gap-check-method-flag.md",
+          "dydo/project/changelog/2026/2026-03-19/guard-lift-command.md",
+          "dydo/project/changelog/2026/2026-03-19/human-only-commands.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-autoclose-escape-bug.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-dispatch.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-inbox-clear-bypass.md",
+          "dydo/project/changelog/2026/2026-03-19/investigate-reviewer-dispatch-block.md"
         ]
       },
       "doc_links_removed": {

@@ -567,14 +567,21 @@ public static partial class GuardCommand
     internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
     {
         var nudges = configNudges?.ToList() ?? [];
-        var existingPatterns = new HashSet<string>(nudges.Select(n => n.Pattern));
 
         foreach (var defaultNudge in ConfigFactory.DefaultNudges)
         {
-            if (string.Equals(defaultNudge.Severity, "block", StringComparison.OrdinalIgnoreCase)
-                && !existingPatterns.Contains(defaultNudge.Pattern))
+            if (!string.Equals(defaultNudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var existingIndex = nudges.FindIndex(n => n.Pattern == defaultNudge.Pattern);
+            if (existingIndex < 0)
             {
                 nudges.Add(defaultNudge);
+            }
+            else if (!string.Equals(nudges[existingIndex].Severity, "block", StringComparison.OrdinalIgnoreCase))
+            {
+                // Severity was downgraded — enforce block
+                nudges[existingIndex] = defaultNudge;
             }
         }
 

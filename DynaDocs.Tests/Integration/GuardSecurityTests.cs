@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Models;
 using DynaDocs.Services;
 
 /// <summary>
@@ -460,6 +461,26 @@ public class GuardSecurityTests : IntegrationTestBase
         // Only block-severity defaults should be merged
         var nudges = GuardCommand.MergeSystemNudges([]);
         Assert.All(nudges, n => Assert.Equal("block", n.Severity, ignoreCase: true));
+    }
+
+    [Fact]
+    public void Issue64_MergeSystemNudges_DowngradedSeverity_ForcedBackToBlock()
+    {
+        // Take a block-severity default and downgrade it to "warn" in config
+        var blockDefault = ConfigFactory.DefaultNudges.First(
+            n => string.Equals(n.Severity, "block", StringComparison.OrdinalIgnoreCase));
+
+        var configNudges = new List<NudgeConfig>
+        {
+            new() { Pattern = blockDefault.Pattern, Message = blockDefault.Message, Severity = "warn" }
+        };
+
+        var result = GuardCommand.MergeSystemNudges(configNudges);
+
+        // The downgraded nudge must be replaced with block severity
+        var matching = result.Where(n => n.Pattern == blockDefault.Pattern).ToList();
+        Assert.Single(matching);
+        Assert.Equal("block", matching[0].Severity, ignoreCase: true);
     }
 
     // ================================================================

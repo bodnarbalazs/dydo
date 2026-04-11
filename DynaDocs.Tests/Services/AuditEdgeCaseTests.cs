@@ -153,7 +153,9 @@ public class AuditEdgeCaseTests : IDisposable
     [Fact]
     public void GetSession_SessionIdWithBackslash_ThrowsDirectoryNotFound()
     {
-        // Same bug as above but with backslash (Windows path separator).
+        // Backslash is only a path separator on Windows; on Linux it's a valid filename char.
+        if (!OperatingSystem.IsWindows()) return;
+
         var year = DateTime.UtcNow.Year.ToString();
         var yearDir = Path.Combine(_auditDir, year);
         Directory.CreateDirectory(yearDir);

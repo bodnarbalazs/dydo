@@ -110,6 +110,10 @@ public class CompactionAtomicWriteTests : IDisposable
     [Fact]
     public void Compact_ReadOnlySessionFile_ThrowsWithoutCorruptingOthers()
     {
+        // On Linux, atomic writes (temp+rename) bypass file-level read-only because
+        // rename() is a directory operation — the file's permissions don't matter.
+        if (!OperatingSystem.IsWindows()) return;
+
         // If one session file can't be written, other files should not be corrupted.
         // This tests that writes are independent and atomic per-file.
         var snap = MakeSnapshot(["a.cs"], ["src"]);

@@ -6,6 +6,12 @@ Documentation-driven context and agent orchestration for Claude Code.
 
 DynaDocs uses Claude Code's `PreToolUse` hook system for guard enforcement. Support for other AI coding tools may come in the future, but right now this is designed for and tested with Claude Code.
 
+Here's a short demo of dydo where an agent orchestrates others to write a poem. (2× speed for brevity.)
+
+<video src="https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo-demo-2x.mp4" controls muted playsinline width="100%">
+  <a href="https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo-demo-2x.mp4">Watch the demo (MP4)</a>
+</video>
+
 ## Stop Doing Agent Work Yourself
 
 Your time is the most precious resource in the equation. You should focus on your comparative advantage: deciding **what** should be done and **why** — articulating intent, making value choices, choosing direction. Everything that *can* be done by an agent *should* be.

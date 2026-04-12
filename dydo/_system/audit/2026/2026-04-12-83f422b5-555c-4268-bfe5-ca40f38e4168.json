@@ -270,6 +270,61 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "ls -lh \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_assets\\dydo-demo-2x.mp4\u0022 \u0022C:\\Users\\User\\Deskto..."
+    },
+    {
+      "ts": "2026-04-12T00:54:02.9879484Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "reason": "Agent Charlie (docs-writer) cannot edit README.md. Docs-writer role can only edit dydo/** (except other agents\u0027 workspaces) and own workspace."
+    },
+    {
+      "ts": "2026-04-12T00:54:12.1447325Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ffmpeg -y -i \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_assets\\dydo-demo-2x.mp4\u0022 -vf \u0022scale=1920..."
+    },
+    {
+      "ts": "2026-04-12T00:54:39.9522854Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -lh \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_assets\\\u0022*.mp4"
+    },
+    {
+      "ts": "2026-04-12T00:54:43.1554953Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -lh C:/Users/User/Desktop/Projects/DynaDocs/dydo/_assets/dydo-demo-2x.mp4 C:/Users/User/Desktop/P..."
+    },
+    {
+      "ts": "2026-04-12T00:54:48.0644023Z",
+      "event": "GuardLift",
+      "agent": "Charlie"
+    },
+    {
+      "ts": "2026-04-12T00:55:03.6450581Z",
+      "event": "GuardLift",
+      "agent": "Charlie"
+    },
+    {
+      "ts": "2026-04-12T00:55:19.4922502Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-04-12T00:56:27.2583242Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-04-12T00:56:29.1813901Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 status --short"
     }
   ],
   "snapshot": {

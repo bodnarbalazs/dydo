@@ -8,8 +8,8 @@ DynaDocs uses Claude Code's `PreToolUse` hook system for guard enforcement. Supp
 
 Here's a short demo of dydo where an agent orchestrates others to write a poem. (2× speed for brevity.)
 
-<video src="https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo-demo-2x-web-small.mp4" controls muted playsinline width="100%">
-  <a href="https://raw.githubusercontent.com/bodnarbalazs/dydo/master/dydo/_assets/dydo-demo-2x-web-small.mp4">Watch the demo (MP4)</a>
+<video src="https://github.com/user-attachments/assets/8d24c833-d792-4a4d-bf8b-2bb6a83908b1" controls muted playsinline width="100%">
+  <a href="https://github.com/user-attachments/assets/8d24c833-d792-4a4d-bf8b-2bb6a83908b1">Watch the demo (MP4)</a>
 </video>
 
 ## Stop Doing Agent Work Yourself

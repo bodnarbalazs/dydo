@@ -325,6 +325,25 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "git -C \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 status --short"
+    },
+    {
+      "ts": "2026-04-12T00:59:29.0436839Z",
+      "event": "Edit",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\README.md",
+      "tool": "edit",
+      "lifted": true
+    },
+    {
+      "ts": "2026-04-12T00:59:32.8795988Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 restore --staged dydo/_assets/dydo-demo-2x-web-smal..."
+    },
+    {
+      "ts": "2026-04-12T00:59:36.8687574Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 status --short"
     }
   ],
   "snapshot": {

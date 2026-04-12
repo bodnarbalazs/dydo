@@ -252,6 +252,24 @@
       "event": "Bash",
       "tool": "bash",
       "cmd": "python \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\run_tests.py\u0022 -- --nologo 2\u003E..."
+    },
+    {
+      "ts": "2026-04-12T00:42:58.4213491Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "git -C \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\u0022 log --oneline -5 \u0026\u0026 git -C \u0022C:\\Users\\User\\Desktop\\P..."
+    },
+    {
+      "ts": "2026-04-12T00:49:34.6680793Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ffmpeg -y -i \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_assets\\dydo-demo-2x.mp4\u0022 -c:v libx264 -p..."
+    },
+    {
+      "ts": "2026-04-12T00:50:11.4077367Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls -lh \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_assets\\dydo-demo-2x.mp4\u0022 \u0022C:\\Users\\User\\Deskto..."
     }
   ],
   "snapshot": {

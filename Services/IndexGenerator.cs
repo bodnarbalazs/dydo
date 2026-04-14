@@ -9,6 +9,11 @@ public class IndexGenerator : IIndexGenerator
     {
         var sb = new StringBuilder();
 
+        sb.AppendLine("---");
+        sb.AppendLine("area: general");
+        sb.AppendLine("type: hub");
+        sb.AppendLine("---");
+        sb.AppendLine();
         sb.AppendLine("# DynaDocs Index");
         sb.AppendLine();
         sb.AppendLine("This is the entry point for AI agents and humans exploring the DynaDocs documentation.");

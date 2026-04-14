@@ -46,7 +46,7 @@ public static class FixCommand
 
             // Fix naming issues
             Console.WriteLine("FIXED:");
-            var fixedCount = FixFileHandler.FixNaming(docs);
+            var (fixedCount, nameConflicts) = FixFileHandler.FixNaming(docs);
 
             // Re-scan after renames
             docs = scanner.ScanDirectory(basePath);
@@ -68,6 +68,7 @@ public static class FixCommand
             // Report manual fixes needed
             docs = scanner.ScanDirectory(basePath);
             var manualFixNeeded = manualFixes;
+            manualFixNeeded.AddRange(nameConflicts);
             manualFixNeeded.AddRange(FixFileHandler.FindManualFixes(docs));
 
             Console.WriteLine();
@@ -85,7 +86,7 @@ public static class FixCommand
                 Console.WriteLine($"{manualFixNeeded.Distinct().Count()} issues require manual attention.");
             }
 
-            return ExitCodes.Success;
+            return nameConflicts.Count > 0 ? ExitCodes.ValidationErrors : ExitCodes.Success;
         }
         catch (Exception ex)
         {

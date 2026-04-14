@@ -100,6 +100,40 @@ public class FixFileHandlerTests : IDisposable
 
     #endregion
 
+    #region FixNaming
+
+    [Fact]
+    public void FixNaming_NonKebabName_RenamesFile()
+    {
+        var doc = CreateDocFile("docs/My Task.md", "# Task");
+
+        var (renamed, conflicts) = FixFileHandler.FixNaming([doc]);
+
+        Assert.Equal(1, renamed);
+        Assert.Empty(conflicts);
+        Assert.False(File.Exists(doc.FilePath));
+        Assert.True(File.Exists(Path.Combine(_testDir, "docs", "my-task.md")));
+    }
+
+    [Fact]
+    public void FixNaming_TargetExists_RecordsConflictAndContinues()
+    {
+        var colliding = CreateDocFile("docs/My Task.md", "# First");
+        var existing = CreateDocFile("docs/my-task.md", "# Existing");
+        var otherNonKebab = CreateDocFile("docs/Other Thing.md", "# Other");
+
+        var (renamed, conflicts) = FixFileHandler.FixNaming([colliding, existing, otherNonKebab]);
+
+        Assert.Equal(1, renamed);
+        Assert.Single(conflicts);
+        Assert.Contains("docs/My Task.md", conflicts[0]);
+        Assert.Contains("my-task.md already exists", conflicts[0]);
+        Assert.True(File.Exists(colliding.FilePath));
+        Assert.True(File.Exists(Path.Combine(_testDir, "docs", "other-thing.md")));
+    }
+
+    #endregion
+
     #region FindManualFixes
 
     [Fact]

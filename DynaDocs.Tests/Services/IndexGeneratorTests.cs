@@ -21,6 +21,15 @@ public class IndexGeneratorTests
     }
 
     [Fact]
+    public void Generate_StartsWithHubFrontmatter()
+    {
+        var generator = new IndexGenerator();
+        var result = generator.Generate([], "/test").Replace("\r\n", "\n");
+
+        Assert.StartsWith("---\narea: general\ntype: hub\n---\n", result);
+    }
+
+    [Fact]
     public void Generate_ContainsNavigationSection()
     {
         // Arrange

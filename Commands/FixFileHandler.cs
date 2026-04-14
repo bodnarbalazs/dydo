@@ -9,27 +9,41 @@ using DynaDocs.Utils;
 /// </summary>
 internal static class FixFileHandler
 {
-    public static int FixNaming(List<DocFile> docs)
+    public static (int renamed, List<string> conflicts) FixNaming(List<DocFile> docs)
     {
-        var fixedCount = 0;
+        var renamed = 0;
+        var conflicts = new List<string>();
 
         foreach (var doc in docs.ToList())
         {
             if (IsExcludedPath(doc.RelativePath))
                 continue;
 
-            if (!PathUtils.IsKebabCase(doc.FileName))
-            {
-                var newName = PathUtils.ToKebabCase(Path.GetFileNameWithoutExtension(doc.FileName)) + ".md";
-                var newPath = Path.Combine(Path.GetDirectoryName(doc.FilePath)!, newName);
+            if (PathUtils.IsKebabCase(doc.FileName))
+                continue;
 
+            var newName = PathUtils.ToKebabCase(Path.GetFileNameWithoutExtension(doc.FileName)) + ".md";
+            var newPath = Path.Combine(Path.GetDirectoryName(doc.FilePath)!, newName);
+
+            if (File.Exists(newPath))
+            {
+                conflicts.Add($"{doc.RelativePath} - Rename conflict: {newName} already exists");
+                continue;
+            }
+
+            try
+            {
                 File.Move(doc.FilePath, newPath);
                 ConsoleOutput.WriteSuccess($"  ✓ Renamed {doc.FileName} -> {newName}");
-                fixedCount++;
+                renamed++;
+            }
+            catch (IOException ex)
+            {
+                conflicts.Add($"{doc.RelativePath} - Rename failed: {ex.Message}");
             }
         }
 
-        return fixedCount;
+        return (renamed, conflicts);
     }
 
     public static (int converted, List<string> manualFixes) FixWikilinks(List<DocFile> docs)

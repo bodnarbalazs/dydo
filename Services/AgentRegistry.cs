@@ -23,7 +23,7 @@ public partial class AgentRegistry : IAgentRegistry
 
     public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
     {
-        _basePath = basePath ?? Environment.CurrentDirectory;
+        _basePath = basePath ?? PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         _configService = configService ?? new ConfigService();
         _folderScaffolder = folderScaffolder ?? new FolderScaffolder();
         _auditService = auditService ?? new AuditService(_configService, _basePath);

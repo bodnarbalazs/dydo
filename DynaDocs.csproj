@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.3.0</Version>
+        <Version>1.3.1</Version>
         <Description>An AI orchestration and context-management framework for Claude Code.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>

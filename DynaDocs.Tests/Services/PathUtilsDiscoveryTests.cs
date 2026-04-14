@@ -141,6 +141,22 @@ public class PathUtilsDiscoveryTests : IDisposable
     }
 
     [Fact]
+    public void FindProjectRoot_FromSubdirectoryCwd_WalksToRoot()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name": "test"}""");
+        var subDir = Path.Combine(_testDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(subDir);
+        Environment.CurrentDirectory = subDir;
+
+        var result = PathUtils.FindProjectRoot();
+
+        Assert.NotNull(result);
+        Assert.Equal(
+            Path.GetFullPath(_testDir).TrimEnd(Path.DirectorySeparatorChar),
+            Path.GetFullPath(result).TrimEnd(Path.DirectorySeparatorChar));
+    }
+
+    [Fact]
     public void FindDydoRoot_ReturnsNull_ForNonProject()
     {
         var result = PathUtils.FindDydoRoot(_testDir);

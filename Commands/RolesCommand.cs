@@ -5,6 +5,7 @@ using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 public static class RolesCommand
 {
@@ -38,7 +39,7 @@ public static class RolesCommand
             }
 
             var resetAll = parseResult.GetValue(allOption);
-            var basePath = Environment.CurrentDirectory;
+            var basePath = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
             var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
 
             if (resetAll)
@@ -77,7 +78,7 @@ public static class RolesCommand
 
         listCommand.SetAction((_, _) =>
         {
-            var basePath = Environment.CurrentDirectory;
+            var basePath = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
             var service = new RoleDefinitionService();
             var roles = service.LoadRoleDefinitions(basePath);
 
@@ -112,7 +113,7 @@ public static class RolesCommand
         createCommand.SetAction((parseResult, _) =>
         {
             var roleName = parseResult.GetValue(nameArg)!;
-            var basePath = Environment.CurrentDirectory;
+            var basePath = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
             var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
 
             // Check for conflicts with existing roles

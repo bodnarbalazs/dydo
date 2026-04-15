@@ -1,9 +1,7 @@
 ---
 area: general
-name: validate-bug-report-dydo-v1.3-usage
-status: pending
-created: 2026-04-14T17:35:32.0323189Z
-assigned: Adele
+type: changelog
+date: 2026-04-15
 ---
 
 # Task: validate-bug-report-dydo-v1.3-usage
@@ -21,3 +19,7 @@ assigned: Adele
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-15 16:19

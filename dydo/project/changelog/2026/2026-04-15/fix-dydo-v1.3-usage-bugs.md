@@ -1,10 +1,7 @@
 ---
 area: general
-name: fix-dydo-v1.3-usage-bugs
-status: review-pending
-created: 2026-04-14T17:43:54.1379030Z
-assigned: Adele
-updated: 2026-04-14T18:14:09.2860141Z
+type: changelog
+date: 2026-04-15
 ---
 
 # Task: fix-dydo-v1.3-usage-bugs
@@ -31,3 +28,7 @@ Fixed three dydo CLI bugs reported from LC v1.3 migration (see dydo/agents/Adele
 - Notes: LGTM. Three bugs fixed surgically per plan. FixFileHandler now returns (renamed, conflicts) with pre-check + IOException catch, FixCommand consumes conflicts and returns ValidationErrors. AgentRegistry and RolesCommand reuse PathUtils.FindProjectRoot() with cwd fallback. IndexGenerator emits 'area: general, type: hub' frontmatter. PathUtilsDiscovery substitution for the stderr-capture test is justified (process-wide Console.SetError was flaky under parallel load) and covers the same root primitive. 3690/3690 pass, gap_check 100%.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-15 16:19

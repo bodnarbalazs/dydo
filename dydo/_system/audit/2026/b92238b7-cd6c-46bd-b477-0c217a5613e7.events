@@ -29,3 +29,4 @@
 {"ts":"2026-04-14T18:16:12.2378939Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\IndexCommand.cs","tool":"read"}
 {"ts":"2026-04-14T18:16:20.3980817Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\FixCommand.cs","tool":"read"}
 {"ts":"2026-04-14T18:16:29.1352502Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py"}
+{"ts":"2026-04-14T18:20:18.5421037Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}

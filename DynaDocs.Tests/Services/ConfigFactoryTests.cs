@@ -261,4 +261,34 @@ public class ConfigFactoryTests
         Assert.NotNull(matchingNudge);
         Assert.Equal("block", matchingNudge.Severity);
     }
+
+    [Theory]
+    [InlineData("dydo worktree merge --force")]
+    [InlineData("dydo worktree merge --finalize --force")]
+    [InlineData("dydo   worktree   merge --foo --force")]
+    public void DefaultNudges_MatchesWorktreeMergeForce_AsWarn(string command)
+    {
+        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+        {
+            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return regex.IsMatch(command);
+        });
+
+        Assert.NotNull(matchingNudge);
+        Assert.Equal("warn", matchingNudge.Severity);
+        Assert.Contains("destroy", matchingNudge.Message);
+    }
+
+    [Theory]
+    [InlineData("dydo worktree merge")]
+    [InlineData("dydo worktree merge --finalize")]
+    [InlineData("dydo worktree cleanup --force my-wt")]
+    public void DefaultNudges_DoesNotMatchWorktreeMerge_WithoutForce_OrOtherForce(string command)
+    {
+        var forceNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
+            n.Pattern.Contains("worktree") && n.Pattern.Contains("merge") && n.Severity == "warn");
+        Assert.NotNull(forceNudge);
+
+        Assert.DoesNotMatch(forceNudge.Pattern, command);
+    }
 }

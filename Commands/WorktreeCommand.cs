@@ -12,6 +12,7 @@ public static class WorktreeCommand
 {
     internal static Action<string, string>? RunProcessOverride;
     internal static Func<string, string, int>? RunProcessWithExitCodeOverride;
+    internal static Func<string, string, (int ExitCode, string Stdout)>? RunProcessCaptureOverride;
 
     public static Command Create()
     {
@@ -43,11 +44,17 @@ public static class WorktreeCommand
         {
             Description = "Finalize a merge after resolving conflicts"
         };
+        var forceOption = new Option<bool>("--force")
+        {
+            Description = "Bypass the pre-merge safety check (source branch not advanced / dirty worktree). Destroys uncommitted work — use only when you genuinely want a no-op cleanup."
+        };
         mergeCommand.Options.Add(finalizeOption);
+        mergeCommand.Options.Add(forceOption);
         mergeCommand.SetAction((result) =>
         {
             var finalize = result.GetValue(finalizeOption);
-            return ExecuteMerge(finalize);
+            var force = result.GetValue(forceOption);
+            return ExecuteMerge(finalize, force);
         });
         command.Subcommands.Add(mergeCommand);
 
@@ -354,6 +361,56 @@ public static class WorktreeCommand
         return Directory.Exists(conventionPath) ? conventionPath : null;
     }
 
+    /// <summary>
+    /// Pre-merge safety check: refuses the merge if the source branch has not advanced beyond
+    /// the base, or if the source worktree has uncommitted changes. Both symptoms mean a
+    /// merge + cleanup would silently destroy the code-writer's work.
+    /// Returns null if safe; otherwise an agent-oriented error message explaining how to recover.
+    /// </summary>
+    internal static string? CheckMergeSafety(string mainRoot, string baseBranch, string mergeSource, string? sourceWorktreePath)
+    {
+        var issues = new List<string>();
+
+        var (revExit, revStdout) = RunProcessCapture("git", $"-C \"{mainRoot}\" rev-list --count -- {baseBranch}..{mergeSource}");
+        if (revExit != 0)
+        {
+            issues.Add($"Could not count commits on {mergeSource} ahead of {baseBranch} (git rev-list exit {revExit}). Cannot verify the merge is safe.");
+        }
+        else if (int.TryParse(revStdout.Trim(), out var aheadCount) && aheadCount == 0)
+        {
+            issues.Add($"Branch {mergeSource} has 0 commits ahead of {baseBranch} — there is nothing to merge. This usually means your changes were never committed.");
+        }
+
+        string? dirtyListing = null;
+        if (sourceWorktreePath != null && Directory.Exists(sourceWorktreePath))
+        {
+            var (statusExit, statusStdout) = RunProcessCapture("git", $"-C \"{sourceWorktreePath}\" status --porcelain");
+            if (statusExit == 0 && !string.IsNullOrWhiteSpace(statusStdout))
+                dirtyListing = statusStdout.TrimEnd();
+        }
+
+        if (dirtyListing != null)
+            issues.Add($"Source worktree has uncommitted or untracked files:\n{dirtyListing}");
+
+        if (issues.Count == 0)
+            return null;
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Refusing to merge {mergeSource} into {baseBranch}:");
+        foreach (var issue in issues)
+            sb.AppendLine($"  - {issue}");
+        sb.AppendLine();
+        sb.AppendLine("To rescue your work, commit in the source worktree and retry:");
+        if (sourceWorktreePath != null)
+            sb.AppendLine($"  cd \"{sourceWorktreePath}\"");
+        sb.AppendLine("  git add -A");
+        sb.AppendLine("  git commit -m \"<message>\"");
+        sb.AppendLine("  dydo worktree merge");
+        sb.AppendLine();
+        sb.Append("If you truly want to discard and clean up, re-run with --force (irreversible).");
+        return sb.ToString();
+    }
+
     internal const int ProcessTimeoutMs = 30_000;
 
     private static void RunProcess(string fileName, string arguments)
@@ -388,6 +445,33 @@ public static class WorktreeCommand
             return 1;
         }
         return p?.ExitCode ?? 1;
+    }
+
+    internal static (int ExitCode, string Stdout) RunProcessCapture(string fileName, string arguments)
+    {
+        if (RunProcessCaptureOverride != null)
+            return RunProcessCaptureOverride(fileName, arguments);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true
+        };
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        var p = Process.Start(psi);
+        if (p == null) return (1, string.Empty);
+        p.StandardInput.Close();
+        var stdout = p.StandardOutput.ReadToEnd();
+        if (!p.WaitForExit(ProcessTimeoutMs))
+        {
+            try { p.Kill(); } catch { }
+            return (1, stdout);
+        }
+        return (p.ExitCode, stdout);
     }
 
     internal static readonly string[] JunctionSubpaths =
@@ -548,13 +632,16 @@ public static class WorktreeCommand
         }
     }
 
-    internal static int ExecuteMerge(bool finalize)
+    internal static int ExecuteMerge(bool finalize, bool force = false)
     {
         var registry = new AgentRegistry();
-        return ExecuteMerge(finalize, registry);
+        return ExecuteMerge(finalize, force, registry);
     }
 
     internal static int ExecuteMerge(bool finalize, AgentRegistry registry)
+        => ExecuteMerge(finalize, false, registry);
+
+    internal static int ExecuteMerge(bool finalize, bool force, AgentRegistry registry)
     {
         var sessionId = registry.GetSessionContext();
         var agent = registry.GetCurrentAgent(sessionId);
@@ -607,6 +694,17 @@ public static class WorktreeCommand
 
         if (finalize)
             return FinalizeMerge(registry, agent.Name, workspace, mergeSource, mainRoot);
+
+        if (!force)
+        {
+            var sourceWorktreePath = ResolveWorktreePath(registry, mergeWorktreeId);
+            var safetyError = CheckMergeSafety(mainRoot, baseBranch, mergeSource, sourceWorktreePath);
+            if (safetyError != null)
+            {
+                ConsoleOutput.WriteError(safetyError);
+                return ExitCodes.ValidationErrors;
+            }
+        }
 
         Console.WriteLine($"Merging worktree branch {mergeSource} into {baseBranch}...");
 

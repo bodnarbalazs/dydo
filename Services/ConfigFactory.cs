@@ -56,6 +56,12 @@ public static class ConfigFactory
             Message = "Use dydo worktree cleanup instead of deleting worktree directories directly.",
             Severity = "block"
         },
+        new()
+        {
+            Pattern = @"\bdydo\s+worktree\s+merge\b[^;|&]*--force\b",
+            Message = "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted work in the source worktree. If the branch has not advanced, the correct action is usually to commit first, or to run `dydo worktree cleanup` for a genuine no-op. Re-run the same command to proceed anyway.",
+            Severity = "warn"
+        },
     ];
 
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

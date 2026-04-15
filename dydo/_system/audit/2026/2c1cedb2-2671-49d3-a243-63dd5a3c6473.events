@@ -1,0 +1,23 @@
+{"ts":"2026-04-14T20:50:37.9119519Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\test-release-bug.md","tool":"read","reason":"No agent identity"}
+{"ts":"2026-04-14T20:51:57.6942779Z","event":"Blocked","tool":"glob","reason":"No agent identity"}
+{"ts":"2026-04-14T20:52:19.7580655Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-04-14T20:52:22.1621114Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-04-14T20:52:30.0112977Z","event":"Role","role":"co-thinker","task":"test-release-bug"}
+{"ts":"2026-04-14T20:52:32.3622547Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\test-release-bug.md","tool":"read"}
+{"ts":"2026-04-14T20:52:38.8465225Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-04-14T20:52:48.8966784Z","event":"Role","role":"orchestrator","task":"test-release-bug"}
+{"ts":"2026-04-14T20:52:51.2045903Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\orchestrator.md","tool":"read"}
+{"ts":"2026-04-14T20:53:40.5598057Z","event":"Blocked","tool":"bash","cmd":"sleep 15 \u0026\u0026 dydo inbox show 2\u003E\u00261 | head -50","reason":"Pending wait markers"}
+{"ts":"2026-04-14T20:53:46.2822595Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\2c1cedb2-2671-49d3-a243-63dd5a3c6473\\tasks\\b6e9eho7i.output","tool":"read","reason":"Pending wait markers"}
+{"ts":"2026-04-14T20:53:55.434Z","event":"Blocked","tool":"bash","cmd":"dydo agent list 2\u003E\u00261","reason":"Pending wait markers"}
+{"ts":"2026-04-14T20:53:59.1117146Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\2c1cedb2-2671-49d3-a243-63dd5a3c6473\\tasks\\bswyid5oc.output","tool":"read","reason":"Pending wait markers"}
+{"ts":"2026-04-14T20:59:06.3522233Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\2c1cedb2-2671-49d3-a243-63dd5a3c6473\\tasks\\b6e9eho7i.output","tool":"read"}
+{"ts":"2026-04-14T21:03:42.6385546Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\df2cad88-msg-release-test-1.md","tool":"read"}
+{"ts":"2026-04-14T21:03:44.739931Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\56ca1327-msg-release-test-1.md","tool":"read"}
+{"ts":"2026-04-14T21:04:23.9633601Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\2c1cedb2-2671-49d3-a243-63dd5a3c6473\\tasks\\b12qw5g0x.output","tool":"read"}
+{"ts":"2026-04-14T21:07:19.031996Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\2c1cedb2-2671-49d3-a243-63dd5a3c6473\\tasks\\bc2fau6sy.output","tool":"read"}
+{"ts":"2026-04-14T21:07:43.5629353Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ac78622b-msg-release-smoke.md","tool":"read"}
+{"ts":"2026-04-14T21:07:46.2807822Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\2d67b013-msg-release-smoke-2.md","tool":"read"}
+{"ts":"2026-04-14T21:08:22.8638491Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\2c1cedb2-2671-49d3-a243-63dd5a3c6473\\tasks\\bgyulnntx.output","tool":"read"}
+{"ts":"2026-04-14T21:17:34.9985101Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a6a793d8-msg-release-smoke-3.md","tool":"read"}
+{"ts":"2026-04-14T21:17:38.5315034Z","event":"Release","agent":"Adele"}

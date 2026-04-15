@@ -1,10 +1,7 @@
 ---
 area: general
-name: smoke-v13-release-merge
-status: human-reviewed
-created: 2026-04-11T20:08:25.8890258Z
-assigned: Emma
-updated: 2026-04-11T20:39:06.9676852Z
+type: changelog
+date: 2026-04-15
 ---
 
 # Task: smoke-v13-release-merge
@@ -39,3 +36,7 @@ Requires rework.
 - Notes: LGTM. Smoke test marker correctly removed from Commands/. All 3686 tests pass, gap_check green (135/135 modules). Clean deletion, no side effects.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-15 16:19

@@ -1,0 +1,7 @@
+{"ts":"2026-04-14T20:56:59.7280552Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md","tool":"read"}
+{"ts":"2026-04-14T20:57:03.998949Z","event":"Claim","agent":"Charlie"}
+{"ts":"2026-04-14T20:57:08.4509295Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\eeb72cf3-release-test-1.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-14T20:57:11.2425015Z","event":"Role","role":"reviewer","task":"release-test-1"}
+{"ts":"2026-04-14T20:57:14.5341484Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\eeb72cf3-release-test-1.md","tool":"read"}
+{"ts":"2026-04-14T20:57:16.8204441Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-04-14T20:57:28.7472337Z","event":"Release","agent":"Charlie"}

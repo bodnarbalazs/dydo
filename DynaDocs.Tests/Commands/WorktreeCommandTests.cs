@@ -303,6 +303,7 @@ public class WorktreeCommandTests : IDisposable
             calls.Add((f, a));
             return 0;
         };
+        MockMergeSafetyChecks();
         try
         {
             WorktreeCommand.ExecuteMerge(false, _registry);
@@ -313,6 +314,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
     }
 
@@ -328,6 +330,7 @@ public class WorktreeCommandTests : IDisposable
             calls.Add((f, a));
             return 0;
         };
+        MockMergeSafetyChecks();
         try
         {
             var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
@@ -341,6 +344,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
     }
 
@@ -456,6 +460,166 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void Merge_BranchNotAdvanced_Blocks_WithoutRunningGitMerge()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        MockMergeSafetyChecks(branchAdvanced: false, cleanTree: true);
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.DoesNotContain(calls, c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit"));
+            Assert.DoesNotContain(calls, c => c.FileName == "git" && c.Arguments.Contains("worktree remove"));
+            Assert.Contains("0 commits ahead", stderr);
+            Assert.Contains("git commit", stderr);
+            Assert.Contains("--force", stderr);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_DirtyWorktree_Blocks_WithoutRunningGitMerge()
+    {
+        var worktreeId = "Adele-20260316";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+        SetupMergeAgent("Adele", "main", $"worktree/{worktreeId}");
+
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-path"), worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        MockMergeSafetyChecks(branchAdvanced: true, cleanTree: false);
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.DoesNotContain(calls, c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit"));
+            Assert.Contains("uncommitted", stderr);
+            Assert.Contains("some/file.cs", stderr);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_WithForce_BypassesSafetyCheck_EvenWhenBranchUnadvancedAndTreeDirty()
+    {
+        var worktreeId = "Adele-20260316";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+        SetupMergeAgent("Adele", "main", $"worktree/{worktreeId}");
+
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-path"), worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        // Safety checks would fail — but --force should skip them entirely.
+        MockMergeSafetyChecks(branchAdvanced: false, cleanTree: false);
+        try
+        {
+            var exitCode = WorktreeCommand.ExecuteMerge(finalize: false, force: true, _registry);
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit -- worktree/Adele-20260316"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_Finalize_SkipsSafetyCheck_ConflictResolutionPathIsUnaffected()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        // Safety check would fail if called — finalize must not invoke it.
+        MockMergeSafetyChecks(branchAdvanced: false, cleanTree: false);
+        try
+        {
+            var exitCode = WorktreeCommand.ExecuteMerge(finalize: true, _registry);
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains(calls, c => c.FileName == "git" && c.Arguments.Contains("branch -D -- worktree/Adele-20260316"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_RevListFails_Blocks()
+    {
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        WorktreeCommand.RunProcessCaptureOverride = (_, args) =>
+        {
+            if (args.Contains("rev-list --count"))
+                return (128, string.Empty);
+            return (0, string.Empty);
+        };
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.DoesNotContain(calls, c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit"));
+            Assert.Contains("Cannot verify", stderr);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
     public void Merge_ConflictDetected_ReturnsValidationErrorAndPrintsInstructions()
     {
         SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
@@ -463,6 +627,7 @@ public class WorktreeCommandTests : IDisposable
         WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
             a.Contains("merge") ? 1 : 0;
         WorktreeCommand.RunProcessOverride = (_, _) => { };
+        MockMergeSafetyChecks();
         try
         {
             var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
@@ -475,7 +640,20 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
             WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
+    }
+
+    private static void MockMergeSafetyChecks(bool branchAdvanced = true, bool cleanTree = true)
+    {
+        WorktreeCommand.RunProcessCaptureOverride = (_, args) =>
+        {
+            if (args.Contains("rev-list --count"))
+                return (0, branchAdvanced ? "1\n" : "0\n");
+            if (args.Contains("status --porcelain"))
+                return (0, cleanTree ? string.Empty : " M some/file.cs\n");
+            return (0, string.Empty);
+        };
     }
 
     private void SetupMergeAgent(string agentName, string? worktreeBase = null, string? mergeSource = null)
@@ -922,6 +1100,7 @@ public class WorktreeCommandTests : IDisposable
 
         WorktreeCommand.RunProcessOverride = (_, _) => { };
         WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        MockMergeSafetyChecks();
         try
         {
             var (_, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
@@ -932,6 +1111,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
     }
 
@@ -1620,6 +1800,7 @@ public class WorktreeCommandTests : IDisposable
         var calls = new List<(string FileName, string Arguments)>();
         WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
         WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        MockMergeSafetyChecks();
         try
         {
             // This may fail or succeed depending on FindProjectRoot, but it exercises the branch
@@ -1630,6 +1811,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
     }
 
@@ -2220,6 +2402,7 @@ public class WorktreeCommandTests : IDisposable
             calls.Add((f, a));
             return 0;
         };
+        MockMergeSafetyChecks();
         try
         {
             WorktreeCommand.ExecuteMerge(false, _registry);
@@ -2230,6 +2413,7 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
             WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
     }
 

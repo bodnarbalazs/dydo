@@ -371,7 +371,7 @@ public static class WorktreeCommand
     {
         var issues = new List<string>();
 
-        var (revExit, revStdout) = RunProcessCapture("git", $"-C \"{mainRoot}\" rev-list --count -- {baseBranch}..{mergeSource}");
+        var (revExit, revStdout) = RunProcessCapture("git", $"-C \"{mainRoot}\" rev-list --count {baseBranch}..{mergeSource}");
         if (revExit != 0)
         {
             issues.Add($"Could not count commits on {mergeSource} ahead of {baseBranch} (git rev-list exit {revExit}). Cannot verify the merge is safe.");
@@ -381,16 +381,14 @@ public static class WorktreeCommand
             issues.Add($"Branch {mergeSource} has 0 commits ahead of {baseBranch} — there is nothing to merge. This usually means your changes were never committed.");
         }
 
-        string? dirtyListing = null;
         if (sourceWorktreePath != null && Directory.Exists(sourceWorktreePath))
         {
             var (statusExit, statusStdout) = RunProcessCapture("git", $"-C \"{sourceWorktreePath}\" status --porcelain");
-            if (statusExit == 0 && !string.IsNullOrWhiteSpace(statusStdout))
-                dirtyListing = statusStdout.TrimEnd();
+            if (statusExit != 0)
+                issues.Add($"Could not check for uncommitted changes in {sourceWorktreePath} (git status exit {statusExit}). Cannot verify the merge is safe.");
+            else if (!string.IsNullOrWhiteSpace(statusStdout))
+                issues.Add($"Source worktree has uncommitted or untracked files:\n{statusStdout.TrimEnd()}");
         }
-
-        if (dirtyListing != null)
-            issues.Add($"Source worktree has uncommitted or untracked files:\n{dirtyListing}");
 
         if (issues.Count == 0)
             return null;

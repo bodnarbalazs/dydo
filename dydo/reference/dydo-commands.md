@@ -679,6 +679,10 @@ dydo roles create my-role
 
 **Creates:** A new `.role.json` file in `dydo/_system/roles/`.
 
+---
+
+## Validation Commands
+
 ### dydo validate
 
 Validate dydo configuration, role files, and agent state.
@@ -764,4 +768,4 @@ $env:DYDO_HUMAN = "your_name"
 | `test-writer` | `dydo/agents/{agent}/**`, `tests/**`, `dydo/project/pitfalls/**` | `src/**` |
 | `orchestrator` | `dydo/agents/{agent}/**`, `dydo/project/tasks/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
 | `inquisitor` | `dydo/agents/{agent}/**`, `dydo/project/inquisitions/**` | `src/**`, `tests/**` |
-| `judge` | `dydo/agents/{agent}/**`, `dydo/project/issues/**` | `src/**`, `tests/**` |
+| `judge` | `dydo/agents/{agent}/**`, `dydo/project/issues/**`, `dydo/project/inquisitions/**` | `src/**`, `tests/**` |

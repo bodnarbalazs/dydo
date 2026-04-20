@@ -59,7 +59,7 @@ public static class ConfigFactory
         new()
         {
             Pattern = @"\bdydo\s+worktree\s+merge\b[^;|&]*--force\b",
-            Message = "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted work in the source worktree. If the branch has not advanced, the correct action is usually to commit first, or to run `dydo worktree cleanup` for a genuine no-op. Re-run the same command to proceed anyway.",
+            Message = "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
             Severity = "warn"
         },
     ];

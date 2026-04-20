@@ -139,6 +139,11 @@
       "pattern": "rm\\b[^;|\u0026]*dydo/_system/\\.local/worktrees/",
       "message": "Use dydo worktree cleanup instead of deleting worktree directories directly.",
       "severity": "block"
+    },
+    {
+      "pattern": "\\bdydo\\s\u002Bworktree\\s\u002Bmerge\\b[^;|\u0026]*--force\\b",
+      "message": "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted work in the source worktree. If the branch has not advanced, the correct action is usually to commit first, or to run \u0060dydo worktree cleanup\u0060 for a genuine no-op. Re-run the same command to proceed anyway.",
+      "severity": "warn"
     }
   ],
   "frameworkHashes": {
@@ -149,7 +154,7 @@
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
     "_system/templates/mode-docs-writer.template.md": "1640a887814f2b7817ff4305df8736843b47f8ae5fe0ebbb491ec82d696ffc31",
     "reference/about-dynadocs.md": "7f449f8fc1f364e985f0076d4471fc8c1a90c4ced77f7961b9c8c7640fac2466",
-    "reference/dydo-commands.md": "067d3633377353ec12e5a25f14eec07b57ec0fa83ccda6673b0f873060debb19",
+    "reference/dydo-commands.md": "857794b5bd2f0e7a82b57ff1982cef2cde5786cfaf208f3354941fd94330a2df",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",

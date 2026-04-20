@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Commands;
 
 using System.Diagnostics;
 using DynaDocs.Commands;
+using DynaDocs.Models;
 using DynaDocs.Services;
 
 /// <summary>
@@ -41,7 +42,7 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
     {
         InitRepoWithAdvancedBranch(out var worktreePath);
 
-        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath);
+        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath, new DydoConfig());
 
         Assert.Null(result);
     }
@@ -51,7 +52,7 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
     {
         InitRepoWithUnadvancedBranch(out var worktreePath);
 
-        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/same", worktreePath);
+        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/same", worktreePath, new DydoConfig());
 
         Assert.NotNull(result);
         Assert.Contains("0 commits ahead", result);
@@ -63,11 +64,50 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
         InitRepoWithAdvancedBranch(out var worktreePath);
         File.WriteAllText(Path.Combine(worktreePath, "dirty.txt"), "uncommitted");
 
-        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath);
+        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath, new DydoConfig());
 
         Assert.NotNull(result);
         Assert.Contains("uncommitted", result);
         Assert.Contains("dirty.txt", result);
+    }
+
+    [Fact]
+    public void CheckMergeSafety_OnlyJunkFiles_ReturnsNull()
+    {
+        InitRepoWithAdvancedBranch(out var worktreePath, seedDydoDirs: true);
+        File.WriteAllText(Path.Combine(worktreePath, "dydo", "_system", "audit", "2026", "session.json"), "{}");
+
+        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath, new DydoConfig());
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void CheckMergeSafety_SuspiciousAndJunk_BlocksWithAnnotation()
+    {
+        InitRepoWithAdvancedBranch(out var worktreePath, seedDydoDirs: true);
+        File.WriteAllText(Path.Combine(worktreePath, "dydo", "_system", "audit", "2026", "session.json"), "{}");
+        File.WriteAllText(Path.Combine(worktreePath, "real-work.cs"), "// real work");
+
+        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath, new DydoConfig());
+
+        Assert.NotNull(result);
+        Assert.Contains("real-work.cs", result);
+        Assert.Contains("1 generated artifact ignored", result);
+        Assert.DoesNotContain("session.json", result);
+    }
+
+    [Fact]
+    public void CheckMergeSafety_TaskFileUncommitted_BlocksWithTaskAnnotation()
+    {
+        InitRepoWithAdvancedBranch(out var worktreePath, seedDydoDirs: true);
+        File.WriteAllText(Path.Combine(worktreePath, "dydo", "project", "tasks", "new-task.md"), "# task");
+
+        var result = WorktreeCommand.CheckMergeSafety(_repoDir, "master", "feature/advanced", worktreePath, new DydoConfig());
+
+        Assert.NotNull(result);
+        Assert.Contains("new-task.md", result);
+        Assert.Contains("task file", result);
     }
 
     [Fact]
@@ -127,13 +167,21 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
         }
     }
 
-    private void InitRepoWithAdvancedBranch(out string worktreePath)
+    private void InitRepoWithAdvancedBranch(out string worktreePath, bool seedDydoDirs = false)
     {
         Git(_repoDir, "init", "--initial-branch=master");
         Git(_repoDir, "config", "user.email", "test@example.com");
         Git(_repoDir, "config", "user.name", "Test");
         File.WriteAllText(Path.Combine(_repoDir, "seed.txt"), "seed");
         Git(_repoDir, "add", "seed.txt");
+
+        if (seedDydoDirs)
+        {
+            SeedPlaceholder(Path.Combine(_repoDir, "dydo", "_system", "audit", "2026"));
+            SeedPlaceholder(Path.Combine(_repoDir, "dydo", "project", "tasks"));
+            Git(_repoDir, "add", "dydo");
+        }
+
         Git(_repoDir, "commit", "-m", "seed");
 
         Git(_repoDir, "branch", "feature/advanced");
@@ -145,6 +193,12 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
 
         worktreePath = Path.Combine(_testDir, "wt-advanced");
         Git(_repoDir, "worktree", "add", worktreePath, "feature/advanced");
+    }
+
+    private static void SeedPlaceholder(string dir)
+    {
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, ".gitkeep"), string.Empty);
     }
 
     private void InitRepoWithUnadvancedBranch(out string worktreePath)

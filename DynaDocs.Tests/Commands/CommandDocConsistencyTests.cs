@@ -16,7 +16,7 @@ public class CommandDocConsistencyTests
     private static readonly HashSet<string> ExcludedPaths =
     [
         "guard lift", "guard restore", "completions", "help",
-        "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune",
+        "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune", "worktree status",
         "watchdog", "watchdog start", "watchdog stop", "watchdog run",
         "queue create", "queue show", "queue cancel", "queue clear"
     ];

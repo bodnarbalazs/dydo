@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -76,7 +77,103 @@ public static class WorktreeCommand
         pruneCommand.SetAction((result) => ExecutePrune());
         command.Subcommands.Add(pruneCommand);
 
+        var statusCommand = new Command("status", "Show classified merge-safety view of the current worktree");
+        var allOption = new Option<bool>("--all")
+        {
+            Description = "Include junk (ignored generated artifacts) in the output"
+        };
+        statusCommand.Options.Add(allOption);
+        statusCommand.SetAction((result) =>
+        {
+            var all = result.GetValue(allOption);
+            return ExecuteStatus(all);
+        });
+        command.Subcommands.Add(statusCommand);
+
         return command;
+    }
+
+    internal static int ExecuteStatus(bool all)
+    {
+        var registry = new AgentRegistry();
+        return ExecuteStatus(all, registry);
+    }
+
+    internal static int ExecuteStatus(bool all, AgentRegistry registry)
+    {
+        var worktreePath = ResolveCurrentWorktreePath(registry);
+        if (worktreePath == null)
+        {
+            ConsoleOutput.WriteError("Not inside a dydo worktree. Run this from an agent's worktree directory.");
+            return ExitCodes.ToolError;
+        }
+
+        var (statusExit, statusStdout) = RunProcessCapture("git", $"-C \"{worktreePath}\" status --porcelain");
+        if (statusExit != 0)
+        {
+            ConsoleOutput.WriteError($"git status failed (exit {statusExit}) in {worktreePath}.");
+            return ExitCodes.ToolError;
+        }
+
+        var config = new ConfigService().LoadConfig(worktreePath) ?? new DydoConfig();
+        var result = WorktreeMergeSafety.Classify(statusStdout, config);
+
+        if (result.Suspicious.Count == 0 && result.Junk.Count == 0)
+        {
+            Console.WriteLine("Worktree is clean — no uncommitted files.");
+            return ExitCodes.Success;
+        }
+
+        if (result.Suspicious.Count == 0)
+            Console.WriteLine("No suspicious files.");
+        else
+        {
+            Console.WriteLine($"Suspicious ({result.Suspicious.Count}):");
+            foreach (var group in result.Suspicious.GroupBy(f => f.Category))
+            {
+                Console.WriteLine($"  [{group.Key}]");
+                foreach (var file in group)
+                    Console.WriteLine($"    {file.GitStatusLine}");
+            }
+        }
+
+        if (all)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"Junk ({result.Junk.Count}):");
+            foreach (var file in result.Junk)
+                Console.WriteLine($"  {file.GitStatusLine}    [matched {file.MatchedPattern}]");
+        }
+        else if (result.Junk.Count > 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"{result.Junk.Count} generated artifact{(result.Junk.Count == 1 ? "" : "s")} ignored — use --all to see them.");
+        }
+
+        return ExitCodes.Success;
+    }
+
+    private static string? ResolveCurrentWorktreePath(AgentRegistry registry)
+    {
+        var sessionId = registry.GetSessionContext();
+        var agent = registry.GetCurrentAgent(sessionId);
+        if (agent != null)
+        {
+            var workspace = registry.GetAgentWorkspace(agent.Name);
+            var pathMarker = Path.Combine(workspace, ".worktree-path");
+            if (File.Exists(pathMarker))
+            {
+                var path = File.ReadAllText(pathMarker).Trim();
+                if (Directory.Exists(path))
+                    return path;
+            }
+        }
+
+        var cwd = Directory.GetCurrentDirectory();
+        if (PathUtils.IsInsideWorktree(cwd))
+            return cwd;
+
+        return null;
     }
 
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
@@ -363,50 +460,112 @@ public static class WorktreeCommand
 
     /// <summary>
     /// Pre-merge safety check: refuses the merge if the source branch has not advanced beyond
-    /// the base, or if the source worktree has uncommitted changes. Both symptoms mean a
+    /// the base, or if the source worktree has uncommitted changes classified as suspicious
+    /// (anything not matched by <c>worktree.mergeSafety.ignore</c>). Both symptoms mean a
     /// merge + cleanup would silently destroy the code-writer's work.
     /// Returns null if safe; otherwise an agent-oriented error message explaining how to recover.
     /// </summary>
-    internal static string? CheckMergeSafety(string mainRoot, string baseBranch, string mergeSource, string? sourceWorktreePath)
+    internal static string? CheckMergeSafety(string mainRoot, string baseBranch, string mergeSource, string? sourceWorktreePath, DydoConfig config)
     {
-        var issues = new List<string>();
+        string? aheadIssue = null;
+        string? statusError = null;
+        ClassificationResult? classification = null;
 
         var (revExit, revStdout) = RunProcessCapture("git", $"-C \"{mainRoot}\" rev-list --count {baseBranch}..{mergeSource}");
         if (revExit != 0)
         {
-            issues.Add($"Could not count commits on {mergeSource} ahead of {baseBranch} (git rev-list exit {revExit}). Cannot verify the merge is safe.");
+            aheadIssue = $"Could not count commits on {mergeSource} ahead of {baseBranch} (git rev-list exit {revExit}). Cannot verify the merge is safe.";
         }
         else if (int.TryParse(revStdout.Trim(), out var aheadCount) && aheadCount == 0)
         {
-            issues.Add($"Branch {mergeSource} has 0 commits ahead of {baseBranch} — there is nothing to merge. This usually means your changes were never committed.");
+            aheadIssue = $"Branch {mergeSource} has 0 commits ahead of {baseBranch} — there is nothing to merge. This usually means your changes were never committed.";
         }
 
         if (sourceWorktreePath != null && Directory.Exists(sourceWorktreePath))
         {
             var (statusExit, statusStdout) = RunProcessCapture("git", $"-C \"{sourceWorktreePath}\" status --porcelain");
             if (statusExit != 0)
-                issues.Add($"Could not check for uncommitted changes in {sourceWorktreePath} (git status exit {statusExit}). Cannot verify the merge is safe.");
-            else if (!string.IsNullOrWhiteSpace(statusStdout))
-                issues.Add($"Source worktree has uncommitted or untracked files:\n{statusStdout.TrimEnd()}");
+                statusError = $"Could not check for uncommitted changes in {sourceWorktreePath} (git status exit {statusExit}). Cannot verify the merge is safe.";
+            else
+                classification = WorktreeMergeSafety.Classify(statusStdout, config);
         }
 
-        if (issues.Count == 0)
+        var hasSuspicious = classification != null && classification.Suspicious.Count > 0;
+        if (aheadIssue == null && statusError == null && !hasSuspicious)
             return null;
 
+        return BuildSafetyError(baseBranch, mergeSource, sourceWorktreePath, aheadIssue, statusError, classification);
+    }
+
+    private static string BuildSafetyError(
+        string baseBranch,
+        string mergeSource,
+        string? sourceWorktreePath,
+        string? aheadIssue,
+        string? statusError,
+        ClassificationResult? classification)
+    {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"Refusing to merge {mergeSource} into {baseBranch}:");
-        foreach (var issue in issues)
-            sb.AppendLine($"  - {issue}");
+
+        if (aheadIssue != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"  {aheadIssue}");
+        }
+
+        if (statusError != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"  {statusError}");
+        }
+
+        var suspicious = classification?.Suspicious ?? Array.Empty<SuspiciousFile>();
+        var junk = classification?.Junk ?? Array.Empty<JunkFile>();
+
+        if (suspicious.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("  Source worktree has uncommitted files. Commit them before merging:");
+            sb.AppendLine();
+            foreach (var file in suspicious)
+            {
+                var annotation = file.Category == SuspiciousCategory.TaskFile ? "    ← task file — commit it" : "";
+                sb.AppendLine($"      {file.GitStatusLine}{annotation}");
+            }
+        }
+
         sb.AppendLine();
-        sb.AppendLine("To rescue your work, commit in the source worktree and retry:");
+        sb.AppendLine("  Recommended:");
         if (sourceWorktreePath != null)
-            sb.AppendLine($"  cd \"{sourceWorktreePath}\"");
-        sb.AppendLine("  git add -A");
-        sb.AppendLine("  git commit -m \"<message>\"");
-        sb.AppendLine("  dydo worktree merge");
+            sb.AppendLine($"      cd \"{sourceWorktreePath}\"");
+        sb.AppendLine(suspicious.Count > 0
+            ? $"      git add -- {BuildAddArgs(suspicious)}"
+            : "      git add -A");
+        sb.AppendLine("      git commit -m \"<message>\"");
+        sb.AppendLine("      dydo worktree merge");
+
+        if (junk.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"  ({junk.Count} generated artifact{(junk.Count == 1 ? "" : "s")} ignored by worktree.mergeSafety.ignore.");
+            sb.AppendLine("   Run `dydo worktree status --all` to see them.)");
+        }
+
         sb.AppendLine();
-        sb.Append("If you truly want to discard and clean up, re-run with --force (irreversible).");
+        sb.Append("  --force bypasses this check and destroys uncommitted files. Use only if the listed files are truly throwaway.");
         return sb.ToString();
+    }
+
+    private static string BuildAddArgs(IReadOnlyList<SuspiciousFile> suspicious)
+    {
+        var parts = new List<string>(suspicious.Count);
+        foreach (var file in suspicious)
+        {
+            var path = file.Path;
+            parts.Add(path.Contains(' ') ? $"\"{path}\"" : path);
+        }
+        return string.Join(' ', parts);
     }
 
     internal const int ProcessTimeoutMs = 30_000;
@@ -696,7 +855,8 @@ public static class WorktreeCommand
         if (!force)
         {
             var sourceWorktreePath = ResolveWorktreePath(registry, mergeWorktreeId);
-            var safetyError = CheckMergeSafety(mainRoot, baseBranch, mergeSource, sourceWorktreePath);
+            var config = new ConfigService().LoadConfig(mainRoot) ?? new DydoConfig();
+            var safetyError = CheckMergeSafety(mainRoot, baseBranch, mergeSource, sourceWorktreePath, config);
             if (safetyError != null)
             {
                 ConsoleOutput.WriteError(safetyError);

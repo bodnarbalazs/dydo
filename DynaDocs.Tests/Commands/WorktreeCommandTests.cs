@@ -2492,6 +2492,95 @@ public class WorktreeCommandTests : IDisposable
 
     #endregion
 
+    #region Status subcommand
+
+    [Fact]
+    public void Status_OutsideWorktree_ReturnsError()
+    {
+        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false, _registry));
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("Not inside a dydo worktree", stderr);
+    }
+
+    [Fact]
+    public void Status_SuspiciousOnly_DefaultMode()
+    {
+        SetupWorktreeAgent("Adele", out var worktreePath);
+
+        WorktreeCommand.RunProcessCaptureOverride = (_, args) =>
+            args.Contains("status --porcelain")
+                ? (0, " M Services/Foo.cs\n?? dydo/_system/audit/2026/x.json\n")
+                : (0, string.Empty);
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("Services/Foo.cs", stdout);
+            Assert.Contains("1 generated artifact", stdout);
+            Assert.DoesNotContain("x.json", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Status_All_IncludesJunk()
+    {
+        SetupWorktreeAgent("Adele", out var worktreePath);
+
+        WorktreeCommand.RunProcessCaptureOverride = (_, args) =>
+            args.Contains("status --porcelain")
+                ? (0, " M Services/Foo.cs\n?? dydo/_system/audit/2026/x.json\n")
+                : (0, string.Empty);
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: true, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("Services/Foo.cs", stdout);
+            Assert.Contains("x.json", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Status_CleanTree_ReportsClean()
+    {
+        SetupWorktreeAgent("Adele", out var worktreePath);
+
+        WorktreeCommand.RunProcessCaptureOverride = (_, _) => (0, string.Empty);
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("clean", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessCaptureOverride = null;
+        }
+    }
+
+    private void SetupWorktreeAgent(string agentName, out string worktreePath)
+    {
+        worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", $"{agentName}-wt");
+        Directory.CreateDirectory(worktreePath);
+        var workspace = _registry.GetAgentWorkspace(agentName);
+        Directory.CreateDirectory(workspace);
+        StoreSessionForAgent(agentName);
+        File.WriteAllText(Path.Combine(workspace, ".worktree-path"), worktreePath);
+    }
+
+    #endregion
+
     private static string CaptureStdout(Action action) => ConsoleCapture.Stdout(action);
 
     private static (int exitCode, string stdout, string stderr) CaptureAll(Func<int> action) =>

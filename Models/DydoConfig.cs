@@ -28,6 +28,9 @@ public class DydoConfig
     [JsonPropertyName("tasks")]
     public TasksConfig Tasks { get; set; } = new();
 
+    [JsonPropertyName("worktree")]
+    public WorktreeConfig Worktree { get; set; } = new();
+
     [JsonPropertyName("queues")]
     public List<string> Queues { get; set; } = new();
 

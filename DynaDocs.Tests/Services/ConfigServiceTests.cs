@@ -292,4 +292,41 @@ public class ConfigServiceTests : IDisposable
         Assert.NotNull(config);
         Assert.Empty(config!.Nudges);
     }
+
+    [Fact]
+    public void LoadConfig_WithWorktreeMergeSafety_DeserializesCorrectly()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {
+                "version": 1,
+                "structure": { "root": "dydo" },
+                "agents": { "pool": [], "assignments": {} },
+                "worktree": {
+                    "mergeSafety": {
+                        "ignore": ["custom/**", "*.tmp"],
+                        "ignoreDefaults": false
+                    }
+                }
+            }
+            """);
+
+        var service = new ConfigService();
+        var config = service.LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.False(config!.Worktree.MergeSafety.IgnoreDefaults);
+        Assert.Equal(2, config.Worktree.MergeSafety.Ignore.Count);
+        Assert.Contains("custom/**", config.Worktree.MergeSafety.Ignore);
+    }
+
+    [Fact]
+    public void LoadConfig_WithoutWorktreeBlock_UsesDefaults()
+    {
+        var service = new ConfigService();
+        var config = service.LoadConfig(_testDir);
+
+        Assert.NotNull(config);
+        Assert.True(config!.Worktree.MergeSafety.IgnoreDefaults);
+        Assert.Empty(config.Worktree.MergeSafety.Ignore);
+    }
 }

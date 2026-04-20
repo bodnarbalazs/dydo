@@ -1,9 +1,7 @@
 ---
 area: platform
-name: troubleshooting-zombie-working-docs
-status: pending
-created: 2026-04-18T22:38:55.1006429Z
-assigned: Brian
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: troubleshooting-zombie-working-docs
@@ -21,3 +19,7 @@ Docs addition: two new sections in dydo/guides/troubleshooting.md under Stuck st
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:03

@@ -1,9 +1,7 @@
 ---
 area: platform
-name: stale-free-semantics-gate
-status: pending
-created: 2026-04-18T19:15:02.8859806Z
-assigned: Brian
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: stale-free-semantics-gate
@@ -21,3 +19,7 @@ Design discussion: should GetFreeAgents also gate stale-dispatched agents on !Is
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:03

@@ -1,9 +1,7 @@
 ---
 area: platform
-name: stale-dydo-processes-inquiry
-status: pending
-created: 2026-04-18T17:52:04.8327916Z
-assigned: Brian
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: stale-dydo-processes-inquiry
@@ -21,3 +19,7 @@ Inquisition: map long-lived dydo processes and file-handle lifetimes to explain 
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:03

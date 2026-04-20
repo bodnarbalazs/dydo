@@ -1,10 +1,7 @@
 ---
 area: platform
-name: worktree-merge-safety-ignore
-status: human-reviewed
-created: 2026-04-18T17:29:55.2341980Z
-assigned: Brian
-updated: 2026-04-18T18:50:24.4157610Z
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: worktree-merge-safety-ignore
@@ -31,3 +28,7 @@ Review worktree merge-safety ignore implementation. New: Models/WorktreeConfig.c
 - Notes: LGTM. New classifier is clean (pure function, well-tested with 17 unit + 8 integration + 4 status + 2 config tests). CheckMergeSafety refactor preserves existing behavior while adding suspicious/junk breakdown + task-file annotation + targeted git add recipe. Coverage tier gate passes 136/136 modules. The 5 failing tests (AgentRegistryTests.*Stale*, PhantomUnreadInboxTests) are unrelated in-flight work on stale-dispatch-double-claim and phantom-unread-inbox — not on any code path touched by this task. Deferred items acknowledged in brief: dydo.json worktree.mergeSafety block + nudge text sync, dydo/reference/configuration.md section, dydo/reference/dydo-commands.md worktree status entry — all need docs-writer follow-up.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-20 16:03

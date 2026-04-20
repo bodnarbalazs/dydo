@@ -1,9 +1,7 @@
 ---
 area: general
-name: worktree-merge-escape-hatch
-status: pending
-created: 2026-04-16T12:32:15.7567437Z
-assigned: Adele
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: worktree-merge-escape-hatch
@@ -21,3 +19,7 @@ assigned: Adele
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:03

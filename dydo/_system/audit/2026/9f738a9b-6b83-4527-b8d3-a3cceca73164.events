@@ -1,0 +1,74 @@
+{"ts":"2026-04-18T22:39:14.5429925Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/ 2\u003E/dev/null | head -50"}
+{"ts":"2026-04-18T22:39:17.2331125Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\workflow.md","tool":"read"}
+{"ts":"2026-04-18T22:39:21.89876Z","event":"Claim","agent":"Iris"}
+{"ts":"2026-04-18T22:39:27.1983045Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\8c7393bc-stale-working-reclaim.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-18T22:39:31.132746Z","event":"Role","role":"code-writer","task":"stale-working-reclaim"}
+{"ts":"2026-04-18T22:39:34.906589Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\8c7393bc-stale-working-reclaim.md","tool":"read"}
+{"ts":"2026-04-18T22:39:36.9684364Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-04-18T22:39:52.8760897Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-18T22:39:53.1466337Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-18T22:39:54.1051593Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-18T22:39:54.2607117Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Grace\\brief-stale-working-reclaim.md","tool":"read"}
+{"ts":"2026-04-18T22:39:59.4709945Z","event":"Blocked","tool":"bash","cmd":"cd C:/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 git diff Services/AgentRegistry.cs","reason":"Needless cd compound"}
+{"ts":"2026-04-18T22:40:03.0273475Z","event":"Bash","tool":"bash","cmd":"git diff Services/AgentRegistry.cs"}
+{"ts":"2026-04-18T22:40:03.7851283Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\017-stale-free-semantics.md","tool":"read"}
+{"ts":"2026-04-18T22:40:04.066139Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\018-zombie-working-state-recovery.md","tool":"read"}
+{"ts":"2026-04-18T22:40:07.9540245Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T22:40:10.9436652Z","event":"Bash","tool":"bash","cmd":"wc -l Services/AgentRegistry.cs"}
+{"ts":"2026-04-18T22:40:12.5024426Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-18T22:40:15.5556448Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T22:41:06.540776Z","event":"Bash","tool":"bash","cmd":"ls Utils/"}
+{"ts":"2026-04-18T22:41:07.2944248Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentSession.cs","tool":"read"}
+{"ts":"2026-04-18T22:41:12.3826063Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-18T22:41:13.0305485Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-18T22:41:21.4968271Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read"}
+{"ts":"2026-04-18T22:41:21.7824482Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs","tool":"read"}
+{"ts":"2026-04-18T22:42:47.8436843Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T22:42:48.7295268Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Serialization","tool":"grep"}
+{"ts":"2026-04-18T22:42:51.7332437Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T22:42:52.6601992Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleDispatchDoubleClaimTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:43:11.5570839Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\ProcessUtilsCollection.cs","tool":"read"}
+{"ts":"2026-04-18T22:43:12.0950613Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T22:43:36.0153124Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleWorkingReclaimTests.cs","tool":"write"}
+{"ts":"2026-04-18T22:44:13.2520702Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentSession.cs","tool":"edit"}
+{"ts":"2026-04-18T22:44:20.2584822Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-18T22:44:38.8092837Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-18T22:44:44.3331605Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-18T22:45:02.8540833Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-18T22:45:08.6539615Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-18T22:45:16.3528083Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-18T22:45:24.8188535Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-18T22:45:30.995008Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T22:45:36.4896303Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~StaleWorking\u0022"}
+{"ts":"2026-04-18T22:45:58.8199262Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\run_tests.py","tool":"read"}
+{"ts":"2026-04-18T22:46:02.3527521Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py"}
+{"ts":"2026-04-18T22:49:53.1472435Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022GetFreeAgents_IncludesStaleDispatched\\|GetFreeAgents_IncludesStaleQueuedAgent\\|ReserveAgent..."}
+{"ts":"2026-04-18T22:49:56.1938428Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:50:18.5285265Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/ 2\u003E/dev/null; echo \u0022---\u0022; ls dydo/agents/*/.session 2\u003E/dev/null"}
+{"ts":"2026-04-18T22:50:21.859289Z","event":"Bash","tool":"bash","cmd":"tasklist //FI \u0022WINDOWTITLE eq *Adele*\u0022 2\u003E/dev/null | head -10; echo \u0022---\u0022; tasklist //FI \u0022WINDOWTITL..."}
+{"ts":"2026-04-18T22:57:20.8899179Z","event":"Bash","tool":"bash","cmd":"powershell -c \u0022Get-CimInstance Win32_Process | Where-Object { \\$_.CommandLine -like \u0027*Adele*--inbox*..."}
+{"ts":"2026-04-18T22:57:33.8065182Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.CommandLine.cs","tool":"read"}
+{"ts":"2026-04-18T22:58:22.1432136Z","event":"Bash","tool":"bash","cmd":"git diff Commands/GuardCommand.cs | head -80"}
+{"ts":"2026-04-18T22:58:24.9190921Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\PhantomUnreadInboxTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:58:44.1514009Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:58:50.4946682Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:58:51.6462258Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"grep"}
+{"ts":"2026-04-18T22:58:52.6672303Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"grep"}
+{"ts":"2026-04-18T22:58:55.7068854Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:59:43.6512768Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-04-18T22:59:57.796358Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"grep"}
+{"ts":"2026-04-18T23:00:25.5164053Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\AgentListHandlerTests.cs","tool":"edit"}
+{"ts":"2026-04-18T23:00:32.9505814Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"edit"}
+{"ts":"2026-04-18T23:00:42.3401941Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"edit"}
+{"ts":"2026-04-18T23:00:57.2038582Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"edit"}
+{"ts":"2026-04-18T23:01:17.5704515Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~StaleWorking|FullyQualif..."}
+{"ts":"2026-04-18T23:07:16.5803409Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py"}
+{"ts":"2026-04-18T23:11:55.0792194Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -80"}
+{"ts":"2026-04-18T23:16:51.9638818Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~StaleWorking\u0022"}
+{"ts":"2026-04-20T11:56:12.1691616Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-20T11:56:41.8514561Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"edit"}
+{"ts":"2026-04-20T11:56:52.340081Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleWorkingReclaimTests.cs","tool":"edit"}
+{"ts":"2026-04-20T11:57:02.007455Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-20T11:57:36.514365Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261 | tail -60"}
+{"ts":"2026-04-20T12:09:59.463234Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\1cecd691-msg-stale-working-reclaim.md","tool":"read"}
+{"ts":"2026-04-20T12:10:03.1203007Z","event":"Release","agent":"Iris"}

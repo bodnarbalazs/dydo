@@ -1,0 +1,33 @@
+{"ts":"2026-04-18T19:15:22.0947356Z","event":"Blocked","tool":"glob","reason":"No agent identity"}
+{"ts":"2026-04-18T19:15:27.7139711Z","event":"Claim","agent":"Dexter"}
+{"ts":"2026-04-18T19:15:29.769943Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\workflow.md","tool":"read"}
+{"ts":"2026-04-18T19:15:35.2290194Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\43e8600a-stale-free-semantics-gate.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-18T19:15:37.9564552Z","event":"Role","role":"co-thinker","task":"stale-free-semantics-gate"}
+{"ts":"2026-04-18T19:15:40.7084083Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-04-18T19:15:43.1445987Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-18T19:15:45.5101313Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-18T19:15:49.2026836Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\43e8600a-stale-free-semantics-gate.md","tool":"read"}
+{"ts":"2026-04-18T19:15:51.3251753Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T19:15:54.1879212Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T19:15:57.5354575Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-18T19:16:01.1006301Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:03.8567843Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-18T19:16:06.6176502Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentListHandler.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:10.0836237Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:14.7584371Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WhoamiCommand.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:17.2383453Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:24.4904379Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:26.8275861Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:31.7887389Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:37.1019863Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\stale-dydo-processes.md","tool":"read"}
+{"ts":"2026-04-18T19:16:49.5843581Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-stale-dispatch-double-claim.md","tool":"read"}
+{"ts":"2026-04-18T19:16:52.241335Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleDispatchDoubleClaimTests.cs","tool":"read"}
+{"ts":"2026-04-18T19:16:54.736026Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\stale-free-semantics-gate.md","tool":"read"}
+{"ts":"2026-04-18T19:16:57.3085652Z","event":"Bash","tool":"bash","cmd":"ls \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\u0022 2\u003E/dev/null"}
+{"ts":"2026-04-18T19:16:59.7800399Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_index.md","tool":"read"}
+{"ts":"2026-04-18T19:17:02.8078257Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\016-keep-workspace-init-check.md","tool":"read"}
+{"ts":"2026-04-18T19:18:52.5046498Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-18T19:19:40.9014484Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\017-stale-free-semantics.md","tool":"write"}
+{"ts":"2026-04-18T19:21:26.90412Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_decisions.md","tool":"read"}
+{"ts":"2026-04-18T19:21:39.2855322Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services","tool":"grep"}
+{"ts":"2026-04-18T19:33:26.9763754Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\msg-adele-stale-free-semantics.md","tool":"write"}

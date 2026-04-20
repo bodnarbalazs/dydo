@@ -1,10 +1,7 @@
 ---
 area: platform
-name: investigate-printinboxitem-test-regression
-status: human-reviewed
-created: 2026-04-18T19:15:03.0125476Z
-assigned: Brian
-updated: 2026-04-18T19:28:27.8258629Z
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: investigate-printinboxitem-test-regression
@@ -31,3 +28,7 @@ No-op review: investigation concluded no regression exists. All 3 InboxServiceTe
 - Notes: Verified Emma's no-op investigation. InboxService.cs:192-197 correctly emits 'File:' line; InboxServiceTests.cs:9-24 asserts correctly. Targeted run: 3/3 InboxServiceTests passed. gap_check: 136/136 modules passing (0 failures). No regression present on HEAD 580515e.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-20 16:02

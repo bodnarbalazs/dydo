@@ -1,9 +1,7 @@
 ---
 area: platform
-name: reviewer-verdict-routing
-status: pending
-created: 2026-04-18T21:16:10.8832934Z
-assigned: Brian
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: reviewer-verdict-routing
@@ -21,3 +19,7 @@ Design discussion: reviewer verdicts go to the dispatching code-writer, not up t
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:03

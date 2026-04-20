@@ -1,10 +1,7 @@
 ---
 area: platform
-name: revive-watchdog-on-release
-status: human-reviewed
-created: 2026-04-18T22:38:54.8417271Z
-assigned: Brian
-updated: 2026-04-20T12:06:52.9921308Z
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: revive-watchdog-on-release
@@ -38,3 +35,7 @@ Heads-up: gap_check surfaces 2 pre-existing failures in PhantomUnreadInboxTests 
 - Notes: LGTM. One-line fix at Commands/AgentLifecycleHandlers.cs:80 is correct and minimal. EnsureRunning is idempotent; best-effort try/catch keeps release from failing on watchdog revival. Integration test (Release_RevivesWatchdogWhenDead) uses the existing StartProcessOverride seam and confirms red->green. 67/67 AgentLifecycleTests pass locally. 2 failing PhantomUnreadInboxTests are Charlie's in-flight phantom-unread-inbox work (off-limits per Henry's dispatch); Brian authorized pass on that basis.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-20 16:03

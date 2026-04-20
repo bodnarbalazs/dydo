@@ -1,9 +1,7 @@
 ---
 area: general
-name: investigate-bugs
-status: pending
-created: 2026-04-18T16:18:40.7165071Z
-assigned: Brian
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: investigate-bugs
@@ -21,3 +19,7 @@ assigned: Brian
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:02

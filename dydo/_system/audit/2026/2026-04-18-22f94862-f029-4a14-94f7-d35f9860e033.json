@@ -1,0 +1,15 @@
+{
+  "session": "22f94862-f029-4a14-94f7-d35f9860e033",
+  "agent": "Frank",
+  "human": "balazs",
+  "started": "2026-04-18T19:16:04.4946048Z",
+  "git_head": "580515e",
+  "events": [
+    {
+      "ts": "2026-04-18T19:16:04.4933773Z",
+      "event": "Edit",
+      "path": "dydo/agents/Frank/notes-probe.md",
+      "tool": "edit"
+    }
+  ]
+}

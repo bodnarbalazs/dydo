@@ -952,7 +952,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Notify about unread messages. Returns exit code if blocked, null if OK.
     /// </summary>
-    private static int? NotifyUnreadMessages(
+    internal static int? NotifyUnreadMessages(
         AgentState agent, string? path, string? toolName, string? command,
         IAuditService auditService, string? sessionId, IAgentRegistry registry)
     {

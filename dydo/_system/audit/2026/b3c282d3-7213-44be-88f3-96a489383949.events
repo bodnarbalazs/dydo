@@ -1,0 +1,28 @@
+{"ts":"2026-04-20T12:50:52.161843Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\workflow.md","tool":"read"}
+{"ts":"2026-04-20T12:50:58.6782917Z","event":"Claim","agent":"Iris"}
+{"ts":"2026-04-20T12:51:04.0575449Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\0ebeea47-stale-working-reclaim.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-20T12:51:07.194597Z","event":"Role","role":"code-writer","task":"stale-working-reclaim"}
+{"ts":"2026-04-20T12:51:10.6012412Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\0ebeea47-stale-working-reclaim.md","tool":"read"}
+{"ts":"2026-04-20T12:51:13.7044219Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-04-20T12:51:34.2115515Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-20T12:51:34.9773011Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-20T12:51:35.3697014Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-20T12:51:35.8396605Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\stale-working-reclaim.md","tool":"read"}
+{"ts":"2026-04-20T12:51:39.9171787Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-20T12:51:43.1454296Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-20T12:51:46.3501458Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-20T12:51:50.2165002Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-20T12:51:53.6596768Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\017-stale-free-semantics.md","tool":"read"}
+{"ts":"2026-04-20T12:51:57.3118508Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-20T12:52:00.6491088Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\018-zombie-working-state-recovery.md","tool":"read"}
+{"ts":"2026-04-20T12:52:31.5563484Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleWorkingReclaimTests.cs","tool":"read"}
+{"ts":"2026-04-20T12:52:43.8175075Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-20T12:52:44.0902561Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-20T12:52:47.6240721Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-20T12:54:18.5250085Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"grep"}
+{"ts":"2026-04-20T12:54:32.8324202Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-04-20T12:54:46.5807243Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleWorkingReclaimTests.cs","tool":"edit"}
+{"ts":"2026-04-20T12:54:59.938578Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleWorkingReclaimTests.cs","tool":"edit"}
+{"ts":"2026-04-20T12:55:04.8408129Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~StaleWorking"}
+{"ts":"2026-04-20T12:55:51.6977574Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run"}
+{"ts":"2026-04-20T13:01:01.6330955Z","event":"Release","agent":"Iris"}

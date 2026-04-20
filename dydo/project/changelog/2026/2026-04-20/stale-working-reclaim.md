@@ -1,10 +1,7 @@
 ---
 area: platform
-name: stale-working-reclaim
-status: human-reviewed
-created: 2026-04-18T22:38:54.9704380Z
-assigned: Brian
-updated: 2026-04-20T13:00:56.8359271Z
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: stale-working-reclaim
@@ -73,3 +70,7 @@ Verification:
 - Full suite: 3744/3746. The 2 PhantomUnreadInboxTests failures are Charlie's carved-out work (confirmed pre-existing, disregarded per Brian/Henry).
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-20 16:03

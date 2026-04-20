@@ -1,9 +1,7 @@
 ---
 area: platform
-name: stale-dispatch-double-claim
-status: pending
-created: 2026-04-18T17:12:39.3074931Z
-assigned: Brian
+type: changelog
+date: 2026-04-20
 ---
 
 # Task: stale-dispatch-double-claim
@@ -21,3 +19,7 @@ Fix: two dispatches can both claim same agent via stale-dispatch window, produci
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-20 16:03

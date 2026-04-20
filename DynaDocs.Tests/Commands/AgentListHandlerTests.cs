@@ -249,6 +249,8 @@ public class AgentListHandlerTests : IDisposable
     {
         var workspace = _registry.GetAgentWorkspace(name);
         Directory.CreateDirectory(workspace);
+        // Fresh timestamp so the state never trips IsStaleDispatch / IsStaleWorking
+        // (stale-reclaim semantics are exercised in dedicated tests).
         File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
             ---
             agent: {{name}}
@@ -257,7 +259,7 @@ public class AgentListHandlerTests : IDisposable
             status: {{status}}
             assigned: testuser
             dispatched-by: null
-            started: 2026-01-01T00:00:00Z
+            started: {{DateTime.UtcNow:o}}
             writable-paths: []
             readonly-paths: []
             unread-must-reads: []

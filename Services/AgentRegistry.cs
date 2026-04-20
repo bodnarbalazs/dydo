@@ -10,6 +10,19 @@ using DynaDocs.Utils;
 public partial class AgentRegistry : IAgentRegistry
 {
     private const int StaleDispatchMinutes = 2;
+    private const int StaleWorkingMinutes = 5;
+
+    /// <summary>
+    /// When set, IsLauncherAlive uses this instead of scanning processes.
+    /// Enables testing the stale-dispatch reclaim gate without real process lookups.
+    /// </summary>
+    internal static Func<string, bool>? IsLauncherAliveOverride { get; set; }
+
+    /// <summary>
+    /// When set, IsSessionPidAlive uses this instead of reading .session and probing the OS.
+    /// Enables testing the stale-working reclaim gate without real process lookups.
+    /// </summary>
+    internal static Func<string, bool>? IsSessionPidAliveOverride { get; set; }
 
     private readonly string _basePath;
     private readonly IConfigService _configService;
@@ -122,7 +135,7 @@ public partial class AgentRegistry : IAgentRegistry
                 return false;
             }
 
-            if (!IsEffectivelyFree(state))
+            if (!IsReservable(state))
             {
                 error = $"Agent '{agentName}' is not free (status: {state.Status.ToString().ToLowerInvariant()}).";
                 return false;
@@ -144,12 +157,59 @@ public partial class AgentRegistry : IAgentRegistry
 
     private bool IsEffectivelyFree(AgentState state) =>
         state.Status == AgentStatus.Free ||
-        (state.Status is AgentStatus.Dispatched or AgentStatus.Queued && IsStaleDispatch(state));
+        (state.Status is AgentStatus.Dispatched or AgentStatus.Queued
+            && IsStaleDispatch(state)
+            && !IsLauncherAlive(state.Name)) ||
+        IsStaleWorking(state);
+
+    // Strict gate for the reservation path (decisions 017, 018):
+    // IsEffectivelyFree keeps stale-working permissive so display/claim-auto
+    // surface reclaim candidates; ReserveAgent adds the session-pid probe
+    // here to avoid double-claiming a live Claude.
+    private bool IsReservable(AgentState state) =>
+        IsEffectivelyFree(state) &&
+        !(IsStaleWorking(state) && IsSessionPidAlive(state.Name));
 
     private static bool IsStaleDispatch(AgentState state) =>
         state.Status is AgentStatus.Dispatched or AgentStatus.Queued &&
         state.Since.HasValue &&
         (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleDispatchMinutes;
+
+    private static bool IsStaleWorking(AgentState state) =>
+        state.Status == AgentStatus.Working &&
+        state.Since.HasValue &&
+        (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleWorkingMinutes;
+
+    // PID to persist in .session so a later claim can probe Claude-tab liveness.
+    // Prefer the nearest Claude ancestor (survives shell/subshell churn). If the
+    // claim isn't running under a Claude tab (e.g. CLI tests), fall back to the
+    // immediate parent shell, which at least dies with the current terminal.
+    private static int? ResolveClaimedPid() =>
+        ProcessUtils.FindAncestorProcess("claude") ??
+        ProcessUtils.GetParentPid(Environment.ProcessId);
+
+    // Guards the stale-dispatch reclaim path: if the original dispatch's
+    // "{agent} --inbox" launcher process is still alive, the first Claude is
+    // merely slow to boot — reclaiming would strand it and double-launch.
+    private static bool IsLauncherAlive(string agentName) =>
+        IsLauncherAliveOverride != null
+            ? IsLauncherAliveOverride(agentName)
+            : ProcessUtils.FindProcessesByCommandLine($"{agentName} --inbox").Count > 0;
+
+    // Guards the stale-working reclaim path (decision 018): reads .session,
+    // checks the stored ClaimedPid against the OS. Missing/unparseable session
+    // or absent PID is treated as dead — the claim path already archives
+    // the workspace, so a malformed session is not a reason to keep a
+    // zombie-working agent unclaimable.
+    private bool IsSessionPidAlive(string agentName)
+    {
+        if (IsSessionPidAliveOverride != null)
+            return IsSessionPidAliveOverride(agentName);
+
+        var session = GetSession(agentName);
+        if (session?.ClaimedPid is not { } pid) return false;
+        return ProcessUtils.IsProcessRunning(pid);
+    }
 
     public bool ClaimAgent(string agentName, out string error)
     {
@@ -245,6 +305,17 @@ public partial class AgentRegistry : IAgentRegistry
         if (existingSession.SessionId == sessionId)
             return true;
 
+        // Stale-working reclaim (decision 018, issue #103): prior Claude's
+        // session PID is dead and Status has been Working past the threshold.
+        // SetupAgentWorkspace will archive the old workspace and regenerate.
+        if (state != null && IsStaleWorking(state) && !IsSessionPidAlive(agentName))
+        {
+            Console.Error.WriteLine(
+                $"[dydo] Note: reclaimed agent {agentName} from an interrupted session. " +
+                "Check 'git status' for uncommitted work from the prior Claude.");
+            return true;
+        }
+
         error = $"Agent {agentName} is already claimed by another session.";
         if (_config != null && human != null)
         {
@@ -272,7 +343,8 @@ public partial class AgentRegistry : IAgentRegistry
         {
             Agent = agentName,
             SessionId = sessionId,
-            Claimed = DateTime.UtcNow
+            Claimed = DateTime.UtcNow,
+            ClaimedPid = ResolveClaimedPid()
         };
 
         var sessionPath = Path.Combine(workspace, ".session");

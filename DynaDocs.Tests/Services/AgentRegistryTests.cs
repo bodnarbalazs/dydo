@@ -17,6 +17,7 @@ public class AgentRegistryTests : IDisposable
 
     public void Dispose()
     {
+        AgentRegistry.IsLauncherAliveOverride = null;
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
     }
@@ -1632,6 +1633,7 @@ public class AgentRegistryTests : IDisposable
             # Adele — Session State
             """);
 
+        AgentRegistry.IsLauncherAliveOverride = _ => false;
         var registry = new AgentRegistry(_testDir);
 
         var result = registry.ReserveAgent("Adele", out var error);
@@ -1763,6 +1765,7 @@ public class AgentRegistryTests : IDisposable
             # Adele — Session State
             """);
 
+        AgentRegistry.IsLauncherAliveOverride = _ => false;
         var registry = new AgentRegistry(_testDir);
 
         var freeAgents = registry.GetFreeAgents();
@@ -1794,6 +1797,7 @@ public class AgentRegistryTests : IDisposable
             """);
         File.WriteAllText(Path.Combine(workspace, ".queued"), "");
 
+        AgentRegistry.IsLauncherAliveOverride = _ => false;
         var registry = new AgentRegistry(_testDir);
 
         var freeAgents = registry.GetFreeAgents();

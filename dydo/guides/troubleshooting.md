@@ -149,6 +149,67 @@ dydo wait --cancel                   # Cancel all active waits
 
 Then investigate why the dispatched agent didn't respond.
 
+### Agent stuck in `status: working` after its tab closed
+
+**Symptom:** `dydo agent list` shows an agent as `working`, but no live terminal for it exists. Its `state.md` still has `status: working`, task populated, writable/readonly paths populated. The workspace still contains `.session` and `modes/`.
+
+**Cause:** The agent's Claude process ended (context exhaustion, user closed the tab, crash) before `dydo agent release` ran to completion. `ReleaseAgent` is the only code path that transitions Working → Free — nothing else (not the watchdog, not dispatch, not guard) touches that transition. When the session dies mid-work, state.md legitimately reflects "was working when last alive."
+
+Common triggers:
+
+- Context limit reached mid-task.
+- `dispatched code-writers must dispatch a reviewer before releasing` error hit at end-of-work, not resolved before tab closed.
+- Tab was closed before the agent finished.
+- `taskkill /im dydo.exe /f` during an in-flight `dydo agent release` (rare — leaves a `.claim.lock` in the workspace).
+
+**Verify release really didn't run** (before force-cleaning):
+
+```bash
+grep -l '"Claim","agent":"<Name>"' dydo/_system/audit/2026/*.events    # find sessions
+grep '"Release"' dydo/_system/audit/2026/<session-id>.events           # confirm absence
+```
+
+If the agent was running in a **worktree**, audit lives under the worktree's own `dydo/_system/audit/` — only `dydo/agents`, `dydo/_system/roles`, `dydo/project/issues`, `dydo/project/inquisitions` are junctioned across worktrees. Check `dydo/_system/.local/worktrees/<id>/dydo/_system/audit/2026/` too.
+
+**Recovery options, least destructive first:**
+
+1. **Resume the tab.** If the agent's tab is still open, run `claude --resume` in it. The Claude process reconnects, you can finish the work and release normally. This preserves task-role-history, inbox, and uncommitted code edits.
+
+2. **Force-clean the workspace.** Destructive — wipes inbox, modes, state.md:
+
+    ```bash
+    dydo agent clean <name> --force
+    ```
+
+    Code-writers' uncommitted source edits survive (they live outside the agent workspace), but anything inside `dydo/agents/<name>/` is gone. Rescue drafts (`msg-*.md`, notes) with `cp` first.
+
+3. **Worktree zombies need worktree teardown first.** If the agent has `.worktree*` markers in its workspace, the branch and worktree dir persist even after `agent clean`:
+
+    ```bash
+    git worktree remove dydo/_system/.local/worktrees/<id> --force
+    git branch -D worktree/<id>
+    dydo worktree prune
+    dydo agent clean <name> --force
+    ```
+
+See [decision 018](../project/decisions/018-zombie-working-state-recovery.md) for the mechanism and the planned reclaim-on-claim fix (issue #103).
+
+### Watchdog is dead, tabs don't auto-close
+
+**Symptom:** Released agents with `auto-close: true` still have their terminals open after release. `dydo/_system/.local/watchdog.pid` is stale or missing.
+
+**Cause:** The watchdog is only (re)started by `dydo dispatch` when `--auto-close` is set. Release does not revive it. So if `taskkill /im dydo.exe /f` (or a crash) kills the watchdog, it stays dead until the next auto-close dispatch.
+
+**Fix:**
+
+```bash
+dydo watchdog start              # idempotent — no-ops if already running
+```
+
+The next poll (every 10 seconds) will find hung tabs via process-pattern match (`<Agent> --inbox`) and kill them. `window-id: null` in state.md is expected for root dispatches (MRU window targeting) and does NOT prevent auto-close — the kill uses command-line pattern matching.
+
+Planned fix: `dydo agent release` should best-effort revive the watchdog (issue #102).
+
 ---
 
 ## Recovery commands
@@ -168,6 +229,7 @@ dydo wait --cancel               # Clear all stuck waits
 dydo inbox clear --all           # Archive all inbox items
 dydo clean Adele                 # Clean an agent's workspace
 dydo clean --all --force         # Nuclear option: clean all workspaces
+# For zombie working agents specifically, see "Agent stuck in status: working after its tab closed" above.
 ```
 
 ---

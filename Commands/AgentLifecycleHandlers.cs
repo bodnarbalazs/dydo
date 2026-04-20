@@ -77,6 +77,8 @@ internal static class AgentLifecycleHandlers
         Console.WriteLine($"Agent identity released: {current.Name}");
         Console.WriteLine("  Status: free");
 
+        try { WatchdogService.EnsureRunning(); } catch { /* best-effort */ }
+
         DequeueIfActive(current.Name, registry.Config);
 
         return ExitCodes.Success;

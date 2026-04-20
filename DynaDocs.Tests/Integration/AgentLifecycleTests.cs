@@ -814,6 +814,36 @@ public class AgentLifecycleTests : IntegrationTestBase
         Assert.DoesNotContain("Auto-close:", result.Stdout);
     }
 
+    [Fact]
+    public async Task Release_RevivesWatchdogWhenDead()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Simulate dead watchdog: ensure no live pid file remains
+        var pidFile = WatchdogService.GetPidFilePath(DydoDir);
+        if (File.Exists(pidFile)) File.Delete(pidFile);
+
+        var startInvocations = 0;
+        var previousOverride = WatchdogService.StartProcessOverride;
+        WatchdogService.StartProcessOverride = _ =>
+        {
+            Interlocked.Increment(ref startInvocations);
+            return null;
+        };
+        try
+        {
+            var result = await ReleaseAgentAsync();
+            result.AssertSuccess();
+
+            Assert.Equal(1, startInvocations);
+        }
+        finally
+        {
+            WatchdogService.StartProcessOverride = previousOverride;
+        }
+    }
+
     private async Task<CommandResult> InboxClearAsync(bool all = false, string? id = null)
     {
         StoreSessionContext();

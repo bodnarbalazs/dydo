@@ -25,6 +25,32 @@ public static partial class PathUtils
         return configService.GetProjectRoot(startPath);
     }
 
+    /// <summary>
+    /// Find the main project root even when called from inside a worktree.
+    /// Resolves via the <c>dydo/_system/.local/worktrees/</c> marker; falls back
+    /// to <see cref="FindProjectRoot"/> when not inside a worktree.
+    /// Used by the watchdog so its PID file and CWD never land inside a worktree.
+    /// </summary>
+    public static string? FindMainProjectRoot(string? startPath = null)
+    {
+        var start = startPath ?? Environment.CurrentDirectory;
+        var worktreeMainRoot = GetMainProjectRoot(start);
+        if (worktreeMainRoot != null) return worktreeMainRoot;
+        return FindProjectRoot(start);
+    }
+
+    /// <summary>
+    /// Returns the main project's dydo folder (the one with agents/, _system/, ...),
+    /// resolved from the main project root rather than the nearest one.
+    /// </summary>
+    public static string? FindMainDydoRoot(string? startPath = null)
+    {
+        var projectRoot = FindMainProjectRoot(startPath);
+        if (projectRoot == null) return null;
+        var configService = new ConfigService();
+        return configService.GetDydoRoot(projectRoot);
+    }
+
     public static string ResolvePath(string sourcePath, string relativePath)
     {
         var sourceDir = Path.GetDirectoryName(sourcePath) ?? "";

@@ -91,6 +91,26 @@ Bash commands go through multi-stage analysis:
 
 ---
 
+## Auto-Approve JSON (Worktree-Only)
+
+On a successful decision, the guard can emit a Claude-Code-specific JSON envelope to stdout that tells the host to skip its own per-tool permission prompt:
+
+```json
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}
+```
+
+Emission is **conditional on CWD being inside a dispatch worktree** (`dydo/_system/.local/worktrees/{id}/...`). The gate is implemented in `Commands/GuardCommand.cs` as `IsWorktreeContext()` + `EmitWorktreeAllowIfNeeded()`; the allow is emitted from `HandleReadOperation`, `HandleWriteOperation`, `HandleSearchTool`, `HandleDydoBashCommand`, and `AnalyzeAndCheckBashOperations` on their success paths. Blocked operations never emit allow.
+
+**Why the gate exists.** Worktree-resolved absolute paths (e.g., `…/dydo/_system/.local/worktrees/{id}/src/foo.cs`) typically don't match the patterns in `settings.local.json permissions.allow[]` (which usually target the main project root). Without the guard's explicit allow, dispatched agents would hit a permission prompt on every tool call.
+
+**What it means for users.**
+- **Inside a worktree (dispatched agents):** the guard owns the allow/deny decision; Claude Code does not prompt. Less friction for isolated experiments.
+- **At the project root (main session):** the guard never emits allow, so Claude Code falls back to its normal permission flow — `settings.local.json` `permissions.allow[]` match, or a prompt. The human stays in the loop on main-repo edits.
+
+Security posture is unchanged either way: the guard's decision is authoritative — off-limits checks, RBAC, and staged onboarding all run before any allow is emitted. The gate only affects whether Claude Code shows an additional prompt on top of the guard's own verdict.
+
+---
+
 ## Guard Lift
 
 The guard lift temporarily bypasses RBAC permission checking for a specific agent. This is a human-only administrative mechanism — agents cannot lift their own guard.

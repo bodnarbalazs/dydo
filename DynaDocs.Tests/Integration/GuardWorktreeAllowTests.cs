@@ -104,6 +104,54 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
         result.AssertStdoutContains(AllowJson);
     }
 
+    [Fact]
+    public async Task WorktreeGlob_Approved_OutputsAllowJson()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+        GuardCommand.IsWorktreeContextOverride = () => true;
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Glob\",\"tool_input\":{{\"pattern\":\"**/*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains(AllowJson);
+    }
+
+    [Fact]
+    public async Task WorktreeGrep_Approved_OutputsAllowJson()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+        GuardCommand.IsWorktreeContextOverride = () => true;
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Grep\",\"tool_input\":{{\"pattern\":\"foo\",\"path\":\"src\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+        result.AssertStdoutContains(AllowJson);
+    }
+
+    [Fact]
+    public async Task NonWorktreeGlob_Approved_StdoutEmpty()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+        GuardCommand.IsWorktreeContextOverride = () => false;
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Glob\",\"tool_input\":{{\"pattern\":\"**/*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+        Assert.Empty(result.Stdout.Trim());
+    }
+
     #endregion
 
     #region Security: Blocked Reads Still Block
@@ -229,6 +277,31 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
         Environment.CurrentDirectory = worktreeDir;
 
         Assert.True(GuardCommand.IsWorktreeContext());
+    }
+
+    [Fact]
+    public void IsWorktreeContext_UnanchoredSubstringMatch_ReturnsFalse()
+    {
+        GuardCommand.IsWorktreeContextOverride = null;
+        // A directory whose name starts with "worktrees" but isn't a real worktree
+        // (e.g., worktrees-notes, worktrees.backup). The marker is a substring of
+        // the path, but not an exact path segment — must NOT be treated as a worktree.
+        var lookalikeDir = Path.Combine(TestDir, "dydo", "_system", ".local", "worktrees-notes", "scratch");
+        Directory.CreateDirectory(lookalikeDir);
+        Environment.CurrentDirectory = lookalikeDir;
+
+        Assert.False(GuardCommand.IsWorktreeContext());
+    }
+
+    [Fact]
+    public void IsWorktreeContext_SiblingWorktreesBackup_ReturnsFalse()
+    {
+        GuardCommand.IsWorktreeContextOverride = null;
+        var backupDir = Path.Combine(TestDir, "dydo", "_system", ".local", "worktrees.backup", "bar");
+        Directory.CreateDirectory(backupDir);
+        Environment.CurrentDirectory = backupDir;
+
+        Assert.False(GuardCommand.IsWorktreeContext());
     }
 
     #endregion

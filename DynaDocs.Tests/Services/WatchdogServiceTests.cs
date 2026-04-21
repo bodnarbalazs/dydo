@@ -2,27 +2,40 @@ namespace DynaDocs.Tests.Services;
 
 using System.Diagnostics;
 using DynaDocs.Services;
+using DynaDocs.Utils;
 
 [Collection("ProcessUtils")]
 public class WatchdogServiceTests : IDisposable
 {
     private readonly string _testDir;
+    private readonly string _originalCwd;
 
     public WatchdogServiceTests()
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-watchdog-test-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
+        _originalCwd = Environment.CurrentDirectory;
         // Prevent tests from spawning real wt.exe or watchdog processes
         WatchdogService.StartProcessOverride = _ => null;
     }
 
     public void Dispose()
     {
+        Environment.CurrentDirectory = _originalCwd;
         WatchdogService.StartProcessOverride = null;
         WatchdogService.FindProcessesOverride = null;
+        WatchdogService.GetParentPidOverride = null;
+        WatchdogService.PollIntervalOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
+        ProcessUtils.IsProcessRunningOverride = null;
         if (Directory.Exists(_testDir))
-            Directory.Delete(_testDir, true);
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                try { Directory.Delete(_testDir, true); return; }
+                catch (IOException) when (i < 2) { Thread.Sleep(50 * (i + 1)); }
+            }
+        }
     }
 
     [Fact]
@@ -764,6 +777,143 @@ public class WatchdogServiceTests : IDisposable
         {
             proc.Kill();
         }
+    }
+
+    #endregion
+
+    #region Watchdog Lifecycle (issues #95, #97)
+
+    [Fact]
+    public void EnsureRunning_SpawnedFromWorktree_SetsWorkingDirectoryToMainProjectRoot()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-project");
+        var worktreeRoot = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "wt-abc");
+        Directory.CreateDirectory(Path.Combine(mainRoot, "dydo"));
+        Directory.CreateDirectory(Path.Combine(worktreeRoot, "dydo"));
+        File.WriteAllText(Path.Combine(mainRoot, "dydo.json"), """{"name":"main"}""");
+        File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), """{"name":"main"}""");
+
+        ProcessStartInfo? capturedPsi = null;
+        WatchdogService.StartProcessOverride = psi => { capturedPsi = psi; return null; };
+
+        Environment.CurrentDirectory = worktreeRoot;
+        WatchdogService.EnsureRunning();
+
+        Assert.NotNull(capturedPsi);
+        var wd = PathUtils.NormalizePath(capturedPsi.WorkingDirectory ?? "");
+        var expected = PathUtils.NormalizePath(Path.GetFullPath(mainRoot));
+        Assert.Equal(expected, wd);
+        Assert.DoesNotContain("_system/.local/worktrees", wd);
+    }
+
+    [Fact]
+    public void EnsureRunning_OutsideWorktree_SetsWorkingDirectoryToProjectRoot()
+    {
+        var mainRoot = Path.Combine(_testDir, "plain-project");
+        Directory.CreateDirectory(Path.Combine(mainRoot, "dydo"));
+        File.WriteAllText(Path.Combine(mainRoot, "dydo.json"), """{"name":"plain"}""");
+
+        ProcessStartInfo? capturedPsi = null;
+        WatchdogService.StartProcessOverride = psi => { capturedPsi = psi; return null; };
+
+        Environment.CurrentDirectory = mainRoot;
+        WatchdogService.EnsureRunning();
+
+        Assert.NotNull(capturedPsi);
+        Assert.Equal(
+            PathUtils.NormalizePath(Path.GetFullPath(mainRoot)),
+            PathUtils.NormalizePath(capturedPsi.WorkingDirectory ?? ""));
+    }
+
+    [Fact]
+    public void EnsureRunning_FromWorktree_WritesPidFileToMainProjectNotWorktree()
+    {
+        var mainRoot = Path.Combine(_testDir, "main-pidfile");
+        var worktreeRoot = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", "wt-xyz");
+        Directory.CreateDirectory(Path.Combine(mainRoot, "dydo"));
+        Directory.CreateDirectory(Path.Combine(worktreeRoot, "dydo"));
+        File.WriteAllText(Path.Combine(mainRoot, "dydo.json"), """{"name":"main"}""");
+        File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), """{"name":"main"}""");
+
+        // Return a live process so EnsureRunning keeps the pid file
+        using var dummy = StartDummyProcess();
+        WatchdogService.StartProcessOverride = _ => dummy;
+
+        try
+        {
+            Environment.CurrentDirectory = worktreeRoot;
+            WatchdogService.EnsureRunning();
+
+            var mainPidFile = Path.Combine(mainRoot, "dydo", "_system", ".local", "watchdog.pid");
+            var worktreePidFile = Path.Combine(worktreeRoot, "dydo", "_system", ".local", "watchdog.pid");
+            Assert.True(File.Exists(mainPidFile), "Watchdog pid file should live under the main project's dydo/_system/.local");
+            Assert.False(File.Exists(worktreePidFile), "Watchdog pid file must not be written into the worktree");
+        }
+        finally
+        {
+            if (!dummy.HasExited) dummy.Kill();
+        }
+    }
+
+    [Fact]
+    public void Run_ExitsWhenAnchorProcessDies()
+    {
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        WatchdogService.GetParentPidOverride = () => anchor.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        Thread.Sleep(250); // Let the loop enter and read the anchor PID
+        anchor.Kill();
+
+        Assert.True(runTask.Wait(TimeSpan.FromSeconds(5)),
+            "Run did not exit within 5s of its anchor process being killed");
+    }
+
+    [Fact]
+    public void Run_ExitsWhenCancellationRequested()
+    {
+        using var longLived = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        WatchdogService.GetParentPidOverride = () => longLived.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        Thread.Sleep(250);
+        WatchdogService.RequestShutdownForTests();
+
+        Assert.True(runTask.Wait(TimeSpan.FromSeconds(5)),
+            "Run did not exit within 5s of cancellation being requested");
+        longLived.Kill();
+    }
+
+    [Fact]
+    public void Run_DeletesPidFileOnExit()
+    {
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        var dydoRoot = Path.Combine(_testDir, "dydo");
+        Directory.CreateDirectory(Path.Combine(dydoRoot, "_system", ".local"));
+        var pidFile = WatchdogService.GetPidFilePath(dydoRoot);
+        File.WriteAllText(pidFile, Environment.ProcessId.ToString());
+
+        WatchdogService.GetParentPidOverride = () => anchor.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        Thread.Sleep(250);
+        anchor.Kill();
+        runTask.Wait(TimeSpan.FromSeconds(5));
+
+        Assert.False(File.Exists(pidFile), "Run must delete watchdog.pid on exit");
     }
 
     #endregion

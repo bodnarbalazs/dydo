@@ -3,9 +3,10 @@ id: 99
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-18
+resolved-date: 2026-04-20
 ---
 
 # HandleSearchTool never emits worktree allow JSON, prompting users for Glob/Grep/Agent inside worktrees
@@ -31,4 +32,4 @@ Inside a dispatch worktree, run a Glob or Grep tool call from a Stage-2 agent on
 
 ## Resolution
 
-(Filled when resolved)
+HandleSearchTool now emits the worktree-allow JSON on its success path (Commands/GuardCommand.cs), matching the four sister handlers. Glob/Grep/Agent calls inside a worktree no longer surface Claude Code's permission prompt. Covered by WorktreeGlob/Grep_Approved_OutputsAllowJson and NonWorktreeGlob_Approved_StdoutEmpty.

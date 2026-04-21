@@ -23,17 +23,47 @@ public static class WatchdogService
     /// </summary>
     internal static Func<string, List<int>>? FindProcessesOverride { get; set; }
 
+    /// <summary>
+    /// When set, Run() uses this to determine the anchor process PID instead of walking
+    /// the real parent chain. Test hook.
+    /// </summary>
+    internal static Func<int?>? GetParentPidOverride { get; set; }
+
+    /// <summary>
+    /// When set, Run()'s polling loop waits for this interval instead of the default 10s.
+    /// Test hook to keep behavioural assertions fast.
+    /// </summary>
+    internal static TimeSpan? PollIntervalOverride { get; set; }
+
+    private static CancellationTokenSource? _shutdownCts;
+
+    /// <summary>
+    /// Test hook: signals the active Run() loop to cancel without raising a real
+    /// OS signal (which would terminate the test host).
+    /// </summary>
+    internal static void RequestShutdownForTests() => _shutdownCts?.Cancel();
+
     public static string GetPidFilePath(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "watchdog.pid");
 
     /// <summary>
     /// Starts the watchdog if not already running. Called automatically by DispatchCommand
     /// when --auto-close is set. Idempotent: multiple calls are safe.
+    /// Resolves to the MAIN project root — dispatches from inside a worktree
+    /// do not spawn a second, worktree-scoped watchdog.
     /// Returns true if a new watchdog was started, false if one was already running.
     /// </summary>
-    public static bool EnsureRunning() => EnsureRunning(PathUtils.FindDydoRoot() ?? ".");
+    public static bool EnsureRunning()
+    {
+        var mainProjectRoot = PathUtils.FindMainProjectRoot();
+        var mainDydoRoot = PathUtils.FindMainDydoRoot() ?? ".";
+        return EnsureRunning(mainDydoRoot, mainProjectRoot);
+    }
 
-    public static bool EnsureRunning(string dydoRoot)
+    public static bool EnsureRunning(string dydoRoot) =>
+        EnsureRunning(dydoRoot, Path.GetDirectoryName(Path.GetFullPath(dydoRoot)));
+
+    private static bool EnsureRunning(string dydoRoot, string? workingDirectory)
     {
         var pidFile = GetPidFilePath(dydoRoot);
         PathUtils.EnsureLocalDirExists(dydoRoot);
@@ -78,7 +108,10 @@ public static class WatchdogService
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true
+                RedirectStandardError = true,
+                // Pin CWD to the main project root so the spawned watchdog never holds a
+                // directory handle inside a worktree — otherwise Windows blocks worktree deletion.
+                WorkingDirectory = workingDirectory ?? ""
             };
 
             var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
@@ -110,7 +143,7 @@ public static class WatchdogService
     /// Stops the watchdog process.
     /// Returns true if a running watchdog was stopped, false if none was running.
     /// </summary>
-    public static bool Stop() => Stop(PathUtils.FindDydoRoot() ?? ".");
+    public static bool Stop() => Stop(PathUtils.FindMainDydoRoot() ?? ".");
 
     public static bool Stop(string dydoRoot)
     {
@@ -138,26 +171,57 @@ public static class WatchdogService
     /// <summary>
     /// The watchdog polling loop. Runs as a background process, scanning for released
     /// auto-close agents and killing their claude processes.
+    /// Exits gracefully on: cancellation (ProcessExit / CancelKeyPress), or when the
+    /// spawning anchor process is gone. The pid file is deleted in a finally block so
+    /// a clean shutdown never leaves residue — the gap that prior `taskkill`
+    /// remediations kept papering over.
     /// </summary>
     public static void Run()
     {
-        var dydoRoot = PathUtils.FindDydoRoot();
+        var dydoRoot = PathUtils.FindMainDydoRoot();
         if (dydoRoot == null) return;
 
-        while (true)
-        {
-            Thread.Sleep(10_000);
+        var pidFile = GetPidFilePath(dydoRoot);
+        using var cts = new CancellationTokenSource();
+        _shutdownCts = cts;
 
-            try
+        void OnProcessExit(object? s, EventArgs e) => cts.Cancel();
+        void OnCancelKeyPress(object? s, ConsoleCancelEventArgs e) { e.Cancel = true; cts.Cancel(); }
+
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+        Console.CancelKeyPress += OnCancelKeyPress;
+
+        var anchorPid = GetParentPidOverride != null
+            ? GetParentPidOverride()
+            : ProcessUtils.GetParentPid(Environment.ProcessId);
+        var pollInterval = PollIntervalOverride ?? TimeSpan.FromSeconds(10);
+
+        try
+        {
+            while (!cts.IsCancellationRequested)
             {
-                PollAndCleanup(dydoRoot);
-                PollQueues(dydoRoot);
-                PollOrphanedWaits(dydoRoot);
+                if (cts.Token.WaitHandle.WaitOne(pollInterval)) break;
+
+                if (anchorPid.HasValue && !ProcessUtils.IsProcessRunning(anchorPid.Value)) break;
+
+                try
+                {
+                    PollAndCleanup(dydoRoot);
+                    PollQueues(dydoRoot);
+                    PollOrphanedWaits(dydoRoot);
+                }
+                catch
+                {
+                    // Swallow individual poll errors — keep the loop alive
+                }
             }
-            catch
-            {
-                // Swallow individual poll errors — keep the loop alive
-            }
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+            Console.CancelKeyPress -= OnCancelKeyPress;
+            _shutdownCts = null;
+            try { File.Delete(pidFile); } catch { }
         }
     }
 

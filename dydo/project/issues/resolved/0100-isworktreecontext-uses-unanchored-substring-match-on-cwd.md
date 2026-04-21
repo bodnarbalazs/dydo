@@ -3,9 +3,10 @@ id: 100
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-18
+resolved-date: 2026-04-20
 ---
 
 # IsWorktreeContext uses unanchored substring match on CWD
@@ -38,4 +39,4 @@ Create a directory whose absolute path contains the literal substring `dydo/_sys
 
 ## Resolution
 
-(Filled when resolved)
+IsWorktreeContext replaces the unanchored substring check with an exact path-segment match for the sequence [dydo, _system, .local, worktrees]. Sibling directories like worktrees-notes or worktrees.backup are no longer misidentified as worktree contexts. Covered by IsWorktreeContext_UnanchoredSubstringMatch_ReturnsFalse and IsWorktreeContext_SiblingWorktreesBackup_ReturnsFalse.

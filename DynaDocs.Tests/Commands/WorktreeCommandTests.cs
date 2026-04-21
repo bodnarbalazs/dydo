@@ -2585,4 +2585,302 @@ public class WorktreeCommandTests : IDisposable
 
     private static (int exitCode, string stdout, string stderr) CaptureAll(Func<int> action) =>
         ConsoleCapture.All(action);
+
+    #region Worktree-cleanup-hardening — issues #104, #98, and reproducers
+
+    [Fact]
+    public void Cleanup_WithJunctionToMainAgents_DoesNotDeleteMainAgents()
+    {
+        // Reproducer for issue #104: cleanup of a registered worktree with a junction
+        // to the main repo's dydo/agents followed the junction and wiped 19 agent
+        // workspaces in production. The fix routes the worktree teardown through
+        // DeleteDirectoryJunctionSafe BEFORE letting git's forced remove run.
+        if (!OperatingSystem.IsWindows()) return;
+
+        var worktreeId = "junction-repro";
+        var mainRoot = _testDir;
+
+        var mainAgents = Path.Combine(mainRoot, "dydo", "agents");
+        var probeDir = Path.Combine(mainAgents, "Probe");
+        Directory.CreateDirectory(probeDir);
+        var stateMarker = Path.Combine(probeDir, "state.md");
+        File.WriteAllText(stateMarker, "KNOWN_MARKER");
+
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(Path.Combine(worktreePath, "dydo"));
+        CreateJunction(Path.Combine(worktreePath, "dydo", "agents"), mainAgents);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-root"), mainRoot);
+
+        // Simulate the production failure mode:
+        //   - The explicit cmd rmdir fails silently (no-op) — what happens when the junction
+        //     is held open or sits at a path not in JunctionSubpaths.
+        //   - git worktree remove --force on Windows recursively deletes, following reparse
+        //     points into their target.
+        WorktreeCommand.RunProcessOverride = (f, a) =>
+        {
+            if (f == "git" && a.Contains("worktree remove"))
+            {
+                try { UnsafeRecursiveDelete(worktreePath); } catch { }
+                return;
+            }
+            // cmd rmdir and other git calls: no-op (simulates failure / clean git env)
+        };
+
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.True(File.Exists(stateMarker),
+                "Main repo agent state was destroyed — cleanup followed junction into target");
+            Assert.Equal("KNOWN_MARKER", File.ReadAllText(stateMarker));
+            Assert.False(Directory.Exists(Path.Combine(worktreePath, "dydo", "agents")),
+                "Junction at worktree/dydo/agents was not removed");
+            Assert.False(Directory.Exists(worktreePath), "Worktree directory was not removed");
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_WithUnknownJunction_DoesNotDeleteJunctionTarget()
+    {
+        // Extends #104 coverage: a junction at a path NOT in JunctionSubpaths must also
+        // be handled safely. DeleteDirectoryJunctionSafe detects via ReparsePoint at any depth.
+        if (!OperatingSystem.IsWindows()) return;
+
+        var worktreeId = "unknown-junction-repro";
+        var mainRoot = _testDir;
+        var worktreePath = Path.Combine(mainRoot, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+
+        var externalTarget = Path.Combine(_testDir, "external-data");
+        Directory.CreateDirectory(externalTarget);
+        File.WriteAllText(Path.Combine(externalTarget, "precious.txt"), "must survive");
+        CreateJunction(Path.Combine(worktreePath, "linked"), externalTarget);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-root"), mainRoot);
+
+        WorktreeCommand.RunProcessOverride = (f, a) =>
+        {
+            if (f == "git" && a.Contains("worktree remove"))
+            {
+                try { UnsafeRecursiveDelete(worktreePath); } catch { }
+                return;
+            }
+        };
+
+        try
+        {
+            WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.True(File.Exists(Path.Combine(externalTarget, "precious.txt")),
+                "External data was destroyed — unknown junction was followed");
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_DirectoryLocked_StillClearsAgentMarker()
+    {
+        var worktreeId = "locked-wt";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-path"), worktreePath);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-base"), "main");
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-root"), _testDir);
+
+        var lockedFile = Path.Combine(worktreePath, "locked.bin");
+        File.WriteAllText(lockedFile, "data");
+        using var lockStream = File.Open(lockedFile, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var exitCode = WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
+
+            Assert.Equal(0, exitCode);
+            Assert.False(File.Exists(Path.Combine(adeleWs, ".worktree")));
+            Assert.False(File.Exists(Path.Combine(adeleWs, ".worktree-path")));
+            Assert.False(File.Exists(Path.Combine(adeleWs, ".worktree-base")));
+            Assert.False(File.Exists(Path.Combine(adeleWs, ".worktree-root")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Prune_StrandedWatchdogPidInOrphanWorktree_IsReported()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var orphanDir = Path.Combine(worktreesDir, "orphan-watchdog-wt");
+        Directory.CreateDirectory(orphanDir);
+
+        var localDir = Path.Combine(orphanDir, "dydo", "_system", ".local");
+        Directory.CreateDirectory(localDir);
+        var pidFile = Path.Combine(localDir, "watchdog.pid");
+        File.WriteAllText(pidFile, "27220");
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, stderr) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(File.Exists(pidFile));
+            Assert.Contains("watchdog.pid", stdout + stderr);
+            Assert.Contains("27220", stdout + stderr);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Prune_StrandedWatchdogPidAlive_EmitsWarningToStderr()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var orphanDir = Path.Combine(worktreesDir, "alive-pid-wt");
+        Directory.CreateDirectory(orphanDir);
+
+        var localDir = Path.Combine(orphanDir, "dydo", "_system", ".local");
+        Directory.CreateDirectory(localDir);
+        var pidFile = Path.Combine(localDir, "watchdog.pid");
+        File.WriteAllText(pidFile, "42");
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("ALIVE", stderr);
+            Assert.Contains("42", stderr);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Prune_DoesNotRecurseIntoRegisteredWorktrees()
+    {
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var registeredDir = Path.Combine(worktreesDir, "auto-accept-edits-inquiry");
+        Directory.CreateDirectory(registeredDir);
+        // Registered worktrees have a .git file (pointer to main's .git/worktrees/<id>)
+        File.WriteAllText(Path.Combine(registeredDir, ".git"),
+            "gitdir: /main/.git/worktrees/auto-accept-edits-inquiry");
+        Directory.CreateDirectory(Path.Combine(registeredDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(registeredDir, ".github", "workflows"));
+        Directory.CreateDirectory(Path.Combine(registeredDir, "src"));
+
+        // Still referenced so prune would correctly skip the worktree itself.
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+        File.WriteAllText(Path.Combine(ws, ".worktree"), "auto-accept-edits-inquiry");
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, stderr) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+            var combined = stdout + stderr;
+
+            Assert.Equal(0, exitCode);
+            Assert.DoesNotContain(".claude", combined);
+            Assert.DoesNotContain(".github", combined);
+            Assert.DoesNotContain("workflows", combined);
+            Assert.Contains("Pruned 0 orphaned worktree(s)", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Prune_OrphanDirectory_WithNestedSubdirs_StillPrunes()
+    {
+        // Regression guard: the subdirs fix must not regress pruning of orphan directories
+        // that happen to have nested subdirectories but no .git marker.
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var orphanDir = Path.Combine(worktreesDir, "nested-orphan");
+        Directory.CreateDirectory(Path.Combine(orphanDir, "sub", "deeper"));
+        File.WriteAllText(Path.Combine(orphanDir, "sub", "deeper", "file.txt"), "x");
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(Directory.Exists(orphanDir));
+            Assert.Contains("nested-orphan", stdout);
+        }
+        finally { WorktreeCommand.RunProcessOverride = null; }
+    }
+
+    private static void CreateJunction(string junctionPath, string targetPath)
+    {
+        var parent = Path.GetDirectoryName(junctionPath);
+        if (parent != null) Directory.CreateDirectory(parent);
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "cmd",
+            Arguments = $"/c mklink /J \"{junctionPath}\" \"{targetPath}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        var proc = System.Diagnostics.Process.Start(psi)!;
+        proc.WaitForExit(5000);
+        if (proc.ExitCode != 0)
+            throw new InvalidOperationException($"mklink /J failed: {proc.StandardError.ReadToEnd()}");
+    }
+
+    // Simulates the unsafe recursive delete that git-on-Windows may perform under
+    // --force worktree remove: walks into reparse points and destroys their targets.
+    private static void UnsafeRecursiveDelete(string path)
+    {
+        if (!Directory.Exists(path)) return;
+        foreach (var sub in Directory.GetDirectories(path))
+            UnsafeRecursiveDelete(sub);
+        foreach (var file in Directory.GetFiles(path))
+        {
+            try { File.Delete(file); } catch { }
+        }
+        try { Directory.Delete(path); } catch { }
+    }
+
+    #endregion
 }

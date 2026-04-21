@@ -73,7 +73,7 @@ public static partial class GuardCommand
     private const string WorktreeAllowJson =
         """{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}""";
 
-    private const string WorktreePathMarker = "dydo/_system/.local/worktrees/";
+    private static readonly string[] WorktreePathSegments = ["dydo", "_system", ".local", "worktrees"];
 
     internal static Func<bool>? IsWorktreeContextOverride;
 
@@ -81,8 +81,25 @@ public static partial class GuardCommand
     {
         if (IsWorktreeContextOverride != null)
             return IsWorktreeContextOverride();
-        var cwd = Directory.GetCurrentDirectory().Replace('\\', '/');
-        return cwd.Contains(WorktreePathMarker);
+        var segments = Directory.GetCurrentDirectory()
+            .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
+        // Require the exact sequence "dydo/_system/.local/worktrees/" plus a worktree id after it.
+        // An unanchored substring match would accept sibling paths like "worktrees-notes" or
+        // "worktrees.backup" — treat those as non-worktree contexts.
+        for (var i = 0; i + WorktreePathSegments.Length < segments.Length; i++)
+        {
+            var match = true;
+            for (var j = 0; j < WorktreePathSegments.Length; j++)
+            {
+                if (!segments[i + j].Equals(WorktreePathSegments[j], StringComparison.OrdinalIgnoreCase))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) return true;
+        }
+        return false;
     }
 
     private static void EmitWorktreeAllowIfNeeded()
@@ -433,6 +450,9 @@ public static partial class GuardCommand
         {
             EventType = AuditEventType.Read, Path = searchPath, Tool = toolName
         });
+
+        EmitWorktreeAllowIfNeeded();
+
         return ExitCodes.Success;
     }
 
@@ -956,6 +976,23 @@ public static partial class GuardCommand
         AgentState agent, string? path, string? toolName, string? command,
         IAuditService auditService, string? sessionId, IAgentRegistry registry)
     {
+        // Self-heal phantom ids — drop ids whose inbox file is missing. Without this, a
+        // non-atomic inbox clear (crash mid-operation, manual cleanup) leaves the
+        // agent blocked forever: state.md says "N unread" but there is no file to read.
+        if (agent.UnreadMessages.Count > 0)
+        {
+            var workspace = registry.GetAgentWorkspace(agent.Name);
+            var phantoms = agent.UnreadMessages
+                .Where(msgId => FindMessageInfo(workspace, msgId) == null)
+                .ToList();
+            if (phantoms.Count > 0)
+            {
+                foreach (var id in phantoms)
+                    registry.MarkMessageRead(sessionId, id);
+                agent = registry.GetCurrentAgent(sessionId) ?? agent;
+            }
+        }
+
         if (agent.UnreadMessages.Count == 0)
             return null;
 

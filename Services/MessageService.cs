@@ -20,8 +20,71 @@ public static class MessageService
         }
 
         var targetState = registry.GetAgentState(to);
-        WriteMessage(registry, sender!.Name, to, body, subject, targetState);
+        var messageId = DeliverInboxMessage(registry, sender!.Name, to, body, subject);
+
+        if (!string.IsNullOrEmpty(subject))
+        {
+            if (registry.RemoveReplyPendingMarker(sender.Name, subject))
+                Console.WriteLine($"  Reply obligation fulfilled for '{subject}'.");
+        }
+        else
+        {
+            var markers = registry.GetReplyPendingMarkers(sender.Name);
+            foreach (var marker in markers.Where(m => m.To.Equals(to, StringComparison.OrdinalIgnoreCase)))
+            {
+                registry.RemoveReplyPendingMarker(sender.Name, marker.Task);
+                Console.WriteLine($"  Reply obligation fulfilled for '{marker.Task}'.");
+            }
+        }
+
+        WarnOnSubjectMismatch(registry, to, subject, targetState);
+
+        Console.WriteLine($"Message sent to {to}.");
+        Console.WriteLine($"  Subject: {subject ?? "(none)"}");
         return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// Writes an inbox message file for programmatic delivery (bypasses ownership/active checks).
+    /// Used by system-initiated sends like reviewer verdict auto-routing.
+    /// </summary>
+    public static string DeliverInboxMessage(AgentRegistry registry, string fromName, string toName,
+        string body, string? subject)
+    {
+        var messageId = Guid.NewGuid().ToString("N")[..8];
+        var sanitizedSubject = PathUtils.SanitizeForFilename(subject ?? "general");
+
+        var inboxPath = Path.Combine(registry.GetAgentWorkspace(toName), "inbox");
+        Directory.CreateDirectory(inboxPath);
+
+        var filePath = Path.Combine(inboxPath, $"{messageId}-msg-{sanitizedSubject}.md");
+        var subjectYaml = !string.IsNullOrEmpty(subject) ? $"\nsubject: {subject}" : "";
+        var content = $"""
+            ---
+            id: {messageId}
+            type: message
+            from: {fromName}{subjectYaml}
+            received: {DateTime.UtcNow:o}
+            ---
+
+            # Message from {fromName}
+
+            ## Subject
+
+            {subject ?? "(none)"}
+
+            ## Body
+
+            {body}
+            """;
+
+        File.WriteAllText(filePath, content);
+
+        var targetState = registry.GetAgentState(toName);
+        if (targetState != null && targetState.Status == Models.AgentStatus.Working)
+            registry.AddUnreadMessage(toName, messageId);
+
+        return messageId;
     }
 
     private static string? ValidateSendRequest(AgentRegistry registry, Models.AgentState? sender,
@@ -72,10 +135,10 @@ public static class MessageService
         if (hasReplyPending)
             return null;
 
-        return BuildInactiveTargetMessage(registry, to, targetState, activeAgents, oversightAgents);
+        return BuildInactiveTargetMessage(registry, to, subject, targetState, activeAgents, oversightAgents);
     }
 
-    private static string BuildInactiveTargetMessage(AgentRegistry registry, string to,
+    private static string BuildInactiveTargetMessage(AgentRegistry registry, string to, string? subject,
         Models.AgentState? targetState, List<Models.AgentState> activeAgents, List<Models.AgentState> oversightAgents)
     {
         var sb = new System.Text.StringBuilder();
@@ -88,6 +151,20 @@ public static class MessageService
                 sb.AppendLine();
                 sb.AppendLine($"  {to} was dispatched by {dispatcher.Name} — try messaging them instead:");
                 sb.AppendLine($"    dydo msg --to {dispatcher.Name} --body \"...\"");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(subject))
+        {
+            var waiters = GetAgentsWaitingForSubject(registry, subject)
+                .Where(w => !w.Equals(to, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (waiters.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"  Agents waiting on subject '{subject}':");
+                foreach (var waiter in waiters)
+                    sb.AppendLine($"    {waiter}");
             }
         }
 
@@ -125,58 +202,36 @@ public static class MessageService
         return sb.ToString();
     }
 
-    private static void WriteMessage(AgentRegistry registry, string senderName, string to,
-        string body, string? subject, Models.AgentState? targetState)
+    private static List<string> GetAgentsWaitingForSubject(AgentRegistry registry, string subject)
     {
-        var messageId = Guid.NewGuid().ToString("N")[..8];
-        var sanitizedSubject = PathUtils.SanitizeForFilename(subject ?? "general");
-
-        var inboxPath = Path.Combine(registry.GetAgentWorkspace(to), "inbox");
-        Directory.CreateDirectory(inboxPath);
-
-        var filePath = Path.Combine(inboxPath, $"{messageId}-msg-{sanitizedSubject}.md");
-        var subjectYaml = !string.IsNullOrEmpty(subject) ? $"\nsubject: {subject}" : "";
-        var content = $"""
-            ---
-            id: {messageId}
-            type: message
-            from: {senderName}{subjectYaml}
-            received: {DateTime.UtcNow:o}
-            ---
-
-            # Message from {senderName}
-
-            ## Subject
-
-            {subject ?? "(none)"}
-
-            ## Body
-
-            {body}
-            """;
-
-        File.WriteAllText(filePath, content);
-
-        if (!string.IsNullOrEmpty(subject))
+        var waiters = new List<string>();
+        foreach (var name in registry.AgentNames)
         {
-            if (registry.RemoveReplyPendingMarker(senderName, subject))
-                Console.WriteLine($"  Reply obligation fulfilled for '{subject}'.");
+            if (registry.GetWaitMarkers(name).Any(m => m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)))
+                waiters.Add(name);
         }
-        else
-        {
-            // No subject: clear any reply-pending markers from sender to this target
-            var markers = registry.GetReplyPendingMarkers(senderName);
-            foreach (var marker in markers.Where(m => m.To.Equals(to, StringComparison.OrdinalIgnoreCase)))
-            {
-                registry.RemoveReplyPendingMarker(senderName, marker.Task);
-                Console.WriteLine($"  Reply obligation fulfilled for '{marker.Task}'.");
-            }
-        }
+        return waiters;
+    }
 
-        if (targetState != null && targetState.Status == Models.AgentStatus.Working)
-            registry.AddUnreadMessage(to, messageId);
+    private static void WarnOnSubjectMismatch(AgentRegistry registry, string to, string? subject,
+        Models.AgentState? targetState)
+    {
+        if (string.IsNullOrEmpty(subject)) return;
+        if (targetState?.Status != Models.AgentStatus.Working) return;
 
-        Console.WriteLine($"Message sent to {to}.");
-        Console.WriteLine($"  Subject: {subject ?? "(none)"}");
+        var waits = registry.GetWaitMarkers(to);
+        var specificWaits = waits.Where(m => !m.Task.StartsWith("_")).ToList();
+        if (specificWaits.Count == 0) return;
+
+        var hasGeneralWait = waits.Any(m => m.Task.StartsWith("_"));
+        if (hasGeneralWait) return;
+
+        if (specificWaits.Any(m => m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        var waitList = string.Join(", ", specificWaits.Select(m => $"'{m.Task}'"));
+        Console.Error.WriteLine(
+            $"Warning: Recipient {to} is waiting on {waitList}, not '{subject}'. " +
+            $"Message delivered, but their wait won't fire on this subject.");
     }
 }

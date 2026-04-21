@@ -121,9 +121,11 @@ public static class ReviewCommand
             Console.WriteLine("Task now awaits human approval");
             Console.WriteLine("Human can run: dydo task approve " + taskName);
 
-            // If reviewer is in a worktree, require merge dispatch before release
             if (agent != null)
             {
+                RouteVerdictMessages(registry, agent, taskName, notes);
+
+                // If reviewer is in a worktree, require merge dispatch before release
                 var workspace = registry.GetAgentWorkspace(agent.Name);
                 var worktreeMarker = Path.Combine(workspace, ".worktree");
                 Console.WriteLine($"  [review-debug] workspace={workspace}, worktreeMarker exists={File.Exists(worktreeMarker)}");
@@ -165,5 +167,51 @@ public static class ReviewCommand
         }
 
         return ExitCodes.Success;
+    }
+
+    private static void RouteVerdictMessages(AgentRegistry registry, Models.AgentState reviewer,
+        string taskName, string? notes)
+    {
+        if (string.IsNullOrEmpty(reviewer.DispatchedBy)) return;
+
+        var dispatcher = reviewer.DispatchedBy;
+        var baseBody = string.IsNullOrEmpty(notes)
+            ? $"Review passed for {taskName}."
+            : $"Review passed for {taskName}.\n\n{notes}";
+
+        MessageService.DeliverInboxMessage(registry, reviewer.Name, dispatcher, baseBody, taskName);
+        if (registry.RemoveReplyPendingMarker(reviewer.Name, taskName))
+            Console.WriteLine($"  Reply obligation fulfilled for '{taskName}'.");
+        Console.WriteLine($"  Verdict sent to {dispatcher}.");
+
+        var ancestor = FindNearestCanOrchestrateAncestor(registry, dispatcher);
+        if (string.IsNullOrEmpty(ancestor)) return;
+        if (ancestor.Equals(dispatcher, StringComparison.OrdinalIgnoreCase)) return;
+        if (ancestor.Equals(reviewer.Name, StringComparison.OrdinalIgnoreCase)) return;
+
+        var ccBody = string.IsNullOrEmpty(notes)
+            ? $"[CC] Review passed for {taskName} (code-writer: {dispatcher})."
+            : $"[CC] Review passed for {taskName} (code-writer: {dispatcher}).\n\n{notes}";
+        MessageService.DeliverInboxMessage(registry, reviewer.Name, ancestor, ccBody, taskName);
+        Console.WriteLine($"  CC'd orchestrator {ancestor}.");
+    }
+
+    private static string? FindNearestCanOrchestrateAncestor(AgentRegistry registry, string startAgent)
+    {
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var current = startAgent;
+        while (!string.IsNullOrEmpty(current) && visited.Add(current))
+        {
+            var state = registry.GetAgentState(current);
+            if (state == null) return null;
+            if (!string.IsNullOrEmpty(state.Role))
+            {
+                var def = registry.GetRoleDefinition(state.Role);
+                if (def?.CanOrchestrate == true)
+                    return current;
+            }
+            current = state.DispatchedBy ?? "";
+        }
+        return null;
     }
 }

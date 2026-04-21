@@ -689,17 +689,23 @@ public static class WorktreeCommand
     }
 
     /// <summary>
-    /// Shared teardown: preserve audit files, remove junctions, remove git worktree, delete zombie directory.
-    /// When mainRoot is provided, git commands run via -C mainRoot (needed when executing from a worktree context).
-    /// Branch deletion is intentionally excluded — callers handle it since FinalizeMerge uses mergeSource directly.
+    /// Shared teardown: preserve audit files, remove junctions, safely delete the worktree,
+    /// then clean up git's bookkeeping. When mainRoot is provided, git commands run via
+    /// -C mainRoot (needed when executing from a worktree context). Branch deletion is
+    /// intentionally excluded — callers handle it since FinalizeMerge uses mergeSource directly.
+    ///
+    /// The junction-safe delete runs BEFORE git worktree remove: issue #104 showed that
+    /// git's --force removal on Windows can follow reparse points into main-repo junction
+    /// targets (destroying agent workspaces). By wiping the directory ourselves first,
+    /// git's remove only has to tidy up metadata for a missing working tree.
     /// </summary>
     internal static void TeardownWorktree(string worktreePath, string? mainRoot = null)
     {
         PreserveAuditFiles(worktreePath);
         foreach (var sub in JunctionSubpaths)
             RemoveJunction(Path.Combine(worktreePath, sub));
-        RemoveGitWorktree(worktreePath, mainRoot);
         RemoveZombieDirectory(worktreePath);
+        RemoveGitWorktree(worktreePath, mainRoot);
     }
 
     internal static void RemoveJunction(string junctionPath)
@@ -726,8 +732,10 @@ public static class WorktreeCommand
 
     /// <summary>
     /// Recursively deletes a directory, safely handling junctions/symlinks at any depth.
-    /// Junctions are detected via <see cref="FileAttributes.ReparsePoint"/> and removed
-    /// without following into their target, preventing destruction of main repo files.
+    /// Junctions are detected via <see cref="FileAttributes.ReparsePoint"/> and unlinked
+    /// via <see cref="Directory.Delete(string, bool)"/> with recursive=false — the Win32
+    /// RemoveDirectory call removes a directory junction without touching its target.
+    /// This path does not shell out to cmd, so it is reliable even when cmd isn't on PATH.
     /// </summary>
     internal static void DeleteDirectoryJunctionSafe(string path)
     {
@@ -736,7 +744,10 @@ public static class WorktreeCommand
         foreach (var subDir in Directory.GetDirectories(path))
         {
             if ((File.GetAttributes(subDir) & FileAttributes.ReparsePoint) != 0)
-                RemoveJunction(subDir);
+            {
+                try { Directory.Delete(subDir, recursive: false); }
+                catch { RemoveJunction(subDir); }
+            }
             else
                 DeleteDirectoryJunctionSafe(subDir);
         }
@@ -918,9 +929,9 @@ public static class WorktreeCommand
 
         if (Directory.Exists(worktreesDir))
         {
-            var dirs = EnumerateLeafDirectories(worktreesDir);
-            foreach (var (worktreeId, dirPath) in dirs)
+            foreach (var dir in Directory.GetDirectories(worktreesDir))
             {
+                var worktreeId = Path.GetFileName(dir);
                 var refs = CountWorktreeReferences(registry, worktreeId);
                 if (refs > 0)
                 {
@@ -929,7 +940,8 @@ public static class WorktreeCommand
                 }
 
                 Console.WriteLine($"Pruning orphaned worktree: {worktreeId}");
-                TeardownWorktree(dirPath, mainRoot);
+                ReportStrandedWatchdogPid(dir);
+                TeardownWorktree(dir, mainRoot);
                 DeleteWorktreeBranch(worktreeId, mainRoot);
                 orphansRemoved++;
             }
@@ -979,24 +991,22 @@ public static class WorktreeCommand
         return cleaned;
     }
 
-    private static List<(string worktreeId, string path)> EnumerateLeafDirectories(string worktreesDir)
+    /// <summary>
+    /// Emits a warning when an orphan worktree still contains a watchdog.pid file.
+    /// Newer worktrees don't create this file inside the worktree — a stranded one
+    /// means a legacy or abnormally-exited watchdog. A live PID is surfaced to stderr
+    /// so the user can intervene; a dead PID is reported on stdout and swept by the
+    /// subsequent teardown.
+    /// </summary>
+    private static void ReportStrandedWatchdogPid(string worktreePath)
     {
-        var result = new List<(string, string)>();
-        CollectLeafDirectories(worktreesDir, worktreesDir, result);
-        return result;
-    }
+        var pidFile = Path.Combine(worktreePath, "dydo", "_system", ".local", "watchdog.pid");
+        if (!File.Exists(pidFile)) return;
 
-    private static void CollectLeafDirectories(string root, string current, List<(string, string)> result)
-    {
-        var subdirs = Directory.GetDirectories(current);
-        if (subdirs.Length == 0)
-        {
-            if (current == root) return;
-            var id = Path.GetRelativePath(root, current).Replace('\\', '/');
-            result.Add((id, current));
-            return;
-        }
-        foreach (var sub in subdirs)
-            CollectLeafDirectories(root, sub, result);
+        var pidStr = File.ReadAllText(pidFile).Trim();
+        if (int.TryParse(pidStr, out var pid) && ProcessUtils.IsProcessRunning(pid))
+            Console.Error.WriteLine($"WARNING: Stranded watchdog.pid at {pidFile} (pid {pid} still ALIVE — investigate before relying on prune)");
+        else
+            Console.WriteLine($"  Stranded watchdog.pid at {pidFile} (pid {pidStr}, dead — sweeping)");
     }
 }

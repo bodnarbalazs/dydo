@@ -3,9 +3,10 @@ id: 101
 area: understand
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-18
+resolved-date: 2026-04-20
 ---
 
 # Worktree-only auto-approve gating is undocumented in guard-system.md
@@ -33,4 +34,4 @@ Read `dydo/understand/guard-system.md` looking for an explanation of why Claude 
 
 ## Resolution
 
-(Filled when resolved)
+Added 'Auto-Approve JSON (Worktree-Only)' section to dydo/understand/guard-system.md documenting the IsWorktreeContext + EmitWorktreeAllowIfNeeded gate, why it exists, and user-visible behavior at worktree vs project root.

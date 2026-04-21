@@ -255,3 +255,53 @@
 {"ts":"2026-04-20T14:31:02.2592202Z","event":"Bash","tool":"bash","cmd":"git add \\\n  dydo/guides/troubleshooting.md \\\n  dydo/project/decisions/018-zombie-working-state-recov..."}
 {"ts":"2026-04-20T14:35:44.9216987Z","event":"Bash","tool":"bash","cmd":"git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nDocument zombie-Working recovery and file watchdog/auto-approve inquisi..."}
 {"ts":"2026-04-20T14:38:55.4951394Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5 2\u003E\u00261\necho \u0022---remaining uncommitted---\u0022\ngit status --short 2\u003E\u00261 | head -20"}
+{"ts":"2026-04-20T16:05:47.3083667Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261\necho \u0022---\u0022\nls dydo/_system/.local/worktrees/ 2\u003E\u00261\necho \u0022---\u0022\ngit branch -a | ..."}
+{"ts":"2026-04-20T16:06:42.5106784Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/ 2\u003E\u00261 | head -20"}
+{"ts":"2026-04-20T16:13:51.2421112Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261\necho \u0022---\u0022\nls dydo/_system/.local/worktrees/ 2\u003E\u00261"}
+{"ts":"2026-04-20T16:14:20.2576746Z","event":"Blocked","tool":"bash","cmd":"for agent in Adele Brian Charlie Dexter Emma Frank Grace Henry Iris Jack; do\n  for f in dydo/agents/...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-04-20T16:14:24.6089454Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Emma/.worktree dydo/agents/Emma/.worktree-path dydo/agents/Frank/.worktree dydo/agent..."}
+{"ts":"2026-04-20T16:14:30.0103832Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\.worktree","tool":"read"}
+{"ts":"2026-04-20T16:14:31.0347533Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Grace/.worktree dydo/agents/Grace/.worktree-path dydo/agents/Henry/.worktree dydo/age..."}
+{"ts":"2026-04-20T16:15:04.7194289Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261\necho \u0022---\u0022\nls dydo/_system/.local/worktrees/ 2\u003E\u00261"}
+{"ts":"2026-04-20T16:15:06.3341827Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/stale-dydo-processes-inquiry/dydo/_system/.local/watchdog.pid 2\u003E\u00261\n..."}
+{"ts":"2026-04-20T16:15:16.7576272Z","event":"Bash","tool":"bash","cmd":"tasklist //FI \u0022IMAGENAME eq dydo.exe\u0022 2\u003E\u00261"}
+{"ts":"2026-04-20T16:19:19.6002447Z","event":"Bash","tool":"bash","cmd":"ls dydo/project/issues/ 2\u003E\u00261 | head -20\necho \u0022---new ones---\u0022\nls -la dydo/project/issues/0001*.md dy..."}
+{"ts":"2026-04-20T16:19:30.5623195Z","event":"Bash","tool":"bash","cmd":"git log --oneline --name-only HEAD~1 HEAD | head -30\necho \u0022---\u0022\ngit status dydo/project/issues/ 2\u003E\u00261"}
+{"ts":"2026-04-20T16:19:51.1650258Z","event":"Bash","tool":"bash","cmd":"git restore dydo/project/issues/ 2\u003E\u00261\necho \u0022---\u0022\nls dydo/project/issues/ 2\u003E\u00261 | wc -l\necho \u0022---\u0022\nls ..."}
+{"ts":"2026-04-20T16:21:16.0547482Z","event":"Bash","tool":"bash","cmd":"git status --short 2\u003E\u00261 | head -50\necho \u0022---\u0022\nls dydo/project/inquisitions/ 2\u003E\u00261\necho \u0022---\u0022\nls dydo/..."}
+{"ts":"2026-04-20T16:21:29.5256125Z","event":"Bash","tool":"bash","cmd":"git restore dydo/project/inquisitions/ 2\u003E\u00261\necho \u0022---inquisitions after---\u0022\nls dydo/project/inquisit..."}
+{"ts":"2026-04-20T16:55:18.0614489Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-20T16:55:29.8231775Z","event":"Bash","tool":"bash","cmd":"git status --short dydo/agents/ 2\u003E\u00261 | head -40\necho \u0022---\u0022\ngit ls-files dydo/agents/ 2\u003E\u00261 | head -20"}
+{"ts":"2026-04-20T16:55:52.0093517Z","event":"Bash","tool":"bash","cmd":"git ls-files dydo/agents/ 2\u003E\u00261 | wc -l\necho \u0022---untracked search---\u0022\nls -la dydo/agents/ 2\u003E\u00261 | head..."}
+{"ts":"2026-04-20T16:55:59.9051038Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-20T16:56:00.889231Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Brian/ 2\u003E\u00261 | head -20"}
+{"ts":"2026-04-20T16:56:09.3972688Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/ 2\u003E\u00261"}
+{"ts":"2026-04-20T16:56:41.361785Z","event":"Bash","tool":"bash","cmd":"ls dydo/project/issues/ 2\u003E\u00261 | tail -20\necho \u0022---\u0022\nls dydo/project/issues/resolved/ 2\u003E\u00261 | head -20"}
+{"ts":"2026-04-20T16:56:52.2337808Z","event":"Blocked","path":"dydo/project/issues/0001-dydo-worktree-cleanup-does-not-clear-the-agent-s-worktree-marker-when-directory.md","tool":"bash","cmd":"rm dydo/project/issues/0001-dydo-worktree-cleanup-does-not-clear-the-agent-s-worktree-marker-when-di...","reason":"Agent Brian (orchestrator) cannot delete dydo/project/issues/0001-dydo-worktree-cleanup-does-not-clear-the-agent-s-worktree-marker-when-directory.md. "}
+{"ts":"2026-04-20T16:57:11.4728418Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/ 2\u003E\u00261 | wc -l\necho \u0022---\u0022\nls dydo/agents/ 2\u003E\u00261"}
+{"ts":"2026-04-20T17:34:57.1682159Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-watchdog-lifecycle-fixes.md","tool":"write"}
+{"ts":"2026-04-20T17:35:52.7173419Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-worktree-cleanup-hardening.md","tool":"write"}
+{"ts":"2026-04-20T17:36:45.9944188Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-guard-worktree-and-phantom-inbox.md","tool":"write"}
+{"ts":"2026-04-20T17:37:20.918934Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-reviewer-verdict-routing-dispatch.md","tool":"write"}
+{"ts":"2026-04-20T17:38:10.5132994Z","event":"Blocked","tool":"bash","cmd":"cat /c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/f26a20bb-744f-44...","reason":"Pending wait markers"}
+{"ts":"2026-04-20T17:55:08.3676017Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261","reason":"Pending wait markers"}
+{"ts":"2026-04-20T17:55:24.0706202Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\5d269423-msg-watchdog-lifecycle-fixes.md","tool":"read"}
+{"ts":"2026-04-20T17:56:19.2578328Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\e409c367-msg-guard-worktree-and-phantom-inbox.md","tool":"read"}
+{"ts":"2026-04-20T18:21:02.9200755Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\b6522cd4-msg-reviewer-verdict-routing.md","tool":"read"}
+{"ts":"2026-04-20T18:26:45.910406Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\9d8c2909-msg-worktree-cleanup-hardening.md","tool":"read"}
+{"ts":"2026-04-20T18:38:28.0726492Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\ce436c24-msg-guard-worktree-and-phantom-inbox.md","tool":"read"}
+{"ts":"2026-04-20T18:38:28.340779Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\b4a012c0-msg-worktree-cleanup-hardening.md","tool":"read"}
+{"ts":"2026-04-20T18:54:30.9637121Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\c7430dea-msg-reviewer-verdict-routing.md","tool":"read"}
+{"ts":"2026-04-20T19:20:03.031322Z","event":"Bash","tool":"bash","cmd":"git show --stat HEAD 2\u003E\u00261 | head -25\necho \u0022---uncommitted---\u0022\ngit status --short 2\u003E\u00261 | head -25"}
+{"ts":"2026-04-20T19:20:18.6950993Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/ 2\u003E\u00261\necho \u0022---archive---\u0022\nls dydo/agents/Adele/archive/inbox/ 2\u003E\u00261 | head -10"}
+{"ts":"2026-04-20T19:20:19.7991571Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\state.md","tool":"read"}
+{"ts":"2026-04-20T19:20:28.0069397Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Brian/archive/inbox/ 2\u003E\u00261 | grep -i watchdog 2\u003E\u00261\necho \u0022---\u0022\nls dydo/_system/audit/20..."}
+{"ts":"2026-04-20T19:20:29.2359341Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026","tool":"grep"}
+{"ts":"2026-04-20T19:20:34.2706731Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents","tool":"grep"}
+{"ts":"2026-04-20T19:20:57.0069008Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/audit/2026/*.events 2\u003E\u00261 | head -5"}
+{"ts":"2026-04-20T19:20:58.0630378Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026","tool":"grep"}
+{"ts":"2026-04-20T19:21:04.534327Z","event":"Bash","tool":"bash","cmd":"ls -la dydo/_system/audit/2026/01927b50-b547-4f4d-87a3-a3739e73ac05.events dydo/_system/audit/2026/0..."}
+{"ts":"2026-04-20T19:21:09.8792952Z","event":"Bash","tool":"bash","cmd":"ls -la dydo/_system/audit/2026/e2deb618-1c61-4736-9437-0a5e1499c688.events dydo/_system/audit/2026/9..."}
+{"ts":"2026-04-20T19:21:14.2950028Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026\\e2deb618-1c61-4736-9437-0a5e1499c688.events","tool":"read"}
+{"ts":"2026-04-20T19:21:18.860029Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026\\e2deb618-1c61-4736-9437-0a5e1499c688.events","tool":"read"}
+{"ts":"2026-04-20T19:39:30.8027352Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\a6772e5b-msg-watchdog-lifecycle-review.md","tool":"read"}

@@ -856,7 +856,7 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void Run_ExitsWhenAnchorProcessDies()
+    public async Task Run_ExitsWhenAnchorProcessDies()
     {
         using var anchor = StartDummyProcess();
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
@@ -867,15 +867,16 @@ public class WatchdogServiceTests : IDisposable
         Environment.CurrentDirectory = _testDir;
 
         var runTask = Task.Run(WatchdogService.Run);
-        Thread.Sleep(250); // Let the loop enter and read the anchor PID
+        await Task.Delay(250); // Let the loop enter and read the anchor PID
         anchor.Kill();
 
-        Assert.True(runTask.Wait(TimeSpan.FromSeconds(5)),
-            "Run did not exit within 5s of its anchor process being killed");
+        var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(runTask, completed);
+        await runTask;
     }
 
     [Fact]
-    public void Run_ExitsWhenCancellationRequested()
+    public async Task Run_ExitsWhenCancellationRequested()
     {
         using var longLived = StartDummyProcess();
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
@@ -886,16 +887,17 @@ public class WatchdogServiceTests : IDisposable
         Environment.CurrentDirectory = _testDir;
 
         var runTask = Task.Run(WatchdogService.Run);
-        Thread.Sleep(250);
+        await Task.Delay(250);
         WatchdogService.RequestShutdownForTests();
 
-        Assert.True(runTask.Wait(TimeSpan.FromSeconds(5)),
-            "Run did not exit within 5s of cancellation being requested");
+        var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(runTask, completed);
+        await runTask;
         longLived.Kill();
     }
 
     [Fact]
-    public void Run_DeletesPidFileOnExit()
+    public async Task Run_DeletesPidFileOnExit()
     {
         using var anchor = StartDummyProcess();
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
@@ -909,11 +911,12 @@ public class WatchdogServiceTests : IDisposable
         Environment.CurrentDirectory = _testDir;
 
         var runTask = Task.Run(WatchdogService.Run);
-        Thread.Sleep(250);
+        await Task.Delay(250);
         anchor.Kill();
-        runTask.Wait(TimeSpan.FromSeconds(5));
+        await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
 
         Assert.False(File.Exists(pidFile), "Run must delete watchdog.pid on exit");
+        await runTask;
     }
 
     #endregion

@@ -16,4 +16,5 @@ dydo/_system/.local/
 
 /DynaDocs.Tests/coverage/report
 /DynaDocs.Tests/coverage/results
+/DynaDocs.Tests/coverage/__pycache__/
 /DynaDocs.Tests/TestResults

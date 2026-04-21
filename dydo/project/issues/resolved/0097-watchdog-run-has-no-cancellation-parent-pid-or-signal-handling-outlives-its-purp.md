@@ -3,9 +3,10 @@ id: 97
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-18
+resolved-date: 2026-04-21
 ---
 
 # Watchdog Run() has no cancellation, parent-PID, or signal handling — outlives its purpose

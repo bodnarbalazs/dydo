@@ -3,9 +3,10 @@ id: 96
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-18
+resolved-date: 2026-04-21
 ---
 
 # FindDydoRoot resolves to worktree — spawns duplicate watchdog with worktree-scoped pid file

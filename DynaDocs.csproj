@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>1.3.5</Version>
+        <Version>1.3.6</Version>
         <Description>An AI orchestration and context-management framework for Claude Code.</Description>
         <Authors>Balazs Bodnar</Authors>
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
@@ -23,6 +23,12 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>dydo</ToolCommandName>
         <PackageId>dydo</PackageId>
+
+        <!-- Runtime rollforward: run on any .NET 10.x runtime regardless of the SDK patch
+             the tool was built with. Prevents users from being forced to upgrade .NET every
+             time we ship a build against a newer patch. -->
+        <RollForward>LatestMinor</RollForward>
+        <RuntimeFrameworkVersion>10.0.0</RuntimeFrameworkVersion>
 
         <!-- Native AOT publishing -->
         <PublishAot>true</PublishAot>

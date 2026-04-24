@@ -30,3 +30,9 @@
 {"ts":"2026-04-24T12:52:56.8392468Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -30"}
 {"ts":"2026-04-24T12:56:39.6783419Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | grep -E \u0022(FAIL|Failed|Error)\u0022 | head -20"}
 {"ts":"2026-04-24T12:56:44.8753403Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | grep -E \u0022FAIL|Failed\u0022 | head -20"}
+{"ts":"2026-04-24T13:15:52.049145Z","event":"Release","agent":"Adele"}
+{"ts":"2026-04-24T13:41:16.1027013Z","event":"Bash","tool":"bash","cmd":"dotnet tool list -g 2\u003E\u00261 | grep -i dydo; echo \u0022---\u0022; dotnet tool install -g dydo 2\u003E\u00261; echo \u0022---exit..."}
+{"ts":"2026-04-24T13:41:23.3851286Z","event":"Bash","tool":"bash","cmd":"curl -s https://api.nuget.org/v3-flatcontainer/dydo/index.json 2\u003E\u00261"}
+{"ts":"2026-04-24T13:41:32.2163876Z","event":"Bash","tool":"bash","cmd":"dotnet tool update -g dydo 2\u003E\u00261; echo \u0022---\u0022; dotnet tool list -g | grep -i dydo"}
+{"ts":"2026-04-24T13:41:49.6095175Z","event":"Bash","tool":"bash","cmd":"dotnet nuget locals http-cache --clear 2\u003E\u00261 | tail -3; echo \u0022---\u0022; dotnet tool update -g dydo --vers..."}
+{"ts":"2026-04-24T13:42:29.0066526Z","event":"Bash","tool":"bash","cmd":"dotnet tool update -g dydo 2\u003E\u00261; echo \u0022---\u0022; dotnet tool list -g | grep -i dydo"}

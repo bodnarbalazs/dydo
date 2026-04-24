@@ -1,10 +1,10 @@
 ---
 area: general
 name: investigate-worktree-race
-status: review-pending
+status: human-reviewed
 created: 2026-04-24T14:41:12.0347171Z
 assigned: Adele
-updated: 2026-04-24T15:34:12.9461053Z
+updated: 2026-04-24T17:07:31.9713578Z
 ---
 
 # Task: investigate-worktree-race
@@ -78,3 +78,13 @@ User saw PowerShell windows fail to launch with `error 2147942667 (0x8007010b)` 
 
 - Separate auto-close regression from commit `def1fa4` — being handled on its own task (`fix-watchdog-anchor-regression`). Do NOT try to fix it as part of this review.
 - Broader refactor of worktree lifecycle reference tracking.
+
+
+## Code Review
+
+- Reviewed by: Dexter
+- Date: 2026-04-24 17:27
+- Result: PASSED
+- Notes: Second-round review PASS. Charlie's fixes address both first-round findings: test now pins the refs>0 branch via Assert.Contains('still referencing', stdout), and the final log line ('branch deleted') is true in both paths. Full suite 3781/3781 green; gap_check 136/136 modules pass. Original FinalizeMerge reorder + CountWorktreeReferences gate + TerminalLauncher DirectoryNotFoundException pre-check all intact. Report: dydo/agents/Dexter/review-investigate-worktree-race.md
+
+Awaiting human approval.

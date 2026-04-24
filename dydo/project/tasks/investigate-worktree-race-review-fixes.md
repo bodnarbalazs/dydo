@@ -1,9 +1,10 @@
 ---
 area: general
 name: investigate-worktree-race-review-fixes
-status: pending
+status: review-pending
 created: 2026-04-24T16:37:21.2080742Z
 assigned: Brian
+updated: 2026-04-24T17:05:02.0948057Z
 ---
 
 # Task: investigate-worktree-race-review-fixes
@@ -74,4 +75,22 @@ Message orchestrator Brian with a concise status and release. Brian will dispatc
 
 ## Review Summary
 
-(Pending)
+Second-round review of investigate-worktree-race-review-fixes.
+
+Charlie (code-writer) addressed the two reviewer findings from Brian's first-round FAIL:
+
+Fix 1 — DynaDocs.Tests/Commands/WorktreeCommandTests.cs :: Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences
+- Added File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath) to mirror Services/DispatchService.cs :: InheritWorktree dispatch-time state.
+- Switched ExecuteMerge call to CaptureAll(...) and added Assert.Contains("still referencing", stdout) to pin the CountWorktreeReferences refs>0 branch (FinalizeMerge:913).
+
+Fix 2 — Commands/WorktreeCommand.cs:924
+- Reworded "cleaned up." to "branch deleted." — true in both teardown and skip-teardown paths.
+
+Untouched per the brief: FinalizeMerge reorder, CountWorktreeReferences, TerminalLauncher + its test, WatchdogService (separate task), version bumps.
+
+Verification:
+- run_tests.py --filter WorktreeCommandTests: 133/133.
+- run_tests.py full: 3781/3781.
+- gap_check.py: exit 0, 136/136 modules at tier.
+
+Prior review: dydo/agents/Brian/archive/20260424-163706/review-investigate-worktree-race.md.

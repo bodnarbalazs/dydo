@@ -476,6 +476,29 @@ public class RoleConstraintEvaluatorTests
     }
 
     [Fact]
+    public void CanDispatch_AllowsWhenDispatchedByTestWriter()
+    {
+        // Test-writer → reviewer → code-writer-merger is the standard merge-back
+        // chain for test-writer tasks (e.g. coverage slices). Without test-writer
+        // in the allowlist, the reviewer cannot dispatch the merger and the
+        // .merge-source marker never lands in the merger's workspace.
+        var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var reviewerDef = baseRoles.Single(r => r.Name == "reviewer");
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = reviewerDef
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "test-writer";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => state);
+
+        Assert.True(evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out _));
+    }
+
+    [Fact]
     public void CanDispatch_MessageSubstitution()
     {
         var roles = new Dictionary<string, RoleDefinition>

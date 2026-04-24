@@ -59,9 +59,9 @@ public class RoleDefinitionService : IRoleDefinitionService
                     {
                         Type = "dispatch-restriction",
                         TargetRole = "code-writer",
-                        RequiredRoles = ["code-writer", "inquisitor"],
+                        RequiredRoles = ["code-writer", "inquisitor", "test-writer"],
                         OnlyWhenDispatched = true,
-                        Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer or inquisitor. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
+                        Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer, inquisitor, or test-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
                     }
                 ],
                 ConditionalMustReads =

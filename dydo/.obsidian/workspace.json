@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "guides/getting-started.md",
+                "file": "project/v1.3-release.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "getting-started"
+              "title": "v1.3-release"
             }
           }
         ]
@@ -185,6 +185,7 @@
   },
   "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
+    "guides/getting-started.md",
     "_assets/dydo-demo-2x-web-small.mp4",
     "_assets/dydo-demo-2x-web.mp4",
     "_assets/dydo-demo-2x.mp4",
@@ -220,7 +221,6 @@
     "_system/audit/2026/2026-04-11-1749a438-a523-4da7-847f-bcc42151b5c3.json",
     "agents/Emma/modes",
     "_system/audit/2026/2026-04-11-ac4c160d-f6b8-4bb6-b5b4-2252030fa748.json",
-    "_system/audit/2026/2026-04-11-c2e6fd41-6224-43be-bfbb-83e64acfd821.json",
     "_assets/dydo_diagram_complex_workflow.svg",
     "_assets/dydo_diagram_simple_workflow.svg"
   ]

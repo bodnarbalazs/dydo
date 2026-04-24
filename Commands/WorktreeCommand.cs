@@ -896,20 +896,32 @@ public static class WorktreeCommand
             : mergeSource;
         var worktreeId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
 
+        // Clear merger's own markers first so its .worktree-hold is not counted
+        // as a reference below.
+        RemoveAllMarkers(workspace);
+
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
-            TeardownWorktree(worktreePath, mainRoot);
+        {
+            var remainingRefs = CountWorktreeReferences(registry, worktreeId);
+            if (remainingRefs == 0)
+            {
+                TeardownWorktree(worktreePath, mainRoot);
+            }
+            else
+            {
+                Console.WriteLine($"Worktree {worktreeId}: {remainingRefs} agent(s) still referencing — directory kept; the last cleanup will remove it.");
+            }
+        }
 
-        // Prune stale worktree references after teardown
+        // Prune stale worktree references (no-op if the directory is still present).
         try { RunProcess("git", $"-C \"{mainRoot}\" worktree prune"); }
         catch { /* best-effort */ }
 
         try { RunProcess("git", $"-C \"{mainRoot}\" branch -D -- {mergeSource}"); }
         catch { Console.Error.WriteLine($"WARNING: Failed to delete branch {mergeSource}"); }
 
-        RemoveAllMarkers(workspace);
-
-        Console.WriteLine($"Merge finalized. Worktree {worktreeId} cleaned up.");
+        Console.WriteLine($"Merge finalized. Worktree {worktreeId} branch deleted.");
         return ExitCodes.Success;
     }
 

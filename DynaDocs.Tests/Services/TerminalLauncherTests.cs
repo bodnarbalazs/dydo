@@ -2404,6 +2404,25 @@ public class TerminalLauncherTests
         Assert.Equal(0, pid);
     }
 
+    [Fact]
+    public void Launch_WorkingDirectoryMissing_DoesNotStartProcess()
+    {
+        // Guards against ERROR_DIRECTORY (0x8007010b) when a queued dispatch's
+        // worktree path is torn down (e.g. by FinalizeMerge) before the terminal
+        // actually launches — the raw Process.Start call would otherwise fail
+        // with an unactionable "Could not access starting directory" message.
+        var recorder = new RecordingProcessStarter();
+        var launcher = new TerminalLauncher(recorder);
+
+        var missing = Path.Combine(Path.GetTempPath(),
+            "dydo-missing-" + Guid.NewGuid().ToString("N"));
+
+        var pid = launcher.Launch("TestAgent", workingDirectory: missing);
+
+        Assert.Equal(0, pid);
+        Assert.Empty(recorder.Started);
+    }
+
     #endregion
 }
 

@@ -1,0 +1,37 @@
+{"ts":"2026-04-24T15:34:21.1252554Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md","tool":"read"}
+{"ts":"2026-04-24T15:34:30.6460813Z","event":"Claim","agent":"Brian"}
+{"ts":"2026-04-24T15:34:36.5258622Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\668d15b9-investigate-worktree-race.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-24T15:34:44.2866422Z","event":"Role","role":"reviewer","task":"investigate-worktree-race"}
+{"ts":"2026-04-24T15:34:50.3826539Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-04-24T15:34:54.7138446Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-24T15:34:59.2152854Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-24T15:35:02.8951066Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-24T15:35:07.1815948Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\668d15b9-investigate-worktree-race.md","tool":"read"}
+{"ts":"2026-04-24T15:35:10.1415458Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\investigate-worktree-race.md","tool":"read"}
+{"ts":"2026-04-24T15:35:13.76387Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\plan-investigate-worktree-race.md","tool":"read"}
+{"ts":"2026-04-24T15:35:18.4021462Z","event":"Bash","tool":"bash","cmd":"git diff --stat"}
+{"ts":"2026-04-24T15:35:21.3875553Z","event":"Bash","tool":"bash","cmd":"git diff Commands/WorktreeCommand.cs Services/TerminalLauncher.cs"}
+{"ts":"2026-04-24T15:35:25.0510578Z","event":"Bash","tool":"bash","cmd":"git diff DynaDocs.Tests/Commands/WorktreeCommandTests.cs DynaDocs.Tests/Services/TerminalLauncherTes..."}
+{"ts":"2026-04-24T15:35:31.4108057Z","event":"Bash","tool":"bash","cmd":"git diff DynaDocs.csproj npm/package.json"}
+{"ts":"2026-04-24T15:35:35.8968185Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:35:41.2724118Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:35:48.8935893Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"grep"}
+{"ts":"2026-04-24T15:35:53.0283592Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:36:08.8044656Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs","tool":"grep"}
+{"ts":"2026-04-24T15:36:13.3961996Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs","tool":"read"}
+{"ts":"2026-04-24T15:36:29.3604227Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"grep"}
+{"ts":"2026-04-24T15:36:32.582825Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:36:40.5162487Z","event":"Bash","tool":"bash","cmd":"git show HEAD:Commands/WorktreeCommand.cs | sed -n \u0027890,930p\u0027"}
+{"ts":"2026-04-24T15:36:46.4872433Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"grep"}
+{"ts":"2026-04-24T15:36:49.8863655Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:36:53.3987413Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"grep"}
+{"ts":"2026-04-24T15:36:58.4646107Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:37:12.2783051Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs","tool":"grep"}
+{"ts":"2026-04-24T15:37:21.1471955Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs","tool":"read"}
+{"ts":"2026-04-24T15:37:40.690143Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs","tool":"read"}
+{"ts":"2026-04-24T15:38:04.6780966Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"read"}
+{"ts":"2026-04-24T15:38:14.4475911Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"grep"}
+{"ts":"2026-04-24T15:38:23.0749758Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py"}
+{"ts":"2026-04-24T15:45:44.1417132Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-24T15:46:38.9186345Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\review-investigate-worktree-race.md","tool":"write"}
+{"ts":"2026-04-24T16:21:50.706289Z","event":"Release","agent":"Brian"}

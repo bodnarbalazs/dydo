@@ -168,6 +168,13 @@ public class TerminalLauncher
     {
         try
         {
+            // A queued dispatch can outlive its worktree (e.g. a merger finalized
+            // while the dispatch was waiting). Bail before Process.Start so the
+            // target doesn't crash on ERROR_DIRECTORY (0x8007010b).
+            if (workingDirectory != null && !Directory.Exists(workingDirectory))
+                throw new DirectoryNotFoundException(
+                    $"Working directory no longer exists: {workingDirectory}");
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

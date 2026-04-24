@@ -114,6 +114,13 @@ public static class WatchdogService
                 WorkingDirectory = workingDirectory ?? ""
             };
 
+            // Resolve the anchor here (in the still-alive dispatcher) rather than inside the
+            // watchdog — its immediate parent is this short-lived dispatcher, so walking from
+            // the watchdog would anchor on a dead PID. Pass the claude-session PID via env var.
+            var anchor = ProcessUtils.FindAncestorProcess("claude");
+            if (anchor.HasValue)
+                psi.Environment["DYDO_WATCHDOG_ANCHOR_PID"] = anchor.Value.ToString();
+
             var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
             if (proc == null)
             {
@@ -191,9 +198,12 @@ public static class WatchdogService
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         Console.CancelKeyPress += OnCancelKeyPress;
 
-        var anchorPid = GetParentPidOverride != null
+        // Anchor precedence: test override > env var set by dispatcher > none.
+        // Never fall back to GetParentPid(Environment.ProcessId) — the watchdog's real parent
+        // is the short-lived dispatcher, which dies within seconds and falsely trips the exit.
+        int? anchorPid = GetParentPidOverride != null
             ? GetParentPidOverride()
-            : ProcessUtils.GetParentPid(Environment.ProcessId);
+            : int.TryParse(Environment.GetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID"), out var envPid) ? envPid : null;
         var pollInterval = PollIntervalOverride ?? TimeSpan.FromSeconds(10);
 
         try

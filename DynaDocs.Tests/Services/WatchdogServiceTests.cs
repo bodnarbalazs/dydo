@@ -28,6 +28,8 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.PollIntervalOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
         ProcessUtils.IsProcessRunningOverride = null;
+        ProcessUtils.FindAncestorProcessOverride = null;
+        Environment.SetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID", null);
         if (Directory.Exists(_testDir))
         {
             for (var i = 0; i < 3; i++)
@@ -916,6 +918,46 @@ public class WatchdogServiceTests : IDisposable
         await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
 
         Assert.False(File.Exists(pidFile), "Run must delete watchdog.pid on exit");
+        await runTask;
+    }
+
+    [Fact]
+    public void EnsureRunning_PassesClaudeAncestorPidToChildViaEnv()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        ProcessStartInfo? capturedPsi = null;
+        WatchdogService.StartProcessOverride = psi => { capturedPsi = psi; return null; };
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 99999;
+
+        WatchdogService.EnsureRunning(_testDir);
+
+        Assert.NotNull(capturedPsi);
+        Assert.True(capturedPsi.Environment.TryGetValue("DYDO_WATCHDOG_ANCHOR_PID", out var envValue));
+        Assert.Equal("99999", envValue);
+    }
+
+    [Fact]
+    public async Task Run_ReadsAnchorPidFromEnvironmentWhenOverrideNull_DoesNotFallBackToParentPid()
+    {
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        Environment.SetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID", anchor.Id.ToString());
+        WatchdogService.GetParentPidOverride = null;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        await Task.Delay(250);
+        Assert.False(runTask.IsCompleted);
+
+        anchor.Kill();
+
+        var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(runTask, completed);
         await runTask;
     }
 

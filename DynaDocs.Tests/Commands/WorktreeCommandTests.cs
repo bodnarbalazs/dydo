@@ -446,6 +446,60 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences()
+    {
+        // Reproduces the race behind ERROR_DIRECTORY (0x8007010b) on queued
+        // inheriting-worktree dispatches: FinalizeMerge used to tear down the
+        // directory regardless of other agents still holding .worktree.
+        var worktreeId = "Adele-20260316";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+        SetupMergeAgent("Adele", "main", $"worktree/{worktreeId}");
+
+        var adeleWs = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-hold"), worktreeId);
+        File.WriteAllText(Path.Combine(adeleWs, ".worktree-path"), worktreePath);
+
+        // Brian still references the worktree (e.g. inheriting dispatch queued
+        // behind Adele's merger). InheritWorktree wrote both .worktree and
+        // .worktree-path to his workspace at dispatch time; mirror that so
+        // ResolveWorktreePath returns a directory and the reference-count
+        // branch in FinalizeMerge actually runs.
+        var brianWs = _registry.GetAgentWorkspace("Brian");
+        Directory.CreateDirectory(brianWs);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree"), worktreeId);
+        File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        try
+        {
+            var (_, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(true, _registry));
+
+            Assert.True(Directory.Exists(worktreePath),
+                "Worktree directory must be preserved while other agents reference it.");
+            Assert.True(File.Exists(Path.Combine(brianWs, ".worktree")),
+                "Referring agent's .worktree marker must not be touched by FinalizeMerge.");
+
+            Assert.False(File.Exists(Path.Combine(adeleWs, ".merge-source")));
+            Assert.False(File.Exists(Path.Combine(adeleWs, ".worktree-hold")));
+
+            Assert.Contains(calls, c => c.FileName == "git" &&
+                c.Arguments.Contains("branch -D -- worktree/" + worktreeId));
+            Assert.DoesNotContain(calls, c => c.FileName == "git" &&
+                c.Arguments.Contains("worktree remove"));
+
+            // Pin the refs>0 branch: this informational line is only emitted
+            // when CountWorktreeReferences sees a non-zero count.
+            Assert.Contains("still referencing", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
     public void Merge_NoAgentClaimed_ReturnsError()
     {
         // Set up session context but no agent claimed for it

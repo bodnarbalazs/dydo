@@ -3,9 +3,10 @@ id: 116
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: review
 date: 2026-04-26
+resolved-date: 2026-04-26
 ---
 
 # WatchdogServiceTests.PollAndCleanup_SkipsWorkingAgents flakes when sibling PathUtilsTests Dispose deletes the captured CWD
@@ -60,4 +61,4 @@ Do both for belt-and-braces. Add a regression test (or just a comment in `Watchd
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in commit 3654ec6 (Frank). WatchdogServiceTests no longer captures Environment.CurrentDirectory; uses test-context working directory explicitly. PathUtilsTests.Dispose parks on Path.GetTempPath() with justified try/catch for cleanup. Rationale comments cite the issue. 3803/3803 tests clean on forced rerun; gap_check 136/136. Reviewed by Charlie.

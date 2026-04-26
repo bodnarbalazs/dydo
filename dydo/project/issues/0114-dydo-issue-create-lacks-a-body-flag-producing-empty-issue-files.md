@@ -1,14 +1,14 @@
 ---
-id: 89
-area: backend
+id: 3
+area: platform
 type: issue
-severity: low
+severity: medium
 status: open
-found-by: inquisition
-date: 2026-04-10
+found-by: manual
+date: 2026-04-20
 ---
 
-# Unescaped mainProjectRoot in inherited-worktree cleanup cd on Linux/Mac
+# dydo issue create lacks a --body flag, producing empty issue files
 
 ## Description
 

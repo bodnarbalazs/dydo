@@ -3,9 +3,10 @@ id: 115
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 date: 2026-04-26
+resolved-date: 2026-04-26
 ---
 
 # dydo issue create assigns IDs that collide with historical resolved issues; resolve subcommand then refuses with "already resolved"
@@ -63,4 +64,4 @@ Add a regression test that creates an issue, resolves it, then creates another â
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in commit 3654ec6 (Frank). dydo issue create now scans dydo/project/issues/**/*.md recursively when computing next-free ID. dydo issue resolve uses open-dir-wins logic with a warning when both open and resolved files share an ID; 'already resolved' only fires when the open file is genuinely absent. Integration test asserts exact behavior. Reviewed by Charlie.

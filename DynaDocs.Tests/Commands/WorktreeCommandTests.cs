@@ -2460,7 +2460,7 @@ public class WorktreeCommandTests : IDisposable
         try
         {
             WorktreeCommand.ExecuteMerge(false, _registry);
-            var mergeCall = calls.Single(c => c.FileName == "git" && c.Arguments.Contains("merge"));
+            var mergeCall = calls.Single(c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit"));
             Assert.Contains("merge --no-edit -- worktree/Adele-20260316", mergeCall.Arguments);
         }
         finally
@@ -2934,6 +2934,299 @@ public class WorktreeCommandTests : IDisposable
             try { File.Delete(file); } catch { }
         }
         try { Directory.Delete(path); } catch { }
+    }
+
+    #endregion
+
+    #region Issue #0107 — self-merge guard, ancestor-gated cleanup, consolidated finalize output
+
+    [Fact]
+    public void Merge_NoOpMerge_AncestorCheckFails_PreservesMarkers_AndPointsAtMainRepoRecovery()
+    {
+        // Repro: `git merge` returned 0 ("Already up to date") but base never gained
+        // the source's commits — the bug-shaped self-merge from inside the worktree.
+        // FinalizeMerge must refuse to consume markers and must surface a recovery hint
+        // that does NOT involve the manual `git merge --no-ff` path (now blocked by
+        // the new dydo guard described in Brian's 2026-04-26 post-mortem note).
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-hold"), "Adele-20260316");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0; // git merge returns 0 (no-op success)
+        };
+        WorktreeCommand.RunProcessSilentOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            // The ancestor check is the only thing that distinguishes a real merge
+            // from a no-op self-merge. Force it to fail.
+            if (a.Contains("merge-base --is-ancestor")) return 1;
+            return 0;
+        };
+        MockMergeSafetyChecks();
+        try
+        {
+            var (exitCode, stdout, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.True(File.Exists(Path.Combine(workspace, ".merge-source")),
+                ".merge-source must be preserved when the merge did not advance base.");
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree-base")),
+                ".worktree-base must be preserved when the merge did not advance base.");
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree-hold")),
+                ".worktree-hold must be preserved when the merge did not advance base.");
+
+            Assert.Contains("does not contain", stderr);
+            Assert.Contains("dydo worktree merge", stderr);
+            Assert.DoesNotContain("Merge finalized", stdout);
+
+            // The cleanup commands must not have run.
+            Assert.DoesNotContain(calls, c => c.FileName == "git" &&
+                c.Arguments.Contains("branch -D -- worktree/Adele-20260316"));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_RealAdvance_AncestorCheckPasses_CleansMarkers_AndFinalizes()
+    {
+        // Inverse of the previous test: when the merge actually advances base
+        // (merge-base --is-ancestor returns 0), cleanup must run to completion.
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        WorktreeCommand.RunProcessSilentOverride = (_, _) => 0;
+        MockMergeSafetyChecks();
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.False(File.Exists(Path.Combine(workspace, ".merge-source")));
+            Assert.False(File.Exists(Path.Combine(workspace, ".worktree-base")));
+            Assert.Contains("Merge finalized", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_BranchDeleteFails_DoesNotPrintFinalizedSuccess_AndPrintsRecoveryHint()
+    {
+        // The contradictory pair "Merge finalized" + "cannot delete branch ... used by
+        // worktree" must not co-occur. When `git branch -D` fails (worktree still pinned,
+        // branch checked out elsewhere, etc.), the success line must be replaced with an
+        // accurate partial-state message that gives the user a concrete next command.
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        WorktreeCommand.RunProcessSilentOverride = (f, a) =>
+        {
+            if (a.Contains("merge-base --is-ancestor")) return 0; // merge advanced base
+            if (a.Contains("branch -D")) return 1;                // but cleanup failed
+            return 0;
+        };
+        MockMergeSafetyChecks();
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.DoesNotContain("Merge finalized", stdout);
+            Assert.Contains("could not be deleted", stdout);
+            Assert.Contains("branch -D -- worktree/Adele-20260316", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_NothingToMerge_AheadCheckFires_NotAncestorRetryPath()
+    {
+        // Distinguishes the "true nothing to merge" case (base already contains source)
+        // from the self-merge case. The pre-merge safety check should catch
+        // "0 commits ahead" before the merge runs — the agent must NOT reach the new
+        // ancestor-gated retry-error path, which would mislead them about cause.
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        WorktreeCommand.RunProcessSilentOverride = (_, _) => 1; // would fire ancestor retry path if reached
+        MockMergeSafetyChecks(branchAdvanced: false, cleanTree: true);
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("0 commits ahead", stderr);
+            Assert.DoesNotContain("does not contain", stderr);
+            Assert.DoesNotContain("merge call did not advance", stderr);
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_ConflictDetected_PreservesMarkersForFinalizeRetry()
+    {
+        // Genuine conflict — `git merge` exits non-zero. ExecuteMerge must return early
+        // BEFORE the cleanup path so that the agent can resolve, commit, and run
+        // `dydo worktree merge --finalize`. Marker preservation is implicit (we never
+        // reach FinalizeMerge), but it's load-bearing for the user-facing recovery, so
+        // pin it here as a regression test.
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-hold"), "Adele-20260316");
+
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, a) =>
+            a.Contains("merge --no-edit") ? 1 : 0;
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessSilentOverride = (_, _) => 0;
+        MockMergeSafetyChecks();
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("Merge conflicts detected", stdout);
+            Assert.Contains("dydo worktree merge --finalize", stdout);
+
+            Assert.True(File.Exists(Path.Combine(workspace, ".merge-source")));
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree-base")));
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree-hold")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_FromInsideWorktreeCwd_NoWorktreeRootMarker_StillRehomesToMainRoot()
+    {
+        // The original 0107 bug shape: agent's CWD is inside the source worktree, and
+        // the workspace lacks `.worktree-root`. The old fallback used FindProjectRoot,
+        // which from a worktree CWD returns the worktree itself (dydo.json lives there
+        // too) — and `git -C <worktree> merge worktree/<id>` is a no-op self-merge.
+        // FindMainProjectRoot must walk up out of the worktree, so the merge gets
+        // rehomed to the real main root.
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.Delete(Path.Combine(workspace, ".worktree-root"));
+
+        var fakeMainRoot = Path.Combine(_testDir, "fake-project-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(fakeMainRoot);
+        File.WriteAllText(Path.Combine(fakeMainRoot, "dydo.json"), "{}");
+        var fakeWorktreeCwd = Path.Combine(fakeMainRoot, "dydo", "_system", ".local", "worktrees", "Adele-20260316");
+        Directory.CreateDirectory(fakeWorktreeCwd);
+        File.WriteAllText(Path.Combine(fakeWorktreeCwd, "dydo.json"), "{}");
+
+        var calls = new List<(string FileName, string Arguments)>();
+        WorktreeCommand.RunProcessOverride = (f, a) => calls.Add((f, a));
+        WorktreeCommand.RunProcessWithExitCodeOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        WorktreeCommand.RunProcessSilentOverride = (f, a) =>
+        {
+            calls.Add((f, a));
+            return 0;
+        };
+        MockMergeSafetyChecks();
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(fakeWorktreeCwd);
+
+            WorktreeCommand.ExecuteMerge(false, _registry);
+
+            var mergeCall = calls.Single(c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit"));
+            // FindMainProjectRoot returns the marker-derived path with forward slashes;
+            // git accepts both. Normalize before comparing.
+            var normalizedArgs = mergeCall.Arguments.Replace('\\', '/');
+            var normalizedMainRoot = fakeMainRoot.Replace('\\', '/');
+            var normalizedWorktreeCwd = fakeWorktreeCwd.Replace('\\', '/');
+            Assert.Contains($"-C \"{normalizedMainRoot}\"", normalizedArgs);
+            Assert.DoesNotContain($"-C \"{normalizedWorktreeCwd}\"", normalizedArgs);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Merge_WorktreeRootPointsAtAWorktree_RefusesWithClearError()
+    {
+        // Defensive: even if `.worktree-root` somehow contains a worktree path (corrupt
+        // dispatch chain, prior bug, manual edit), refuse rather than silently
+        // self-merging into nowhere. The error must point at restoring the marker.
+        SetupMergeAgent("Adele", "main", "worktree/Adele-20260316");
+        var workspace = _registry.GetAgentWorkspace("Adele");
+
+        var poisonedRoot = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", "Adele-20260316");
+        Directory.CreateDirectory(poisonedRoot);
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), poisonedRoot);
+
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessWithExitCodeOverride = (_, _) => 0;
+        WorktreeCommand.RunProcessSilentOverride = (_, _) => 0;
+        MockMergeSafetyChecks();
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("main project root", stderr);
+            Assert.Contains(".worktree-root", stderr);
+
+            Assert.True(File.Exists(Path.Combine(workspace, ".merge-source")),
+                ".merge-source must be preserved when mainRoot resolution fails.");
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessWithExitCodeOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessSilentOverride = null;
+        }
     }
 
     #endregion

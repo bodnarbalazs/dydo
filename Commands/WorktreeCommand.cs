@@ -14,6 +14,7 @@ public static class WorktreeCommand
     internal static Action<string, string>? RunProcessOverride;
     internal static Func<string, string, int>? RunProcessWithExitCodeOverride;
     internal static Func<string, string, (int ExitCode, string Stdout)>? RunProcessCaptureOverride;
+    internal static Func<string, string, int>? RunProcessSilentOverride;
 
     public static Command Create()
     {
@@ -604,6 +605,49 @@ public static class WorktreeCommand
         return p?.ExitCode ?? 1;
     }
 
+    /// <summary>
+    /// Runs a process with stdout and stderr both swallowed, returning only the exit code.
+    /// Used by FinalizeMerge for git checks (merge-base --is-ancestor) and best-effort
+    /// cleanup (branch -D, worktree prune) where git's own stderr would otherwise bleed
+    /// contradictory messages into the user-facing output. Falls back through the existing
+    /// RunProcess override chain so tests that mock at the coarser level keep working.
+    /// </summary>
+    internal static int RunProcessSilent(string fileName, string arguments)
+    {
+        if (RunProcessSilentOverride != null)
+            return RunProcessSilentOverride(fileName, arguments);
+        if (RunProcessWithExitCodeOverride != null)
+            return RunProcessWithExitCodeOverride(fileName, arguments);
+        if (RunProcessOverride != null)
+        {
+            RunProcessOverride(fileName, arguments);
+            return 0;
+        }
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        var p = Process.Start(psi);
+        if (p == null) return 1;
+        p.StandardInput.Close();
+        p.StandardOutput.ReadToEnd();
+        p.StandardError.ReadToEnd();
+        if (!p.WaitForExit(ProcessTimeoutMs))
+        {
+            try { p.Kill(); } catch { }
+            return 1;
+        }
+        return p.ExitCode;
+    }
+
     internal static (int ExitCode, string Stdout) RunProcessCapture(string fileName, string arguments)
     {
         if (RunProcessCaptureOverride != null)
@@ -849,19 +893,25 @@ public static class WorktreeCommand
         }
         var baseBranch = File.ReadAllText(basePath).Trim();
 
-        // Merge must run from the main repo via git -C, not from inside a worktree.
+        // Merge must run from the main repo via git -C, never from inside the source
+        // worktree (would self-merge: "git merge X" while HEAD is on X is a no-op).
+        // The .worktree-root marker is the authoritative pointer; the FindMainProjectRoot
+        // fallback walks up out of any worktree CWD when the marker is absent.
         var worktreeRootPath = Path.Combine(workspace, ".worktree-root");
         var mainRoot = File.Exists(worktreeRootPath)
             ? File.ReadAllText(worktreeRootPath).Trim()
-            : PathUtils.FindProjectRoot();
-        if (mainRoot == null)
+            : PathUtils.FindMainProjectRoot();
+        if (mainRoot == null || PathUtils.IsInsideWorktree(mainRoot))
         {
-            ConsoleOutput.WriteError("Cannot determine main project root. No .worktree-root marker and FindProjectRoot failed.");
+            ConsoleOutput.WriteError(
+                "Cannot determine main project root for merge. " +
+                "Run from the main repo, or restore the .worktree-root marker in your workspace " +
+                "pointing to the main project root (not a worktree directory).");
             return ExitCodes.ToolError;
         }
 
         if (finalize)
-            return FinalizeMerge(registry, agent.Name, workspace, mergeSource, mainRoot);
+            return FinalizeMerge(registry, agent.Name, workspace, mergeSource, baseBranch, mainRoot);
 
         if (!force)
         {
@@ -885,10 +935,10 @@ public static class WorktreeCommand
             return ExitCodes.ValidationErrors;
         }
 
-        return FinalizeMerge(registry, agent.Name, workspace, mergeSource, mainRoot);
+        return FinalizeMerge(registry, agent.Name, workspace, mergeSource, baseBranch, mainRoot);
     }
 
-    internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource, string mainRoot)
+    internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource, string baseBranch, string mainRoot)
     {
         // Extract worktreeId from merge-source (e.g. "worktree/domain-A.+.auth" -> "domain-A/auth")
         var branchSuffix = mergeSource.StartsWith("worktree/")
@@ -896,32 +946,55 @@ public static class WorktreeCommand
             : mergeSource;
         var worktreeId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
 
+        // Ancestor gate: only commit to cleanup if the merge actually advanced base.
+        // A no-op self-merge from inside the source worktree leaves base unchanged
+        // even though `git merge` returned 0 ("Already up to date") — the markers must
+        // survive so the agent can retry from the main repo. `git merge-base
+        // --is-ancestor X Y` exits 0 when X is reachable from Y, 1 otherwise.
+        var advancedExit = RunProcessSilent("git", $"-C \"{mainRoot}\" merge-base --is-ancestor {mergeSource} {baseBranch}");
+        if (advancedExit != 0)
+        {
+            ConsoleOutput.WriteError(
+                $"Cannot finalize merge: {baseBranch} does not contain {mergeSource}. " +
+                $"The merge call did not advance {baseBranch} (likely a self-merge from inside the source " +
+                $"worktree, or {baseBranch} has diverged). Markers preserved — re-run `dydo worktree merge` " +
+                $"from the main repo (or `cd {mainRoot}` first).");
+            return ExitCodes.ValidationErrors;
+        }
+
         // Clear merger's own markers first so its .worktree-hold is not counted
         // as a reference below.
         RemoveAllMarkers(workspace);
 
+        var refsRemaining = 0;
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
         {
-            var remainingRefs = CountWorktreeReferences(registry, worktreeId);
-            if (remainingRefs == 0)
-            {
+            refsRemaining = CountWorktreeReferences(registry, worktreeId);
+            if (refsRemaining == 0)
                 TeardownWorktree(worktreePath, mainRoot);
-            }
-            else
-            {
-                Console.WriteLine($"Worktree {worktreeId}: {remainingRefs} agent(s) still referencing — directory kept; the last cleanup will remove it.");
-            }
         }
 
         // Prune stale worktree references (no-op if the directory is still present).
-        try { RunProcess("git", $"-C \"{mainRoot}\" worktree prune"); }
-        catch { /* best-effort */ }
+        RunProcessSilent("git", $"-C \"{mainRoot}\" worktree prune");
 
-        try { RunProcess("git", $"-C \"{mainRoot}\" branch -D -- {mergeSource}"); }
-        catch { Console.Error.WriteLine($"WARNING: Failed to delete branch {mergeSource}"); }
+        var branchDeleteExit = RunProcessSilent("git", $"-C \"{mainRoot}\" branch -D -- {mergeSource}");
 
-        Console.WriteLine($"Merge finalized. Worktree {worktreeId} branch deleted.");
+        if (refsRemaining > 0)
+        {
+            Console.WriteLine($"Merge applied to {baseBranch}. Worktree {worktreeId}: {refsRemaining} agent(s) still referencing — directory and branch kept; the last cleanup will remove them.");
+            return ExitCodes.Success;
+        }
+
+        if (branchDeleteExit == 0)
+        {
+            Console.WriteLine($"Merge finalized. Worktree {worktreeId} branch deleted.");
+        }
+        else
+        {
+            Console.WriteLine($"Merge applied to {baseBranch}, but worktree branch {mergeSource} could not be deleted.");
+            Console.WriteLine($"Run `git -C \"{mainRoot}\" branch -D -- {mergeSource}` from outside the source worktree to clean up.");
+        }
         return ExitCodes.Success;
     }
 

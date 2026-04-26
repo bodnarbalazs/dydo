@@ -142,7 +142,7 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateModeFile_TestWriter_SkipsCodingStandards()
+    public void GenerateModeFile_TestWriter_IncludesCodingStandards()
     {
         var content = TemplateGenerator.GenerateModeFile("Adele", "test-writer");
 

@@ -252,3 +252,13 @@
 {"ts":"2026-04-26T19:35:04.6108585Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0115-dydo-issue-create-assigns-ids-that-collide-with-historical-resolved-issues-resol.md","tool":"write","lifted":true}
 {"ts":"2026-04-26T19:35:09.15623Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md","tool":"read"}
 {"ts":"2026-04-26T19:35:39.540346Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md","tool":"write","lifted":true}
+{"ts":"2026-04-26T19:44:59.4731783Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/audit/2026/2026-03-23-abc* 2\u003E\u00261; echo \u0022---\u0022; git tag --list | tail -10"}
+{"ts":"2026-04-26T19:45:04.6000325Z","event":"Blocked","path":"dydo/_system/audit/2026/2026-03-23-abc.json","tool":"bash","cmd":"cat dydo/_system/audit/2026/2026-03-23-abc.json 2\u003E\u00261 | head -10; echo \u0022---\u0022; rm dydo/_system/audit/2...","reason":"Agent Brian (orchestrator) cannot delete dydo/_system/audit/2026/2026-03-23-abc.json. "}
+{"ts":"2026-04-26T19:45:11.4669511Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\audit\\2026\\2026-03-23-abc.json","tool":"read"}
+{"ts":"2026-04-26T19:46:09.9507332Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-A2-cothink-worktree-reliability-redo.md","tool":"write"}
+{"ts":"2026-04-26T19:47:07.8035126Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-D-audit-subsystem-cleanup.md","tool":"write"}
+{"ts":"2026-04-26T19:47:34.1159776Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-E-role-perms-code-fixes.md","tool":"write"}
+{"ts":"2026-04-26T19:48:04.8941421Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-G-quick-fixes.md","tool":"write"}
+{"ts":"2026-04-26T19:48:41.3963472Z","event":"GuardLift","agent":"Brian"}
+{"ts":"2026-04-26T19:49:08.4519983Z","event":"GuardLift","agent":"Brian"}
+{"ts":"2026-04-26T19:49:16.5298542Z","event":"Bash","tool":"bash","cmd":"rm dydo/_system/audit/2026/2026-03-23-abc.json 2\u003E\u00261 \u0026\u0026 echo \u0022deleted\u0022 \u0026\u0026 ls dydo/_system/audit/2026/..."}

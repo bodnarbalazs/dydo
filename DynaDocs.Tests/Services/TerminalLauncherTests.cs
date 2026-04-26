@@ -2049,6 +2049,47 @@ public class TerminalLauncherTests
         Assert.Equal(plain, withNulls);
     }
 
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    public void GetLinuxArguments_InheritedWorktree_EscapesApostropheInMainProjectRoot(string terminal)
+    {
+        var args = TerminalLauncher.GetLinuxArguments(terminal, "Brian",
+            cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/home/o'connor/project");
+
+        // Bash single-quote escape: '/home/o'\''connor/project'
+        Assert.Contains(@"cd '/home/o'\''connor/project'", args);
+        Assert.DoesNotContain("cd '/home/o'connor/project'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_InheritedWorktree_EscapesApostropheInMainProjectRoot()
+    {
+        var args = TerminalLauncher.GetMacArguments("Brian",
+            cleanupWorktreeId: TestWorktreeId, mainProjectRoot: "/Users/o'connor/project");
+
+        Assert.Contains(@"cd '/Users/o'\''connor/project'", args);
+        Assert.DoesNotContain("cd '/Users/o'connor/project'", args);
+    }
+
+    [Fact]
+    public void BashSingleQuoteEscape_NoApostrophe_ReturnsInputUnchanged()
+    {
+        Assert.Equal("/home/user/project", TerminalLauncher.BashSingleQuoteEscape("/home/user/project"));
+    }
+
+    [Fact]
+    public void BashSingleQuoteEscape_SingleApostrophe_EscapesViaCloseInsertReopen()
+    {
+        Assert.Equal(@"o'\''connor", TerminalLauncher.BashSingleQuoteEscape("o'connor"));
+    }
+
+    [Fact]
+    public void BashSingleQuoteEscape_MultipleApostrophes_EscapesEach()
+    {
+        Assert.Equal(@"a'\''b'\''c", TerminalLauncher.BashSingleQuoteEscape("a'b'c"));
+    }
+
     #endregion
 
     #region Nested Worktree Tests

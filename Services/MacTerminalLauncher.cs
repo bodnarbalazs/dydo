@@ -24,7 +24,7 @@ public static class MacTerminalLauncher
         else if (cleanupWorktreeId != null && mainProjectRoot != null)
         {
             wtSetup = TerminalLauncher.WorktreeInheritedSetupScript(mainProjectRoot, workingDirectory);
-            wtCleanup = $"; cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
+            wtCleanup = $"; cd '{TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot)}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
         var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}";

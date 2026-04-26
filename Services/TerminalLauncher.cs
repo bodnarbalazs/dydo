@@ -89,13 +89,17 @@ public class TerminalLauncher
         new("xterm", (agentName, wd) => $"-e bash -c \"{CdPrefix(wd)}unset CLAUDECODE; claude '{agentName} --inbox'; printf '\\e[?1004l'; exec bash\""),
     ];
 
+    // Escape a value for safe interpolation inside a bash single-quoted string.
+    // Closes the quoted segment (`'`), inserts a literal apostrophe (`\'`), and reopens (`'`).
+    internal static string BashSingleQuoteEscape(string value) => value.Replace("'", "'\\''");
+
     internal static string WorktreeSetupScript(string worktreeId, string? mainProjectRoot = null)
     {
         // Worktree is already created by DispatchService.CreateGitWorktree() before terminal launch.
         // This script only cd's into it and sets up symlinks.
         if (mainProjectRoot != null)
         {
-            var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
+            var escapedRoot = BashSingleQuoteEscape(mainProjectRoot);
             return $"cd '{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}' && " +
                    WorktreeCommand.GenerateBashJunctionScript(escapedRoot, isVariable: false) +
                    $"(dydo worktree init-settings --main-root '{escapedRoot}' || echo 'WARNING: init-settings failed' >&2) && sleep 1 && ";
@@ -110,16 +114,16 @@ public class TerminalLauncher
     internal static string WorktreeInitSettingsScript(string? mainProjectRoot)
     {
         if (mainProjectRoot == null) return "";
-        var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
+        var escapedRoot = BashSingleQuoteEscape(mainProjectRoot);
         return $"(dydo worktree init-settings --main-root '{escapedRoot}' || echo 'WARNING: init-settings failed' >&2) && sleep 1 && ";
     }
 
     internal static string WorktreeInheritedSetupScript(string? mainProjectRoot, string? workingDirectory)
     {
         if (mainProjectRoot == null) return "";
-        var escapedRoot = mainProjectRoot.Replace("'", "'\\''");
+        var escapedRoot = BashSingleQuoteEscape(mainProjectRoot);
         var cdPrefix = workingDirectory != null
-            ? $"cd '{workingDirectory.Replace("'", "'\\''")}' && "
+            ? $"cd '{BashSingleQuoteEscape(workingDirectory)}' && "
             : "";
         return $"{cdPrefix}(dydo worktree init-settings --main-root '{escapedRoot}' || echo 'WARNING: init-settings failed' >&2) && sleep 1 && ";
     }

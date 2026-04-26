@@ -21,7 +21,7 @@ public static class LinuxTerminalLauncher
         else if (cleanupWorktreeId != null && mainProjectRoot != null)
         {
             args = args.Replace("unset CLAUDECODE", TerminalLauncher.WorktreeInheritedSetupScript(mainProjectRoot, workingDirectory) + "unset CLAUDECODE");
-            var cleanup = $"cd '{mainProjectRoot}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
+            var cleanup = $"cd '{TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot)}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
             args = args.Replace("exec bash", cleanup + "; exec bash");
         }
 

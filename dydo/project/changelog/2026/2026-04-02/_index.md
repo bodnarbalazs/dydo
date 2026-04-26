@@ -11,36 +11,36 @@ Index of 2026-04-02 documentation.
 
 ## Contents
 
-- [Task: check-ci-failures](./check-ci-failures.md) - (No description)
-- [Task: check-merge-guide-diffs](./check-merge-guide-diffs.md) - (No description)
-- [Task: claude-code-features](./claude-code-features.md) - (No description)
-- [Task: cli-design-questions](./cli-design-questions.md) - (No description)
-- [Task: docs-v13-arch-focus](./docs-v13-arch-focus.md) - Architecture.
-- [Task: docs-v13-code-fixes](./docs-v13-code-fixes.md) - Fixed 2 source code locations: (1) Updated judge role description in RoleDefinitionService.
-- [Task: docs-v13-fixes](./docs-v13-fixes.md) - Review documentation fixes across 8 files for three issues: (1) removed false platform-agnostic claims, added 'Built for Claude Code' notice, (2) r...
-- [Task: docs-v13-readme-round2](./docs-v13-readme-round2.md) - Applied 3 fixes across 4 files (README.
-- [Task: docs-v13-readme-sync](./docs-v13-readme-sync.md) - Synced Templates/about-dynadocs.
-- [Task: docs-v13-template-npm-fix](./docs-v13-template-npm-fix.md) - Updated Templates/about-dynadocs.
-- [Task: docs-v13-template-npm](./docs-v13-template-npm.md) - (No description)
-- [Task: firefighting-sitrep-triage](./firefighting-sitrep-triage.md) - (No description)
-- [Task: fix-completions-doc-test](./fix-completions-doc-test.md) - No changes made.
-- [Task: fix-flaky-ci-tests](./fix-flaky-ci-tests.md) - Fixed 3 flaky CI tests.
-- [Task: fix-guard-inquisition-batch1](./fix-guard-inquisition-batch1.md) - Fix guard-system.
-- [Task: fix-guard-inquisition-batch2](./fix-guard-inquisition-batch2.md) - Fixed 4 inquisition issues: (1) removed unused CheckCommand from IOffLimitsService, rewrote bash off-limits tests to use production path (BashComma...
-- [Task: fix-guard-inquisition-batch3](./fix-guard-inquisition-batch3.md) - Unified glob-to-regex logic into Utils/GlobMatcher.
-- [Task: fix-inquisition-data-recovery](./fix-inquisition-data-recovery.md) - (No description)
-- [Task: fix-inquisition-state-isolation](./fix-inquisition-state-isolation.md) - Implemented fix for inquisition state isolation.
-- [Task: fix-reviewer-docs-guidance](./fix-reviewer-docs-guidance.md) - Issue #0003: Soft-code the conditional must-read system.
-- [Task: fix-template-hash-matching](./fix-template-hash-matching.md) - Implemented Option A: normalize content before hashing to fix false user-edit detection from CRLF/LF and BOM differences.
-- [Task: fix-template-sync](./fix-template-sync.md) - Fixed 3 template sync issues: (1) Regenerated guides/how-to-merge-worktrees.
-- [Task: fix-watchdog-concurrency](./fix-watchdog-concurrency.md) - Fixed TOCTOU race in WatchdogService.
-- [Task: greet-mate-1](./greet-mate-1.md) - (No description)
-- [Task: greet-mate-2](./greet-mate-2.md) - (No description)
-- [Task: greet-mate-3](./greet-mate-3.md) - (No description)
-- [Task: implement-clean-rename](./implement-clean-rename.md) - Implemented decision 014: renamed dydo clean to dydo agent clean.
-- [Task: implement-init-allowlist](./implement-init-allowlist.md) - Implemented Bash(dydo:*) wildcard entry in permissions.
-- [Task: investigate-ci-failure](./investigate-ci-failure.md) - (No description)
-- [Task: investigate-flaky-ci](./investigate-flaky-ci.md) - (No description)
-- [Task: investigate-worktree-remove-bypass](./investigate-worktree-remove-bypass.md) - (No description)
-- [Task: review-open-issues](./review-open-issues.md) - (No description)
-- [Task: run-gap-check](./run-gap-check.md) - No code changes made.
+- [Check Ci Failures](./check-ci-failures.md)
+- [Check Merge Guide Diffs](./check-merge-guide-diffs.md)
+- [Claude Code Features](./claude-code-features.md)
+- [Cli Design Questions](./cli-design-questions.md)
+- [Docs V13 Arch Focus](./docs-v13-arch-focus.md)
+- [Docs V13 Code Fixes](./docs-v13-code-fixes.md)
+- [Docs V13 Fixes](./docs-v13-fixes.md)
+- [Docs V13 Readme Round2](./docs-v13-readme-round2.md)
+- [Docs V13 Readme Sync](./docs-v13-readme-sync.md)
+- [Docs V13 Template Npm Fix](./docs-v13-template-npm-fix.md)
+- [Docs V13 Template Npm](./docs-v13-template-npm.md)
+- [Firefighting Sitrep Triage](./firefighting-sitrep-triage.md)
+- [Fix Completions Doc Test](./fix-completions-doc-test.md)
+- [Fix Flaky Ci Tests](./fix-flaky-ci-tests.md)
+- [Fix Guard Inquisition Batch1](./fix-guard-inquisition-batch1.md)
+- [Fix Guard Inquisition Batch2](./fix-guard-inquisition-batch2.md)
+- [Fix Guard Inquisition Batch3](./fix-guard-inquisition-batch3.md)
+- [Fix Inquisition Data Recovery](./fix-inquisition-data-recovery.md)
+- [Fix Inquisition State Isolation](./fix-inquisition-state-isolation.md)
+- [Fix Reviewer Docs Guidance](./fix-reviewer-docs-guidance.md)
+- [Fix Template Hash Matching](./fix-template-hash-matching.md)
+- [Fix Template Sync](./fix-template-sync.md)
+- [Fix Watchdog Concurrency](./fix-watchdog-concurrency.md)
+- [Greet Mate 1](./greet-mate-1.md)
+- [Greet Mate 2](./greet-mate-2.md)
+- [Greet Mate 3](./greet-mate-3.md)
+- [Implement Clean Rename](./implement-clean-rename.md)
+- [Implement Init Allowlist](./implement-init-allowlist.md)
+- [Investigate Ci Failure](./investigate-ci-failure.md)
+- [Investigate Flaky Ci](./investigate-flaky-ci.md)
+- [Investigate Worktree Remove Bypass](./investigate-worktree-remove-bypass.md)
+- [Review Open Issues](./review-open-issues.md)
+- [Run Gap Check](./run-gap-check.md)

@@ -11,32 +11,21 @@ Index of tasks documentation.
 
 ## Contents
 
-- [Task: baton-passing-docs](./baton-passing-docs.md) - (No description)
-- [Task: baton-passing-implementation](./baton-passing-implementation.md) - Implement decision 010: baton-passing reply-pending clearance and review enforcement for dispatched code-writers.
-- [Task: docs-batch-a](./docs-batch-a.md) - (No description)
-- [Task: docs-batch-b](./docs-batch-b.md) - (No description)
-- [Task: docs-batch-c](./docs-batch-c.md) - Docs Batch C: Fill in placeholder guide docs with complete content.
-- [Task: docs-batch-d](./docs-batch-d.md) - Fill in remaining reference placeholders and update outdated pages per the docs-upgrade-sprint plan.
-- [Task: docs-structure-planning](./docs-structure-planning.md) - (No description)
-- [Task: docs-upgrade-sprint](./docs-upgrade-sprint.md) - (No description)
-- [Task: find-t1-coverage-doc](./find-t1-coverage-doc.md) - (No description)
-- [Task: fix-test-errors](./fix-test-errors.md) - (No description)
-- [Task: gap-check-fix](./gap-check-fix.md) - (No description)
-- [Task: gap-check-setup](./gap-check-setup.md) - (No description)
-- [Task: git-stash-guard-block](./git-stash-guard-block.md) - (No description)
-- [Task: guard-python-invocation](./guard-python-invocation.md) - (No description)
-- [Task: guardrails-doc-update](./guardrails-doc-update.md) - (No description)
-- [Task: investigate-last-validation-bug](./investigate-last-validation-bug.md) - (No description)
-- [Task: orchestrator-worktree-guidance](./orchestrator-worktree-guidance.md) - (No description)
-- [Task: role-docs-batch1](./role-docs-batch1.md) - (No description)
-- [Task: role-docs-batch2](./role-docs-batch2.md) - (No description)
-- [Task: role-docs-batch3](./role-docs-batch3.md) - (No description)
-- [Task: t1-coverage-doc](./t1-coverage-doc.md) - (No description)
-- [Task: t1-coverage-gaps](./t1-coverage-gaps.md) - (No description)
-- [Task: t1-slice-a](./t1-slice-a.md) - (No description)
-- [Task: t1-slice-b](./t1-slice-b.md) - (No description)
-- [Task: t1-slice-c](./t1-slice-c.md) - (No description)
-- [Task: template-bug-fixes](./template-bug-fixes.md) - (No description)
-- [Task: template-harmonization](./template-harmonization.md) - (No description)
-- [Task: worktree-implementation](./worktree-implementation.md) - (No description)
-- [Task: worktree-workflow-design](./worktree-workflow-design.md) - (No description)
+- [Task: add-worktree-merge-self-merge-issue](./add-worktree-merge-self-merge-issue.md) - (No description)
+- [Task: autoclose-smoke-test-2](./autoclose-smoke-test-2.md) - (No description)
+- [Task: autoclose-smoke-test](./autoclose-smoke-test.md) - (No description)
+- [Task: fix-ci-xunit1031](./fix-ci-xunit1031.md) - Review fix-ci-xunit1031.
+- [Task: fix-reviewer-dispatch-allow-test-writer](./fix-reviewer-dispatch-allow-test-writer.md) - (No description)
+- [Task: fix-watchdog-anchor-regression](./fix-watchdog-anchor-regression.md) - def1fa4 anchored the watchdog on its immediate parent (the short-lived dydo dispatch CLI).
+- [Task: guard-worktree-and-phantom-inbox-doc](./guard-worktree-and-phantom-inbox-doc.md) - (No description)
+- [Task: guard-worktree-and-phantom-inbox](./guard-worktree-and-phantom-inbox.md) - Fix #99 (HandleSearchTool worktree-allow), #100 (unanchored substring match), #101 (guard-system.
+- [Task: investigate-reviewer-merger-guard](./investigate-reviewer-merger-guard.md) - (No description)
+- [Task: investigate-worktree-race-review-fixes](./investigate-worktree-race-review-fixes.md)
+- [Task: investigate-worktree-race](./investigate-worktree-race.md) - PowerShell fails with `ERROR_DIRECTORY (0x8007010b)` / "Could not access starting directory" when a dispatched agent is launched in a worktree path...
+- [Task: regression-test-auto-close-2](./regression-test-auto-close-2.md) - (No description)
+- [Task: regression-test-auto-close](./regression-test-auto-close.md) - (No description)
+- [Task: release-validation](./release-validation.md) - (No description)
+- [Task: reviewer-verdict-routing](./reviewer-verdict-routing.md) - Implemented Frank's design (option A variant).
+- [Task: watchdog-lifecycle-fixes](./watchdog-lifecycle-fixes.md) - Fix inquisition issues #95, #96, #97 as one coherent watchdog-lifecycle change.
+- [Task: watchdog-lifecycle-review](./watchdog-lifecycle-review.md) - Review Adele's zombied watchdog-lifecycle-fixes work on master.
+- [Task: worktree-cleanup-hardening](./worktree-cleanup-hardening.md) - Fix critical #104 (junction-follow deletion) + #98 (prune doesn't sweep orphan watchdog.

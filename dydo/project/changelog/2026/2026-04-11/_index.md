@@ -11,11 +11,11 @@ Index of 2026-04-11 documentation.
 
 ## Contents
 
-- [Firefighting Sitrep Triage](./firefighting-sitrep-triage.md)
-- [Fix Audit Backend Issues](./fix-audit-backend-issues.md)
-- [Fix Docs Issues](./fix-docs-issues.md)
-- [Fix Guard Medium Issues](./fix-guard-medium-issues.md)
-- [Fix Remaining High Issues](./fix-remaining-high-issues.md)
-- [Inquisition Guard Final Security 3 Merge](./inquisition-guard-final-security-3-merge.md)
-- [Inquisition Worktree Final Path Norm Merge](./inquisition-worktree-final-path-norm-merge.md)
-- [Resolve Fixed Issues V2](./resolve-fixed-issues-v2.md)
+- [Task: firefighting-sitrep-triage](./firefighting-sitrep-triage.md) - (No description)
+- [Task: fix-audit-backend-issues](./fix-audit-backend-issues.md) - Fixed all 8 issues.
+- [Task: fix-docs-issues](./fix-docs-issues.md) - Documentation fixes ready for review.
+- [Task: fix-guard-medium-issues](./fix-guard-medium-issues.md) - Fixed all 7 guard/security issues (#58, #85, #86, #60, #61, #63, #64).
+- [Task: fix-remaining-high-issues](./fix-remaining-high-issues.md) - Fixed 3 security issues: (1) #84 RemoveZombieDirectory now uses DeleteDirectoryJunctionSafe instead of Directory.
+- [Task: inquisition-guard-final-security-3-merge](./inquisition-guard-final-security-3-merge.md) - Merged worktree branch worktree/inquisition-guard-final into master via dydo worktree merge.
+- [Task: inquisition-worktree-final-path-norm-merge](./inquisition-worktree-final-path-norm-merge.md) - (No description)
+- [Task: resolve-fixed-issues-v2](./resolve-fixed-issues-v2.md) - Reviewed all 75 open issues against recent commits.

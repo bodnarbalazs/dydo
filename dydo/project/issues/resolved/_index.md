@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 

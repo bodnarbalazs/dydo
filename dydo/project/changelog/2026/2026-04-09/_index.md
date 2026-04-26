@@ -11,65 +11,65 @@ Index of 2026-04-09 documentation.
 
 ## Contents
 
-- [Firefighting Sitrep Triage](./firefighting-sitrep-triage.md)
-- [Fix Audit Junction](./fix-audit-junction.md)
-- [Fix Bash Write Allow](./fix-bash-write-allow.md)
-- [Fix Captureall Flake Definitive Merge](./fix-captureall-flake-definitive-merge.md)
-- [Fix Captureall Flake Definitive](./fix-captureall-flake-definitive.md)
-- [Fix Ci Round4](./fix-ci-round4.md)
-- [Fix Commands Doc Consistency](./fix-commands-doc-consistency.md)
-- [Fix Completion Provider](./fix-completion-provider.md)
-- [Fix Guard Security](./fix-guard-security.md)
-- [Fix Guard Worktree Allow Tests](./fix-guard-worktree-allow-tests.md)
-- [Fix Guard Worktree Allow](./fix-guard-worktree-allow.md)
-- [Fix Help Tests Cleanup](./fix-help-tests-cleanup.md)
-- [Fix Inquisition Coverage Denominator](./fix-inquisition-coverage-denominator.md)
-- [Fix Issues Dead Code](./fix-issues-dead-code.md)
-- [Fix Issues Process Git](./fix-issues-process-git.md)
-- [Fix Issues Small Docs](./fix-issues-small-docs.md)
-- [Fix Issues Small](./fix-issues-small.md)
-- [Fix Issues Template Bugs](./fix-issues-template-bugs.md)
-- [Fix Iterm2 Dispatch Issues](./fix-iterm2-dispatch-issues.md)
-- [Fix Junction Guard Paths](./fix-junction-guard-paths.md)
-- [Fix Junction Safe Deletion Tests](./fix-junction-safe-deletion-tests.md)
-- [Fix Junction Safe Deletion](./fix-junction-safe-deletion.md)
-- [Fix Mac Iterm Detection](./fix-mac-iterm-detection.md)
-- [Fix Security Path Traversal](./fix-security-path-traversal.md)
-- [Fix Workflow Roles](./fix-workflow-roles.md)
-- [Fix Worktree Code Quality](./fix-worktree-code-quality.md)
-- [Inquisition Audit System Docs 1](./inquisition-audit-system-docs-1.md)
-- [Inquisition Audit System Edges 1](./inquisition-audit-system-edges-1.md)
-- [Inquisition Audit System Quality 1](./inquisition-audit-system-quality-1.md)
-- [Inquisition Audit System Quality 2](./inquisition-audit-system-quality-2.md)
-- [Inquisition Audit System Ruling](./inquisition-audit-system-ruling.md)
-- [Inquisition Audit System Security 1 Merge](./inquisition-audit-system-security-1-merge.md)
-- [Inquisition Audit System Security 1](./inquisition-audit-system-security-1.md)
-- [Inquisition Audit System](./inquisition-audit-system.md)
-- [Inquisition Cli Commands Ruling](./inquisition-cli-commands-ruling.md)
-- [Inquisition Cli Commands Security 1 Merge](./inquisition-cli-commands-security-1-merge.md)
-- [Inquisition Role Permission System Ruling](./inquisition-role-permission-system-ruling.md)
-- [Inquisition Role Permission System Security 1 Merge](./inquisition-role-permission-system-security-1-merge.md)
-- [Inquisition Template System Docs 1](./inquisition-template-system-docs-1.md)
-- [Inquisition Template System Hyp 1](./inquisition-template-system-hyp-1.md)
-- [Inquisition Template System Hyp 2](./inquisition-template-system-hyp-2.md)
-- [Inquisition Template System Hyp 3 Merge](./inquisition-template-system-hyp-3-merge.md)
-- [Inquisition Template System Hyp 3](./inquisition-template-system-hyp-3.md)
-- [Inquisition Template System Quality 1](./inquisition-template-system-quality-1.md)
-- [Inquisition Template System Quality 2](./inquisition-template-system-quality-2.md)
-- [Inquisition Template System Quality 3](./inquisition-template-system-quality-3.md)
-- [Inquisition Template System Ruling](./inquisition-template-system-ruling.md)
-- [Inquisition Template System Security 1](./inquisition-template-system-security-1.md)
-- [Inquisition Template System](./inquisition-template-system.md)
-- [Investigate Commands Doc Gap](./investigate-commands-doc-gap.md)
-- [Investigate Cothinker Premature Release](./investigate-cothinker-premature-release.md)
-- [Investigate Plan Mode Guard History](./investigate-plan-mode-guard-history.md)
-- [Investigate Reviewer Merge Deadlock](./investigate-reviewer-merge-deadlock.md)
-- [Investigate Wait Flag Bug Merge Merge Merge](./investigate-wait-flag-bug-merge-merge-merge.md)
-- [Investigate Wait Flag Bug Merge Merge](./investigate-wait-flag-bug-merge-merge.md)
-- [Investigate Wait Flag Bug Merge](./investigate-wait-flag-bug-merge.md)
-- [Investigate Wait Flag Bug](./investigate-wait-flag-bug.md)
-- [Investigate Worktree Permission Prompts](./investigate-worktree-permission-prompts.md)
-- [Prompt Engineering Tweaks](./prompt-engineering-tweaks.md)
-- [Readme And Template Docs](./readme-and-template-docs.md)
-- [Resolve Issues Coverage](./resolve-issues-coverage.md)
-- [Smoke Final5 A Merge](./smoke-final5-a-merge.md)
+- [Task: firefighting-sitrep-triage](./firefighting-sitrep-triage.md) - (No description)
+- [Task: fix-audit-junction](./fix-audit-junction.md) - Fixed 2 of 4 inbox findings (findings 3 and 4 were already implemented in codebase).
+- [Task: fix-bash-write-allow](./fix-bash-write-allow.md) - Extended worktree allow JSON to non-dydo bash commands (AnalyzeAndCheckBashOperations) and guard-lifted write path (HandleWriteOperation).
+- [Task: fix-captureall-flake-definitive-merge](./fix-captureall-flake-definitive-merge.md) - Merge of worktree/inquisition-template-system into master completed.
+- [Task: fix-captureall-flake-definitive](./fix-captureall-flake-definitive.md) - Created shared ConsoleCapture utility class with a static SemaphoreSlim that serializes all console redirect-execute-restore sequences.
+- [Task: fix-ci-round4](./fix-ci-round4.md) - Fixed CI failure on Linux: added OperatingSystem.
+- [Task: fix-commands-doc-consistency](./fix-commands-doc-consistency.md) - Fixed all 3 issues from the brief plus pre-existing template sync failures.
+- [Task: fix-completion-provider](./fix-completion-provider.md) - Fixed CompletionProvider staleness (issue #49).
+- [Task: fix-guard-security](./fix-guard-security.md) - Fixed 4 guard security findings from inquisition: (1) CRITICAL guard lift self-escalation via hardcoded off-limits in OffLimitsService, (2) HIGH in...
+- [Task: fix-guard-worktree-allow-tests](./fix-guard-worktree-allow-tests.md) - (No description)
+- [Task: fix-guard-worktree-allow](./fix-guard-worktree-allow.md) - Implemented 3 fixes: (1) Guard now emits worktree allow JSON for Bash dydo commands via EmitWorktreeAllowIfNeeded in HandleDydoBashCommand, (2) sam...
+- [Task: fix-help-tests-cleanup](./fix-help-tests-cleanup.md) - Implemented all 5 items from the brief: (1) Extracted help text from inline Program.
+- [Task: fix-inquisition-coverage-denominator](./fix-inquisition-coverage-denominator.md) - Fixed inquisition coverage integration tests.
+- [Task: fix-issues-dead-code](./fix-issues-dead-code.md) - Fixed issues #21-#24.
+- [Task: fix-issues-process-git](./fix-issues-process-git.md) - Fixed 4 process/git safety issues.
+- [Task: fix-issues-small-docs](./fix-issues-small-docs.md) - (No description)
+- [Task: fix-issues-small](./fix-issues-small.md) - Review code changes for issues #26, #36, #37.
+- [Task: fix-issues-template-bugs](./fix-issues-template-bugs.md) - Fixed 5 template system bugs from inquisition: (1) StoreInitialFrameworkHashes now hashes doc and binary files alongside templates (#29), (2) Reanc...
+- [Task: fix-iterm2-dispatch-issues](./fix-iterm2-dispatch-issues.md) - Implement iTerm2 window ID targeting fix.
+- [Task: fix-junction-guard-paths](./fix-junction-guard-paths.md) - Implemented 3 worktree fixes: (1) Replaced hardcoded junction subpath list + Directory.
+- [Task: fix-junction-safe-deletion-tests](./fix-junction-safe-deletion-tests.md) - (No description)
+- [Task: fix-junction-safe-deletion](./fix-junction-safe-deletion.md) - Implemented junction-safe deletion across three areas: (1) DispatchService.
+- [Task: fix-mac-iterm-detection](./fix-mac-iterm-detection.md) - Fixed macOS iTerm2 detection for agent dispatch.
+- [Task: fix-security-path-traversal](./fix-security-path-traversal.md) - Fixed 2 path traversal vulnerabilities.
+- [Task: fix-workflow-roles](./fix-workflow-roles.md) - Fixed 3 workflow/role issues: (1) Added 'inquisitor' to reviewer dispatch-restriction RequiredRoles in RoleDefinitionService.
+- [Task: fix-worktree-code-quality](./fix-worktree-code-quality.md) - Refactored three worktree code quality issues from inquisition report.
+- [Task: inquisition-audit-system-docs-1](./inquisition-audit-system-docs-1.md) - (No description)
+- [Task: inquisition-audit-system-edges-1](./inquisition-audit-system-edges-1.md) - (No description)
+- [Task: inquisition-audit-system-quality-1](./inquisition-audit-system-quality-1.md) - (No description)
+- [Task: inquisition-audit-system-quality-2](./inquisition-audit-system-quality-2.md) - (No description)
+- [Task: inquisition-audit-system-ruling](./inquisition-audit-system-ruling.md) - (No description)
+- [Task: inquisition-audit-system-security-1-merge](./inquisition-audit-system-security-1-merge.md) - Merged worktree/inquisition-audit-system into master (fast-forward).
+- [Task: inquisition-audit-system-security-1](./inquisition-audit-system-security-1.md) - (No description)
+- [Task: inquisition-audit-system](./inquisition-audit-system.md) - (No description)
+- [Task: inquisition-cli-commands-ruling](./inquisition-cli-commands-ruling.md) - (No description)
+- [Task: inquisition-cli-commands-security-1-merge](./inquisition-cli-commands-security-1-merge.md) - Merged worktree/inquisition-cli-commands into master.
+- [Task: inquisition-role-permission-system-ruling](./inquisition-role-permission-system-ruling.md) - (No description)
+- [Task: inquisition-role-permission-system-security-1-merge](./inquisition-role-permission-system-security-1-merge.md) - Merged worktree branch worktree/inquisition-role-permission-system into master.
+- [Task: inquisition-template-system-docs-1](./inquisition-template-system-docs-1.md) - (No description)
+- [Task: inquisition-template-system-hyp-1](./inquisition-template-system-hyp-1.md) - (No description)
+- [Task: inquisition-template-system-hyp-2](./inquisition-template-system-hyp-2.md) - (No description)
+- [Task: inquisition-template-system-hyp-3-merge](./inquisition-template-system-hyp-3-merge.md) - Merged worktree/inquisition-template-system into master (fast-forward).
+- [Task: inquisition-template-system-hyp-3](./inquisition-template-system-hyp-3.md) - (No description)
+- [Task: inquisition-template-system-quality-1](./inquisition-template-system-quality-1.md) - (No description)
+- [Task: inquisition-template-system-quality-2](./inquisition-template-system-quality-2.md) - (No description)
+- [Task: inquisition-template-system-quality-3](./inquisition-template-system-quality-3.md) - (No description)
+- [Task: inquisition-template-system-ruling](./inquisition-template-system-ruling.md) - (No description)
+- [Task: inquisition-template-system-security-1](./inquisition-template-system-security-1.md) - (No description)
+- [Task: inquisition-template-system](./inquisition-template-system.md) - (No description)
+- [Task: investigate-commands-doc-gap](./investigate-commands-doc-gap.md) - (No description)
+- [Task: investigate-cothinker-premature-release](./investigate-cothinker-premature-release.md) - One-line addition to Templates/mode-co-thinker.
+- [Task: investigate-plan-mode-guard-history](./investigate-plan-mode-guard-history.md) - (No description)
+- [Task: investigate-reviewer-merge-deadlock](./investigate-reviewer-merge-deadlock.md) - (No description)
+- [Task: investigate-wait-flag-bug-merge-merge-merge](./investigate-wait-flag-bug-merge-merge-merge.md) - Worktree merge cleanup completed.
+- [Task: investigate-wait-flag-bug-merge-merge](./investigate-wait-flag-bug-merge-merge.md) - Merge of worktree/inquisition-template-system into master was already completed via fast-forward (commit fee6405).
+- [Task: investigate-wait-flag-bug-merge](./investigate-wait-flag-bug-merge.md) - Merged worktree/inquisition-template-system into master (branch was already merged, finalized cleanup).
+- [Task: investigate-wait-flag-bug](./investigate-wait-flag-bug.md)
+- [Task: investigate-worktree-permission-prompts](./investigate-worktree-permission-prompts.md) - (No description)
+- [Task: prompt-engineering-tweaks](./prompt-engineering-tweaks.md) - Review two template changes: (1) Templates/mode-judge.
+- [Task: readme-and-template-docs](./readme-and-template-docs.md) - Documentation updates for review: (1) Added Tip section about gap_check.
+- [Task: resolve-issues-coverage](./resolve-issues-coverage.md) - (No description)
+- [Task: smoke-final5-a-merge](./smoke-final5-a-merge.md) - Merged worktree/smoke-final5-a into master via fast-forward.

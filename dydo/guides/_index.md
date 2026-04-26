@@ -14,6 +14,8 @@ Index of guides documentation.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
 - [Customizing Roles](./customizing-roles.md) - How to create custom roles, modify permission sets, and extend the role system.
 - [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, and run your first agent session.
+- [How to Merge Worktrees](./how-to-merge-worktrees.md) - You have a `.
+- [How to Review Worktree Merges](./how-to-review-worktree-merges.md) - You are reviewing a merge task.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
 - [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
 - [Troubleshooting](./troubleshooting.md) - Common errors, guard blocks, and recovery patterns.

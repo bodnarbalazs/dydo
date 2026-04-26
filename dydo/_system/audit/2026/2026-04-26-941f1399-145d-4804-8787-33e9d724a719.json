@@ -1,0 +1,14 @@
+{
+  "session": "941f1399-145d-4804-8787-33e9d724a719",
+  "agent": "Brian",
+  "human": "balazs",
+  "started": "2026-04-26T11:30:26.3851615Z",
+  "git_head": "db3d7f7",
+  "events": [
+    {
+      "ts": "2026-04-26T11:30:26.3841263Z",
+      "event": "GuardLift",
+      "agent": "Brian"
+    }
+  ]
+}

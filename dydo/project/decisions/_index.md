@@ -20,6 +20,16 @@ Index of decisions documentation.
 - [007 — Oversight Roles: Orchestrator, Inquisitor, Judge](./007-oversight-roles.md) - Three new roles that enable swarm coordination, adversarial QA, and dispute resolution.
 - [008 — Data-Driven Role Definitions](./008-data-driven-roles.md) - Replace hardcoded role permissions and constraints with JSON role definition files.
 - [008 — Terminal Dispatch Routing and Auto-Close Watchdog](./008-terminal-dispatch-routing-and-autoclose.md) - Two-tier window routing (MRU for linear workflows, GUID for parallel slices), and a global stateless watchdog for auto-closing released agent tabs.
+- [009 — Claude Code Native `.claude/` Features Evaluation](./009-claude-native-features-evaluation.md)
 - [009 — CRAP Uses Per-Method Cyclomatic Complexity](./009-crap-per-method-metric.md) - CRAP (Change Risk Anti-Patterns) is a per-method metric.
 - [010 — Baton-Passing and Review Enforcement](./010-baton-passing-and-review-enforcement.md) - When an agent dispatches on the same task, its reply obligation passes to the dispatched agent.
 - [011 — Worktrees as Default for Parallel Development](./011-worktrees-as-default-for-parallel-work.md) - When an orchestrator dispatches multiple code-writers in parallel, each should run in its own git worktree.
+- [012 — Dispatch Queue: Deferred Terminal Launch](./012-dispatch-queue-deferred-launch.md) - Named dispatch queues serialize work by deferring only the terminal launch — not the dispatch itself.
+- [012 — Release Constraints and Role Capabilities](./012-release-constraints-and-role-capabilities.md) - Extend the data-driven role system (decision 008) to cover release-time constraints and role capabilities, replacing hardcoded role-specific checks.
+- [013 — Conditional Must-Reads (Hardcoded)](./013-conditional-must-reads.md) - Hardcode conditional must-read enforcement for merge workflows now; defer soft-coding to role JSON if more cases emerge.
+- [014 — Rename `dydo clean` to `dydo agent clean`](./014-rename-clean-to-agent-clean.md)
+- [015 — Shell Completions: Keep Code, Remove from Docs](./015-completions-keep-code-remove-from-docs.md)
+- [016 — Keep `workspace init` and `workspace check`](./016-keep-workspace-init-check.md)
+- [017 — Stale-Free Semantics: Narrow Launcher-Alive Gate to Reservation Only](./017-stale-free-semantics.md)
+- [018 — Zombie Working State: Mechanism, Fixes, and Doc Surface](./018-zombie-working-state-recovery.md)
+- [019 — Reviewer Verdict Routing and Subject-Aware Send Diagnostics](./019-reviewer-verdict-routing.md)

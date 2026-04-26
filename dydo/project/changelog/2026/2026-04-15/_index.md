@@ -11,15 +11,15 @@ Index of 2026-04-15 documentation.
 
 ## Contents
 
-- [Audit Events Inquiry](./audit-events-inquiry.md)
-- [Dispatch Commit Gap Fix](./dispatch-commit-gap-fix.md)
-- [Fix Ci Round5](./fix-ci-round5.md)
-- [Fix Dydo V1.3 Usage Bugs](./fix-dydo-v1.3-usage-bugs.md)
-- [Readme Demo Video](./readme-demo-video.md)
-- [Release Smoke 2](./release-smoke-2.md)
-- [Release Smoke 3](./release-smoke-3.md)
-- [Release Smoke](./release-smoke.md)
-- [Release Test 1](./release-test-1.md)
-- [Smoke V13 Release Merge](./smoke-v13-release-merge.md)
-- [Test Release Bug](./test-release-bug.md)
-- [Validate Bug Report Dydo V1.3 Usage](./validate-bug-report-dydo-v1.3-usage.md)
+- [Task: audit-events-inquiry](./audit-events-inquiry.md) - (No description)
+- [Task: dispatch-commit-gap-fix](./dispatch-commit-gap-fix.md) - Adds a pre-merge safety check to  that refuses when the source branch has 0 commits ahead of base OR the source worktree has uncommitted/untracked ...
+- [Task: fix-ci-round5](./fix-ci-round5.md) - Fixed 2 Linux CI test failures (3684/3686 passing → 3686/3686).
+- [Task: fix-dydo-v1.3-usage-bugs](./fix-dydo-v1.3-usage-bugs.md) - Fixed three dydo CLI bugs reported from LC v1.
+- [Task: readme-demo-video](./readme-demo-video.md) - (No description)
+- [Task: release-smoke-2](./release-smoke-2.md) - (No description)
+- [Task: release-smoke-3](./release-smoke-3.md) - (No description)
+- [Task: release-smoke](./release-smoke.md) - (No description)
+- [Task: release-test-1](./release-test-1.md) - Smoke test of release guard — no code changes to review.
+- [Task: smoke-v13-release-merge](./smoke-v13-release-merge.md) - Merged worktree/smoke-v13-release into master (fast-forward).
+- [Task: test-release-bug](./test-release-bug.md) - (No description)
+- [Task: validate-bug-report-dydo-v1.3-usage](./validate-bug-report-dydo-v1.3-usage.md) - (No description)

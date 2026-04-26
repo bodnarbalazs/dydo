@@ -118,6 +118,29 @@ public class RoleConstraintEvaluatorTests
         Assert.True(evaluator.CanTakeRole("Alice", "reviewer", "task1", out _));
     }
 
+    [Fact]
+    public void CanTakeRole_RoleTransition_BlocksWhenHistoryRoleCaseDiffers()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "role-transition",
+                    FromRole = "code-writer",
+                    Message = "Blocked."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name, taskRoleHistory: new()
+            {
+                ["task1"] = ["Code-Writer"]
+            }));
+
+        Assert.False(evaluator.CanTakeRole("Alice", "reviewer", "task1", out _));
+    }
+
     #endregion
 
     #region requires-prior constraint
@@ -163,6 +186,29 @@ public class RoleConstraintEvaluatorTests
             name => MakeState(name, taskRoleHistory: new()
             {
                 ["task1"] = ["planner"]
+            }));
+
+        Assert.True(evaluator.CanTakeRole("Alice", "test-writer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanTakeRole_RequiresPrior_AllowsWhenHistoryRoleCaseDiffers()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["test-writer"] = MakeRole("test-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-prior",
+                    RequiredRoles = ["planner"],
+                    Message = "Blocked."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name, taskRoleHistory: new()
+            {
+                ["task1"] = ["PLANNER"]
             }));
 
         Assert.True(evaluator.CanTakeRole("Alice", "test-writer", "task1", out _));
@@ -267,6 +313,37 @@ public class RoleConstraintEvaluatorTests
             name => states.GetValueOrDefault(name));
 
         Assert.True(evaluator.CanTakeRole("Alice", "reviewer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanTakeRole_PanelLimit_BlocksWhenStoredRoleAndTaskCaseDiffer()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "panel-limit",
+                    MaxCount = 1,
+                    Message = "Only one reviewer per task."
+                }
+            ])
+        };
+        var states = new Dictionary<string, AgentState>
+        {
+            ["Alice"] = MakeState("Alice"),
+            ["Bob"] = new()
+            {
+                Name = "Bob",
+                Role = "Reviewer",
+                Task = "Task1",
+                Status = AgentStatus.Working
+            }
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice", "Bob"],
+            name => states.GetValueOrDefault(name));
+
+        Assert.False(evaluator.CanTakeRole("Alice", "reviewer", "task1", out _));
     }
 
     #endregion

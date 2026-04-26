@@ -54,7 +54,7 @@ public class RoleConstraintEvaluator
         {
             case "role-transition":
                 if (state.TaskRoleHistory.TryGetValue(task, out var previousRoles) &&
-                    previousRoles.Contains(constraint.FromRole!))
+                    previousRoles.Contains(constraint.FromRole!, StringComparer.OrdinalIgnoreCase))
                 {
                     reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
                     return false;
@@ -63,7 +63,7 @@ public class RoleConstraintEvaluator
 
             case "requires-prior":
                 if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
-                    !constraint.RequiredRoles!.Any(r => taskRoles.Contains(r)))
+                    !constraint.RequiredRoles!.Any(r => taskRoles.Contains(r, StringComparer.OrdinalIgnoreCase)))
                 {
                     reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
                     return false;
@@ -75,7 +75,9 @@ public class RoleConstraintEvaluator
                 foreach (var name in _agentNames)
                 {
                     var s = _getAgentState(name);
-                    if (s != null && s.Role == role && s.Task == task &&
+                    if (s != null &&
+                        string.Equals(s.Role, role, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(s.Task, task, StringComparison.OrdinalIgnoreCase) &&
                         s.Status != AgentStatus.Free)
                     {
                         activeCount++;

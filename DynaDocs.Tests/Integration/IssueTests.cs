@@ -344,6 +344,51 @@ public class IssueTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Issue_Resolve_DuplicateIdInResolved_ResolvesOpenAndWarns()
+    {
+        // Defensive against stale state: if an open file and a resolved file share an
+        // ID (historical create-side bug, manual edit), `resolve <id>` must operate on
+        // the open file and surface a warning — not refuse with "already resolved".
+        await InitProjectAsync("none", "balazs", 3);
+        await IssueCreateAsync("Original", area: "general", severity: "low");
+        await IssueResolveAsync(1, "Done");
+
+        // Manually drop a colliding open file with the same numeric ID as the resolved one.
+        var openPath = Path.Combine(TestDir, "dydo", "project", "issues", "0001-collision.md");
+        await File.WriteAllTextAsync(openPath, """
+            ---
+            id: 1
+            area: general
+            type: issue
+            severity: low
+            status: open
+            found-by: manual
+            date: 2026-04-26
+            ---
+
+            # Collision
+
+            ## Description
+            (Describe the issue)
+
+            ## Reproduction
+            (Steps to reproduce, if applicable)
+
+            ## Resolution
+            (Filled when resolved)
+            """);
+
+        var result = await IssueResolveAsync(1, "Open one resolved");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Resolved issue #1: 0001-collision.md");
+        AssertFileNotExists("dydo/project/issues/0001-collision.md");
+        AssertFileExists("dydo/project/issues/resolved/0001-collision.md");
+        // Original resolved file still present and untouched.
+        AssertFileExists("dydo/project/issues/resolved/0001-original.md");
+    }
+
+    [Fact]
     public async Task Issue_Create_CleansUpLockFile()
     {
         await InitProjectAsync("none", "balazs", 3);

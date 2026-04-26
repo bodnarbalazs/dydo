@@ -491,6 +491,8 @@ Create a new issue.
 ```bash
 dydo issue create --title "Null ref in AuthService" --area backend --severity high
 dydo issue create --title "Missing validation" --area backend --severity medium --found-by inquisition
+dydo issue create --title "Race in queue" --area backend --severity high --body "Two workers can claim the same job."
+dydo issue create --title "Schema drift" --area backend --severity medium --body-file ./issue-body.md
 ```
 
 **Options:**
@@ -498,6 +500,8 @@ dydo issue create --title "Missing validation" --area backend --severity medium 
 - `--area <area>` - Affected area, e.g. backend, frontend, general (required)
 - `--severity <level>` - Severity: `low`, `medium`, `high`, `critical` (required)
 - `--found-by <source>` - How it was found: `manual`, `inquisition`, `review` (optional)
+- `--body <text>` - Inline body content for the issue's Description section (optional)
+- `--body-file <path>` - Read body content from a file (optional, mutually exclusive with `--body`)
 
 ### dydo issue list
 

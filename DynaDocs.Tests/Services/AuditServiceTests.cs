@@ -144,6 +144,40 @@ public class AuditServiceTests : IDisposable
         Assert.Empty(files);
     }
 
+    [Theory]
+    [InlineData("../escape")]
+    [InlineData("a/b")]
+    [InlineData("a\\b")]
+    [InlineData("..")]
+    [InlineData("foo..bar")]
+    [InlineData("with\0null")]
+    public void LogEvent_RejectsSessionIdsWithPathSeparators(string badId)
+    {
+        var service = new AuditService(basePath: _testDir);
+
+        Assert.Throws<ArgumentException>(() =>
+            service.LogEvent(badId, new AuditEvent
+            {
+                EventType = AuditEventType.Read,
+                Path = "test.md"
+            }));
+
+        Assert.Empty(service.ListSessionFiles());
+    }
+
+    [Theory]
+    [InlineData("../escape")]
+    [InlineData("a/b")]
+    [InlineData("a\\b")]
+    [InlineData("..")]
+    [InlineData("with\0null")]
+    public void GetSession_RejectsSessionIdsWithPathSeparators(string badId)
+    {
+        var service = new AuditService(basePath: _testDir);
+
+        Assert.Throws<ArgumentException>(() => service.GetSession(badId));
+    }
+
     #endregion
 
     #region GetSession Tests

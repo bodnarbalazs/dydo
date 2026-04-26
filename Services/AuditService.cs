@@ -39,6 +39,8 @@ public partial class AuditService : IAuditService
         if (string.IsNullOrEmpty(sessionId))
             return;
 
+        ValidateSessionId(sessionId);
+
         // Set timestamp if not already set
         if (@event.Timestamp == default)
             @event.Timestamp = DateTime.UtcNow;
@@ -84,6 +86,8 @@ public partial class AuditService : IAuditService
     {
         if (string.IsNullOrEmpty(sessionId))
             return null;
+
+        ValidateSessionId(sessionId);
 
         // Check cache first
         if (_sessionCache.TryGetValue(sessionId, out var cached))
@@ -296,4 +300,14 @@ public partial class AuditService : IAuditService
 
     [GeneratedRegex(@"^\d{4}$")]
     private static partial Regex YearFolderRegex();
+
+    private static void ValidateSessionId(string sessionId)
+    {
+        if (sessionId.IndexOfAny(['/', '\\', '\0']) >= 0 || sessionId.Contains(".."))
+        {
+            throw new ArgumentException(
+                $"Invalid session ID '{sessionId}': must not contain path separators ('/', '\\\\'), '..', or null bytes.",
+                nameof(sessionId));
+        }
+    }
 }

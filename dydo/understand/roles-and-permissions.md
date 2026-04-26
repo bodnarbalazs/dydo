@@ -66,16 +66,30 @@ Role definitions live at `dydo/_system/roles/<name>.role.json`:
   "readOnlyPaths": ["dydo/**"],
   "templateFile": "mode-code-writer.template.md",
   "denialHint": "Code-writer role can only edit configured source/test paths and own workspace.",
-  "constraints": [...]
+  "canOrchestrate": false,
+  "constraints": [...],
+  "conditionalMustReads": []
 }
 ```
+
+The full schema is `Models/RoleDefinition.cs`. For a complete real example, see `dydo/_system/roles/orchestrator.role.json` — note `canOrchestrate: true` (line 15) and `conditionalMustReads: []` (line 31).
+
+**Field notes:**
+- `canOrchestrate` (boolean) — whether this role may use the `--wait` flag on dispatch. Reserved for oversight roles (`orchestrator`, `inquisitor`, `judge`); all other base roles set it to `false`.
+- `conditionalMustReads` — reserved for future use (currently `[]` for all base roles). Per [decision 013](../project/decisions/013-conditional-must-reads.md), the two existing conditional must-reads (merge code-writer, merge reviewer) are hard-coded in `MustReadTracker`; this field is the soft-coding path if a third case emerges.
 
 **Path tokens** are expanded at role assignment time:
 - `{self}` — the agent's name (e.g., `dydo/agents/Brian/**`)
 - `{source}` — configured source directories from `dydo.json`
 - `{tests}` — configured test directories from `dydo.json`
 
-**Glob patterns**: `**` matches any path depth, `*` matches within a single segment.
+**Glob patterns:**
+- `**/` — optional directory prefix (zero or more leading directories)
+- `**` — any path depth (matches across `/`)
+- `*` — any characters within a single segment (does not cross `/`)
+- `?` — a single character
+
+These four are the full set supported by `Utils/GlobMatcher.cs`. Matching is case-insensitive.
 
 ---
 

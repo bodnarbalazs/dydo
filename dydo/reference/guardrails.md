@@ -44,7 +44,6 @@ A one-time blocking message that forces the agent to acknowledge before proceedi
 |---|------|---------|-------------|---------|
 | S1 | Role mismatch | Agent sets a different role than what the inbox dispatch specified. Skipped if agent already fulfilled the dispatched role and is intentionally switching. | `.role-nudge-{task}` | `You were dispatched as '{role}' for this task. If '{newRole}' fits better, run the command again.` |
 | S2 | No-launch dispatch | Agent uses `--no-launch` flag (which means the target agent won't be activated automatically). | `.no-launch-nudge-{task}` | `You dispatched with the --no-launch flag... Unless the user was explicit about using no-launch... you shouldn't use this flag. If you insist you may run it again and it will pass.` |
-| S3 | Unread message delivery | Any tool call when agent has unread inbox messages. Hard-blocks every operation until messages are read and cleared — this is a delivery mechanism, not a one-time check. Persists until inbox is empty. | *(inbox files themselves)* | `NOTICE: You have {n} unread message(s). [...] Read your message(s) to continue. After reading, retry your previous action — it will succeed.` |
 | S4 | Pending wait registration | Any operation when agent has wait markers that aren't actively listening (e.g., dispatched `--wait` but hasn't run `dydo wait`). Self-heals dead listener PIDs. | `.waiting/{task}.json` | `BLOCKED: Register waits before continuing. Pending: [{tasks}]. Run: dydo wait --task <name> (in background)` |
 | S5 | Inactive agent messaging | `dydo msg --to <agent>` where target agent is not currently active. Almost always a mistake — the message will sit unread until the agent is manually claimed. Override with `--force` for cases where the message needs to be persisted regardless. | *(none — uses --force flag)* | `Agent {name} is not currently active. The message will sit unread... Send anyway with: dydo msg --to {name} --body "..." --force` |
 
@@ -68,6 +67,12 @@ Absolute constraints the agent cannot bypass. No marker files, no retries, no fl
 | H6 | Search tool lockout | Glob, Grep, and Agent tools require both identity AND role (Stage 2). Prevents broad codebase scanning before onboarding. | `BLOCKED: Read access denied...` |
 | H27 | Plan mode blocked | Agent uses `EnterPlanMode` or `ExitPlanMode` tool. Dydo agents must not use Claude Code's built-in plan mode — use planner role or workspace notes instead. | `BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.` |
 
+### Pending State
+
+| # | Name | Trigger | Message |
+|---|------|---------|---------|
+| H30 | Unread message delivery | Any tool call when the agent has unread inbox messages. Persists until the inbox is empty — there is no marker file or `--force` override. The "soft-block" framing was a documentation artifact (formerly listed as S3); the actual code path is a hard gate that re-fires on every tool call, so it is classified here. | `NOTICE: You have {n} unread message(s). [...] Read your message(s) to continue. After reading, retry your previous action — it will succeed.` |
+
 ### Onboarding & Identity
 
 | # | Name | Trigger | Message |
@@ -79,6 +84,8 @@ Absolute constraints the agent cannot bypass. No marker files, no retries, no fl
 ### Role Constraints (from `.role.json`)
 
 These are defined in the `constraints` array of each role definition file, making them extensible for custom roles.
+
+> **H10–H12 are doc-shorthand only.** The labels do not appear in source — `grep H10|H11|H12` across `*.cs` returns zero hits. They map to the constraint-type strings (`role-transition`, `requires-prior`, `panel-limit`) evaluated by `Services/RoleConstraintEvaluator.cs` against the rows currently shipped in the base `.role.json` files. Adding a new constraint of the same type to a custom role is **not** assigned a new H## — the ID names the row, not the mechanism.
 
 | # | Name | Constraint Type | Used By | Trigger | Message |
 |---|------|----------------|---------|---------|---------|
@@ -102,9 +109,11 @@ These are defined in the `constraints` array of each role definition file, makin
 |---|------|---------|---------|
 | H17 | Dangerous commands | Bash command matches destructive patterns: recursive delete of root/home, fork bombs, `dd` to disk, download-and-execute (`curl\|sh`), eval of variables, history clearing, SELinux disable, firewall flush, shadow/password file access. | `BLOCKED: Dangerous command pattern detected. Reason: {reason}` |
 | H18 | Chained `cd` commands | `cd /path && command` or `cd /path; command`. Breaks the guard's ability to analyze the actual command. | `BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.` |
-| H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, etc. Dydo should be called directly. | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
+| H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, `python dydo`, etc. Dydo should be called directly. **Severity-pinned default nudge** — implemented in `Services/ConfigFactory.cs DefaultNudges`; pattern/message editable in `dydo.json`, severity force-restored to `block` by `MergeSystemNudges` (see Extensibility section below). | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
 | H20 | `dydo wait` in foreground | `dydo wait` executed without `run_in_background: true`. Would block the agent's main thread. | `BLOCKED: 'dydo wait' must run in background.` |
 | H26 | Conditional git stash block | Bash command matches `git stash` (any variant) and the agent is NOT running in a worktree. Allowed inside worktrees where the stash stack is isolated. | `BLOCKED: git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents' stash operations will interfere. Commit your changes instead.` |
+| H28 | Direct `git merge` in worktree | `git merge` issued by an agent that is in a dispatch worktree or whose workspace contains a `.merge-source` marker. Forces the merge through `dydo worktree merge` (which runs the safety pre-check). Implemented at `Commands/GuardCommand.cs:758-779` (regex `GitMergeRegex` at `:1317-1318`). | `BLOCKED: Use dydo worktree merge to merge worktree branches. Do not use git merge directly.` |
+| H29 | Human-only dydo subcommands | Agent (any agent identity attached to the session) runs `dydo task approve`, `dydo task reject`, `dydo roles reset`, `dydo guard lift`, or `dydo guard restore`. These are administrative commands reserved for the human. Implemented at `Commands/GuardCommand.cs:620-633`; regex at `:1320-1322`. | `BLOCKED: This command is human-only. Agents cannot run it.` |
 
 ### Messaging
 
@@ -137,10 +146,13 @@ The guardrail system is designed for extension through role definition files (`.
 **What's hard-coded:**
 - Staged access control (H3, H6) and tool blocking (H27)
 - Off-limits enforcement (H2)
-- Bash safety analysis (H17–H20, H26)
+- Bash safety analysis (H17, H18, H20, H26, H28, H29) — direct pattern checks in `Commands/GuardCommand.cs`
 - Release blocking checks (H13–H16, H25)
 - Messaging restrictions (H21–H22)
-- Soft-block marker file logic (S1–S4)
+- Soft-block marker file logic (S1, S2, S4, S5)
+
+**What's a severity-pinned default nudge** (pattern and message editable in `dydo.json`, severity force-restored to `block`):
+- Indirect dydo invocation (H19) — implemented as multiple `block`-severity entries in `Services/ConfigFactory.cs:9-22 DefaultNudges` (npx, dotnet, dotnet run, bash/sh/zsh/cmd/powershell/pwsh, python). `Commands/GuardCommand.cs:587-609 MergeSystemNudges` re-merges these on every guard call: a missing pattern is re-added; a downgraded severity is force-restored to `block`. The pattern text and the message body remain user-editable.
 
 Custom roles inherit the hard-coded enforcement automatically. Adding a new `.role.json` with custom `constraints` entries extends the system without code changes.
 

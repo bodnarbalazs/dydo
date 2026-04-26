@@ -39,7 +39,7 @@ The guard enforces a progressive unlock. An agent cannot skip stages — each ga
 
 **Stage 1 (Claimed, No Role):** Adds own mode files to readable set (`dydo/agents/{self}/modes/*.md`). Writes and search tools still blocked.
 
-**Stage 2 (Claimed + Role):** All reads allowed. Writes permitted to role's `WritablePaths`, but only after all `must-read: true` files have been read. Search tools (Glob, Grep, Agent) unlocked.
+**Stage 2 (Claimed + Role):** All reads allowed. Writes permitted to role's `WritablePaths`, but only after all `must-read: true` files have been read. Search tools (Glob, Grep, Agent) unlocked. Stage 2 also widens the off-limits mode-file bypass to **all** agents' mode files, not just the agent's own — see "Stage-2 cross-agent mode-file bypass" under Off-Limits File Enforcement below.
 
 See [Agent Lifecycle](./agent-lifecycle.md) for the full stage progression.
 
@@ -68,6 +68,8 @@ Global off-limits patterns are defined in `dydo/files-off-limits.md`. These appl
 **Whitelist exceptions:** The file supports a `## Whitelist` section where patterns can override off-limits rules (e.g., `.env.example`).
 
 **Bootstrap bypass:** Files needed for onboarding (bootstrap files, mode files) bypass off-limits checks based on the agent's current stage.
+
+**Stage-2 cross-agent mode-file bypass (security-adjacent):** Once an agent has a role set (Stage 2), the off-limits enforcement bypasses for *any* agent's mode file (`dydo/agents/*/modes/*.md`), not just the agent's own. The bypass is intentional — it lets a docs-writer or co-thinker reason about the role system across agents without requiring elevated access — but it means a stage-2 agent can read the mode files of every other agent in the project, not only its own. Implemented at `Commands/GuardCommand.cs:351-360 ShouldBypassOffLimits` and `:1216-1223 IsAnyModeFile`. The narrower self-only variant (`IsModeFile(filePath, agent.Name)`) on line 355 is the Stage-1 bypass; the unconditional `IsAnyModeFile` on line 357 is the Stage-2 widening. If you need to scope this down, change the Stage-2 branch to call `IsModeFile(filePath, agent.Name)` instead.
 
 ---
 
@@ -148,16 +150,17 @@ All guardrails fall into three tiers:
 
 **Nudges (N-tier):** Exit 0, action allowed but guidance injected. Examples: release hints when inbox is empty, bash command warnings about variable expansion, role-specific denial hints.
 
-**Soft-Blocks (S-tier):** Exit 2 on first encounter; a marker file is created so the same check passes on retry. Examples: role mismatch warning on dispatch, `--no-launch` confirmation, unread messages blocking work, pending wait registration.
+**Soft-Blocks (S-tier):** Exit 2 on first encounter; a marker file is created so the same check passes on retry. Examples: role mismatch warning on dispatch, `--no-launch` confirmation, pending wait registration, inactive-agent messaging.
 
 **Hard Rules (H-tier):** Exit 2, no override, no retry. Categories include:
-- **Access control** (H1–H6): Role permissions, off-limits, staged reads, must-read enforcement, search tool lockout
+- **Access control** (H1–H6, H27): Role permissions, off-limits, staged reads, must-read enforcement, search tool lockout, plan mode lockout
 - **Onboarding** (H7–H9): No identity/role blocks writes, session ID required
-- **Role constraints** (H10–H12): No self-review, orchestrator graduation, judge panel limit
+- **Role constraints** (H10–H12): No self-review, orchestrator graduation, judge panel limit (doc-shorthand for `.role.json` constraint types)
 - **Release blocking** (H13–H16, H25): Unprocessed inbox, active waits, pending replies, worktree merges, code-writer review enforcement
-- **Bash safety** (H17–H20, H26): Dangerous commands, chained cd, indirect dydo, foreground wait, git stash
+- **Bash safety** (H17, H18, H20, H26, H28, H29): Dangerous commands, chained cd, foreground wait, git stash, direct git merge in worktree, human-only dydo subcommands. (H19 indirect-dydo is a severity-pinned default nudge — pattern editable, severity force-restored to `block`. See [Guardrails Reference](../reference/guardrails.md) under Extensibility.)
 - **Messaging** (H21–H22): No self-messaging, no cross-human messaging
 - **Dispatch** (H23–H24): Double-dispatch protection, conflicting launch flags
+- **Pending state** (H30): Unread inbox blocks every operation until cleared (was S3 — re-classified because the gate has no marker/override and re-fires on every tool call)
 
 See [Guardrails Reference](../reference/guardrails.md) for the full catalog.
 

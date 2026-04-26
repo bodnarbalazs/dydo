@@ -864,17 +864,6 @@ public static class AuditCommand
             }
         }
 
-        function getEventColor(eventType) {
-            switch(eventType) {
-                case 'Read': return '#90EE90';
-                case 'Write': return '#87CEEB';
-                case 'Edit': return '#FFD700';
-                case 'Delete': return '#FF6B6B';
-                case 'Blocked': return '#FF0000';
-                default: return '#CCCCCC';
-            }
-        }
-
         function toggleDocLinks() {
             showDocLinks = document.getElementById('showDocLinks').checked;
             for (let i = 0; i < 3; i++) {
@@ -969,6 +958,4 @@ public static class AuditCommand
         }
 """;
 
-    private static string TruncateCommand(string command)
-        => AuditVisualizationService.TruncateCommand(command);
 }

@@ -3,9 +3,10 @@ id: 35
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-08
+resolved-date: 2026-04-26
 ---
 
 # Test GenerateModeFile_TestWriter_SkipsCodingStandards has misleading name
@@ -20,4 +21,4 @@ date: 2026-04-08
 
 ## Resolution
 
-(Filled when resolved)
+Test renamed in commit e4cd980 (Dexter) to match assertion. Production behaviour correct: test-writer mode files include coding-standards (mode-test-writer.template.md:18, with template comment 'tests are code too'). Reviewed by Frank.

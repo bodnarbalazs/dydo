@@ -1,0 +1,48 @@
+{"ts":"2026-04-26T14:41:04.3299388Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md","tool":"read"}
+{"ts":"2026-04-26T14:41:09.5482645Z","event":"Claim","agent":"Charlie"}
+{"ts":"2026-04-26T14:41:14.8062121Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\17ead107-fix-0113-per-agent-clean-marker-removal.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-26T14:41:19.9386939Z","event":"Role","role":"code-writer","task":"fix-0113-per-agent-clean-marker-removal"}
+{"ts":"2026-04-26T14:41:26.8655995Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-04-26T14:41:27.7562599Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\17ead107-fix-0113-per-agent-clean-marker-removal.md","tool":"read"}
+{"ts":"2026-04-26T14:41:28.0659858Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-0113-per-agent-clean-marker-removal.md","tool":"read"}
+{"ts":"2026-04-26T14:41:33.8255341Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-26T14:41:34.4385889Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-26T14:41:34.9905389Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-26T14:41:35.5529153Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\draft-issue-0113-body.md","tool":"read"}
+{"ts":"2026-04-26T14:41:39.6028891Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs","tool":"read"}
+{"ts":"2026-04-26T14:41:50.955768Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T14:41:53.6169428Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\WorkspaceCleanerTests.cs","tool":"read"}
+{"ts":"2026-04-26T14:42:00.8622229Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T14:42:04.0445706Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T14:42:13.6976581Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-26T14:42:14.9208684Z","event":"Read","path":"DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-26T14:42:25.459527Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-04-26T14:42:40.423257Z","event":"Read","path":"Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-26T14:42:41.3867753Z","event":"Read","path":"Commands/CleanCommand.cs","tool":"grep"}
+{"ts":"2026-04-26T14:42:44.9371979Z","event":"Read","path":"Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-26T14:42:48.278675Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T14:42:52.6980677Z","event":"Read","path":"DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-26T14:42:56.8438077Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"read"}
+{"ts":"2026-04-26T14:43:05.8885248Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"read"}
+{"ts":"2026-04-26T14:43:08.8780557Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"read"}
+{"ts":"2026-04-26T14:43:20.5852968Z","event":"Read","path":"DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs","tool":"grep"}
+{"ts":"2026-04-26T14:43:23.5334409Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"read"}
+{"ts":"2026-04-26T14:43:34.9577752Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5 -- DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs"}
+{"ts":"2026-04-26T14:43:36.5583432Z","event":"Bash","tool":"bash","cmd":"git log -1 --format=\u0022%H %s\u0022 -L \u0027/Clean_SingleAgent_PreservesWorktreeMarkers/,/^    \\[/:DynaDocs.Test..."}
+{"ts":"2026-04-26T19:09:40.1133541Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs","tool":"edit"}
+{"ts":"2026-04-26T19:11:30.6141622Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs","tool":"edit"}
+{"ts":"2026-04-26T19:11:38.5657124Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs","tool":"edit"}
+{"ts":"2026-04-26T19:11:49.7035747Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs","tool":"edit"}
+{"ts":"2026-04-26T19:11:53.615816Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WorkspaceCleaner.cs","tool":"read"}
+{"ts":"2026-04-26T19:12:09.3933607Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"edit"}
+{"ts":"2026-04-26T19:12:15.6063271Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"read"}
+{"ts":"2026-04-26T19:12:23.1798654Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkspaceAndCleanTests.cs","tool":"edit"}
+{"ts":"2026-04-26T19:12:29.9733003Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~WorkspaceCleaner|FullyQu..."}
+{"ts":"2026-04-26T19:12:56.9878503Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\coverage\\run_tests.py","tool":"read"}
+{"ts":"2026-04-26T19:13:07.9799862Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -80"}
+{"ts":"2026-04-26T19:17:17.7411243Z","event":"Bash","tool":"bash","cmd":"git status --porcelain | head -20"}
+{"ts":"2026-04-26T19:17:18.820413Z","event":"Bash","tool":"bash","cmd":"git diff --stat Services/WorkspaceCleaner.cs DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs"}
+{"ts":"2026-04-26T19:17:27.6758661Z","event":"Bash","tool":"bash","cmd":"git add Services/WorkspaceCleaner.cs DynaDocs.Tests/Integration/WorkspaceAndCleanTests.cs \u0026\u0026 git com..."}
+{"ts":"2026-04-26T19:19:36.3360968Z","event":"Bash","tool":"bash","cmd":"git log master..HEAD --oneline 2\u003E\u00261 ; echo \u0022---\u0022 ; git log -1 --format=\u0022%H %s%n%nFiles:\u0022 \u0026\u0026 git show..."}
+{"ts":"2026-04-26T19:19:41.9078197Z","event":"Bash","tool":"bash","cmd":"git log -3 --oneline"}
+{"ts":"2026-04-26T19:20:02.4765145Z","event":"Release","agent":"Charlie"}

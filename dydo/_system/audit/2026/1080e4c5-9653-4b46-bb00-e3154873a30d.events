@@ -54,3 +54,11 @@
 {"ts":"2026-04-26T13:57:41.0218587Z","event":"Bash","tool":"bash","cmd":"sed -n \u00271,100p\u0027 /c/Users/User/Desktop/Projects/DynaDocs/Services/InboxMetadataReader.cs"}
 {"ts":"2026-04-26T13:57:45.6417073Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\RoleConstraint.cs","tool":"read"}
 {"ts":"2026-04-26T13:57:46.0338575Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022class AgentState\\|DispatchedBy\\|DispatchedByRole\u0022 /c/Users/User/Desktop/Projects/DynaDocs/..."}
+{"ts":"2026-04-26T13:59:21.8255432Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_index.md","tool":"read"}
+{"ts":"2026-04-26T13:59:21.8396338Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:59:26.2050552Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\017-stale-free-semantics.md","tool":"read"}
+{"ts":"2026-04-26T13:59:27.0084595Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\018-zombie-working-state-recovery.md","tool":"read"}
+{"ts":"2026-04-26T13:59:27.7638083Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\012-release-constraints-and-role-capabilities.md","tool":"read"}
+{"ts":"2026-04-26T13:59:28.0031061Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\012-dispatch-queue-deferred-launch.md","tool":"read"}
+{"ts":"2026-04-26T14:01:16.22679Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-worktree-reliability.md","tool":"write"}
+{"ts":"2026-04-26T14:02:57.0733175Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\1080e4c5-9653-4b46-bb00-e3154873a30d\\tasks\\blb3zl4g4.output","tool":"read"}

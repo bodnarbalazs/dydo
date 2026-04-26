@@ -33,3 +33,27 @@
 {"ts":"2026-04-26T13:58:05.6159763Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"read"}
 {"ts":"2026-04-26T13:58:08.6795335Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"grep"}
 {"ts":"2026-04-26T13:58:12.411696Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"read"}
+{"ts":"2026-04-26T13:59:42.4602349Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-26T13:59:45.3191673Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\RoleDefinition.cs","tool":"read"}
+{"ts":"2026-04-26T13:59:48.1495377Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\013-conditional-must-reads.md","tool":"read"}
+{"ts":"2026-04-26T14:00:02.0647177Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\roles-and-permissions.md","tool":"edit"}
+{"ts":"2026-04-26T14:00:32.0585772Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\roles-and-permissions.md","tool":"edit"}
+{"ts":"2026-04-26T14:00:54.951941Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"edit"}
+{"ts":"2026-04-26T14:01:14.1287953Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"edit"}
+{"ts":"2026-04-26T14:01:39.207889Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"edit"}
+{"ts":"2026-04-26T14:01:47.807078Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"edit"}
+{"ts":"2026-04-26T14:02:18.8987108Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"edit"}
+{"ts":"2026-04-26T14:02:29.690254Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"edit"}
+{"ts":"2026-04-26T14:03:04.4088479Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\guard-system.md","tool":"edit"}
+{"ts":"2026-04-26T14:03:15.8219597Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\guard-system.md","tool":"edit"}
+{"ts":"2026-04-26T14:03:24.7089375Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\guard-system.md","tool":"edit"}
+{"ts":"2026-04-26T14:03:34.3078237Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\guardrails.md","tool":"read"}
+{"ts":"2026-04-26T14:04:05.5346331Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\guard-system.md","tool":"read"}
+{"ts":"2026-04-26T14:04:17.4016758Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\guard-system.md","tool":"edit"}
+{"ts":"2026-04-26T14:04:30.7232517Z","event":"Bash","tool":"bash","cmd":"git status -s 2\u003E\u00261 | grep -iE \u0022(guardrails|guard-system|roles-and-permissions|^M|^A|^\\?\\?)\u0022 | head -..."}
+{"ts":"2026-04-26T14:04:33.3699052Z","event":"Bash","tool":"bash","cmd":"git status -s"}
+{"ts":"2026-04-26T14:04:53.4296656Z","event":"Bash","tool":"bash","cmd":"git add dydo/reference/guardrails.md dydo/understand/guard-system.md dydo/understand/roles-and-permi..."}
+{"ts":"2026-04-26T14:05:43.8556837Z","event":"Bash","tool":"bash","cmd":"git diff --cached --stat"}
+{"ts":"2026-04-26T14:06:04.9171635Z","event":"Bash","tool":"bash","cmd":"git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\ndocs: fix guardrail taxonomy drift (#0043, #0044, #0048, #0064, #0066, ..."}
+{"ts":"2026-04-26T14:06:29.4451099Z","event":"Bash","tool":"bash","cmd":"git rev-parse HEAD"}
+{"ts":"2026-04-26T14:07:11.6196961Z","event":"Release","agent":"Charlie"}

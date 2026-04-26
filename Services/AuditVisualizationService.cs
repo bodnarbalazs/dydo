@@ -3,21 +3,6 @@ namespace DynaDocs.Services;
 using DynaDocs.Models;
 
 /// <summary>
-/// Represents a merged event from multiple sessions for timeline visualization.
-/// Public version for testability — mirrors the internal MergedEvent in AuditCommand.
-/// </summary>
-public class TimelineEntry
-{
-    public DateTime Timestamp { get; set; }
-    public string Agent { get; set; } = "";
-    public string EventType { get; set; } = "";
-    public string? Path { get; set; }
-    public string? Command { get; set; }
-    public string? Role { get; set; }
-    public string? Task { get; set; }
-}
-
-/// <summary>
 /// Pure logic for audit visualization — agent color assignment,
 /// timeline merging, and combined snapshot building.
 /// Extracted from AuditCommand to enable unit testing.

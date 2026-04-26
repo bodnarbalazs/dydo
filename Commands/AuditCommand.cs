@@ -292,7 +292,7 @@ public static class AuditCommand
         var agentColors = AssignAgentColors(sessions);
 
         // Merge all events across sessions, sorted by timestamp
-        var mergedTimeline = MergeTimelines(sessions);
+        var mergedTimeline = AuditVisualizationService.MergeTimelines(sessions);
 
         // Build combined snapshot (union of all files/folders/links)
         var combinedSnapshot = BuildCombinedSnapshot(sessions);
@@ -300,7 +300,7 @@ public static class AuditCommand
         // Serialize data for embedding
         var sessionsJson = JsonSerializer.Serialize(sessions, DydoDefaultJsonContext.Default.ListAuditSession);
         var agentColorsJson = JsonSerializer.Serialize(agentColors, DydoDefaultJsonContext.Default.DictionaryStringString);
-        var timelineJson = JsonSerializer.Serialize(mergedTimeline, DydoDefaultJsonContext.Default.ListMergedEvent);
+        var timelineJson = JsonSerializer.Serialize(mergedTimeline, DydoDefaultJsonContext.Default.ListTimelineEntry);
         var snapshotJson = JsonSerializer.Serialize(combinedSnapshot, DydoDefaultJsonContext.Default.ProjectSnapshot);
 
         var sb = new StringBuilder();
@@ -408,22 +408,6 @@ public static class AuditCommand
 
     private static Dictionary<string, string> AssignAgentColors(IReadOnlyList<AuditSession> sessions)
         => AuditVisualizationService.AssignAgentColors(sessions);
-
-    private static List<MergedEvent> MergeTimelines(IReadOnlyList<AuditSession> sessions)
-    {
-        return AuditVisualizationService.MergeTimelines(sessions)
-            .Select(t => new MergedEvent
-            {
-                Timestamp = t.Timestamp,
-                Agent = t.Agent,
-                EventType = t.EventType,
-                Path = t.Path,
-                Command = t.Command,
-                Role = t.Role,
-                Task = t.Task
-            })
-            .ToList();
-    }
 
     private static ProjectSnapshot BuildCombinedSnapshot(IReadOnlyList<AuditSession> sessions)
     {
@@ -987,19 +971,4 @@ public static class AuditCommand
 
     private static string TruncateCommand(string command)
         => AuditVisualizationService.TruncateCommand(command);
-}
-
-/// <summary>
-/// Represents a merged event from multiple sessions for timeline visualization.
-/// Internal to allow source-generated JSON serialization.
-/// </summary>
-internal class MergedEvent
-{
-    public DateTime Timestamp { get; set; }
-    public string Agent { get; set; } = "";
-    public string EventType { get; set; } = "";
-    public string? Path { get; set; }
-    public string? Command { get; set; }
-    public string? Role { get; set; }
-    public string? Task { get; set; }
 }

@@ -2460,7 +2460,7 @@ public class WorktreeCommandTests : IDisposable
         try
         {
             WorktreeCommand.ExecuteMerge(false, _registry);
-            var mergeCall = calls.Single(c => c.FileName == "git" && c.Arguments.Contains("merge"));
+            var mergeCall = calls.Single(c => c.FileName == "git" && c.Arguments.Contains("merge --no-edit"));
             Assert.Contains("merge --no-edit -- worktree/Adele-20260316", mergeCall.Arguments);
         }
         finally

@@ -74,6 +74,8 @@ public class RoleConstraintEvaluator
                 int activeCount = 0;
                 foreach (var name in _agentNames)
                 {
+                    if (string.Equals(name, agentName, StringComparison.OrdinalIgnoreCase))
+                        continue;
                     var s = _getAgentState(name);
                     if (s != null &&
                         string.Equals(s.Role, role, StringComparison.OrdinalIgnoreCase) &&

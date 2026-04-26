@@ -316,6 +316,67 @@ public class RoleConstraintEvaluatorTests
     }
 
     [Fact]
+    public void CanTakeRole_PanelLimit_AllowsIdempotentReSetBySameAgent()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "panel-limit",
+                    MaxCount = 1,
+                    Message = "Only one reviewer per task."
+                }
+            ])
+        };
+        var states = new Dictionary<string, AgentState>
+        {
+            ["Alice"] = new()
+            {
+                Name = "Alice",
+                Role = "reviewer",
+                Task = "task1",
+                Status = AgentStatus.Working
+            }
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => states.GetValueOrDefault(name));
+
+        Assert.True(evaluator.CanTakeRole("Alice", "reviewer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanTakeRole_PanelLimit_BlocksWhenAnotherAgentAtLimit()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "panel-limit",
+                    MaxCount = 1,
+                    Message = "Only one reviewer per task."
+                }
+            ])
+        };
+        var states = new Dictionary<string, AgentState>
+        {
+            ["Alice"] = MakeState("Alice"),
+            ["Bob"] = new()
+            {
+                Name = "Bob",
+                Role = "reviewer",
+                Task = "task1",
+                Status = AgentStatus.Working
+            }
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice", "Bob"],
+            name => states.GetValueOrDefault(name));
+
+        Assert.False(evaluator.CanTakeRole("Alice", "reviewer", "task1", out _));
+    }
+
+    [Fact]
     public void CanTakeRole_PanelLimit_BlocksWhenStoredRoleAndTaskCaseDiffer()
     {
         var roles = new Dictionary<string, RoleDefinition>

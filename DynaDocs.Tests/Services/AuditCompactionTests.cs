@@ -833,6 +833,31 @@ public class AuditCompactionTests : IDisposable
     }
 
     [Fact]
+    public void Compact_CorruptBaseline_LogsWarningInsteadOfSilentSkip()
+    {
+        File.WriteAllText(
+            Path.Combine(_yearDir, "_baseline-corrupt.json"),
+            "{ this is not valid json");
+        WriteSession(MakeSession("s1", MakeSnapshot(["a.cs"], ["src"])));
+
+        var stderr = new StringWriter();
+        var originalErr = Console.Error;
+        Console.SetError(stderr);
+        try
+        {
+            SnapshotCompactionService.Compact(_yearDir);
+        }
+        finally
+        {
+            Console.SetError(originalErr);
+        }
+
+        var output = stderr.ToString();
+        Assert.Contains("[dydo] WARNING", output);
+        Assert.Contains("_baseline-corrupt.json", output);
+    }
+
+    [Fact]
     public void ComputeBaselineId_IgnoresFileAndFolderOrdering()
     {
         var ordered = MakeSnapshot(

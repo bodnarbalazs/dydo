@@ -170,7 +170,10 @@ public static class AuditCommand
                     if (baseline != null)
                         baselineCache[baseline.Id] = baseline;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[dydo] WARNING: Failed to load audit baseline {Path.GetFileName(file)}: {ex.Message}");
+                }
             }
         }
 
@@ -413,23 +416,29 @@ public static class AuditCommand
     {
         // Load baselines from audit folder for delta resolution
         var baselineCache = new Dictionary<string, SnapshotBaseline>();
-        try
+        var auditService = new AuditService();
+        var auditPath = auditService.GetAuditPath();
+        if (Directory.Exists(auditPath))
         {
-            var auditService = new AuditService();
-            var auditPath = auditService.GetAuditPath();
             foreach (var yearDir in Directory.GetDirectories(auditPath))
             {
                 foreach (var file in Directory.GetFiles(yearDir, "_baseline-*.json"))
                 {
-                    var baseline = JsonSerializer.Deserialize(
-                        File.ReadAllText(file),
-                        DydoDefaultJsonContext.Default.SnapshotBaseline);
-                    if (baseline != null)
-                        baselineCache[baseline.Id] = baseline;
+                    try
+                    {
+                        var baseline = JsonSerializer.Deserialize(
+                            File.ReadAllText(file),
+                            DydoDefaultJsonContext.Default.SnapshotBaseline);
+                        if (baseline != null)
+                            baselineCache[baseline.Id] = baseline;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"[dydo] WARNING: Failed to load audit baseline {Path.GetFileName(file)}: {ex.Message}");
+                    }
                 }
             }
         }
-        catch { /* Baselines may not exist yet */ }
 
         var sessionLookup = sessions.ToDictionary(s => s.SessionId);
         return AuditVisualizationService.BuildCombinedSnapshot(

@@ -326,7 +326,10 @@ public class SnapshotCompactionService
                 if (baseline != null)
                     baselines[baseline.Id] = baseline;
             }
-            catch { /* skip corrupt baselines */ }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[dydo] WARNING: Failed to load audit baseline {Path.GetFileName(file)}: {ex.Message}");
+            }
         }
         return baselines;
     }
@@ -344,7 +347,11 @@ public class SnapshotCompactionService
             }
             return session;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[dydo] WARNING: Failed to load audit session {Path.GetFileName(filePath)}: {ex.Message}");
+            return null;
+        }
     }
 
     private static AuditSession? FindSessionById(List<string> sessionFiles, string sessionId)

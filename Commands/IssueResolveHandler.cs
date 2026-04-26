@@ -10,21 +10,29 @@ internal static class IssueResolveHandler
         var issuesPath = IssueCommand.GetIssuesPath();
         var resolvedPath = Path.Combine(issuesPath, "resolved");
 
-        if (Directory.Exists(resolvedPath))
+        // Open dir wins: a duplicate ID in resolved/ is a stale-state artifact (historical
+        // create-side bug, manual file edits) and must not block the resolve. Surface it as
+        // a warning so the duplicate gets renumbered.
+        var issueFile = FindIssueById(issuesPath, id);
+        var resolvedFile = FindIssueById(resolvedPath, id);
+
+        if (issueFile == null)
         {
-            var resolvedFile = FindIssueById(resolvedPath, id);
             if (resolvedFile != null)
             {
                 ConsoleOutput.WriteError($"Issue #{id} is already resolved.");
                 return ExitCodes.ToolError;
             }
-        }
 
-        var issueFile = FindIssueById(issuesPath, id);
-        if (issueFile == null)
-        {
             ConsoleOutput.WriteError($"Issue #{id} not found.");
             return ExitCodes.ToolError;
+        }
+
+        if (resolvedFile != null)
+        {
+            ConsoleOutput.WriteWarning(
+                $"Warning: Issue #{id} also exists in resolved/ ({Path.GetFileName(resolvedFile)}). " +
+                $"Resolving the open file ({Path.GetFileName(issueFile)}); the duplicate ID should be renumbered.");
         }
 
         var content = File.ReadAllText(issueFile);

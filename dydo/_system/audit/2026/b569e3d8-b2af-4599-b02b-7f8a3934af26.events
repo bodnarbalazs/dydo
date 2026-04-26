@@ -264,3 +264,5 @@
 {"ts":"2026-04-26T19:49:16.5298542Z","event":"Bash","tool":"bash","cmd":"rm dydo/_system/audit/2026/2026-03-23-abc.json 2\u003E\u00261 \u0026\u0026 echo \u0022deleted\u0022 \u0026\u0026 ls dydo/_system/audit/2026/..."}
 {"ts":"2026-04-26T20:32:00.1520519Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b569e3d8-b2af-4599-b02b-7f8a3934af26\\tasks\\bt8ff167m.output","tool":"read"}
 {"ts":"2026-04-26T20:32:12.5386159Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\b4e89ac5-msg-quick-fixes-89-115-116.md","tool":"read"}
+{"ts":"2026-04-26T20:48:22.1253919Z","event":"Blocked","tool":"bash","cmd":"git log --oneline 09a43fb -10 2\u003E\u00261; echo \u0022---\u0022; git log --oneline --all | grep -E \u00223654ec6|0089|0115...","reason":"Unread messages"}
+{"ts":"2026-04-26T20:48:32.4220989Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\f2145b67-msg-quick-fixes-89-115-116.md","tool":"read"}

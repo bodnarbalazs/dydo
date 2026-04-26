@@ -26,3 +26,10 @@
 {"ts":"2026-04-26T20:42:08.9199173Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 show 4bf138f --stat | head -10"}
 {"ts":"2026-04-26T20:42:17.3659824Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/quick-fixes-89-115-116..."}
 {"ts":"2026-04-26T20:42:41.9364102Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 ls-tree HEAD -- dydo/project/issues/0114-dydo-issue..."}
+{"ts":"2026-04-26T20:44:35.6549031Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 status"}
+{"ts":"2026-04-26T20:45:00.8206536Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/quick-fixes-89-115-116..."}
+{"ts":"2026-04-26T20:45:08.4649713Z","event":"Bash","tool":"bash","cmd":"diff \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/quick-fixes-89-115-116/d..."}
+{"ts":"2026-04-26T20:45:13.8091987Z","event":"Blocked","tool":"bash","cmd":"rm \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/quick-fixes-89-115-116/dyd...","reason":"Nudge (block): Use dydo worktree cleanup instead of deleting worktree directories directly."}
+{"ts":"2026-04-26T20:45:16.817582Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/quick-fixes-89-115-116..."}
+{"ts":"2026-04-26T20:45:29.7642613Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 status"}
+{"ts":"2026-04-26T20:45:54.4826519Z","event":"Bash","tool":"bash","cmd":"git -C \u0022C:/Users/User/Desktop/Projects/DynaDocs\u0022 log --oneline -5"}

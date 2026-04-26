@@ -8,20 +8,25 @@ using DynaDocs.Utils;
 public class WatchdogServiceTests : IDisposable
 {
     private readonly string _testDir;
-    private readonly string _originalCwd;
 
     public WatchdogServiceTests()
     {
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-watchdog-test-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
-        _originalCwd = Environment.CurrentDirectory;
-        // Prevent tests from spawning real wt.exe or watchdog processes
+        // Note: we deliberately do NOT capture Environment.CurrentDirectory here.
+        // CWD is process-global state shared with parallel test classes; capturing it
+        // can pin a temp path that another class deletes before our Dispose runs (#0116).
+        // Tests that need a specific CWD set it themselves; Dispose parks CWD at
+        // Path.GetTempPath() so deleting _testDir is always safe.
         WatchdogService.StartProcessOverride = _ => null;
     }
 
     public void Dispose()
     {
-        Environment.CurrentDirectory = _originalCwd;
+        // Park CWD on a guaranteed-existing dir before deleting _testDir, so we never
+        // leave the process pointing at a deleted directory and never block the delete.
+        try { Environment.CurrentDirectory = Path.GetTempPath(); }
+        catch { /* best-effort; if even GetTempPath is gone, we have bigger problems */ }
         WatchdogService.StartProcessOverride = null;
         WatchdogService.FindProcessesOverride = null;
         WatchdogService.GetParentPidOverride = null;

@@ -55,6 +55,30 @@ The PID staleness check exists in the read-side code path (`dydo queue show` ann
 
 Likely fix is in whichever service owns `_active.json` lifecycle — probably a `QueueService` or similar — adding a "is active stale → clear and promote first pending" branch on every read of queue state. This is a single-file change with bounded blast radius.
 
+### 2026-04-26 live observation: the tracked PID is the launcher, not the agent
+
+Reproduced in this project's own session immediately after the previous filings. Charlie (reviewer) dispatched Adele to merge the `#0107` redo branch via `--queue merge`. The merge **succeeded** (commit `3ba24c4` landed on master, the worktree was torn down), but `dydo queue show` continued to display:
+
+```
+Active: Adele (fix-worktree-merge-self-merge-redo-merge) PID=1632 [stale]
+Pending: (none)
+```
+
+with `[stale]` from the moment the dispatch was registered, **including while Adele was demonstrably alive and in the middle of a successful merge**. Adele was still showing `working` in `dydo agent list` at the same time the queue marked her PID dead.
+
+This means the queue's active-slot PID is the **launching process** (the dispatch invocation that spawns the agent terminal), not the agent's own session PID. The launcher exits as soon as the terminal is up, so by design the tracked PID dies almost immediately while the real agent process keeps running.
+
+Implications for the fix:
+
+- The staleness *signal* in `dydo queue show` is producing false positives in normal operation, not just after crashes. Agents that read this state are being trained that `[stale]` is normal — which means a real stale (post-crash) is indistinguishable from a healthy in-flight merger.
+- An "auto-clear on stale" fix that only consults the launcher PID will incorrectly clear active mergers in the middle of a healthy merge — actively making things worse.
+- The fix needs to either (a) record the agent's session PID/ID in `_active.json` (not the launcher PID) and consult that for staleness, or (b) cross-check the agent's `dydo agent status` (still working? alive session?) before treating an entry as stale.
+- The post-mortem's three observed wedges may have been a mix of true crashes *and* this false-positive race interacting with whatever advancement logic does exist — worth re-investigating with the launcher-vs-agent-PID distinction in hand.
+
+### Cleanup behaviour observed in this session
+
+When `dydo agent clean Adele --force` was run after the merge succeeded, the queue's active slot was cleared as a side effect of the workspace cleanup. So the queue state IS reachable via that path, but only with `--force` and only via a path normally reserved for explicit workspace teardown. Worth documenting either as the recovery procedure for now or — preferably — fixing properly per the bullets above so the queue self-recovers without `agent clean` involvement.
+
 ## Suggested fix
 
 Two reasonable approaches:

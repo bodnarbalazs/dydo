@@ -1,0 +1,56 @@
+{"ts":"2026-04-26T13:54:51.0556156Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-04-26T13:54:54.9583673Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-04-26T13:54:59.5089564Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c01eed8a-worktree-reliability.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-26T13:55:02.7731584Z","event":"Role","role":"co-thinker","task":"worktree-reliability"}
+{"ts":"2026-04-26T13:55:09.7698997Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c01eed8a-worktree-reliability.md","tool":"read"}
+{"ts":"2026-04-26T13:55:10.8076778Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-04-26T13:55:34.7631978Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-26T13:55:35.0494072Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-26T13:55:38.3627885Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:38.3651825Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:38.7530671Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:39.1307625Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:39.5073991Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:39.8893606Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:40.8919921Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-26T13:55:43.6417287Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0107-dydo-worktree-merge-silently-self-merges-when-run-from-inside-the-source-worktre.md","tool":"read"}
+{"ts":"2026-04-26T13:55:44.3196316Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}
+{"ts":"2026-04-26T13:55:45.0717016Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0109-reviewer-cannot-dispatch-merge-code-writer-when-dispatch-chain-originates-from-a.md","tool":"read"}
+{"ts":"2026-04-26T13:55:45.8411463Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0110-code-writer-release-lacks-a-requires-commit-gate-uncommitted-worktree-changes-ar.md","tool":"read"}
+{"ts":"2026-04-26T13:55:46.6054869Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0111-stale-active-queue-marker-not-auto-cleared-dead-agent-active-slot-blocks-all-sub.md","tool":"read"}
+{"ts":"2026-04-26T13:55:47.3729488Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0112-worktree-marker-shape-is-crash-fragile-orphan-markers-across-multiple-workspaces.md","tool":"read"}
+{"ts":"2026-04-26T13:55:47.5895355Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\incoming-post-mortem-LC-2026-04-26.md","tool":"read"}
+{"ts":"2026-04-26T13:56:24.2871189Z","event":"Read","tool":"agent"}
+{"ts":"2026-04-26T13:56:29.0315164Z","event":"Bash","tool":"bash","cmd":"find /c/Users/User/Desktop/Projects/DynaDocs -type f -name \u0022*.cs\u0022 | grep -E \u0022(AgentRegistry|QueueSer..."}
+{"ts":"2026-04-26T13:56:31.7896646Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:32.0797613Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\QueueService.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:32.2669716Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorktreeCommand.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:32.5357077Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentCommand.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:35.9889333Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:36.3127249Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:37.0503537Z","event":"Read","path":"/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-26T13:56:40.2631264Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\RoleConstraintEvaluator.cs","tool":"read"}
+{"ts":"2026-04-26T13:56:40.7212352Z","event":"Read","path":"/c/Users/User/Desktop/Projects/DynaDocs","tool":"glob"}
+{"ts":"2026-04-26T13:56:41.1121439Z","event":"Bash","tool":"bash","cmd":"find /c/Users/User/Desktop/Projects/DynaDocs/Commands -name \u0022*Command.cs\u0022 | xargs basename -a | sort"}
+{"ts":"2026-04-26T13:57:06.7479333Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\roles\\code-writer.role.json","tool":"read"}
+{"ts":"2026-04-26T13:57:06.8916359Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\roles\\reviewer.role.json","tool":"read"}
+{"ts":"2026-04-26T13:57:07.2489565Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WorkspaceCommand.cs","tool":"read"}
+{"ts":"2026-04-26T13:57:10.6147524Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\CleanCommand.cs","tool":"read"}
+{"ts":"2026-04-26T13:57:10.8742546Z","event":"Bash","tool":"bash","cmd":"find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022AgentLifecycleHandlers.cs\u0022 -o -name \u0022*LifecycleH..."}
+{"ts":"2026-04-26T13:57:11.3492538Z","event":"Read","path":"/c/Users/User/Desktop/Projects/DynaDocs","tool":"grep"}
+{"ts":"2026-04-26T13:57:14.2355514Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\AgentLifecycleHandlers.cs","tool":"read"}
+{"ts":"2026-04-26T13:57:19.1774145Z","event":"Read","path":"/c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-26T13:57:19.8537961Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022\\.worktree\\|\\.merge-source\\|\\.worktree-path\\|\\.worktree-base\\|\\.worktree-hold\\|\\.worktree-r..."}
+{"ts":"2026-04-26T13:57:22.6954287Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-26T13:57:23.2212378Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022static.*Marker\\|void.*Marker\\|File.WriteAllText.*marker\\|File.ReadAllText.*marker\u0022 /c/Users..."}
+{"ts":"2026-04-26T13:57:29.7608899Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022worktree cleanup\\|ExecuteCleanup\\|cleanup.*worktree\u0022 /c/Users/User/Desktop/Projects/DynaDoc..."}
+{"ts":"2026-04-26T13:57:30.7704514Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022worktree cleanup\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Commands/ /c/Users/User/Desktop/..."}
+{"ts":"2026-04-26T13:57:31.2040161Z","event":"Bash","tool":"bash","cmd":"sed -n \u0027574,650p\u0027 /c/Users/User/Desktop/Projects/DynaDocs/Services/AgentRegistry.cs"}
+{"ts":"2026-04-26T13:57:35.4023336Z","event":"Bash","tool":"bash","cmd":"sed -n \u0027160,175p\u0027 /c/Users/User/Desktop/Projects/DynaDocs/Services/QueueService.cs"}
+{"ts":"2026-04-26T13:57:35.8147579Z","event":"Bash","tool":"bash","cmd":"grep -A 5 \u0022class QueueActiveEntry\\|class QueueEntry\u0022 /c/Users/User/Desktop/Projects/DynaDocs/Models/..."}
+{"ts":"2026-04-26T13:57:36.2282341Z","event":"Bash","tool":"bash","cmd":"find /c/Users/User/Desktop/Projects/DynaDocs -name \u0022*.cs\u0022 -path \u0022*/Models/*\u0022 | xargs grep -l \u0022QueueA..."}
+{"ts":"2026-04-26T13:57:40.5788215Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022GetDispatchedFrom\\|dispatchedByRole\\|DispatchedBy\u0022 /c/Users/User/Desktop/Projects/DynaDocs..."}
+{"ts":"2026-04-26T13:57:41.012862Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022class InboxMetadataReader\u0022 /c/Users/User/Desktop/Projects/DynaDocs --include=\u0022*.cs\u0022"}
+{"ts":"2026-04-26T13:57:41.0218587Z","event":"Bash","tool":"bash","cmd":"sed -n \u00271,100p\u0027 /c/Users/User/Desktop/Projects/DynaDocs/Services/InboxMetadataReader.cs"}
+{"ts":"2026-04-26T13:57:45.6417073Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\RoleConstraint.cs","tool":"read"}
+{"ts":"2026-04-26T13:57:46.0338575Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022class AgentState\\|DispatchedBy\\|DispatchedByRole\u0022 /c/Users/User/Desktop/Projects/DynaDocs/..."}

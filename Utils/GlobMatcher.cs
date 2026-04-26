@@ -1,5 +1,6 @@
 namespace DynaDocs.Utils;
 
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 /// <summary>
@@ -8,6 +9,8 @@ using System.Text.RegularExpressions;
 /// </summary>
 public static class GlobMatcher
 {
+    private static readonly ConcurrentDictionary<string, Regex> _cache = new();
+
     public static bool IsMatch(string path, string pattern)
     {
         path = PathUtils.NormalizePath(path);
@@ -18,8 +21,12 @@ public static class GlobMatcher
     public static Regex CompileGlob(string pattern)
     {
         pattern = PathUtils.NormalizePath(pattern);
+        return _cache.GetOrAdd(pattern, BuildRegex);
+    }
 
-        var regexPattern = "^" + Regex.Escape(pattern)
+    private static Regex BuildRegex(string normalizedPattern)
+    {
+        var regexPattern = "^" + Regex.Escape(normalizedPattern)
             .Replace(@"\*\*/", "(.*/)?")
             .Replace(@"\*\*", ".*")
             .Replace(@"\*", "[^/]*")

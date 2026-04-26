@@ -108,4 +108,26 @@ public class GlobMatcherTests
     }
 
     #endregion
+
+    #region Compilation cache
+
+    [Fact]
+    public void CompileGlob_SamePattern_ReturnsCachedRegex()
+    {
+        var first = GlobMatcher.CompileGlob("Commands/**/*.cs");
+        var second = GlobMatcher.CompileGlob("Commands/**/*.cs");
+
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void CompileGlob_EquivalentPatternDifferentSeparators_ReturnsCachedRegex()
+    {
+        var forward = GlobMatcher.CompileGlob("src/**/*.cs");
+        var backward = GlobMatcher.CompileGlob("src\\**\\*.cs");
+
+        Assert.Same(forward, backward);
+    }
+
+    #endregion
 }

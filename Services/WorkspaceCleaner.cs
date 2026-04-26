@@ -11,6 +11,10 @@ public static class WorkspaceCleaner
     private static readonly string[] DirsToRemove =
         ["modes", ".waiting", ".reply-pending", ".dispatch-markers", ".review-dispatched"];
 
+    private static readonly string[] WorktreeMarkers =
+        [".worktree", ".worktree-path", ".worktree-base", ".worktree-hold",
+         ".worktree-root", ".merge-source", ".needs-merge"];
+
     public static int Execute(string? agentNameOrLetter, bool all, bool force, string? task)
     {
         var registry = new AgentRegistry();
@@ -64,7 +68,10 @@ public static class WorkspaceCleaner
 
         var markersBefore = CountWaitMarkersInWorkspace(workspace);
         CleanWorkspace(workspace);
+        var worktreeMarkersRemoved = RemoveWorktreeMarkers(workspace);
         Console.WriteLine($"Cleaned workspace for {name}");
+        if (worktreeMarkersRemoved > 0)
+            Console.WriteLine($"Removed {worktreeMarkersRemoved} stale worktree marker(s)");
         if (markersBefore > 0)
             Console.WriteLine($"Audit: found {markersBefore} stale wait marker(s), cleaned {markersBefore}");
 
@@ -93,30 +100,19 @@ public static class WorkspaceCleaner
         var markersBefore = CountWaitMarkers(registry);
 
         var cleaned = 0;
-        foreach (var name in registry.AgentNames)
-        {
-            var workspace = registry.GetAgentWorkspace(name);
-            if (Directory.Exists(workspace))
-            {
-                CleanWorkspace(workspace);
-                cleaned++;
-            }
-        }
-
-        Console.WriteLine($"Cleaned {cleaned} workspace(s)");
-
         var markersRemoved = 0;
         foreach (var name in registry.AgentNames)
         {
             var workspace = registry.GetAgentWorkspace(name);
             if (!Directory.Exists(workspace)) continue;
-            foreach (var marker in new[] { ".worktree", ".worktree-path", ".worktree-base",
-                ".worktree-hold", ".worktree-root", ".merge-source", ".needs-merge" })
-            {
-                var path = Path.Combine(workspace, marker);
-                if (File.Exists(path)) { File.Delete(path); markersRemoved++; }
-            }
+
+            CleanWorkspace(workspace);
+            cleaned++;
+            markersRemoved += RemoveWorktreeMarkers(workspace);
         }
+
+        Console.WriteLine($"Cleaned {cleaned} workspace(s)");
+
         if (markersRemoved > 0)
             Console.WriteLine($"Removed {markersRemoved} stale worktree marker(s)");
 
@@ -127,6 +123,7 @@ public static class WorkspaceCleaner
     private static int CleanByTask(AgentRegistry registry, string taskName, bool force)
     {
         var cleaned = 0;
+        var markersRemoved = 0;
 
         foreach (var name in registry.AgentNames)
         {
@@ -146,6 +143,7 @@ public static class WorkspaceCleaner
             if (!Directory.Exists(workspace)) continue;
 
             CleanWorkspace(workspace);
+            markersRemoved += RemoveWorktreeMarkers(workspace);
             Console.WriteLine($"Cleaned {name} (was working on {state.Task})");
             cleaned++;
         }
@@ -154,7 +152,21 @@ public static class WorkspaceCleaner
             ? $"No workspaces found for task: {taskName}"
             : $"Cleaned {cleaned} workspace(s) for task: {taskName}");
 
+        if (markersRemoved > 0)
+            Console.WriteLine($"Removed {markersRemoved} stale worktree marker(s)");
+
         return ExitCodes.Success;
+    }
+
+    private static int RemoveWorktreeMarkers(string workspace)
+    {
+        var removed = 0;
+        foreach (var marker in WorktreeMarkers)
+        {
+            var path = Path.Combine(workspace, marker);
+            if (File.Exists(path)) { File.Delete(path); removed++; }
+        }
+        return removed;
     }
 
     private static int CountWaitMarkersInWorkspace(string workspace)

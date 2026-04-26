@@ -423,20 +423,33 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Clean_SingleAgent_PreservesWorktreeMarkers()
+    public async Task Clean_Agent_WithWorktreeMarkers_RemovesAllSeven()
     {
         await InitProjectAsync("none", "balazs", 3);
 
-        WriteFile("dydo/agents/Adele/.worktree", "some-wt-id");
-        WriteFile("dydo/agents/Adele/.worktree-hold", "some-wt-id");
-        WriteFile("dydo/agents/Adele/.merge-source", "worktree/some-branch");
+        var markers = new[] { ".worktree", ".worktree-path", ".worktree-base",
+            ".worktree-hold", ".worktree-root", ".merge-source", ".needs-merge" };
+
+        foreach (var marker in markers)
+            WriteFile($"dydo/agents/Adele/{marker}", "some-value");
 
         var result = await CleanAsync("Adele");
 
         result.AssertSuccess();
-        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.worktree")));
-        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.worktree-hold")));
-        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.merge-source")));
+        result.AssertStdoutContains("Removed 7 stale worktree marker(s)");
+        foreach (var marker in markers)
+            Assert.False(File.Exists(Path.Combine(TestDir, $"dydo/agents/Adele/{marker}")));
+    }
+
+    [Fact]
+    public async Task Clean_Agent_WithoutWorktreeMarkers_DoesNotReportRemoval()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await CleanAsync("Adele");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("stale worktree marker(s)", result.Stdout);
     }
 
     #endregion
@@ -470,6 +483,37 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
         Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.waiting")));
         Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.reply-pending")));
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/.auto-close")));
+    }
+
+    [Fact]
+    public async Task Clean_ByTask_WithWorktreeMarkers_RemovesAllSeven()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        WriteFile("dydo/agents/Adele/state.md", """
+            ---
+            agent: Adele
+            role: code-writer
+            task: feature-auth
+            status: free
+            started: null
+            writable-paths: []
+            readonly-paths: []
+            ---
+            """);
+
+        var markers = new[] { ".worktree", ".worktree-path", ".worktree-base",
+            ".worktree-hold", ".worktree-root", ".merge-source", ".needs-merge" };
+
+        foreach (var marker in markers)
+            WriteFile($"dydo/agents/Adele/{marker}", "some-value");
+
+        var result = await CleanByTaskAsync("feature-auth");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Removed 7 stale worktree marker(s)");
+        foreach (var marker in markers)
+            Assert.False(File.Exists(Path.Combine(TestDir, $"dydo/agents/Adele/{marker}")));
     }
 
     [Fact]

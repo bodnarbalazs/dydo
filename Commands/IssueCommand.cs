@@ -41,11 +41,23 @@ public static class IssueCommand
             Description = "How the issue was found (inquisition, review, manual). Defaults to manual."
         };
 
+        var bodyOption = new Option<string?>("--body")
+        {
+            Description = "Inline body content for the issue's Description section."
+        };
+
+        var bodyFileOption = new Option<string?>("--body-file")
+        {
+            Description = "Path to a file containing the issue body."
+        };
+
         var command = new Command("create", "Create a new issue");
         command.Options.Add(titleOption);
         command.Options.Add(areaOption);
         command.Options.Add(severityOption);
         command.Options.Add(foundByOption);
+        command.Options.Add(bodyOption);
+        command.Options.Add(bodyFileOption);
 
         command.SetAction(parseResult =>
         {
@@ -53,7 +65,9 @@ public static class IssueCommand
             var area = parseResult.GetValue(areaOption)!;
             var severity = parseResult.GetValue(severityOption)!;
             var foundBy = parseResult.GetValue(foundByOption);
-            return IssueCreateHandler.Execute(title, area, severity, foundBy);
+            var body = parseResult.GetValue(bodyOption);
+            var bodyFile = parseResult.GetValue(bodyFileOption);
+            return IssueCreateHandler.Execute(title, area, severity, foundBy, body, bodyFile);
         });
 
         return command;

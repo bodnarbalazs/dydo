@@ -7,7 +7,7 @@ using DynaDocs.Utils;
 
 internal static partial class IssueCreateHandler
 {
-    public static int Execute(string title, string area, string severity, string? foundBy)
+    public static int Execute(string title, string area, string severity, string? foundBy, string? body = null, string? bodyFile = null)
     {
         if (!Frontmatter.ValidAreas.Contains(area))
         {
@@ -28,6 +28,29 @@ internal static partial class IssueCreateHandler
             var valid = string.Join(", ", Enum.GetNames<IssueFoundBy>().Select(n => n.ToLowerInvariant()));
             ConsoleOutput.WriteError($"Invalid found-by '{foundBy}'. Must be one of: {valid}");
             return ExitCodes.ToolError;
+        }
+
+        if (body != null && bodyFile != null)
+        {
+            ConsoleOutput.WriteError("Cannot specify both --body and --body-file. Use one or the other.");
+            return ExitCodes.ToolError;
+        }
+
+        string? bodyContent = body;
+        if (bodyFile != null)
+        {
+            if (!File.Exists(bodyFile))
+            {
+                ConsoleOutput.WriteError($"Body file not found: {bodyFile}");
+                return ExitCodes.ToolError;
+            }
+            bodyContent = File.ReadAllText(bodyFile);
+        }
+
+        if (bodyContent != null)
+        {
+            bodyContent = bodyContent.Trim();
+            if (bodyContent.Length == 0) bodyContent = null;
         }
 
         var issuesPath = IssueCommand.GetIssuesPath();
@@ -61,6 +84,7 @@ internal static partial class IssueCreateHandler
             var fileName = $"{newId:D4}-{slug}.md";
             var filePath = Path.Combine(issuesPath, fileName);
 
+            var bodySection = BuildBodySection(bodyContent);
             var content = $"""
                 ---
                 id: {newId}
@@ -74,17 +98,7 @@ internal static partial class IssueCreateHandler
 
                 # {title}
 
-                ## Description
-
-                (Describe the issue)
-
-                ## Reproduction
-
-                (Steps to reproduce, if applicable)
-
-                ## Resolution
-
-                (Filled when resolved)
+                {bodySection}
                 """;
 
             File.WriteAllText(filePath, content);
@@ -132,6 +146,47 @@ internal static partial class IssueCreateHandler
         return maxId;
     }
 
+    private const string ReproductionResolutionPlaceholder = """
+        ## Reproduction
+
+        (Steps to reproduce, if applicable)
+
+        ## Resolution
+
+        (Filled when resolved)
+        """;
+
+    internal static string BuildBodySection(string? bodyContent)
+    {
+        if (bodyContent == null)
+        {
+            return $"""
+                ## Description
+
+                (Describe the issue)
+
+                {ReproductionResolutionPlaceholder}
+                """;
+        }
+
+        if (StructuralHeadingRegex().IsMatch(bodyContent))
+        {
+            return $"""
+                ## Description
+
+                {bodyContent}
+                """;
+        }
+
+        return $"""
+            ## Description
+
+            {bodyContent}
+
+            {ReproductionResolutionPlaceholder}
+            """;
+    }
+
     [GeneratedRegex(@"^(\d+)-")]
     private static partial Regex IdPrefixRegex();
 
@@ -140,4 +195,7 @@ internal static partial class IssueCreateHandler
 
     [GeneratedRegex(@"-+")]
     private static partial Regex MultipleHyphensRegex();
+
+    [GeneratedRegex(@"^## (Reproduction|Resolution)\b", RegexOptions.Multiline)]
+    private static partial Regex StructuralHeadingRegex();
 }

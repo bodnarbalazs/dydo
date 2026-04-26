@@ -79,6 +79,104 @@ public class IssueTests : IntegrationTestBase
         AssertFileContains("dydo/project/issues/0001-inquisition-issue.md", "found-by: inquisition");
     }
 
+    [Fact]
+    public async Task Issue_Create_NoBody_PreservesPlaceholder()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await IssueCreateAsync("Plain issue", area: "general", severity: "low");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-plain-issue.md");
+        Assert.Contains("(Describe the issue)", content);
+        Assert.Contains("## Reproduction", content);
+        Assert.Contains("(Steps to reproduce, if applicable)", content);
+        Assert.Contains("## Resolution", content);
+        Assert.Contains("(Filled when resolved)", content);
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithBody_ReplacesDescriptionPlaceholder()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await IssueCreateAsync("Body issue", area: "general", severity: "low",
+            body: "The thing breaks when you click the button twice.");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-body-issue.md");
+        Assert.Contains("The thing breaks when you click the button twice.", content);
+        Assert.DoesNotContain("(Describe the issue)", content);
+        Assert.Contains("(Steps to reproduce, if applicable)", content);
+        Assert.Contains("(Filled when resolved)", content);
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithBodyFile_ReadsContent()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        var bodyFile = Path.Combine(TestDir, "body.md");
+        await File.WriteAllTextAsync(bodyFile, "Body sourced from a file.");
+
+        var result = await IssueCreateAsync("File body issue", area: "general", severity: "low", bodyFile: bodyFile);
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-file-body-issue.md");
+        Assert.Contains("Body sourced from a file.", content);
+        Assert.DoesNotContain("(Describe the issue)", content);
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithBoth_BodyAndBodyFile_Fails()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        var bodyFile = Path.Combine(TestDir, "body.md");
+        await File.WriteAllTextAsync(bodyFile, "ignored");
+
+        var result = await IssueCreateAsync("Bad issue", area: "general", severity: "low",
+            body: "inline", bodyFile: bodyFile);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Cannot specify both --body and --body-file");
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithMissingBodyFile_Fails()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await IssueCreateAsync("Bad issue", area: "general", severity: "low",
+            bodyFile: Path.Combine(TestDir, "nope.md"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Body file not found");
+    }
+
+    [Fact]
+    public async Task Issue_Create_BodyWithReproductionSection_OmitsDefaultPlaceholders()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        var bodyText = """
+            Initial summary.
+
+            ## Reproduction
+
+            1. Step one
+            2. Step two
+            """;
+
+        var result = await IssueCreateAsync("Structured issue", area: "general", severity: "low", body: bodyText);
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-structured-issue.md");
+        Assert.Contains("Initial summary.", content);
+        Assert.Contains("1. Step one", content);
+        Assert.DoesNotContain("(Steps to reproduce, if applicable)", content);
+        Assert.DoesNotContain("(Filled when resolved)", content);
+        // Description heading is still added by the template above the body content.
+        Assert.Contains("## Description", content);
+    }
+
     #endregion
 
     #region Issue List
@@ -285,7 +383,7 @@ public class IssueTests : IntegrationTestBase
 
     #region Helper Methods
 
-    private async Task<CommandResult> IssueCreateAsync(string title, string area = "general", string severity = "low", string? foundBy = null)
+    private async Task<CommandResult> IssueCreateAsync(string title, string area = "general", string severity = "low", string? foundBy = null, string? body = null, string? bodyFile = null)
     {
         var command = IssueCommand.Create();
         var args = new List<string> { "create", "--title", title, "--area", area, "--severity", severity };
@@ -293,6 +391,16 @@ public class IssueTests : IntegrationTestBase
         {
             args.Add("--found-by");
             args.Add(foundBy);
+        }
+        if (body != null)
+        {
+            args.Add("--body");
+            args.Add(body);
+        }
+        if (bodyFile != null)
+        {
+            args.Add("--body-file");
+            args.Add(bodyFile);
         }
         return await RunAsync(command, args.ToArray());
     }

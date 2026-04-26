@@ -365,11 +365,13 @@ public class SnapshotCompactionService
         File.Move(tempPath, targetPath, overwrite: true);
     }
 
-    private static string ComputeBaselineId(ProjectSnapshot snapshot)
+    internal static string ComputeBaselineId(ProjectSnapshot snapshot)
     {
-        // Deterministic ID from snapshot content
-        var content = string.Join("\n", snapshot.Files) + "\n" +
-                      string.Join("\n", snapshot.Folders) + "\n" +
+        // Deterministic ID from snapshot content — sort all collections so
+        // semantically-equal snapshots that differ only in caller-provided
+        // ordering hash to the same baseline.
+        var content = string.Join("\n", snapshot.Files.OrderBy(f => f, StringComparer.OrdinalIgnoreCase)) + "\n" +
+                      string.Join("\n", snapshot.Folders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase)) + "\n" +
                       snapshot.GitCommit + "\n" +
                       string.Join("\n", snapshot.DocLinks
                           .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)

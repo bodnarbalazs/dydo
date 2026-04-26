@@ -833,6 +833,23 @@ public class AuditCompactionTests : IDisposable
     }
 
     [Fact]
+    public void ComputeBaselineId_IgnoresFileAndFolderOrdering()
+    {
+        var ordered = MakeSnapshot(
+            ["a.cs", "b.cs", "c.cs"],
+            ["alpha", "beta", "gamma"],
+            commit: "same-commit");
+        var shuffled = MakeSnapshot(
+            ["c.cs", "a.cs", "b.cs"],
+            ["gamma", "alpha", "beta"],
+            commit: "same-commit");
+
+        Assert.Equal(
+            SnapshotCompactionService.ComputeBaselineId(ordered),
+            SnapshotCompactionService.ComputeBaselineId(shuffled));
+    }
+
+    [Fact]
     public void IsEmpty_NotSerialized()
     {
         var delta = new SnapshotDelta

@@ -171,10 +171,10 @@ public class AuditEdgeCaseTests : IDisposable
     #region 3. ComputeBaselineId ordering sensitivity
 
     [Fact]
-    public void ComputeBaselineId_DifferentFileOrder_ProducesDifferentHash()
+    public void ComputeBaselineId_DifferentFileOrder_ProducesSameHash()
     {
-        // Hypothesis: ComputeBaselineId hashes files in list order without sorting.
-        // Two snapshots with identical files in different order produce different IDs.
+        // #0080: ComputeBaselineId sorts Files and Folders before hashing, so two
+        // snapshots with identical content in different order hash to the same baseline.
         var snapshot1 = new ProjectSnapshot
         {
             GitCommit = "abc",
@@ -189,9 +189,7 @@ public class AuditEdgeCaseTests : IDisposable
             Folders = ["src"]
         };
 
-        // Use Compact to force baseline creation and compare — but we can test
-        // more directly by comparing the delta between identical-content snapshots.
-        // Since ComputeBaselineId is private static, we test indirectly via Compact.
+        // ComputeBaselineId is private static, so we test indirectly via Compact.
         var yearDir1 = Path.Combine(_auditDir, "2090");
         var yearDir2 = Path.Combine(_auditDir, "2091");
         Directory.CreateDirectory(yearDir1);
@@ -222,9 +220,7 @@ public class AuditEdgeCaseTests : IDisposable
         var id1 = Path.GetFileNameWithoutExtension(baseline1).Replace("_baseline-", "");
         var id2 = Path.GetFileNameWithoutExtension(baseline2).Replace("_baseline-", "");
 
-        // BUG: Same logical content, different file order → different baseline IDs.
-        // ComputeBaselineId should sort Files and Folders before hashing.
-        Assert.NotEqual(id1, id2);
+        Assert.Equal(id1, id2);
     }
 
     #endregion

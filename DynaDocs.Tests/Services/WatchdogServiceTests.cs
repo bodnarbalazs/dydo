@@ -85,6 +85,22 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
+    public void Stop_ReturnsTrue_WhenProcessIsRunning_TightSuccession()
+    {
+        // Regression for #0117: if the spawn primitive ever exits before Stop's
+        // liveness check runs, this loop will catch it deterministically rather
+        // than once-in-a-CI-run.
+        for (var i = 0; i < 10; i++)
+        {
+            using var proc = StartDummyProcess();
+            WritePidFile(proc.Id);
+
+            Assert.True(WatchdogService.Stop(_testDir), $"iteration {i}: Stop returned false");
+            Assert.True(proc.HasExited, $"iteration {i}: process did not exit");
+        }
+    }
+
+    [Fact]
     public void Stop_DeletesPidFile_WhenProcessIsRunning()
     {
         using var proc = StartDummyProcess();
@@ -129,13 +145,17 @@ public class WatchdogServiceTests : IDisposable
 
     private static Process StartDummyProcess()
     {
-        // Start a long-running process we can safely kill
-        var psi = new ProcessStartInfo("ping", OperatingSystem.IsWindows() ? "-n 600 127.0.0.1" : "-c 600 127.0.0.1")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true
-        };
+        // Start a long-running process we can safely kill. On Linux GitHub runners,
+        // `ping` exits within milliseconds (the sandbox rejects ICMP socket creation),
+        // making any test that asserts liveness flake (#0117). `sleep` is a kernel-level
+        // primitive with no network dependency. Windows has no `sleep` binary, but `ping`
+        // is reliable there, so platform-split the spawn.
+        var psi = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("ping", "-n 600 127.0.0.1")
+            : new ProcessStartInfo("sleep", "30");
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+        psi.RedirectStandardOutput = true;
         return Process.Start(psi)!;
     }
 

@@ -1,9 +1,7 @@
 ---
 area: general
-name: worktree-reliability
-status: pending
-created: 2026-04-26T19:48:40.2876227Z
-assigned: Adele
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: worktree-reliability
@@ -21,3 +19,7 @@ assigned: Adele
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-27 15:31

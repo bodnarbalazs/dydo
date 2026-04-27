@@ -1,14 +1,14 @@
 ---
-id: 93
+id: 120
 area: backend
 type: issue
 severity: low
 status: open
-found-by: inquisition
-date: 2026-04-10
+found-by: review
+date: 2026-04-27
 ---
 
-# Thin test coverage for ValidateWorktreeId — missing backslash and path traversal cases
+# WatchdogServiceTests.EnsureRunning_SpawnedFromWorktree_SetsWorkingDirectoryToMainProjectRoot flakes — file-in-use on wt-abc at Dispose
 
 ## Description
 

@@ -1,9 +1,7 @@
 ---
 area: general
-name: recover-audit-cherry-pick
-status: pending
-created: 2026-04-27T13:07:05.1220894Z
-assigned: Adele
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: recover-audit-cherry-pick
@@ -21,3 +19,7 @@ assigned: Adele
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-27 15:31

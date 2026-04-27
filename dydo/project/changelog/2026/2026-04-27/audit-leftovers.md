@@ -1,9 +1,7 @@
 ---
 area: general
-name: audit-leftovers
-status: pending
-created: 2026-04-27T14:02:30.9572942Z
-assigned: Charlie
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: audit-leftovers
@@ -21,3 +19,7 @@ assigned: Charlie
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-27 15:31

@@ -1,9 +1,7 @@
 ---
 area: general
-name: explore-orchestrator-general-wait
-status: pending
-created: 2026-04-27T14:22:56.3969733Z
-assigned: Dexter
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: explore-orchestrator-general-wait
@@ -21,3 +19,7 @@ assigned: Dexter
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-27 15:31

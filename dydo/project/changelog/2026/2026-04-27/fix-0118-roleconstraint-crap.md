@@ -1,10 +1,7 @@
 ---
 area: general
-name: fix-0118-roleconstraint-crap
-status: human-reviewed
-created: 2026-04-27T14:02:43.1086620Z
-assigned: Henry
-updated: 2026-04-27T14:27:14.2043538Z
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: fix-0118-roleconstraint-crap
@@ -31,3 +28,7 @@ Review #0118 refactor + tests. See git log master..HEAD (commits 4fdd383, 40c558
 - Notes: LGTM. Refactor cleanly extracts three per-type helpers (verbatim moves, only collateral change is collapsing two adjacent return-true cases into a fall-through). Three new CanDispatch tests close the partial branches (null state, null TargetRole, null RequiredRoles). gap_check exits 0; RoleConstraintEvaluator.cs T1, lines 100%, branches 100%, CRAP 26.0 (was 32.0, target <30 met). 3840/3840 tests pass.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-04-27 15:31

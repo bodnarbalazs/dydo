@@ -1,10 +1,7 @@
 ---
 area: general
-name: fix-ci-after-audit-recovery
-status: review-pending
-created: 2026-04-27T13:17:07.5062651Z
-assigned: Adele
-updated: 2026-04-27T13:44:04.7099767Z
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: fix-ci-after-audit-recovery
@@ -100,3 +97,7 @@ Then release.
 ## Review Summary
 
 Review CI fix. See git log master..HEAD (2 commits: fc548ce, d012105). Both aligned obsolete tests with #0080 (sort-before-hash) and #0073 (path-separator validation). Watchdog test #3 left for separate investigation per Brian's discretion (different from #0116 pattern). gap_check: 1 pre-existing FAIL on RoleConstraintEvaluator (CRAP 32 from #0045) — unrelated to this task. Verify: (1) test renames and assertion flips correctly reference the production behaviour now in Services/SnapshotCompactionService.cs ComputeBaselineId and Services/AuditService.cs ValidateSessionId; (2) full suite passes (3823/3823 locally); (3) CI green on master HEAD (run 24998191977).
+
+## Approval
+
+- Approved: 2026-04-27 15:31

@@ -1,9 +1,7 @@
 ---
 area: general
-name: recover-role-perms-merge
-status: pending
-created: 2026-04-26T20:59:24.0165020Z
-assigned: Adele
+type: changelog
+date: 2026-04-27
 ---
 
 # Task: recover-role-perms-merge
@@ -21,3 +19,7 @@ assigned: Adele
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-04-27 15:31

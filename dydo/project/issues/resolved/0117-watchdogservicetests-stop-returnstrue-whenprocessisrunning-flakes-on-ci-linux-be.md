@@ -3,9 +3,10 @@ id: 117
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: review
 date: 2026-04-27
+resolved-date: 2026-04-27
 ---
 
 # WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning flakes on CI Linux because ping process exits inside the test window
@@ -78,4 +79,4 @@ Add a regression that runs the test in tight succession 10x — if it ever fails
 
 ## Resolution
 
-(Filled when resolved)
+WatchdogService Stop_ReturnsTrue_WhenProcessIsRunning flake fixed in commit 980104a (Frank). Platform-split: sleep 30 on POSIX, kept ping on Windows where it's reliable. Added Stop_ReturnsTrue_WhenProcessIsRunning_TightSuccession regression test running the assertion 10 times in a row. Verified locally with 3 consecutive WatchdogServiceTests runs (54/54 each). Reviewed by Charlie.

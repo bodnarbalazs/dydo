@@ -2434,6 +2434,29 @@ public class TerminalLauncherTests
             TerminalLauncher.ValidateWorktreeId("valid/inv@lid"));
     }
 
+    [Theory]
+    [InlineData(@"worktree\evil")]    // backslash anywhere — rejected before component split
+    [InlineData(@"C:\foo")]           // Windows drive — rejected via the same backslash branch
+    public void ValidateWorktreeId_BackslashInPath_Throws(string id)
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.ValidateWorktreeId(id));
+        Assert.Contains("backslash", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(".")]      // current-traversal as the entire id
+    [InlineData("..")]     // parent-traversal as the entire id
+    [InlineData("a/..")]   // parent-traversal embedded after a valid component
+    [InlineData("a/../b")] // parent-traversal between two valid components
+    [InlineData("a/./b")]  // current-traversal between two valid components
+    public void ValidateWorktreeId_PathTraversalComponent_Throws(string id)
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.ValidateWorktreeId(id));
+        Assert.Contains("path traversal", ex.Message);
+    }
+
     [Fact]
     public void Launch_ProcessStarterThrows_PrintsFallbackMessage()
     {

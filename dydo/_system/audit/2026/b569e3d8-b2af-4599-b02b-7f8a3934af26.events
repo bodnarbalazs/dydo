@@ -266,3 +266,38 @@
 {"ts":"2026-04-26T20:32:12.5386159Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\b4e89ac5-msg-quick-fixes-89-115-116.md","tool":"read"}
 {"ts":"2026-04-26T20:48:22.1253919Z","event":"Blocked","tool":"bash","cmd":"git log --oneline 09a43fb -10 2\u003E\u00261; echo \u0022---\u0022; git log --oneline --all | grep -E \u00223654ec6|0089|0115...","reason":"Unread messages"}
 {"ts":"2026-04-26T20:48:32.4220989Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\f2145b67-msg-quick-fixes-89-115-116.md","tool":"read"}
+{"ts":"2026-04-26T20:50:08.6261935Z","event":"Bash","tool":"bash","cmd":"git log --oneline worktree/role-perms-code-fixes 2\u003E\u00261 | head -5; echo \u0022---\u0022; git log --oneline workt..."}
+{"ts":"2026-04-26T20:50:22.6788601Z","event":"Bash","tool":"bash","cmd":"git log --oneline master -20 2\u003E\u00261; echo \u0022---\u0022; git log --oneline --grep=\u00220089\\|0115\\|0116\\|panel-lim..."}
+{"ts":"2026-04-26T20:51:01.6276375Z","event":"Bash","tool":"bash","cmd":"git fsck --no-reflogs --lost-found 2\u003E\u00261 | grep \u0022^dangling commit\u0022 | head -10; echo \u0022---\u0022; git log --..."}
+{"ts":"2026-04-26T20:51:10.8178317Z","event":"Bash","tool":"bash","cmd":"for c in 38033c2 0a0d40e b293da4 a89d1c2 19245ef bea6f6e dd27eba abb9cf9 e942180 5646d70; do git log..."}
+{"ts":"2026-04-26T20:51:59.5526882Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Emma/ 2\u003E\u00261; echo \u0022---\u0022; ls dydo/agents/Adele/ 2\u003E\u00261; echo \u0022---\u0022; ls dydo/agents/Emma/a..."}
+{"ts":"2026-04-26T20:52:50.0212264Z","event":"Bash","tool":"bash","cmd":"git cat-file -t 551bc5d 2\u003E\u00261; echo \u0022---\u0022; git branch recover-role-perms 551bc5d 2\u003E\u00261 \u0026\u0026 git log --on..."}
+{"ts":"2026-04-26T20:53:53.2853103Z","event":"Bash","tool":"bash","cmd":"git log --oneline master..recover-role-perms 2\u003E\u00261; echo \u0022---\u0022; git diff --stat master..recover-role-..."}
+{"ts":"2026-04-26T20:54:16.8156189Z","event":"Bash","tool":"bash","cmd":"git show --stat 008e880 2\u003E\u00261 | head -10; echo \u0022---\u0022; git show --stat 9e182e7 2\u003E\u00261 | head -10; echo \u0022..."}
+{"ts":"2026-04-26T20:57:52.7999029Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-recover-role-perms-merge.md","tool":"write"}
+{"ts":"2026-04-26T20:58:44.6643592Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-D2-audit-subsystem-cleanup-redo.md","tool":"write"}
+{"ts":"2026-04-26T21:15:06.4614121Z","event":"Bash","tool":"bash","cmd":"git cat-file -t 6f802ca 2\u003E\u00261; echo \u0022---\u0022; git log --format=\u0022%H %ci %s\u0022 6f802ca -5 2\u003E\u00261"}
+{"ts":"2026-04-26T21:15:23.3280812Z","event":"Bash","tool":"bash","cmd":"git branch recover-audit-cleanup 6f802ca 2\u003E\u00261 \u0026\u0026 git log --oneline recover-audit-cleanup -7 2\u003E\u00261"}
+{"ts":"2026-04-27T13:06:35.776266Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-recover-audit-cherry-pick.md","tool":"write"}
+{"ts":"2026-04-27T13:09:59.4212625Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b569e3d8-b2af-4599-b02b-7f8a3934af26\\tasks\\b3y339j6c.output","tool":"read"}
+{"ts":"2026-04-27T13:10:06.3945817Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\6768d7e9-msg-recover-audit-cherry-pick.md","tool":"read"}
+{"ts":"2026-04-27T13:14:56.8982103Z","event":"Bash","tool":"bash","cmd":"gh run view 24996949358 --log-failed 2\u003E\u00261 | head -50"}
+{"ts":"2026-04-27T13:15:07.5921663Z","event":"Bash","tool":"bash","cmd":"gh run view 24996949358 --log-failed 2\u003E\u00261 | grep -E \u0022Failed|Assert|Error|error CS|FAIL\u0022 | head -30"}
+{"ts":"2026-04-27T13:16:33.9330059Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-ci-after-audit-recovery.md","tool":"write"}
+{"ts":"2026-04-27T13:34:22.6055345Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b569e3d8-b2af-4599-b02b-7f8a3934af26\\tasks\\bvcy09604.output","tool":"read"}
+{"ts":"2026-04-27T13:34:29.9554717Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\25a48793-msg-fix-ci-after-audit-recovery.md","tool":"read"}
+{"ts":"2026-04-27T13:35:12.4910562Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b569e3d8-b2af-4599-b02b-7f8a3934af26\\tasks\\b1rjt0rs6.output","tool":"read"}
+{"ts":"2026-04-27T13:35:16.7902061Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\0ddc6401-msg-fix-ci-after-audit-recovery.md","tool":"read"}
+{"ts":"2026-04-27T13:35:28.7846284Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b569e3d8-b2af-4599-b02b-7f8a3934af26\\tasks\\b8lbaprfn.output","tool":"read"}
+{"ts":"2026-04-27T13:35:37.9277076Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\9d8a5afb-msg-fix-ci-after-audit-recovery.md","tool":"read"}
+{"ts":"2026-04-27T13:44:07.7763911Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b569e3d8-b2af-4599-b02b-7f8a3934af26\\tasks\\b2155q7bw.output","tool":"read"}
+{"ts":"2026-04-27T13:44:26.1242807Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\15af1aef-msg-fix-ci-after-audit-recovery.md","tool":"read"}
+{"ts":"2026-04-27T13:51:11.821272Z","event":"Bash","tool":"bash","cmd":"git branch -D recover-role-perms recover-audit-cleanup 2\u003E\u00261; echo \u0022---\u0022; git branch -a 2\u003E\u00261 | grep -..."}
+{"ts":"2026-04-27T13:54:55.0040333Z","event":"GuardLift","agent":"Brian"}
+{"ts":"2026-04-27T13:55:03.1206044Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0117-watchdogservicetests-stop-returnstrue-whenprocessisrunning-flakes-on-ci-linux-be.md","tool":"read"}
+{"ts":"2026-04-27T13:55:40.6897155Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0117-watchdogservicetests-stop-returnstrue-whenprocessisrunning-flakes-on-ci-linux-be.md","tool":"write","lifted":true}
+{"ts":"2026-04-27T13:55:46.6940053Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0118-roleconstraintevaluator-crap-score-regressed-past-30-limit-32-0-after-0045-case.md","tool":"read"}
+{"ts":"2026-04-27T13:56:20.5768542Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0118-roleconstraintevaluator-crap-score-regressed-past-30-limit-32-0-after-0045-case.md","tool":"write","lifted":true}
+{"ts":"2026-04-27T14:00:07.5223549Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-X-audit-leftovers.md","tool":"write","lifted":true}
+{"ts":"2026-04-27T14:01:16.0156121Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-Y-test-additions.md","tool":"write","lifted":true}
+{"ts":"2026-04-27T14:02:02.2392222Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-Z-roleconstraint-crap.md","tool":"write","lifted":true}

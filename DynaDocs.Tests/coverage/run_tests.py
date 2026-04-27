@@ -27,7 +27,10 @@ COVERAGE_XML_GLOB = "DynaDocs.Tests/**/coverage.cobertura.xml"
 def _git(*args, capture=False):
     cmd = ["git", *args]
     if capture:
-        result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, cwd=ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
         return result.stdout, result.returncode
     return subprocess.run(cmd, cwd=ROOT)
 

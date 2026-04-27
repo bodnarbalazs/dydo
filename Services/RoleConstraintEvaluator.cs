@@ -53,48 +53,16 @@ public class RoleConstraintEvaluator
         switch (constraint.Type)
         {
             case "role-transition":
-                if (state.TaskRoleHistory.TryGetValue(task, out var previousRoles) &&
-                    previousRoles.Contains(constraint.FromRole!, StringComparer.OrdinalIgnoreCase))
-                {
-                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
-                    return false;
-                }
-                return true;
+                return EvaluateRoleTransitionConstraint(constraint, agentName, task, state, out reason);
 
             case "requires-prior":
-                if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
-                    !constraint.RequiredRoles!.Any(r => taskRoles.Contains(r, StringComparer.OrdinalIgnoreCase)))
-                {
-                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
-                    return false;
-                }
-                return true;
+                return EvaluateRequiresPriorConstraint(constraint, agentName, task, state, out reason);
 
             case "panel-limit":
-                int activeCount = 0;
-                foreach (var name in _agentNames)
-                {
-                    if (string.Equals(name, agentName, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var s = _getAgentState(name);
-                    if (s != null &&
-                        string.Equals(s.Role, role, StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(s.Task, task, StringComparison.OrdinalIgnoreCase) &&
-                        s.Status != AgentStatus.Free)
-                    {
-                        activeCount++;
-                    }
-                }
-                if (activeCount >= constraint.MaxCount!.Value)
-                {
-                    reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
-                    return false;
-                }
-                return true;
+                return EvaluatePanelLimitConstraint(constraint, agentName, role, task, state,
+                    _agentNames, _getAgentState, out reason);
 
             case "requires-dispatch":
-                return true;
-
             case "dispatch-restriction":
                 return true;
 
@@ -102,6 +70,59 @@ public class RoleConstraintEvaluator
                 reason = $"Unknown constraint type: '{constraint.Type}'.";
                 return false;
         }
+    }
+
+    private static bool EvaluateRoleTransitionConstraint(RoleConstraint constraint, string agentName,
+        string task, AgentState state, out string reason)
+    {
+        reason = string.Empty;
+        if (state.TaskRoleHistory.TryGetValue(task, out var previousRoles) &&
+            previousRoles.Contains(constraint.FromRole!, StringComparer.OrdinalIgnoreCase))
+        {
+            reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
+            return false;
+        }
+        return true;
+    }
+
+    private static bool EvaluateRequiresPriorConstraint(RoleConstraint constraint, string agentName,
+        string task, AgentState state, out string reason)
+    {
+        reason = string.Empty;
+        if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles) ||
+            !constraint.RequiredRoles!.Any(r => taskRoles.Contains(r, StringComparer.OrdinalIgnoreCase)))
+        {
+            reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
+            return false;
+        }
+        return true;
+    }
+
+    private static bool EvaluatePanelLimitConstraint(RoleConstraint constraint, string agentName,
+        string role, string task, AgentState state,
+        IReadOnlyList<string> agentNames, Func<string, AgentState?> getAgentState, out string reason)
+    {
+        reason = string.Empty;
+        int activeCount = 0;
+        foreach (var name in agentNames)
+        {
+            if (string.Equals(name, agentName, StringComparison.OrdinalIgnoreCase))
+                continue;
+            var s = getAgentState(name);
+            if (s != null &&
+                string.Equals(s.Role, role, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(s.Task, task, StringComparison.OrdinalIgnoreCase) &&
+                s.Status != AgentStatus.Free)
+            {
+                activeCount++;
+            }
+        }
+        if (activeCount >= constraint.MaxCount!.Value)
+        {
+            reason = SubstituteConstraintVars(constraint.Message, agentName, task, state.Role);
+            return false;
+        }
+        return true;
     }
 
     /// <summary>

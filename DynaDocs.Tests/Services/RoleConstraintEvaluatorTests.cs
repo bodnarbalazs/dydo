@@ -637,6 +637,86 @@ public class RoleConstraintEvaluatorTests
     }
 
     [Fact]
+    public void CanDispatch_NullState_TreatedAsUndispatchedAndBlocksWhenRequiredRoleAbsent()
+    {
+        // Covers the state == null branches at the `state?.DispatchedBy` / `state?.DispatchedByRole`
+        // sites and the OnlyWhenDispatched == false branch in CanDispatch.
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = ["code-writer"],
+                    OnlyWhenDispatched = false,
+                    Message = "Blocked dispatcher={dispatcher}."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"], _ => null);
+
+        var result = evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out var reason);
+
+        Assert.False(result);
+        Assert.Contains("dispatcher=unknown", reason);
+    }
+
+    [Fact]
+    public void CanDispatch_ConstraintWithNullTargetRole_IsSkipped()
+    {
+        // Covers the `constraint.TargetRole == null` branch at the targetRole-match guard.
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = null,
+                    RequiredRoles = ["code-writer"],
+                    Message = "Should not fire."
+                }
+            ])
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "orchestrator";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"], _ => state);
+
+        Assert.True(evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out _));
+    }
+
+    [Fact]
+    public void CanDispatch_ConstraintWithNullRequiredRoles_BlocksDispatch()
+    {
+        // Covers the `constraint.RequiredRoles == null` branch — a malformed constraint
+        // with a matching TargetRole but no allowlist always blocks.
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["reviewer"] = MakeRole("reviewer", [
+                new RoleConstraint
+                {
+                    Type = "dispatch-restriction",
+                    TargetRole = "code-writer",
+                    RequiredRoles = null,
+                    Message = "No allowlist configured."
+                }
+            ])
+        };
+        var state = MakeState("Alice", role: "reviewer", task: "task1");
+        state.DispatchedBy = "Bob";
+        state.DispatchedByRole = "code-writer";
+
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"], _ => state);
+
+        var result = evaluator.CanDispatch("Alice", "reviewer", "code-writer", "task1", out var reason);
+
+        Assert.False(result);
+        Assert.Contains("No allowlist", reason);
+    }
+
+    [Fact]
     public void CanDispatch_MessageSubstitution()
     {
         var roles = new Dictionary<string, RoleDefinition>

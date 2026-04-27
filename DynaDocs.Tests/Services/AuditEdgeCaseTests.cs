@@ -134,35 +134,31 @@ public class AuditEdgeCaseTests : IDisposable
     #region 2. GetSession with path separator in session ID
 
     [Fact]
-    public void GetSession_SessionIdWithForwardSlash_ThrowsDirectoryNotFound()
+    public void GetSession_SessionIdWithForwardSlash_ThrowsArgumentException()
     {
-        // BUG: sessionId containing "/" is interpolated into the glob pattern
-        // "*-{sessionId}.json" and passed to Directory.GetFiles, which interprets
-        // the slashes as path separators, escaping the year directory.
-        // GetSession does NOT sanitize the input or catch the exception.
+        // #0073: GetSession validates sessionId against path separators before any
+        // filesystem access, throwing ArgumentException for "/", "\", "..", or null bytes.
         var year = DateTime.UtcNow.Year.ToString();
         var yearDir = Path.Combine(_auditDir, year);
         Directory.CreateDirectory(yearDir);
 
         var service = new AuditService(basePath: _testDir);
 
-        Assert.Throws<DirectoryNotFoundException>(
+        Assert.Throws<ArgumentException>(
             () => service.GetSession("../../etc/passwd"));
     }
 
     [Fact]
-    public void GetSession_SessionIdWithBackslash_ThrowsDirectoryNotFound()
+    public void GetSession_SessionIdWithBackslash_ThrowsArgumentException()
     {
-        // Backslash is only a path separator on Windows; on Linux it's a valid filename char.
-        if (!OperatingSystem.IsWindows()) return;
-
+        // #0073: Backslash is rejected by ValidateSessionId on all platforms.
         var year = DateTime.UtcNow.Year.ToString();
         var yearDir = Path.Combine(_auditDir, year);
         Directory.CreateDirectory(yearDir);
 
         var service = new AuditService(basePath: _testDir);
 
-        Assert.Throws<DirectoryNotFoundException>(
+        Assert.Throws<ArgumentException>(
             () => service.GetSession(@"..\..\etc\passwd"));
     }
 

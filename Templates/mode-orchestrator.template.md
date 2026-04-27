@@ -142,6 +142,12 @@ dydo agent list    # See who's active
 dydo agent tree    # See dispatch hierarchy
 ```
 
+**Keep a general wait open.** Alongside per-task waits, run one general `dydo wait` (no `--task`) in the background and rearm it whenever it fires. Task-channel waits have priority routing, so the general wait only catches messages that don't match an active task wait — direct messages, ad-hoc questions, completion notices without subjects — and surfaces them in real time instead of waiting for your next tool call to trip the unread-messages notice.
+
+```bash
+dydo wait    # run_in_background: true — no --task; rearm on each fire
+```
+
 Background waits notify you as responses arrive. For each response:
 - Did the sub-agent succeed?
 - Does the output fit with other workstreams?
@@ -210,5 +216,7 @@ When dismissed:
 dydo inbox clear --all
 dydo agent release
 ```
+
+The general wait dies automatically when its parent bash exits (parent-PID liveness check, ~10 s) — no explicit teardown needed.
 
 If release is blocked, something is still outstanding — check what and resolve it before proceeding.

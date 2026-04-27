@@ -78,12 +78,6 @@ public static class WaitCommand
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
-        var markers = registry.GetWaitMarkers(agentName);
-        var claimedTasks = new HashSet<string>(
-            markers.Select(m => m.Task),
-            StringComparer.OrdinalIgnoreCase);
-
-        // Record PID for visibility (after reading markers so it doesn't self-exclude)
         registry.CreateWaitMarker(agentName, GeneralWaitMarker, agentName);
         registry.UpdateWaitMarkerListening(agentName, GeneralWaitMarker, Environment.ProcessId);
 
@@ -93,6 +87,10 @@ public static class WaitCommand
         {
             while (!cancelled)
             {
+                // Re-read each poll so subjects claimed by task waits registered after this
+                // wait started are excluded — task-channel waits have priority over the general
+                // fallback, regardless of registration order.
+                var claimedTasks = GetActiveTaskWaitSubjects(registry, agentName);
                 var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks);
                 if (message != null)
                 {
@@ -154,6 +152,16 @@ public static class WaitCommand
         {
             registry.ResetWaitMarkerListening(agentName, task);
         }
+    }
+
+    internal static HashSet<string> GetActiveTaskWaitSubjects(AgentRegistry registry, string agentName)
+    {
+        // Skip "_"-prefix markers (general-wait sentinels) — only task-channel subjects exclude.
+        return new HashSet<string>(
+            registry.GetWaitMarkers(agentName)
+                .Where(m => !m.Task.StartsWith('_'))
+                .Select(m => m.Task),
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private static void PrintMessage(MessageFinder.MessageInfo message)

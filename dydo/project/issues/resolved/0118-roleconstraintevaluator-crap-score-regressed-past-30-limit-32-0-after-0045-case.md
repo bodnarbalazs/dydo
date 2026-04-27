@@ -3,9 +3,10 @@ id: 118
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: review
 date: 2026-04-27
+resolved-date: 2026-04-27
 ---
 
 # RoleConstraintEvaluator CRAP score regressed past 30 limit (32.0) after #0045 case-insensitive unification
@@ -69,4 +70,4 @@ If you decide to ship as-is and adjust the tier rules instead, file a follow-up 
 
 ## Resolution
 
-(Filled when resolved)
+RoleConstraintEvaluator refactored + tests added. Refactor in commit 4fdd383 (Henry) extracted EvaluateRoleTransitionConstraint, EvaluateRequiresPriorConstraint, and EvaluatePanelLimitConstraint as private static helpers; CanTakeRole's switch now dispatches. Tests in commit 40c5582 close the branch-coverage gap (3 new tests covering CanDispatch's null-state, null TargetRole, null RequiredRoles paths). Result: CRAP 32.0 -> 26.0, branch coverage 92.7% -> 100%, gap_check tier T1 passes. 3840/3840 tests. Reviewed by Emma.

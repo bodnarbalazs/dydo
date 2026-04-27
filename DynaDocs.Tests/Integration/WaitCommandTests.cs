@@ -486,6 +486,144 @@ public class WaitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Task-Priority Routing Tests
+
+    [Fact]
+    public void MessageFinder_FindMessage_ExcludesSubjectsInExcludeSet()
+    {
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            WriteMessageFileDirect(inboxPath, "aaa", "Brian", "claimed-subject", "Should be skipped", DateTime.UtcNow);
+
+            var excludeSet = new HashSet<string>(["claimed-subject"], StringComparer.OrdinalIgnoreCase);
+            var result = MessageFinder.FindMessage(inboxPath, null, excludeSet);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            Directory.Delete(inboxPath, true);
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_SkipsMessage_WhenTaskWaitExistsForSubject()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Task wait registered for "X" (regardless of registration order — re-read each poll)
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "X", "Brian");
+
+        // Pre-place message with the same subject
+        CreateMessageFile("Adele", "Brian", "X", "task-channel message");
+
+        // Make the parent appear dead so general wait exits after one poll without finding the message
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            // General wait did not return the message (excluded) — exits via parent-death path
+            result.AssertExitCode(2);
+            Assert.DoesNotContain("Message received", result.Stdout);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_FindsMessage_WhenSubjectHasNoTaskWait()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Task wait registered for "X" — but message arrives with a different subject "Y"
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "X", "Brian");
+
+        CreateMessageFile("Adele", "Brian", "Y", "general message");
+
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Brian");
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_TaskWaitWins_WhenBothActive()
+    {
+        // Even when both waits are eligible, the per-poll exclusion re-read ensures the
+        // task wait gets the message — a directly-filtered FindMessage returns it; the
+        // general wait, with the live exclusion set, does not.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "X", "Brian");
+        CreateMessageFile("Adele", "Brian", "X", "task-channel message");
+
+        var inboxPath = Path.Combine(TestDir, "dydo", "agents", "Adele", "inbox");
+        var claimed = WaitCommand.GetActiveTaskWaitSubjects(registry, "Adele");
+
+        var generalView = MessageFinder.FindMessage(inboxPath, null, claimed);
+        var taskView = MessageFinder.FindMessage(inboxPath, "X");
+
+        Assert.Null(generalView);
+        Assert.NotNull(taskView);
+        Assert.Equal("X", taskView!.Subject);
+    }
+
+    [Fact]
+    public async Task GetActiveTaskWaitSubjects_ReturnsFreshState_AcrossCalls()
+    {
+        // The general wait must re-read claimed subjects each poll cycle so task waits
+        // registered after the general wait started are still excluded — closes the
+        // dispatch-time race on the original startup-snapshot design.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        Assert.Empty(WaitCommand.GetActiveTaskWaitSubjects(registry, "Adele"));
+
+        registry.CreateWaitMarker("Adele", "first", "Brian");
+        var afterFirst = WaitCommand.GetActiveTaskWaitSubjects(registry, "Adele");
+        Assert.Single(afterFirst);
+        Assert.Contains("first", afterFirst);
+
+        registry.CreateWaitMarker("Adele", "second", "Charlie");
+        var afterSecond = WaitCommand.GetActiveTaskWaitSubjects(registry, "Adele");
+        Assert.Equal(2, afterSecond.Count);
+
+        registry.CreateWaitMarker("Adele", "_general-wait", "Adele");
+        var withSentinel = WaitCommand.GetActiveTaskWaitSubjects(registry, "Adele");
+        Assert.Equal(2, withSentinel.Count);
+        Assert.DoesNotContain("_general-wait", withSentinel);
+
+        registry.RemoveWaitMarker("Adele", "first");
+        var afterRemove = WaitCommand.GetActiveTaskWaitSubjects(registry, "Adele");
+        Assert.Single(afterRemove);
+        Assert.Contains("second", afterRemove);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

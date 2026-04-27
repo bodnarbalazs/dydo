@@ -1033,17 +1033,18 @@ public static partial class GuardCommand
         IAuditService auditService, string? sessionId, AgentRegistry registry)
     {
         var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-        if (pendingMarkers.Count == 0)
+        var missingGeneralWait = OrchestratorMissingGeneralWait(agent, registry);
+        if (pendingMarkers.Count == 0 && !missingGeneralWait)
             return null;
 
         LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
             EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
             Command = command != null ? TruncateCommand(command) : null,
-            BlockReason = "Pending wait markers"
+            BlockReason = pendingMarkers.Count > 0 ? "Pending wait markers" : "Missing general wait"
         });
 
-        WritePendingStateBlock(pendingMarkers);
+        WritePendingStateBlock(pendingMarkers, missingGeneralWait);
         return ExitCodes.ToolError;
     }
 
@@ -1280,8 +1281,10 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Self-heal wait markers with dead listener PIDs, then return non-listening markers.
-    /// Markers with listening=true but dead PID are flipped to listening=false.
+    /// Self-heal wait markers with dead listener PIDs, then return non-listening task markers.
+    /// Task markers with listening=true but dead PID flip to listening=false.
+    /// Sentinel markers (e.g. general wait) with dead PID are deleted — they're transient
+    /// per-process state, not "pending" task channels for the agent to register.
     /// </summary>
     private static List<Models.WaitMarker> SelfHealAndGetPendingMarkers(AgentRegistry registry, string agentName)
     {
@@ -1290,24 +1293,56 @@ public static partial class GuardCommand
         {
             if (!marker.Listening) continue;
 
-            // If PID is null (legacy) or dead, flip to non-listening
             if (marker.Pid == null || !ProcessUtils.IsProcessRunning(marker.Pid.Value))
             {
-                registry.ResetWaitMarkerListening(agentName, marker.Task);
+                if (marker.Task.StartsWith('_'))
+                    registry.RemoveWaitMarker(agentName, marker.Task);
+                else
+                    registry.ResetWaitMarkerListening(agentName, marker.Task);
             }
         }
 
-        return registry.GetNonListeningWaitMarkers(agentName);
+        return registry.GetNonListeningWaitMarkers(agentName)
+            .Where(m => !m.Task.StartsWith('_'))
+            .ToList();
+    }
+
+    /// <summary>
+    /// True when the agent is an orchestrator that has dispatched at least one task wait
+    /// but has no listening general wait. The general-wait policy is "always one open while
+    /// orchestrating", so once dispatch begins the wait must be active.
+    /// </summary>
+    private static bool OrchestratorMissingGeneralWait(AgentState agent, AgentRegistry registry)
+    {
+        if (!string.Equals(agent.Role, "orchestrator", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var markers = registry.GetWaitMarkers(agent.Name);
+        if (!markers.Any(m => !m.Task.StartsWith('_')))
+            return false;
+
+        var general = markers.FirstOrDefault(m => m.Task.StartsWith('_'));
+        if (general == null || !general.Listening) return true;
+        if (general.Pid == null || !ProcessUtils.IsProcessRunning(general.Pid.Value)) return true;
+        return false;
     }
 
     /// <summary>
     /// Emit the standard pending-state block message to stderr.
     /// </summary>
-    private static void WritePendingStateBlock(List<Models.WaitMarker> pendingMarkers)
+    private static void WritePendingStateBlock(List<Models.WaitMarker> pendingMarkers, bool missingGeneralWait)
     {
-        var taskNames = string.Join(", ", pendingMarkers.Select(m => m.Task));
-        Console.Error.WriteLine($"BLOCKED: Register waits before continuing. Pending: [{taskNames}].");
-        Console.Error.WriteLine("  Run: dydo wait --task <name> (in background)");
+        if (pendingMarkers.Count > 0)
+        {
+            var taskNames = string.Join(", ", pendingMarkers.Select(m => m.Task));
+            Console.Error.WriteLine($"BLOCKED: Register waits before continuing. Pending: [{taskNames}].");
+            Console.Error.WriteLine("  Run: dydo wait --task <name> (in background)");
+        }
+        if (missingGeneralWait)
+        {
+            Console.Error.WriteLine("BLOCKED: Orchestrator must keep a general wait active.");
+            Console.Error.WriteLine("  Run: dydo wait (in background)");
+        }
     }
 
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)

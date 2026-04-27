@@ -16,3 +16,19 @@
 {"ts":"2026-04-27T14:03:59.2782736Z","event":"Bash","tool":"bash","cmd":"git status \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 git log master --oneline -5"}
 {"ts":"2026-04-27T14:04:17.9246509Z","event":"Bash","tool":"bash","cmd":"git diff DynaDocs.Tests/coverage/run_tests.py"}
 {"ts":"2026-04-27T14:04:24.7000534Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --inspect RoleConstraintEvaluator --detail --methods 2\u003E\u0026..."}
+{"ts":"2026-04-27T14:09:07.9561146Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\RoleConstraint.cs","tool":"read"}
+{"ts":"2026-04-27T14:09:22.9877143Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022dispatch-restriction\u0022 --include=\u0022*.cs\u0022 Services/ Models/ Rules/ | head -20"}
+{"ts":"2026-04-27T14:09:26.1116904Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\RoleDefinitionService.cs","tool":"read"}
+{"ts":"2026-04-27T14:10:30.017226Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\RoleConstraintEvaluator.cs","tool":"edit"}
+{"ts":"2026-04-27T14:11:59.0171099Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~RoleConstraintEvaluator\u0022..."}
+{"ts":"2026-04-27T14:12:19.7294215Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --inspect RoleConstraintEvaluator --methods 2\u003E\u00261 | tail ..."}
+{"ts":"2026-04-27T14:15:37.6096559Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run --inspect RoleConstraintEvaluator --methods ..."}
+{"ts":"2026-04-27T14:19:17.4845465Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\RoleConstraintEvaluator.cs","tool":"read"}
+{"ts":"2026-04-27T14:19:40.0701986Z","event":"Bash","tool":"bash","cmd":"git commit Services/RoleConstraintEvaluator.cs -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nrefactor(roles): extract per-constr..."}
+{"ts":"2026-04-27T14:20:19.5985259Z","event":"Bash","tool":"bash","cmd":"git log master --oneline -10 \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 git status"}
+{"ts":"2026-04-27T14:21:30.8478955Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\RoleConstraintEvaluatorTests.cs","tool":"edit"}
+{"ts":"2026-04-27T14:21:35.2732689Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~RoleConstraintEvaluator\u0022..."}
+{"ts":"2026-04-27T14:22:05.3283886Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --inspect RoleConstraintEvaluator --methods --detail 2\u003E\u0026..."}
+{"ts":"2026-04-27T14:25:38.7584479Z","event":"Bash","tool":"bash","cmd":"git commit DynaDocs.Tests/Services/RoleConstraintEvaluatorTests.cs -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\ntest(roles): cl..."}
+{"ts":"2026-04-27T14:26:48.565034Z","event":"Bash","tool":"bash","cmd":"git log master..HEAD --oneline; echo \u0022---\u0022; git log origin/master --oneline -5"}
+{"ts":"2026-04-27T14:27:25.5576734Z","event":"Release","agent":"Henry"}

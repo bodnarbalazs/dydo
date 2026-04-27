@@ -655,7 +655,204 @@ public class PendingStateGuardTests : IntegrationTestBase
 
     #endregion
 
+    #region Orchestrator General-Wait Enforcement
+
+    [Fact]
+    public async Task Guard_BlocksOrchestrator_WithTaskWait_ButNoGeneralWait()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Orchestrator must keep a general wait active");
+        result.AssertStderrContains("dydo wait");
+    }
+
+    [Fact]
+    public async Task Guard_AllowsOrchestrator_WhenGeneralWaitListening()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+        registry.CreateWaitMarker("Adele", "_general-wait", "Adele");
+        registry.UpdateWaitMarkerListening("Adele", "_general-wait", Environment.ProcessId);
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_BlocksOrchestrator_WhenGeneralWaitHasDeadPid()
+    {
+        // Force-killed general wait leaves a stale marker. Self-heal removes it; the
+        // orchestrator-general-wait check then fires until a fresh wait is started.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+        registry.CreateWaitMarker("Adele", "_general-wait", "Adele");
+        registry.UpdateWaitMarkerListening("Adele", "_general-wait", 999999);
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Orchestrator must keep a general wait active");
+
+        // Self-heal deleted the stale general-wait marker
+        registry = new AgentRegistry(TestDir);
+        var markers = registry.GetWaitMarkers("Adele");
+        Assert.DoesNotContain(markers, m => m.Task == "_general-wait");
+    }
+
+    [Fact]
+    public async Task Guard_AllowsOrchestrator_WhenNoTaskWaitsYet()
+    {
+        // Onboarding path: orchestrator has set role but hasn't dispatched anything yet.
+        // The general-wait check is gated on having at least one task wait, so reads
+        // during onboarding are not blocked.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_DoesNotBlockNonOrchestrator_OnMissingGeneralWait()
+    {
+        // Code-writer with all task waits listening → existing check passes; new check
+        // does not apply because role is not orchestrator.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+
+        var result = await GuardAsync("read", "Commands/SomeFile.cs");
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_AllowsDydoWaitGeneral_DuringMissingGeneralWaitBlock()
+    {
+        // The bash bypass for dydo wait must work so the orchestrator can start
+        // the general wait that the new check requires.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+
+        var json = $$"""
+            {
+                "session_id": "{{TestSessionId}}",
+                "tool_name": "Bash",
+                "tool_input": {
+                    "command": "dydo wait",
+                    "run_in_background": true
+                }
+            }
+            """;
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_BlocksWithBothMessages_WhenTaskWaitNonListeningAndNoGeneralWait()
+    {
+        // Both signals fire on the same call: pending task waits AND missing general wait.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Register waits before continuing");
+        result.AssertStderrContains("sub-task");
+        result.AssertStderrContains("Orchestrator must keep a general wait active");
+    }
+
+    [Fact]
+    public async Task Guard_GeneralWaitMarker_NotIncluded_InPendingTaskList()
+    {
+        // The "_general-wait" sentinel should never appear in the task-list error message,
+        // even when its underlying marker is non-listening (e.g. self-healed dead PID).
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+        // Stale general-wait marker with dead PID
+        registry.CreateWaitMarker("Adele", "_general-wait", "Adele");
+        registry.UpdateWaitMarkerListening("Adele", "_general-wait", 999999);
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertExitCode(2);
+        Assert.DoesNotContain("_general-wait", result.Stderr);
+    }
+
+    #endregion
+
     #region Helper Methods
+
+    private void SetTaskRoleHistory(string agentName, string task, string role)
+    {
+        var statePath = Path.Combine(TestDir, "dydo", "agents", agentName, "state.md");
+        if (!File.Exists(statePath)) return;
+
+        var content = File.ReadAllText(statePath);
+        content = System.Text.RegularExpressions.Regex.Replace(
+            content,
+            @"^task-role-history:.*$",
+            $"task-role-history: {{ \"{task}\": [\"{role}\"] }}",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        File.WriteAllText(statePath, content);
+    }
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)
     {

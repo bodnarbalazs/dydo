@@ -1945,6 +1945,118 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void DeleteDirectoryJunctionSafe_NonExistentPath_NoOp()
+    {
+        var missing = Path.Combine(_testDir, "no-such-dir-" + Guid.NewGuid().ToString("N")[..8]);
+
+        WorktreeCommand.DeleteDirectoryJunctionSafe(missing);
+
+        Assert.False(Directory.Exists(missing));
+    }
+
+    [Fact]
+    public void DeleteDirectoryJunctionSafe_EmptyDirectory_DeletesIt()
+    {
+        var dir = Path.Combine(_testDir, "empty-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+
+        WorktreeCommand.DeleteDirectoryJunctionSafe(dir);
+
+        Assert.False(Directory.Exists(dir));
+    }
+
+    [Fact]
+    public void DeleteDirectoryJunctionSafe_DirectoryWithFiles_DeletesAll()
+    {
+        var dir = Path.Combine(_testDir, "with-files-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "a.txt"), "1");
+        File.WriteAllText(Path.Combine(dir, "b.txt"), "2");
+
+        WorktreeCommand.DeleteDirectoryJunctionSafe(dir);
+
+        Assert.False(Directory.Exists(dir));
+    }
+
+    [Fact]
+    public void DeleteDirectoryJunctionSafe_NestedRegularDirs_DeletesRecursively()
+    {
+        var root = Path.Combine(_testDir, "nested-" + Guid.NewGuid().ToString("N")[..8]);
+        var deep = Path.Combine(root, "level1", "level2");
+        Directory.CreateDirectory(deep);
+        File.WriteAllText(Path.Combine(deep, "leaf.txt"), "data");
+        File.WriteAllText(Path.Combine(root, "level1", "mid.txt"), "data");
+
+        WorktreeCommand.DeleteDirectoryJunctionSafe(root);
+
+        Assert.False(Directory.Exists(root));
+    }
+
+    [Fact]
+    public void DeleteDirectoryJunctionSafe_DirectoryWithJunction_UnlinksJunction_PreservesTarget()
+    {
+        // Core scenario for #0092: the function must unlink reparse-point junctions
+        // without recursing into their target directories.
+        var targetDir = Path.Combine(_testDir, "target-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(targetDir);
+        File.WriteAllText(Path.Combine(targetDir, "precious.txt"), "must survive");
+
+        var root = Path.Combine(_testDir, "root-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(root);
+        File.WriteAllText(Path.Combine(root, "local.txt"), "local");
+
+        var junctionPath = Path.Combine(root, "linked");
+        CreateJunctionOrSymlink(junctionPath, targetDir);
+        Assert.True(File.Exists(Path.Combine(junctionPath, "precious.txt")));
+
+        WorktreeCommand.DeleteDirectoryJunctionSafe(root);
+
+        Assert.False(Directory.Exists(root));
+        Assert.True(Directory.Exists(targetDir));
+        Assert.True(File.Exists(Path.Combine(targetDir, "precious.txt")));
+    }
+
+    [Fact]
+    public void DeleteDirectoryJunctionSafe_DeeplyNestedJunction_UnlinksJunction_PreservesTarget()
+    {
+        // Junction at depth-2 — exercises the recursive descent path that finds
+        // and unlinks reparse points at any nesting level (per the function's contract).
+        var targetDir = Path.Combine(_testDir, "deep-target-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(targetDir);
+        File.WriteAllText(Path.Combine(targetDir, "precious.txt"), "must survive");
+
+        var root = Path.Combine(_testDir, "deep-root-" + Guid.NewGuid().ToString("N")[..8]);
+        var inner = Path.Combine(root, "a", "b");
+        Directory.CreateDirectory(inner);
+
+        var junctionPath = Path.Combine(inner, "linked");
+        CreateJunctionOrSymlink(junctionPath, targetDir);
+
+        WorktreeCommand.DeleteDirectoryJunctionSafe(root);
+
+        Assert.False(Directory.Exists(root));
+        Assert.True(Directory.Exists(targetDir));
+        Assert.True(File.Exists(Path.Combine(targetDir, "precious.txt")));
+    }
+
+    private static void CreateJunctionOrSymlink(string linkPath, string targetPath)
+    {
+        var parent = Path.GetDirectoryName(linkPath);
+        if (parent != null) Directory.CreateDirectory(parent);
+        var psi = OperatingSystem.IsWindows()
+            ? new System.Diagnostics.ProcessStartInfo("cmd", $"/c mklink /J \"{linkPath}\" \"{targetPath}\"")
+            : new System.Diagnostics.ProcessStartInfo("ln", $"-s \"{targetPath}\" \"{linkPath}\"");
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        var proc = System.Diagnostics.Process.Start(psi)!;
+        proc.WaitForExit(5000);
+        if (proc.ExitCode != 0)
+            throw new InvalidOperationException($"Link creation failed: {proc.StandardError.ReadToEnd()}");
+    }
+
+    [Fact]
     public void Cleanup_RemovesZombieDirectory_AfterGitWorktreeRemoveFails()
     {
         var worktreeId = "zombie-" + Guid.NewGuid().ToString("N")[..8];

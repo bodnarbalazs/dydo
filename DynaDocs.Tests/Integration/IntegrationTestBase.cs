@@ -329,6 +329,19 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
+    /// Pre-create the Agent tool nudge marker so tests using the Agent tool bypass the nudge.
+    /// </summary>
+    protected void BypassAgentToolNudge()
+    {
+        var registry = new AgentRegistry(TestDir);
+        var agent = registry.GetCurrentAgent(TestSessionId);
+        if (agent == null) return;
+        var workspace = registry.GetAgentWorkspace(agent.Name);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".agent-tool-nudge"), "test-bypass");
+    }
+
+    /// <summary>
     /// Assert file exists in test directory.
     /// </summary>
     protected void AssertFileExists(string relativePath)

@@ -592,6 +592,9 @@ public partial class AgentRegistry : IAgentRegistry
         foreach (var marker in Directory.GetFiles(workspace, ".no-wait-nudge-*"))
             File.Delete(marker);
 
+        var agentToolNudge = Path.Combine(workspace, ".agent-tool-nudge");
+        if (File.Exists(agentToolNudge)) File.Delete(agentToolNudge);
+
         foreach (var marker in Directory.GetFiles(workspace, ".nudge-*"))
             File.Delete(marker);
 

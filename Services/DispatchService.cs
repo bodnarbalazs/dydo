@@ -39,6 +39,13 @@ public static class DispatchService
             return ExitCodes.ToolError;
         }
 
+        var noWaitNudgeError = CheckNoWaitNudge(!opts.Wait, registry, sessionId, opts.Task);
+        if (noWaitNudgeError != null)
+        {
+            ConsoleOutput.WriteError(noWaitNudgeError);
+            return ExitCodes.ToolError;
+        }
+
         if (sender != null && !string.IsNullOrEmpty(sender.Role))
         {
             var dispatchError = CheckDispatchRestriction(registry, sender, opts.Role, opts.Task);
@@ -487,6 +494,30 @@ public static class DispatchService
         if (registry.GetRoleDefinition(sender.Role ?? "")?.CanOrchestrate != true)
             return $"The --wait flag is reserved for oversight roles. Your role '{sender.Role}' should use --no-wait.";
 
+        return null;
+    }
+
+    private static string? CheckNoWaitNudge(bool noWait, AgentRegistry registry, string? sessionId, string task)
+    {
+        if (!noWait) return null;
+
+        var sender = registry.GetCurrentAgent(sessionId);
+        if (sender == null) return null;
+
+        if (registry.GetRoleDefinition(sender.Role ?? "")?.CanOrchestrate != true) return null;
+
+        var senderWorkspace = registry.GetAgentWorkspace(sender.Name);
+        var nudgeKey = PathUtils.SanitizeForFilename(task);
+        var markerPath = Path.Combine(senderWorkspace, $".no-wait-nudge-{nudgeKey}");
+
+        if (!File.Exists(markerPath))
+        {
+            Directory.CreateDirectory(senderWorkspace);
+            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+            return "Oversight roles should use --wait so dispatched agents' replies route back to you. " +
+                   "If you really mean --no-wait (fire-and-forget), run again and it will pass.";
+        }
+        File.Delete(markerPath);
         return null;
     }
 

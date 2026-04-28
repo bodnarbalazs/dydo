@@ -438,8 +438,10 @@ public static partial class GuardCommand
 
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
         {
-            blocked = CheckAgentToolNudge(searchAgent!, sessionId, registry, auditService);
-            if (blocked != null) return blocked.Value;
+            Console.Error.WriteLine("NOTICE: You invoked Claude Code's built-in Agent tool. This is fine for read "
+                + "discovery and autonomous code-writing within your current task — the subagent inherits your identity, "
+                + "role, and permissions. Do not use it as a substitute for dydo dispatch, which spawns a fresh, stateful, "
+                + "role-scoped dydo agent in its own session for separable work. Two different tools, two different jobs.");
         }
 
         if (!string.IsNullOrEmpty(searchPath))
@@ -468,31 +470,6 @@ public static partial class GuardCommand
         EmitWorktreeAllowIfNeeded();
 
         return ExitCodes.Success;
-    }
-
-    private static int? CheckAgentToolNudge(
-        AgentState agent, string? sessionId, AgentRegistry registry, IAuditService auditService)
-    {
-        var workspace = registry.GetAgentWorkspace(agent.Name);
-        var markerPath = Path.Combine(workspace, ".agent-tool-nudge");
-
-        if (!File.Exists(markerPath))
-        {
-            Directory.CreateDirectory(workspace);
-            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "agent",
-                BlockReason = "Agent tool soft-nudge"
-            });
-            Console.Error.WriteLine("BLOCKED: Claude Code's 'Agent' tool spawns a stateless subagent that bypasses dydo's "
-                + "identity, role, and audit guarantees. Prefer 'dydo dispatch' to hand work to a stateful dydo agent. "
-                + "If you have a clear reason to use the built-in Agent tool (e.g., quick read-only exploration), "
-                + "run the call again and it will pass.");
-            return ExitCodes.ToolError;
-        }
-        File.Delete(markerPath);
-        return null;
     }
 
     /// <summary>

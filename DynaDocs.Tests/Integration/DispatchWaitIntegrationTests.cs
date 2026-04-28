@@ -963,6 +963,10 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         Directory.CreateDirectory(workspace);
         File.WriteAllText(marker, "test-bypass");
 
+        // Also bypass the --no-wait nudge for oversight-role dispatchers
+        var noWaitMarker = Path.Combine(workspace, $".no-wait-nudge-{sanitized}");
+        File.WriteAllText(noWaitMarker, "test-bypass");
+
         var command = DispatchCommand.Create();
         var args = new List<string> { "--role", role, "--task", task, "--brief", brief, "--no-launch" };
         if (wait) args.Add("--wait");

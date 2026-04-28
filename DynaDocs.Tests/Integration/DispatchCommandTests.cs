@@ -1014,6 +1014,97 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --no-wait Nudge Tests
+
+    [Fact]
+    public async Task Dispatch_NoWait_OrchestratorFirstAttempt_FailsWithNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "nudge-test", "planner");
+        await SetRoleAsync("orchestrator", "nudge-test");
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        BypassNoLaunchNudge("nudge-test");
+        var result = await RunAsync(command, args);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--wait so dispatched");
+        result.AssertStderrContains("run again");
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_OrchestratorSecondAttempt_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "nudge-test", "planner");
+        await SetRoleAsync("orchestrator", "nudge-test");
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        BypassNoLaunchNudge("nudge-test");
+
+        // First attempt: fails with nudge
+        var result1 = await RunAsync(command, args);
+        result1.AssertExitCode(2);
+
+        // Second attempt: passes
+        BypassNoLaunchNudge("nudge-test");
+        var result2 = await RunAsync(command, args);
+        result2.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_WithoutSender_SkipsNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        // No agent claimed — no sender context
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var result = await RunAsync(command, args);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_OrchestratorMarkerCleanedOnRelease()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "nudge-test", "planner");
+        await SetRoleAsync("orchestrator", "nudge-test");
+
+        // First attempt creates marker
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        BypassNoLaunchNudge("nudge-test");
+        await RunAsync(command, args);
+
+        // Marker should exist
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.no-wait-nudge-nudge-test");
+        Assert.True(File.Exists(markerPath));
+
+        // Release cleans up markers
+        await ReleaseAgentAsync();
+        Assert.False(File.Exists(markerPath));
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_CodeWriter_SkipsNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "nudge-test");
+
+        var result = await DispatchAsync("reviewer", "nudge-test", "Brief", noWait: true);
+        result.AssertSuccess();
+    }
+
+    #endregion
+
     #region --worktree Tests
 
     [Fact]

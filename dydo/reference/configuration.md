@@ -103,7 +103,7 @@ For Claude Code, `dydo init claude` writes `.claude/settings.local.json` automat
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent",
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell",
         "hooks": [
           {
             "type": "command",
@@ -116,7 +116,7 @@ For Claude Code, `dydo init claude` writes `.claude/settings.local.json` automat
 }
 ```
 
-The `PreToolUse` hook intercepts every Edit, Write, Read, Bash, Glob, Grep, and Agent tool call. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block).
+The `PreToolUse` hook intercepts every Edit, Write, Read, Bash, Glob, Grep, Agent, EnterPlanMode, ExitPlanMode, and PowerShell tool call. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block).
 
 The `permissions.allow` list pre-approves common dydo commands so the human doesn't get prompted for every agent lifecycle call.
 

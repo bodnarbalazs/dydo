@@ -1,0 +1,43 @@
+{"ts":"2026-04-28T13:52:16.7996985Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md","tool":"read"}
+{"ts":"2026-04-28T13:52:22.5639917Z","event":"Claim","agent":"Charlie"}
+{"ts":"2026-04-28T13:52:28.5296708Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\7da3e75c-plan-orchestrator-wait-deadlock.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-28T13:52:33.4646345Z","event":"Role","role":"planner","task":"plan-orchestrator-wait-deadlock"}
+{"ts":"2026-04-28T13:52:39.2544441Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\7da3e75c-plan-orchestrator-wait-deadlock.md","tool":"read"}
+{"ts":"2026-04-28T13:52:42.3893967Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\planner.md","tool":"read"}
+{"ts":"2026-04-28T13:52:46.2244142Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-28T13:52:50.3897066Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-28T13:52:55.7471677Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-regression-verify.md","tool":"read"}
+{"ts":"2026-04-28T13:52:59.4137175Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-orchestrator-nowait-nudge.md","tool":"read"}
+{"ts":"2026-04-28T13:53:03.464251Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-28T13:53:06.524934Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read"}
+{"ts":"2026-04-28T13:53:29.5345083Z","event":"Bash","tool":"bash","cmd":"find Services -name \u0022*.cs\u0022 | head -50"}
+{"ts":"2026-04-28T13:53:34.2848211Z","event":"Bash","tool":"bash","cmd":"find Services -name \u0022MessageFinder*\u0022 -o -name \u0022*MessageFinder*\u0022"}
+{"ts":"2026-04-28T13:53:56.7851578Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageFinder.cs","tool":"read"}
+{"ts":"2026-04-28T13:53:57.194835Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"read"}
+{"ts":"2026-04-28T13:55:49.6427616Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T13:55:57.2780494Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-28T13:56:03.3297526Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T13:56:07.5200107Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\InitCommand.cs","tool":"read"}
+{"ts":"2026-04-28T13:56:14.6054877Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-28T13:56:17.4673157Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\settings.local.json","tool":"read"}
+{"ts":"2026-04-28T13:56:21.4089205Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\InitCommandTests.cs","tool":"read"}
+{"ts":"2026-04-28T13:56:24.8936343Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\spec.md","tool":"read"}
+{"ts":"2026-04-28T13:56:29.3938077Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-28T13:56:32.4763413Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WaitCommandTests.cs","tool":"read"}
+{"ts":"2026-04-28T13:56:40.2125165Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-28T13:56:43.9808262Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\PendingStateGuardTests.cs","tool":"read"}
+{"ts":"2026-04-28T13:56:52.7822961Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models","tool":"grep"}
+{"ts":"2026-04-28T13:56:55.7666878Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentState.cs","tool":"read"}
+{"ts":"2026-04-28T13:57:02.177416Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\InboxCommand.cs","tool":"grep"}
+{"ts":"2026-04-28T13:57:08.3405737Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-28T13:57:13.0969707Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxService.cs","tool":"grep"}
+{"ts":"2026-04-28T13:58:58.1512732Z","event":"Bash","tool":"bash","cmd":"find Models -name \u0022ToolInputData.cs\u0022 -o -name \u0022HookInput.cs\u0022"}
+{"ts":"2026-04-28T13:59:01.7344317Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\HookInput.cs","tool":"read"}
+{"ts":"2026-04-28T13:59:05.7503063Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\ToolInputData.cs","tool":"read"}
+{"ts":"2026-04-28T13:59:10.1512325Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022GetAction\\|GetCommand\\|GetFilePath\\|GetSearchPath\\|ToLowerInvariant\u0022 Models/HookInput.cs Mo..."}
+{"ts":"2026-04-28T13:59:13.814668Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022GetAction\\|GetCommand\\|GetFilePath\\|GetSearchPath\u0022 Models/*.cs Services/*.cs Serialization/..."}
+{"ts":"2026-04-28T13:59:18.8822705Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\HookInputExtensions.cs","tool":"read"}
+{"ts":"2026-04-28T14:00:16.2482392Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\plan-orchestrator-wait-deadlock.md","tool":"read"}
+{"ts":"2026-04-28T14:02:53.2408283Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\plan-orchestrator-wait-deadlock.md","tool":"write"}
+{"ts":"2026-04-28T14:04:07.1770481Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\msg-to-adele.txt","tool":"write"}
+{"ts":"2026-04-28T14:04:15.7178982Z","event":"Release","agent":"Charlie"}

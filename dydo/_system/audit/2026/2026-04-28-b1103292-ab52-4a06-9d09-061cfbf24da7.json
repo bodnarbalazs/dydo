@@ -1,0 +1,14 @@
+{
+  "session": "b1103292-ab52-4a06-9d09-061cfbf24da7",
+  "human": "balazs",
+  "started": "2026-04-28T18:44:17.276638Z",
+  "git_head": "a3a7616",
+  "events": [
+    {
+      "ts": "2026-04-28T18:44:17.275661Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "pwd \u0026\u0026 git status \u0026\u0026 echo \u0022---BRANCH---\u0022 \u0026\u0026 git branch --show-current \u0026\u0026 echo \u0022---LOG---\u0022 \u0026\u0026 git log..."
+    }
+  ]
+}

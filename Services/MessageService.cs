@@ -126,23 +126,29 @@ public static class MessageService
         var activeAgents = registry.GetActiveAgents();
         var oversightAgents = registry.GetActiveOversightAgents();
 
-        // Allow sends that fulfill a reply-pending obligation, even to inactive targets
         var replyMarkers = registry.GetReplyPendingMarkers(senderName);
-        var hasReplyPending = replyMarkers.Any(m =>
-            m.To.Equals(to, StringComparison.OrdinalIgnoreCase)
-            && (string.IsNullOrEmpty(subject) || m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)));
+        var pendingReplyTask = replyMarkers
+            .FirstOrDefault(m => m.To.Equals(to, StringComparison.OrdinalIgnoreCase)
+                && (string.IsNullOrEmpty(subject) || m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)))
+            ?.Task;
 
-        if (hasReplyPending)
-            return null;
-
-        return BuildInactiveTargetMessage(registry, to, subject, targetState, activeAgents, oversightAgents);
+        return BuildInactiveTargetMessage(registry, to, subject, targetState, activeAgents, oversightAgents, pendingReplyTask);
     }
 
     private static string BuildInactiveTargetMessage(AgentRegistry registry, string to, string? subject,
-        Models.AgentState? targetState, List<Models.AgentState> activeAgents, List<Models.AgentState> oversightAgents)
+        Models.AgentState? targetState, List<Models.AgentState> activeAgents, List<Models.AgentState> oversightAgents,
+        string? pendingReplyTask = null)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"Agent {to} has been released and will not receive this message.");
+
+        if (!string.IsNullOrEmpty(pendingReplyTask))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"  You owe a reply on '{pendingReplyTask}'. Use --force to discharge by writing to the released inbox,");
+            sb.AppendLine($"  or message the active orchestrator above instead (your reply marker discharges either way");
+            sb.AppendLine($"  if --subject matches).");
+        }
         if (targetState?.DispatchedBy != null)
         {
             var dispatcher = registry.GetAgentState(targetState.DispatchedBy);

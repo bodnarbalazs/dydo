@@ -179,12 +179,21 @@ public static class ReviewCommand
             ? $"Review passed for {taskName}."
             : $"Review passed for {taskName}.\n\n{notes}";
 
-        MessageService.DeliverInboxMessage(registry, reviewer.Name, dispatcher, baseBody, taskName);
+        var dispatcherState = registry.GetAgentState(dispatcher);
+        if (dispatcherState?.Status == Models.AgentStatus.Working)
+        {
+            MessageService.DeliverInboxMessage(registry, reviewer.Name, dispatcher, baseBody, taskName);
+            Console.WriteLine($"  Verdict sent to {dispatcher}.");
+        }
+        else
+        {
+            Console.WriteLine($"  Dispatcher {dispatcher} is not active; verdict is on the task file.");
+        }
+
         if (registry.RemoveReplyPendingMarker(reviewer.Name, taskName))
             Console.WriteLine($"  Reply obligation fulfilled for '{taskName}'.");
-        Console.WriteLine($"  Verdict sent to {dispatcher}.");
 
-        var ancestor = FindNearestCanOrchestrateAncestor(registry, dispatcher);
+        var ancestor = FindNearestWorkingCanOrchestrateAncestor(registry, dispatcher);
         if (string.IsNullOrEmpty(ancestor)) return;
         if (ancestor.Equals(dispatcher, StringComparison.OrdinalIgnoreCase)) return;
         if (ancestor.Equals(reviewer.Name, StringComparison.OrdinalIgnoreCase)) return;
@@ -196,7 +205,7 @@ public static class ReviewCommand
         Console.WriteLine($"  CC'd orchestrator {ancestor}.");
     }
 
-    private static string? FindNearestCanOrchestrateAncestor(AgentRegistry registry, string startAgent)
+    private static string? FindNearestWorkingCanOrchestrateAncestor(AgentRegistry registry, string startAgent)
     {
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var current = startAgent;
@@ -204,6 +213,11 @@ public static class ReviewCommand
         {
             var state = registry.GetAgentState(current);
             if (state == null) return null;
+            if (state.Status != Models.AgentStatus.Working)
+            {
+                current = state.DispatchedBy ?? "";
+                continue;
+            }
             if (!string.IsNullOrEmpty(state.Role))
             {
                 var def = registry.GetRoleDefinition(state.Role);

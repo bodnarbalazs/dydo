@@ -633,7 +633,7 @@ public class MessageIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Message_ToInactiveAgent_WithReplyPending_AllowsSend()
+    public async Task Message_ToInactiveAgent_WithReplyPending_NowFails()
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
@@ -643,19 +643,19 @@ public class MessageIntegrationTests : IntegrationTestBase
         var registry = new AgentRegistry(TestDir);
         registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
 
-        // Brian is not claimed = inactive, but Adele has reply-pending — send should succeed
+        // Brian is not claimed = inactive. Reply-pending no longer bypasses — hard reject.
         var result = await SendMessageAsync("Brian", "Reply to Brian", subject: "test-task");
 
-        result.AssertSuccess();
-        result.AssertStdoutContains("Reply obligation fulfilled");
+        result.AssertExitCode(2);
+        result.AssertStderrContains("has been released");
 
-        // Marker should be cleared
+        // Marker is preserved so the reply obligation remains visible
         var markers = registry.GetReplyPendingMarkers("Adele");
-        Assert.Empty(markers);
+        Assert.Single(markers);
     }
 
     [Fact]
-    public async Task Message_ToInactiveAgent_WithReplyPending_NoSubject_AllowsSend()
+    public async Task Message_ToInactiveAgent_WithReplyPending_NoSubject_NowFails()
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
@@ -664,15 +664,32 @@ public class MessageIntegrationTests : IntegrationTestBase
         var registry = new AgentRegistry(TestDir);
         registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
 
-        // No subject — reply-pending match uses empty-subject wildcard
+        // No subject — still hard reject; reply-pending bypass dropped.
         var result = await SendMessageAsync("Brian", "Reply to Brian");
 
-        result.AssertSuccess();
-        result.AssertStdoutContains("Reply obligation fulfilled");
+        result.AssertExitCode(2);
+        result.AssertStderrContains("has been released");
 
-        // Marker should be cleared even without a subject
+        // Marker preserved
         var markers = registry.GetReplyPendingMarkers("Adele");
-        Assert.Empty(markers);
+        Assert.Single(markers);
+    }
+
+    [Fact]
+    public async Task Message_ToInactiveAgent_WithReplyPending_HintsForceOrRedirect()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "test-task");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
+
+        var result = await SendMessageAsync("Brian", "Reply to Brian", subject: "test-task");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--force");
+        result.AssertStderrContains("test-task");
     }
 
     [Fact]

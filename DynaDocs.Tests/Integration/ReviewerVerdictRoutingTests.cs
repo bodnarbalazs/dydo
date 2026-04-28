@@ -25,8 +25,8 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
 
         // Wire up the dispatch chain:
         //   Adele (orchestrator) -> Brian (code-writer) -> Charlie (reviewer)
-        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: "Adele", dispatchedByRole: "orchestrator");
-        WriteAgentStateFile("Adele", role: "orchestrator", dispatchedBy: null, dispatchedByRole: null);
+        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: "Adele", dispatchedByRole: "orchestrator", status: "working");
+        WriteAgentStateFile("Adele", role: "orchestrator", dispatchedBy: null, dispatchedByRole: null, status: "working");
         PatchDispatchedBy("Charlie", "Brian", "code-writer");
 
         // Task must exist in review-pending state
@@ -66,7 +66,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         await SetRoleAsync("reviewer", "root-task");
 
         // Brian is a root code-writer — no dispatcher above him
-        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: null, dispatchedByRole: null);
+        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: null, dispatchedByRole: null, status: "working");
         PatchDispatchedBy("Charlie", "Brian", "code-writer");
 
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
@@ -83,6 +83,123 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         Assert.NotEmpty(brianMessages);
 
         // Adele is NOT CC'd — no canOrchestrate ancestor exists
+        var adeleInbox = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
+        var adeleMessages = Directory.Exists(adeleInbox)
+            ? Directory.GetFiles(adeleInbox, "*-msg-*.md")
+            : Array.Empty<string>();
+        Assert.Empty(adeleMessages);
+    }
+
+    [Fact]
+    public async Task ReviewCompletePass_DispatcherReleased_VerdictRedirectsToWorkingAncestor()
+    {
+        await InitProjectAsync("none", "testuser", 4);
+
+        await ClaimAgentAsync("Charlie");
+        await SetRoleAsync("reviewer", "released-dispatcher-task");
+
+        // Adele (orchestrator, working) -> Brian (code-writer, free) -> Charlie (reviewer)
+        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: "Adele", dispatchedByRole: "orchestrator", status: "free");
+        WriteAgentStateFile("Adele", role: "orchestrator", dispatchedBy: null, dispatchedByRole: null, status: "working");
+        PatchDispatchedBy("Charlie", "Brian", "code-writer");
+
+        var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(tasksPath);
+        File.WriteAllText(Path.Combine(tasksPath, "released-dispatcher-task.md"),
+            "---\nname: released-dispatcher-task\nstatus: review-pending\n---\n");
+
+        var result = await ReviewCompleteAsync("released-dispatcher-task", "pass", "LGTM");
+        result.AssertSuccess();
+
+        // Brian (released) gets no inbox write
+        var brianInbox = Path.Combine(TestDir, "dydo/agents/Brian/inbox");
+        var brianMessages = Directory.Exists(brianInbox)
+            ? Directory.GetFiles(brianInbox, "*-msg-*.md")
+            : Array.Empty<string>();
+        Assert.Empty(brianMessages);
+
+        // Adele (working orchestrator) receives the CC
+        var adeleMessages = Directory.GetFiles(
+            Path.Combine(TestDir, "dydo/agents/Adele/inbox"), "*-msg-*.md");
+        Assert.NotEmpty(adeleMessages);
+        var adeleContent = File.ReadAllText(adeleMessages[0]);
+        Assert.Contains("subject: released-dispatcher-task", adeleContent);
+    }
+
+    [Fact]
+    public async Task ReviewCompletePass_DispatcherAndAncestorReleased_NoWrites()
+    {
+        await InitProjectAsync("none", "testuser", 4);
+
+        await ClaimAgentAsync("Charlie");
+        await SetRoleAsync("reviewer", "all-released-task");
+
+        // Both Adele and Brian released — no Working CanOrchestrate ancestor
+        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: "Adele", dispatchedByRole: "orchestrator", status: "free");
+        WriteAgentStateFile("Adele", role: "orchestrator", dispatchedBy: null, dispatchedByRole: null, status: "free");
+        PatchDispatchedBy("Charlie", "Brian", "code-writer");
+
+        var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(tasksPath);
+        File.WriteAllText(Path.Combine(tasksPath, "all-released-task.md"),
+            "---\nname: all-released-task\nstatus: review-pending\n---\n");
+
+        var result = await ReviewCompleteAsync("all-released-task", "pass");
+        result.AssertSuccess();
+
+        // No inbox writes anywhere
+        foreach (var name in new[] { "Brian", "Adele" })
+        {
+            var inbox = Path.Combine(TestDir, "dydo/agents", name, "inbox");
+            var messages = Directory.Exists(inbox)
+                ? Directory.GetFiles(inbox, "*-msg-*.md")
+                : Array.Empty<string>();
+            Assert.Empty(messages);
+        }
+
+        // Task file still records the review
+        var taskContent = File.ReadAllText(Path.Combine(tasksPath, "all-released-task.md"));
+        Assert.Contains("PASSED", taskContent);
+        Assert.Contains("status: human-reviewed", taskContent);
+    }
+
+    [Fact]
+    public async Task ReviewCompletePass_AncestorWalkSkipsReleasedIntermediate()
+    {
+        await InitProjectAsync("none", "testuser", 4);
+
+        await ClaimAgentAsync("Charlie");
+        await SetRoleAsync("reviewer", "skip-walk-task");
+
+        // Chain: Adele (orchestrator, working) <- Dexter (orchestrator, working)
+        //        <- Brian (code-writer, released) <- Charlie (reviewer)
+        // Expected CC target: Dexter — the nearest *Working* CanOrchestrate ancestor.
+        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: "Dexter", dispatchedByRole: "orchestrator", status: "free");
+        WriteAgentStateFile("Dexter", role: "orchestrator", dispatchedBy: "Adele", dispatchedByRole: "orchestrator", status: "working");
+        WriteAgentStateFile("Adele", role: "orchestrator", dispatchedBy: null, dispatchedByRole: null, status: "working");
+        PatchDispatchedBy("Charlie", "Brian", "code-writer");
+
+        var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(tasksPath);
+        File.WriteAllText(Path.Combine(tasksPath, "skip-walk-task.md"),
+            "---\nname: skip-walk-task\nstatus: review-pending\n---\n");
+
+        var result = await ReviewCompleteAsync("skip-walk-task", "pass");
+        result.AssertSuccess();
+
+        // Brian (released) gets nothing
+        var brianInbox = Path.Combine(TestDir, "dydo/agents/Brian/inbox");
+        var brianMessages = Directory.Exists(brianInbox)
+            ? Directory.GetFiles(brianInbox, "*-msg-*.md")
+            : Array.Empty<string>();
+        Assert.Empty(brianMessages);
+
+        // Dexter (nearest Working CanOrchestrate) is the CC target
+        var dexterMessages = Directory.GetFiles(
+            Path.Combine(TestDir, "dydo/agents/Dexter/inbox"), "*-msg-*.md");
+        Assert.NotEmpty(dexterMessages);
+
+        // Adele (further up) is NOT CC'd — the walk stops at the first Working ancestor
         var adeleInbox = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
         var adeleMessages = Directory.Exists(adeleInbox)
             ? Directory.GetFiles(adeleInbox, "*-msg-*.md")
@@ -196,7 +313,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         return await RunAsync(command, args.ToArray());
     }
 
-    private void WriteAgentStateFile(string agentName, string? role, string? dispatchedBy, string? dispatchedByRole)
+    private void WriteAgentStateFile(string agentName, string? role, string? dispatchedBy, string? dispatchedByRole, string status = "free")
     {
         var workspace = Path.Combine(TestDir, "dydo", "agents", agentName);
         Directory.CreateDirectory(workspace);
@@ -205,7 +322,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
             agent: {{agentName}}
             role: {{role ?? "null"}}
             task: null
-            status: free
+            status: {{status}}
             assigned: testuser
             dispatched-by: {{dispatchedBy ?? "null"}}
             dispatched-by-role: {{dispatchedByRole ?? "null"}}

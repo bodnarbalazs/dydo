@@ -1137,6 +1137,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
+        Assert.DoesNotContain("dydo dispatch", result.Stderr);
     }
 
     [Fact]
@@ -1150,10 +1151,15 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
+        Assert.DoesNotContain("dydo dispatch", result.Stderr);
     }
 
+    #endregion
+
+    #region Agent Tool — Nudge
+
     [Fact]
-    public async Task Guard_AgentTool_IdentityWithRole_Allows()
+    public async Task Guard_AgentTool_IdentityWithRole_FirstCall_FailsWithNudge()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -1162,7 +1168,89 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Agent");
+        result.AssertStderrContains("dydo dispatch");
+        result.AssertStderrContains("run the call again");
+    }
+
+    [Fact]
+    public async Task Guard_AgentTool_IdentityWithRole_SecondCall_Succeeds()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
+        var first = await GuardWithStdinAsync(json);
+        first.AssertExitCode(2);
+
+        var second = await GuardWithStdinAsync(json);
+        second.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_AgentTool_BypassMarker_PassesImmediately()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        BypassAgentToolNudge();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
         result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_AgentTool_MarkerCleanedOnRelease()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
+        await GuardWithStdinAsync(json);
+
+        var registry = new AgentRegistry(TestDir);
+        var workspace = registry.GetAgentWorkspace("Adele");
+        var markerPath = Path.Combine(workspace, ".agent-tool-nudge");
+        Assert.True(File.Exists(markerPath));
+
+        await ReleaseAgentAsync();
+        Assert.False(File.Exists(markerPath));
+    }
+
+    [Fact]
+    public async Task Guard_AgentTool_EmptyToolInput_FailsWithNudge()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("dydo dispatch");
+    }
+
+    [Fact]
+    public async Task Guard_GlobTool_DoesNotFireAgentNudge()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Glob\",\"tool_input\":{{\"pattern\":\"**/*.cs\"}}}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+
+        var registry = new AgentRegistry(TestDir);
+        var workspace = registry.GetAgentWorkspace("Adele");
+        Assert.False(File.Exists(Path.Combine(workspace, ".agent-tool-nudge")));
     }
 
     #endregion

@@ -248,6 +248,36 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("Dangerous");
     }
 
+    private string PowerShellJson(string command) =>
+        "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"PowerShell\",\"tool_input\":{\"command\":\"" +
+        command.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"}}";
+
+    [Fact]
+    public async Task BugB_PowerShell_DangerousPattern_IsBlocked()
+    {
+        // Bug B: before the fix, PowerShell tool calls fell through to HandleWriteOperation
+        // with filePath==null and returned Success — full guard bypass. This test proves
+        // PowerShell now routes through HandleBashCommand and trips CheckDangerousPatterns
+        // identically to Bash.
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(PowerShellJson("rm -rf /"));
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Dangerous");
+    }
+
+    [Fact]
+    public async Task BugB_PowerShell_DydoWaitForeground_IsBlocked()
+    {
+        // Bug B: PowerShell tool with a dydo command must route through HandleDydoBashCommand
+        // — verifies dydo wait foreground is blocked exactly like via Bash.
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(PowerShellJson("dydo wait"));
+        result.AssertExitCode(2);
+        result.AssertStderrContains("dydo wait");
+    }
+
     // ================================================================
     // Issue #58: DangerousPatterns gaps
     // ================================================================

@@ -624,9 +624,91 @@ public class WaitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Deadlock Recovery Tests
+
+    [Fact]
+    public async Task WaitGeneral_SkipsMessage_AlreadyInUnreadAtStart()
+    {
+        // Bug A: WaitGeneral previously popped on any unread message — including ones
+        // already in agent.UnreadMessages — and removed the _general-wait marker on exit,
+        // deadlocking the orchestrator's read tool. The wait must now snapshot the unread
+        // set at startup and skip those IDs.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var staleId = CreateMessageFileReturningId("Adele", "Brian", "stale-subject", "Already-known");
+        var registry = new AgentRegistry(TestDir);
+        registry.AddUnreadMessage("Adele", staleId);
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+            Assert.DoesNotContain("Message received", result.Stdout);
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_PopsOnNewMessage_EvenWhenStartupUnreadExists()
+    {
+        // Bug A: with a stale unread present, a freshly-arriving message must still wake
+        // the wait — only IDs already unread at wait-start are skipped.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var staleId = CreateMessageFileReturningId("Adele", "Brian", "stale", "Old");
+        var registry = new AgentRegistry(TestDir);
+        registry.AddUnreadMessage("Adele", staleId);
+
+        // New arrival (NOT in state.md unread) — should pop the wait.
+        CreateMessageFile("Adele", "Charlie", "fresh", "New");
+
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Charlie");
+            Assert.DoesNotContain("From: Brian", result.Stdout);
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
+    }
+
+    [Fact]
+    public void MessageFinder_FindMessage_ExcludesIdsInExcludeSet()
+    {
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            WriteMessageFileDirect(inboxPath, "deadbeef", "Brian", "subj", "stale", DateTime.UtcNow);
+
+            var excludeIds = new HashSet<string>(["deadbeef"], StringComparer.OrdinalIgnoreCase);
+            var result = MessageFinder.FindMessage(inboxPath, null, excludeSubjects: null, excludeIds: excludeIds);
+
+            Assert.Null(result);
+        }
+        finally { Directory.Delete(inboxPath, true); }
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)
+    {
+        CreateMessageFileReturningId(agentName, fromAgent, subject, body);
+    }
+
+    private string CreateMessageFileReturningId(string agentName, string fromAgent, string subject, string body)
     {
         var inboxPath = Path.Combine(TestDir, "dydo", "agents", agentName, "inbox");
         Directory.CreateDirectory(inboxPath);
@@ -653,6 +735,7 @@ public class WaitCommandTests : IntegrationTestBase
             """;
 
         File.WriteAllText(Path.Combine(inboxPath, $"{id}-msg-{subject}.md"), content);
+        return id;
     }
 
     private static void WriteMessageFileDirect(string inboxPath, string id, string from, string subject, string body, DateTime received)

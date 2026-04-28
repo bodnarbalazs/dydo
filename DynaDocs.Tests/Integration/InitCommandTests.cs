@@ -182,6 +182,18 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Init_Claude_MatcherIncludesPowerShell()
+    {
+        // Bug B: PowerShell was missing from the matcher, so Claude Code did not pipe
+        // PowerShell tool calls through `dydo guard` — total bypass of every guard layer.
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        Assert.Contains("PowerShell", content);
+    }
+
+    [Fact]
     public async Task Init_Claude_PreservesExistingHooks()
     {
         // Arrange: Create existing settings with a custom hook

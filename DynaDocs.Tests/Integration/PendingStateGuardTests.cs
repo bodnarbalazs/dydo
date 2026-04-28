@@ -813,6 +813,55 @@ public class PendingStateGuardTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Guard_Orchestrator_CanReadInboxFile_WithUnreadAndTaskWait()
+    {
+        // Bug A end-to-end: pre-existing unread message + task wait + listening general
+        // wait. The orchestrator's Read of the inbox file must succeed (general-wait
+        // marker still present because WaitGeneral now skips the startup unread instead
+        // of popping and removing the marker), and the read must clear the unread via
+        // TrackReadCompletion's audit-driven mark-as-read.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+        registry.CreateWaitMarker("Adele", "_general-wait", "Adele");
+        registry.UpdateWaitMarkerListening("Adele", "_general-wait", Environment.ProcessId);
+
+        var inboxPath = Path.Combine(TestDir, "dydo", "agents", "Adele", "inbox");
+        Directory.CreateDirectory(inboxPath);
+        var msgPath = Path.Combine(inboxPath, "deadbeef-msg-unrelated.md");
+        File.WriteAllText(msgPath, $"""
+            ---
+            id: deadbeef
+            type: message
+            from: Charlie
+            subject: unrelated
+            received: {DateTime.UtcNow:o}
+            ---
+
+            ## Body
+
+            hello
+            """);
+        registry.AddUnreadMessage("Adele", "deadbeef");
+
+        var result = await GuardAsync("read", msgPath);
+
+        result.AssertSuccess();
+
+        // The audit-driven tracker should have marked the message read.
+        registry = new AgentRegistry(TestDir);
+        var state = registry.GetCurrentAgent(TestSessionId);
+        Assert.NotNull(state);
+        Assert.DoesNotContain("deadbeef", state!.UnreadMessages);
+    }
+
+    [Fact]
     public async Task Guard_GeneralWaitMarker_NotIncluded_InPendingTaskList()
     {
         // The "_general-wait" sentinel should never appear in the task-list error message,

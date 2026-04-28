@@ -10,6 +10,7 @@ public static class HookInputExtensions
         ["write"] = "write",
         ["edit"] = "edit",
         ["bash"] = "execute",
+        ["powershell"] = "execute",
         ["read"] = "read",
         ["glob"] = "read",
         ["grep"] = "read",

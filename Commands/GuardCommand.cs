@@ -202,7 +202,7 @@ public static partial class GuardCommand
         // ============================================================
         // SECURITY LAYER 2: Handle Bash tool specifically
         // ============================================================
-        if (toolName == "bash" && !string.IsNullOrEmpty(bashCommand))
+        if ((toolName == "bash" || toolName == "powershell") && !string.IsNullOrEmpty(bashCommand))
         {
             return HandleBashCommand(bashCommand, sessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground);
         }

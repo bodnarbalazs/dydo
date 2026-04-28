@@ -67,6 +67,14 @@ public static partial class GuardCommand
 
     // Data-driven lookups to reduce cyclomatic complexity
     private static readonly HashSet<string> SearchTools = new(StringComparer.OrdinalIgnoreCase) { "glob", "grep", "agent" };
+    private static readonly HashSet<string> ShellTools = new(StringComparer.OrdinalIgnoreCase) { "bash", "powershell" };
+
+    private static bool ShouldRouteToShellHandler(string? toolName, string? bashCommand)
+    {
+        if (toolName == null) return false;
+        if (!ShellTools.Contains(toolName)) return false;
+        return !string.IsNullOrEmpty(bashCommand);
+    }
 
     // Claude Code hook response that explicitly approves a tool call, bypassing the permission prompt.
     // Used in worktree contexts where permission patterns fail to match worktree-resolved paths.
@@ -202,9 +210,9 @@ public static partial class GuardCommand
         // ============================================================
         // SECURITY LAYER 2: Handle Bash tool specifically
         // ============================================================
-        if ((toolName == "bash" || toolName == "powershell") && !string.IsNullOrEmpty(bashCommand))
+        if (ShouldRouteToShellHandler(toolName, bashCommand))
         {
-            return HandleBashCommand(bashCommand, sessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground);
+            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground);
         }
 
         // ============================================================

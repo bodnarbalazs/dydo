@@ -428,6 +428,12 @@ public static partial class GuardCommand
         blocked = CheckPendingState(searchAgent!, searchPath, toolName, null, auditService, sessionId, registry);
         if (blocked != null) return blocked.Value;
 
+        if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
+        {
+            blocked = CheckAgentToolNudge(searchAgent!, sessionId, registry, auditService);
+            if (blocked != null) return blocked.Value;
+        }
+
         if (!string.IsNullOrEmpty(searchPath))
         {
             var offLimitsPattern = offLimitsService.IsPathOffLimits(searchPath);
@@ -454,6 +460,31 @@ public static partial class GuardCommand
         EmitWorktreeAllowIfNeeded();
 
         return ExitCodes.Success;
+    }
+
+    private static int? CheckAgentToolNudge(
+        AgentState agent, string? sessionId, AgentRegistry registry, IAuditService auditService)
+    {
+        var workspace = registry.GetAgentWorkspace(agent.Name);
+        var markerPath = Path.Combine(workspace, ".agent-tool-nudge");
+
+        if (!File.Exists(markerPath))
+        {
+            Directory.CreateDirectory(workspace);
+            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+            {
+                EventType = AuditEventType.Blocked, Tool = "agent",
+                BlockReason = "Agent tool soft-nudge"
+            });
+            Console.Error.WriteLine("BLOCKED: Claude Code's 'Agent' tool spawns a stateless subagent that bypasses dydo's "
+                + "identity, role, and audit guarantees. Prefer 'dydo dispatch' to hand work to a stateful dydo agent. "
+                + "If you have a clear reason to use the built-in Agent tool (e.g., quick read-only exploration), "
+                + "run the call again and it will pass.");
+            return ExitCodes.ToolError;
+        }
+        File.Delete(markerPath);
+        return null;
     }
 
     /// <summary>

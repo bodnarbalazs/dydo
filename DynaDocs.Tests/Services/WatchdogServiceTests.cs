@@ -442,6 +442,7 @@ public class WatchdogServiceTests : IDisposable
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: "win-xyz");
 
         WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude" : null;
 
         try
         {
@@ -450,6 +451,7 @@ public class WatchdogServiceTests : IDisposable
         finally
         {
             WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
         }
 
         dummy.WaitForExit(5000);
@@ -467,6 +469,7 @@ public class WatchdogServiceTests : IDisposable
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
         WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude" : null;
 
         try
         {
@@ -475,6 +478,7 @@ public class WatchdogServiceTests : IDisposable
         finally
         {
             WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
         }
 
         dummy.WaitForExit(5000);
@@ -489,10 +493,13 @@ public class WatchdogServiceTests : IDisposable
     public void PollAndCleanup_ProcessesRunning_DeadPid_ClearsAutoClose()
     {
         // Fake PID that doesn't exist — exercises the kill path where
-        // Process.GetProcessById throws (caught gracefully)
+        // Process.GetProcessById throws (caught gracefully). Override the
+        // process name to "claude" so the whitelist gate is passed and the
+        // kill attempt actually runs.
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
         WatchdogService.FindProcessesOverride = _ => [99999999];
+        ProcessUtils.GetProcessNameOverride = _ => "claude";
 
         try
         {
@@ -503,6 +510,7 @@ public class WatchdogServiceTests : IDisposable
         finally
         {
             WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
         }
     }
 
@@ -534,6 +542,7 @@ public class WatchdogServiceTests : IDisposable
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: "win-ok");
 
         WatchdogService.FindProcessesOverride = _ => [99999999];
+        ProcessUtils.GetProcessNameOverride = _ => "claude";
 
         try
         {
@@ -542,6 +551,7 @@ public class WatchdogServiceTests : IDisposable
         finally
         {
             WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
         }
 
         var statePath = Path.Combine(_testDir, "agents", "Adele", "state.md");
@@ -604,7 +614,11 @@ public class WatchdogServiceTests : IDisposable
         WriteAgentState("Adele", status: "free", autoClose: true, windowId: null);
 
         WatchdogService.FindProcessesOverride = _ => [dummy1.Id, dummy2.Id];
-        ProcessUtils.GetProcessNameOverride = pid => pid == dummy1.Id ? "pwsh" : null;
+        // dummy1 is a shell (skipped under whitelist — not on whitelist),
+        // dummy2 is the actual claude target (killed).
+        ProcessUtils.GetProcessNameOverride = pid =>
+            pid == dummy1.Id ? "pwsh" :
+            pid == dummy2.Id ? "claude" : null;
 
         try
         {
@@ -612,7 +626,7 @@ public class WatchdogServiceTests : IDisposable
 
             // Shell process (dummy1) should not be killed
             Assert.False(dummy1.HasExited);
-            // Non-shell process (dummy2) should be killed
+            // Whitelisted process (dummy2) should be killed
             dummy2.WaitForExit(5000);
             Assert.True(dummy2.HasExited);
 
@@ -639,6 +653,7 @@ public class WatchdogServiceTests : IDisposable
         WriteAgentState("Adele", status: "free", autoClose: true);
 
         WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude" : null;
 
         try
         {
@@ -654,10 +669,151 @@ public class WatchdogServiceTests : IDisposable
         finally
         {
             WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
         }
 
         dummy.WaitForExit(5000);
         Assert.True(dummy.HasExited);
+    }
+
+    [Fact]
+    public void PollAndCleanup_LockHeldByWriter_DoesNotKill()
+    {
+        // Regression for #0121: when a registry writer holds the .claim.lock,
+        // the watchdog must skip the iteration (no read, no kill, no
+        // ClearAutoClose RMW). When the lock is released, the next poll
+        // proceeds normally — proving the gate is a deferral, not a permanent
+        // block.
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true);
+
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        var lockPath = Path.Combine(agentDir, ".claim.lock");
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude" : null;
+
+        try
+        {
+            // Take the lock from this thread (simulates an in-flight registry writer).
+            Assert.True(AgentRegistry.TryAcquireLockAtPath(lockPath, "Adele", out _));
+
+            WatchdogService.PollAndCleanup(_testDir);
+
+            // While the lock is held: no kill, no auto-close clear.
+            Assert.False(dummy.HasExited);
+            var content = File.ReadAllText(Path.Combine(agentDir, "state.md"));
+            Assert.Contains("auto-close: true", content);
+            Assert.DoesNotContain("auto-close: false", content);
+
+            // Release the lock — next poll should kill normally.
+            AgentRegistry.ReleaseLockAtPath(lockPath);
+
+            WatchdogService.PollAndCleanup(_testDir);
+
+            dummy.WaitForExit(5000);
+            Assert.True(dummy.HasExited);
+            Assert.Contains("auto-close: false", File.ReadAllText(Path.Combine(agentDir, "state.md")));
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            if (!dummy.HasExited) dummy.Kill();
+            if (File.Exists(lockPath)) File.Delete(lockPath);
+        }
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void PollAndCleanup_LinuxTerminalEmulatorPid_NotKilled(string emulatorName)
+    {
+        // Regression for #0122: every Linux terminal emulator launches `bash -c
+        // "...claude '{agent} --inbox'..."` and inherits the prompt in argv.
+        // Substring-match returns the emulator PID as well as claude's PID.
+        // Under the whitelist, the emulator must survive — only claude/node
+        // is a valid kill target.
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true);
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? emulatorName : null;
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+
+            Assert.False(dummy.HasExited);
+            // Auto-close must not be cleared either — the agent's actual claude
+            // process is still in flight (just not in this fake pid list).
+            var content = File.ReadAllText(Path.Combine(_testDir, "agents", "Adele", "state.md"));
+            Assert.Contains("auto-close: true", content);
+            Assert.DoesNotContain("auto-close: false", content);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            if (!dummy.HasExited) dummy.Kill();
+        }
+    }
+
+    [Fact]
+    public void PollAndCleanup_ClaudeProcess_Killed()
+    {
+        // Whitelist positive case: a process named "claude" must be killed
+        // and auto-close cleared.
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true);
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude" : null;
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+        }
+
+        dummy.WaitForExit(5000);
+        Assert.True(dummy.HasExited);
+        Assert.Contains("auto-close: false", File.ReadAllText(Path.Combine(_testDir, "agents", "Adele", "state.md")));
+    }
+
+    [Fact]
+    public void PollAndCleanup_ReleasesLockAfterWork()
+    {
+        // Guards against a finally-block regression that would deadlock the
+        // registry: after PollAndCleanup runs, no .claim.lock files should
+        // remain under any agent dir.
+        WriteAgentState("Adele", status: "free", autoClose: true);
+        WriteAgentState("Bob", status: "working", autoClose: true);
+
+        WatchdogService.FindProcessesOverride = _ => [];
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+        }
+
+        Assert.False(File.Exists(Path.Combine(_testDir, "agents", "Adele", ".claim.lock")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "agents", "Bob", ".claim.lock")));
     }
 
     #region PollOrphanedWaits Tests

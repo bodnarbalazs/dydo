@@ -1975,17 +1975,16 @@ public partial class AgentRegistry : IAgentRegistry
         Path.Combine(GetAgentWorkspace(agentName), ".claim.lock");
 
     /// <summary>
-    /// Attempts to acquire an exclusive lock for claiming/releasing an agent.
+    /// Attempts to acquire an exclusive lock at the given path.
     /// Handles stale locks from crashed processes.
+    /// agentName is used for error messages only; lockPath determines the actual file.
     /// </summary>
-    private bool TryAcquireLock(string agentName, out string error, int retryCount = 0)
+    internal static bool TryAcquireLockAtPath(string lockPath, string agentName, out string error, int retryCount = 0)
     {
         error = string.Empty;
-        var lockPath = GetLockFilePath(agentName);
-        var workspace = GetAgentWorkspace(agentName);
 
         // Ensure workspace directory exists
-        Directory.CreateDirectory(workspace);
+        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
 
         try
         {
@@ -2026,14 +2025,14 @@ public partial class AgentRegistry : IAgentRegistry
 
                 // Stale lock - delete and retry once
                 File.Delete(lockPath);
-                return TryAcquireLock(agentName, out error, retryCount + 1);
+                return TryAcquireLockAtPath(lockPath, agentName, out error, retryCount + 1);
             }
             catch (JsonException)
             {
                 // Corrupt lock file - treat as stale, delete and retry
                 // If delete fails, retry will handle it (either succeeds or fails with proper error)
                 try { File.Delete(lockPath); } catch (IOException) { }
-                return TryAcquireLock(agentName, out error, retryCount + 1);
+                return TryAcquireLockAtPath(lockPath, agentName, out error, retryCount + 1);
             }
             catch (IOException)
             {
@@ -2050,12 +2049,10 @@ public partial class AgentRegistry : IAgentRegistry
     }
 
     /// <summary>
-    /// Releases the lock file for an agent.
+    /// Releases the lock file at the given path.
     /// </summary>
-    private void ReleaseLock(string agentName)
+    internal static void ReleaseLockAtPath(string lockPath)
     {
-        var lockPath = GetLockFilePath(agentName);
-
         // Retry deletion - another process might briefly have the file open for reading
         for (var attempt = 0; attempt < 5; attempt++)
         {
@@ -2077,6 +2074,18 @@ public partial class AgentRegistry : IAgentRegistry
             }
         }
     }
+
+    /// <summary>
+    /// Attempts to acquire an exclusive lock for claiming/releasing an agent.
+    /// </summary>
+    private bool TryAcquireLock(string agentName, out string error, int retryCount = 0) =>
+        TryAcquireLockAtPath(GetLockFilePath(agentName), agentName, out error, retryCount);
+
+    /// <summary>
+    /// Releases the lock file for an agent.
+    /// </summary>
+    private void ReleaseLock(string agentName) =>
+        ReleaseLockAtPath(GetLockFilePath(agentName));
 
     #endregion
 

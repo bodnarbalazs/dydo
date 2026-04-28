@@ -11,6 +11,15 @@ public static class WatchdogService
         "powershell", "pwsh", "bash", "sh", "cmd", "zsh"
     };
 
+    // Targets the watchdog is allowed to kill. Whitelist (not skip-list) so every other
+    // process — terminal emulators, editors, anything future — is fail-closed protected.
+    // Linux/Mac claude binary is "claude"; on Windows it ships as a Node script so the
+    // resolved process name is "node".
+    internal static readonly HashSet<string> ClaudeProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "claude", "node"
+    };
+
     /// <summary>
     /// When set, EnsureRunning uses this instead of Process.Start.
     /// Enables testing without spawning real watchdog processes.
@@ -245,40 +254,54 @@ public static class WatchdogService
             var statePath = Path.Combine(agentDir, "state.md");
             if (!File.Exists(statePath)) continue;
 
-            var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
-            if (!autoClose || !isFree || agentName == null) continue;
+            // Hold the same per-agent lock the registry uses for Reserve/Release/SetDispatchMetadata.
+            // If the lock is held by a live writer, skip this iteration and try again on the next
+            // poll. Closes #0121 Window A (stale-decision kill — registry write completes before
+            // we read state) and Window B (ClearAutoClose RMW cannot interleave with WriteStateFile).
+            var lockPath = Path.Combine(agentDir, ".claim.lock");
+            var agentDirName = Path.GetFileName(agentDir);
+            if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentDirName, out _)) continue;
 
-            var pattern = $"{agentName} --inbox";
-            var pids = FindProcessesOverride != null
-                ? FindProcessesOverride(pattern)
-                : ProcessUtils.FindProcessesByCommandLine(pattern);
-
-            // Kill non-shell processes immediately — no deferral.
-            // The phantom close issue that originally motivated a two-poll
-            // deferral is fixed separately; killing on first sighting
-            // prevents the race where re-dispatch between polls leaves
-            // old sessions alive.
-            var killedOrAttempted = false;
-            foreach (var pid in pids)
+            try
             {
-                try
-                {
-                    var procName = ProcessUtils.GetProcessName(pid);
-                    if (procName != null && ShellProcessNames.Contains(procName))
-                        continue;
-                    killedOrAttempted = true;
-                    using var proc = Process.GetProcessById(pid);
-                    proc.Kill();
-                }
-                catch { }
-            }
+                var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
+                if (!autoClose || !isFree || agentName == null) continue;
 
-            // Only clear auto-close when a non-shell process was found and
-            // killed, or when no processes remain at all (terminal already
-            // closed). When only shell processes remain the cleanup finally
-            // block may still be running — retry on the next poll.
-            if (killedOrAttempted || pids.Count == 0)
-                ClearAutoClose(statePath);
+                var pattern = $"{agentName} --inbox";
+                var pids = FindProcessesOverride != null
+                    ? FindProcessesOverride(pattern)
+                    : ProcessUtils.FindProcessesByCommandLine(pattern);
+
+                // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID
+                // — terminal emulators that carry the prompt in their argv (gnome-terminal,
+                // konsole, alacritty, kitty, …), bash wrappers, editors that happen to substring-
+                // match — is fail-closed protected. Closes #0122.
+                var killedOrAttempted = false;
+                foreach (var pid in pids)
+                {
+                    try
+                    {
+                        var procName = ProcessUtils.GetProcessName(pid);
+                        if (procName == null || !ClaudeProcessNames.Contains(procName))
+                            continue;
+                        killedOrAttempted = true;
+                        using var proc = Process.GetProcessById(pid);
+                        proc.Kill();
+                    }
+                    catch { }
+                }
+
+                // Same retry semantics as before: clear auto-close only when we actually killed
+                // a whitelisted target, or when there are no candidates left at all. When matches
+                // exist but none are claude/node (terminal still tearing down), defer to the
+                // next poll.
+                if (killedOrAttempted || pids.Count == 0)
+                    ClearAutoClose(statePath);
+            }
+            finally
+            {
+                AgentRegistry.ReleaseLockAtPath(lockPath);
+            }
         }
     }
 

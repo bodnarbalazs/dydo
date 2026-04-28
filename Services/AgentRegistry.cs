@@ -589,6 +589,9 @@ public partial class AgentRegistry : IAgentRegistry
         foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
             File.Delete(marker);
 
+        foreach (var marker in Directory.GetFiles(workspace, ".no-wait-nudge-*"))
+            File.Delete(marker);
+
         foreach (var marker in Directory.GetFiles(workspace, ".nudge-*"))
             File.Delete(marker);
 

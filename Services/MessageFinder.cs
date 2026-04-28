@@ -5,7 +5,15 @@ using DynaDocs.Utils;
 
 public static class MessageFinder
 {
-    public static MessageInfo? FindMessage(string inboxPath, string? taskFilter, HashSet<string>? excludeSubjects = null)
+    private static readonly Regex MessageIdRegex = new(
+        @"^([a-f0-9]+)-msg-",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public static MessageInfo? FindMessage(
+        string inboxPath,
+        string? taskFilter,
+        HashSet<string>? excludeSubjects = null,
+        HashSet<string>? excludeIds = null)
     {
         if (!Directory.Exists(inboxPath))
             return null;
@@ -26,6 +34,13 @@ public static class MessageFinder
                 !string.IsNullOrEmpty(info.Subject) &&
                 excludeSubjects.Contains(info.Subject))
                 continue;
+
+            if (excludeIds != null && excludeIds.Count > 0)
+            {
+                var idMatch = MessageIdRegex.Match(Path.GetFileName(file));
+                if (idMatch.Success && excludeIds.Contains(idMatch.Groups[1].Value))
+                    continue;
+            }
 
             parsed.Add(info);
         }

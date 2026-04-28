@@ -81,6 +81,15 @@ public static class WaitCommand
         registry.CreateWaitMarker(agentName, GeneralWaitMarker, agentName);
         registry.UpdateWaitMarkerListening(agentName, GeneralWaitMarker, Environment.ProcessId);
 
+        // Snapshot what was already unread when the wait started. The general wait should
+        // signal NEW arrivals, not pop on already-known messages — popping on a known unread
+        // creates a deadlock: marker is removed on exit, agent can't satisfy the orchestrator
+        // general-wait guard, can't Read to mark messages read, can't 'inbox clear'.
+        var sessionId = registry.GetSessionContext();
+        var initialUnread = new HashSet<string>(
+            registry.GetCurrentAgent(sessionId)?.UnreadMessages ?? Enumerable.Empty<string>(),
+            StringComparer.OrdinalIgnoreCase);
+
         Console.WriteLine("Waiting for message...");
 
         try
@@ -91,7 +100,7 @@ public static class WaitCommand
                 // wait started are excluded — task-channel waits have priority over the general
                 // fallback, regardless of registration order.
                 var claimedTasks = GetActiveTaskWaitSubjects(registry, agentName);
-                var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks);
+                var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks, initialUnread);
                 if (message != null)
                 {
                     PrintMessage(message);

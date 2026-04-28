@@ -123,7 +123,7 @@ The `--subject` field correlates messages to specific tasks. When a message is s
 
 - **No self-messaging** (H21): Cannot send messages to yourself
 - **No cross-human messaging** (H22): Cannot message agents assigned to a different human (unless `--force` is used)
-- **Inactive target warning**: A soft-block warns if the target agent is not currently in Working status
+- **Released target rejection**: `dydo msg` to a non-Working target hard-rejects. Use `--force` to write to the released inbox anyway, or redirect to an active orchestrator (a matching `--subject` discharges the same reply-pending marker either way)
 
 ---
 

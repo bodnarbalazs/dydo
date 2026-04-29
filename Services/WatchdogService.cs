@@ -215,13 +215,17 @@ public static class WatchdogService
             : int.TryParse(Environment.GetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID"), out var envPid) ? envPid : null;
         var pollInterval = PollIntervalOverride ?? TimeSpan.FromSeconds(10);
 
+        var anchorName = anchorPid.HasValue ? ProcessUtils.GetProcessName(anchorPid.Value) : null;
+        WatchdogLogger.LogStart(dydoRoot, anchorPid, anchorName, (int)pollInterval.TotalMilliseconds);
+
+        var exitReason = "cancelled";
         try
         {
             while (!cts.IsCancellationRequested)
             {
-                if (cts.Token.WaitHandle.WaitOne(pollInterval)) break;
+                if (cts.Token.WaitHandle.WaitOne(pollInterval)) { exitReason = "cancelled"; break; }
 
-                if (anchorPid.HasValue && !ProcessUtils.IsProcessRunning(anchorPid.Value)) break;
+                if (anchorPid.HasValue && !ProcessUtils.IsProcessRunning(anchorPid.Value)) { exitReason = "anchor_gone"; break; }
 
                 try
                 {
@@ -229,14 +233,15 @@ public static class WatchdogService
                     PollQueues(dydoRoot);
                     PollOrphanedWaits(dydoRoot);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Swallow individual poll errors — keep the loop alive
+                    WatchdogLogger.LogPollError(dydoRoot, ex.GetType().Name + ": " + ex.Message);
                 }
             }
         }
         finally
         {
+            WatchdogLogger.LogExit(dydoRoot, exitReason);
             AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
             Console.CancelKeyPress -= OnCancelKeyPress;
             _shutdownCts = null;
@@ -249,7 +254,10 @@ public static class WatchdogService
         var agentsDir = Path.Combine(dydoRoot, "agents");
         if (!Directory.Exists(agentsDir)) return;
 
-        foreach (var agentDir in Directory.GetDirectories(agentsDir))
+        var agentDirs = Directory.GetDirectories(agentsDir);
+        var killsAttempted = 0;
+
+        foreach (var agentDir in agentDirs)
         {
             var statePath = Path.Combine(agentDir, "state.md");
             if (!File.Exists(statePath)) continue;
@@ -266,6 +274,8 @@ public static class WatchdogService
             {
                 var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
                 if (!autoClose || !isFree || agentName == null) continue;
+
+                var (dispatchedBy, since) = ReadStateContext(statePath);
 
                 var pattern = $"{agentName} --inbox";
                 var pids = FindProcessesOverride != null
@@ -285,6 +295,9 @@ public static class WatchdogService
                         if (procName == null || !ClaudeProcessNames.Contains(procName))
                             continue;
                         killedOrAttempted = true;
+                        killsAttempted++;
+                        WatchdogLogger.LogKill(dydoRoot, agentName, pid, procName, pattern,
+                            status: "free", autoClose: true, dispatchedBy, since);
                         using var proc = Process.GetProcessById(pid);
                         proc.Kill();
                     }
@@ -303,6 +316,17 @@ public static class WatchdogService
                 AgentRegistry.ReleaseLockAtPath(lockPath);
             }
         }
+
+        if (agentDirs.Length > 0 || killsAttempted > 0)
+            WatchdogLogger.LogTick(dydoRoot, agentDirs.Length, killsAttempted);
+    }
+
+    internal static (string? dispatchedBy, string? since) ReadStateContext(string statePath)
+    {
+        var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
+        var db = fields?.GetValueOrDefault("dispatched-by");
+        var since = fields?.GetValueOrDefault("started");
+        return (db == "null" ? null : db, since == "null" ? null : since);
     }
 
     internal static void ClearAutoClose(string statePath)
@@ -438,7 +462,11 @@ public static class WatchdogService
         {
             var content = File.ReadAllText(statePath);
             var fields = FrontmatterParser.ParseFields(content);
-            if (fields == null) return (false, false, null, null);
+            if (fields == null)
+            {
+                WatchdogLogger.LogParseFailure(GetDydoRootForLog(statePath), statePath, "no frontmatter");
+                return (false, false, null, null);
+            }
 
             fields.TryGetValue("agent", out var agentName);
             var isFree = fields.TryGetValue("status", out var status) && status == "free";
@@ -449,9 +477,18 @@ public static class WatchdogService
 
             return (autoClose, isFree, agentName, windowId);
         }
-        catch
+        catch (Exception ex)
         {
+            WatchdogLogger.LogParseFailure(GetDydoRootForLog(statePath), statePath, ex.GetType().Name + ": " + ex.Message);
             return (false, false, null, null);
         }
+    }
+
+    internal static string GetDydoRootForLog(string statePath)
+    {
+        // .../<dydoRoot>/agents/<agent>/state.md → grandparent of agentDir
+        var agentDir = Path.GetDirectoryName(statePath);
+        var agentsDir = Path.GetDirectoryName(agentDir);
+        return Path.GetDirectoryName(agentsDir) ?? "";
     }
 }

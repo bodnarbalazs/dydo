@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Services;
 
 using System.Diagnostics;
+using System.Text.Json;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -34,6 +35,9 @@ public class WatchdogServiceTests : IDisposable
         ProcessUtils.GetProcessNameOverride = null;
         ProcessUtils.IsProcessRunningOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
+        WatchdogLogger.LogPathOverride = null;
+        WatchdogLogger.MaxBytesOverride = null;
+        WatchdogLogger.MaxRotationsOverride = null;
         Environment.SetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID", null);
         if (Directory.Exists(_testDir))
         {
@@ -1167,4 +1171,227 @@ public class WatchdogServiceTests : IDisposable
             ---
             """);
     }
+
+    #region Structured Logging (#0129)
+
+    private string SetLogPathOverride()
+    {
+        var logPath = Path.Combine(_testDir, "watchdog.log");
+        WatchdogLogger.LogPathOverride = logPath;
+        return logPath;
+    }
+
+    private static List<Dictionary<string, JsonElement>> ReadLogLines(string logPath)
+    {
+        if (!File.Exists(logPath)) return [];
+        return File.ReadAllLines(logPath)
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .Select(l => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(l)!)
+            .ToList();
+    }
+
+    [Fact]
+    public async Task Logger_StartEvent_RecordedWithAnchorPid()
+    {
+        var logPath = SetLogPathOverride();
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        WatchdogService.GetParentPidOverride = () => anchor.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        ProcessUtils.GetProcessNameOverride = pid => pid == anchor.Id ? "claude" : null;
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        await Task.Delay(250);
+        WatchdogService.RequestShutdownForTests();
+        await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        await runTask;
+        anchor.Kill();
+
+        var lines = ReadLogLines(logPath);
+        Assert.NotEmpty(lines);
+        var start = lines.First(l => l["event"].GetString() == "start");
+        Assert.Equal(anchor.Id, start["anchor_pid"].GetInt32());
+        Assert.Equal("claude", start["anchor_name"].GetString());
+        Assert.Equal(100, start["poll_interval_ms"].GetInt32());
+        Assert.True(start.ContainsKey("watchdog_pid"));
+        Assert.True(start.ContainsKey("ts"));
+    }
+
+    [Fact]
+    public void Logger_KillEvent_RecordsTargetPidAndPattern()
+    {
+        var logPath = SetLogPathOverride();
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true);
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude" : null;
+
+        try { WatchdogService.PollAndCleanup(_testDir); }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+        }
+
+        var lines = ReadLogLines(logPath);
+        var kill = lines.Single(l => l["event"].GetString() == "kill");
+        Assert.Equal("Adele", kill["agent"].GetString());
+        Assert.Equal(dummy.Id, kill["target_pid"].GetInt32());
+        Assert.Equal("claude", kill["target_proc"].GetString());
+        Assert.Equal("Adele --inbox", kill["pattern"].GetString());
+        var state = kill["state"];
+        Assert.Equal("free", state.GetProperty("status").GetString());
+        Assert.True(state.GetProperty("auto_close").GetBoolean());
+    }
+
+    [Fact]
+    public void Logger_ParseFailure_RecordedOnMalformedState()
+    {
+        var logPath = SetLogPathOverride();
+        var agentDir = Path.Combine(_testDir, "agents", "Bad");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Bad\nno closing");
+
+        WatchdogService.ParseStateForWatchdog(statePath);
+
+        var lines = ReadLogLines(logPath);
+        var pf = lines.Single(l => l["event"].GetString() == "parse_failure");
+        Assert.Equal(statePath, pf["state_path"].GetString());
+        Assert.False(string.IsNullOrEmpty(pf["reason"].GetString()));
+    }
+
+    [Fact]
+    public void Logger_Rotation_TriggersAtThreshold_KeepsThreeBackups()
+    {
+        var logPath = SetLogPathOverride();
+        WatchdogLogger.MaxBytesOverride = 256;
+        WatchdogLogger.MaxRotationsOverride = 3;
+
+        // Each tick line is ~80 bytes; 200 ticks is plenty to trigger 4 rotations.
+        for (var i = 0; i < 200; i++)
+            WatchdogLogger.LogTick(_testDir, agentsObserved: 1, killsAttempted: 0);
+
+        Assert.True(File.Exists(logPath));
+        Assert.True(File.Exists(logPath + ".1"));
+        Assert.True(File.Exists(logPath + ".2"));
+        Assert.True(File.Exists(logPath + ".3"));
+        Assert.False(File.Exists(logPath + ".4"));
+    }
+
+    [Fact]
+    public async Task Logger_ExitEvent_AnchorGoneReason()
+    {
+        var logPath = SetLogPathOverride();
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        WatchdogService.GetParentPidOverride = () => anchor.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        await Task.Delay(250);
+        anchor.Kill();
+        await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        await runTask;
+
+        var lines = ReadLogLines(logPath);
+        var exit = lines.Last(l => l["event"].GetString() == "exit");
+        Assert.Equal("anchor_gone", exit["reason"].GetString());
+    }
+
+    [Fact]
+    public async Task Logger_ExitEvent_CancelledReason()
+    {
+        var logPath = SetLogPathOverride();
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+
+        WatchdogService.GetParentPidOverride = () => anchor.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        await Task.Delay(250);
+        WatchdogService.RequestShutdownForTests();
+        await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        await runTask;
+        anchor.Kill();
+
+        var lines = ReadLogLines(logPath);
+        var exit = lines.Last(l => l["event"].GetString() == "exit");
+        Assert.Equal("cancelled", exit["reason"].GetString());
+    }
+
+    [Fact]
+    public void Logger_TickEvent_SkipsIdleNoAgents()
+    {
+        var logPath = SetLogPathOverride();
+        Directory.CreateDirectory(Path.Combine(_testDir, "agents"));
+
+        WatchdogService.PollAndCleanup(_testDir);
+
+        var lines = ReadLogLines(logPath);
+        Assert.DoesNotContain(lines, l => l["event"].GetString() == "tick");
+    }
+
+    [Fact]
+    public void Logger_NeverThrows_OnInvalidPath()
+    {
+        // A path under a non-existent root with an illegal character on Windows
+        // (NUL ('\0') is rejected by Path APIs on every platform).
+        WatchdogLogger.LogPathOverride = Path.Combine(_testDir, "no\0such", "watchdog.log");
+
+        var ex = Record.Exception(() =>
+        {
+            WatchdogLogger.LogStart(_testDir, 123, "claude", 100);
+            WatchdogLogger.LogTick(_testDir, 1, 0);
+            WatchdogLogger.LogKill(_testDir, "Adele", 999, "claude", "Adele --inbox", "free", true, null, null);
+            WatchdogLogger.LogParseFailure(_testDir, "x", "y");
+            WatchdogLogger.LogPollError(_testDir, "boom");
+            WatchdogLogger.LogExit(_testDir, "cancelled");
+        });
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public async Task Logger_PollError_RecordedOnInnerException()
+    {
+        var logPath = SetLogPathOverride();
+        using var anchor = StartDummyProcess();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        var dydoRoot = Path.Combine(_testDir, "dydo");
+        var adeleDir = Path.Combine(dydoRoot, "agents", "Adele");
+        Directory.CreateDirectory(adeleDir);
+        File.WriteAllText(Path.Combine(adeleDir, "state.md"),
+            "---\nagent: Adele\nstatus: free\nauto-close: true\n---\n");
+
+        WatchdogService.GetParentPidOverride = () => anchor.Id;
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        WatchdogService.FindProcessesOverride = _ => throw new InvalidOperationException("boom");
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        await Task.Delay(400);
+        WatchdogService.RequestShutdownForTests();
+        await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        await runTask;
+        anchor.Kill();
+
+        var lines = ReadLogLines(logPath);
+        var pe = lines.First(l => l["event"].GetString() == "poll_error");
+        var error = pe["error"].GetString();
+        Assert.Contains("InvalidOperationException", error);
+        Assert.Contains("boom", error);
+    }
+
+    #endregion
 }

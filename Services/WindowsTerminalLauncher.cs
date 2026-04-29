@@ -15,7 +15,12 @@ public static class WindowsTerminalLauncher
         var postClaudeCheck = autoClose
             ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
             : "";
-        var noExitFlag = autoClose ? "" : "-NoExit ";
+        // Always -NoExit. PowerShell's -NoExit only suppresses the implicit end-of-`-Command`
+        // exit; explicit `exit 0` in postClaudeCheck still terminates on the free path.
+        // On any other exit (claude crash, /exit, watchdog kill, context limit), the script
+        // body completes without `exit 0` and -NoExit keeps the terminal open with the claude
+        // output visible — diagnostic mirror of the Linux `exec bash` fallback. (issue #0124)
+        var noExitFlag = "-NoExit ";
 
         var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; ";
         var windowEnv = windowName != null

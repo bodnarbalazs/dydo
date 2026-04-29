@@ -959,10 +959,36 @@ public class TerminalLauncherTests
     }
 
     [Fact]
-    public void GetWindowsArguments_AutoClose_OmitsNoExit()
+    public void GetWindowsArguments_AutoClose_RetainsNoExit_StaysOpenOnNonFreeExit()
     {
+        // Regression for #0124. -NoExit is always set so that when claude exits non-released
+        // (crash, /exit, watchdog kill, context limit), the terminal stays open with the
+        // claude output visible. The `; exit 0` in the status check still closes it on free.
         var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
-        Assert.DoesNotContain("-NoExit", args);
+        Assert.Contains("-NoExit", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_AutoClose_FreePathExitsZero()
+    {
+        // Free-on-exit path: the if-branch contains `exit 0`, which terminates the
+        // PowerShell host even with -NoExit set. Mirrors Linux's `exit 0` in
+        // BashPostClaudeCheck.
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
+        Assert.Contains("-match 'free'", args);
+        Assert.Contains("{ exit 0 }", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_AutoClose_NotFreePathStaysOpenViaNoExit()
+    {
+        // Not-free path: there is no else-branch, so the script body completes without
+        // calling `exit`, and -NoExit keeps the host alive. Mirrors Linux's `exec bash`
+        // fallback in BashPostClaudeCheck. Regression for #0124.
+        var args = TerminalLauncher.GetWindowsArguments("Adele", autoClose: true);
+        Assert.Contains("-NoExit", args);
+        // No else-branch and no second `exit` statement — the if is the only exit gate.
+        Assert.DoesNotContain("else", args);
     }
 
     [Fact]
@@ -1376,7 +1402,9 @@ public class TerminalLauncherTests
         Assert.DoesNotContain("git worktree add", args);
         Assert.Contains($"dydo worktree cleanup {TestWorktreeId} --agent Adele", args);
         Assert.Contains("dydo agent status Adele", args);
-        Assert.DoesNotContain("-NoExit", args);
+        // -NoExit is now always present (issue #0124); free path still exits via the explicit
+        // `exit 0` inside the if-branch, which terminates the host even with -NoExit set.
+        Assert.Contains("-NoExit", args);
     }
 
     [Fact]

@@ -1,13 +1,15 @@
 ---
 area: project
 type: decision
-status: accepted
+status: superseded
 date: 2026-03-16
 ---
 
 # 011 — Worktrees as Default for Parallel Development
 
 When an orchestrator dispatches multiple code-writers in parallel, each should run in its own git worktree.
+
+> **Superseded by [020 — Worktree Usage Policy: Power Option, Not Default](./020-worktree-usage-policy-power-option.md)** for the *when-to-use* question. The mechanics below (sequential merges, conflict escalation, `git stash` block) remain in force.
 
 ## Context
 

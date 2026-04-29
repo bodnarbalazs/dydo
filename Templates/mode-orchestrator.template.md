@@ -96,31 +96,26 @@ Write briefs as if the sub-agent knows nothing. They don't.
 
 #### Worktrees
 
-Worktrees give agents a fully isolated copy of the repository — separate directory, build outputs, and processes. The tradeoff is merge overhead at the end.
+A power option. Default is skip — dispatch on main and rely on disjoint-file slicing. **Confirm with the user before dispatching `--worktree`, except for inquisitors (worktree is the default there).**
 
-**Why they matter:** Agents sharing a working directory share everything — build cache, lock files, test processes, intermediate build outputs. A single agent building alone is fine. Two or three agents working simultaneously will occasionally step on each other. Beyond that, it becomes exponentially worse — corrupted builds, killed processes, cryptic errors that waste time investigating. The blast radius matters too: untangling three agents is annoying; recovering ten is a project in itself.
+**When to suggest:**
+- Extreme fan-out (10+ concurrent code-writers/test-writers) where build contention is real
 
-**When to use `--worktree`:**
-- Multiple agents that build or run tests will be active simultaneously
-- Dispatching co-thinkers for sub-domains (they and their future sub-agents will inherit the worktree)
-- Inquisitors (they spawn test-writers that build and test)
+**When it's the default:**
+- Inquisitors (they spawn test-writers; clean separation from main)
 
-**When to skip:**
-- Sequential work (one agent at a time — no contention)
-- Roles that don't build or test (docs-writers, planners, co-thinkers without a sub-domain)
+Sub-orchestrators on their own do not justify a worktree — only the size of their own fan-out does.
 
 ```bash
-dydo dispatch --wait --auto-close --worktree --role code-writer --task <sub-task> --brief "..."
+dydo dispatch --wait --auto-close --worktree --role <role> --task <sub-task> --brief "..."
 ```
-
-**Nested worktrees:** Sub-orchestrators can create child worktrees within their parent's worktree for further isolation. The naming is hierarchical — `domain-A/auth-service/edge-cases` — encoding both the hierarchy and the merge order. Each child merges back to its parent, not to main. Use this when a sub-domain grows large enough that its agents start contending with each other.
 
 #### Dispatching Sub-Domain Co-Thinkers
 
 Co-thinkers dispatched for sub-domains graduate to sub-orchestrators. Use `--new-window` so the sub-domain gets its own window — agents the future orchestrator dispatches open as tabs within it, giving the user a natural visual grouping of related work.
 
 ```bash
-dydo dispatch --wait --auto-close --worktree --new-window --role co-thinker --task <sub-domain> --brief "..."
+dydo dispatch --wait --auto-close --new-window --role co-thinker --task <sub-domain> --brief "..."
 ```
 
 #### Dispatching Inquisitors

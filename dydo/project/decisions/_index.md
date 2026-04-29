@@ -33,3 +33,4 @@ Index of decisions documentation.
 - [017 — Stale-Free Semantics: Narrow Launcher-Alive Gate to Reservation Only](./017-stale-free-semantics.md)
 - [018 — Zombie Working State: Mechanism, Fixes, and Doc Surface](./018-zombie-working-state-recovery.md)
 - [019 — Reviewer Verdict Routing and Subject-Aware Send Diagnostics](./019-reviewer-verdict-routing.md)
+- [020 — Worktree Usage Policy: Power Option, Not Default](./020-worktree-usage-policy-power-option.md) - Worktrees are reframed from "default for parallel code work" (Decision 011) to a **power option** orchestrators reach for only in narrow, sized cas...

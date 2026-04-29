@@ -221,22 +221,33 @@ public static class WatchdogService
         var exitReason = "cancelled";
         try
         {
-            while (!cts.IsCancellationRequested)
+            try
             {
-                if (cts.Token.WaitHandle.WaitOne(pollInterval)) { exitReason = "cancelled"; break; }
-
-                if (anchorPid.HasValue && !ProcessUtils.IsProcessRunning(anchorPid.Value)) { exitReason = "anchor_gone"; break; }
-
-                try
+                while (!cts.IsCancellationRequested)
                 {
-                    PollAndCleanup(dydoRoot);
-                    PollQueues(dydoRoot);
-                    PollOrphanedWaits(dydoRoot);
+                    if (cts.Token.WaitHandle.WaitOne(pollInterval)) { exitReason = "cancelled"; break; }
+
+                    if (anchorPid.HasValue && !ProcessUtils.IsProcessRunning(anchorPid.Value)) { exitReason = "anchor_gone"; break; }
+
+                    try
+                    {
+                        PollAndCleanup(dydoRoot);
+                        PollQueues(dydoRoot);
+                        PollOrphanedWaits(dydoRoot);
+                    }
+                    catch (Exception ex)
+                    {
+                        WatchdogLogger.LogPollError(dydoRoot, ex.GetType().Name + ": " + ex.Message);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    WatchdogLogger.LogPollError(dydoRoot, ex.GetType().Name + ": " + ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                // Anything escaping the inner poll-error catch (WaitHandle disposal mid-shutdown,
+                // OOM bubbling out of IsProcessRunning, etc.) records as error:* so LogExit
+                // distinguishes a crash from a clean cancel.
+                exitReason = "error:" + ex.GetType().Name;
+                throw;
             }
         }
         finally
@@ -258,75 +269,94 @@ public static class WatchdogService
         var killsAttempted = 0;
 
         foreach (var agentDir in agentDirs)
-        {
-            var statePath = Path.Combine(agentDir, "state.md");
-            if (!File.Exists(statePath)) continue;
-
-            // Hold the same per-agent lock the registry uses for Reserve/Release/SetDispatchMetadata.
-            // If the lock is held by a live writer, skip this iteration and try again on the next
-            // poll. Closes #0121 Window A (stale-decision kill — registry write completes before
-            // we read state) and Window B (ClearAutoClose RMW cannot interleave with WriteStateFile).
-            var lockPath = Path.Combine(agentDir, ".claim.lock");
-            var agentDirName = Path.GetFileName(agentDir);
-            if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentDirName, out _)) continue;
-
-            try
-            {
-                var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
-                if (!autoClose || !isFree || agentName == null) continue;
-
-                var (dispatchedBy, since) = ReadStateContext(statePath);
-
-                var pattern = $"{agentName} --inbox";
-                var pids = FindProcessesOverride != null
-                    ? FindProcessesOverride(pattern)
-                    : ProcessUtils.FindProcessesByCommandLine(pattern);
-
-                // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID
-                // — terminal emulators that carry the prompt in their argv (gnome-terminal,
-                // konsole, alacritty, kitty, …), bash wrappers, editors that happen to substring-
-                // match — is fail-closed protected. Closes #0122.
-                var killedOrAttempted = false;
-                foreach (var pid in pids)
-                {
-                    try
-                    {
-                        var procName = ProcessUtils.GetProcessName(pid);
-                        if (procName == null || !ClaudeProcessNames.Contains(procName))
-                            continue;
-                        killedOrAttempted = true;
-                        killsAttempted++;
-                        WatchdogLogger.LogKill(dydoRoot, agentName, pid, procName, pattern,
-                            status: "free", autoClose: true, dispatchedBy, since);
-                        using var proc = Process.GetProcessById(pid);
-                        proc.Kill();
-                    }
-                    catch { }
-                }
-
-                // Same retry semantics as before: clear auto-close only when we actually killed
-                // a whitelisted target, or when there are no candidates left at all. When matches
-                // exist but none are claude/node (terminal still tearing down), defer to the
-                // next poll.
-                if (killedOrAttempted || pids.Count == 0)
-                    ClearAutoClose(statePath);
-            }
-            finally
-            {
-                AgentRegistry.ReleaseLockAtPath(lockPath);
-            }
-        }
+            killsAttempted += PollAndCleanupForAgent(dydoRoot, agentDir);
 
         if (agentDirs.Length > 0 || killsAttempted > 0)
             WatchdogLogger.LogTick(dydoRoot, agentDirs.Length, killsAttempted);
     }
 
+    private static int PollAndCleanupForAgent(string dydoRoot, string agentDir)
+    {
+        var statePath = Path.Combine(agentDir, "state.md");
+        if (!File.Exists(statePath)) return 0;
+
+        // Hold the same per-agent lock the registry uses for Reserve/Release/SetDispatchMetadata.
+        // If the lock is held by a live writer, skip this iteration and try again on the next
+        // poll. Closes #0121 Window A (stale-decision kill — registry write completes before
+        // we read state) and Window B (ClearAutoClose RMW cannot interleave with WriteStateFile).
+        var lockPath = Path.Combine(agentDir, ".claim.lock");
+        var agentDirName = Path.GetFileName(agentDir);
+        if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentDirName, out _)) return 0;
+
+        try
+        {
+            var (autoClose, isFree, agentName, _) = ParseStateForWatchdog(statePath);
+            if (!autoClose || !isFree || agentName == null) return 0;
+
+            var (dispatchedBy, since) = ReadStateContext(statePath);
+
+            var pattern = $"{agentName} --inbox";
+            var pids = FindProcessesOverride != null
+                ? FindProcessesOverride(pattern)
+                : ProcessUtils.FindProcessesByCommandLine(pattern);
+
+            var killsAttempted = KillClaudeProcesses(dydoRoot, agentName, pattern, pids, dispatchedBy, since);
+
+            // Same retry semantics as before: clear auto-close only when we actually killed
+            // a whitelisted target, or when there are no candidates left at all. When matches
+            // exist but none are claude/node (terminal still tearing down), defer to the
+            // next poll.
+            if (killsAttempted > 0 || pids.Count == 0)
+                ClearAutoClose(statePath);
+
+            return killsAttempted;
+        }
+        finally
+        {
+            AgentRegistry.ReleaseLockAtPath(lockPath);
+        }
+    }
+
+    // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID
+    // — terminal emulators that carry the prompt in their argv (gnome-terminal,
+    // konsole, alacritty, kitty, …), bash wrappers, editors that happen to substring-
+    // match — is fail-closed protected. Closes #0122.
+    private static int KillClaudeProcesses(string dydoRoot, string agentName, string pattern,
+                                           List<int> pids, string? dispatchedBy, string? since)
+    {
+        var killsAttempted = 0;
+        foreach (var pid in pids)
+        {
+            try
+            {
+                var procName = ProcessUtils.GetProcessName(pid);
+                if (procName == null || !ClaudeProcessNames.Contains(procName))
+                    continue;
+                killsAttempted++;
+                WatchdogLogger.LogKill(dydoRoot, agentName, pid, procName, pattern,
+                    status: "free", autoClose: true, dispatchedBy, since);
+                using var proc = Process.GetProcessById(pid);
+                proc.Kill();
+            }
+            catch { }
+        }
+        return killsAttempted;
+    }
+
     internal static (string? dispatchedBy, string? since) ReadStateContext(string statePath)
     {
-        var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
-        var db = fields?.GetValueOrDefault("dispatched-by");
-        var since = fields?.GetValueOrDefault("started");
-        return (db == "null" ? null : db, since == "null" ? null : since);
+        // Inline catch keeps a single agent's IO failure (sharing-violation, file vanished
+        // mid-poll) from aborting the surrounding foreach over agentDirs and skipping every
+        // other agent for this tick. The outer poll-error catch would only fire on the next
+        // iteration after an early break.
+        try
+        {
+            var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
+            var db = fields?.GetValueOrDefault("dispatched-by");
+            var since = fields?.GetValueOrDefault("started");
+            return (db == "null" ? null : db, since == "null" ? null : since);
+        }
+        catch { return (null, null); }
     }
 
     internal static void ClearAutoClose(string statePath)

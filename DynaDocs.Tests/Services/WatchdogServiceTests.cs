@@ -361,6 +361,49 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
+    public void ReadStateContext_NonexistentFile_ReturnsNullTuple()
+    {
+        // Regression: an inline try/catch around the ReadAllText call keeps a single
+        // agent's IO failure (file vanished mid-poll, sharing-violation, etc.) from
+        // aborting the surrounding foreach over agentDirs and skipping every other
+        // agent in this tick.
+        var path = Path.Combine(_testDir, "missing-state.md");
+
+        var (dispatchedBy, since) = WatchdogService.ReadStateContext(path);
+
+        Assert.Null(dispatchedBy);
+        Assert.Null(since);
+    }
+
+    [Fact]
+    public void ReadStateContext_ParsesDispatchedByAndSince()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Adele");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Adele\ndispatched-by: Brian\nstarted: 2026-04-29T15:00:00Z\n---\n");
+
+        var (dispatchedBy, since) = WatchdogService.ReadStateContext(statePath);
+
+        Assert.Equal("Brian", dispatchedBy);
+        Assert.Equal("2026-04-29T15:00:00Z", since);
+    }
+
+    [Fact]
+    public void ReadStateContext_NullLiterals_ReturnNull()
+    {
+        var agentDir = Path.Combine(_testDir, "agents", "Bob");
+        Directory.CreateDirectory(agentDir);
+        var statePath = Path.Combine(agentDir, "state.md");
+        File.WriteAllText(statePath, "---\nagent: Bob\ndispatched-by: null\nstarted: null\n---\n");
+
+        var (dispatchedBy, since) = WatchdogService.ReadStateContext(statePath);
+
+        Assert.Null(dispatchedBy);
+        Assert.Null(since);
+    }
+
+    [Fact]
     public void ClearAutoClose_SetsAutoCloseToFalse()
     {
         var agentDir = Path.Combine(_testDir, "agents", "Adele");

@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-public static class WatchdogLogger
+public static partial class WatchdogLogger
 {
     private const long DefaultMaxBytes = 2L * 1024 * 1024;
     private const int DefaultMaxRotations = 3;
@@ -96,57 +96,57 @@ public static class WatchdogLogger
         Write(dydoRoot,
             new ExitEvent(Now(), "exit", reason),
             WatchdogLogJsonContext.Default.ExitEvent);
+
+    private sealed record StartEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("anchor_pid")] int? AnchorPid,
+        [property: JsonPropertyName("anchor_name")] string? AnchorName,
+        [property: JsonPropertyName("poll_interval_ms")] int PollIntervalMs,
+        [property: JsonPropertyName("watchdog_pid")] int WatchdogPid);
+
+    private sealed record TickEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("agents")] int Agents,
+        [property: JsonPropertyName("kills_attempted")] int KillsAttempted);
+
+    private sealed record KillEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("agent")] string Agent,
+        [property: JsonPropertyName("target_pid")] int TargetPid,
+        [property: JsonPropertyName("target_proc")] string? TargetProc,
+        [property: JsonPropertyName("pattern")] string Pattern,
+        [property: JsonPropertyName("state")] KillState State);
+
+    private sealed record KillState(
+        [property: JsonPropertyName("status")] string Status,
+        [property: JsonPropertyName("auto_close")] bool AutoClose,
+        [property: JsonPropertyName("dispatched_by")] string? DispatchedBy,
+        [property: JsonPropertyName("since")] string? Since);
+
+    private sealed record ParseFailureEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("state_path")] string StatePath,
+        [property: JsonPropertyName("reason")] string Reason);
+
+    private sealed record PollErrorEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("error")] string Error);
+
+    private sealed record ExitEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("reason")] string Reason);
+
+    [JsonSerializable(typeof(StartEvent))]
+    [JsonSerializable(typeof(TickEvent))]
+    [JsonSerializable(typeof(KillEvent))]
+    [JsonSerializable(typeof(ParseFailureEvent))]
+    [JsonSerializable(typeof(PollErrorEvent))]
+    [JsonSerializable(typeof(ExitEvent))]
+    private partial class WatchdogLogJsonContext : JsonSerializerContext { }
 }
-
-internal sealed record StartEvent(
-    [property: JsonPropertyName("ts")] string Ts,
-    [property: JsonPropertyName("event")] string Event,
-    [property: JsonPropertyName("anchor_pid")] int? AnchorPid,
-    [property: JsonPropertyName("anchor_name")] string? AnchorName,
-    [property: JsonPropertyName("poll_interval_ms")] int PollIntervalMs,
-    [property: JsonPropertyName("watchdog_pid")] int WatchdogPid);
-
-internal sealed record TickEvent(
-    [property: JsonPropertyName("ts")] string Ts,
-    [property: JsonPropertyName("event")] string Event,
-    [property: JsonPropertyName("agents")] int Agents,
-    [property: JsonPropertyName("kills_attempted")] int KillsAttempted);
-
-internal sealed record KillEvent(
-    [property: JsonPropertyName("ts")] string Ts,
-    [property: JsonPropertyName("event")] string Event,
-    [property: JsonPropertyName("agent")] string Agent,
-    [property: JsonPropertyName("target_pid")] int TargetPid,
-    [property: JsonPropertyName("target_proc")] string? TargetProc,
-    [property: JsonPropertyName("pattern")] string Pattern,
-    [property: JsonPropertyName("state")] KillState State);
-
-internal sealed record KillState(
-    [property: JsonPropertyName("status")] string Status,
-    [property: JsonPropertyName("auto_close")] bool AutoClose,
-    [property: JsonPropertyName("dispatched_by")] string? DispatchedBy,
-    [property: JsonPropertyName("since")] string? Since);
-
-internal sealed record ParseFailureEvent(
-    [property: JsonPropertyName("ts")] string Ts,
-    [property: JsonPropertyName("event")] string Event,
-    [property: JsonPropertyName("state_path")] string StatePath,
-    [property: JsonPropertyName("reason")] string Reason);
-
-internal sealed record PollErrorEvent(
-    [property: JsonPropertyName("ts")] string Ts,
-    [property: JsonPropertyName("event")] string Event,
-    [property: JsonPropertyName("error")] string Error);
-
-internal sealed record ExitEvent(
-    [property: JsonPropertyName("ts")] string Ts,
-    [property: JsonPropertyName("event")] string Event,
-    [property: JsonPropertyName("reason")] string Reason);
-
-[JsonSerializable(typeof(StartEvent))]
-[JsonSerializable(typeof(TickEvent))]
-[JsonSerializable(typeof(KillEvent))]
-[JsonSerializable(typeof(ParseFailureEvent))]
-[JsonSerializable(typeof(PollErrorEvent))]
-[JsonSerializable(typeof(ExitEvent))]
-internal partial class WatchdogLogJsonContext : JsonSerializerContext { }

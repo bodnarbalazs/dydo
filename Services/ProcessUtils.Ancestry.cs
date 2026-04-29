@@ -32,11 +32,12 @@ public static partial class ProcessUtils
 
     /// <summary>
     /// Walks up the process tree from the current process, returning the first ancestor
-    /// whose process name contains the given string (case-insensitive).
+    /// whose process name matches the given basename exactly (extension stripped,
+    /// case-insensitive).
     /// </summary>
-    public static int? FindAncestorProcess(string nameContains, int maxDepth = 10)
+    public static int? FindAncestorProcess(string processName, int maxDepth = 10)
     {
-        if (FindAncestorProcessOverride != null) return FindAncestorProcessOverride(nameContains, maxDepth);
+        if (FindAncestorProcessOverride != null) return FindAncestorProcessOverride(processName, maxDepth);
 
         var pid = Environment.ProcessId;
 
@@ -45,8 +46,7 @@ public static partial class ProcessUtils
             var parentPid = GetParentPid(pid);
             if (parentPid == null || parentPid <= 1) return null;
 
-            var name = GetProcessName(parentPid.Value);
-            if (name != null && name.Contains(nameContains, StringComparison.OrdinalIgnoreCase))
+            if (MatchesProcessName(GetProcessName(parentPid.Value), processName))
                 return parentPid.Value;
 
             pid = parentPid.Value;
@@ -54,6 +54,13 @@ public static partial class ProcessUtils
 
         return null;
     }
+
+    // Closes #0128: "claudia.exe", "claude-dev.exe" — anything that merely contains
+    // "claude" — must NOT be picked as the watchdog anchor.
+    internal static bool MatchesProcessName(string? actualName, string needle) =>
+        actualName != null &&
+        Path.GetFileNameWithoutExtension(actualName)
+            .Equals(needle, StringComparison.OrdinalIgnoreCase);
 
     private static int? GetParentPidWindows(int pid)
     {

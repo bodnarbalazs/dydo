@@ -155,6 +155,33 @@ public class ProcessUtilsTests
     }
 
     [Theory]
+    [InlineData("claude", "claude", true)]
+    [InlineData("claude.exe", "claude", true)]
+    [InlineData("CLAUDE", "claude", true)]
+    [InlineData("claudia", "claude", false)]
+    [InlineData("claudia.exe", "claude", false)]
+    [InlineData("claude-dev", "claude", false)]
+    [InlineData("anthropicclaude", "claude", false)]
+    [InlineData(null, "claude", false)]
+    public void MatchesProcessName_ExactBasename(string? actual, string needle, bool expected)
+        => Assert.Equal(expected, ProcessUtils.MatchesProcessName(actual, needle));
+
+    [Fact]
+    public void ParsePsEoPidArgs_PrefixCollision_NotMatched()
+    {
+        // ParsePsEoPidArgs uses substring contains; the watchdog relies on the trailing
+        // " --inbox" suffix as a token boundary. If the prompt format ever changes, this
+        // test asserts the boundary is gone and forces the change to surface.
+        var output = "  PID ARGS\n  100 dydo dispatch Jacky --inbox-other\n  200 dydo dispatch Jack --inbox\n";
+
+        var pids = ProcessUtils.ParsePsEoPidArgs(output, "Jack --inbox");
+
+        Assert.Single(pids);
+        Assert.Equal(200, pids[0]);
+        Assert.DoesNotContain(100, pids);
+    }
+
+    [Theory]
     [InlineData("simple", "simple")]
     [InlineData("it's", "it''s")]
     [InlineData("say \"hi\"", "say \"hi\"")]

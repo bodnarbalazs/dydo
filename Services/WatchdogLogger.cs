@@ -65,9 +65,9 @@ public static partial class WatchdogLogger
 
     private static string Now() => DateTime.UtcNow.ToString("O");
 
-    public static void LogStart(string dydoRoot, int? anchorPid, string? anchorName, int pollIntervalMs) =>
+    public static void LogStart(string dydoRoot, int? anchorPid, string? anchorName, int pollIntervalMs, int anchorCount) =>
         Write(dydoRoot,
-            new StartEvent(Now(), "start", anchorPid, anchorName, pollIntervalMs, Environment.ProcessId),
+            new StartEvent(Now(), "start", anchorPid, anchorName, anchorCount, pollIntervalMs, Environment.ProcessId),
             WatchdogLogJsonContext.Default.StartEvent);
 
     public static void LogTick(string dydoRoot, int agentsObserved, int killsAttempted) =>
@@ -102,6 +102,7 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("event")] string Event,
         [property: JsonPropertyName("anchor_pid")] int? AnchorPid,
         [property: JsonPropertyName("anchor_name")] string? AnchorName,
+        [property: JsonPropertyName("anchor_count")] int AnchorCount,
         [property: JsonPropertyName("poll_interval_ms")] int PollIntervalMs,
         [property: JsonPropertyName("watchdog_pid")] int WatchdogPid);
 

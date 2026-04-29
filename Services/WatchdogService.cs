@@ -8,7 +8,8 @@ public static class WatchdogService
 {
     internal static readonly HashSet<string> ShellProcessNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "powershell", "pwsh", "bash", "sh", "cmd", "zsh"
+        "powershell", "pwsh", "bash", "sh", "cmd", "zsh",
+        "fish", "dash", "tcsh", "csh", "nu", "ksh"
     };
 
     // Targets the watchdog is allowed to kill. Whitelist (not skip-list) so every other
@@ -33,16 +34,18 @@ public static class WatchdogService
     internal static Func<string, List<int>>? FindProcessesOverride { get; set; }
 
     /// <summary>
-    /// When set, Run() uses this to determine the anchor process PID instead of walking
-    /// the real parent chain. Test hook.
-    /// </summary>
-    internal static Func<int?>? GetParentPidOverride { get; set; }
-
-    /// <summary>
     /// When set, Run()'s polling loop waits for this interval instead of the default 10s.
     /// Test hook to keep behavioural assertions fast.
     /// </summary>
     internal static TimeSpan? PollIntervalOverride { get; set; }
+
+    /// <summary>
+    /// When set, Run() exits the orphan path (no anchors ever registered) after this
+    /// interval instead of the default 24h. Test hook — mirrors PollIntervalOverride.
+    /// </summary>
+    internal static TimeSpan? MaxOrphanAgeOverride { get; set; }
+
+    private static readonly TimeSpan MaxOrphanAge = TimeSpan.FromHours(24);
 
     private static CancellationTokenSource? _shutdownCts;
 
@@ -54,6 +57,9 @@ public static class WatchdogService
 
     public static string GetPidFilePath(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "watchdog.pid");
+
+    public static string GetAnchorsDirPath(string dydoRoot) =>
+        Path.Combine(dydoRoot, "_system", ".local", "watchdog-anchors");
 
     /// <summary>
     /// Starts the watchdog if not already running. Called automatically by DispatchCommand
@@ -76,6 +82,11 @@ public static class WatchdogService
     {
         var pidFile = GetPidFilePath(dydoRoot);
         PathUtils.EnsureLocalDirExists(dydoRoot);
+
+        // Register this dispatcher's claude ancestor (if any) before any short-circuit,
+        // so a watchdog already running for an earlier dispatcher gains coverage of THIS
+        // claude as well. Closes #0127.
+        RegisterAnchor(dydoRoot, ProcessUtils.FindAncestorProcess("claude"));
 
         // Fast path: live watchdog already running
         if (File.Exists(pidFile))
@@ -123,13 +134,6 @@ public static class WatchdogService
                 WorkingDirectory = workingDirectory ?? ""
             };
 
-            // Resolve the anchor here (in the still-alive dispatcher) rather than inside the
-            // watchdog — its immediate parent is this short-lived dispatcher, so walking from
-            // the watchdog would anchor on a dead PID. Pass the claude-session PID via env var.
-            var anchor = ProcessUtils.FindAncestorProcess("claude");
-            if (anchor.HasValue)
-                psi.Environment["DYDO_WATCHDOG_ANCHOR_PID"] = anchor.Value.ToString();
-
             var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
             if (proc == null)
             {
@@ -153,6 +157,60 @@ public static class WatchdogService
         {
             stream.Close();
         }
+    }
+
+    // PID <= 1 is init/System; never write that — it would never appear gone and would
+    // defeat the orphan-cap entirely. Closes the anchor-write half of #0128.
+    internal static void RegisterAnchor(string dydoRoot, int? anchorPid)
+    {
+        if (!anchorPid.HasValue || anchorPid.Value <= 1) return;
+        try
+        {
+            var dir = GetAnchorsDirPath(dydoRoot);
+            Directory.CreateDirectory(dir);
+            // The PID is in the filename; content is unused. Concurrent dispatchers writing
+            // the same {pid}.anchor are race-free (truncate-or-create).
+            File.WriteAllBytes(Path.Combine(dir, $"{anchorPid.Value}.anchor"), Array.Empty<byte>());
+        }
+        catch { /* best-effort; null-anchor cap protects orphan path anyway */ }
+    }
+
+    /// <summary>
+    /// Lists anchor marker files under the anchors directory, deletes the ones whose
+    /// PIDs are gone or malformed, and returns the count of still-live anchors.
+    /// </summary>
+    internal static int ScanAnchors(string anchorsDir)
+    {
+        if (!Directory.Exists(anchorsDir)) return 0;
+        var liveCount = 0;
+        foreach (var file in Directory.GetFiles(anchorsDir, "*.anchor"))
+        {
+            if (!int.TryParse(Path.GetFileNameWithoutExtension(file), out var pid) || pid <= 1)
+            {
+                try { File.Delete(file); } catch { }
+                continue;
+            }
+            if (ProcessUtils.IsProcessRunning(pid)) { liveCount++; continue; }
+            try { File.Delete(file); } catch { }
+        }
+        return liveCount;
+    }
+
+    // Returns the lowest-PID live anchor (if any) along with the total live count. The
+    // primary PID is what the structured log records; the count is the new field.
+    private static (int? primaryPid, string? primaryName, int count) ResolveAnchors(string anchorsDir)
+    {
+        var liveCount = ScanAnchors(anchorsDir);
+        if (liveCount == 0) return (null, null, 0);
+
+        int? lowest = null;
+        foreach (var file in Directory.GetFiles(anchorsDir, "*.anchor"))
+        {
+            if (!int.TryParse(Path.GetFileNameWithoutExtension(file), out var pid) || pid <= 1) continue;
+            if (!ProcessUtils.IsProcessRunning(pid)) continue;
+            if (lowest == null || pid < lowest) lowest = pid;
+        }
+        return (lowest, lowest.HasValue ? ProcessUtils.GetProcessName(lowest.Value) : null, liveCount);
     }
 
     /// <summary>
@@ -198,6 +256,7 @@ public static class WatchdogService
         if (dydoRoot == null) return;
 
         var pidFile = GetPidFilePath(dydoRoot);
+        var anchorsDir = GetAnchorsDirPath(dydoRoot);
         using var cts = new CancellationTokenSource();
         _shutdownCts = cts;
 
@@ -207,16 +266,14 @@ public static class WatchdogService
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         Console.CancelKeyPress += OnCancelKeyPress;
 
-        // Anchor precedence: test override > env var set by dispatcher > none.
-        // Never fall back to GetParentPid(Environment.ProcessId) — the watchdog's real parent
-        // is the short-lived dispatcher, which dies within seconds and falsely trips the exit.
-        int? anchorPid = GetParentPidOverride != null
-            ? GetParentPidOverride()
-            : int.TryParse(Environment.GetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID"), out var envPid) ? envPid : null;
         var pollInterval = PollIntervalOverride ?? TimeSpan.FromSeconds(10);
+        var maxOrphanAge = MaxOrphanAgeOverride ?? MaxOrphanAge;
+        var startedAt = DateTime.UtcNow;
+        var hasSeenLiveAnchor = false;
 
-        var anchorName = anchorPid.HasValue ? ProcessUtils.GetProcessName(anchorPid.Value) : null;
-        WatchdogLogger.LogStart(dydoRoot, anchorPid, anchorName, (int)pollInterval.TotalMilliseconds);
+        var (primaryPid, primaryName, anchorCount) = ResolveAnchors(anchorsDir);
+        if (anchorCount > 0) hasSeenLiveAnchor = true;
+        WatchdogLogger.LogStart(dydoRoot, primaryPid, primaryName, (int)pollInterval.TotalMilliseconds, anchorCount);
 
         var exitReason = "cancelled";
         try
@@ -227,7 +284,15 @@ public static class WatchdogService
                 {
                     if (cts.Token.WaitHandle.WaitOne(pollInterval)) { exitReason = "cancelled"; break; }
 
-                    if (anchorPid.HasValue && !ProcessUtils.IsProcessRunning(anchorPid.Value)) { exitReason = "anchor_gone"; break; }
+                    var liveAnchorCount = ScanAnchors(anchorsDir);
+                    if (liveAnchorCount > 0) hasSeenLiveAnchor = true;
+
+                    // Exit if all tracked claude anchors are gone (#0127), or if we've been
+                    // running orphaned (no anchor ever registered) past the max-age ceiling
+                    // (#0126). The cap also protects against a future bug where every
+                    // dispatcher fails to register: we never run forever.
+                    if (hasSeenLiveAnchor && liveAnchorCount == 0) { exitReason = "anchor_gone"; break; }
+                    if (!hasSeenLiveAnchor && DateTime.UtcNow - startedAt >= maxOrphanAge) { exitReason = "max_orphan_age"; break; }
 
                     try
                     {
@@ -295,6 +360,12 @@ public static class WatchdogService
 
             var (dispatchedBy, since) = ReadStateContext(statePath);
 
+            // Load-bearing: the trailing " --inbox" suffix is collision-safety. The match
+            // runs as a substring on each process command line (wmic LIKE / ps -eo args),
+            // so without the trailing token "Jack" would prefix-match a hypothetical
+            // "Jacky" agent. Anyone changing the dispatch prompt format MUST preserve a
+            // trailing token that no other agent's prompt could legally start with.
+            // Regression: ProcessUtilsTests.ParsePsEoPidArgs_PrefixCollision_NotMatched.
             var pattern = $"{agentName} --inbox";
             var pids = FindProcessesOverride != null
                 ? FindProcessesOverride(pattern)

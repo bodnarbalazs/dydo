@@ -30,15 +30,14 @@ public class WatchdogServiceTests : IDisposable
         catch { /* best-effort; if even GetTempPath is gone, we have bigger problems */ }
         WatchdogService.StartProcessOverride = null;
         WatchdogService.FindProcessesOverride = null;
-        WatchdogService.GetParentPidOverride = null;
         WatchdogService.PollIntervalOverride = null;
+        WatchdogService.MaxOrphanAgeOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
         ProcessUtils.IsProcessRunningOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
         WatchdogLogger.LogPathOverride = null;
         WatchdogLogger.MaxBytesOverride = null;
         WatchdogLogger.MaxRotationsOverride = null;
-        Environment.SetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID", null);
         if (Directory.Exists(_testDir))
         {
             for (var i = 0; i < 3; i++)
@@ -145,6 +144,23 @@ public class WatchdogServiceTests : IDisposable
         var pidFile = WatchdogService.GetPidFilePath(_testDir);
         Directory.CreateDirectory(Path.GetDirectoryName(pidFile)!);
         File.WriteAllText(pidFile, pid.ToString());
+    }
+
+    // dydoRoot is the discovered FindMainDydoRoot path — _testDir/dydo when dydo.json
+    // sits at _testDir. Each test sets this up explicitly before calling Run().
+    private static string SetupRunDydoRoot(string testDir)
+    {
+        File.WriteAllText(Path.Combine(testDir, "dydo.json"), """{"name":"t"}""");
+        var dydoRoot = Path.Combine(testDir, "dydo");
+        Directory.CreateDirectory(dydoRoot);
+        return dydoRoot;
+    }
+
+    private static void WriteAnchorFile(string dydoRoot, int pid)
+    {
+        var dir = WatchdogService.GetAnchorsDirPath(dydoRoot);
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, $"{pid}.anchor"), Array.Empty<byte>());
     }
 
     private static Process StartDummyProcess()
@@ -1089,15 +1105,14 @@ public class WatchdogServiceTests : IDisposable
     public async Task Run_ExitsWhenAnchorProcessDies()
     {
         using var anchor = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, anchor.Id);
 
-        WatchdogService.GetParentPidOverride = () => anchor.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         Environment.CurrentDirectory = _testDir;
 
         var runTask = Task.Run(WatchdogService.Run);
-        await Task.Delay(250); // Let the loop enter and read the anchor PID
+        await Task.Delay(250); // Let the loop enter and observe the live anchor
         anchor.Kill();
 
         var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
@@ -1109,10 +1124,9 @@ public class WatchdogServiceTests : IDisposable
     public async Task Run_ExitsWhenCancellationRequested()
     {
         using var longLived = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, longLived.Id);
 
-        WatchdogService.GetParentPidOverride = () => longLived.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         Environment.CurrentDirectory = _testDir;
 
@@ -1130,13 +1144,12 @@ public class WatchdogServiceTests : IDisposable
     public async Task Run_DeletesPidFileOnExit()
     {
         using var anchor = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        var dydoRoot = Path.Combine(_testDir, "dydo");
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, anchor.Id);
         Directory.CreateDirectory(Path.Combine(dydoRoot, "_system", ".local"));
         var pidFile = WatchdogService.GetPidFilePath(dydoRoot);
         File.WriteAllText(pidFile, Environment.ProcessId.ToString());
 
-        WatchdogService.GetParentPidOverride = () => anchor.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         Environment.CurrentDirectory = _testDir;
 
@@ -1150,43 +1163,148 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void EnsureRunning_PassesClaudeAncestorPidToChildViaEnv()
+    public void EnsureRunning_RegistersClaudeAnchor_InAnchorsDirectory()
     {
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
-
-        ProcessStartInfo? capturedPsi = null;
-        WatchdogService.StartProcessOverride = psi => { capturedPsi = psi; return null; };
         ProcessUtils.FindAncestorProcessOverride = (_, _) => 99999;
 
         WatchdogService.EnsureRunning(_testDir);
 
-        Assert.NotNull(capturedPsi);
-        Assert.True(capturedPsi.Environment.TryGetValue("DYDO_WATCHDOG_ANCHOR_PID", out var envValue));
-        Assert.Equal("99999", envValue);
+        var anchor = Path.Combine(WatchdogService.GetAnchorsDirPath(_testDir), "99999.anchor");
+        Assert.True(File.Exists(anchor), "anchor marker file must be written");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(-5)]
+    public void EnsureRunning_RejectsAnchorPidLessOrEqualOne(int badPid)
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => badPid;
+
+        WatchdogService.EnsureRunning(_testDir);
+
+        var anchorsDir = WatchdogService.GetAnchorsDirPath(_testDir);
+        if (Directory.Exists(anchorsDir))
+            Assert.Empty(Directory.GetFiles(anchorsDir, "*.anchor"));
     }
 
     [Fact]
-    public async Task Run_ReadsAnchorPidFromEnvironmentWhenOverrideNull_DoesNotFallBackToParentPid()
+    public void EnsureRunning_LiveWatchdog_StillRegistersAnchor()
     {
-        using var anchor = StartDummyProcess();
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
 
-        Environment.SetEnvironmentVariable("DYDO_WATCHDOG_ANCHOR_PID", anchor.Id.ToString());
-        WatchdogService.GetParentPidOverride = null;
+        // Pre-existing live watchdog → fast path returns false without spawning.
+        using var existing = StartDummyProcess();
+        try
+        {
+            WritePidFile(existing.Id);
+            ProcessUtils.FindAncestorProcessOverride = (_, _) => 88888;
+
+            Assert.False(WatchdogService.EnsureRunning(_testDir));
+
+            var anchor = Path.Combine(WatchdogService.GetAnchorsDirPath(_testDir), "88888.anchor");
+            Assert.True(File.Exists(anchor),
+                "even when a watchdog is already running, EnsureRunning must register the new claude as an anchor");
+        }
+        finally
+        {
+            if (!existing.HasExited) existing.Kill();
+        }
+    }
+
+    [Fact]
+    public async Task Run_AllAnchorsDead_Exits()
+    {
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, 12345);
+
+        var alive = true;
+        ProcessUtils.IsProcessRunningOverride = pid => pid == 12345 && alive;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         Environment.CurrentDirectory = _testDir;
 
         var runTask = Task.Run(WatchdogService.Run);
         await Task.Delay(250);
-        Assert.False(runTask.IsCompleted);
+        Assert.False(runTask.IsCompleted, "watchdog must stay alive while anchor 12345 is alive");
 
-        anchor.Kill();
+        alive = false;
 
         var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
         Assert.Same(runTask, completed);
         await runTask;
+
+        var anchorPath = Path.Combine(WatchdogService.GetAnchorsDirPath(dydoRoot), "12345.anchor");
+        Assert.False(File.Exists(anchorPath), "dead-anchor file must be pruned");
+    }
+
+    [Fact]
+    public async Task Run_NewAnchorAddedMidFlight_DefersExit()
+    {
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, 100);
+
+        var live = new HashSet<int> { 100 };
+        ProcessUtils.IsProcessRunningOverride = pid => { lock (live) { return live.Contains(pid); } };
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+        await Task.Delay(150);
+
+        // Second dispatcher arrives, registers a new anchor; first claude dies.
+        WriteAnchorFile(dydoRoot, 200);
+        lock (live) { live.Add(200); live.Remove(100); }
+
+        await Task.Delay(400);
+        Assert.False(runTask.IsCompleted, "watchdog must stay alive while ANY anchor is alive");
+
+        lock (live) { live.Remove(200); }
+        var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(runTask, completed);
+        await runTask;
+    }
+
+    [Fact]
+    public async Task Run_NoAnchorsEverRegistered_ExitsAtMaxAge()
+    {
+        SetupRunDydoRoot(_testDir);
+        // No anchors directory at all — orphan path
+
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(50);
+        WatchdogService.MaxOrphanAgeOverride = TimeSpan.FromMilliseconds(150);
+        Environment.CurrentDirectory = _testDir;
+
+        var runTask = Task.Run(WatchdogService.Run);
+
+        var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(runTask, completed);
+        await runTask;
+    }
+
+    [Fact]
+    public void ScanAnchors_PrunesDeadPids_AndIgnoresMalformedFiles()
+    {
+        var dir = WatchdogService.GetAnchorsDirPath(_testDir);
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "111.anchor"), Array.Empty<byte>()); // alive
+        File.WriteAllBytes(Path.Combine(dir, "222.anchor"), Array.Empty<byte>()); // dead
+        File.WriteAllBytes(Path.Combine(dir, "garbage.anchor"), Array.Empty<byte>());
+        File.WriteAllBytes(Path.Combine(dir, "1.anchor"), Array.Empty<byte>()); // <= 1 rejected
+
+        ProcessUtils.IsProcessRunningOverride = pid => pid == 111;
+
+        var live = WatchdogService.ScanAnchors(dir);
+
+        Assert.Equal(1, live);
+        Assert.True(File.Exists(Path.Combine(dir, "111.anchor")));
+        Assert.False(File.Exists(Path.Combine(dir, "222.anchor")));
+        Assert.False(File.Exists(Path.Combine(dir, "garbage.anchor")));
+        Assert.False(File.Exists(Path.Combine(dir, "1.anchor")));
     }
 
     #endregion
@@ -1238,10 +1356,9 @@ public class WatchdogServiceTests : IDisposable
     {
         var logPath = SetLogPathOverride();
         using var anchor = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, anchor.Id);
 
-        WatchdogService.GetParentPidOverride = () => anchor.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         ProcessUtils.GetProcessNameOverride = pid => pid == anchor.Id ? "claude" : null;
         Environment.CurrentDirectory = _testDir;
@@ -1258,6 +1375,7 @@ public class WatchdogServiceTests : IDisposable
         var start = lines.First(l => l["event"].GetString() == "start");
         Assert.Equal(anchor.Id, start["anchor_pid"].GetInt32());
         Assert.Equal("claude", start["anchor_name"].GetString());
+        Assert.Equal(1, start["anchor_count"].GetInt32());
         Assert.Equal(100, start["poll_interval_ms"].GetInt32());
         Assert.True(start.ContainsKey("watchdog_pid"));
         Assert.True(start.ContainsKey("ts"));
@@ -1331,10 +1449,9 @@ public class WatchdogServiceTests : IDisposable
     {
         var logPath = SetLogPathOverride();
         using var anchor = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, anchor.Id);
 
-        WatchdogService.GetParentPidOverride = () => anchor.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         Environment.CurrentDirectory = _testDir;
 
@@ -1354,10 +1471,9 @@ public class WatchdogServiceTests : IDisposable
     {
         var logPath = SetLogPathOverride();
         using var anchor = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        Directory.CreateDirectory(Path.Combine(_testDir, "dydo"));
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, anchor.Id);
 
-        WatchdogService.GetParentPidOverride = () => anchor.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         Environment.CurrentDirectory = _testDir;
 
@@ -1394,7 +1510,7 @@ public class WatchdogServiceTests : IDisposable
 
         var ex = Record.Exception(() =>
         {
-            WatchdogLogger.LogStart(_testDir, 123, "claude", 100);
+            WatchdogLogger.LogStart(_testDir, 123, "claude", 100, 1);
             WatchdogLogger.LogTick(_testDir, 1, 0);
             WatchdogLogger.LogKill(_testDir, "Adele", 999, "claude", "Adele --inbox", "free", true, null, null);
             WatchdogLogger.LogParseFailure(_testDir, "x", "y");
@@ -1410,14 +1526,13 @@ public class WatchdogServiceTests : IDisposable
     {
         var logPath = SetLogPathOverride();
         using var anchor = StartDummyProcess();
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"name":"t"}""");
-        var dydoRoot = Path.Combine(_testDir, "dydo");
+        var dydoRoot = SetupRunDydoRoot(_testDir);
+        WriteAnchorFile(dydoRoot, anchor.Id);
         var adeleDir = Path.Combine(dydoRoot, "agents", "Adele");
         Directory.CreateDirectory(adeleDir);
         File.WriteAllText(Path.Combine(adeleDir, "state.md"),
             "---\nagent: Adele\nstatus: free\nauto-close: true\n---\n");
 
-        WatchdogService.GetParentPidOverride = () => anchor.Id;
         WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
         WatchdogService.FindProcessesOverride = _ => throw new InvalidOperationException("boom");
         Environment.CurrentDirectory = _testDir;

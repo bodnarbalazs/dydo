@@ -35,13 +35,13 @@ public class WatchdogRunLivenessContractTests
     }
 
     [Fact]
-    public void Run_Source_ContainsParentLivenessCheck()
+    public void Run_Source_ContainsAnchorLivenessCheck()
     {
         var body = ReadRunMethodBody();
-        var hasParentPid = body.Contains("GetParentPid", StringComparison.Ordinal)
-            || body.Contains("FindAncestorProcess", StringComparison.Ordinal);
-        Assert.True(hasParentPid,
-            "Run() must reference GetParentPid or FindAncestorProcess to self-terminate when its anchor dies.");
+        var hasAnchorScan = body.Contains("ScanAnchors", StringComparison.Ordinal)
+            || body.Contains("anchorsDir", StringComparison.Ordinal);
+        Assert.True(hasAnchorScan,
+            "Run() must reference the anchors directory (ScanAnchors / anchorsDir) to self-terminate when its anchors die.");
     }
 
     [Fact]

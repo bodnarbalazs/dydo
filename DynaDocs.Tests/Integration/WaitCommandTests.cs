@@ -701,6 +701,134 @@ public class WaitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Atomic Listening-Marker Tests (#0133)
+
+    [Fact]
+    public async Task CreateListeningWaitMarker_WritesListeningAndPid_InOneStep()
+    {
+        // Regression for #0133: WaitGeneral previously created the marker with
+        // Listening=false, then issued a second write to flip it to true. The window
+        // between the two writes left the OrchestratorMissingGeneralWait guard check
+        // observing Listening=false and blocking the next tool call. The atomic
+        // create method must publish Listening=true and Pid in a single file write.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", 4242);
+
+        var markers = registry.GetWaitMarkers("Adele");
+        Assert.Single(markers);
+        Assert.True(markers[0].Listening);
+        Assert.Equal(4242, markers[0].Pid);
+        Assert.Equal("Adele", markers[0].Target);
+        Assert.Equal("_general-wait", markers[0].Task);
+    }
+
+    [Fact]
+    public async Task CreateListeningWaitMarker_PreservesTargetAndSince_WhenMarkerExists()
+    {
+        // WaitForTask runs after the dispatcher has pre-created a marker (Listening=false).
+        // Flipping to listening atomically must not lose the dispatcher-recorded Target
+        // or Since fields — those drive `dydo agent list` and audit display.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "auth", "Brian");
+        var original = registry.GetWaitMarkers("Adele")[0];
+
+        // Caller passes its own agent name as the target placeholder; existing Target wins.
+        registry.CreateListeningWaitMarker("Adele", "auth", "Adele", 7777);
+
+        var markers = registry.GetWaitMarkers("Adele");
+        Assert.Single(markers);
+        Assert.True(markers[0].Listening);
+        Assert.Equal(7777, markers[0].Pid);
+        Assert.Equal("Brian", markers[0].Target);
+        Assert.Equal(original.Since, markers[0].Since);
+    }
+
+    [Fact]
+    public async Task Wait_General_MarkerListeningWhenLoopStarts()
+    {
+        // After WaitGeneral starts, the _general-wait marker must satisfy the guard's
+        // "general wait active" check (Listening=true + live Pid) by the time the
+        // polling loop runs. We observe via IsProcessRunningOverride on the first poll.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        bool? observedListening = null;
+        int? observedPid = null;
+        var observed = false;
+
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!observed)
+            {
+                observed = true;
+                var probe = new AgentRegistry(TestDir);
+                var general = probe.GetWaitMarkers("Adele").FirstOrDefault(m => m.Task == "_general-wait");
+                observedListening = general?.Listening;
+                observedPid = general?.Pid;
+            }
+            return false;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            await RunAsync(command);
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
+
+        Assert.True(observedListening, "Marker must be Listening=true by the time the polling loop runs.");
+        Assert.NotNull(observedPid);
+        Assert.True(observedPid > 0);
+    }
+
+    [Fact]
+    public async Task Wait_Task_MarkerListeningWhenLoopStarts()
+    {
+        // Parity with WaitGeneral: WaitForTask must also leave the marker in
+        // Listening=true with live Pid by the time its polling loop runs. The fix
+        // collapses the previous read-modify-non-atomic-write into a single atomic
+        // write so guard/list readers can never observe a transient Listening=false.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "auth", "Brian");
+
+        bool? observedListening = null;
+        int? observedPid = null;
+        var observed = false;
+
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!observed)
+            {
+                observed = true;
+                var probe = new AgentRegistry(TestDir);
+                var marker = probe.GetWaitMarkers("Adele").FirstOrDefault(m => m.Task == "auth");
+                observedListening = marker?.Listening;
+                observedPid = marker?.Pid;
+            }
+            return false;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            await RunAsync(command, "--task", "auth");
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
+
+        Assert.True(observedListening, "Task wait marker must be Listening=true by the time the polling loop runs.");
+        Assert.NotNull(observedPid);
+        Assert.True(observedPid > 0);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

@@ -991,6 +991,45 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Release_NotBlockedBy_GeneralWaitSentinel()
+    {
+        // The _general-wait sentinel marker is started at claim time once decision 021
+        // (unified general wait) lands; on release CleanupAfterRelease wipes it. The
+        // pre-release validation must not treat it as a "waiting for response" wait —
+        // those checks apply only to real task-channel markers (no `_` prefix).
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", Environment.ProcessId);
+
+        var result = await ReleaseAgentAsync();
+
+        result.AssertSuccess();
+
+        registry = new AgentRegistry(TestDir);
+        var markers = registry.GetWaitMarkers("Adele");
+        Assert.Empty(markers);
+    }
+
+    [Fact]
+    public async Task Release_StillBlockedBy_RealTaskWaitMarker()
+    {
+        // Companion to Release_NotBlockedBy_GeneralWaitSentinel: real task-channel
+        // markers still block release with their existing message.
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateWaitMarker("Adele", "real-task", "Brian");
+
+        var result = await ReleaseAgentAsync();
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("real-task");
+    }
+
+    [Fact]
     public async Task Release_ClearsUnreadMustReads()
     {
         await InitProjectAsync("none", "balazs", 3);

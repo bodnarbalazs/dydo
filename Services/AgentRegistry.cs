@@ -530,7 +530,11 @@ public partial class AgentRegistry : IAgentRegistry
             }
         }
 
-        var waitMarkers = GetWaitMarkers(agentName);
+        // `_`-prefixed wait markers are sentinels (e.g. _general-wait) — they signal
+        // background-wait state, not "waiting for a response on this task". Real
+        // task-channel waits are the only ones that should block release. Sentinels
+        // are torn down by CleanupAfterRelease's ClearAllWaitMarkers below.
+        var waitMarkers = GetWaitMarkers(agentName).Where(m => !m.Task.StartsWith('_')).ToList();
         if (waitMarkers.Count > 0)
         {
             var tasks = string.Join(", ", waitMarkers.Select(m => m.Task));
@@ -996,6 +1000,67 @@ public partial class AgentRegistry : IAgentRegistry
         var path = Path.Combine(dir, $"{sanitized}.json");
         var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.WaitMarker);
         File.WriteAllText(path, json);
+    }
+
+    /// <summary>
+    /// Atomically writes a wait marker with Listening=true and the given Pid in a single
+    /// temp-then-rename file write. If a marker already exists for the task, its Target
+    /// and Since fields are preserved (so callers can flip a dispatcher-pre-created marker
+    /// to listening without losing dispatch context).
+    ///
+    /// Replaces the previous CreateWaitMarker + UpdateWaitMarkerListening sequence used by
+    /// dydo wait — issue #0133 traced the orchestrator general-wait deadlock to the window
+    /// between those two writes, where guard checks could see Listening=false.
+    /// </summary>
+    public void CreateListeningWaitMarker(string agentName, string task, string targetAgent, int pid)
+    {
+        var dir = GetWaitingDir(agentName);
+        Directory.CreateDirectory(dir);
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+
+        var resolvedTarget = targetAgent;
+        var since = DateTime.UtcNow;
+
+        if (File.Exists(path))
+        {
+            try
+            {
+                var existing = JsonSerializer.Deserialize(File.ReadAllText(path), DydoDefaultJsonContext.Default.WaitMarker);
+                if (existing != null)
+                {
+                    resolvedTarget = existing.Target;
+                    since = existing.Since;
+                }
+            }
+            catch
+            {
+                // Corrupt or unreadable existing marker — overwrite with caller-provided values.
+            }
+        }
+
+        var marker = new WaitMarker
+        {
+            Target = resolvedTarget,
+            Task = task,
+            Since = since,
+            Listening = true,
+            Pid = pid,
+        };
+
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.WaitMarker);
+        var tempPath = $"{path}.tmp.{Environment.ProcessId}.{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, json);
+        try
+        {
+            File.Move(tempPath, path, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(tempPath); } catch { }
+            throw;
+        }
     }
 
     public List<WaitMarker> GetWaitMarkers(string agentName)

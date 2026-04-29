@@ -242,6 +242,7 @@ public class CheckAgentValidatorTests : IDisposable
         public void StorePendingSessionId(string agentName, string sessionId) { }
         public string? GetPendingSessionId(string agentName) => null;
         public void CreateWaitMarker(string agentName, string task, string targetAgent) { }
+        public void CreateListeningWaitMarker(string agentName, string task, string targetAgent, int pid) { }
         public List<WaitMarker> GetWaitMarkers(string agentName) => [];
         public bool RemoveWaitMarker(string agentName, string task) => false;
         public void ClearAllWaitMarkers(string agentName) { }

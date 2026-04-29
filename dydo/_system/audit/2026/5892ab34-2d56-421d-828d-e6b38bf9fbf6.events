@@ -115,3 +115,33 @@
 {"ts":"2026-04-29T15:26:02.6186516Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\log-orchestrator-handoff.md","tool":"edit"}
 {"ts":"2026-04-29T16:15:37.0730163Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\47669423-msg-fix-watchdog-logging-followup.md","tool":"read"}
 {"ts":"2026-04-29T16:15:43.5050754Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all","reason":"Missing general wait"}
+{"ts":"2026-04-29T17:23:07.9492064Z","event":"Blocked","tool":"bash","cmd":"gh run list --limit 5 2\u003E\u00261; echo \u0022---\u0022; gh run view --log-failed --limit 1 2\u003E\u00261 | head -60","reason":"Unread messages"}
+{"ts":"2026-04-29T17:23:14.6847186Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\3591eb97-msg-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T17:23:15.3443688Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\dd541a53-msg-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T17:23:15.6904716Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\29bcbef7-msg-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T17:23:39.9671811Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\dc70e094-msg-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T17:23:40.7867844Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\f89ddc16-msg-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T17:23:41.2091173Z","event":"Bash","tool":"bash","cmd":"gh run view 25122266336 --log-failed 2\u003E\u00261 | head -150"}
+{"ts":"2026-04-29T17:25:02.9472582Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-ci-test-failures.md","tool":"write"}
+{"ts":"2026-04-29T18:10:20.765888Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-close-smoke.md","tool":"write","reason":"Missing general wait"}
+{"ts":"2026-04-29T18:10:31.8312224Z","event":"Bash","tool":"bash","cmd":"cat C:/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/5892ab34-2d56-42..."}
+{"ts":"2026-04-29T18:10:46.7772854Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-close-smoke.md","tool":"write"}
+{"ts":"2026-04-29T18:11:45.4068269Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\37a9056a-msg-auto-close-smoke.md","tool":"read"}
+{"ts":"2026-04-29T18:15:49.8000031Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-investigate-auto-close-regression.md","tool":"write"}
+{"ts":"2026-04-29T18:54:25.0047525Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-discuss-unified-general-wait.md","tool":"write"}
+{"ts":"2026-04-29T19:12:27.4084443Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -40; echo \u0022---AGENTS---\u0022; dydo agent list 2\u003E\u00261 | head -16; echo \u0022---GIT-...","reason":"Missing general wait"}
+{"ts":"2026-04-29T19:21:05.8911523Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-discuss-auto-resume-crashed-agents.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-04-29T19:21:17.9454427Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\331e03d2-msg-fix-ci-test-failures.md","tool":"read"}
+{"ts":"2026-04-29T19:21:18.7391274Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\3586fc43-msg-discuss-unified-general-wait.md","tool":"read"}
+{"ts":"2026-04-29T19:21:19.0557286Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\bb103dd2-msg-investigate-auto-close-regression.md","tool":"read"}
+{"ts":"2026-04-29T19:22:29.0594252Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-discuss-auto-resume-crashed-agents.md","tool":"write"}
+{"ts":"2026-04-29T19:51:23.8778627Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\01fdc25c-msg-discuss-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T19:51:31.8361906Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\a7060680-msg-fix-ci-test-failures.md","tool":"read"}
+{"ts":"2026-04-29T19:51:32.3487411Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\0510fdb5-msg-fix-ci-test-failures.md","tool":"read"}
+{"ts":"2026-04-29T19:55:35.2905633Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\notes-discuss-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T19:55:36.0807518Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-29T19:55:36.2076085Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T19:56:41.5364414Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-plan-auto-resume-crashed-agents.md","tool":"write"}
+{"ts":"2026-04-29T20:07:45.0240885Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\548440fa-msg-plan-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T20:07:45.35335Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\plan-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T20:08:51.5711745Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-auto-resume-crashed-agents.md","tool":"write"}

@@ -28,12 +28,13 @@
       "targetRole": "code-writer",
       "requiredRoles": [
         "code-writer",
-        "inquisitor"
+        "inquisitor",
+        "test-writer"
       ],
       "maxCount": null,
       "requireAll": true,
       "onlyWhenDispatched": true,
-      "message": "Reviewers can only dispatch a code-writer when dispatched by a code-writer or inquisitor. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \u0022Review findings: ...\u0022"
+      "message": "Reviewers can only dispatch a code-writer when dispatched by a code-writer, inquisitor, or test-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \u0022Review findings: ...\u0022"
     }
   ],
   "conditionalMustReads": [

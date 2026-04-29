@@ -78,8 +78,10 @@ public static class WaitCommand
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
-        registry.CreateWaitMarker(agentName, GeneralWaitMarker, agentName);
-        registry.UpdateWaitMarkerListening(agentName, GeneralWaitMarker, Environment.ProcessId);
+        // Atomic create — Listening=true and Pid set in a single file write so the
+        // bash that launched this wait can return to the parent without leaving a
+        // window where guard checks observe Listening=false. (#0133)
+        registry.CreateListeningWaitMarker(agentName, GeneralWaitMarker, agentName, Environment.ProcessId);
 
         // Snapshot what was already unread when the wait started. The general wait should
         // signal NEW arrivals, not pop on already-known messages — popping on a known unread
@@ -131,7 +133,9 @@ public static class WaitCommand
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
-        registry.UpdateWaitMarkerListening(agentName, task, Environment.ProcessId);
+        // Atomic upsert — same race fix as WaitGeneral. The dispatcher-pre-created
+        // marker's Target and Since are preserved by CreateListeningWaitMarker.
+        registry.CreateListeningWaitMarker(agentName, task, agentName, Environment.ProcessId);
 
         Console.WriteLine($"Waiting for message about '{task}'...");
 

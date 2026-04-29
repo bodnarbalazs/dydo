@@ -91,6 +91,12 @@
   "tasks": {
     "autoCompactInterval": 100
   },
+  "worktree": {
+    "mergeSafety": {
+      "ignore": [],
+      "ignoreDefaults": true
+    }
+  },
   "queues": [
     "merge"
   ],
@@ -154,12 +160,12 @@
     "_system/templates/mode-planner.template.md": "ba7d395fef092edd97e1302be2901f0bc1e02992ba88de8c1faddb1c747a48e8",
     "_system/templates/mode-docs-writer.template.md": "1640a887814f2b7817ff4305df8736843b47f8ae5fe0ebbb491ec82d696ffc31",
     "reference/about-dynadocs.md": "7f449f8fc1f364e985f0076d4471fc8c1a90c4ced77f7961b9c8c7640fac2466",
-    "reference/dydo-commands.md": "857794b5bd2f0e7a82b57ff1982cef2cde5786cfaf208f3354941fd94330a2df",
+    "reference/dydo-commands.md": "cb862bd8b07ff2686d205887b74236570c1a1bcb6015bb42d8d3557f779da039",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",
     "_system/templates/mode-test-writer.template.md": "15845eb12c90f3020aee1625067c78bb8e17d00c845b42e74e79ee09965e83cf",
-    "_system/templates/mode-orchestrator.template.md": "828c63c2b704004ade3cc0cf8608ef4babdf35b900c360fbb6d62baa79faf2d1",
+    "_system/templates/mode-orchestrator.template.md": "148fc567f3213feae57ebd630c92e2105c3f79e380474a596174d3e914632715",
     "_system/templates/mode-inquisitor.template.md": "291bca4ebdcf6260c0e91812e0a3630c88f41ae9d2458a86fb5ee2b5fe7442a1",
     "_system/templates/mode-judge.template.md": "51c7927f15426818a414df7613dd14ab6fd4970a80b9dea5a7a1f9898ff9a826",
     "guides/how-to-merge-worktrees.md": "a01edead0a9e0751b4768fedf7941e460eabdc1317d76c33041f60a24da38e5c",

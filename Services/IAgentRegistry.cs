@@ -168,6 +168,8 @@ public interface IAgentRegistry
 
     void CreateWaitMarker(string agentName, string task, string targetAgent);
 
+    void CreateListeningWaitMarker(string agentName, string task, string targetAgent, int pid);
+
     List<Models.WaitMarker> GetWaitMarkers(string agentName);
 
     bool RemoveWaitMarker(string agentName, string task);

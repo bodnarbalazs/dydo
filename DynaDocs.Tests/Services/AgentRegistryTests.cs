@@ -1118,6 +1118,94 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ReleaseAgent_ClearsAutoCloseOnDisk()
+    {
+        // Regression for #0123 / #0121: after release, on-disk state must be
+        // `free + auto-close: false`. SetDispatchMetadata is the only authoritative
+        // producer of `auto-close: true` post-fix; release must not leave the lethal
+        // `free + auto-close: true` window open between release and the next watchdog poll.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        CreateSessionFile("Adele", "test-session-autoclose");
+
+        var registry = new AgentRegistry(_testDir);
+        registry.SetDispatchMetadata("Adele", "abcd1234", true);
+
+        var statePath = Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md");
+        var preRelease = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: true", preRelease);
+
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        var inboxPath = Path.Combine(workspace, "inbox");
+        if (Directory.Exists(inboxPath))
+            Directory.Delete(inboxPath, true);
+
+        var released = registry.ReleaseAgent("test-session-autoclose", out var error);
+        Assert.True(released, $"Release should succeed: {error}");
+
+        var postRelease = File.ReadAllText(statePath);
+        Assert.Contains("auto-close: false", postRelease);
+        Assert.Contains("status: free", postRelease);
+    }
+
+    [Fact]
+    public void WriteStateFile_AtomicReplace_ConcurrentReaderNeverSeesPartial()
+    {
+        // Regression for #0125: WriteStateFile must replace state.md atomically so
+        // unlocked readers (e.g. `dydo agent status`) never observe a torn write.
+        SetupAgentState("Adele");
+        var statePath = Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md");
+
+        var stop = false;
+        var parseFailures = 0;
+        var readsObserved = 0;
+
+        var reader = new System.Threading.Thread(() =>
+        {
+            while (!Volatile.Read(ref stop))
+            {
+                string content;
+                try { content = File.ReadAllText(statePath); }
+                catch { continue; }
+
+                Interlocked.Increment(ref readsObserved);
+                var fields = DynaDocs.Utils.FrontmatterParser.ParseFields(content);
+                if (fields == null || !fields.ContainsKey("agent") || !fields.ContainsKey("status"))
+                    Interlocked.Increment(ref parseFailures);
+            }
+        });
+        reader.Start();
+
+        for (var i = 0; i < 200; i++)
+        {
+            try { _registry.SetDispatchMetadata("Adele", $"win-{i}", i % 2 == 0); }
+            catch { /* writer-side IOException acceptable; contract is reader-side integrity */ }
+        }
+
+        Volatile.Write(ref stop, true);
+        reader.Join();
+
+        Assert.True(readsObserved > 0, "Reader thread should have observed at least one read");
+        Assert.Equal(0, parseFailures);
+    }
+
+    [Fact]
+    public void WriteStateFile_NoTempFilesLeftBehind()
+    {
+        // Regression for #0125: on the success path the rename consumes the temp file,
+        // so no `state.md.tmp.*` siblings should remain after a write.
+        SetupAgentState("Adele");
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+
+        _registry.SetDispatchMetadata("Adele", "abcd1234", true);
+        Assert.Empty(Directory.GetFiles(workspace, "state.md.tmp.*"));
+
+        // Second write — guards against a regression where the catch-block cleanup
+        // accidentally fires on the success path.
+        _registry.SetDispatchMetadata("Adele", "efgh5678", false);
+        Assert.Empty(Directory.GetFiles(workspace, "state.md.tmp.*"));
+    }
+
+    [Fact]
     public void SetRole_StaleMarkerDoesNotBypassNudge_AfterRelease()
     {
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
@@ -1961,9 +2049,8 @@ public class AgentRegistryTests : IDisposable
         Assert.Equal("abcd1234", state.WindowId);
         Assert.True(state.AutoClose);
 
-        // Simulate what release does: clear role/task but NOT windowId/autoClose
-        // (The integration test Release_WithAutoCloseState_PreservesAutoCloseForWatchdog
-        // covers the full release flow)
+        // Simulate what release does: clear role/task and AutoClose, but NOT windowId
+        // (The integration test Release_ClearsAutoCloseOnDisk covers the full flow.)
         state.Status = AgentStatus.Free;
         state.Role = null;
         state.Task = null;

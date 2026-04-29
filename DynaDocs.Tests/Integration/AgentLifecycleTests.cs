@@ -768,23 +768,23 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Release_WithAutoCloseState_PreservesAutoCloseForWatchdog()
+    public async Task Release_ClearsAutoCloseOnDisk()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
 
-        // Set auto-close in state file (simulating what DispatchCommand does)
         var registry = new AgentRegistry(TestDir);
         registry.SetDispatchMetadata("Adele", "abcd1234", true);
 
         var result = await ReleaseAgentAsync();
         result.AssertSuccess();
 
-        // Auto-close and window-id should survive release for the watchdog
+        // Regression for #0123 / #0121: the lethal `free + auto-close: true` window
+        // between release and the next watchdog poll must not exist on disk. Each
+        // new dispatch re-asserts AutoClose via SetDispatchMetadata.
         var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
         var stateContent = File.ReadAllText(statePath);
-        Assert.Contains("auto-close: true", stateContent);
-        Assert.Contains("window-id: abcd1234", stateContent);
+        Assert.Contains("auto-close: false", stateContent);
         Assert.Contains("status: free", stateContent);
     }
 

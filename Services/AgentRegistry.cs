@@ -499,6 +499,10 @@ public partial class AgentRegistry : IAgentRegistry
                 s.ReadOnlyPaths = [];
                 s.UnreadMustReads = [];
                 s.UnreadMessages = [];
+                // Closes #0123 / #0121 redispatch race: between release and the next watchdog poll
+                // (<=10s) the agent must NOT sit in `free + auto-close: true`. SetDispatchMetadata
+                // re-asserts AutoClose on each dispatch, so clearing on release is safe.
+                s.AutoClose = false;
             });
 
             CleanupAfterRelease(agent.Name, workspace, sessionId);
@@ -1403,7 +1407,27 @@ public partial class AgentRegistry : IAgentRegistry
             -->
             """;
 
-        File.WriteAllText(statePath, content);
+        // Atomic replace: write to a same-directory temp file then rename over the destination.
+        // On POSIX this is rename(2) (always atomic). On NTFS, File.Move(..., overwrite: true)
+        // uses MoveFileEx(MOVEFILE_REPLACE_EXISTING). Same-directory is required: cross-volume
+        // rename is non-atomic on every OS we support. The temp suffix combines PID and a Guid
+        // to avoid collisions if multiple agents are written from the same process under load.
+        // (Within an agent's lifecycle the per-agent .claim.lock already serializes writers; the
+        // PID+Guid suffix is defence-in-depth for cross-agent or unlocked-call paths.)
+        var tempPath = $"{statePath}.tmp.{Environment.ProcessId}.{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, content);
+        try
+        {
+            File.Move(tempPath, statePath, overwrite: true);
+        }
+        catch
+        {
+            // Best-effort cleanup of the orphaned temp file if the rename failed (e.g. a Windows
+            // sharing violation from a concurrent unlocked reader). The next call writes a fresh
+            // temp anyway; we don't want a partially-named file lingering.
+            try { File.Delete(tempPath); } catch { }
+            throw;
+        }
     }
 
     private static string FormatTaskRoleHistory(Dictionary<string, List<string>> history)

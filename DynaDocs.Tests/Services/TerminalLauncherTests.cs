@@ -2516,6 +2516,184 @@ public class TerminalLauncherTests
     }
 
     #endregion
+
+    #region Resume Launcher (Decision 022)
+
+    [Fact]
+    public void GetWindowsResumeArguments_ContainsResumeAndSessionId()
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc");
+
+        Assert.Contains("--resume", args);
+        Assert.Contains("'sess-abc'", args);
+        Assert.Contains("Re-orient briefly", args);
+        Assert.DoesNotContain("--inbox", args);
+    }
+
+    [Theory]
+    [InlineData("gnome-terminal")]
+    [InlineData("konsole")]
+    [InlineData("xfce4-terminal")]
+    [InlineData("alacritty")]
+    [InlineData("kitty")]
+    [InlineData("wezterm")]
+    [InlineData("tilix")]
+    [InlineData("foot")]
+    [InlineData("xterm")]
+    public void GetLinuxResumeArguments_ContainsResumeAndSessionId(string terminalName)
+    {
+        var args = TerminalLauncher.GetLinuxResumeArguments(terminalName, "Adele", "sess-abc");
+
+        Assert.Contains("--resume", args);
+        Assert.Contains("'sess-abc'", args);
+        Assert.Contains("Re-orient briefly", args);
+        Assert.DoesNotContain("--inbox", args);
+    }
+
+    [Fact]
+    public void GetMacResumeArguments_ContainsResumeAndSessionId()
+    {
+        var args = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc");
+
+        Assert.Contains("--resume", args);
+        Assert.Contains("sess-abc", args);
+        Assert.Contains("Re-orient briefly", args);
+        Assert.DoesNotContain("--inbox", args);
+    }
+
+    [Fact]
+    public void GetWindowsResumeArguments_BackgroundsDydoWaitBeforeClaude()
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc");
+
+        var waitIdx = args.IndexOf("Start-Process", StringComparison.Ordinal);
+        var claudeIdx = args.IndexOf("claude --resume", StringComparison.Ordinal);
+        Assert.True(waitIdx >= 0, "Resume launcher must spawn dydo wait via Start-Process");
+        Assert.Contains("'wait'", args);
+        Assert.True(claudeIdx > waitIdx, "dydo wait startup must precede claude --resume");
+    }
+
+    [Fact]
+    public void GetLinuxResumeArguments_BackgroundsDydoWaitBeforeClaude()
+    {
+        var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc");
+
+        var waitIdx = args.IndexOf("(dydo wait", StringComparison.Ordinal);
+        var claudeIdx = args.IndexOf("claude --resume", StringComparison.Ordinal);
+        Assert.True(waitIdx >= 0, "Resume launcher must include backgrounded (dydo wait ...)");
+        Assert.True(claudeIdx > waitIdx, "(dydo wait ...) must precede claude --resume");
+    }
+
+    [Fact]
+    public void GetClaudeResumeCommand_VerbatimPromptFromDecision022()
+    {
+        var cmd = TerminalLauncher.GetClaudeResumeCommand("sess-abc");
+
+        Assert.Equal(
+            "claude --resume \"sess-abc\" \"Your terminal tab crashed and you have been auto-resumed. " +
+            "Your dydo identity, role, and task are unchanged. " +
+            "Re-orient briefly from your most recent context and continue from where you left off.\"",
+            cmd);
+    }
+
+    [Fact]
+    public void GetLinuxResumeArguments_UnknownTerminal_Throws()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            TerminalLauncher.GetLinuxResumeArguments("unknown-terminal", "Adele", "sess-abc"));
+    }
+
+    [Fact]
+    public void TryLaunchResume_SucceedsOnFirstAvailableTerminal()
+    {
+        var recorder = new RecordingProcessStarter();
+        var pid = LinuxTerminalLauncher.TryLaunchResume(recorder, TerminalLauncher.LinuxTerminals, "Adele", "sess-abc");
+
+        Assert.NotEqual(0, pid);
+        Assert.Single(recorder.Started);
+        Assert.Equal("gnome-terminal", recorder.Started[0].FileName);
+        Assert.Contains("--resume", recorder.Started[0].Arguments);
+        Assert.Contains("'sess-abc'", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void TryLaunchResume_FallsThroughToNextTerminal_WhenFirstFails()
+    {
+        var recorder = new RecordingProcessStarter();
+        recorder.FailOnFileName("gnome-terminal");
+        recorder.FailOnFileName("konsole");
+
+        var pid = LinuxTerminalLauncher.TryLaunchResume(recorder, TerminalLauncher.LinuxTerminals, "Adele", "sess-abc");
+
+        Assert.NotEqual(0, pid);
+        // Should have tried gnome-terminal, konsole, then succeeded on xfce4-terminal
+        Assert.Equal(3, recorder.Started.Count);
+        Assert.Equal("xfce4-terminal", recorder.Started[2].FileName);
+    }
+
+    [Fact]
+    public void TryLaunchResume_ReturnsZero_WhenAllTerminalsFail()
+    {
+        var recorder = new RecordingProcessStarter { FailAll = true };
+        var pid = LinuxTerminalLauncher.TryLaunchResume(recorder, TerminalLauncher.LinuxTerminals, "Adele", "sess-abc");
+
+        Assert.Equal(0, pid);
+        Assert.Equal(TerminalLauncher.LinuxTerminals.Length, recorder.Started.Count);
+    }
+
+    [Fact]
+    public void WindowsLaunchResume_TriesWindowsTerminalFirst()
+    {
+        var recorder = new RecordingProcessStarter();
+        WindowsTerminalLauncher.LaunchResume(recorder, "Adele", "sess-abc");
+
+        Assert.NotEmpty(recorder.Started);
+        Assert.Equal("wt", recorder.Started[0].FileName);
+        Assert.Contains("--resume", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void WindowsLaunchResume_FallsBackToPowerShell_WhenWtFails()
+    {
+        ProcessUtils.PowerShellResolverOverride = () => "powershell.exe";
+        try
+        {
+            var recorder = new RecordingProcessStarter();
+            recorder.FailOnFileName("wt");
+
+            WindowsTerminalLauncher.LaunchResume(recorder, "Adele", "sess-abc");
+
+            Assert.Equal(2, recorder.Started.Count);
+            Assert.Equal("wt", recorder.Started[0].FileName);
+            Assert.Equal("powershell.exe", recorder.Started[1].FileName);
+            Assert.Contains("--resume", recorder.Started[1].Arguments);
+        }
+        finally
+        {
+            ProcessUtils.PowerShellResolverOverride = null;
+        }
+    }
+
+    [Fact]
+    public void LaunchResume_NonExistentWorkingDirectory_ReturnsZeroAndDoesNotStart()
+    {
+        var recorder = new RecordingProcessStarter();
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        try
+        {
+            var missing = Path.Combine(Path.GetTempPath(), "dydo-missing-" + Guid.NewGuid().ToString("N"));
+            var pid = TerminalLauncher.LaunchResumeTerminal("Adele", "sess-abc", workingDirectory: missing);
+
+            Assert.Equal(0, pid);
+            Assert.Empty(recorder.Started);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = null;
+        }
+    }
+
+    #endregion
 }
 
 /// <summary>

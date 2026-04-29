@@ -202,4 +202,11 @@ public interface IAgentRegistry
     /// Called by the guard hook before allowing dydo commands.
     /// </summary>
     void StoreSessionContext(string sessionId, string? agentName = null);
+
+    /// <summary>
+    /// Atomically increments the agent's resume-attempts counter and returns
+    /// the new value. Returns -1 if the per-agent lock is contended (caller
+    /// should defer to the next watchdog poll).
+    /// </summary>
+    int IncrementResumeAttempts(string agentName);
 }

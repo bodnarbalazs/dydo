@@ -2815,4 +2815,102 @@ public class AgentRegistryTests : IDisposable
     }
 
     #endregion
+
+    #region IncrementResumeAttempts (Decision 022)
+
+    [Fact]
+    public void IncrementResumeAttempts_ReturnsNewValue_AndPersists()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            resume-attempts: 1
+            ---
+            """);
+        var registry = new AgentRegistry(_testDir);
+
+        var newCount = registry.IncrementResumeAttempts("Adele");
+
+        Assert.Equal(2, newCount);
+        var persisted = registry.GetAgentState("Adele");
+        Assert.Equal(2, persisted!.ResumeAttempts);
+    }
+
+    [Fact]
+    public async Task IncrementResumeAttempts_ConcurrentCalls_ProduceExactCount()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            resume-attempts: 0
+            ---
+            """);
+        var registry = new AgentRegistry(_testDir);
+
+        const int iterationsPerThread = 5;
+
+        // Spin until increment succeeds. -1 = lock contention; any exception thrown
+        // before the registry's WriteStateFile commits is transient (Windows File.Move
+        // races with AV / indexers under heavy parallel load). The contract being tested
+        // is that EVERY successful increment counts exactly once, even under concurrent
+        // callers.
+        void IncrementOnce()
+        {
+            while (true)
+            {
+                try
+                {
+                    if (registry.IncrementResumeAttempts("Adele") >= 0) return;
+                }
+                catch
+                {
+                    // transient — retry. WriteStateFile's atomic temp+move means a thrown
+                    // exception means the increment did not persist; the next read will
+                    // see the prior value.
+                }
+                Thread.Sleep(1);
+            }
+        }
+
+        var t1 = Task.Run(() => { for (var i = 0; i < iterationsPerThread; i++) IncrementOnce(); });
+        var t2 = Task.Run(() => { for (var i = 0; i < iterationsPerThread; i++) IncrementOnce(); });
+        await Task.WhenAll(t1, t2);
+
+        Assert.Equal(2 * iterationsPerThread, registry.GetAgentState("Adele")!.ResumeAttempts);
+    }
+
+    [Fact]
+    public void IncrementResumeAttempts_ParseLegacyState_TreatsMissingFieldAsZero()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        // Legacy state.md with no resume-attempts line.
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            ---
+            """);
+        var registry = new AgentRegistry(_testDir);
+
+        var newCount = registry.IncrementResumeAttempts("Adele");
+
+        Assert.Equal(1, newCount);
+        var content = File.ReadAllText(Path.Combine(workspace, "state.md"));
+        Assert.Contains("resume-attempts: 1", content);
+    }
+
+    #endregion
 }

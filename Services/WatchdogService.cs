@@ -45,6 +45,24 @@ public static class WatchdogService
     /// </summary>
     internal static TimeSpan? MaxOrphanAgeOverride { get; set; }
 
+    /// <summary>
+    /// When set, PollAndResumeForAgent uses this instead of TerminalLauncher.LaunchResumeTerminal.
+    /// Test hook — receives (agentName, sessionId), returns the (faked) launched PID.
+    /// </summary>
+    internal static Func<string, string, int>? LaunchResumeOverride { get; set; }
+
+    /// <summary>
+    /// When set, PollAndResumeForAgent uses this cap instead of ResumeAttemptsCap.
+    /// Test hook — lets retry-cap tests run with cap=1 or cap=2 for fewer iterations.
+    /// </summary>
+    internal static int? ResumeAttemptsCapOverride { get; set; }
+
+    /// <summary>
+    /// Per Decision 022: bounded respawns absorb transient crashes; cap exits a
+    /// poisoned-state crash-resume-crash loop within ~2 polling intervals after hit.
+    /// </summary>
+    internal const int ResumeAttemptsCap = 3;
+
     private static readonly TimeSpan MaxOrphanAge = TimeSpan.FromHours(24);
 
     private static CancellationTokenSource? _shutdownCts;
@@ -299,6 +317,7 @@ public static class WatchdogService
                         PollAndCleanup(dydoRoot);
                         PollQueues(dydoRoot);
                         PollOrphanedWaits(dydoRoot);
+                        PollAndResumeCrashedAgents(dydoRoot);
                     }
                     catch (Exception ex)
                     {
@@ -386,6 +405,91 @@ public static class WatchdogService
         {
             AgentRegistry.ReleaseLockAtPath(lockPath);
         }
+    }
+
+    /// <summary>
+    /// Per-tick pass: detects agents whose claimed claude PID is dead while state is still
+    /// working, and re-launches them via the resume launcher up to ResumeAttemptsCap.
+    /// Decision 022.
+    /// </summary>
+    public static void PollAndResumeCrashedAgents(string dydoRoot)
+    {
+        var agentsDir = Path.Combine(dydoRoot, "agents");
+        if (!Directory.Exists(agentsDir)) return;
+
+        foreach (var agentDir in Directory.GetDirectories(agentsDir))
+            PollAndResumeForAgent(dydoRoot, agentDir);
+    }
+
+    private static void PollAndResumeForAgent(string dydoRoot, string agentDir)
+    {
+        var statePath = Path.Combine(agentDir, "state.md");
+        if (!File.Exists(statePath)) return;
+
+        var lockPath = Path.Combine(agentDir, ".claim.lock");
+        var agentName = Path.GetFileName(agentDir);
+        if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentName, out _)) return;
+
+        string? sessionId;
+        try
+        {
+            // Read state + session under the lock so a concurrent claim/release
+            // cannot interleave with our gating checks.
+            var (status, attempts) = ParseStatusAndResumeAttempts(statePath);
+            if (status != "working") return;
+            var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
+            if (attempts >= cap) return;
+
+            var sessionPath = Path.Combine(agentDir, ".session");
+            if (!File.Exists(sessionPath)) return;
+            int? claimedPid;
+            try
+            {
+                var json = File.ReadAllText(sessionPath);
+                var session = System.Text.Json.JsonSerializer.Deserialize(
+                    json, Serialization.DydoDefaultJsonContext.Default.AgentSession);
+                if (session == null) return;
+                sessionId = session.SessionId;
+                claimedPid = session.ClaimedPid;
+            }
+            catch { return; }
+
+            if (claimedPid is not { } pid) return;
+            if (ProcessUtils.IsProcessRunning(pid)) return;
+        }
+        finally
+        {
+            AgentRegistry.ReleaseLockAtPath(lockPath);
+        }
+
+        // Drop the lock before delegating to the registry — IncrementResumeAttempts
+        // takes its own lock; the launcher must NOT hold the agent's claim lock or
+        // the resumed claude would block on its first claim.
+        var projectRoot = Path.GetDirectoryName(dydoRoot) ?? Directory.GetCurrentDirectory();
+        var registry = new AgentRegistry(projectRoot);
+        var newCount = registry.IncrementResumeAttempts(agentName);
+        if (newCount < 0) return; // lock contention — try again next tick
+
+        var launchedPid = LaunchResumeOverride != null
+            ? LaunchResumeOverride(agentName, sessionId)
+            : TerminalLauncher.LaunchResumeTerminal(agentName, sessionId);
+
+        WatchdogLogger.LogResume(dydoRoot, agentName, sessionId, newCount, launchedPid);
+    }
+
+    private static (string? status, int attempts) ParseStatusAndResumeAttempts(string statePath)
+    {
+        try
+        {
+            var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
+            if (fields == null) return (null, 0);
+            fields.TryGetValue("status", out var status);
+            var attempts = 0;
+            if (fields.TryGetValue("resume-attempts", out var r) && int.TryParse(r, out var n))
+                attempts = n;
+            return (status, attempts);
+        }
+        catch { return (null, 0); }
     }
 
     // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID

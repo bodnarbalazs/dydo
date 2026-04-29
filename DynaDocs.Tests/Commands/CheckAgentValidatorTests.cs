@@ -255,6 +255,7 @@ public class CheckAgentValidatorTests : IDisposable
         public void ClearAllDispatchMarkers(string agentName) { }
         public string? GetSessionContext() => null;
         public void StoreSessionContext(string sessionId, string? agentName = null) { }
+        public int IncrementResumeAttempts(string agentName) => 0;
     }
 
     #endregion

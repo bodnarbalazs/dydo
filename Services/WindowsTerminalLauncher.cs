@@ -72,6 +72,54 @@ public static class WindowsTerminalLauncher
         return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
     }
 
+    public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
+    {
+        var escapedSession = sessionId.Replace("'", "''");
+        var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
+        var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; ";
+        // Re-arm the general wait in the background so the resumed claude session
+        // has reachability without re-executing its workflow. (#022 + #021 launcher pattern)
+        var waitStart = "Start-Process -WindowStyle Hidden -FilePath dydo -ArgumentList 'wait' | Out-Null; ";
+        return $"-NoExit -Command \"{agentEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; " +
+               $"{waitStart}claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}\"";
+    }
+
+    public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId, string? workingDirectory = null)
+    {
+        var shell = ProcessUtils.ResolvePowerShell();
+
+        try
+        {
+            var windowName = Guid.NewGuid().ToString("N")[..8];
+            var wtAction = $"--window {windowName} new-tab";
+            var wtDirArg = workingDirectory != null
+                ? $"--startingDirectory \"{workingDirectory}\" "
+                : "";
+            var psi = new ProcessStartInfo
+            {
+                FileName = "wt",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory).Replace(";", "\\;")}",
+                UseShellExecute = true
+            };
+            if (workingDirectory != null)
+                psi.WorkingDirectory = workingDirectory;
+            return processStarter.Start(psi);
+        }
+        catch
+        {
+        }
+
+        var fallbackPsi = new ProcessStartInfo
+        {
+            FileName = shell,
+            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory),
+            UseShellExecute = true
+        };
+        if (workingDirectory != null)
+            fallbackPsi.WorkingDirectory = workingDirectory;
+        return processStarter.Start(fallbackPsi);
+    }
+
     public static int Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,
         bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
     {

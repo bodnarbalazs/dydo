@@ -32,6 +32,8 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.FindProcessesOverride = null;
         WatchdogService.PollIntervalOverride = null;
         WatchdogService.MaxOrphanAgeOverride = null;
+        WatchdogService.LaunchResumeOverride = null;
+        WatchdogService.ResumeAttemptsCapOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
         ProcessUtils.IsProcessRunningOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
@@ -1319,7 +1321,116 @@ public class WatchdogServiceTests : IDisposable
 
     #endregion
 
-    private void WriteAgentState(string agentName, string status, bool autoClose, string? windowId = null)
+    #region Auto-Resume (Decision 022)
+
+    [Fact]
+    public void PollAndResumeForAgent_LiveClaimedPid_DoesNotLaunch()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        using var live = StartDummyProcess();
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-live", live.Id);
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+        Assert.Equal(0, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_DeadClaimedPid_BelowCap_Launches()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        var calls = new List<(string agent, string sessionId)>();
+        WatchdogService.LaunchResumeOverride = (a, s) => { calls.Add((a, s)); return 12345; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Single(calls);
+        Assert.Equal(("Adele", "sess-abc"), calls[0]);
+        Assert.Equal(1, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_DeadClaimedPid_AtCap_DoesNotLaunch()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 3);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+        Assert.Equal(3, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_FreeStatus_DoesNotLaunch()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "free", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_NoSessionFile_DoesNotLaunch()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        // No .session file written.
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+        Assert.Equal(0, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_RepeatedPolls_StopAtCap()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+
+        for (var i = 0; i < 6; i++)
+            WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(3, launchCount);
+        Assert.Equal(3, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    #endregion
+
+    private void WriteAgentState(string agentName, string status, bool autoClose, string? windowId = null, int resumeAttempts = 0)
     {
         var agentDir = Path.Combine(_testDir, "agents", agentName);
         Directory.CreateDirectory(agentDir);
@@ -1333,6 +1444,7 @@ public class WatchdogServiceTests : IDisposable
             dispatched-by: null
             window-id: {{windowId ?? "null"}}
             auto-close: {{autoClose.ToString().ToLowerInvariant()}}
+            resume-attempts: {{resumeAttempts}}
             started: null
             writable-paths: []
             readonly-paths: []
@@ -1341,6 +1453,72 @@ public class WatchdogServiceTests : IDisposable
             task-role-history: {}
             ---
             """);
+    }
+
+    private void WriteAgentSession(string agentName, string sessionId, int? claimedPid)
+    {
+        var agentDir = Path.Combine(_testDir, "agents", agentName);
+        Directory.CreateDirectory(agentDir);
+        var pidJson = claimedPid.HasValue ? claimedPid.Value.ToString() : "null";
+        var json = $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"{sessionId}\",\"Claimed\":\"{DateTime.UtcNow:o}\",\"ClaimedPid\":{pidJson}}}";
+        File.WriteAllText(Path.Combine(agentDir, ".session"), json);
+    }
+
+    /// <summary>
+    /// Resume tests need the registry's IncrementResumeAttempts to write to the same
+    /// path the watchdog reads from. Watchdog derives projectRoot = parent(dydoRoot),
+    /// and the registry's GetAgentsPath = projectRoot/dydo/agents. Tests therefore
+    /// stage state under _testDir/dydo/agents/&lt;name&gt; and pass _testDir/dydo as the
+    /// dydoRoot — keeping the existing _testDir/agents/&lt;name&gt; layout untouched
+    /// for non-resume tests.
+    /// </summary>
+    private string ResumeDydoRoot()
+    {
+        var dydoRoot = Path.Combine(_testDir, "dydo");
+        Directory.CreateDirectory(dydoRoot);
+        return dydoRoot;
+    }
+
+    private void WriteResumeAgentState(string dydoRoot, string agentName, string status, int resumeAttempts)
+    {
+        var agentDir = Path.Combine(dydoRoot, "agents", agentName);
+        Directory.CreateDirectory(agentDir);
+        File.WriteAllText(Path.Combine(agentDir, "state.md"), $$"""
+            ---
+            agent: {{agentName}}
+            role: null
+            task: null
+            status: {{status}}
+            assigned: testuser
+            dispatched-by: null
+            window-id: null
+            auto-close: false
+            resume-attempts: {{resumeAttempts}}
+            started: null
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            unread-messages: []
+            task-role-history: {}
+            ---
+            """);
+    }
+
+    private void WriteResumeAgentSession(string dydoRoot, string agentName, string sessionId, int? claimedPid)
+    {
+        var agentDir = Path.Combine(dydoRoot, "agents", agentName);
+        Directory.CreateDirectory(agentDir);
+        var pidJson = claimedPid.HasValue ? claimedPid.Value.ToString() : "null";
+        var json = $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"{sessionId}\",\"Claimed\":\"{DateTime.UtcNow:o}\",\"ClaimedPid\":{pidJson}}}";
+        File.WriteAllText(Path.Combine(agentDir, ".session"), json);
+    }
+
+    private static int ReadResumeAttempts(string dydoRoot, string agentName)
+    {
+        var statePath = Path.Combine(dydoRoot, "agents", agentName, "state.md");
+        var content = File.ReadAllText(statePath);
+        var match = System.Text.RegularExpressions.Regex.Match(content, @"resume-attempts:\s*(\d+)");
+        return match.Success ? int.Parse(match.Groups[1].Value) : 0;
     }
 
     #region Structured Logging (#0129)
@@ -1523,6 +1701,7 @@ public class WatchdogServiceTests : IDisposable
             WatchdogLogger.LogStart(_testDir, 123, "claude", 100, 1);
             WatchdogLogger.LogTick(_testDir, 1, 0);
             WatchdogLogger.LogKill(_testDir, "Adele", 999, "claude", "Adele --inbox", "free", true, null, null);
+            WatchdogLogger.LogResume(_testDir, "Adele", "sess-abc", 1, 12345);
             WatchdogLogger.LogParseFailure(_testDir, "x", "y");
             WatchdogLogger.LogPollError(_testDir, "boom");
             WatchdogLogger.LogExit(_testDir, "cancelled");

@@ -40,6 +40,49 @@ public static class MacTerminalLauncher
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
+    private static (string shellCommand, string postCheck) BuildResumeShellComponents(string agentName, string sessionId, string? workingDirectory)
+    {
+        var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
+        var agentExport = $"export DYDO_AGENT={agentName}; ";
+        var escapedSession = sessionId.Replace("\\\"", "\\\\\\\"");
+        var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("\"", "\\\"");
+        var shellCommand = $"{cdPrefix}{agentExport}unset CLAUDECODE; " +
+                           $"(dydo wait >/dev/null 2>&1 &) ; " +
+                           $"claude --resume \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
+        return (shellCommand, "");
+    }
+
+    public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
+    {
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory);
+        return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
+    }
+
+    public static int LaunchResume(IProcessStarter processStarter, ITerminalDetector terminalDetector,
+        string agentName, string sessionId, string? workingDirectory = null)
+    {
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory);
+
+        var runningTerminal = terminalDetector.GetRunningTerminal();
+        var useITerm = runningTerminal == "iTerm"
+            || (runningTerminal == null && terminalDetector.IsAvailable("iTerm"));
+
+        var script = useITerm
+            ? GetITermWindowScript(shellCommand, postCheck)
+            : $"tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"";
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "osascript",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        psi.ArgumentList.Add("-e");
+        psi.ArgumentList.Add(script);
+
+        return processStarter.Start(psi);
+    }
+
     public static int Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string? workingDirectory = null, bool useTab = false,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)

@@ -46,4 +46,11 @@ public class AgentState
     /// Survives release so the watchdog can act on it.
     /// </summary>
     public bool AutoClose { get; set; }
+
+    /// <summary>
+    /// Number of times the watchdog has auto-resumed this agent's claude session
+    /// since the last claim/release. Reset to 0 on claim and release. Capped at
+    /// <see cref="DynaDocs.Services.WatchdogService.ResumeAttemptsCap"/> per Decision 022.
+    /// </summary>
+    public int ResumeAttempts { get; set; }
 }

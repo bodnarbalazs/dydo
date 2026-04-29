@@ -31,6 +31,19 @@ public class TerminalLauncher
         return $"claude \"{prompt}\"";
     }
 
+    /// <summary>
+    /// The continuation prompt used when the watchdog auto-resumes a crashed
+    /// claude session. Identity-agnostic — claude already knows its dydo identity
+    /// from the resumed conversation. Verbatim from Decision 022.
+    /// </summary>
+    public const string ResumeContinuationPrompt =
+        "Your terminal tab crashed and you have been auto-resumed. " +
+        "Your dydo identity, role, and task are unchanged. " +
+        "Re-orient briefly from your most recent context and continue from where you left off.";
+
+    public static string GetClaudeResumeCommand(string sessionId) =>
+        $"claude --resume \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
+
     public static string GenerateWorktreeId(string taskName, string? parentWorktreeId = null)
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(taskName, @"^[a-zA-Z0-9_.\-]+$"))
@@ -155,6 +168,15 @@ public class TerminalLauncher
     public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
+    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
+        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory);
+
+    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null)
+        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory);
+
+    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
+        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory);
+
     public static string GetITermTabScript(string shellCommand, string postCheck, string? windowId = null)
         => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck, windowId);
 
@@ -194,6 +216,38 @@ public class TerminalLauncher
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
             Console.WriteLine($"  {GetClaudeCommand(agentName)}");
+            return 0;
+        }
+    }
+
+    public static int LaunchResumeTerminal(string agentName, string sessionId, string? workingDirectory = null)
+    {
+        return new TerminalLauncher(ProcessStarterOverride).LaunchResume(agentName, sessionId, workingDirectory);
+    }
+
+    public int LaunchResume(string agentName, string sessionId, string? workingDirectory = null)
+    {
+        try
+        {
+            if (workingDirectory != null && !Directory.Exists(workingDirectory))
+                throw new DirectoryNotFoundException(
+                    $"Working directory no longer exists: {workingDirectory}");
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory);
+
+            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory);
+            if (pid == 0)
+                throw new InvalidOperationException("No terminal found");
+            return pid;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"WARN: Could not launch resume terminal: {ex.Message}");
+            Console.WriteLine($"Please manually open a new terminal and run:");
+            Console.WriteLine($"  {GetClaudeResumeCommand(sessionId)}");
             return 0;
         }
     }

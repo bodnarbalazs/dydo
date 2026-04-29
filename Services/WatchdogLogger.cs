@@ -82,6 +82,11 @@ public static partial class WatchdogLogger
                 new KillState(status, autoClose, dispatchedBy, since)),
             WatchdogLogJsonContext.Default.KillEvent);
 
+    public static void LogResume(string dydoRoot, string agent, string sessionId, int attempts, int launchedPid) =>
+        Write(dydoRoot,
+            new ResumeEvent(Now(), "resume", agent, sessionId, attempts, launchedPid),
+            WatchdogLogJsonContext.Default.ResumeEvent);
+
     public static void LogParseFailure(string dydoRoot, string statePath, string reason) =>
         Write(dydoRoot,
             new ParseFailureEvent(Now(), "parse_failure", statePath, reason),
@@ -127,6 +132,14 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("dispatched_by")] string? DispatchedBy,
         [property: JsonPropertyName("since")] string? Since);
 
+    private sealed record ResumeEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("agent")] string Agent,
+        [property: JsonPropertyName("session_id")] string SessionId,
+        [property: JsonPropertyName("attempts")] int Attempts,
+        [property: JsonPropertyName("launched_pid")] int LaunchedPid);
+
     private sealed record ParseFailureEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event,
@@ -146,6 +159,7 @@ public static partial class WatchdogLogger
     [JsonSerializable(typeof(StartEvent))]
     [JsonSerializable(typeof(TickEvent))]
     [JsonSerializable(typeof(KillEvent))]
+    [JsonSerializable(typeof(ResumeEvent))]
     [JsonSerializable(typeof(ParseFailureEvent))]
     [JsonSerializable(typeof(PollErrorEvent))]
     [JsonSerializable(typeof(ExitEvent))]

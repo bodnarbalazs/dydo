@@ -237,6 +237,59 @@ public class AgentLifecycleTests : IntegrationTestBase
         Assert.DoesNotContain("code-writer", status.Stdout);
     }
 
+    [Fact]
+    public async Task Claim_ResetsResumeAttemptsToZero()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        // Synthesize an agent state with resume-attempts: 2 (mid-resume crash scenario).
+        var statePath = Path.Combine(TestDir, "dydo", "agents", "Adele", "state.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(statePath)!);
+        File.WriteAllText(statePath, """
+            ---
+            agent: Adele
+            role: null
+            task: null
+            status: free
+            assigned: balazs
+            dispatched-by: null
+            window-id: null
+            auto-close: false
+            resume-attempts: 2
+            started: null
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            unread-messages: []
+            task-role-history: {}
+            ---
+            """);
+
+        await ClaimAgentAsync("Adele");
+
+        var content = File.ReadAllText(statePath);
+        Assert.Contains("resume-attempts: 0", content);
+        Assert.DoesNotContain("resume-attempts: 2", content);
+    }
+
+    [Fact]
+    public async Task Release_ResetsResumeAttemptsToZero()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Mutate state.md mid-session as if the watchdog had bumped resume-attempts.
+        var statePath = Path.Combine(TestDir, "dydo", "agents", "Adele", "state.md");
+        var pre = File.ReadAllText(statePath);
+        File.WriteAllText(statePath, pre.Replace("resume-attempts: 0", "resume-attempts: 1"));
+
+        await ReleaseAgentAsync();
+
+        var content = File.ReadAllText(statePath);
+        Assert.Contains("resume-attempts: 0", content);
+        Assert.DoesNotContain("resume-attempts: 1", content);
+    }
+
     #endregion
 
     #region Status

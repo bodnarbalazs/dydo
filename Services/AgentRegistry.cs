@@ -355,6 +355,7 @@ public partial class AgentRegistry : IAgentRegistry
             s.Status = AgentStatus.Working;
             s.Since = DateTime.UtcNow;
             s.AssignedHuman = human;
+            s.ResumeAttempts = 0;
             if (!wasDispatched)
             {
                 s.WindowId = null;
@@ -499,6 +500,7 @@ public partial class AgentRegistry : IAgentRegistry
                 s.ReadOnlyPaths = [];
                 s.UnreadMustReads = [];
                 s.UnreadMessages = [];
+                s.ResumeAttempts = 0;
                 // Leave AutoClose untouched. The watchdog needs `free + auto-close: true`
                 // post-release to kill claude (Services/WatchdogService.cs:359). The
                 // redispatch race that earlier motivated clearing this here is closed by
@@ -1412,6 +1414,23 @@ public partial class AgentRegistry : IAgentRegistry
         });
     }
 
+    public int IncrementResumeAttempts(string agentName)
+    {
+        if (!TryAcquireLock(agentName, out _))
+            return -1;
+        try
+        {
+            var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
+            state.ResumeAttempts += 1;
+            WriteStateFile(agentName, state);
+            return state.ResumeAttempts;
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
+    }
+
     private void UpdateAgentState(string agentName, Action<AgentState> update)
     {
         var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
@@ -1439,6 +1458,7 @@ public partial class AgentRegistry : IAgentRegistry
             dispatched-by-role: {state.DispatchedByRole ?? "null"}
             window-id: {state.WindowId ?? "null"}
             auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
+            resume-attempts: {state.ResumeAttempts}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
             readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
@@ -1516,6 +1536,7 @@ public partial class AgentRegistry : IAgentRegistry
         ["dispatched-by-role"] = (s, v) => s.DispatchedByRole = NullableString(v),
         ["window-id"] = (s, v) => s.WindowId = NullableString(v),
         ["auto-close"] = (s, v) => s.AutoClose = v == "true",
+        ["resume-attempts"] = (s, v) => s.ResumeAttempts = int.TryParse(v, out var n) ? n : 0,
         ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },
         ["writable-paths"] = (s, v) => s.WritablePaths = ParsePathList(v),
         ["readonly-paths"] = (s, v) => s.ReadOnlyPaths = ParsePathList(v),

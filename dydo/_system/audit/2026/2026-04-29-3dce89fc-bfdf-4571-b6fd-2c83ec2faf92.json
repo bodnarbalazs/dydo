@@ -1,0 +1,14 @@
+{
+  "session": "3dce89fc-bfdf-4571-b6fd-2c83ec2faf92",
+  "human": "balazs",
+  "started": "2026-04-29T12:29:42.0987171Z",
+  "git_head": "925085c",
+  "events": [
+    {
+      "ts": "2026-04-29T12:29:42.0975076Z",
+      "event": "Read",
+      "path": "C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md",
+      "tool": "read"
+    }
+  ]
+}

@@ -835,7 +835,7 @@
   ],
   "snapshot_ref": {
     "type": "delta",
-    "base": "9e8a2fcbc7f3",
+    "base": "b5a035e29765",
     "depth": 1,
     "delta": {
       "files_added": [
@@ -1442,106 +1442,74 @@
           "dydo/reference/guardrails.md",
           "dydo/reference/about-dynadocs.md"
         ],
-        "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/welcome.md": [
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/about.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/glossary.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/project/_index.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/index.md"
+        "dydo/agents/charlie/workflow.md": [
+          "dydo/agents/charlie/modes/co-thinker.md",
+          "dydo/agents/charlie/modes/code-writer.md",
+          "dydo/agents/charlie/modes/docs-writer.md",
+          "dydo/agents/charlie/modes/inquisitor.md",
+          "dydo/agents/charlie/modes/judge.md",
+          "dydo/agents/charlie/modes/orchestrator.md",
+          "dydo/agents/charlie/modes/planner.md",
+          "dydo/agents/charlie/modes/reviewer.md",
+          "dydo/agents/charlie/modes/test-writer.md"
         ],
-        "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/roles-and-permissions.md"
+        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
+          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
+          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-test-v15/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/index.md"
+        "dydo/project/future-features/agent-graph-metrics.md": [
+          "dydo/reference/audit-system.md",
+          "dydo/understand/dispatch-and-messaging.md"
         ],
-        "dydo/_system/.local/worktrees/smoke-comp-a/claude.md": [
-          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/index.md"
+        "dydo/agents/charlie/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/charlie/modes/code-writer.md"
         ],
-        "dydo/_system/.local/worktrees/inquisition-guard-system-v2/claude.md": [
-          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/index.md"
+        "dydo/agents/charlie/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
-        "dydo/project/changelog/2026/2026-03-30/_index.md": [
-          "dydo/project/changelog/2026/2026-03-30/agent-list-queued-status.md",
-          "dydo/project/changelog/2026/2026-03-30/docs-v13-impl.md",
-          "dydo/project/changelog/2026/2026-03-30/docs-v13-update.md",
-          "dydo/project/changelog/2026/2026-03-30/excalidraw-workflows.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-all-path-formats-merge.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-all-path-formats.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-autoclose-race.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-ci-linux-round3.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-guard-lift-negative.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-inquisition-state-isolation.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-inquisitor-release-constraint.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-queue-broken.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-queue-debug.md",
-          "dydo/project/changelog/2026/2026-03-30/fix-read-permissions-final.md",
-          "dydo/project/changelog/2026/2026-03-30/inquisition-guard-system-v2.md",
-          "dydo/project/changelog/2026/2026-03-30/inquisition-guard-system.md",
-          "dydo/project/changelog/2026/2026-03-30/investigate-charlie-autoclose.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-race-1.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-race-2.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-test-1.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-test-2.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-verify-1.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-verify-2.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-verify-3.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-verify-4.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-verify-5.md",
-          "dydo/project/changelog/2026/2026-03-30/queue-verify-6.md",
-          "dydo/project/changelog/2026/2026-03-30/smoke-final2-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-30/smoke-final2-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-30/smoke-final3-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-30/smoke-final3-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-30/speed-up-tests.md"
+        "dydo/agents/charlie/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
         ],
-        "dydo/project/changelog/2026/2026-03-27/_index.md": [
-          "dydo/project/changelog/2026/2026-03-27/dispatch-queue-design.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-ci-linux-round2.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-default-nudges.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-inbox-discoverability.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue-impl.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-path-backslash-glob.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-phantom-close.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-plan-mode-matcher.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-reviewer-queue-hint.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-wait-process-leak.md",
-          "dydo/project/changelog/2026/2026-03-27/fix-zombie-worktrees.md",
-          "dydo/project/changelog/2026/2026-03-27/gap-check-freshness.md",
-          "dydo/project/changelog/2026/2026-03-27/gap-check-skip-optimization.md",
-          "dydo/project/changelog/2026/2026-03-27/implement-dispatch-queue.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-phantom-close.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-plan-mode-block.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-process-leak.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-reply-pending-race.md",
-          "dydo/project/changelog/2026/2026-03-27/investigate-tilde-read-regression.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-comp-postmortem.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-final-a-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/smoke-final-b-merge.md",
-          "dydo/project/changelog/2026/2026-03-27/verify-process-leak-fix.md"
+        "dydo/agents/charlie/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
         "dydo/project/changelog/2026/_index.md": [
           "dydo/project/changelog/2026/2026-03-25/_index.md",
           "dydo/project/changelog/2026/2026-03-27/_index.md",
           "dydo/project/changelog/2026/2026-03-30/_index.md"
+        ],
+        "dydo/agents/charlie/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
         ],
         "dydo/project/changelog/2026/2026-03-25/_index.md": [
           "dydo/project/changelog/2026/2026-03-25/agent-graph-metrics.md",
@@ -1601,69 +1569,101 @@
           "dydo/project/changelog/2026/2026-03-25/worktree-compat-fixes.md",
           "dydo/project/changelog/2026/2026-03-25/worktree-compat-tests.md"
         ],
-        "dydo/agents/charlie/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/project/changelog/2026/2026-03-27/_index.md": [
+          "dydo/project/changelog/2026/2026-03-27/dispatch-queue-design.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-ci-linux-round2.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-default-nudges.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-inbox-discoverability.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-cleanup.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-discoverability.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue-impl.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-merge-queue.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-path-backslash-glob.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-phantom-close.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-plan-mode-matcher.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-queue-defaults.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-reviewer-queue-hint.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-wait-process-leak.md",
+          "dydo/project/changelog/2026/2026-03-27/fix-zombie-worktrees.md",
+          "dydo/project/changelog/2026/2026-03-27/gap-check-freshness.md",
+          "dydo/project/changelog/2026/2026-03-27/gap-check-skip-optimization.md",
+          "dydo/project/changelog/2026/2026-03-27/implement-dispatch-queue.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-phantom-close.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-plan-mode-block.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-process-leak.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-reply-pending-race.md",
+          "dydo/project/changelog/2026/2026-03-27/investigate-tilde-read-regression.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-comp-postmortem.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-final-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/smoke-final-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-27/verify-process-leak-fix.md"
         ],
-        "dydo/agents/charlie/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/project/changelog/2026/2026-03-30/_index.md": [
+          "dydo/project/changelog/2026/2026-03-30/agent-list-queued-status.md",
+          "dydo/project/changelog/2026/2026-03-30/docs-v13-impl.md",
+          "dydo/project/changelog/2026/2026-03-30/docs-v13-update.md",
+          "dydo/project/changelog/2026/2026-03-30/excalidraw-workflows.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-all-path-formats-merge.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-all-path-formats.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-autoclose-race.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-ci-linux-round3.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-guard-lift-negative.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-inquisition-state-isolation.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-inquisitor-release-constraint.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-queue-broken.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-queue-debug.md",
+          "dydo/project/changelog/2026/2026-03-30/fix-read-permissions-final.md",
+          "dydo/project/changelog/2026/2026-03-30/inquisition-guard-system-v2.md",
+          "dydo/project/changelog/2026/2026-03-30/inquisition-guard-system.md",
+          "dydo/project/changelog/2026/2026-03-30/investigate-charlie-autoclose.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-race-1.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-race-2.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-test-1.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-test-2.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-verify-1.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-verify-2.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-verify-3.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-verify-4.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-verify-5.md",
+          "dydo/project/changelog/2026/2026-03-30/queue-verify-6.md",
+          "dydo/project/changelog/2026/2026-03-30/smoke-final2-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-30/smoke-final2-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-30/smoke-final3-a-merge.md",
+          "dydo/project/changelog/2026/2026-03-30/smoke-final3-b-merge.md",
+          "dydo/project/changelog/2026/2026-03-30/speed-up-tests.md"
         ],
-        "dydo/agents/charlie/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/code-writer.md"
+        "dydo/_system/.local/worktrees/inquisition-guard-system-v2/claude.md": [
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/index.md"
         ],
-        "dydo/agents/charlie/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
+        "dydo/_system/.local/worktrees/smoke-comp-a/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-comp-a/dydo/index.md"
         ],
-        "dydo/agents/charlie/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/smoke-test-v15/claude.md": [
+          "dydo/_system/.local/worktrees/smoke-test-v15/dydo/index.md"
         ],
-        "dydo/agents/charlie/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
+        "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/roles-and-permissions.md"
         ],
-        "dydo/agents/charlie/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/charlie/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/project/future-features/agent-graph-metrics.md": [
-          "dydo/reference/audit-system.md",
-          "dydo/understand/dispatch-and-messaging.md"
-        ],
-        "dydo/project/decisions/012-dispatch-queue-deferred-launch.md": [
-          "dydo/project/decisions/011-worktrees-as-default-for-parallel-work.md",
-          "dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
-        ],
-        "dydo/agents/charlie/workflow.md": [
-          "dydo/agents/charlie/modes/co-thinker.md",
-          "dydo/agents/charlie/modes/code-writer.md",
-          "dydo/agents/charlie/modes/docs-writer.md",
-          "dydo/agents/charlie/modes/inquisitor.md",
-          "dydo/agents/charlie/modes/judge.md",
-          "dydo/agents/charlie/modes/orchestrator.md",
-          "dydo/agents/charlie/modes/planner.md",
-          "dydo/agents/charlie/modes/reviewer.md",
-          "dydo/agents/charlie/modes/test-writer.md"
+        "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/welcome.md": [
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/about.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/glossary.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/reference/_index.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/project/_index.md",
+          "dydo/_system/.local/worktrees/inquisition-guard-system-v2/dydo/index.md"
         ],
         "dydo/project/changelog/2026/2026-03-19/_index.md": [
           "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",

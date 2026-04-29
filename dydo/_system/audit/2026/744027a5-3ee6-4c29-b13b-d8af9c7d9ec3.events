@@ -120,3 +120,9 @@
 {"ts":"2026-04-28T19:20:58.2747892Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022_system/templates\\|claude.*setting\\|matcher\u0022 Services/TemplateService.cs Services/*.cs 2\u003E\u00261..."}
 {"ts":"2026-04-28T19:26:43.2443785Z","event":"Bash","tool":"bash","cmd":"git restore -- dydo/project/inquisitions dydo/project/issues 2\u003E\u00261; echo \u0022---inquisitions\u002Bissues file..."}
 {"ts":"2026-04-28T19:27:03.0397543Z","event":"Bash","tool":"bash","cmd":"git status --short 2\u003E\u00261 | head -10; echo \u0022---\u0022; git status --short 2\u003E\u00261 | wc -l; echo \u0022---untracked ..."}
+{"ts":"2026-04-28T20:19:51.4389647Z","event":"Blocked","tool":"bash","cmd":"dydo agent status 2\u003E\u00261 | grep -i role","reason":"Pending wait markers"}
+{"ts":"2026-04-28T20:37:03.6380305Z","event":"Blocked","tool":"bash","cmd":"dydo agent status 2\u003E\u00261 | grep -i role; echo \u0022---inbox---\u0022; dydo inbox show 2\u003E\u00261 | head -3","reason":"Missing general wait"}
+{"ts":"2026-04-28T20:39:29.9167395Z","event":"Blocked","tool":"bash","cmd":"dydo agent list 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-04-28T20:39:34.1312574Z","event":"Blocked","tool":"bash","cmd":"dydo agent list 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-04-28T20:39:37.781429Z","event":"Blocked","tool":"bash","cmd":"dydo agent list 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-04-29T12:02:03.3854787Z","event":"Release","agent":"Adele"}

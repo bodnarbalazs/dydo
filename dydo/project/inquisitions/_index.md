@@ -11,6 +11,7 @@ Index of inquisitions documentation.
 
 ## Contents
 
+- [Agent Deaths Inquisition](./agent-deaths.md)
 - [Agent Lifecycle Inquisition](./agent-lifecycle.md)
 - [Auto-accept-edits behavior inquiry](./auto-accept-edits-behavior.md)
 - [Cli Commands](./cli-commands.md)

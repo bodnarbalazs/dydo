@@ -11,21 +11,13 @@ Index of tasks documentation.
 
 ## Contents
 
-- [Task: add-worktree-merge-self-merge-issue](./add-worktree-merge-self-merge-issue.md) - (No description)
-- [Task: autoclose-smoke-test-2](./autoclose-smoke-test-2.md) - (No description)
-- [Task: autoclose-smoke-test](./autoclose-smoke-test.md) - (No description)
-- [Task: fix-ci-xunit1031](./fix-ci-xunit1031.md) - Review fix-ci-xunit1031.
-- [Task: fix-reviewer-dispatch-allow-test-writer](./fix-reviewer-dispatch-allow-test-writer.md) - (No description)
-- [Task: fix-watchdog-anchor-regression](./fix-watchdog-anchor-regression.md) - def1fa4 anchored the watchdog on its immediate parent (the short-lived dydo dispatch CLI).
-- [Task: guard-worktree-and-phantom-inbox-doc](./guard-worktree-and-phantom-inbox-doc.md) - (No description)
-- [Task: guard-worktree-and-phantom-inbox](./guard-worktree-and-phantom-inbox.md) - Fix #99 (HandleSearchTool worktree-allow), #100 (unanchored substring match), #101 (guard-system.
-- [Task: investigate-reviewer-merger-guard](./investigate-reviewer-merger-guard.md) - (No description)
-- [Task: investigate-worktree-race-review-fixes](./investigate-worktree-race-review-fixes.md)
-- [Task: investigate-worktree-race](./investigate-worktree-race.md) - PowerShell fails with `ERROR_DIRECTORY (0x8007010b)` / "Could not access starting directory" when a dispatched agent is launched in a worktree path...
-- [Task: regression-test-auto-close-2](./regression-test-auto-close-2.md) - (No description)
-- [Task: regression-test-auto-close](./regression-test-auto-close.md) - (No description)
-- [Task: release-validation](./release-validation.md) - (No description)
-- [Task: reviewer-verdict-routing](./reviewer-verdict-routing.md) - Implemented Frank's design (option A variant).
-- [Task: watchdog-lifecycle-fixes](./watchdog-lifecycle-fixes.md) - Fix inquisition issues #95, #96, #97 as one coherent watchdog-lifecycle change.
-- [Task: watchdog-lifecycle-review](./watchdog-lifecycle-review.md) - Review Adele's zombied watchdog-lifecycle-fixes work on master.
-- [Task: worktree-cleanup-hardening](./worktree-cleanup-hardening.md) - Fix critical #104 (junction-follow deletion) + #98 (prune doesn't sweep orphan watchdog.
+- [Task: fix-release-autoclose-and-atomic-write](./fix-release-autoclose-and-atomic-write.md) - Review fix-release-autoclose-and-atomic-write (commit 8d3e3b1).
+- [Task: fix-watchdog-logging-followup](./fix-watchdog-logging-followup.md) - (No description)
+- [Task: fix-watchdog-structured-logging](./fix-watchdog-structured-logging.md)
+- [Task: fix-windows-launcher-stayopen](./fix-windows-launcher-stayopen.md) - Review commit e1eac2e for fix-windows-launcher-stayopen (#0124).
+- [Task: orchestrator-handoff](./orchestrator-handoff.md) - (No description)
+- [Task: plan-release-autoclose-and-atomic-write](./plan-release-autoclose-and-atomic-write.md) - (No description)
+- [Task: plan-watchdog-anchor-hardening](./plan-watchdog-anchor-hardening.md) - (No description)
+- [Task: plan-watchdog-structured-logging](./plan-watchdog-structured-logging.md) - (No description)
+- [Task: plan-windows-launcher-stayopen](./plan-windows-launcher-stayopen.md) - (No description)
+- [Task: refine-worktree-direction](./refine-worktree-direction.md) - (No description)

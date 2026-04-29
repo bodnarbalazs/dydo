@@ -240,7 +240,7 @@
   ],
   "snapshot_ref": {
     "type": "delta",
-    "base": "9e8a2fcbc7f3",
+    "base": "b5a035e29765",
     "depth": 1,
     "delta": {
       "files_added": [
@@ -450,61 +450,6 @@
         "dydo/understand/multi-agent-workflows.md": [
           "dydo/reference/roles/orchestrator.md"
         ],
-        "dydo/agents/charlie/workflow.md": [
-          "dydo/agents/charlie/modes/planner.md",
-          "dydo/agents/charlie/modes/code-writer.md",
-          "dydo/agents/charlie/modes/co-thinker.md",
-          "dydo/agents/charlie/modes/reviewer.md",
-          "dydo/agents/charlie/modes/docs-writer.md",
-          "dydo/agents/charlie/modes/inquisitor.md",
-          "dydo/agents/charlie/modes/judge.md",
-          "dydo/agents/charlie/modes/orchestrator.md",
-          "dydo/agents/charlie/modes/test-writer.md"
-        ],
-        "dydo/agents/charlie/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/charlie/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/test-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/charlie/modes/orchestrator.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/charlie/modes/judge.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/inquisitor.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
         "dydo/project/tasks/_index.md": [
           "dydo/project/tasks/docs-structure-planning.md",
           "dydo/project/tasks/docs-upgrade-sprint.md",
@@ -518,6 +463,61 @@
           "dydo/project/tasks/t1-slice-a.md",
           "dydo/project/tasks/t1-slice-b.md",
           "dydo/project/tasks/t1-slice-c.md"
+        ],
+        "dydo/agents/charlie/modes/inquisitor.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/judge.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/orchestrator.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/test-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/charlie/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/workflow.md": [
+          "dydo/agents/charlie/modes/planner.md",
+          "dydo/agents/charlie/modes/code-writer.md",
+          "dydo/agents/charlie/modes/co-thinker.md",
+          "dydo/agents/charlie/modes/reviewer.md",
+          "dydo/agents/charlie/modes/docs-writer.md",
+          "dydo/agents/charlie/modes/inquisitor.md",
+          "dydo/agents/charlie/modes/judge.md",
+          "dydo/agents/charlie/modes/orchestrator.md",
+          "dydo/agents/charlie/modes/test-writer.md"
         ]
       },
       "doc_links_removed": {

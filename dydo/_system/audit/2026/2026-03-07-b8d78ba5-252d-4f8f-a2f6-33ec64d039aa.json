@@ -112,7 +112,7 @@
   ],
   "snapshot_ref": {
     "type": "delta",
-    "base": "9e8a2fcbc7f3",
+    "base": "b5a035e29765",
     "depth": 1,
     "delta": {
       "files_added": [
@@ -929,82 +929,16 @@
           "dydo/agents/grace/modes/interviewer.md",
           "dydo/agents/grace/modes/tester.md"
         ],
-        "dydo/agents/charlie/workflow.md": [
-          "dydo/agents/charlie/modes/interviewer.md",
-          "dydo/agents/charlie/modes/planner.md",
-          "dydo/agents/charlie/modes/code-writer.md",
-          "dydo/agents/charlie/modes/co-thinker.md",
-          "dydo/agents/charlie/modes/reviewer.md",
-          "dydo/agents/charlie/modes/docs-writer.md",
-          "dydo/agents/charlie/modes/tester.md"
+        "dydo/agents/grace/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/grace/modes/planner.md"
         ],
-        "dydo/_system/templates/mode-interviewer.template.md": [
+        "dydo/agents/grace/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/_system/templates/mode-tester.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/adele/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/adele/modes/planner.md"
-        ],
-        "dydo/agents/adele/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/charlie/modes/co-thinker.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/project/decisions/_index.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/code-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/docs-writer.md": [
-          "dydo/understand/about.md",
-          "dydo/guides/how-to-use-docs.md",
-          "dydo/reference/writing-docs.md"
-        ],
-        "dydo/agents/charlie/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/planner.md"
-        ],
-        "dydo/agents/charlie/modes/planner.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/charlie/modes/code-writer.md"
-        ],
-        "dydo/agents/charlie/modes/reviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/guides/coding-standards.md"
-        ],
-        "dydo/agents/charlie/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/dexter/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/dexter/modes/planner.md"
-        ],
-        "dydo/agents/dexter/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/emma/modes/interviewer.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md",
-          "dydo/agents/emma/modes/planner.md"
-        ],
-        "dydo/agents/emma/modes/tester.md": [
+        "dydo/agents/frank/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
@@ -1013,18 +947,84 @@
           "dydo/understand/architecture.md",
           "dydo/agents/frank/modes/planner.md"
         ],
-        "dydo/agents/frank/modes/tester.md": [
+        "dydo/agents/emma/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
-        "dydo/agents/grace/modes/tester.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/agents/grace/modes/interviewer.md": [
+        "dydo/agents/emma/modes/interviewer.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md",
-          "dydo/agents/grace/modes/planner.md"
+          "dydo/agents/emma/modes/planner.md"
+        ],
+        "dydo/agents/dexter/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/dexter/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/dexter/modes/planner.md"
+        ],
+        "dydo/agents/charlie/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/modes/reviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/planner.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/charlie/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/charlie/modes/planner.md"
+        ],
+        "dydo/agents/charlie/modes/docs-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/guides/how-to-use-docs.md",
+          "dydo/reference/writing-docs.md"
+        ],
+        "dydo/agents/charlie/modes/code-writer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/guides/coding-standards.md"
+        ],
+        "dydo/agents/charlie/modes/co-thinker.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/project/decisions/_index.md",
+          "dydo/agents/charlie/modes/code-writer.md"
+        ],
+        "dydo/agents/adele/modes/tester.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/adele/modes/interviewer.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md",
+          "dydo/agents/adele/modes/planner.md"
+        ],
+        "dydo/_system/templates/mode-tester.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/_system/templates/mode-interviewer.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/agents/charlie/workflow.md": [
+          "dydo/agents/charlie/modes/interviewer.md",
+          "dydo/agents/charlie/modes/planner.md",
+          "dydo/agents/charlie/modes/code-writer.md",
+          "dydo/agents/charlie/modes/co-thinker.md",
+          "dydo/agents/charlie/modes/reviewer.md",
+          "dydo/agents/charlie/modes/docs-writer.md",
+          "dydo/agents/charlie/modes/tester.md"
         ]
       },
       "doc_links_removed": {

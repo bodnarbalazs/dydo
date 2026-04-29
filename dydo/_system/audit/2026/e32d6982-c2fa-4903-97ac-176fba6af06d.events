@@ -1,0 +1,25 @@
+{"ts":"2026-04-29T16:39:47.0534347Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md","tool":"read"}
+{"ts":"2026-04-29T16:39:52.1520335Z","event":"Claim","agent":"Charlie"}
+{"ts":"2026-04-29T16:39:59.3481927Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\b586b1b8-fix-watchdog-anchor-hardening.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-29T16:40:02.5512954Z","event":"Role","role":"reviewer","task":"fix-watchdog-anchor-hardening"}
+{"ts":"2026-04-29T16:40:06.4401649Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-04-29T16:40:23.9400769Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-29T16:40:24.3294765Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-29T16:40:24.9581304Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-29T16:40:28.3031981Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/dydo/guides/"}
+{"ts":"2026-04-29T16:40:32.7135602Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\b586b1b8-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T16:40:33.5053672Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T16:40:34.1646162Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\plan-watchdog-anchor-hardening.md","tool":"read"}
+{"ts":"2026-04-29T16:40:38.6345606Z","event":"Bash","tool":"bash","cmd":"git show --stat 762eeda"}
+{"ts":"2026-04-29T16:40:42.9273093Z","event":"Bash","tool":"bash","cmd":"git show 762eeda -- Services/ProcessUtils.Ancestry.cs Services/WatchdogLogger.cs"}
+{"ts":"2026-04-29T16:40:46.6669081Z","event":"Bash","tool":"bash","cmd":"git show 762eeda -- Services/WatchdogService.cs"}
+{"ts":"2026-04-29T16:40:50.9316152Z","event":"Bash","tool":"bash","cmd":"git show 762eeda -- DynaDocs.Tests/Services/ProcessUtilsTests.cs DynaDocs.Tests/Services/WatchdogRun..."}
+{"ts":"2026-04-29T16:40:54.625888Z","event":"Bash","tool":"bash","cmd":"git show 762eeda -- DynaDocs.Tests/Services/WatchdogServiceTests.cs"}
+{"ts":"2026-04-29T16:41:02.4928298Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs","tool":"grep"}
+{"ts":"2026-04-29T16:41:03.2553379Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs","tool":"grep"}
+{"ts":"2026-04-29T16:41:04.1235449Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs","tool":"grep"}
+{"ts":"2026-04-29T16:41:09.9956275Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-04-29T16:41:49.8288806Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/coverage/"}
+{"ts":"2026-04-29T16:41:53.0367829Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-04-29T16:42:09.9813559Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run"}
+{"ts":"2026-04-29T16:46:07.0432515Z","event":"Release","agent":"Charlie"}

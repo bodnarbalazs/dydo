@@ -19,7 +19,7 @@ Index of project documentation.
 - [Changelog](./changelog/_index.md) - Chronological record of completed work.
 - [Decisions](./decisions/_index.md) - Decision Records documenting choices that required deliberation.
 - [Future-features](./future-features/_index.md) - Speculative feature ideas that are worth capturing but not yet committed to a release.
-- [Inquisitions](./inquisitions/_index.md)
+- [Inquisitions](./inquisitions/_index.md) - TODO: Describe the purpose of this folder.
 - [Issues](./issues/_index.md) - Actionable work items with lifecycle tracking.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.
 - [Tasks](./tasks/_index.md) - Task tracking for work in progress.

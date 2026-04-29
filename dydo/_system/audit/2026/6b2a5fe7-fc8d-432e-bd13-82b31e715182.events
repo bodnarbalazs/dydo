@@ -1,0 +1,24 @@
+{"ts":"2026-04-28T20:39:23.3830275Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workflow.md","tool":"read"}
+{"ts":"2026-04-28T20:39:27.7147816Z","event":"Claim","agent":"Emma"}
+{"ts":"2026-04-28T20:39:35.7767017Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\030acba0-plan-watchdog-deaths-critical.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-28T20:39:39.2562548Z","event":"Role","role":"planner","task":"plan-watchdog-deaths-critical"}
+{"ts":"2026-04-28T20:39:41.9956207Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\030acba0-plan-watchdog-deaths-critical.md","tool":"read"}
+{"ts":"2026-04-28T20:39:44.4297908Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\planner.md","tool":"read"}
+{"ts":"2026-04-28T20:39:47.3506033Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-28T20:39:49.7534425Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-28T20:40:09.8148427Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\agent-deaths.md","tool":"read"}
+{"ts":"2026-04-28T20:40:09.9728775Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-regression-verify.md","tool":"read"}
+{"ts":"2026-04-28T20:40:14.3405407Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:17.5372189Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:20.8720632Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:24.1443534Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:24.9039812Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:28.2500163Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:37.1909972Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:42.0891762Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.cs","tool":"read"}
+{"ts":"2026-04-28T20:40:45.8307853Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-28T20:40:46.2711957Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-28T20:40:48.7355909Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\WatchdogServiceTests.cs","tool":"read"}
+{"ts":"2026-04-28T20:43:57.8734781Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\plan-watchdog-deaths-critical.md","tool":"write"}
+{"ts":"2026-04-28T20:45:20.6815931Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\7621bb46-msg-fix-agent-tool-nudge-wording.md","tool":"read"}
+{"ts":"2026-04-28T20:45:26.1794171Z","event":"Release","agent":"Emma"}

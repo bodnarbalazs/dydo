@@ -1247,6 +1247,11 @@ public class WatchdogServiceTests : IDisposable
     {
         var dydoRoot = SetupRunDydoRoot(_testDir);
         WriteAnchorFile(dydoRoot, 100);
+        // Decoy dead anchor: its deletion proves the watchdog's initial ScanAnchors
+        // has run AND observed anchor 100 as live (hasSeenLiveAnchor=true). Without
+        // this gate, CI thread-pool starvation can delay Run() past the live→dead
+        // transition, leaving the watchdog in the 24h orphan path.
+        WriteAnchorFile(dydoRoot, 99999999);
 
         var live = new HashSet<int> { 100 };
         ProcessUtils.IsProcessRunningOverride = pid => { lock (live) { return live.Contains(pid); } };
@@ -1254,7 +1259,12 @@ public class WatchdogServiceTests : IDisposable
         Environment.CurrentDirectory = _testDir;
 
         var runTask = Task.Run(WatchdogService.Run);
-        await Task.Delay(150);
+
+        var decoyPath = Path.Combine(WatchdogService.GetAnchorsDirPath(dydoRoot), "99999999.anchor");
+        var initialScanDeadline = DateTime.UtcNow.AddSeconds(5);
+        while (File.Exists(decoyPath) && DateTime.UtcNow < initialScanDeadline)
+            await Task.Delay(20);
+        Assert.False(File.Exists(decoyPath), "watchdog must complete initial anchor scan");
 
         // Second dispatcher arrives, registers a new anchor; first claude dies.
         WriteAnchorFile(dydoRoot, 200);

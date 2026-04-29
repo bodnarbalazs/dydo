@@ -1118,12 +1118,16 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
-    public void ReleaseAgent_ClearsAutoCloseOnDisk()
+    public void ReleaseAgent_PreservesAutoCloseOnDisk_ForWatchdogKill()
     {
-        // Regression for #0123 / #0121: after release, on-disk state must be
-        // `free + auto-close: false`. SetDispatchMetadata is the only authoritative
-        // producer of `auto-close: true` post-fix; release must not leave the lethal
-        // `free + auto-close: true` window open between release and the next watchdog poll.
+        // Regression for the v1.3.9 auto-close regression: after release of an agent
+        // dispatched with auto-close, on-disk state must be `free + auto-close: true` —
+        // that is exactly the precondition the watchdog poll requires to kill claude
+        // (Services/WatchdogService.cs:359, `if (!autoClose || !isFree …) return 0;`).
+        // The redispatch race that motivated clearing AutoClose on release (#0121) is
+        // already closed by the per-agent .claim.lock in PollAndCleanupForAgent
+        // (06512de); clearing AutoClose on release additionally killed the legitimate
+        // post-release kill window.
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
         CreateSessionFile("Adele", "test-session-autoclose");
 
@@ -1143,7 +1147,7 @@ public class AgentRegistryTests : IDisposable
         Assert.True(released, $"Release should succeed: {error}");
 
         var postRelease = File.ReadAllText(statePath);
-        Assert.Contains("auto-close: false", postRelease);
+        Assert.Contains("auto-close: true", postRelease);
         Assert.Contains("status: free", postRelease);
     }
 
@@ -2049,8 +2053,9 @@ public class AgentRegistryTests : IDisposable
         Assert.Equal("abcd1234", state.WindowId);
         Assert.True(state.AutoClose);
 
-        // Simulate what release does: clear role/task and AutoClose, but NOT windowId
-        // (The integration test Release_ClearsAutoCloseOnDisk covers the full flow.)
+        // Simulate what release does: clear role/task, but NOT windowId or AutoClose.
+        // (The integration test Release_PreservesAutoCloseOnDisk_ForWatchdogKill covers
+        // the full flow.)
         state.Status = AgentStatus.Free;
         state.Role = null;
         state.Task = null;

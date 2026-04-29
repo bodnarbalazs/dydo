@@ -768,7 +768,7 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Release_ClearsAutoCloseOnDisk()
+    public async Task Release_PreservesAutoCloseOnDisk_ForWatchdogKill()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
@@ -779,12 +779,13 @@ public class AgentLifecycleTests : IntegrationTestBase
         var result = await ReleaseAgentAsync();
         result.AssertSuccess();
 
-        // Regression for #0123 / #0121: the lethal `free + auto-close: true` window
-        // between release and the next watchdog poll must not exist on disk. Each
-        // new dispatch re-asserts AutoClose via SetDispatchMetadata.
+        // Regression for the v1.3.9 auto-close break: the post-release on-disk state
+        // must be `free + auto-close: true` so the watchdog's next poll observes the
+        // kill precondition and terminates claude. The redispatch race (#0121) is
+        // already closed by the per-agent .claim.lock in PollAndCleanupForAgent.
         var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
         var stateContent = File.ReadAllText(statePath);
-        Assert.Contains("auto-close: false", stateContent);
+        Assert.Contains("auto-close: true", stateContent);
         Assert.Contains("status: free", stateContent);
     }
 

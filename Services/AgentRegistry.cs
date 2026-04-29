@@ -499,10 +499,10 @@ public partial class AgentRegistry : IAgentRegistry
                 s.ReadOnlyPaths = [];
                 s.UnreadMustReads = [];
                 s.UnreadMessages = [];
-                // Closes #0123 / #0121 redispatch race: between release and the next watchdog poll
-                // (<=10s) the agent must NOT sit in `free + auto-close: true`. SetDispatchMetadata
-                // re-asserts AutoClose on each dispatch, so clearing on release is safe.
-                s.AutoClose = false;
+                // Leave AutoClose untouched. The watchdog needs `free + auto-close: true`
+                // post-release to kill claude (Services/WatchdogService.cs:359). The
+                // redispatch race that earlier motivated clearing this here is closed by
+                // the per-agent .claim.lock in PollAndCleanupForAgent (06512de).
             });
 
             CleanupAfterRelease(agent.Name, workspace, sessionId);

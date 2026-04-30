@@ -11,13 +11,15 @@ Index of tasks documentation.
 
 ## Contents
 
-- [Task: fix-release-autoclose-and-atomic-write](./fix-release-autoclose-and-atomic-write.md) - Review fix-release-autoclose-and-atomic-write (commit 8d3e3b1).
-- [Task: fix-watchdog-logging-followup](./fix-watchdog-logging-followup.md) - (No description)
-- [Task: fix-watchdog-structured-logging](./fix-watchdog-structured-logging.md)
-- [Task: fix-windows-launcher-stayopen](./fix-windows-launcher-stayopen.md) - Review commit e1eac2e for fix-windows-launcher-stayopen (#0124).
+- [Task: auto-close-smoke](./auto-close-smoke.md) - (No description)
+- [Task: discuss-auto-resume-crashed-agents](./discuss-auto-resume-crashed-agents.md) - (No description)
+- [Task: discuss-unified-general-wait](./discuss-unified-general-wait.md) - (No description)
+- [Task: fix-auto-resume-crashed-agents](./fix-auto-resume-crashed-agents.md) - (No description)
+- [Task: fix-ci-test-failures](./fix-ci-test-failures.md) - Review commit 3b58876 for fix-ci-test-failures.
+- [Task: investigate-auto-close-regression](./investigate-auto-close-regression.md) - Review commit bd3cebe — five-line revert of 8d3e3b1's  addition in ReleaseAgent (Services/AgentRegistry.
 - [Task: orchestrator-handoff](./orchestrator-handoff.md) - (No description)
-- [Task: plan-release-autoclose-and-atomic-write](./plan-release-autoclose-and-atomic-write.md) - (No description)
-- [Task: plan-watchdog-anchor-hardening](./plan-watchdog-anchor-hardening.md) - (No description)
-- [Task: plan-watchdog-structured-logging](./plan-watchdog-structured-logging.md) - (No description)
-- [Task: plan-windows-launcher-stayopen](./plan-windows-launcher-stayopen.md) - (No description)
-- [Task: refine-worktree-direction](./refine-worktree-direction.md) - (No description)
+- [Task: plan-auto-resume-crashed-agents](./plan-auto-resume-crashed-agents.md) - (No description)
+- [Task: publish-general-wait-guide](./publish-general-wait-guide.md) - (No description)
+- [Task: unified-general-wait-slice1](./unified-general-wait-slice1.md) - Review Slice 1 of unified-general-wait — fix for #0133 (dydo wait deadlock).
+- [Task: unified-general-wait-slice3](./unified-general-wait-slice3.md) - (No description)
+- [Task: unified-general-wait](./unified-general-wait.md) - (No description)

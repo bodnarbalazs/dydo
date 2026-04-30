@@ -40,6 +40,5 @@ Index of 2026-04-29 documentation.
 - [Plan Windows Launcher Stayopen](./plan-windows-launcher-stayopen.md)
 - [Recover Fix Agent Tool Nudge](./recover-fix-agent-tool-nudge.md)
 - [Refine Worktree Direction](./refine-worktree-direction.md)
-- [Regression Agent Tool Guard](./regression-agent-tool-guard.md)
 - [Regression Orchestrator Nowait Nudge](./regression-orchestrator-nowait-nudge.md)
 - [Regression Verify](./regression-verify.md)

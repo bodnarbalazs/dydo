@@ -34,3 +34,5 @@ Index of decisions documentation.
 - [018 — Zombie Working State: Mechanism, Fixes, and Doc Surface](./018-zombie-working-state-recovery.md)
 - [019 — Reviewer Verdict Routing and Subject-Aware Send Diagnostics](./019-reviewer-verdict-routing.md)
 - [020 — Worktree Usage Policy: Power Option, Not Default](./020-worktree-usage-policy-power-option.md) - Worktrees are reframed from "default for parallel code work" (Decision 011) to a **power option** orchestrators reach for only in narrow, sized cas...
+- [021 — Unified General Wait for All Roles](./021-unified-general-wait.md) - Every claimed agent registers a single always-active general wait at claim time, replacing the orchestrator-only general-wait policy.
+- [022 — Auto-Resume Crashed Agents](./022-auto-resume-crashed-agents.md) - When the watchdog detects that an agent's claude process has died while `state.

@@ -41,6 +41,7 @@ Index of issues documentation.
 - [ShellProcessNames missing fish/dash/tcsh/csh/nu/ksh](./0131-shellprocessnames-missing-fish-dash-tcsh-csh-nu-ksh.md)
 - [Watchdog CLI substring match has undocumented load-bearing invariant](./0132-watchdog-cli-substring-match-has-undocumented-load-bearing-invariant.md)
 - [Orchestrator general-wait deadlock recurs (bcff3f4 incomplete)](./0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md)
+- [Auto-close mechanism broken — ReleaseAgent clears auto-close prematurely (v1.3.9 regression)](./0134-auto-close-mechanism-broken-releaseagent-clears-auto-close-prematurely-v1-3-9-re.md)
 
 ## Subfolders
 

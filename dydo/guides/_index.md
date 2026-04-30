@@ -11,6 +11,7 @@ Index of guides documentation.
 
 ## Contents
 
+- [Agent General Wait](./agent-general-wait.md) - Every claimed agent runs a single always-active **general wait** in the background.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
 - [Customizing Roles](./customizing-roles.md) - How to create custom roles, modify permission sets, and extend the role system.
 - [Getting Started](./getting-started.md) - First-time setup walkthrough: install dydo, initialize a project, and run your first agent session.

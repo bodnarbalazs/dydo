@@ -47,9 +47,9 @@ public static class WatchdogService
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this instead of TerminalLauncher.LaunchResumeTerminal.
-    /// Test hook — receives (agentName, sessionId), returns the (faked) launched PID.
+    /// Test hook — receives (agentName, sessionId, workingDirectory), returns the (faked) launched PID.
     /// </summary>
-    internal static Func<string, string, int>? LaunchResumeOverride { get; set; }
+    internal static Func<string, string, string?, int>? LaunchResumeOverride { get; set; }
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this cap instead of ResumeAttemptsCap.
@@ -470,11 +470,29 @@ public static class WatchdogService
         var newCount = registry.IncrementResumeAttempts(agentName);
         if (newCount < 0) return; // lock contention — try again next tick
 
+        // Worktree-resumed agents must land in their worktree directory, not the
+        // main project root — otherwise the resumed claude can't see its branch.
+        // .worktree-path is the canonical marker DispatchService writes when an
+        // agent is dispatched into (or inherits) a worktree.
+        var workingDirectory = ResolveResumeWorkingDirectory(agentDir, projectRoot);
+
         var launchedPid = LaunchResumeOverride != null
-            ? LaunchResumeOverride(agentName, sessionId)
-            : TerminalLauncher.LaunchResumeTerminal(agentName, sessionId);
+            ? LaunchResumeOverride(agentName, sessionId, workingDirectory)
+            : TerminalLauncher.LaunchResumeTerminal(agentName, sessionId, workingDirectory);
 
         WatchdogLogger.LogResume(dydoRoot, agentName, sessionId, newCount, launchedPid);
+    }
+
+    private static string ResolveResumeWorkingDirectory(string agentDir, string projectRoot)
+    {
+        var worktreeMarker = Path.Combine(agentDir, ".worktree-path");
+        if (!File.Exists(worktreeMarker)) return projectRoot;
+        try
+        {
+            var path = File.ReadAllText(worktreeMarker).Trim();
+            return Directory.Exists(path) ? path : projectRoot;
+        }
+        catch { return projectRoot; }
     }
 
     private static (string? status, int attempts) ParseStatusAndResumeAttempts(string statePath)

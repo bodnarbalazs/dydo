@@ -1373,7 +1373,7 @@ public class WatchdogServiceTests : IDisposable
         WriteResumeAgentSession(dydoRoot, "Adele", "sess-live", live.Id);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1391,7 +1391,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         var calls = new List<(string agent, string sessionId)>();
-        WatchdogService.LaunchResumeOverride = (a, s) => { calls.Add((a, s)); return 12345; };
+        WatchdogService.LaunchResumeOverride = (a, s, _) => { calls.Add((a, s)); return 12345; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1410,7 +1410,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1427,7 +1427,7 @@ public class WatchdogServiceTests : IDisposable
         ProcessUtils.IsProcessRunningOverride = _ => false;
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1442,7 +1442,7 @@ public class WatchdogServiceTests : IDisposable
         // No .session file written.
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1460,13 +1460,88 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _) => { launchCount++; return 0; };
 
         for (var i = 0; i < 6; i++)
             WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
         Assert.Equal(3, launchCount);
         Assert.Equal(3, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_LaunchesWithProjectRootAsWorkingDirectory()
+    {
+        // Repro for #0138: auto-resume relaunched the terminal but with no working
+        // directory, so the new shell inherited %USERPROFILE% (Windows) / $HOME (POSIX)
+        // instead of the project root the crashed agent was working in.
+        var dydoRoot = ResumeDydoRoot();
+        var projectRoot = _testDir; // ResumeDydoRoot() returns _testDir/dydo, so parent == _testDir
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        string? capturedWorkingDirectory = null;
+        WatchdogService.LaunchResumeOverride = (_, _, wd) => { capturedWorkingDirectory = wd; return 12345; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(projectRoot, capturedWorkingDirectory);
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_WorktreeAgent_LaunchesInWorktreeDirectory()
+    {
+        // Worktree-resumed agents must land in their worktree directory so the
+        // resumed claude sees the right git branch. The .worktree-path marker
+        // (written by DispatchService when the agent is dispatched into a worktree)
+        // is the canonical signal.
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+
+        var worktreePath = Path.Combine(_testDir, "fake-worktree");
+        Directory.CreateDirectory(worktreePath);
+        var agentDir = Path.Combine(dydoRoot, "agents", "Adele");
+        File.WriteAllText(Path.Combine(agentDir, ".worktree-path"), worktreePath);
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        string? capturedWorkingDirectory = null;
+        WatchdogService.LaunchResumeOverride = (_, _, wd) => { capturedWorkingDirectory = wd; return 12345; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(worktreePath, capturedWorkingDirectory);
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_StaleWorktreeMarker_FallsBackToProjectRoot()
+    {
+        // .worktree-path can outlive its directory if cleanup raced the resume
+        // (e.g. merger finalized the worktree while the crashed agent's poll was
+        // about to fire). We must not pass a non-existent path to LaunchResume —
+        // it would throw DirectoryNotFoundException and abort the resume.
+        var dydoRoot = ResumeDydoRoot();
+        var projectRoot = _testDir;
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+
+        var agentDir = Path.Combine(dydoRoot, "agents", "Adele");
+        File.WriteAllText(Path.Combine(agentDir, ".worktree-path"),
+            Path.Combine(_testDir, "deleted-worktree"));
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        string? capturedWorkingDirectory = null;
+        WatchdogService.LaunchResumeOverride = (_, _, wd) => { capturedWorkingDirectory = wd; return 12345; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(projectRoot, capturedWorkingDirectory);
     }
 
     #endregion

@@ -1247,38 +1247,79 @@ public class WatchdogServiceTests : IDisposable
     [Fact]
     public async Task Run_NewAnchorAddedMidFlight_DefersExit()
     {
+        // Three deterministic gates replace fixed sleeps. Each gate is a sentinel
+        // file whose deletion observably proves the watchdog ran a full ScanAnchors
+        // pass with a known disk+live-set state — closing the residual race that
+        // Frank's single-decoy fix (3b58876) couldn't: under coverlet on Linux CI
+        // the loop-iter ScanAnchors could call Directory.GetFiles BEFORE the test
+        // wrote anchor 200, but check IsProcessRunning(100) AFTER the test removed
+        // 100 from the live set, observing liveCount=0 and exiting prematurely.
+        //
+        // Mutation ordering invariant (per phase): live-set adds happen before file
+        // writes, file writes happen before live-set removals. This guarantees that
+        // any racing ScanAnchors snapshot sees liveCount >= 1 — every anchor file
+        // it observes either still has a live PID, or its replacement file has
+        // already appeared with its PID already in the live set.
         var dydoRoot = SetupRunDydoRoot(_testDir);
         WriteAnchorFile(dydoRoot, 100);
-        // Decoy dead anchor: its deletion proves the watchdog's initial ScanAnchors
-        // has run AND observed anchor 100 as live (hasSeenLiveAnchor=true). Without
-        // this gate, CI thread-pool starvation can delay Run() past the live→dead
-        // transition, leaving the watchdog in the 24h orphan path.
-        WriteAnchorFile(dydoRoot, 99999999);
+        WriteAnchorFile(dydoRoot, 99999999); // decoy A: gate startup scan
 
         var live = new HashSet<int> { 100 };
         ProcessUtils.IsProcessRunningOverride = pid => { lock (live) { return live.Contains(pid); } };
-        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(100);
+        WatchdogService.PollIntervalOverride = TimeSpan.FromMilliseconds(50);
         Environment.CurrentDirectory = _testDir;
+
+        var anchorsDir = WatchdogService.GetAnchorsDirPath(dydoRoot);
+        var decoyAPath = Path.Combine(anchorsDir, "99999999.anchor");
+        var decoyBPath = Path.Combine(anchorsDir, "99999998.anchor");
+        var anchor100Path = Path.Combine(anchorsDir, "100.anchor");
 
         var runTask = Task.Run(WatchdogService.Run);
 
-        var decoyPath = Path.Combine(WatchdogService.GetAnchorsDirPath(dydoRoot), "99999999.anchor");
-        var initialScanDeadline = DateTime.UtcNow.AddSeconds(5);
-        while (File.Exists(decoyPath) && DateTime.UtcNow < initialScanDeadline)
-            await Task.Delay(20);
-        Assert.False(File.Exists(decoyPath), "watchdog must complete initial anchor scan");
+        // Gate 1: decoy A deletion proves Run() executed its startup ResolveAnchors
+        // with anchor 100 alive — hasSeenLiveAnchor is now true.
+        await WaitForFileGoneAsync(decoyAPath, TimeSpan.FromSeconds(5),
+            "watchdog must complete initial anchor scan");
 
-        // Second dispatcher arrives, registers a new anchor; first claude dies.
+        // Phase 1: register anchor 200 alongside decoy B. Live-set add is published
+        // BEFORE the file write so any racing scan that picks up 200.anchor also
+        // sees its PID alive. Decoy B is written last so its deletion proves a
+        // post-200 scan completed.
+        lock (live) { live.Add(200); }
         WriteAnchorFile(dydoRoot, 200);
-        lock (live) { live.Add(200); live.Remove(100); }
+        WriteAnchorFile(dydoRoot, 99999998);
 
-        await Task.Delay(400);
-        Assert.False(runTask.IsCompleted, "watchdog must stay alive while ANY anchor is alive");
+        // Gate 2: decoy B deletion proves a full ScanAnchors ran with anchor 200
+        // present on disk and 200 in the live set (liveCount >= 2 throughout).
+        await WaitForFileGoneAsync(decoyBPath, TimeSpan.FromSeconds(5),
+            "watchdog must scan with anchor 200 alive before original is killed");
 
+        // Phase 2: kill the original. live={200}, 100.anchor still on disk until
+        // the next watchdog scan. Critically, 200 is in live BEFORE this — so any
+        // scan whose GetFiles snapshot includes 100 will keep 200 (liveCount >= 1).
+        lock (live) { live.Remove(100); }
+
+        // Gate 3: 100.anchor deletion proves the watchdog's next scan saw 100 dead
+        // and pruned its file. Because 200 was alive in live throughout that scan,
+        // liveCount=1 — not 0 — so no anchor_gone exit fired.
+        await WaitForFileGoneAsync(anchor100Path, TimeSpan.FromSeconds(5),
+            "watchdog must observe anchor 100 dead and prune its file");
+
+        Assert.False(runTask.IsCompleted, "watchdog must stay alive while anchor 200 is alive");
+
+        // Phase 3: kill the survivor; watchdog must now exit anchor_gone.
         lock (live) { live.Remove(200); }
         var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
         Assert.Same(runTask, completed);
         await runTask;
+    }
+
+    private static async Task WaitForFileGoneAsync(string path, TimeSpan timeout, string failureMessage)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (File.Exists(path) && DateTime.UtcNow < deadline)
+            await Task.Delay(20);
+        Assert.False(File.Exists(path), failureMessage);
     }
 
     [Fact]

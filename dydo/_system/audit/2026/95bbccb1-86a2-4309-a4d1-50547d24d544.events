@@ -1,0 +1,29 @@
+{"ts":"2026-04-29T19:22:38.5381063Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Paul/ 2\u003E/dev/null || echo \u0022Paul agent dir not found\u0022"}
+{"ts":"2026-04-29T19:22:42.0961451Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\state.md","tool":"read","reason":"No agent identity"}
+{"ts":"2026-04-29T19:22:45.0305577Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Paul/workflow.md 2\u003E/dev/null \u0026\u0026 echo \u0022---FOUND---\u0022 || ls dydo/agents/ 2\u003E/dev/null"}
+{"ts":"2026-04-29T19:22:47.434217Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Paul/"}
+{"ts":"2026-04-29T19:22:50.3062028Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/"}
+{"ts":"2026-04-29T19:22:55.1327288Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-04-29T19:22:59.4565529Z","event":"Claim","agent":"Paul"}
+{"ts":"2026-04-29T19:23:05.8160366Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\inbox\\0e63413e-discuss-auto-resume-crashed-agents.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-29T19:23:09.557057Z","event":"Role","role":"co-thinker","task":"discuss-auto-resume-crashed-agents"}
+{"ts":"2026-04-29T19:23:12.3294306Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\inbox\\0e63413e-discuss-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T19:23:21.4268265Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0130-stale-working-reclaim-silently-archives-in-flight-work.md","tool":"read"}
+{"ts":"2026-04-29T19:23:24.0789477Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\021-unified-general-wait.md","tool":"read"}
+{"ts":"2026-04-29T19:23:26.9649379Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-04-29T19:31:35.9140985Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-29T19:31:36.5695746Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-29T19:31:41.7449417Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-29T19:31:42.4160083Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentSession.cs","tool":"read"}
+{"ts":"2026-04-29T19:31:48.2510604Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-29T19:31:48.7163008Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSessionManager.cs","tool":"read"}
+{"ts":"2026-04-29T19:32:17.4557784Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read"}
+{"ts":"2026-04-29T19:32:17.969816Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-04-29T19:34:45.1984182Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"write","reason":"Must-read files not yet read"}
+{"ts":"2026-04-29T19:35:15.4149027Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\notes-discuss-auto-resume-crashed-agents.md","tool":"write","reason":"Must-read files not yet read"}
+{"ts":"2026-04-29T19:35:18.6042775Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-29T19:35:19.0042977Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-29T19:35:19.1980771Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-04-29T19:36:25.5074807Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"write"}
+{"ts":"2026-04-29T19:40:12.2533007Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Paul\\notes-discuss-auto-resume-crashed-agents.md","tool":"write"}
+{"ts":"2026-04-29T19:53:29.5544324Z","event":"Release","agent":"Paul"}

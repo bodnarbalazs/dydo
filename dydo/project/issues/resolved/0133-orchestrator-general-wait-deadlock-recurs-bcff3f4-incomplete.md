@@ -3,9 +3,10 @@ id: 133
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 date: 2026-04-29
+resolved-date: 2026-04-30
 ---
 
 # Orchestrator general-wait deadlock recurs (bcff3f4 incomplete)
@@ -56,4 +57,4 @@ Human edits `unread-messages: []` in `dydo/agents/<orch>/state.md` to break the 
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 8b28355 (Slice 1 of unified-general-wait — atomic CreateListeningWaitMarker + sentinel filter on release closes the registration race; rearm-gap deadlock then closed by ca5666b's universal always-on general wait).

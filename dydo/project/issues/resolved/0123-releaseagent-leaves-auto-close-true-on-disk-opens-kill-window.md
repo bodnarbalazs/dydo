@@ -3,9 +3,10 @@ id: 123
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # ReleaseAgent leaves auto-close: true on disk, opens kill window
@@ -24,4 +25,4 @@ date: 2026-04-28
 
 ## Resolution
 
-(Filled when resolved)
+Resolved as won't-fix by bd3cebe — clearing auto-close on release crashed the auto-close mechanism (kill watchdog needs free + auto-close: true). Per-agent lock from 06512de closes the redispatch race the original issue motivated.

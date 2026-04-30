@@ -3,9 +3,10 @@ id: 124
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Windows launcher silently closes terminal when claude exits non-released
@@ -40,4 +41,4 @@ This is the *diagnosability* layer of agent deaths: even when the underlying cau
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by e1eac2e (Windows launcher always passes -NoExit; explicit exit 0 in post-claude-check still terminates host on free path).

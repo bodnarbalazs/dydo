@@ -3,9 +3,10 @@ id: 126
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Watchdog leaks forever when FindAncestorProcess('claude') returns null
@@ -28,4 +29,4 @@ When null, the env var is not set. `Run()` (Services/WatchdogService.cs:204-206)
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 762eeda (file-based anchors directory + 24h MaxOrphanAge cap with MaxOrphanAgeOverride test hook).

@@ -3,9 +3,10 @@ id: 132
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Watchdog CLI substring match has undocumented load-bearing invariant
@@ -28,4 +29,4 @@ Cited by scout in Q1 of `dydo/agents/Brian/archive/20260428-150142/findings-watc
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 762eeda (load-bearing comment at PollAndCleanupForAgent + ParsePsEoPidArgs_PrefixCollision_NotMatched regression test).

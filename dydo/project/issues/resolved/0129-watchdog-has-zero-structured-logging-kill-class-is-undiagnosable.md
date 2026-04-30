@@ -3,9 +3,10 @@ id: 129
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Watchdog has zero structured logging — kill class is undiagnosable
@@ -33,4 +34,4 @@ This is a diagnosability/maintainability bug, not a correctness bug — but it g
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 3532bd9 + 4dd5d03 (structured JSONL event log at dydo/_system/.local/watchdog.log with start/tick/kill/parse_failure/poll_error/exit events; 2MB rotation × 3 backups; never-throws contract).

@@ -3,9 +3,10 @@ id: 122
 area: backend
 type: issue
 severity: critical
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Watchdog kills Linux terminal emulator process via argv leak
@@ -30,4 +31,4 @@ This is independent of finding #1: even without the redispatch race, every legit
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 06512de (whitelist kill targets to ClaudeProcessNames; Linux terminal emulator no longer matches).

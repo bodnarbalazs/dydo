@@ -1,0 +1,19 @@
+{"ts":"2026-04-29T22:08:03.0574033Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-04-29T22:08:07.5277094Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-04-29T22:08:14.0761993Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\cdfa7ec9-msg-unified-general-wait-slice3.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-29T22:08:17.5822341Z","event":"Role","role":"docs-writer","task":"fix-decision-021-wait-ordering"}
+{"ts":"2026-04-29T22:08:19.94794Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\docs-writer.md","tool":"read"}
+{"ts":"2026-04-29T22:08:33.8321876Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-29T22:08:36.3540326Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\how-to-use-docs.md","tool":"read"}
+{"ts":"2026-04-29T22:08:38.9185805Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\writing-docs.md","tool":"read"}
+{"ts":"2026-04-29T22:08:42.2996361Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\021-unified-general-wait.md","tool":"read"}
+{"ts":"2026-04-29T22:08:57.6961593Z","event":"Blocked","tool":"bash","cmd":"git status --short dydo/project/decisions/ 2\u003E\u00261 | head -50","reason":"Unread messages"}
+{"ts":"2026-04-29T22:09:00.3843418Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\cdfa7ec9-msg-unified-general-wait-slice3.md","tool":"read"}
+{"ts":"2026-04-29T22:09:06.171678Z","event":"Bash","tool":"bash","cmd":"git status --short dydo/project/decisions/ 2\u003E\u00261"}
+{"ts":"2026-04-29T22:09:09.4884834Z","event":"Bash","tool":"bash","cmd":"git log --oneline -10 -- dydo/project/decisions/021-unified-general-wait.md 2\u003E\u00261"}
+{"ts":"2026-04-29T22:09:15.9677632Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\021-unified-general-wait.md","tool":"grep"}
+{"ts":"2026-04-29T22:09:57.1612467Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\021-unified-general-wait.md","tool":"edit","reason":"Unread messages"}
+{"ts":"2026-04-29T22:10:01.2757527Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\45d8fa17-msg-fix-decision-021-wait-ordering.md","tool":"read"}
+{"ts":"2026-04-29T22:10:08.6570356Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\021-unified-general-wait.md","tool":"edit"}
+{"ts":"2026-04-29T22:11:18.5425368Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\msg-charlie-body.txt","tool":"write"}
+{"ts":"2026-04-29T22:11:46.5431937Z","event":"Release","agent":"Adele"}

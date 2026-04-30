@@ -3,9 +3,10 @@ id: 121
 area: backend
 type: issue
 severity: critical
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Watchdog kills re-dispatched agents in poll-gap (stale-decision + ClearAutoClose RMW)
@@ -30,4 +31,4 @@ Root cause of mid-work agent deaths. Two race windows:
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 06512de (per-agent lock around PollAndCleanup) and bd3cebe (revert of unnecessary AutoClose clear on release).

@@ -3,9 +3,10 @@ id: 127
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # Watchdog anchor pinned to first dispatcher's claude only
@@ -28,4 +29,4 @@ If that claude session exits while later-dispatched agents are still mid-work, t
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 762eeda (each dispatcher's EnsureRunning writes a per-PID anchor marker; ScanAnchors prunes dead-PID files; watchdog only exits when ALL anchors are gone).

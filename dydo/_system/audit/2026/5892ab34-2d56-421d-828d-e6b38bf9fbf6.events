@@ -145,3 +145,33 @@
 {"ts":"2026-04-29T20:07:45.0240885Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\548440fa-msg-plan-auto-resume-crashed-agents.md","tool":"read"}
 {"ts":"2026-04-29T20:07:45.35335Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\plan-auto-resume-crashed-agents.md","tool":"read"}
 {"ts":"2026-04-29T20:08:51.5711745Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-auto-resume-crashed-agents.md","tool":"write"}
+{"ts":"2026-04-30T13:31:44.5673119Z","event":"Blocked","tool":"bash","cmd":"gh run list -L 5 2\u003E\u00261; echo \u0022---STATUS---\u0022; git status --short 2\u003E\u00261 | head -20","reason":"Unread messages"}
+{"ts":"2026-04-30T13:31:51.8600925Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\2dc2c014-msg-general.md","tool":"read"}
+{"ts":"2026-04-30T13:31:52.6260936Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\355c8a04-msg-fix-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-30T13:31:53.3926365Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\d6632463-msg-fix-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-30T13:31:53.7513846Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\b4e4ddc7-msg-fix-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-30T13:31:54.3459785Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\50da42f5-msg-general.md","tool":"read"}
+{"ts":"2026-04-30T13:32:03.4050526Z","event":"Bash","tool":"bash","cmd":"gh run list -L 5 2\u003E\u00261; echo \u0022---STATUS---\u0022; git status 2\u003E\u00261 | head -50"}
+{"ts":"2026-04-30T13:32:34.1926157Z","event":"Bash","tool":"bash","cmd":"gh run view 25131463702 --log-failed 2\u003E\u00261 | grep -E \u0022(Failed!|FAIL\\]|\\[FAIL|Failed )\u0022 | head -20"}
+{"ts":"2026-04-30T13:35:18.4990985Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T13:35:18.5026085Z","event":"Bash","tool":"bash","cmd":"git log origin/master..HEAD --oneline 2\u003E\u00261"}
+{"ts":"2026-04-30T13:36:19.9559791Z","event":"Bash","tool":"bash","cmd":"git add dydo/guides/_index.md dydo/project/changelog/2026/2026-04-29/_index.md dydo/project/changelo..."}
+{"ts":"2026-04-30T13:36:38.9070613Z","event":"Bash","tool":"bash","cmd":"git commit -m \u0022chore(session): index regeneration after orchestrator-handoff task approvals\n\nSweeps ..."}
+{"ts":"2026-04-30T13:38:04.2588072Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-ci-flake-anchor-midflight.md","tool":"write"}
+{"ts":"2026-04-30T13:38:15.7487526Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-resume-smoke.md","tool":"write"}
+{"ts":"2026-04-30T13:38:31.5058893Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T13:38:31.5967028Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T13:38:38.6132807Z","event":"Bash","tool":"bash","cmd":"git tag -l --format=\u0027%(refname:short) | %(creatordate:short) | %(subject)\u0027 | tail -10"}
+{"ts":"2026-04-30T13:39:22.1141884Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\release-notes-v1.4.0.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-04-30T13:39:28.2593906Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\5ce14fe3-msg-auto-resume-smoke.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T13:39:28.7564665Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Sam\\.session","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T13:42:28.8596344Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\release-notes-v1.4.0.md","tool":"write"}
+{"ts":"2026-04-30T13:43:04.3257282Z","event":"Bash","tool":"bash","cmd":"tail -20 dydo/agents/Brian/log-orchestrator-handoff.md"}
+{"ts":"2026-04-30T13:43:28.734847Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\log-orchestrator-handoff.md","tool":"edit"}
+{"ts":"2026-04-30T14:28:50.6017401Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\631de626-msg-fix-ci-flake-anchor-midflight.md","tool":"read"}
+{"ts":"2026-04-30T14:48:07.0848598Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\log-orchestrator-handoff.md","tool":"edit","reason":"Unread messages"}
+{"ts":"2026-04-30T14:48:11.6522384Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\6b66b500-msg-fix-ci-flake-anchor-midflight.md","tool":"read"}
+{"ts":"2026-04-30T14:48:21.0407327Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\log-orchestrator-handoff.md","tool":"edit"}
+{"ts":"2026-04-30T17:09:30.9385013Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\9e8d4d2b-msg-fix-ci-flake-anchor-midflight.md","tool":"read"}
+{"ts":"2026-04-30T17:09:31.2380911Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\66fad1eb-msg-fix-ci-flake-anchor-midflight.md","tool":"read"}
+{"ts":"2026-04-30T17:09:37.6126281Z","event":"Bash","tool":"bash","cmd":"git log origin/master..HEAD --oneline 2\u003E\u00261"}

@@ -3,9 +3,10 @@ id: 128
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # FindAncestorProcess substring match too broad (claude vs claudia)
@@ -26,4 +27,4 @@ Same broad-match concern at the env-var read path (Services/WatchdogService.cs:2
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 762eeda (FindAncestorProcess.MatchesProcessName uses exact basename match without extension; rejects PID <= 1 at parse time).

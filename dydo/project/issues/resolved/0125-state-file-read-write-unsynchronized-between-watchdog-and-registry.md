@@ -3,9 +3,10 @@ id: 125
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # State-file read/write unsynchronized between watchdog and registry
@@ -28,4 +29,4 @@ The torn-read `try/catch` in `ParseStateForWatchdog` is a partial mitigation —
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 8d3e3b1 (atomic temp+rename in WriteStateFile; same-volume by construction; per-agent lock contract preserved).

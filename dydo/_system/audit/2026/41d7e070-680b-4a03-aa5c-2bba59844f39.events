@@ -1,0 +1,44 @@
+{"ts":"2026-04-29T23:26:07.7447994Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-04-29T23:26:12.2068048Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-04-29T23:26:56.5807963Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\74b4315e-fix-auto-resume-crashed-agents.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-29T23:26:59.5590621Z","event":"Role","role":"reviewer","task":"fix-auto-resume-crashed-agents"}
+{"ts":"2026-04-29T23:27:03.1961698Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\74b4315e-fix-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T23:27:05.8037609Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-04-29T23:27:11.5000818Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-29T23:27:13.9404965Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-29T23:27:16.9629022Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-29T23:27:21.3388562Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Quinn\\plan-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T23:27:25.2806377Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T23:27:28.6306323Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-29T23:27:31.8252691Z","event":"Bash","tool":"bash","cmd":"git show --stat c8e6d83"}
+{"ts":"2026-04-29T23:27:34.6542178Z","event":"Bash","tool":"bash","cmd":"git show c8e6d83 -- Models/AgentState.cs Services/AgentRegistry.cs Services/IAgentRegistry.cs"}
+{"ts":"2026-04-29T23:27:37.8177009Z","event":"Bash","tool":"bash","cmd":"git show c8e6d83 -- Services/WatchdogService.cs Services/WatchdogLogger.cs"}
+{"ts":"2026-04-29T23:27:41.2435235Z","event":"Bash","tool":"bash","cmd":"git show c8e6d83 -- Services/TerminalLauncher.cs Services/WindowsTerminalLauncher.cs"}
+{"ts":"2026-04-29T23:27:44.2689856Z","event":"Bash","tool":"bash","cmd":"git show c8e6d83 -- Services/LinuxTerminalLauncher.cs Services/MacTerminalLauncher.cs"}
+{"ts":"2026-04-29T23:27:48.473643Z","event":"Bash","tool":"bash","cmd":"git show c8e6d83 -- DynaDocs.Tests/Services/WatchdogServiceTests.cs DynaDocs.Tests/Commands/CheckAge..."}
+{"ts":"2026-04-29T23:27:52.2829736Z","event":"Bash","tool":"bash","cmd":"git show c8e6d83 -- DynaDocs.Tests/Services/TerminalLauncherTests.cs DynaDocs.Tests/Integration/Agen..."}
+{"ts":"2026-04-29T23:27:58.0007718Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-29T23:28:01.0539548Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-29T23:28:11.6933052Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-29T23:28:14.566427Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-29T23:28:25.2341294Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services","tool":"grep"}
+{"ts":"2026-04-29T23:28:28.0748712Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ConfigService.cs","tool":"read"}
+{"ts":"2026-04-29T23:28:38.9859393Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"grep"}
+{"ts":"2026-04-29T23:28:41.7815307Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-04-29T23:29:33.1779737Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-04-29T23:29:38.377524Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-04-29T23:29:46.239398Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"grep"}
+{"ts":"2026-04-29T23:29:53.210877Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -120"}
+{"ts":"2026-04-30T10:01:50.4384298Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py"}
+{"ts":"2026-04-30T10:05:17.348992Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5 -- DynaDocs.Tests/Services/PathUtilsDiscoveryTests.cs DynaDocs.Tests/Commands/W..."}
+{"ts":"2026-04-30T10:05:20.324854Z","event":"Blocked","tool":"bash","cmd":"git stash \u0026\u0026 git checkout 8b28355 -- . 2\u003E\u00261 | head -20","reason":"git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."}
+{"ts":"2026-04-30T10:05:38.9593718Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -50"}
+{"ts":"2026-04-30T10:06:22.6821835Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Commands\\WorktreeCommandTests.cs","tool":"read"}
+{"ts":"2026-04-30T10:06:36.5306589Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/ 2\u003E\u00261"}
+{"ts":"2026-04-30T10:07:43.6641762Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\review-fix-auto-resume-crashed-agents.md","tool":"write","reason":"Must-read files not yet read"}
+{"ts":"2026-04-30T10:07:46.3844403Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-04-30T10:08:40.2887451Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\review-fix-auto-resume-crashed-agents.md","tool":"write"}
+{"ts":"2026-04-30T10:40:59.3552681Z","event":"Bash","tool":"bash","cmd":"ls dydo/project/issues/ | grep -E \u0022^013[567]\u0022"}
+{"ts":"2026-04-30T10:41:03.1830779Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0135-flaky-test-watchdogservicetests-logger-startevent-recordedwithanchorpid-dispose.md","tool":"read"}
+{"ts":"2026-04-30T10:41:15.4373401Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0135-flaky-test-watchdogservicetests-logger-startevent-recordedwithanchorpid-dispose.md","tool":"edit","reason":"Agent Adele (reviewer) cannot edit dydo/project/issues/0135-flaky-test-watchdogservicetests-logger-startevent-recordedwithanchorpid-dispose.md. Reviewer role can only edit own workspace."}
+{"ts":"2026-04-30T10:41:34.2315465Z","event":"Release","agent":"Adele"}

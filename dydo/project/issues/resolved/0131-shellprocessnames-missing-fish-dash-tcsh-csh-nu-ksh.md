@@ -3,9 +3,10 @@ id: 131
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-04-28
+resolved-date: 2026-04-30
 ---
 
 # ShellProcessNames missing fish/dash/tcsh/csh/nu/ksh
@@ -28,4 +29,4 @@ Low severity given the dominant shells are covered, but the fix is one line.
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 762eeda (ShellProcessNames extended with fish, dash, tcsh, csh, nu, ksh).

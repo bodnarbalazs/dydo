@@ -9,6 +9,20 @@ public static class MessageFinder
         @"^([a-f0-9]+)-msg-",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    public static HashSet<string> GetInboxMessageIds(string inboxPath)
+    {
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!Directory.Exists(inboxPath))
+            return ids;
+        foreach (var file in Directory.GetFiles(inboxPath, "*-msg-*.md"))
+        {
+            var match = MessageIdRegex.Match(Path.GetFileName(file));
+            if (match.Success)
+                ids.Add(match.Groups[1].Value);
+        }
+        return ids;
+    }
+
     public static MessageInfo? FindMessage(
         string inboxPath,
         string? taskFilter,

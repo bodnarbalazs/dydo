@@ -71,8 +71,25 @@ public static class WaitCommand
 
     private const string GeneralWaitMarker = "_general-wait";
 
+    // Test hook — production stays at 10s; tests that exercise the polling loop
+    // shorten this so they don't hang for a real interval per iteration.
+    internal static int PollIntervalMs { get; set; } = 10_000;
+
     private static int WaitGeneral(AgentRegistry registry, string agentName, string inboxPath)
     {
+        // Idempotency: a live general-wait already does the job. Refuse to register
+        // a duplicate with a NONZERO exit + stderr so wrappers/agents notice and
+        // don't grow a defensive habit of re-registering before every tool block.
+        var existing = registry.GetWaitMarkers(agentName)
+            .FirstOrDefault(m => m.Task == GeneralWaitMarker);
+        if (existing is { Listening: true, Pid: { } activePid }
+            && ProcessUtils.IsProcessRunning(activePid))
+        {
+            Console.Error.WriteLine(
+                $"A general wait is already active for {agentName} (PID {activePid}). Refusing to register a duplicate.");
+            return ExitCodes.ToolError;
+        }
+
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
         var claudePid = ProcessUtils.FindAncestorProcess("claude");
         var cancelled = false;
@@ -83,14 +100,16 @@ public static class WaitCommand
         // window where guard checks observe Listening=false. (#0133)
         registry.CreateListeningWaitMarker(agentName, GeneralWaitMarker, agentName, Environment.ProcessId);
 
-        // Snapshot what was already unread when the wait started. The general wait should
-        // signal NEW arrivals, not pop on already-known messages — popping on a known unread
-        // creates a deadlock: marker is removed on exit, agent can't satisfy the orchestrator
+        // Snapshot what was already on disk when the wait started. The general wait should
+        // signal NEW arrivals, not pop on already-known messages — popping on a known
+        // message creates a deadlock: marker is removed on exit, agent can't satisfy the
         // general-wait guard, can't Read to mark messages read, can't 'inbox clear'.
-        var sessionId = registry.GetSessionContext();
-        var initialUnread = new HashSet<string>(
-            registry.GetCurrentAgent(sessionId)?.UnreadMessages ?? Enumerable.Empty<string>(),
-            StringComparer.OrdinalIgnoreCase);
+        //
+        // Snapshot from inbox dir, NOT state.md.UnreadMessages — the latter is depleted
+        // by the Read tool (GuardCommand.TrackReadCompletion -> MarkMessageRead) while
+        // inbox files persist until 'dydo inbox clear'. MessageFinder scans the inbox dir,
+        // so the snapshot must use the same source of truth. (#0141)
+        var initialUnread = MessageFinder.GetInboxMessageIds(inboxPath);
 
         Console.WriteLine("Waiting for message...");
 
@@ -116,7 +135,7 @@ public static class WaitCommand
                 if (claudePid.HasValue && !ProcessUtils.IsProcessRunning(claudePid.Value))
                     return ExitCodes.ToolError;
 
-                Thread.Sleep(10_000);
+                Thread.Sleep(PollIntervalMs);
             }
             return ExitCodes.ToolError;
         }
@@ -157,7 +176,7 @@ public static class WaitCommand
                 if (claudePid.HasValue && !ProcessUtils.IsProcessRunning(claudePid.Value))
                     return ExitCodes.ToolError;
 
-                Thread.Sleep(10_000);
+                Thread.Sleep(PollIntervalMs);
             }
             return ExitCodes.ToolError;
         }

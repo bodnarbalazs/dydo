@@ -187,21 +187,42 @@ public class WaitCommandTests : IntegrationTestBase
     #region Wait With Message Tests
 
     [Fact]
-    public async Task Wait_General_FindsExistingMessage()
+    public async Task Wait_General_FindsArrivingMessage()
     {
+        // Under #0141 semantics, the general wait snapshots from the inbox dir at
+        // start and only fires on messages that arrive AFTER. Drop the message
+        // after the snapshot via IsProcessRunningOverride and assert the wait pops.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
-        // Pre-populate inbox with a message
-        CreateMessageFile("Adele", "Brian", "test-subject", "Hello from Brian");
+        var dropped = false;
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
 
-        StoreSessionContext();
-        var command = WaitCommand.Create();
-        var result = await RunAsync(command);
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!dropped)
+            {
+                dropped = true;
+                CreateMessageFile("Adele", "Brian", "test-subject", "Hello from Brian");
+            }
+            return true;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
 
-        result.AssertSuccess();
-        result.AssertStdoutContains("Message received from Brian");
-        result.AssertStdoutContains("test-subject");
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Brian");
+            result.AssertStdoutContains("test-subject");
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
     }
 
     [Fact]
@@ -399,10 +420,21 @@ public class WaitCommandTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
-        // Pre-populate message so the loop exits immediately
-        CreateMessageFile("Adele", "Brian", "general-subject", "Hello");
+        // Drop a fresh message after the snapshot so the loop exits via Success
+        // (post-#0141 semantics: only post-snapshot arrivals fire the wait).
+        var dropped = false;
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
 
-        ProcessUtils.IsProcessRunningOverride = _ => true;
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!dropped)
+            {
+                dropped = true;
+                CreateMessageFile("Adele", "Brian", "general-subject", "Hello");
+            }
+            return true;
+        };
         try
         {
             StoreSessionContext();
@@ -419,6 +451,7 @@ public class WaitCommandTests : IntegrationTestBase
         finally
         {
             ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
         }
     }
 
@@ -545,13 +578,25 @@ public class WaitCommandTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
-        // Task wait registered for "X" — but message arrives with a different subject "Y"
+        // Task wait registered for "X" — message arriving with subject "Y" is NOT
+        // claimed by the task wait, so the general wait must pick it up. Drop the
+        // message after snapshot (#0141 semantics).
         var registry = new AgentRegistry(TestDir);
         registry.CreateWaitMarker("Adele", "X", "Brian");
 
-        CreateMessageFile("Adele", "Brian", "Y", "general message");
+        var dropped = false;
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
 
-        ProcessUtils.IsProcessRunningOverride = _ => true;
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!dropped)
+            {
+                dropped = true;
+                CreateMessageFile("Adele", "Brian", "Y", "general message");
+            }
+            return true;
+        };
         try
         {
             StoreSessionContext();
@@ -564,6 +609,7 @@ public class WaitCommandTests : IntegrationTestBase
         finally
         {
             ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
         }
     }
 
@@ -654,35 +700,6 @@ public class WaitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task WaitGeneral_PopsOnNewMessage_EvenWhenStartupUnreadExists()
-    {
-        // Bug A: with a stale unread present, a freshly-arriving message must still wake
-        // the wait — only IDs already unread at wait-start are skipped.
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-
-        var staleId = CreateMessageFileReturningId("Adele", "Brian", "stale", "Old");
-        var registry = new AgentRegistry(TestDir);
-        registry.AddUnreadMessage("Adele", staleId);
-
-        // New arrival (NOT in state.md unread) — should pop the wait.
-        CreateMessageFile("Adele", "Charlie", "fresh", "New");
-
-        ProcessUtils.IsProcessRunningOverride = _ => true;
-        try
-        {
-            StoreSessionContext();
-            var command = WaitCommand.Create();
-            var result = await RunAsync(command);
-
-            result.AssertSuccess();
-            result.AssertStdoutContains("Message received from Charlie");
-            Assert.DoesNotContain("From: Brian", result.Stdout);
-        }
-        finally { ProcessUtils.IsProcessRunningOverride = null; }
-    }
-
-    [Fact]
     public void MessageFinder_FindMessage_ExcludesIdsInExcludeSet()
     {
         var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
@@ -697,6 +714,193 @@ public class WaitCommandTests : IntegrationTestBase
             Assert.Null(result);
         }
         finally { Directory.Delete(inboxPath, true); }
+    }
+
+    #endregion
+
+    #region Snapshot-Divergence + Idempotency Tests (#0141)
+
+    [Fact]
+    public void MessageFinder_GetInboxMessageIds_ReturnsIdsForMessageFiles()
+    {
+        // Helper introduced for #0141: WaitGeneral snapshots from the inbox dir to
+        // align with MessageFinder.FindMessage's source of truth. The helper extracts
+        // the message-id prefix from each *-msg-*.md filename and skips anything else.
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            WriteMessageFileDirect(inboxPath, "abc123", "Brian", "subj-a", "Body", DateTime.UtcNow);
+            WriteMessageFileDirect(inboxPath, "deadbeef", "Charlie", "subj-b", "Body", DateTime.UtcNow);
+            File.WriteAllText(Path.Combine(inboxPath, "not-a-message.md"), "ignored");
+            File.WriteAllText(Path.Combine(inboxPath, "readme.txt"), "ignored");
+
+            var ids = MessageFinder.GetInboxMessageIds(inboxPath);
+
+            Assert.Equal(2, ids.Count);
+            Assert.Contains("abc123", ids);
+            Assert.Contains("deadbeef", ids);
+        }
+        finally { Directory.Delete(inboxPath, true); }
+    }
+
+    [Fact]
+    public void MessageFinder_GetInboxMessageIds_NonexistentPath_ReturnsEmpty()
+    {
+        var ids = MessageFinder.GetInboxMessageIds(Path.Combine(Path.GetTempPath(), "dydo-no-such-inbox-" + Guid.NewGuid().ToString("N")[..8]));
+        Assert.Empty(ids);
+    }
+
+    [Fact]
+    public async Task WaitGeneral_StaysAliveWhenInboxFilesExistButStateMdEmpty()
+    {
+        // Bug #0141: WaitGeneral previously snapshotted from agent.UnreadMessages — which
+        // is depleted by the Read tool — while MessageFinder scans the inbox dir. The
+        // divergence caused the wait to "find" already-known messages and exit, removing
+        // the marker and deadlocking the agent. Snapshotting from the inbox dir aligns
+        // both sides on the same source of truth.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Two old files in inbox; state.md is NOT updated (simulates post-Read state).
+        CreateMessageFile("Adele", "Brian", "stale-1", "Old1");
+        CreateMessageFile("Adele", "Brian", "stale-2", "Old2");
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            // No "Message received" — pre-existing inbox files are excluded by snapshot.
+            // Wait exits via parent-death (exit 2), not by popping on a stale message.
+            result.AssertExitCode(2);
+            Assert.DoesNotContain("Message received", result.Stdout);
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_FiresOnGenuinelyNewArrivalAfterReadDepletedStateMd()
+    {
+        // Forward functionality: with stale files snapshotted, a NEW message arriving
+        // after the wait starts must still fire the wait — only IDs already on disk at
+        // wait-start are excluded.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        CreateMessageFile("Adele", "Brian", "stale-1", "Old1");
+        CreateMessageFile("Adele", "Brian", "stale-2", "Old2");
+
+        var droppedFresh = false;
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
+
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!droppedFresh)
+            {
+                droppedFresh = true;
+                CreateMessageFile("Adele", "Charlie", "fresh", "New arrival");
+            }
+            return true;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Charlie");
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_RefusesSecondRegistrationWhilePriorIsAlive()
+    {
+        // Bug #0141 secondary fix: concurrent dydo wait processes used to clobber the
+        // marker's PID and the first to exit removed the marker for all of them. The
+        // idempotency guard refuses a second registration when a live listening marker
+        // already exists. Per user override, the refusal is NONZERO + stderr so agents
+        // and wrappers see a visible failure (silent Success rewards defensive
+        // re-registration before every tool block).
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        // Simulate Wait #1: a live, listening general-wait marker for this test process.
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", Environment.ProcessId);
+
+        StoreSessionContext();
+        var command = WaitCommand.Create();
+        var result = await RunAsync(command);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("already active");
+        Assert.Contains($"PID {Environment.ProcessId}", result.Stderr);
+
+        // Marker still has Wait #1's PID; #2 did not overwrite it.
+        var markers = new AgentRegistry(TestDir).GetWaitMarkers("Adele");
+        Assert.Single(markers);
+        Assert.Equal(Environment.ProcessId, markers[0].Pid);
+        Assert.True(markers[0].Listening);
+    }
+
+    [Fact]
+    public async Task WaitGeneral_PriorWaitDeadCausesNewWaitToTakeOver()
+    {
+        // Self-heal: if the existing marker's PID is no longer running (process killed
+        // or crashed), the idempotency guard must NOT block — the new wait overwrites
+        // and proceeds normally.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        const int deadPid = 999_999;
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", deadPid);
+
+        int? observedPid = null;
+        bool? observedListening = null;
+        var idempotencyChecked = false;
+
+        ProcessUtils.IsProcessRunningOverride = pid =>
+        {
+            if (!idempotencyChecked)
+            {
+                // Idempotency guard probes the stale PID — report it dead so the new
+                // wait proceeds to register.
+                idempotencyChecked = true;
+                return pid != deadPid;
+            }
+            // After registration, parent/claude liveness check fires — observe the
+            // marker (now owned by this process) and exit the wait.
+            if (observedPid == null)
+            {
+                var probe = new AgentRegistry(TestDir).GetWaitMarkers("Adele")
+                    .FirstOrDefault(m => m.Task == "_general-wait");
+                observedPid = probe?.Pid;
+                observedListening = probe?.Listening;
+            }
+            return false;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+            Assert.Equal(Environment.ProcessId, observedPid);
+            Assert.True(observedListening);
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
     }
 
     #endregion

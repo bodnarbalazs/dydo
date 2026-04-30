@@ -119,10 +119,9 @@ public static class DispatchService
 
         if (wait)
         {
-            registry.CreateWaitMarker(senderName, task, targetAgentName);
-            Console.WriteLine($"Wait registered for '{task}'. Listen for the response with:");
-            Console.WriteLine($"  dydo wait --task {task}");
-            Console.WriteLine("  (run in background to avoid blocking)");
+            Console.WriteLine($"Dispatched with --wait: {targetAgentName} cannot release until they have");
+            Console.WriteLine($"  messaged you back on subject '{task}'. Their reply will surface via your");
+            Console.WriteLine($"  general wait — no need to register a per-task wait.");
             return ExitCodes.Success;
         }
 
@@ -135,6 +134,8 @@ public static class DispatchService
     {
         var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin,
             opts.Role, opts.Task, opts.Brief, opts.Files, opts.Escalate, opts.Wait, inheritReply);
+
+        WriteDispatchWaitMarkerIfNeeded(registry, targetAgentName, senderName, opts.Task, opts.Wait);
 
         InjectBriefIntoTaskFile(opts.Task, opts.Brief);
         HandleReviewerTransition(opts.Role, opts.Task, opts.Brief);
@@ -537,6 +538,19 @@ public static class DispatchService
         return null;
     }
 
+    /// <summary>
+    /// Decision 021: `dispatch --wait` writes a release-block marker into the callee's
+    /// workspace before the terminal launches, so the callee cannot race the marker
+    /// write and release prematurely.
+    /// </summary>
+    private static void WriteDispatchWaitMarkerIfNeeded(AgentRegistry registry, string targetAgentName,
+        string senderName, string task, bool wait)
+    {
+        if (!wait) return;
+        var senderRole = registry.GetAgentState(senderName)?.Role;
+        registry.CreateDispatchWaitMarker(targetAgentName, task, senderName, senderRole);
+    }
+
     private static void PrintReleaseHint(AgentRegistry registry, AgentState? sender, string senderName)
     {
         if (sender == null || string.Equals(sender.Role, "co-thinker", StringComparison.OrdinalIgnoreCase))
@@ -544,9 +558,11 @@ public static class DispatchService
 
         var senderInbox = Path.Combine(registry.GetAgentWorkspace(senderName), "inbox");
         var hasInboxItems = Directory.Exists(senderInbox) && Directory.GetFiles(senderInbox, "*.md").Length > 0;
-        var hasWaitMarkers = registry.GetWaitMarkers(senderName).Count > 0;
+        // Sentinel waits (_general-wait) are infrastructure, not outstanding work — exclude
+        // them so the hint still surfaces when only the universal general wait is active.
+        var hasTaskWaits = registry.GetWaitMarkers(senderName).Any(m => !m.Task.StartsWith('_'));
 
-        if (!hasInboxItems && !hasWaitMarkers)
+        if (!hasInboxItems && !hasTaskWaits)
             Console.WriteLine("  Nothing left? Don't forget: dydo agent release");
     }
 

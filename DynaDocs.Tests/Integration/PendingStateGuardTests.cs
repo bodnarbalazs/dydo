@@ -277,6 +277,9 @@ public class PendingStateGuardTests : IntegrationTestBase
         // Make it listening
         registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
 
+        // Decision 021: every role with a role set must run a general wait too.
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", Environment.ProcessId);
+
         var result = await GuardAsync("read", "Commands/SomeFile.cs");
         result.AssertSuccess();
     }
@@ -455,12 +458,12 @@ public class PendingStateGuardTests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED: Register waits before continuing");
 
-        // Verify the marker was flipped
+        // Verify the marker was flipped (filter out the auto-registered _general-wait
+        // sentinel that SetRoleAsync now creates per Decision 021).
         registry = new AgentRegistry(TestDir);
-        var markers = registry.GetWaitMarkers("Adele");
-        Assert.Single(markers);
-        Assert.False(markers[0].Listening);
-        Assert.Null(markers[0].Pid);
+        var subTask = registry.GetWaitMarkers("Adele").Single(m => m.Task == "sub-task");
+        Assert.False(subTask.Listening);
+        Assert.Null(subTask.Pid);
     }
 
     [Fact]
@@ -475,18 +478,19 @@ public class PendingStateGuardTests : IntegrationTestBase
         registry.CreateWaitMarker("Adele", "sub-task", "Brian");
         // Use current process PID (alive)
         registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", Environment.ProcessId);
 
         // Guard should NOT flip — marker is listening with alive PID
         var result = await GuardAsync("read", "Commands/SomeFile.cs");
 
         result.AssertSuccess();
 
-        // Verify the marker is still listening
+        // Verify the sub-task marker is still listening (the general-wait marker added
+        // for Decision 021 is also expected to be present).
         registry = new AgentRegistry(TestDir);
-        var markers = registry.GetWaitMarkers("Adele");
-        Assert.Single(markers);
-        Assert.True(markers[0].Listening);
-        Assert.Equal(Environment.ProcessId, markers[0].Pid);
+        var subTaskMarker = registry.GetWaitMarkers("Adele").Single(m => m.Task == "sub-task");
+        Assert.True(subTaskMarker.Listening);
+        Assert.Equal(Environment.ProcessId, subTaskMarker.Pid);
     }
 
     [Fact]
@@ -505,12 +509,12 @@ public class PendingStateGuardTests : IntegrationTestBase
 
         result.AssertExitCode(2);
 
-        // Marker should still be non-listening (unchanged)
+        // Marker should still be non-listening (unchanged). Filter out the auto-registered
+        // _general-wait sentinel from SetRoleAsync.
         registry = new AgentRegistry(TestDir);
-        var markers = registry.GetWaitMarkers("Adele");
-        Assert.Single(markers);
-        Assert.False(markers[0].Listening);
-        Assert.Null(markers[0].Pid);
+        var subTask = registry.GetWaitMarkers("Adele").Single(m => m.Task == "sub-task");
+        Assert.False(subTask.Listening);
+        Assert.Null(subTask.Pid);
     }
 
     [Fact]
@@ -533,11 +537,11 @@ public class PendingStateGuardTests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED: Register waits before continuing");
 
-        // Verify marker was flipped
+        // Verify marker was flipped (filter out the auto-registered _general-wait
+        // sentinel from SetRoleAsync).
         var registry = new AgentRegistry(TestDir);
-        var markers = registry.GetWaitMarkers("Adele");
-        Assert.Single(markers);
-        Assert.False(markers[0].Listening);
+        var subTask = registry.GetWaitMarkers("Adele").Single(m => m.Task == "sub-task");
+        Assert.False(subTask.Listening);
     }
 
     #endregion
@@ -638,6 +642,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         // Dispatch with --wait creates a non-listening marker
         var registry = new AgentRegistry(TestDir);
         registry.CreateWaitMarker("Adele", "sub-task", "Brian");
+        registry.CreateListeningWaitMarker("Adele", "_general-wait", "Adele", Environment.ProcessId);
 
         // Blocked
         var blocked = await GuardAsync("read", "Commands/SomeFile.cs");
@@ -655,7 +660,7 @@ public class PendingStateGuardTests : IntegrationTestBase
 
     #endregion
 
-    #region Orchestrator General-Wait Enforcement
+    #region General-Wait Enforcement (Decision 021)
 
     [Fact]
     public async Task Guard_BlocksOrchestrator_WithTaskWait_ButNoGeneralWait()
@@ -663,7 +668,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
         await ReadMustReadsAsync();
 
         var registry = new AgentRegistry(TestDir);
@@ -673,7 +678,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         var result = await GuardAsync("read", "dydo/index.md");
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("Orchestrator must keep a general wait active");
+        result.AssertStderrContains("Agent must keep a general wait active");
         result.AssertStderrContains("dydo wait");
     }
 
@@ -701,11 +706,11 @@ public class PendingStateGuardTests : IntegrationTestBase
     public async Task Guard_BlocksOrchestrator_WhenGeneralWaitHasDeadPid()
     {
         // Force-killed general wait leaves a stale marker. Self-heal removes it; the
-        // orchestrator-general-wait check then fires until a fresh wait is started.
+        // missing-general-wait check then fires until a fresh wait is started.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
         await ReadMustReadsAsync();
 
         var registry = new AgentRegistry(TestDir);
@@ -717,7 +722,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         var result = await GuardAsync("read", "dydo/index.md");
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("Orchestrator must keep a general wait active");
+        result.AssertStderrContains("Agent must keep a general wait active");
 
         // Self-heal deleted the stale general-wait marker
         registry = new AgentRegistry(TestDir);
@@ -726,35 +731,50 @@ public class PendingStateGuardTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_AllowsOrchestrator_WhenNoTaskWaitsYet()
+    public async Task Guard_BlocksOrchestrator_OnceRoleSet_WithoutGeneralWait()
     {
-        // Onboarding path: orchestrator has set role but hasn't dispatched anything yet.
-        // The general-wait check is gated on having at least one task wait, so reads
-        // during onboarding are not blocked.
+        // Decision 021: once a role is set the general wait must be active. This was
+        // previously gated on "at least one task wait registered"; the gate is now
+        // simply "role is set", so onboarding reads are blocked until the agent has
+        // started its general wait.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
         await ReadMustReadsAsync();
 
         var result = await GuardAsync("read", "dydo/index.md");
 
-        result.AssertSuccess();
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Agent must keep a general wait active");
     }
 
     [Fact]
-    public async Task Guard_DoesNotBlockNonOrchestrator_OnMissingGeneralWait()
+    public async Task Guard_NonOrchestrator_RoleSet_NoGeneralWait_Blocks()
     {
-        // Code-writer with all task waits listening → existing check passes; new check
-        // does not apply because role is not orchestrator.
+        // Decision 021: the general-wait obligation is universal — code-writer (and
+        // every other role) is blocked once their role is set if the wait isn't running.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task", registerGeneralWait: false);
+        await ReadMustReadsAsync();
+
+        var result = await GuardAsync("read", "Commands/SomeFile.cs");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Agent must keep a general wait active");
+    }
+
+    [Fact]
+    public async Task Guard_NonOrchestrator_GeneralWaitActive_Passes()
+    {
+        // Decision 021: with the general wait registered and listening, code-writer
+        // (and other non-orchestrator roles) pass the check. SetRoleAsync registers
+        // the marker by default to mirror the post-role workflow.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         await SetRoleAsync("code-writer", "my-task");
         await ReadMustReadsAsync();
-
-        var registry = new AgentRegistry(TestDir);
-        registry.CreateWaitMarker("Adele", "sub-task", "Brian");
-        registry.UpdateWaitMarkerListening("Adele", "sub-task", Environment.ProcessId);
 
         var result = await GuardAsync("read", "Commands/SomeFile.cs");
 
@@ -762,14 +782,31 @@ public class PendingStateGuardTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Guard_Orchestrator_StillBlocksWithoutGeneralWait()
+    {
+        // Regression: the universal gate must still fire for orchestrators with no
+        // general wait — the orchestrator-only carve-out was removed, not the check.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
+        await ReadMustReadsAsync();
+
+        var result = await GuardAsync("read", "dydo/index.md");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Agent must keep a general wait active");
+    }
+
+    [Fact]
     public async Task Guard_AllowsDydoWaitGeneral_DuringMissingGeneralWaitBlock()
     {
-        // The bash bypass for dydo wait must work so the orchestrator can start
+        // The bash bypass for dydo wait must work so the agent can start
         // the general wait that the new check requires.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
         await ReadMustReadsAsync();
 
         var registry = new AgentRegistry(TestDir);
@@ -798,7 +835,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
         await ReadMustReadsAsync();
 
         var registry = new AgentRegistry(TestDir);
@@ -809,7 +846,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains("Register waits before continuing");
         result.AssertStderrContains("sub-task");
-        result.AssertStderrContains("Orchestrator must keep a general wait active");
+        result.AssertStderrContains("Agent must keep a general wait active");
     }
 
     [Fact]
@@ -869,7 +906,7 @@ public class PendingStateGuardTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
         SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
+        await SetRoleAsync("orchestrator", "my-task", registerGeneralWait: false);
         await ReadMustReadsAsync();
 
         var registry = new AgentRegistry(TestDir);

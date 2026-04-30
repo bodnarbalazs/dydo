@@ -37,6 +37,8 @@ public static class MessageService
             }
         }
 
+        StampDispatchWaitIfMatched(registry, sender, to, subject);
+
         WarnOnSubjectMismatch(registry, to, subject, targetState);
 
         Console.WriteLine($"Message sent to {to}.");
@@ -85,6 +87,27 @@ public static class MessageService
             registry.AddUnreadMessage(toName, messageId);
 
         return messageId;
+    }
+
+    /// <summary>
+    /// Decision 021: a `dispatch --wait` writes a DispatchWaitMarker into the callee's
+    /// workspace. The marker discharges (RepliedAt stamped) when the callee sends a
+    /// message back to the dispatcher on the dispatched task's subject. The subject
+    /// must match the marker's task — sending on an unrelated subject leaves the
+    /// release-block in place.
+    /// </summary>
+    private static void StampDispatchWaitIfMatched(AgentRegistry registry, Models.AgentState sender,
+        string to, string? subject)
+    {
+        var markerSubject = !string.IsNullOrEmpty(subject) ? subject : sender.Task;
+        if (string.IsNullOrEmpty(markerSubject)) return;
+
+        var marker = registry.GetUnrepliedDispatchWait(sender.Name, markerSubject);
+        if (marker == null) return;
+        if (!marker.DispatcherAgent.Equals(to, StringComparison.OrdinalIgnoreCase)) return;
+
+        if (registry.MarkDispatchWaitReplied(sender.Name, markerSubject))
+            Console.WriteLine($"  Dispatch-wait obligation fulfilled for '{markerSubject}'.");
     }
 
     private static string? ValidateSendRequest(AgentRegistry registry, Models.AgentState? sender,

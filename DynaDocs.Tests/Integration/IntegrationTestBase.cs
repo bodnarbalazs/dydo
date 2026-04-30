@@ -205,16 +205,29 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
-    /// Set agent role.
+    /// Set agent role. Mirrors Decision 021 by registering a listening general-wait
+    /// marker after role-set so the universal MissingGeneralWait guard passes by
+    /// default. Tests that exercise the block itself pass <c>registerGeneralWait: false</c>.
     /// </summary>
-    protected async Task<CommandResult> SetRoleAsync(string role, string? task = null)
+    protected async Task<CommandResult> SetRoleAsync(string role, string? task = null,
+        bool registerGeneralWait = true)
     {
         StoreSessionContext();
         var command = AgentCommand.Create();
         var args = task != null
             ? new[] { "role", role, "--task", task }
             : new[] { "role", role };
-        return await RunAsync(command, args);
+        var result = await RunAsync(command, args);
+
+        if (registerGeneralWait && result.ExitCode == 0)
+        {
+            var registry = new DynaDocs.Services.AgentRegistry(TestDir);
+            var agent = registry.GetCurrentAgent(TestSessionId);
+            if (agent != null)
+                registry.CreateListeningWaitMarker(agent.Name, "_general-wait", agent.Name, Environment.ProcessId);
+        }
+
+        return result;
     }
 
     /// <summary>

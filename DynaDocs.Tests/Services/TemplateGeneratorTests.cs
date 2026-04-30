@@ -325,6 +325,85 @@ public class TemplateGeneratorTests
         Assert.Contains($"dydo agent role {mode}", content);
     }
 
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("reviewer")]
+    [InlineData("co-thinker")]
+    [InlineData("planner")]
+    [InlineData("docs-writer")]
+    [InlineData("test-writer")]
+    [InlineData("inquisitor")]
+    [InlineData("judge")]
+    [InlineData("orchestrator")]
+    public void GenerateModeFile_AllModes_RegisterGeneralWaitStep(string mode)
+    {
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
+
+        Assert.Contains("Register General Wait", content);
+        Assert.Contains("dydo wait", content);
+    }
+
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("reviewer")]
+    [InlineData("co-thinker")]
+    [InlineData("planner")]
+    [InlineData("docs-writer")]
+    [InlineData("test-writer")]
+    [InlineData("inquisitor")]
+    [InlineData("judge")]
+    [InlineData("orchestrator")]
+    public void GenerateModeFile_AllModes_GeneralWaitStepFollowsRoleStep(string mode)
+    {
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
+
+        var roleIdx = content.IndexOf($"dydo agent role {mode}", StringComparison.Ordinal);
+        var generalWaitIdx = content.IndexOf("Register General Wait", StringComparison.Ordinal);
+        var verifyIdx = content.IndexOf("## Verify", StringComparison.Ordinal);
+
+        Assert.True(roleIdx >= 0, "role command must be present");
+        Assert.True(generalWaitIdx > roleIdx, "Register General Wait must follow the role step");
+        Assert.True(verifyIdx > generalWaitIdx, "Verify section must follow Register General Wait");
+    }
+
+    [Fact]
+    public void GenerateModeFile_Orchestrator_DropsPerTaskWaitFromDispatch()
+    {
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
+
+        Assert.DoesNotContain("dydo wait --task <sub-task>", content);
+        Assert.DoesNotContain("Each dispatched task gets its own background wait", content);
+    }
+
+    [Fact]
+    public void GenerateModeFile_Orchestrator_DropsKeepGeneralWaitOpenSubsection()
+    {
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
+
+        Assert.DoesNotContain("Keep a general wait open", content);
+    }
+
+    [Fact]
+    public void GenerateModeFile_Orchestrator_ReframesWaitAsReleaseBlockOnCallee()
+    {
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
+
+        Assert.Contains("release-block", content);
+        Assert.Contains("cannot release until they message you back", content);
+    }
+
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("reviewer")]
+    [InlineData("docs-writer")]
+    public void GenerateModeFile_DispatchedRoles_HaveDispatchWaitReleaseNote(string mode)
+    {
+        var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
+
+        Assert.Contains("if your dispatcher used `--wait`", content);
+        Assert.Contains("cannot release", content);
+    }
+
     #region Asset Tests
 
     [Fact]

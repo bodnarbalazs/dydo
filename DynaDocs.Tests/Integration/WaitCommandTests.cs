@@ -708,9 +708,9 @@ public class WaitCommandTests : IntegrationTestBase
     {
         // Regression for #0133: WaitGeneral previously created the marker with
         // Listening=false, then issued a second write to flip it to true. The window
-        // between the two writes left the OrchestratorMissingGeneralWait guard check
-        // observing Listening=false and blocking the next tool call. The atomic
-        // create method must publish Listening=true and Pid in a single file write.
+        // between the two writes left the MissingGeneralWait guard check observing
+        // Listening=false and blocking the next tool call. The atomic create method
+        // must publish Listening=true and Pid in a single file write.
         await InitProjectAsync("none", "testuser", 3);
 
         var registry = new AgentRegistry(TestDir);

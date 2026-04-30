@@ -234,6 +234,27 @@ public class TemplateOverrideTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Init_FrameworkHashes_MatchEmbeddedTemplateContent()
+    {
+        // Regression for Slice 3: when embedded templates change and dydo.json
+        // hashes are bumped to the new content, init must produce the same hash
+        // — guaranteeing no false-positive override detection downstream.
+        await InitProjectAsync();
+
+        var json = ReadFile("dydo.json");
+        var config = System.Text.Json.JsonSerializer.Deserialize(json,
+            DynaDocs.Serialization.DydoConfigJsonContext.Default.DydoConfig)!;
+
+        foreach (var name in TemplateGenerator.GetAllTemplateNames())
+        {
+            var relativePath = $"_system/templates/{name}";
+            var embedded = TemplateGenerator.ReadBuiltInTemplate(name);
+            var expectedHash = TemplateCommand.ComputeHash(embedded);
+            Assert.Equal(expectedHash, config.FrameworkHashes[relativePath]);
+        }
+    }
+
+    [Fact]
     public async Task AgentClaim_WithAdditionFile_IncludesInModeFile()
     {
         await InitProjectAsync("none", "testuser", 3);

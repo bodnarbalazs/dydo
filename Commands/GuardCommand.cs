@@ -1049,7 +1049,7 @@ public static partial class GuardCommand
         IAuditService auditService, string? sessionId, AgentRegistry registry)
     {
         var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-        var missingGeneralWait = OrchestratorMissingGeneralWait(agent, registry);
+        var missingGeneralWait = MissingGeneralWait(agent, registry);
         if (pendingMarkers.Count == 0 && !missingGeneralWait)
             return null;
 
@@ -1324,19 +1324,17 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// True when the agent is an orchestrator that has dispatched at least one task wait
-    /// but has no listening general wait. The general-wait policy is "always one open while
-    /// orchestrating", so once dispatch begins the wait must be active.
+    /// True when the agent has a role set but no listening general wait. Decision 021
+    /// universalises the general-wait obligation: every claimed agent runs a single
+    /// always-active general wait once their role lands, so reachability and message
+    /// surfacing don't depend on role.
     /// </summary>
-    private static bool OrchestratorMissingGeneralWait(AgentState agent, AgentRegistry registry)
+    private static bool MissingGeneralWait(AgentState agent, AgentRegistry registry)
     {
-        if (!string.Equals(agent.Role, "orchestrator", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(agent.Role))
             return false;
 
         var markers = registry.GetWaitMarkers(agent.Name);
-        if (!markers.Any(m => !m.Task.StartsWith('_')))
-            return false;
-
         var general = markers.FirstOrDefault(m => m.Task.StartsWith('_'));
         if (general == null || !general.Listening) return true;
         if (general.Pid == null || !ProcessUtils.IsProcessRunning(general.Pid.Value)) return true;
@@ -1356,7 +1354,7 @@ public static partial class GuardCommand
         }
         if (missingGeneralWait)
         {
-            Console.Error.WriteLine("BLOCKED: Orchestrator must keep a general wait active.");
+            Console.Error.WriteLine("BLOCKED: Agent must keep a general wait active.");
             Console.Error.WriteLine("  Run: dydo wait (in background)");
         }
     }

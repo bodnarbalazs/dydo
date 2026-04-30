@@ -148,8 +148,10 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         result.AssertSuccess();
         Assert.DoesNotContain("Don't forget", result.Stdout);
-        result.AssertStdoutContains("Wait registered");
-        result.AssertStdoutContains("dydo wait --task auth");
+        // Decision 021: --wait reframed as a release-block on the dispatched agent;
+        // the dispatcher no longer registers a per-task wait.
+        result.AssertStdoutContains("--wait");
+        result.AssertStdoutContains("cannot release");
     }
 
     #endregion
@@ -740,6 +742,159 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         var output = result.Stdout + result.Stderr;
 
         Assert.DoesNotContain("reserved for oversight roles", output);
+    }
+
+    #endregion
+
+    #region Dispatch-Wait Marker (Decision 021)
+
+    [Fact]
+    public async Task Dispatch_Wait_DoesNotCreateTaskWaitMarker()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
+        await SetRoleAsync("orchestrator", "my-task");
+
+        var result = await DispatchAsync("code-writer", "my-task", "Implement", wait: true);
+        result.AssertSuccess();
+
+        // The dispatcher's .waiting directory must not contain a task wait for the
+        // dispatched task — Decision 021 removes the per-task wait registration.
+        var waitingDir = Path.Combine(TestDir, "dydo/agents/Adele/.waiting");
+        if (Directory.Exists(waitingDir))
+        {
+            var registry = new AgentRegistry(TestDir);
+            var taskMarkers = registry.GetWaitMarkers("Adele")
+                .Where(m => !m.Task.StartsWith('_')).ToList();
+            Assert.Empty(taskMarkers);
+        }
+    }
+
+    [Fact]
+    public async Task Dispatch_Wait_WritesDispatchWaitMarkerOnCallee()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
+
+        var result = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
+        result.AssertSuccess();
+
+        var registry = new AgentRegistry(TestDir);
+        var marker = registry.GetUnrepliedDispatchWait("Brian", "auth");
+        Assert.NotNull(marker);
+        Assert.Equal("Adele", marker!.DispatcherAgent);
+        Assert.Equal("orchestrator", marker.DispatcherRole);
+        Assert.Equal("auth", marker.Task);
+        Assert.Null(marker.RepliedAt);
+    }
+
+    [Fact]
+    public async Task Dispatch_NoWait_DoesNotWriteCalleeMarker()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", noWait: true);
+        result.AssertSuccess();
+
+        var dispatchWaitsDir = Path.Combine(TestDir, "dydo/agents/Brian/dispatch-waits");
+        Assert.False(Directory.Exists(dispatchWaitsDir),
+            "No dispatch-wait marker should be written for --no-wait dispatch");
+    }
+
+    [Fact]
+    public async Task Release_BlockedWhileDispatchWaitMarkerActive()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Adele dispatches code-writer to Brian with --wait; clear inbox + reply marker
+        // so we isolate the dispatch-wait release-block from other guardrails.
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Discharge the existing reply-pending marker so the dispatch-wait check is the
+        // only remaining release-block.
+        var registry = new AgentRegistry(TestDir);
+        registry.RemoveReplyPendingMarker("Brian", "auth");
+
+        var releaseResult = ReleaseInSeparateSession("Brian");
+
+        Assert.Contains("dispatch --wait obligation unmet", releaseResult);
+        Assert.Contains("auth", releaseResult);
+        Assert.Contains("Adele", releaseResult);
+    }
+
+    [Fact]
+    public async Task Release_AllowedAfterMessageBack()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        await ClaimAgentAsync("Adele");
+        SetTaskRoleHistory("Adele", "auth", "planner");
+        await SetRoleAsync("orchestrator", "auth");
+        var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
+        dispatchResult.AssertSuccess();
+
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        // Brian sends a message back on the dispatched task's subject — this stamps both
+        // the reply-pending and the dispatch-wait marker.
+        SendMessageInSeparateSession("Brian", "Adele", "auth", "Done.");
+
+        var registry = new AgentRegistry(TestDir);
+        var marker = registry.GetDispatchWaitMarkers("Brian").Single();
+        Assert.NotNull(marker.RepliedAt);
+
+        var releaseResult = ReleaseInSeparateSession("Brian");
+        Assert.DoesNotContain("dispatch --wait obligation unmet", releaseResult);
+    }
+
+    [Fact]
+    public async Task Dispatch_Wait_WithoutClaim_WritesMarkerWithNullDispatcherRole()
+    {
+        // CheckWaitPrivilege only blocks --wait when a claimed sender lacks oversight;
+        // when no agent is claimed, the dispatch proceeds with sender == null. The
+        // dispatch-wait marker still gets written with a null DispatcherRole — covers
+        // the null-state branch on the role lookup.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
+        result.AssertSuccess();
+
+        var registry = new AgentRegistry(TestDir);
+        var marker = registry.GetUnrepliedDispatchWait("Brian", "auth");
+        Assert.NotNull(marker);
+        Assert.Null(marker!.DispatcherRole);
+    }
+
+    [Fact]
+    public async Task Dispatch_Wait_NonOrchestratorRole_StillRejected()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Code-writer (CanOrchestrate=false) must still be rejected when using --wait.
+        // Decision 021 reshapes the meaning of --wait but does not change the privilege.
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "code-writer", "auth", "Implement auth");
+        ClaimAgentInSeparateSession("Brian");
+        SetRoleInState("Brian", "code-writer", "auth");
+        ClearInboxInSeparateSession("Brian");
+
+        var result = DispatchInSeparateSessionWithResult("Brian", "reviewer", "auth", "Review this", wait: true);
+
+        Assert.Contains("reserved for oversight roles", result);
     }
 
     #endregion

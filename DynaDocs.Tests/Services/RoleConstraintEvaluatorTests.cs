@@ -1025,4 +1025,69 @@ public class RoleConstraintEvaluatorTests
     }
 
     #endregion
+
+    #region CanRelease — DispatchWaitMarker (Decision 021)
+
+    [Fact]
+    public void CanRelease_WithDispatchWaitMarker_NoReply_Blocks()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer")
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        var marker = new DispatchWaitMarker
+        {
+            Task = "auth",
+            DispatcherAgent = "Bob",
+            DispatcherRole = "orchestrator",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        var result = evaluator.CanRelease("Alice", "code-writer", "auth", true, null,
+            (_, _) => false, out var reason,
+            t => t == "auth" ? marker : null);
+
+        Assert.False(result);
+        Assert.Contains("dispatch --wait obligation unmet", reason);
+        Assert.Contains("Bob", reason);
+        Assert.Contains("auth", reason);
+    }
+
+    [Fact]
+    public void CanRelease_WithDispatchWaitMarker_RepliedStamp_Allows()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer")
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        // The lookup returns null for "replied" markers (the registry helper filters
+        // them out), so a stamped marker is equivalent to "no unreplied marker".
+        Assert.True(evaluator.CanRelease("Alice", "code-writer", "auth", true, null,
+            (_, _) => false, out _,
+            _ => null));
+    }
+
+    [Fact]
+    public void CanRelease_NoDispatchWaitMarker_Allows()
+    {
+        // Backwards compat: callers that don't pass the dispatch-wait lookup behave
+        // exactly as before (no extra block).
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer")
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanRelease("Alice", "code-writer", "auth", true, null,
+            (_, _) => false, out _));
+    }
+
+    #endregion
 }

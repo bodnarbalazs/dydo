@@ -562,7 +562,8 @@ public partial class AgentRegistry : IAgentRegistry
             if (!evaluator.CanRelease(agentName, state.Role, state.Task,
                 !string.IsNullOrEmpty(state.DispatchedBy),
                 state.DispatchedByRole,
-                (t, r) => HasDispatchMarker(agentName, t, r), out error))
+                (t, r) => HasDispatchMarker(agentName, t, r), out error,
+                t => GetUnrepliedDispatchWait(agentName, t)))
             {
                 return false;
             }
@@ -590,6 +591,7 @@ public partial class AgentRegistry : IAgentRegistry
         ClearAllWaitMarkers(agentName);
         ClearAllReplyPendingMarkers(agentName);
         ClearAllDispatchMarkers(agentName);
+        ClearAllDispatchWaitMarkers(agentName);
 
         try { new GuardLiftService().ClearLift(agentName); } catch { }
 
@@ -1275,6 +1277,142 @@ public partial class AgentRegistry : IAgentRegistry
     public void ClearAllDispatchMarkers(string agentName)
     {
         var dir = GetDispatchMarkersDir(agentName);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
+    }
+
+    #endregion
+
+    #region Dispatch-Wait Markers
+
+    private string GetDispatchWaitsDir(string agentName) =>
+        Path.Combine(GetAgentWorkspace(agentName), "dispatch-waits");
+
+    /// <summary>
+    /// Writes a DispatchWaitMarker into the *callee's* workspace, recording the
+    /// release-block obligation created by `dispatch --wait`. Decision 021: the
+    /// dispatched agent cannot release until they have messaged the dispatcher
+    /// back on the dispatched task's subject.
+    ///
+    /// Atomic temp-then-rename to avoid races with concurrent reads.
+    /// </summary>
+    public void CreateDispatchWaitMarker(string calleeName, string task, string dispatcherAgent, string? dispatcherRole)
+    {
+        var dir = GetDispatchWaitsDir(calleeName);
+        Directory.CreateDirectory(dir);
+
+        var marker = new DispatchWaitMarker
+        {
+            Task = task,
+            DispatcherAgent = dispatcherAgent,
+            DispatcherRole = dispatcherRole,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchWaitMarker);
+
+        var tempPath = $"{path}.tmp.{Environment.ProcessId}.{Guid.NewGuid():N}";
+        File.WriteAllText(tempPath, json);
+        try
+        {
+            File.Move(tempPath, path, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(tempPath); } catch { }
+            throw;
+        }
+    }
+
+    public List<DispatchWaitMarker> GetDispatchWaitMarkers(string agentName)
+    {
+        var dir = GetDispatchWaitsDir(agentName);
+        if (!Directory.Exists(dir))
+            return [];
+
+        var markers = new List<DispatchWaitMarker>();
+        foreach (var file in Directory.GetFiles(dir, "*.json"))
+        {
+            try
+            {
+                var json = File.ReadAllText(file);
+                var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.DispatchWaitMarker);
+                if (marker != null)
+                    markers.Add(marker);
+            }
+            catch { }
+        }
+
+        return markers;
+    }
+
+    /// <summary>
+    /// Stamps RepliedAt on the dispatch-wait marker for the given task if it exists
+    /// and is not already stamped. Returns true if a stamp was written.
+    /// </summary>
+    public bool MarkDispatchWaitReplied(string agentName, string task)
+    {
+        var dir = GetDispatchWaitsDir(agentName);
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        if (!File.Exists(path)) return false;
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.DispatchWaitMarker);
+            if (marker == null || marker.RepliedAt != null) return false;
+
+            marker.RepliedAt = DateTime.UtcNow;
+            var updated = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchWaitMarker);
+
+            var tempPath = $"{path}.tmp.{Environment.ProcessId}.{Guid.NewGuid():N}";
+            File.WriteAllText(tempPath, updated);
+            try
+            {
+                File.Move(tempPath, path, overwrite: true);
+                return true;
+            }
+            catch
+            {
+                try { File.Delete(tempPath); } catch { }
+                return false;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public DispatchWaitMarker? GetUnrepliedDispatchWait(string agentName, string task)
+    {
+        var dir = GetDispatchWaitsDir(agentName);
+        var sanitized = PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(dir, $"{sanitized}.json");
+        if (!File.Exists(path)) return null;
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.DispatchWaitMarker);
+            if (marker == null || marker.RepliedAt != null) return null;
+            return marker;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public bool HasUnrepliedDispatchWait(string agentName, string task) =>
+        GetUnrepliedDispatchWait(agentName, task) != null;
+
+    public void ClearAllDispatchWaitMarkers(string agentName)
+    {
+        var dir = GetDispatchWaitsDir(agentName);
         if (Directory.Exists(dir))
             Directory.Delete(dir, true);
     }
@@ -2230,6 +2368,7 @@ public partial class AgentRegistry : IAgentRegistry
         ".worktree", ".worktree-path", ".worktree-base", ".worktree-root", ".worktree-hold",
         ".merge-source", ".needs-merge",
         ".reply-pending",
+        "dispatch-waits",
         ".queued"
     };
 

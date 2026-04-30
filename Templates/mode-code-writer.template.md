@@ -32,6 +32,16 @@ Don't skip! The hook guard will block you from reading/editing any other files.
 
 ---
 
+## Register General Wait
+
+Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
+
+```bash
+dydo wait    # run in background
+```
+
+---
+
 ## Verify
 
 ```bash
@@ -89,6 +99,8 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-
 
 ## Complete
 {{include:extra-complete-gate}}
+
+> Note: if your dispatcher used `--wait`, you cannot release until you have messaged them on this task. The release error names the expected subject.
 
 When implementation is done and tests pass:
 

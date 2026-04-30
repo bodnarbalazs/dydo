@@ -126,13 +126,26 @@ public class RoleConstraintEvaluator
     }
 
     /// <summary>
-    /// Checks if an agent can release, evaluating requires-dispatch constraints.
+    /// Checks if an agent can release, evaluating requires-dispatch constraints
+    /// and the universal dispatch-wait release-block (Decision 021).
     /// </summary>
     public bool CanRelease(string agentName, string role, string task, bool isDispatched,
         string? dispatchedByRole,
-        Func<string, string, bool> hasDispatchMarker, out string reason)
+        Func<string, string, bool> hasDispatchMarker, out string reason,
+        Func<string, DispatchWaitMarker?>? getUnrepliedDispatchWait = null)
     {
         reason = string.Empty;
+
+        // Universal release-block from `dispatch --wait`: callee owes the dispatcher
+        // a reply on the dispatched task's subject before they may release.
+        var unreplied = getUnrepliedDispatchWait?.Invoke(task);
+        if (unreplied != null)
+        {
+            reason = $"Cannot release: dispatch --wait obligation unmet — message {unreplied.DispatcherAgent} " +
+                     $"on subject '{unreplied.Task}' before releasing.\n" +
+                     $"  dydo msg --to {unreplied.DispatcherAgent} --subject {unreplied.Task} --body \"...\"";
+            return false;
+        }
 
         if (!_roleDefinitions.TryGetValue(role, out var roleDef))
             return true;

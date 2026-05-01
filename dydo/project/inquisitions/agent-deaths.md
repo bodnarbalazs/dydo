@@ -190,3 +190,7 @@ Investigation into a critical class of bugs where dispatched agents were dying m
 - `dydo/agents/Brian/archive/20260428-144500/brief-agent-deaths.md` — co-thinker's independent root-cause analysis
 - `dydo/agents/Brian/findings-watchdog-quality.md` — scout's full Q1–Q7 verdicts (Brian, dispatched 2026-04-28)
 - Commits: `b60b258` (regression introducer — removed two-poll deferral), `b2db397` (the actual "separate fix" cited by the removal commit; covers only the bash-wrapper subset), `63b71bc` (clear-auto-close timing fix; not the redispatch-race fix), `d2a3ba2` (amplifier — re-anchored watchdog so it lives the whole orchestrator session), `215e8d6` (stale-working reclaim — masks the death symptom by archiving instead of erroring)
+
+## Related
+
+- [Inquisition Coverage Heatmap](./_coverage.md) — auto-generated per-source-file coverage across all inquisitions; useful for spotting which subsystems still lack investigation.

@@ -434,60 +434,20 @@ public static class WatchdogService
             PollAndResumeForAgent(dydoRoot, agentDir);
     }
 
+    private sealed record ResumeContext(
+        string AgentName,
+        string SessionId,
+        int ClaimedPid,
+        DateTime? LastResumeAt,
+        int? PreResumePid,
+        string? WindowId,
+        int Cap,
+        TimeSpan Gate);
+
     private static void PollAndResumeForAgent(string dydoRoot, string agentDir)
     {
-        var statePath = Path.Combine(agentDir, "state.md");
-        if (!File.Exists(statePath)) return;
-
-        var lockPath = Path.Combine(agentDir, ".claim.lock");
-        var agentName = Path.GetFileName(agentDir);
-        if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentName, out _)) return;
-
-        string? sessionId;
-        int? claimedPid;
-        DateTime? lastResumeAt;
-        int? preResumePid;
-        string? windowId;
-        var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
-        var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
-        try
-        {
-            // Read state + session under the lock so a concurrent claim/release
-            // cannot interleave with our gating checks.
-            var (status, attempts, lastAt, preRes, wid) = ParseResumeFields(statePath);
-            if (status != "working") return;
-            if (attempts >= cap) return;
-            lastResumeAt = lastAt;
-            preResumePid = preRes;
-            windowId = wid;
-
-            var sessionPath = Path.Combine(agentDir, ".session");
-            if (!File.Exists(sessionPath)) return;
-            try
-            {
-                var json = File.ReadAllText(sessionPath);
-                var session = System.Text.Json.JsonSerializer.Deserialize(
-                    json, Serialization.DydoDefaultJsonContext.Default.AgentSession);
-                if (session == null) return;
-                sessionId = session.SessionId;
-                claimedPid = session.ClaimedPid;
-            }
-            catch { return; }
-
-            if (claimedPid is not { } pid) return;
-            if (ProcessUtils.IsProcessRunning(pid)) return;
-
-            // Suppress re-fires during the resumed claude's warmup. The watchdog cannot tell
-            // "still warming up" from "still crashed" via the dead-PID check alone — claude
-            // only refreshes ClaimedPid after its first dydo claim, which happens after
-            // rehydration completes. Closes #0152.
-            if (lastResumeAt.HasValue && DateTime.UtcNow - lastResumeAt.Value < gate)
-                return;
-        }
-        finally
-        {
-            AgentRegistry.ReleaseLockAtPath(lockPath);
-        }
+        var ctx = TryReadResumeContext(agentDir);
+        if (ctx == null) return;
 
         // Drop the lock before delegating to the registry — IncrementResumeAttempts
         // takes its own lock; the launcher must NOT hold the agent's claim lock or
@@ -495,42 +455,97 @@ public static class WatchdogService
         var projectRoot = Path.GetDirectoryName(dydoRoot) ?? Directory.GetCurrentDirectory();
         var registry = new AgentRegistry(projectRoot);
 
-        // Fail-fast: if the warmup window has elapsed AND ClaimedPid still equals the
-        // PID we observed at the last launch, the resumed claude never refreshed its
-        // PID — meaning it never reached HandleExistingSession (likely "No conversation
-        // found with session ID", or any other startup-time failure). Saturating the
-        // cap here turns repeated redundant terminals into 1.
-        if (lastResumeAt.HasValue
-            && DateTime.UtcNow - lastResumeAt.Value >= gate
-            && preResumePid.HasValue && claimedPid == preResumePid.Value)
+        if (IsBadSessionFailFast(ctx))
         {
-            registry.SaturateResumeAttempts(agentName, cap);
-            WatchdogLogger.LogResumeBlocked(dydoRoot, agentName, sessionId,
-                reason: "no_refresh_after_warmup", preResumePid: preResumePid.Value);
+            registry.SaturateResumeAttempts(ctx.AgentName, ctx.Cap);
+            WatchdogLogger.LogResumeBlocked(dydoRoot, ctx.AgentName, ctx.SessionId,
+                reason: "no_refresh_after_warmup", preResumePid: ctx.PreResumePid!.Value);
             return;
         }
 
-        var newCount = registry.IncrementResumeAttempts(agentName, claimedPid);
+        var newCount = registry.IncrementResumeAttempts(ctx.AgentName, ctx.ClaimedPid);
         if (newCount < 0) return; // lock contention — try again next tick
 
-        // Worktree-resumed agents must land in their worktree directory, not the
-        // main project root — otherwise the resumed claude can't see its branch.
-        // .worktree-path is the canonical marker DispatchService writes when an
-        // agent is dispatched into (or inherits) a worktree.
         var workingDirectory = ResolveResumeWorkingDirectory(agentDir, projectRoot);
-
         // #0144: route the resume back into the dispatcher's window/tab when the
         // dispatcher recorded a window-id. useTab is implied by windowId being non-null:
         // a recorded windowId means the dispatcher used a window-name (Windows) or
         // iTerm window id (Mac), so resume into it as a new tab.
-        var useTab = windowId != null;
+        var useTab = ctx.WindowId != null;
 
         var launchedPid = LaunchResumeOverride != null
-            ? LaunchResumeOverride(agentName, sessionId, workingDirectory, windowId, useTab)
-            : TerminalLauncher.LaunchResumeTerminal(agentName, sessionId, workingDirectory, windowId, useTab);
+            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab)
+            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab);
 
-        WatchdogLogger.LogResume(dydoRoot, agentName, sessionId, newCount, launchedPid);
+        WatchdogLogger.LogResume(dydoRoot, ctx.AgentName, ctx.SessionId, newCount, launchedPid);
     }
+
+    /// <summary>
+    /// Reads the per-agent resume preconditions under the per-agent .claim.lock and
+    /// returns a context record when a resume is warranted, or null when any gating
+    /// check rules it out (status != working, cap saturated, missing/dead-pid session,
+    /// inside warmup window). Lock is released before this method returns.
+    /// </summary>
+    private static ResumeContext? TryReadResumeContext(string agentDir)
+    {
+        var statePath = Path.Combine(agentDir, "state.md");
+        if (!File.Exists(statePath)) return null;
+
+        var lockPath = Path.Combine(agentDir, ".claim.lock");
+        var agentName = Path.GetFileName(agentDir);
+        if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentName, out _)) return null;
+
+        try
+        {
+            var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
+            var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
+
+            var (status, attempts, lastResumeAt, preResumePid, windowId) = ParseResumeFields(statePath);
+            if (status != "working") return null;
+            if (attempts >= cap) return null;
+
+            var session = TryReadSession(Path.Combine(agentDir, ".session"));
+            if (session == null) return null;
+            if (session.SessionId == null) return null;
+            if (session.ClaimedPid is not { } pid) return null;
+            if (ProcessUtils.IsProcessRunning(pid)) return null;
+
+            // Suppress re-fires during the resumed claude's warmup. Closes #0152.
+            if (lastResumeAt.HasValue && DateTime.UtcNow - lastResumeAt.Value < gate)
+                return null;
+
+            return new ResumeContext(agentName, session.SessionId, pid, lastResumeAt,
+                preResumePid, windowId, cap, gate);
+        }
+        finally
+        {
+            AgentRegistry.ReleaseLockAtPath(lockPath);
+        }
+    }
+
+    private static Models.AgentSession? TryReadSession(string sessionPath)
+    {
+        if (!File.Exists(sessionPath)) return null;
+        try
+        {
+            var json = File.ReadAllText(sessionPath);
+            return System.Text.Json.JsonSerializer.Deserialize(
+                json, Serialization.DydoDefaultJsonContext.Default.AgentSession);
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// True when the warmup window has elapsed AND the live ClaimedPid still equals
+    /// the PID we observed at the last launch — meaning the resumed claude never
+    /// refreshed its PID (never reached HandleExistingSession). Saturating the cap
+    /// here turns repeated redundant terminals into 1.
+    /// </summary>
+    private static bool IsBadSessionFailFast(ResumeContext ctx) =>
+        ctx.LastResumeAt.HasValue
+            && DateTime.UtcNow - ctx.LastResumeAt.Value >= ctx.Gate
+            && ctx.PreResumePid.HasValue
+            && ctx.ClaimedPid == ctx.PreResumePid.Value;
 
     private static string ResolveResumeWorkingDirectory(string agentDir, string projectRoot)
     {
@@ -552,26 +567,44 @@ public static class WatchdogService
             var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
             if (fields == null) return (null, 0, null, null, null);
             fields.TryGetValue("status", out var status);
-            var attempts = 0;
-            if (fields.TryGetValue("resume-attempts", out var r) && int.TryParse(r, out var n))
-                attempts = n;
-            DateTime? lastAt = null;
-            if (fields.TryGetValue("last-resume-launched-at", out var ts)
-                && ts is not ("null" or "")
-                && DateTime.TryParse(ts, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
-                lastAt = parsed;
-            int? preResumePid = null;
-            if (fields.TryGetValue("pre-resume-pid", out var p)
-                && p is not ("null" or "")
-                && int.TryParse(p, out var pp))
-                preResumePid = pp;
-            string? windowId = null;
-            if (fields.TryGetValue("window-id", out var wid) && wid is not ("null" or ""))
-                windowId = wid;
-            return (status, attempts, lastAt, preResumePid, windowId);
+            return (
+                status,
+                ParseIntField(fields, "resume-attempts", 0),
+                ParseTimestampField(fields, "last-resume-launched-at"),
+                ParseNullableIntField(fields, "pre-resume-pid"),
+                ParseNonNullStringField(fields, "window-id"));
         }
         catch { return (null, 0, null, null, null); }
     }
+
+    private static int ParseIntField(Dictionary<string, string> fields, string key, int defaultValue)
+    {
+        if (fields.TryGetValue(key, out var v) && int.TryParse(v, out var n)) return n;
+        return defaultValue;
+    }
+
+    private static int? ParseNullableIntField(Dictionary<string, string> fields, string key)
+    {
+        if (!fields.TryGetValue(key, out var v)) return null;
+        if (IsNullSentinel(v)) return null;
+        return int.TryParse(v, out var n) ? n : null;
+    }
+
+    private static DateTime? ParseTimestampField(Dictionary<string, string> fields, string key)
+    {
+        if (!fields.TryGetValue(key, out var v)) return null;
+        if (IsNullSentinel(v)) return null;
+        return DateTime.TryParse(v, null, System.Globalization.DateTimeStyles.RoundtripKind, out var ts)
+            ? ts : null;
+    }
+
+    private static string? ParseNonNullStringField(Dictionary<string, string> fields, string key)
+    {
+        if (!fields.TryGetValue(key, out var v)) return null;
+        return IsNullSentinel(v) ? null : v;
+    }
+
+    private static bool IsNullSentinel(string? v) => v is null or "null" or "";
 
     // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID
     // — terminal emulators that carry the prompt in their argv (gnome-terminal,

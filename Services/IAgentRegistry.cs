@@ -216,9 +216,18 @@ public interface IAgentRegistry
     void StoreSessionContext(string sessionId, string? agentName = null);
 
     /// <summary>
-    /// Atomically increments the agent's resume-attempts counter and returns
-    /// the new value. Returns -1 if the per-agent lock is contended (caller
-    /// should defer to the next watchdog poll).
+    /// Atomically increments the agent's resume-attempts counter, records the
+    /// current UTC time as last-resume-launched-at, and stores the supplied
+    /// pre-resume PID. Returns the new attempts value, or -1 if the per-agent
+    /// lock is contended (caller should defer to the next watchdog poll).
     /// </summary>
-    int IncrementResumeAttempts(string agentName);
+    int IncrementResumeAttempts(string agentName, int? preResumePid = null);
+
+    /// <summary>
+    /// Atomically sets the agent's resume-attempts counter to the cap. Used by
+    /// the watchdog's bad-session-ID fail-fast (#0152): when the resumed claude
+    /// never refreshes its PID, further retries are wasted. Returns false if the
+    /// per-agent lock is contended.
+    /// </summary>
+    bool SaturateResumeAttempts(string agentName, int cap);
 }

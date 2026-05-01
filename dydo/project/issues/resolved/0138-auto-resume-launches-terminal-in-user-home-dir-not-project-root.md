@@ -3,9 +3,10 @@ id: 138
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 date: 2026-04-30
+resolved-date: 2026-05-01
 ---
 
 # Auto-resume launches terminal in user home dir, not project root
@@ -22,4 +23,4 @@ Open high-severity bug: when the watchdog auto-resumes a crashed agent (per deci
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 473af47 (Wendy): WatchdogService threads workingDirectory via ResolveResumeWorkingDirectory (.worktree-path → projectRoot fallback) into all 3 platform launchers. 3 new tests verified.

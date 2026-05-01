@@ -220,12 +220,15 @@ public class TerminalLauncher
         }
     }
 
-    public static int LaunchResumeTerminal(string agentName, string sessionId, string? workingDirectory = null)
+    public static int LaunchResumeTerminal(string agentName, string sessionId, string? workingDirectory = null,
+        string? windowName = null, bool useTab = false)
     {
-        return new TerminalLauncher(ProcessStarterOverride).LaunchResume(agentName, sessionId, workingDirectory);
+        return new TerminalLauncher(ProcessStarterOverride)
+            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab);
     }
 
-    public int LaunchResume(string agentName, string sessionId, string? workingDirectory = null)
+    public int LaunchResume(string agentName, string sessionId, string? workingDirectory = null,
+        string? windowName = null, bool useTab = false)
     {
         try
         {
@@ -234,9 +237,9 @@ public class TerminalLauncher
                     $"Working directory no longer exists: {workingDirectory}");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory);
+                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory);
+                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab);
 
             var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory);
             if (pid == 0)

@@ -55,6 +55,41 @@ public static partial class ProcessUtils
         return null;
     }
 
+    /// <summary>
+    /// Walks up the process tree returning the first ancestor that looks like the
+    /// running claude binary. Linux/Mac: basename "claude". Windows: basename "claude"
+    /// OR "node" (the official npm distribution is a Node script). Mirrors
+    /// WatchdogService.ClaudeProcessNames so anchoring and ClaimedPid capture share
+    /// one source of truth. Closes #0151.
+    /// </summary>
+    public static int? FindClaudeAncestor(int maxDepth = 10)
+    {
+        if (FindAncestorProcessOverride != null)
+        {
+            var injected = FindAncestorProcessOverride("claude", maxDepth);
+            if (injected.HasValue) return injected;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return FindAncestorProcessOverride("node", maxDepth);
+            return null;
+        }
+
+        var pid = Environment.ProcessId;
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        for (var i = 0; i < maxDepth; i++)
+        {
+            var parentPid = GetParentPid(pid);
+            if (parentPid == null || parentPid <= 1) return null;
+
+            var name = GetProcessName(parentPid.Value);
+            if (MatchesProcessName(name, "claude")) return parentPid.Value;
+            if (isWindows && MatchesProcessName(name, "node")) return parentPid.Value;
+
+            pid = parentPid.Value;
+        }
+        return null;
+    }
+
     // Closes #0128: "claudia.exe", "claude-dev.exe" — anything that merely contains
     // "claude" — must NOT be picked as the watchdog anchor.
     internal static bool MatchesProcessName(string? actualName, string needle) =>

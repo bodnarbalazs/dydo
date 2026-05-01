@@ -154,6 +154,78 @@ public class ProcessUtilsTests
             Assert.True(pid > 0);
     }
 
+    [Fact]
+    public void FindClaudeAncestor_ReturnsClaudeKey_WhenInjected()
+    {
+        // The override path is the same on every OS — the helper should hit the
+        // "claude" key first regardless of platform.
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "claude" ? 12345 : null;
+        try
+        {
+            var pid = ProcessUtils.FindClaudeAncestor();
+            Assert.Equal(12345, pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindClaudeAncestor_OnWindows_FallsBackToNodeKey()
+    {
+        // Closes #0151: on Windows the official claude distribution is a Node
+        // script, so the resolved process name is "node". The helper must accept
+        // a "node" ancestor when "claude" was not found.
+        if (!OperatingSystem.IsWindows()) return;
+
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "node" ? 54321 : null;
+        try
+        {
+            var pid = ProcessUtils.FindClaudeAncestor();
+            Assert.Equal(54321, pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindClaudeAncestor_OnNonWindows_DoesNotFallBackToNode()
+    {
+        // On Linux/Mac the claude binary IS named "claude" — so a "node"
+        // ancestor must NOT be picked (would mistake unrelated node processes
+        // for the claude tab).
+        if (OperatingSystem.IsWindows()) return;
+
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "node" ? 54321 : null;
+        try
+        {
+            var pid = ProcessUtils.FindClaudeAncestor();
+            Assert.Null(pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindClaudeAncestor_NoAncestor_ReturnsNull()
+    {
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        try
+        {
+            var pid = ProcessUtils.FindClaudeAncestor();
+            Assert.Null(pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
     [Theory]
     [InlineData("claude", "claude", true)]
     [InlineData("claude.exe", "claude", true)]

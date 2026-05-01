@@ -3,9 +3,10 @@ id: 146
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 date: 2026-05-01
+resolved-date: 2026-05-01
 ---
 
 # Docs-writer + reviewer workflows don't gate on dydo check — schema drift accumulates
@@ -22,4 +23,4 @@ Open medium-severity workflow gap: docs-writer and reviewer mode templates didn'
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by e338115 (Henry): reviewer template Verify section now includes 'Run dydo check' as a release gate; docs-writer template tightened to explicit exit-zero gate plus 'Before Committing' release-gate note; new 'Writing Content' subsection adds summary-paragraph guideline. Backlog cleanup of pre-existing drift handled separately by Quinn (b92e1b3 + 756bedb).

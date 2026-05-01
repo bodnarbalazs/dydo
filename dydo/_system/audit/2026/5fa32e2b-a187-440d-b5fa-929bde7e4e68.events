@@ -1,0 +1,8 @@
+{"ts":"2026-05-01T19:10:26.9751771Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T19:10:32.203041Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-05-01T19:10:37.7120972Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9ce31b7b-smoke-autoclose-v142.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-01T19:10:41.9913139Z","event":"Role","role":"co-thinker","task":"smoke-autoclose-v142"}
+{"ts":"2026-05-01T19:10:45.4530644Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9ce31b7b-smoke-autoclose-v142.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:10:51.2118655Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9ce31b7b-smoke-autoclose-v142.md","tool":"read"}
+{"ts":"2026-05-01T19:10:59.9211666Z","event":"Blocked","tool":"bash","cmd":"dydo agent release","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:11:05.708668Z","event":"Release","agent":"Adele"}

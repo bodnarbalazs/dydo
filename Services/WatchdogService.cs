@@ -47,9 +47,10 @@ public static class WatchdogService
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this instead of TerminalLauncher.LaunchResumeTerminal.
-    /// Test hook — receives (agentName, sessionId, workingDirectory), returns the (faked) launched PID.
+    /// Test hook — receives (agentName, sessionId, workingDirectory, windowName, useTab),
+    /// returns the (faked) launched PID.
     /// </summary>
-    internal static Func<string, string, string?, int>? LaunchResumeOverride { get; set; }
+    internal static Func<string, string, string?, string?, bool, int>? LaunchResumeOverride { get; set; }
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this cap instead of ResumeAttemptsCap.
@@ -62,6 +63,17 @@ public static class WatchdogService
     /// poisoned-state crash-resume-crash loop within ~2 polling intervals after hit.
     /// </summary>
     internal const int ResumeAttemptsCap = 3;
+
+    /// <summary>
+    /// Window after a resume launch during which the watchdog suppresses additional
+    /// resume attempts for the same agent. Sized for claude --resume rehydration
+    /// (tens of seconds on real conversations) plus dydo claim hook latency.
+    /// Closes #0152.
+    /// </summary>
+    internal static readonly TimeSpan ResumeWarmupGate = TimeSpan.FromSeconds(60);
+
+    /// <summary>Test hook — shrink the warmup gate so cap-race tests stay fast.</summary>
+    internal static TimeSpan? ResumeWarmupGateOverride { get; set; }
 
     private static readonly TimeSpan MaxOrphanAge = TimeSpan.FromHours(24);
 
@@ -103,8 +115,9 @@ public static class WatchdogService
 
         // Register this dispatcher's claude ancestor (if any) before any short-circuit,
         // so a watchdog already running for an earlier dispatcher gains coverage of THIS
-        // claude as well. Closes #0127.
-        RegisterAnchor(dydoRoot, ProcessUtils.FindAncestorProcess("claude"));
+        // claude as well. Closes #0127. Uses FindClaudeAncestor to also accept the
+        // "node" parent name on Windows where claude ships as a Node script (#0151).
+        RegisterAnchor(dydoRoot, ProcessUtils.FindClaudeAncestor());
 
         // Fast path: live watchdog already running
         if (File.Exists(pidFile))
@@ -431,18 +444,25 @@ public static class WatchdogService
         if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentName, out _)) return;
 
         string? sessionId;
+        int? claimedPid;
+        DateTime? lastResumeAt;
+        int? preResumePid;
+        string? windowId;
+        var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
+        var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
         try
         {
             // Read state + session under the lock so a concurrent claim/release
             // cannot interleave with our gating checks.
-            var (status, attempts) = ParseStatusAndResumeAttempts(statePath);
+            var (status, attempts, lastAt, preRes, wid) = ParseResumeFields(statePath);
             if (status != "working") return;
-            var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
             if (attempts >= cap) return;
+            lastResumeAt = lastAt;
+            preResumePid = preRes;
+            windowId = wid;
 
             var sessionPath = Path.Combine(agentDir, ".session");
             if (!File.Exists(sessionPath)) return;
-            int? claimedPid;
             try
             {
                 var json = File.ReadAllText(sessionPath);
@@ -456,6 +476,13 @@ public static class WatchdogService
 
             if (claimedPid is not { } pid) return;
             if (ProcessUtils.IsProcessRunning(pid)) return;
+
+            // Suppress re-fires during the resumed claude's warmup. The watchdog cannot tell
+            // "still warming up" from "still crashed" via the dead-PID check alone — claude
+            // only refreshes ClaimedPid after its first dydo claim, which happens after
+            // rehydration completes. Closes #0152.
+            if (lastResumeAt.HasValue && DateTime.UtcNow - lastResumeAt.Value < gate)
+                return;
         }
         finally
         {
@@ -467,7 +494,23 @@ public static class WatchdogService
         // the resumed claude would block on its first claim.
         var projectRoot = Path.GetDirectoryName(dydoRoot) ?? Directory.GetCurrentDirectory();
         var registry = new AgentRegistry(projectRoot);
-        var newCount = registry.IncrementResumeAttempts(agentName);
+
+        // Fail-fast: if the warmup window has elapsed AND ClaimedPid still equals the
+        // PID we observed at the last launch, the resumed claude never refreshed its
+        // PID — meaning it never reached HandleExistingSession (likely "No conversation
+        // found with session ID", or any other startup-time failure). Saturating the
+        // cap here turns repeated redundant terminals into 1.
+        if (lastResumeAt.HasValue
+            && DateTime.UtcNow - lastResumeAt.Value >= gate
+            && preResumePid.HasValue && claimedPid == preResumePid.Value)
+        {
+            registry.SaturateResumeAttempts(agentName, cap);
+            WatchdogLogger.LogResumeBlocked(dydoRoot, agentName, sessionId,
+                reason: "no_refresh_after_warmup", preResumePid: preResumePid.Value);
+            return;
+        }
+
+        var newCount = registry.IncrementResumeAttempts(agentName, claimedPid);
         if (newCount < 0) return; // lock contention — try again next tick
 
         // Worktree-resumed agents must land in their worktree directory, not the
@@ -476,9 +519,15 @@ public static class WatchdogService
         // agent is dispatched into (or inherits) a worktree.
         var workingDirectory = ResolveResumeWorkingDirectory(agentDir, projectRoot);
 
+        // #0144: route the resume back into the dispatcher's window/tab when the
+        // dispatcher recorded a window-id. useTab is implied by windowId being non-null:
+        // a recorded windowId means the dispatcher used a window-name (Windows) or
+        // iTerm window id (Mac), so resume into it as a new tab.
+        var useTab = windowId != null;
+
         var launchedPid = LaunchResumeOverride != null
-            ? LaunchResumeOverride(agentName, sessionId, workingDirectory)
-            : TerminalLauncher.LaunchResumeTerminal(agentName, sessionId, workingDirectory);
+            ? LaunchResumeOverride(agentName, sessionId, workingDirectory, windowId, useTab)
+            : TerminalLauncher.LaunchResumeTerminal(agentName, sessionId, workingDirectory, windowId, useTab);
 
         WatchdogLogger.LogResume(dydoRoot, agentName, sessionId, newCount, launchedPid);
     }
@@ -495,19 +544,33 @@ public static class WatchdogService
         catch { return projectRoot; }
     }
 
-    private static (string? status, int attempts) ParseStatusAndResumeAttempts(string statePath)
+    private static (string? status, int attempts, DateTime? lastResumeAt, int? preResumePid, string? windowId)
+        ParseResumeFields(string statePath)
     {
         try
         {
             var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
-            if (fields == null) return (null, 0);
+            if (fields == null) return (null, 0, null, null, null);
             fields.TryGetValue("status", out var status);
             var attempts = 0;
             if (fields.TryGetValue("resume-attempts", out var r) && int.TryParse(r, out var n))
                 attempts = n;
-            return (status, attempts);
+            DateTime? lastAt = null;
+            if (fields.TryGetValue("last-resume-launched-at", out var ts)
+                && ts is not ("null" or "")
+                && DateTime.TryParse(ts, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+                lastAt = parsed;
+            int? preResumePid = null;
+            if (fields.TryGetValue("pre-resume-pid", out var p)
+                && p is not ("null" or "")
+                && int.TryParse(p, out var pp))
+                preResumePid = pp;
+            string? windowId = null;
+            if (fields.TryGetValue("window-id", out var wid) && wid is not ("null" or ""))
+                windowId = wid;
+            return (status, attempts, lastAt, preResumePid, windowId);
         }
-        catch { return (null, 0); }
+        catch { return (null, 0, null, null, null); }
     }
 
     // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID

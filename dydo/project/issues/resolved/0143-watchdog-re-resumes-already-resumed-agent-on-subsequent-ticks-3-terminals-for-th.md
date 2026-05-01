@@ -3,9 +3,10 @@ id: 143
 area: backend
 type: issue
 severity: critical
-status: open
+status: resolved
 found-by: manual
 date: 2026-05-01
+resolved-date: 2026-05-01
 ---
 
 # Watchdog re-resumes already-resumed agent on subsequent ticks: 3 terminals for the same agent
@@ -22,4 +23,4 @@ Open critical-severity bug: the watchdog's auto-resume path (decision 022) re-fi
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 397011f (Charlie): RefreshClaimedPid in HandleExistingSession's same-SessionId short-circuit. Resumed claude updates ClaimedPid on first hook fire; preserves Decision 022 identity properties (no archive, no role reset, no workspace wipe) — only PID is refreshed. Eliminates the multi-spawn chaos.

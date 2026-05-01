@@ -2675,6 +2675,37 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void WindowsLaunchResume_WithPersistedWindowName_UsesTabIntoExistingWindow()
+    {
+        // #0144: when the dispatcher recorded a window-id, the resume launcher
+        // must attach to that wt window via "-w {name} new-tab" so the resumed
+        // claude appears next to the original instead of in a fresh GUID window.
+        var recorder = new RecordingProcessStarter();
+        WindowsTerminalLauncher.LaunchResume(recorder, "Adele", "sess-abc",
+            windowName: "mywin8", useTab: true);
+
+        Assert.NotEmpty(recorder.Started);
+        Assert.Equal("wt", recorder.Started[0].FileName);
+        Assert.Contains("-w mywin8 new-tab", recorder.Started[0].Arguments);
+        Assert.DoesNotContain("--window ", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
+    public void WindowsLaunchResume_NoWindowName_UsesFreshGuidWindow()
+    {
+        // Symmetry: with no persisted windowName, we keep today's behaviour and
+        // open a fresh GUID-named window — never a tab attach.
+        var recorder = new RecordingProcessStarter();
+        WindowsTerminalLauncher.LaunchResume(recorder, "Adele", "sess-abc",
+            windowName: null, useTab: false);
+
+        Assert.NotEmpty(recorder.Started);
+        Assert.Equal("wt", recorder.Started[0].FileName);
+        Assert.Contains("--window ", recorder.Started[0].Arguments);
+        Assert.DoesNotContain("-w ", recorder.Started[0].Arguments);
+    }
+
+    [Fact]
     public void LaunchResume_NonExistentWorkingDirectory_ReturnsZeroAndDoesNotStart()
     {
         var recorder = new RecordingProcessStarter();

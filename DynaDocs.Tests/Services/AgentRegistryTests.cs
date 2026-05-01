@@ -18,6 +18,7 @@ public class AgentRegistryTests : IDisposable
     public void Dispose()
     {
         AgentRegistry.IsLauncherAliveOverride = null;
+        ProcessUtils.FindAncestorProcessOverride = null;
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
     }
@@ -219,6 +220,94 @@ public class AgentRegistryTests : IDisposable
         Assert.Equal("sess-X", refreshed.SessionId);                // identity preserved
         Assert.Equal(originalClaimed, refreshed.Claimed.ToString("o")); // identity preserved
         Assert.NotEqual(99999999, refreshed.ClaimedPid);            // PID refreshed
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void ClaimAgent_SameSessionIdReclaim_ResetsResumeAttempts()
+    {
+        // #0153: a same-session reclaim is a successful resume — the resume budget
+        // must be cleared so the next crash episode starts fresh. Without this,
+        // the cap accumulates across crashes and long-lived agents become silently
+        // un-resumable.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            $"{{\"Agent\":\"Adele\",\"SessionId\":\"sess-X\",\"Claimed\":\"{DateTime.UtcNow.AddMinutes(-5):o}\",\"ClaimedPid\":99999999}}");
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            resume-attempts: 2
+            last-resume-launched-at: 2026-04-01T00:00:00.0000000Z
+            pre-resume-pid: 12345
+            ---
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+        registry.StorePendingSessionId("Adele", "sess-X");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent failed: {error}");
+        var state = registry.GetAgentState("Adele");
+        Assert.NotNull(state);
+        Assert.Equal(0, state.ResumeAttempts);
+        Assert.Null(state.LastResumeLaunchedAt);
+        Assert.Null(state.PreResumePid);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void ClaimAgent_FreshClaim_RegistersAnchorWithClaudeAncestor()
+    {
+        // #0154: every claim must register an anchor for its claude ancestor.
+        // Without this, leaf agents whose dispatcher has already exited lose
+        // watchdog coverage and never auto-resume.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 65432;
+
+        var registry = new AgentRegistry(_testDir);
+        registry.StorePendingSessionId("Adele", "sess-fresh");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent failed: {error}");
+        var dydoRoot = Path.Combine(_testDir, "dydo");
+        var anchorPath = Path.Combine(WatchdogService.GetAnchorsDirPath(dydoRoot), "65432.anchor");
+        Assert.True(File.Exists(anchorPath),
+            "fresh claim must write an anchor file for the claude ancestor PID");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void ReleaseAgent_ClearsResumeBookkeepingFields()
+    {
+        // Symmetry to ClaimAgent: release zeroes resume-attempts, last-resume-launched-at,
+        // and pre-resume-pid so a fresh re-dispatch starts with a clean budget.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var registry = new AgentRegistry(_testDir);
+        registry.StorePendingSessionId("Adele", "sess-rel");
+        Assert.True(registry.ClaimAgent("Adele", out var claimErr), claimErr);
+
+        // Mutate the state to non-zero resume bookkeeping, then release.
+        registry.IncrementResumeAttempts("Adele", preResumePid: 4242);
+        var beforeRelease = registry.GetAgentState("Adele")!;
+        Assert.Equal(1, beforeRelease.ResumeAttempts);
+        Assert.NotNull(beforeRelease.LastResumeLaunchedAt);
+        Assert.Equal(4242, beforeRelease.PreResumePid);
+
+        Assert.True(registry.ReleaseAgent("sess-rel", out var relErr), relErr);
+
+        var after = registry.GetAgentState("Adele")!;
+        Assert.Equal(0, after.ResumeAttempts);
+        Assert.Null(after.LastResumeLaunchedAt);
+        Assert.Null(after.PreResumePid);
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 

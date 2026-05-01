@@ -53,4 +53,19 @@ public class AgentState
     /// <see cref="DynaDocs.Services.WatchdogService.ResumeAttemptsCap"/> per Decision 022.
     /// </summary>
     public int ResumeAttempts { get; set; }
+
+    /// <summary>
+    /// UTC timestamp of the most recent watchdog auto-resume launch. Used to
+    /// suppress duplicate launches during the resumed claude's warmup window
+    /// (Decision 022, #0152). Cleared on dydo agent claim and release.
+    /// </summary>
+    public DateTime? LastResumeLaunchedAt { get; set; }
+
+    /// <summary>
+    /// The .session.ClaimedPid value observed at the moment of the most recent
+    /// auto-resume launch. Used to detect bad-session-ID failures: if the
+    /// ClaimedPid still matches this after the warmup gate elapses, the resumed
+    /// claude never reached its claim hook and we fail fast. Cleared on claim/release.
+    /// </summary>
+    public int? PreResumePid { get; set; }
 }

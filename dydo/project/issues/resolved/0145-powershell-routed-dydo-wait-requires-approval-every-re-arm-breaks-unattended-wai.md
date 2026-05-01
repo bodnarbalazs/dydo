@@ -3,9 +3,10 @@ id: 145
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 date: 2026-05-01
+resolved-date: 2026-05-01
 ---
 
 # PowerShell-routed dydo wait requires approval every re-arm — breaks unattended wait flow

@@ -1,0 +1,48 @@
+{"ts":"2026-05-01T19:20:47.9740098Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T19:20:51.760782Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-05-01T19:20:58.0566701Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bbd71bdd-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-01T19:21:01.9914802Z","event":"Role","role":"co-thinker","task":"investigate-wait-rearm-flood-deadlock-0149"}
+{"ts":"2026-05-01T19:21:04.1144151Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:21:09.8212111Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-05-01T19:21:13.6288528Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-01T19:21:18.1458531Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:21:23.8279247Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\a078765b-a856-4b62-8ef0-14ebba3c436f\\tasks\\be489a2jg.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:21:29.5989785Z","event":"Blocked","tool":"bash","cmd":"type \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\a078765b-a856-...","reason":"Unread messages"}
+{"ts":"2026-05-01T19:21:35.946451Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bbd71bdd-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:21:44.1067058Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bbd71bdd-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:21:44.490822Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f17a9a86-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:22:05.3926493Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:22:09.7942312Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:22:32.0113236Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bbd71bdd-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:22:32.5412694Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f17a9a86-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:22:53.7882774Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --id bbd71bdd; if ($?) { dydo inbox clear --id f17a9a86 }; dydo wait","reason":"dydo wait in foreground"}
+{"ts":"2026-05-01T19:23:03.4225235Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --id bbd71bdd","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:23:21.0830363Z","event":"Blocked","tool":"bash","cmd":"Start-Sleep -Milliseconds 500; dydo agent status","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:24:43.2676642Z","event":"Blocked","tool":"bash","cmd":"Start-Sleep -Seconds 3; dydo inbox show","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:24:57.1840491Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:24:57.548244Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:25:15.4568406Z","event":"Blocked","tool":"bash","cmd":"dydo wait --help","reason":"dydo wait in foreground"}
+{"ts":"2026-05-01T19:25:17.4726672Z","event":"Blocked","tool":"bash","cmd":"dydo --help","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:25:21.2149403Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:25:21.6808013Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:25:21.9369044Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:25:33.578765Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:26:05.8956745Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:26:13.1816542Z","event":"Blocked","tool":"bash","cmd":"type \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\a078765b-a856-...","reason":"Unread messages"}
+{"ts":"2026-05-01T19:26:17.555448Z","event":"Blocked","tool":"bash","cmd":"type \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\a078765b-a856-...","reason":"Unread messages"}
+{"ts":"2026-05-01T19:26:21.7880908Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f17a9a86-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:26:27.1913142Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f17a9a86-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:26:45.472698Z","event":"Blocked","tool":"bash","cmd":"dydo msg --to Noah --subject investigate-wait-rearm-flood-deadlock-0149 --body \u0022Adele here. Cannot r...","reason":"Missing general wait"}
+{"ts":"2026-05-01T19:28:21.0220193Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md","tool":"read"}
+{"ts":"2026-05-01T19:28:21.3802582Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read"}
+{"ts":"2026-05-01T19:28:21.9407211Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\GuardCommand.cs","tool":"read"}
+{"ts":"2026-05-01T19:31:06.2539246Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-0149-findings.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-05-01T19:31:48.6132451Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-0149-findings.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-05-01T19:35:10.958822Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-0149-findings.md","tool":"write","reason":"Must-read files not yet read"}
+{"ts":"2026-05-01T19:35:15.8295003Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-01T19:36:01.2667117Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-0149-findings.md","tool":"write"}
+{"ts":"2026-05-01T19:38:10.9610677Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bbd71bdd-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read"}
+{"ts":"2026-05-01T19:38:11.5394367Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f17a9a86-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read"}
+{"ts":"2026-05-01T19:38:19.7312133Z","event":"Bash","tool":"bash","cmd":"mv \u0022dydo/agents/Adele/3d65b791-snapshotted.md\u0022 \u0022dydo/agents/Adele/inbox/3d65b791-msg-investigate-wai..."}
+{"ts":"2026-05-01T19:38:35.3799351Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3d65b791-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read"}
+{"ts":"2026-05-01T19:38:42.6260285Z","event":"Release","agent":"Adele"}

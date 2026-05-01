@@ -181,11 +181,12 @@ public partial class AgentRegistry : IAgentRegistry
         (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleWorkingMinutes;
 
     // PID to persist in .session so a later claim can probe Claude-tab liveness.
-    // Prefer the nearest Claude ancestor (survives shell/subshell churn). If the
-    // claim isn't running under a Claude tab (e.g. CLI tests), fall back to the
+    // Prefer the nearest Claude ancestor (survives shell/subshell churn). On Windows
+    // claude ships as a Node script, so FindClaudeAncestor also accepts "node" (#0151).
+    // If the claim isn't running under a Claude tab (e.g. CLI tests), fall back to the
     // immediate parent shell, which at least dies with the current terminal.
     private static int? ResolveClaimedPid() =>
-        ProcessUtils.FindAncestorProcess("claude") ??
+        ProcessUtils.FindClaudeAncestor() ??
         ProcessUtils.GetParentPid(Environment.ProcessId);
 
     private void RefreshClaimedPid(string agentName, AgentSession existingSession)
@@ -202,6 +203,19 @@ public partial class AgentRegistry : IAgentRegistry
         };
         var sessionPath = Path.Combine(GetAgentWorkspace(agentName), ".session");
         File.WriteAllText(sessionPath, JsonSerializer.Serialize(refreshed, DydoDefaultJsonContext.Default.AgentSession));
+    }
+
+    // Caller is responsible for holding the per-agent .claim.lock — UpdateAgentState
+    // does not re-acquire it. Used by the same-session reclaim path inside ClaimAgent
+    // (which already holds the lock) to zero the resume budget after a successful resume.
+    private void ResetResumeBookkeeping(string agentName)
+    {
+        UpdateAgentState(agentName, s =>
+        {
+            s.ResumeAttempts = 0;
+            s.LastResumeLaunchedAt = null;
+            s.PreResumePid = null;
+        });
     }
 
     // Guards the stale-dispatch reclaim path: if the original dispatch's
@@ -325,6 +339,12 @@ public partial class AgentRegistry : IAgentRegistry
             // watchdog's next dead-PID check fires another resume and produces duplicate
             // terminals. Identity preserved per Decision 022 — only the PID changes.
             RefreshClaimedPid(agentName, existingSession);
+            // #0153: a same-session reclaim is a successful resume — clear the resume
+            // bookkeeping so the next crash episode starts from a clean budget. Without
+            // this, the cap accumulates across crashes and long-lived agents eventually
+            // become silently un-resumable. Decision 022 reads "claim" as inclusive of
+            // same-session reclaims; the spec wording is updated alongside this commit.
+            ResetResumeBookkeeping(agentName);
             return true;
         }
 
@@ -379,12 +399,26 @@ public partial class AgentRegistry : IAgentRegistry
             s.Since = DateTime.UtcNow;
             s.AssignedHuman = human;
             s.ResumeAttempts = 0;
+            s.LastResumeLaunchedAt = null;
+            s.PreResumePid = null;
             if (!wasDispatched)
             {
                 s.WindowId = null;
                 s.AutoClose = false;
             }
         });
+
+        // Anchor the watchdog to this claim's claude ancestor. RegisterAnchor is a
+        // best-effort no-op when the helper returns null (test contexts, unusual
+        // parent chains). Closes #0154 — without this, leaf agents whose dispatcher
+        // has already exited lose watchdog coverage and silently never resume.
+        try
+        {
+            var dydoRoot = _configService.GetDydoRoot(_basePath);
+            if (dydoRoot != null)
+                WatchdogService.RegisterAnchor(dydoRoot, ProcessUtils.FindClaudeAncestor());
+        }
+        catch { /* anchoring is best-effort; never fail a claim because of it */ }
 
         ProjectSnapshot? snapshot = null;
         try
@@ -524,6 +558,8 @@ public partial class AgentRegistry : IAgentRegistry
                 s.UnreadMustReads = [];
                 s.UnreadMessages = [];
                 s.ResumeAttempts = 0;
+                s.LastResumeLaunchedAt = null;
+                s.PreResumePid = null;
                 // Leave AutoClose untouched. The watchdog needs `free + auto-close: true`
                 // post-release to kill claude (Services/WatchdogService.cs:359). The
                 // redispatch race that earlier motivated clearing this here is closed by
@@ -1583,7 +1619,7 @@ public partial class AgentRegistry : IAgentRegistry
         });
     }
 
-    public int IncrementResumeAttempts(string agentName)
+    public int IncrementResumeAttempts(string agentName, int? preResumePid = null)
     {
         if (!TryAcquireLock(agentName, out _))
             return -1;
@@ -1591,8 +1627,34 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
             state.ResumeAttempts += 1;
+            state.LastResumeLaunchedAt = DateTime.UtcNow;
+            state.PreResumePid = preResumePid;
             WriteStateFile(agentName, state);
             return state.ResumeAttempts;
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
+    }
+
+    /// <summary>
+    /// Sets ResumeAttempts to the cap value directly (without incrementing). Used by the
+    /// watchdog's bad-session-ID fail-fast path: if the resumed claude never refreshes its
+    /// PID after the warmup window, additional retries are pointless. Saturating the cap
+    /// here turns repeated failed launches into a single one. Reset semantics still apply:
+    /// dydo agent claim or release clears the saturation.
+    /// </summary>
+    public bool SaturateResumeAttempts(string agentName, int cap)
+    {
+        if (!TryAcquireLock(agentName, out _))
+            return false;
+        try
+        {
+            var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
+            state.ResumeAttempts = cap;
+            WriteStateFile(agentName, state);
+            return true;
         }
         finally
         {
@@ -1628,6 +1690,8 @@ public partial class AgentRegistry : IAgentRegistry
             window-id: {state.WindowId ?? "null"}
             auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
             resume-attempts: {state.ResumeAttempts}
+            last-resume-launched-at: {(state.LastResumeLaunchedAt.HasValue ? state.LastResumeLaunchedAt.Value.ToString("o") : "null")}
+            pre-resume-pid: {state.PreResumePid?.ToString() ?? "null"}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
             readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
@@ -1706,6 +1770,17 @@ public partial class AgentRegistry : IAgentRegistry
         ["window-id"] = (s, v) => s.WindowId = NullableString(v),
         ["auto-close"] = (s, v) => s.AutoClose = v == "true",
         ["resume-attempts"] = (s, v) => s.ResumeAttempts = int.TryParse(v, out var n) ? n : 0,
+        ["last-resume-launched-at"] = (s, v) =>
+        {
+            if (v is "null" or "") return;
+            if (DateTime.TryParse(v, null, System.Globalization.DateTimeStyles.RoundtripKind, out var ts))
+                s.LastResumeLaunchedAt = ts;
+        },
+        ["pre-resume-pid"] = (s, v) =>
+        {
+            if (v is "null" or "") return;
+            if (int.TryParse(v, out var p)) s.PreResumePid = p;
+        },
         ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },
         ["writable-paths"] = (s, v) => s.WritablePaths = ParsePathList(v),
         ["readonly-paths"] = (s, v) => s.ReadOnlyPaths = ParsePathList(v),

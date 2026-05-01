@@ -3,9 +3,10 @@ id: 147
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 date: 2026-05-01
+resolved-date: 2026-05-01
 ---
 
 # Wait fails to trigger on a message that arrives during the wait re-arm gap (race condition post-#0141 fix)

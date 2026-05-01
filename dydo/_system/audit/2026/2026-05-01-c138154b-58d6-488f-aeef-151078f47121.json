@@ -1,0 +1,15 @@
+{
+  "session": "c138154b-58d6-488f-aeef-151078f47121",
+  "human": "balazs",
+  "started": "2026-05-01T19:23:45.5490659Z",
+  "git_head": "aeee461",
+  "events": [
+    {
+      "ts": "2026-05-01T19:23:45.5479554Z",
+      "event": "Blocked",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/CLAUDE.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    }
+  ]
+}

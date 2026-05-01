@@ -84,14 +84,21 @@ public static class WindowsTerminalLauncher
                $"{waitStart}claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}\"";
     }
 
-    public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId, string? workingDirectory = null)
+    public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId,
+        string? workingDirectory = null, string? windowName = null, bool useTab = false)
     {
         var shell = ProcessUtils.ResolvePowerShell();
 
         try
         {
-            var windowName = Guid.NewGuid().ToString("N")[..8];
-            var wtAction = $"--window {windowName} new-tab";
+            // #0144: prefer the persisted dispatcher window-name so the resumed claude
+            // lands as a new tab in the original wt window. Falls back to the prior
+            // fresh-GUID-window behaviour for older state.md and fresh-window dispatches.
+            string wtAction;
+            if (useTab && windowName != null)
+                wtAction = $"-w {windowName} new-tab";
+            else
+                wtAction = $"--window {Guid.NewGuid().ToString("N")[..8]} new-tab";
             var wtDirArg = workingDirectory != null
                 ? $"--startingDirectory \"{workingDirectory}\" "
                 : "";

@@ -59,7 +59,8 @@ public static class MacTerminalLauncher
     }
 
     public static int LaunchResume(IProcessStarter processStarter, ITerminalDetector terminalDetector,
-        string agentName, string sessionId, string? workingDirectory = null)
+        string agentName, string sessionId, string? workingDirectory = null,
+        string? windowName = null, bool useTab = false)
     {
         var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory);
 
@@ -67,8 +68,12 @@ public static class MacTerminalLauncher
         var useITerm = runningTerminal == "iTerm"
             || (runningTerminal == null && terminalDetector.IsAvailable("iTerm"));
 
+        // #0144: when the dispatcher recorded an iTerm window id, route the resume
+        // back into that window as a new tab so the resumed claude appears next to
+        // the original. Falls back to a fresh window when no windowId is persisted.
         var script = useITerm
-            ? GetITermWindowScript(shellCommand, postCheck)
+            ? (useTab ? GetITermTabScript(shellCommand, postCheck, windowName)
+                      : GetITermWindowScript(shellCommand, postCheck))
             : $"tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"";
 
         var psi = new ProcessStartInfo

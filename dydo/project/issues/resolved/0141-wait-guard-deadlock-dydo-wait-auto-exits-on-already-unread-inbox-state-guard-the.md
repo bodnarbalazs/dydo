@@ -3,9 +3,10 @@ id: 141
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 date: 2026-04-30
+resolved-date: 2026-05-01
 ---
 
 # Wait-guard deadlock: 'dydo wait' auto-exits on already-unread inbox state, guard then blocks recovery (post-v1.4.0)
@@ -22,4 +23,4 @@ Open high-severity bug: under v1.4.0, `dydo wait` auto-exits in <1s when `state.
 
 ## Resolution
 
-(Filled when resolved)
+Fixed by 65705e0 (Emma): WaitGeneral snapshot moved from state.md.UnreadMessages to MessageFinder.GetInboxMessageIds(inboxPath); idempotency guard refuses duplicate registrations with nonzero exit. Note: #0147 later refined the alignment to use UnreadMessages as canonical signal across all of dydo.

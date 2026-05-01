@@ -921,12 +921,14 @@ public class WaitCommandTests : IntegrationTestBase
             if (!drained)
             {
                 drained = true;
-                // Simulate the agent draining via Read. Stay alive so the loop runs
-                // again with empty UnreadMessages, proving no spurious fire after drain.
+                // Simulate the agent draining via Read on the first liveness probe
+                // (the first poll already returned null because the snapshot excluded
+                // the only unread). Return true so this probe doesn't exit; the next
+                // probe returns false and the wait exits via parent/claude-death.
                 registry.ClearAllUnreadMessages("Adele");
                 return true;
             }
-            return false;  // exit via parent/claude-death after the post-drain iteration
+            return false;
         };
         try
         {

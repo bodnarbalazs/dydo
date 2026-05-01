@@ -75,6 +75,7 @@ There is no such thing as "PASS with notes", it's a "FAIL". "PASS" means PERFECT
 1. **Read the brief** — Understand what was implemented and why, or what you've been asked to audit
 2. **Review the changes** — Check against coding standards, including stack specific standards if there are any
 3. **Run tests** — Verify they pass
+4. **Run `dydo check`** — All errors must be clean before approval. Warnings should be addressed if introduced by this commit, or noted as pre-existing in the review verdict.
 {{include:extra-review-steps}}
 
 **Document findings** — Note issues clearly

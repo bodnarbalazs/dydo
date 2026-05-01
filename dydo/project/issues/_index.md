@@ -35,6 +35,11 @@ Index of issues documentation.
 - [Auto-resume launches terminal in user home dir, not project root](./0138-auto-resume-launches-terminal-in-user-home-dir-not-project-root.md)
 - [Wait-guard deadlock: 'dydo wait' auto-exits on already-unread inbox state, guard then blocks recovery (post-v1.4.0)](./0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md)
 - [dydo dispatch must refuse to run in background — silent no-launch when run with run_in_background true](./0142-dydo-dispatch-must-refuse-to-run-in-background-silent-no-launch-when-run-with-ru.md)
+- [Watchdog re-resumes already-resumed agent on subsequent ticks: 3 terminals for the same agent](./0143-watchdog-re-resumes-already-resumed-agent-on-subsequent-ticks-3-terminals-for-th.md)
+- [Auto-resume opens in new window — should reuse the original window as a new tab where applicable](./0144-auto-resume-opens-in-new-window-should-reuse-the-original-window-as-a-new-tab-wh.md)
+- [PowerShell-routed dydo wait requires approval every re-arm — breaks unattended wait flow](./0145-powershell-routed-dydo-wait-requires-approval-every-re-arm-breaks-unattended-wai.md)
+- [Docs-writer + reviewer workflows don't gate on dydo check — schema drift accumulates](./0146-docs-writer-reviewer-workflows-don-t-gate-on-dydo-check-schema-drift-accumulates.md)
+- [Wait fails to trigger on a message that arrives during the wait re-arm gap (race condition post-#0141 fix)](./0147-wait-fails-to-trigger-on-a-message-that-arrives-during-the-wait-re-arm-gap-race.md)
 
 ## Subfolders
 

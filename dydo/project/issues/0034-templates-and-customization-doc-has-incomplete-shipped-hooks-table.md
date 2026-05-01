@@ -10,6 +10,8 @@ date: 2026-04-08
 
 # Templates-and-customization doc has incomplete shipped hooks table
 
+Audit cross-checked `templates-and-customization.md`'s shipped-hooks table against the actual template files. The table was complete and accurate; the real gap was in decision doc 002's hooks section, fixed under #0033. Closed as a no-op for this doc.
+
 ## Description
 
 (Describe the issue)

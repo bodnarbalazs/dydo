@@ -10,6 +10,8 @@ date: 2026-04-08
 
 # roles-and-permissions.md missing requires-dispatch and dispatch-restriction constraint types
 
+`roles-and-permissions.md`'s Constraint Types table omitted the `requires-dispatch` and `dispatch-restriction` constraints, leaving readers without the rules that gate release and dispatch. Resolved by adding both constraint types with their evaluation contexts (CanRelease/CanDispatch) and three new subsections under Role Transitions and Restrictions covering Review Enforcement (H25), Inquisitor Escalation, and Reviewer Dispatch Restriction.
+
 ## Description
 
 (Describe the issue)

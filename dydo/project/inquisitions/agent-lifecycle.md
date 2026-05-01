@@ -1,9 +1,11 @@
 ---
-area: services
+area: project
 type: inquisition
 ---
 
 # Agent Lifecycle Inquisition
+
+Investigation of the agent lifecycle subsystem — claiming, release, workspace archival, dispatch markers, reply-pending markers — across `AgentRegistry`, validators, selectors, state stores, and the workspace cleanup services. Docs (architecture, dispatch-and-messaging) and tests were cross-checked, with five reviewer scouts dispatched. The report records scope, findings, and recommended follow-up.
 
 ## 2026-04-03 — Charlie
 

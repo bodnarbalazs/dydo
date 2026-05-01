@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # Dead code: TerminalLauncher.MacTerminals array never referenced
 
+Resolved medium-severity dead-code finding: `TerminalLauncher.MacTerminals` was an unreferenced array. Fixed in commit `3b554de` by removing it.
+
 ## Description
 
 (Describe the issue)

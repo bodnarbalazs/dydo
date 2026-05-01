@@ -11,6 +11,8 @@ resolved-date: 2026-04-07
 
 # MacTerminalLauncher.Launch duplicates GetArguments logic
 
+Resolved high-severity duplication finding: `MacTerminalLauncher.Launch` reimplemented argument-construction logic from `GetArguments`. Fixed by extracting the shared logic to `BuildShellComponents`.
+
 ## Description
 
 (Describe the issue)

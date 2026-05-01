@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # Inconsistent git -C usage between cleanup and merge paths
 
+Resolved medium-severity correctness finding: cleanup and merge paths used `git -C` inconsistently, sometimes against the worktree and sometimes against the main repo, producing surprises when the working directory differed. Fixed by routing both paths through `mainRoot` consistently.
+
 ## Description
 
 (Describe the issue)

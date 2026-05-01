@@ -1,9 +1,11 @@
 ---
-area: process-lifecycle
+area: project
 type: inquisition
 ---
 
 # Stale dydo processes & worktree file locks
+
+Targeted audit (per Brian's brief) into which dydo-spawned processes can hold filesystem locks past their intended lifetime, and why. Examines `WatchdogService` and the surrounding lifecycle code; root-cause maps the leak shapes that translate into worktree directories that won't delete and merge attempts that fail unexpectedly.
 
 ## 2026-04-18 — Frank
 

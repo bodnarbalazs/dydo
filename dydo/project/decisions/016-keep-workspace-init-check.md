@@ -2,10 +2,12 @@
 type: decision
 status: accepted
 date: 2026-03-30
-area: cli
+area: project
 ---
 
 # 016 — Keep `workspace init` and `workspace check`
+
+`dydo workspace init` and `dydo workspace check` have effectively zero usage in the audit history because their behavior is folded into the agent claim and release flows. This decision retains both commands as low-risk redundancy rather than removing them, since they cost nothing to keep and would be tedious to reintroduce later.
 
 ## Context
 

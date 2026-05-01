@@ -11,6 +11,8 @@ resolved-date: 2026-04-07
 
 # Dead code: QueueService.TryEnqueue superseded by TryAcquireOrEnqueue
 
+Resolved low-severity dead-code finding: `QueueService.TryEnqueue` was superseded by `TryAcquireOrEnqueue` and had no remaining callers. Closed under the recent code-quality cleanup.
+
 ## Description
 
 (Describe the issue)

@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # RunGitForWorktree has no timeout unlike WorktreeCommand.RunProcess
 
+Resolved low-severity correctness finding: `RunGitForWorktree` had no process timeout, while the parallel `WorktreeCommand.RunProcess` capped at 30s. A hung git invocation could block worktree operations indefinitely. Fixed by applying the same `ProcessTimeoutMs` (30s) cap.
+
 ## Description
 
 (Describe the issue)

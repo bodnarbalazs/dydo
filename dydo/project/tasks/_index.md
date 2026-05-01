@@ -12,13 +12,24 @@ Index of tasks documentation.
 ## Contents
 
 - [Task: auto-close-smoke-v140](./auto-close-smoke-v140.md) - (No description)
+- [Task: auto-close-smoke-v141](./auto-close-smoke-v141.md) - (No description)
 - [Task: auto-resume-smoke-v140](./auto-resume-smoke-v140.md) - (No description)
+- [Task: auto-resume-smoke-v141](./auto-resume-smoke-v141.md) - (No description)
 - [Task: auto-resume-smoke](./auto-resume-smoke.md) - (No description)
+- [Task: cleanup-docs-check-backlog](./cleanup-docs-check-backlog.md) - (No description)
+- [Task: discuss-with-user](./discuss-with-user.md) - (No description)
 - [Task: fix-auto-resume-cwd](./fix-auto-resume-cwd.md) - Review commit 473af47 for fix-auto-resume-cwd (#0138).
+- [Task: fix-auto-resume-multi-spawn](./fix-auto-resume-multi-spawn.md) - Review commit 397011f for fix-auto-resume-multi-spawn (#0143).
 - [Task: fix-ci-flake-anchor-midflight](./fix-ci-flake-anchor-midflight.md) - Review commit f26a288 for fix-ci-flake-anchor-midflight.
+- [Task: fix-docs-quality-workflow](./fix-docs-quality-workflow.md) - Review commit e338115 for fix-docs-quality-workflow (#0146).
 - [Task: fix-issue-permissions-and-message](./fix-issue-permissions-and-message.md) - Review commit 25549b7 for fix-issue-permissions-and-message.
 - [Task: fix-master-regressions](./fix-master-regressions.md) - No-repro review for fix-master-regressions (#0139, #0140).
-- [Task: fix-wait-guard-deadlock](./fix-wait-guard-deadlock.md)
+- [Task: fix-pwsh-wait-approval](./fix-pwsh-wait-approval.md) - Review commit 3808f37 for fix-pwsh-wait-approval (#0145).
+- [Task: fix-wait-guard-deadlock](./fix-wait-guard-deadlock.md) - Code-writer task implementing Zelda's plan for issue #0141: align `WaitCommand.
+- [Task: fix-wait-race](./fix-wait-race.md) - (No description)
+- [Task: investigate-pwsh-wait-approval](./investigate-pwsh-wait-approval.md) - (No description)
 - [Task: investigate-wait-guard-deadlock](./investigate-wait-guard-deadlock.md) - (No description)
+- [Task: investigate-wait-race](./investigate-wait-race.md) - (No description)
 - [Task: readme-advertise-auto-resume](./readme-advertise-auto-resume.md) - (No description)
+- [Task: wait-deadlock-smoke-v141](./wait-deadlock-smoke-v141.md) - (No description)
 - [Task: write-v1.4-release-doc](./write-v1.4-release-doc.md) - Review commit 2054f5d for write-v1.

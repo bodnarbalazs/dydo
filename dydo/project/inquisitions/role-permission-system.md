@@ -1,9 +1,11 @@
 ---
-area: services
+area: project
 type: inquisition
 ---
 
 # Inquisition: Role and Permission System
+
+Feature investigation of the role and permission system — `RoleDefinitionService`, `RoleConstraintEvaluator`, `PathPermissionChecker`, `GlobMatcher`, role JSON schemas, and how guard, dispatch, and audit consume them. The report lists files investigated, scout assignments, and the findings that feed the issue tracker.
 
 ## 2026-04-08 — Brian
 

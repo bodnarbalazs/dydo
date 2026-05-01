@@ -8,6 +8,8 @@ participants: [balazs, Emma]
 
 # 009 — Claude Code Native `.claude/` Features Evaluation
 
+Evaluation of whether dydo should adopt any of Claude Code's expanded native `.claude/` features (rules, skills, native subagents, auto-memory, additional hook events, MCP servers, native worktree isolation, dynamic permission rewriting). The decision is to skip all of them — dydo's current integration surface (PreToolUse hook, CLAUDE.md pointer, terminal spawn) is sufficient, and the native features either conflict with staged enforcement or solve weaker versions of problems dydo already handles.
+
 ## Context
 
 dydo integrates with Claude Code through three touchpoints: a PreToolUse hook in `.claude/settings.local.json`, a CLAUDE.md pointer to `dydo/index.md`, and terminal spawn via `claude 'AgentName --inbox'` with environment variables. Claude Code has expanded its native `.claude/` features significantly (rules, skills, native subagents, auto-memory, 20+ hook events, MCP servers, worktree isolation). We evaluated whether any of these should be adopted.

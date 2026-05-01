@@ -7,6 +7,8 @@ area: platform
 
 # 019 — Reviewer Verdict Routing and Subject-Aware Send Diagnostics
 
+Reviewer verdicts (`dydo review complete --status pass`) used to die in the reviewer's terminal — no inter-agent message, no automatic notification to the dispatcher's chain. Code-writers were supposed to forward manually and routinely skipped it, leaving orchestrators with a fired wait but an empty inbox. This decision auto-routes the verdict back through the dispatch chain and adds subject-aware diagnostics to `dydo msg` so failed sends to released agents tell the sender what they should have done instead.
+
 ## Context
 
 Previously, `dydo review complete --status pass` produced no inter-agent

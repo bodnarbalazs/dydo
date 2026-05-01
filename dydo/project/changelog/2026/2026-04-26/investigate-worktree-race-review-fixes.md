@@ -6,6 +6,8 @@ date: 2026-04-26
 
 # Task: investigate-worktree-race-review-fixes
 
+Follow-up on the `investigate-worktree-race` fix after reviewer Brian FAILED the first-round review. The original race fix (skip `TeardownWorktree` when other agents still hold the worktree) was logically correct, but the regression test passed for the wrong reason and the corresponding log line was misleading. This task strengthens the test to mirror the production marker layout and fixes the log message.
+
 # Brief: address reviewer findings on investigate-worktree-race
 
 Reviewer Brian FAILED the first-round review. Full report lives at `dydo/agents/Brian/archive/20260424-163706/review-investigate-worktree-race.md` — read it first, it is concise and correct. Your job is to land the two substantive fixes below. Do not touch anything else.

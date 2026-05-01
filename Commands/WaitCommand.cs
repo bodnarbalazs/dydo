@@ -100,17 +100,12 @@ public static class WaitCommand
         // window where guard checks observe Listening=false. (#0133)
         registry.CreateListeningWaitMarker(agentName, GeneralWaitMarker, agentName, Environment.ProcessId);
 
-        // Snapshot what was already on disk when the wait started. The general wait should
-        // signal NEW arrivals, not pop on already-known messages — popping on a known
-        // message creates a deadlock: marker is removed on exit, agent can't satisfy the
-        // general-wait guard, can't Read to mark messages read, can't 'inbox clear'.
-        //
-        // Snapshot from inbox dir, NOT state.md.UnreadMessages — the latter is depleted
-        // by the Read tool (GuardCommand.TrackReadCompletion -> MarkMessageRead) while
-        // inbox files persist until 'dydo inbox clear'. MessageFinder scans the inbox dir,
-        // so the snapshot must use the same source of truth. (#0141)
-        var initialUnread = MessageFinder.GetInboxMessageIds(inboxPath);
-
+        // Wait fires on inbox-files ∩ state.md.UnreadMessages, re-read each poll. The
+        // canonical "not yet delivered" set: writer adds via MessageService.DeliverInboxMessage
+        // → AddUnreadMessage; Read removes via GuardCommand.TrackReadCompletion → MarkMessageRead.
+        // No registration-time snapshot — eliminates the W1-exit → W2-register race (#0147)
+        // and cannot re-introduce the #0141 deadlock because already-read ids are no
+        // longer in the set. (#0141 / #0147)
         Console.WriteLine("Waiting for message...");
 
         try
@@ -121,7 +116,12 @@ public static class WaitCommand
                 // wait started are excluded — task-channel waits have priority over the general
                 // fallback, regardless of registration order.
                 var claimedTasks = GetActiveTaskWaitSubjects(registry, agentName);
-                var message = MessageFinder.FindMessage(inboxPath, null, claimedTasks, initialUnread);
+                var unreadIds = registry.GetAgentState(agentName)?.UnreadMessages is { } u
+                    ? new HashSet<string>(u, StringComparer.OrdinalIgnoreCase)
+                    : null;
+                var message = (unreadIds is null || unreadIds.Count == 0)
+                    ? null
+                    : MessageFinder.FindMessage(inboxPath, null, claimedTasks, excludeIds: null, includeIds: unreadIds);
                 if (message != null)
                 {
                     PrintMessage(message);

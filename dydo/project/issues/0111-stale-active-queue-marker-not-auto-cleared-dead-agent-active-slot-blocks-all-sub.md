@@ -10,6 +10,8 @@ date: 2026-04-26
 
 # Stale active-queue marker not auto-cleared; dead-agent active slot blocks all subsequent --queue merge dispatches indefinitely
 
+Open high-severity bug: when a queued agent dies while holding the merge queue's "active" slot, `dydo queue show` correctly annotates the entry `[stale]` but the queue advancement logic never recovers — pending entries sit forever and new `--queue merge` dispatches just add to the pending list. Recovery requires human guard-lift plus a manual `rm` of `_active.json`. Cascades with #0109 to stall multi-agent worktree work indefinitely.
+
 ## Description
 
 When a queued agent's process dies while holding the merge queue's "active" slot, `dydo queue show` correctly annotates the entry `[stale]` (so the queue subsystem already knows the PID is dead) but the queue advancement logic never recovers. Pending entries sit forever behind the dead active. New `dydo dispatch --queue merge` calls add to the pending list rather than starting.

@@ -1,4 +1,11 @@
+---
+area: project
+type: inquisition
+---
+
 # Inquisition: Dispatch and Messaging System
+
+Area investigation covering `DispatchService`, `MessageService`, `InboxService`, `QueueService`, and supporting code. Examines the dispatch-side flow (claim → launcher → state markers) and the messaging-side flow (send → inbox file → wait pickup), with cross-checks against architecture and dispatch docs and the corresponding test suites.
 
 ## 2026-04-03 — Brian
 

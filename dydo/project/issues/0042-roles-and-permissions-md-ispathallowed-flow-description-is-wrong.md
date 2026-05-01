@@ -10,6 +10,8 @@ date: 2026-04-08
 
 # roles-and-permissions.md IsPathAllowed flow description is wrong
 
+The `IsPathAllowed` flow described in `roles-and-permissions.md` (and a parallel description in `guard-system.md`) didn't match the implementation, presenting it as a 3-step process when it's actually 4 (no-role check, ReadOnlyPaths with WritablePaths override, empty-writable check, WritablePaths match). Resolved by rewriting both descriptions, clarifying that off-limits is a separate guard pipeline stage, and updating glob pattern docs to cover all four conversions.
+
 ## Description
 
 (Describe the issue)

@@ -25,7 +25,7 @@ Index of 2026-04-29 documentation.
 - [Task: fix-watchdog-anchor-hardening](./fix-watchdog-anchor-hardening.md) - Review commit 762eeda for fix-watchdog-anchor-hardening (#0126/#0127/#0128/#0131/#0132).
 - [Task: fix-watchdog-deaths-critical](./fix-watchdog-deaths-critical.md) - Review commit 06512de (fix-watchdog-deaths-critical) against Emma's plan at dydo/agents/Emma/archive/20260428-204956/plan-watchdog-deaths-critical.
 - [Task: fix-watchdog-logging-followup](./fix-watchdog-logging-followup.md) - Review commit 4dd5d03 for fix-watchdog-logging-followup.
-- [Task: fix-watchdog-structured-logging](./fix-watchdog-structured-logging.md)
+- [Task: fix-watchdog-structured-logging](./fix-watchdog-structured-logging.md) - Recovery and completion of issue #0129 — adding structured JSON logging to the watchdog so kill-class events become diagnosable.
 - [Task: fix-windows-launcher-stayopen](./fix-windows-launcher-stayopen.md) - Review commit e1eac2e for fix-windows-launcher-stayopen (#0124).
 - [Task: merge-recovery-fix-agent-tool-nudge](./merge-recovery-fix-agent-tool-nudge.md) - (No description)
 - [Task: orchestrator-handoff](./orchestrator-handoff.md) - (No description)

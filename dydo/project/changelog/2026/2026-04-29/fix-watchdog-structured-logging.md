@@ -6,6 +6,8 @@ date: 2026-04-29
 
 # Task: fix-watchdog-structured-logging
 
+Recovery and completion of issue #0129 — adding structured JSON logging to the watchdog so kill-class events become diagnosable. Picked up from Jack's uncommitted WIP after his terminal died mid-task to a watchdog kill (the very class of bug this work helps surface). Includes the new `WatchdogLogger`, `WatchdogService` instrumentation, log rotation, and tests.
+
 # Brief: recover-fix-watchdog-structured-logging (#0129)
 
 You are a code-writer recovering an in-flight task. Today is 2026-04-29.

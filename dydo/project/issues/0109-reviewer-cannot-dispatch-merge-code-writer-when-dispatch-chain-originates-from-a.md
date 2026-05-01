@@ -10,6 +10,8 @@ date: 2026-04-26
 
 # Reviewer cannot dispatch merge code-writer when dispatch chain originates from a released test-writer (or other ineligible role)
 
+Open medium-severity bug: the reviewer's `dispatch-restriction` constraint checks the immediate dispatcher's role only, so chains like `code-writer → test-writer → reviewer` block the reviewer from dispatching the merge code-writer that the worktree merge flow expects. The reviewer ends up stuck with `.needs-merge` set and no way to release without orchestrator intervention. The proposed fix is to gate on the destination ("is this a `--queue merge` dispatch?") rather than on the chain's source role.
+
 ## Description
 
 The reviewer role has a `dispatch-restriction` constraint that limits when a reviewer can dispatch a code-writer:

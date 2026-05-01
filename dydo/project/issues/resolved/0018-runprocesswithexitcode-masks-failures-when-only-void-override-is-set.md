@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # RunProcessWithExitCode masks failures when only void override is set
 
+Resolved medium-severity correctness bug: `RunProcessWithExitCode` fell through to a void override when its own override wasn't set, masking failures that would have surfaced via the exit code. Fixed by checking the dedicated override first.
+
 ## Description
 
 (Describe the issue)

@@ -1,3 +1,12 @@
+---
+area: project
+type: inquisition
+---
+
+# CLI Commands Inquisition
+
+Feature investigation of the dydo CLI command surface — every `Commands/*Command.cs` and the supporting completion / validation / installer services. The report cross-references the user-facing reference docs, help text, and command-related tests; lists scout dispatches (3 reviewers, 1 test-writer); and captures findings against the actual command tree.
+
 ## 2026-04-09 — Brian
 
 ### Scope

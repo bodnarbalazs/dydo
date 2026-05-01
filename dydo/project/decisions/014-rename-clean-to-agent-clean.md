@@ -2,10 +2,12 @@
 type: decision
 status: accepted
 date: 2026-03-30
-area: cli
+area: project
 ---
 
 # 014 — Rename `dydo clean` to `dydo agent clean`
+
+`dydo clean` operates exclusively on agent workspaces, but lived at the top level alongside unrelated commands. This decision moves it under the `agent` subcommand group as `dydo agent clean`, aligning it with the rest of the agent lifecycle commands and matching the muscle memory operators had already developed.
 
 ## Context
 

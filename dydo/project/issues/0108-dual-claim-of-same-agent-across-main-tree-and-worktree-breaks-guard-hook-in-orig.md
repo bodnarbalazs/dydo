@@ -10,6 +10,8 @@ date: 2026-04-26
 
 # Dual-claim of same agent across main tree and worktree breaks guard hook in original shell
 
+Open high-severity bug: the reviewer auto-selector in a `code-writer-in-worktree → reviewer` dispatch chain can route the reviewer claim back to the originating orchestrator, and the second claim silently overwrites the live session record. The original shell ends up in an asymmetric half-broken state — `dydo whoami` still reports the agent identity, but the PreToolUse guard hook rejects all file reads and writes. Likely root causes: missing dispatch-origin exclusion in reviewer auto-selection, plus the claim path overwriting a non-stale, alive session.
+
 ## Description
 
 When a code-writer dispatched into a worktree fulfils its `requires-dispatch`-of-reviewer release constraint by running `dydo dispatch --no-wait --auto-close --role reviewer --task <task> --brief "..."` without an explicit `--agent`, the auto-selector can route the reviewer-claim to the **same human-named agent** that originated the dispatch (i.e. the orchestrator). The dispatched-reviewer process then claims that agent inside the worktree workspace, replacing the live session record. The original orchestrator's shell — still running, same agent name in `dydo whoami` — drifts into a half-broken state where:

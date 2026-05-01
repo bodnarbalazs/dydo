@@ -83,6 +83,10 @@ Write for the reader who comes after you. Be clear. Be accurate. Be concise.
 | `project/pitfalls/` | Known issues | Discovered gotchas, common mistakes |
 | `project/changelog/` | Change history | After releases or major changes |
 
+### Writing Content
+
+Every doc must lead with a summary paragraph immediately after the H1 title — single paragraph, plain prose, no bullets, sets the doc's frame in 2–4 sentences. Schema enforces it; this is your reminder.
+
 ### Before Committing
 
 Validate your docs:
@@ -92,6 +96,8 @@ dydo check              # Find issues
 dydo fix                # Auto-fix what's possible
 ```
 
+`dydo check` is a release gate, not a suggestion. The reviewer will run it as part of their verdict — any errors block approval.
+
 See [writing-docs.md](../../../reference/writing-docs.md) for conventions and validation rules.
 
 ---
@@ -100,7 +106,7 @@ See [writing-docs.md](../../../reference/writing-docs.md) for conventions and va
 
 > Note: if your dispatcher used `--wait`, you cannot release until you have messaged them on this task. The release error names the expected subject.
 
-When documentation is complete and `dydo check` passes:
+Do not proceed until `dydo check` exits zero — clean check is required before dispatching the reviewer (who will run it again as part of their verdict).
 
 ### If Docs Need Review
 

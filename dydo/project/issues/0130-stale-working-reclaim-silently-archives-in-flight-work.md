@@ -10,6 +10,8 @@ date: 2026-04-28
 
 # Stale-working reclaim silently archives in-flight work
 
+Open low-severity bug surfaced by the agent-deaths inquisition: when a dead session is reclaimed past the stale-working threshold, `SetupAgentWorkspace` calls `ArchiveWorkspace`, which moves every non-system file into `archive/{timestamp}/` and re-scaffolds the workspace. The reclaiming agent loses any in-flight notes, drafts, and findings the prior session left behind, and the stderr message ("reclaimed agent ... from an interrupted session") doesn't surface the archive path. Symptom-masker rather than root cause; lower priority until the deaths themselves stop.
+
 ## Description
 
 **Mechanism.** When an agent dies (per findings #1/#2) it remains in `status: working` past the stale-working threshold with a dead session PID. The next claim hits `AgentRegistry.HandleExistingSession` (Services/AgentRegistry.cs:311-317), which allows the reclaim, then `SetupAgentWorkspace` (Services/AgentRegistry.cs:330-363) calls `ArchiveWorkspace` (Services/WorkspaceArchiver.cs:18-46) at line 335. `ArchiveWorkspace` MOVES every non-system file into `archive/{timestamp}/` and re-scaffolds the workspace. The reclaiming agent therefore loses any in-flight notes/drafts/findings the prior session left in their root.

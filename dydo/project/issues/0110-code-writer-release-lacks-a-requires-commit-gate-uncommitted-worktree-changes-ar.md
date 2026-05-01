@@ -10,6 +10,8 @@ date: 2026-04-26
 
 # Code-writer release lacks a requires-commit gate; uncommitted worktree changes are silently destroyed by worktree cleanup
 
+Open high-severity bug: a code-writer in a worktree can edit, test, dispatch a reviewer, message complete, and release — all without ever running `git commit`. On release, `dydo worktree cleanup` empties the worktree directory and the uncommitted work is unrecoverable (no commits, no dangling fsck blobs). The reviewer arrives at an empty branch; the orchestrator was told the fix shipped. Calls for a `requires-commit` gate analogous to the existing `requires-dispatch`.
+
 ## Description
 
 A code-writer dispatched into a worktree is required (per `code-writer.role.json`'s `requires-dispatch` constraint) to dispatch a reviewer before releasing. There is **no** corresponding `requires-commit` gate. As a result, a code-writer can:

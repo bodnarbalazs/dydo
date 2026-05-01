@@ -1,5 +1,5 @@
 ---
-area: process
+area: project
 type: decision
 status: accepted
 date: 2026-04-29
@@ -94,5 +94,5 @@ Decision 011 left nested worktrees as a feature. They are removed from the orche
 
 ## Affects
 
-- [Templates/mode-orchestrator.template.md](../../../Templates/mode-orchestrator.template.md) — Worktrees section rewrite.
+- `Templates/mode-orchestrator.template.md` — Worktrees section rewrite.
 - [Decision 011 — Worktrees as Default for Parallel Development](./011-worktrees-as-default-for-parallel-work.md) — superseded for the *when-to-use* question.

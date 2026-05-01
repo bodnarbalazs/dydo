@@ -8,6 +8,7 @@
       "Bash(dotnet run:*)",
       "Bash(dotnet test:*)",
       "Bash(dydo:*)",
+      "PowerShell(dydo:*)",
       "Read(C:\\Users\\User\\Desktop\\Projects\\DynaDocs/**)",
       "Read(**)",
       "Read(~/**)",

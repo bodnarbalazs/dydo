@@ -11,6 +11,8 @@ resolved-date: 2026-04-07
 
 # Duplicated BashPostClaudeCheck in LinuxTerminalLauncher and MacTerminalLauncher
 
+Resolved low-severity duplication finding: `BashPostClaudeCheck` was duplicated between `LinuxTerminalLauncher` and `MacTerminalLauncher`. Fixed by consolidating it as a single method on `TerminalLauncher` referenced from both subclasses.
+
 ## Description
 
 (Describe the issue)

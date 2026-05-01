@@ -6,6 +6,8 @@ date: 2026-04-26
 
 # Task: triage-roles-docs
 
+Verification-only triage of ten roles/permissions/docs issues an initial pass had marked STILL-VALID. The triager's job was to read code and docs, gather concrete file:line evidence for each claim, and report findings — no code, doc, or issue mutations. Output feeds Brian's housekeeping pass on the issue tracker.
+
 # Triage verification: Roles, permissions, docs issues
 
 ## Why you're here

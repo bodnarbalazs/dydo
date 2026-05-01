@@ -4,7 +4,8 @@
   "base": true,
   "writablePaths": [
     "dydo/agents/{self}/**",
-    "dydo/project/decisions/**"
+    "dydo/project/decisions/**",
+    "dydo/project/issues/**"
   ],
   "readOnlyPaths": [
     "{source}",

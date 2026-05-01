@@ -67,7 +67,7 @@ Index of 2026-04-09 documentation.
 - [Task: investigate-wait-flag-bug-merge-merge-merge](./investigate-wait-flag-bug-merge-merge-merge.md) - Worktree merge cleanup completed.
 - [Task: investigate-wait-flag-bug-merge-merge](./investigate-wait-flag-bug-merge-merge.md) - Merge of worktree/inquisition-template-system into master was already completed via fast-forward (commit fee6405).
 - [Task: investigate-wait-flag-bug-merge](./investigate-wait-flag-bug-merge.md) - Merged worktree/inquisition-template-system into master (branch was already merged, finalized cleanup).
-- [Task: investigate-wait-flag-bug](./investigate-wait-flag-bug.md)
+- [Task: investigate-wait-flag-bug](./investigate-wait-flag-bug.md) - Investigation and fix for a session-context race in `dispatch --wait`.
 - [Task: investigate-worktree-permission-prompts](./investigate-worktree-permission-prompts.md) - (No description)
 - [Task: prompt-engineering-tweaks](./prompt-engineering-tweaks.md) - Review two template changes: (1) Templates/mode-judge.
 - [Task: readme-and-template-docs](./readme-and-template-docs.md) - Documentation updates for review: (1) Added Tip section about gap_check.

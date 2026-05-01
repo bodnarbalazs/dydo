@@ -10,6 +10,8 @@ date: 2026-04-26
 
 # Worktree marker shape is crash-fragile; orphan markers across multiple workspaces require multi-step manual recovery with guard-lift
 
+Open medium-severity bug: worktree merge flow markers (`.needs-merge`, `.merge-source`, `.worktree-*`) are spread across every involved agent's workspace, and an abrupt process death leaves them as orphans. Other agents see in-progress work indefinitely, and there's no first-class cleanup — recovery is a multi-workspace `rm` sweep that requires `dydo guard lift` because cross-workspace edits aren't permitted by default. Reported as a "5-10 minute scrub across 13 workspaces" per orphan event in a downstream post-mortem.
+
 ## Description
 
 The worktree dispatch and merge flow uses a set of filesystem markers — `.needs-merge`, `.merge-source`, `.worktree-base`, `.worktree-path`, `.worktree-root`, `.worktree-hold` — distributed across the workspaces of all agents involved in a worktree session (the dispatched code-writer, the dispatched reviewer, sometimes a test-writer in between, and the merge code-writer at the end). These markers are the connective tissue of the merge handoff: they tell each agent what to do next and they gate release on certain agents.

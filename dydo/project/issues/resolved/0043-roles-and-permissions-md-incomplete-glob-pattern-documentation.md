@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # roles-and-permissions.md incomplete glob pattern documentation
 
+Resolved low-severity docs finding: `roles-and-permissions.md`'s glob-pattern documentation only listed a subset of supported patterns. Fixed in commit `5ffcb54` by adding `?`, `**/`, `**`, and `*` with examples; verified by Charlie.
+
 ## Description
 
 (Describe the issue)

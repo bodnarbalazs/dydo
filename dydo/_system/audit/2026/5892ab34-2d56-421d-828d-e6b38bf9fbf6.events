@@ -235,3 +235,55 @@
 {"ts":"2026-05-01T10:55:07.4193447Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\4a967217-msg-write-v1.4-release-doc.md","tool":"read"}
 {"ts":"2026-05-01T10:55:08.2991163Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\17739418-msg-fix-issue-permissions-and-message.md","tool":"read"}
 {"ts":"2026-05-01T10:55:08.7303721Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\db4b504c-msg-fix-issue-permissions-and-message.md","tool":"read"}
+{"ts":"2026-05-01T11:18:00.474028Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-close-smoke-v141.md","tool":"write","reason":"Pending wait markers"}
+{"ts":"2026-05-01T11:18:05.2740855Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-resume-smoke-v141.md","tool":"write","reason":"Pending wait markers"}
+{"ts":"2026-05-01T11:18:17.2938136Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-wait-deadlock-smoke-v141.md","tool":"write","reason":"Pending wait markers"}
+{"ts":"2026-05-01T11:18:35.8945973Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-close-smoke-v141.md","tool":"write"}
+{"ts":"2026-05-01T11:18:41.6680283Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-resume-smoke-v141.md","tool":"write"}
+{"ts":"2026-05-01T11:18:54.7926536Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-wait-deadlock-smoke-v141.md","tool":"write"}
+{"ts":"2026-05-01T11:19:33.0807255Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -25","reason":"Missing general wait"}
+{"ts":"2026-05-01T11:19:45.8728269Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\d9ededa8-msg-auto-close-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:19:46.7632376Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\59152de1-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:19:47.1355733Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\06b71e98-msg-auto-resume-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:20:42.0140003Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\7512e403-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:21:06.2505328Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\aaa64e39-msg-auto-resume-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:21:06.9942725Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\ededf67a-msg-auto-resume-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:24:21.5364443Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-auto-resume-multi-spawn.md","tool":"write"}
+{"ts":"2026-05-01T12:15:22.068351Z","event":"Bash","tool":"bash","cmd":"cat C:/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/5892ab34-2d56-42..."}
+{"ts":"2026-05-01T12:19:19.8095236Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-investigate-pwsh-wait-approval.md","tool":"write"}
+{"ts":"2026-05-01T12:19:41.7938097Z","event":"Blocked","tool":"bash","cmd":"dydo wait 2\u003E\u00261; echo \u0022---EXIT: $?\u0022","reason":"dydo wait in foreground"}
+{"ts":"2026-05-01T12:19:54.6717201Z","event":"Bash","tool":"bash","cmd":"cat C:/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/5892ab34-2d56-42..."}
+{"ts":"2026-05-01T12:24:41.6061499Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022dydo check\u0022 Templates/mode-docs-writer.template.md Templates/mode-reviewer.template.md 2\u003E\u00261..."}
+{"ts":"2026-05-01T12:29:59.2310682Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-docs-quality-workflow.md","tool":"write"}
+{"ts":"2026-05-01T12:39:47.8483054Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -25","reason":"Missing general wait"}
+{"ts":"2026-05-01T12:39:58.4313259Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\7ad78b1d-msg-investigate-pwsh-wait-approval.md","tool":"read"}
+{"ts":"2026-05-01T12:40:33.133484Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-pwsh-wait-approval.md","tool":"write"}
+{"ts":"2026-05-01T12:46:37.2385107Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-investigate-wait-race.md","tool":"write"}
+{"ts":"2026-05-01T12:48:07.5502548Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-discuss-with-user.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-05-01T12:48:13.7361862Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\6f07a087-msg-fix-auto-resume-multi-spawn.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T12:48:19.8289259Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\6f07a087-msg-fix-auto-resume-multi-spawn.md","tool":"read"}
+{"ts":"2026-05-01T12:48:33.2294928Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-discuss-with-user.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-05-01T12:48:39.30002Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\f09a9a78-msg-wait-deadlock-smoke-v141.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T12:48:39.8851486Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all; echo \u0022---\u0022; dydo wait","reason":"dydo wait in foreground"}
+{"ts":"2026-05-01T12:48:45.1961101Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\f09a9a78-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T12:49:04.9465239Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-discuss-with-user.md","tool":"write"}
+{"ts":"2026-05-01T12:50:01.3969385Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -30","reason":"Missing general wait"}
+{"ts":"2026-05-01T12:50:11.5321668Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\721c31e8-msg-discuss-with-user.md","tool":"read"}
+{"ts":"2026-05-01T14:04:16.8428157Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\75c270e7-msg-investigate-wait-race.md","tool":"read"}
+{"ts":"2026-05-01T14:04:22.5742494Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Mia\\plan-investigate-wait-race.md","tool":"read"}
+{"ts":"2026-05-01T14:05:21.3002465Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-wait-race.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-05-01T14:05:31.8805074Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\e81ea3c1-msg-fix-docs-quality-workflow.md","tool":"read"}
+{"ts":"2026-05-01T14:05:32.0482011Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\a2500664-msg-fix-auto-resume-multi-spawn.md","tool":"read"}
+{"ts":"2026-05-01T14:05:32.4518113Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\92a2d660-msg-fix-auto-resume-multi-spawn.md","tool":"read"}
+{"ts":"2026-05-01T14:05:33.0346115Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\2e670fcc-msg-fix-docs-quality-workflow.md","tool":"read"}
+{"ts":"2026-05-01T14:06:11.2323819Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-wait-race.md","tool":"write"}
+{"ts":"2026-05-01T14:10:22.9920138Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-cleanup-docs-check-backlog.md","tool":"write"}
+{"ts":"2026-05-01T15:28:33.4277909Z","event":"Blocked","tool":"bash","cmd":"ls -la C:/Users/User/Desktop/LC/dydo/agents/Adele/ 2\u003E\u00261 | head -20","reason":"Unread messages"}
+{"ts":"2026-05-01T15:28:38.6740582Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\26234130-msg-fix-docs-quality-workflow.md","tool":"read"}
+{"ts":"2026-05-01T15:28:38.7779534Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\21e46896-msg-fix-docs-quality-workflow.md","tool":"read"}
+{"ts":"2026-05-01T15:28:39.7450056Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\24f0a540-msg-cleanup-docs-check-backlog.md","tool":"read"}
+{"ts":"2026-05-01T15:28:40.143874Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\dc68233e-msg-fix-pwsh-wait-approval.md","tool":"read"}
+{"ts":"2026-05-01T15:29:09.462174Z","event":"Read","path":"C:\\Users\\User\\Desktop\\LC\\dydo\\agents\\Adele\\dydo-tool-issues-report.md","tool":"read"}
+{"ts":"2026-05-01T15:30:20.9740407Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-plan-dydo-tool-fixes.md","tool":"write"}
+{"ts":"2026-05-01T15:34:01.7931355Z","event":"Bash","tool":"bash","cmd":"git tag -l | tail -5; echo \u0022---LATEST TAG VS HEAD---\u0022; git describe --tags 2\u003E\u00261; echo \u0022---COMMITS SI..."}
+{"ts":"2026-05-01T15:37:48.8586792Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-investigate-test-runtime.md","tool":"write"}

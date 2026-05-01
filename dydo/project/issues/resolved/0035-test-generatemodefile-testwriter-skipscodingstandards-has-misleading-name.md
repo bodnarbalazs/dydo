@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Test GenerateModeFile_TestWriter_SkipsCodingStandards has misleading name
 
+Resolved low-severity test-quality finding: the test name claimed test-writer mode skips coding-standards, but the actual production behavior (and the test's own assertion) was that it includes them. Test was renamed in commit `e4cd980` to match the assertion; production behavior was already correct.
+
 ## Description
 
 (Describe the issue)

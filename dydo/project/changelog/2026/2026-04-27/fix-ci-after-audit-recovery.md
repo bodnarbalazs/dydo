@@ -6,6 +6,8 @@ date: 2026-04-27
 
 # Task: fix-ci-after-audit-recovery
 
+CI went red on master after the audit cherry-pick recovery. Three failing tests: two were obsolete after #0080 (sorted-hash) and #0073 (sanitized session ID) landed and needed their assertions updated, and a third (`WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning`) needed investigation to determine whether it was a real regression or a flake similar to #0116. This task addressed all three.
+
 # Fix CI failures after audit recovery (3 tests, 2 obsolete + 1 to investigate)
 
 ## Why you're here

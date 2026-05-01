@@ -11,12 +11,12 @@ Index of inquisitions documentation.
 
 ## Contents
 
-- [Agent Deaths Inquisition](./agent-deaths.md)
-- [Agent Lifecycle Inquisition](./agent-lifecycle.md)
-- [Auto-accept-edits behavior inquiry](./auto-accept-edits-behavior.md)
-- [Cli Commands](./cli-commands.md)
-- [Inquisition: Dispatch and Messaging System](./dispatch-and-messaging.md)
-- [Guard System Inquisition](./guard-system.md)
-- [Inquisition: Role and Permission System](./role-permission-system.md)
-- [Stale dydo processes & worktree file locks](./stale-dydo-processes.md)
-- [Worktree System — Inquisition Report](./worktree-system.md)
+- [Agent Deaths Inquisition](./agent-deaths.md) - Investigation into a critical class of bugs where dispatched agents were dying mid-work without releasing — observed across DynaDocs and the LC pro...
+- [Agent Lifecycle Inquisition](./agent-lifecycle.md) - Investigation of the agent lifecycle subsystem — claiming, release, workspace archival, dispatch markers, reply-pending markers — across `AgentRegi...
+- [Auto-accept-edits behavior inquiry](./auto-accept-edits-behavior.md) - Mechanism inquiry into why Edit/Write tool calls auto-approve in some Claude Code projects (e.
+- [CLI Commands Inquisition](./cli-commands.md) - Feature investigation of the dydo CLI command surface — every `Commands/*Command.
+- [Inquisition: Dispatch and Messaging System](./dispatch-and-messaging.md) - Area investigation covering `DispatchService`, `MessageService`, `InboxService`, `QueueService`, and supporting code.
+- [Guard System Inquisition](./guard-system.md) - Feature investigation of the guard system — `GuardCommand` and `GuardLiftCommand` (~1400 lines), `BashCommandAnalyzer`, `OffLimitsService`, `MustRe...
+- [Inquisition: Role and Permission System](./role-permission-system.md) - Feature investigation of the role and permission system — `RoleDefinitionService`, `RoleConstraintEvaluator`, `PathPermissionChecker`, `GlobMatcher...
+- [Stale dydo processes & worktree file locks](./stale-dydo-processes.md) - Targeted audit (per Brian's brief) into which dydo-spawned processes can hold filesystem locks past their intended lifetime, and why.
+- [Worktree System — Inquisition Report](./worktree-system.md) - Feature investigation of the worktree system — `WorktreeCommand`, the cross-platform terminal launchers, the worktree branches inside `DispatchServ...

@@ -7,6 +7,8 @@ area: platform
 
 # 017 — Stale-Free Semantics: Narrow Launcher-Alive Gate to Reservation Only
 
+The launcher-alive probe added to `IsEffectivelyFree` to fix the stale-dispatch double-claim bug pulled two consumer families in opposite directions: reservation paths want the strict gate, but display and human-selection paths want stale agents to appear claimable. This decision narrows the launcher probe to reservation only and lets `GetFreeAgents`-style queries return permissively, removing both the false-busy noise and the asymmetry.
+
 ## Context
 
 Adele's fix for the stale-dispatch double-claim bug adds a launcher-alive probe to

@@ -14,7 +14,7 @@ Index of 2026-04-27 documentation.
 - [Task: audit-leftovers](./audit-leftovers.md) - (No description)
 - [Task: explore-orchestrator-general-wait](./explore-orchestrator-general-wait.md) - (No description)
 - [Task: fix-0118-roleconstraint-crap](./fix-0118-roleconstraint-crap.md) - Review #0118 refactor + tests.
-- [Task: fix-ci-after-audit-recovery](./fix-ci-after-audit-recovery.md)
+- [Task: fix-ci-after-audit-recovery](./fix-ci-after-audit-recovery.md) - CI went red on master after the audit cherry-pick recovery.
 - [Task: orchestrator-general-wait-priority-routing](./orchestrator-general-wait-priority-routing.md) - Review wait priority routing + new orchestrator general-wait guardrail + orchestrator template change.
 - [Task: quick-fixes-89-115-116-merge](./quick-fixes-89-115-116-merge.md) - (No description)
 - [Task: quick-fixes-89-115-116](./quick-fixes-89-115-116.md) - Review quick fixes for #0089, #0115, #0116.

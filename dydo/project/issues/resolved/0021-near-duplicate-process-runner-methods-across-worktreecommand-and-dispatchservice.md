@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # Near-duplicate process runner methods across WorktreeCommand and DispatchService
 
+Resolved medium-severity duplication finding: `WorktreeCommand` and `DispatchService` carried near-duplicate process-runner methods with subtly different `ProcessStartInfo` setup. Fixed in commit `3b554de` by routing `RunProcess` through `RunProcessWithExitCode` internally and eliminating the duplicate PSI setup.
+
 ## Description
 
 (Describe the issue)

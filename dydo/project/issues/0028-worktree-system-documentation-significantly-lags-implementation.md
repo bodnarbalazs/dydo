@@ -10,6 +10,8 @@ date: 2026-04-07
 
 # Worktree system documentation significantly lags implementation
 
+The worktree section of `architecture.md` and `dispatch-and-messaging.md` had drifted behind the shipped implementation: the junction list was stale, several workspace markers were undocumented, child-dispatch behavior was incomplete, and the docs still referenced `git worktree prune`. Resolved by bringing both docs up to current behavior, including the merge-related markers.
+
 ## Description
 
 (Describe the issue)

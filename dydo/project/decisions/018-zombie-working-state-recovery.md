@@ -7,6 +7,8 @@ area: platform
 
 # 018 — Zombie Working State: Mechanism, Fixes, and Doc Surface
 
+`status: working` can persist after a tab closes when an agent's claude exits without going through `dydo agent release` — typically a crash, a window close, or an in-flight task that ended unexpectedly. This decision captures why the state lingers, what's being fixed mechanically (cleanup, recovery), what's being documented (so the pattern stops being re-discovered from first principles), and how it relates to the adjacent stale-dispatch work in decision 017.
+
 ## Context
 
 Four agents (Adele, Charlie, Dexter, Emma) were observed on 2026-04-18 with

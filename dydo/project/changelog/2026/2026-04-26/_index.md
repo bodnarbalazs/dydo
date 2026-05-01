@@ -26,7 +26,7 @@ Index of 2026-04-26 documentation.
 - [Task: guard-worktree-and-phantom-inbox](./guard-worktree-and-phantom-inbox.md) - Fix #99 (HandleSearchTool worktree-allow), #100 (unanchored substring match), #101 (guard-system.
 - [Task: investigate-per-agent-clean-marker-leak](./investigate-per-agent-clean-marker-leak.md) - (No description)
 - [Task: investigate-reviewer-merger-guard](./investigate-reviewer-merger-guard.md) - (No description)
-- [Task: investigate-worktree-race-review-fixes](./investigate-worktree-race-review-fixes.md)
+- [Task: investigate-worktree-race-review-fixes](./investigate-worktree-race-review-fixes.md) - Follow-up on the `investigate-worktree-race` fix after reviewer Brian FAILED the first-round review.
 - [Task: investigate-worktree-race](./investigate-worktree-race.md) - PowerShell fails with `ERROR_DIRECTORY (0x8007010b)` / "Could not access starting directory" when a dispatched agent is launched in a worktree path...
 - [Task: issue-create-body-and-test-name](./issue-create-body-and-test-name.md) - Mirror new --body and --body-file options into the live reference doc.
 - [Task: regression-test-auto-close-2](./regression-test-auto-close-2.md) - (No description)
@@ -36,7 +36,7 @@ Index of 2026-04-26 documentation.
 - [Task: triage-audit](./triage-audit.md) - (No description)
 - [Task: triage-guard-bash](./triage-guard-bash.md) - (No description)
 - [Task: triage-misc](./triage-misc.md) - (No description)
-- [Task: triage-roles-docs](./triage-roles-docs.md)
+- [Task: triage-roles-docs](./triage-roles-docs.md) - Verification-only triage of ten roles/permissions/docs issues an initial pass had marked STILL-VALID.
 - [Task: triage-worktree](./triage-worktree.md) - (No description)
 - [Task: watchdog-lifecycle-fixes](./watchdog-lifecycle-fixes.md) - Fix inquisition issues #95, #96, #97 as one coherent watchdog-lifecycle change.
 - [Task: watchdog-lifecycle-review](./watchdog-lifecycle-review.md) - Review Adele's zombied watchdog-lifecycle-fixes work on master.

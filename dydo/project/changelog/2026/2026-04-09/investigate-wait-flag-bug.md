@@ -6,6 +6,8 @@ date: 2026-04-09
 
 # Task: investigate-wait-flag-bug
 
+Investigation and fix for a session-context race in `dispatch --wait`. The shared `.session-context` file was last-writer-wins under concurrent multi-agent use, so the initial terminal sometimes resolved the wrong agent. The fix stores agent name alongside session ID, verifies against per-agent `.session` files, and falls back to a working-agent scan when verification fails.
+
 # Plan: Fix Session Context Race Condition
 
 ## Approach

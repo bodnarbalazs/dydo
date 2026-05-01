@@ -27,35 +27,19 @@ public static class MessageFinder
         string inboxPath,
         string? taskFilter,
         HashSet<string>? excludeSubjects = null,
-        HashSet<string>? excludeIds = null)
+        HashSet<string>? excludeIds = null,
+        HashSet<string>? includeIds = null)
     {
         if (!Directory.Exists(inboxPath))
             return null;
 
-        var files = Directory.GetFiles(inboxPath, "*-msg-*.md");
         var parsed = new List<MessageInfo>();
-
-        foreach (var file in files)
+        foreach (var file in Directory.GetFiles(inboxPath, "*-msg-*.md"))
         {
             var info = ParseMessageFile(file);
             if (info == null) continue;
-
-            if (!string.IsNullOrEmpty(taskFilter) &&
-                !string.Equals(info.Subject, taskFilter, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            if (excludeSubjects != null &&
-                !string.IsNullOrEmpty(info.Subject) &&
-                excludeSubjects.Contains(info.Subject))
-                continue;
-
-            if (excludeIds != null && excludeIds.Count > 0)
-            {
-                var idMatch = MessageIdRegex.Match(Path.GetFileName(file));
-                if (idMatch.Success && excludeIds.Contains(idMatch.Groups[1].Value))
-                    continue;
-            }
-
+            if (!MatchesSubject(info.Subject, taskFilter, excludeSubjects)) continue;
+            if (!MatchesIdFilter(file, excludeIds, includeIds)) continue;
             parsed.Add(info);
         }
 
@@ -63,6 +47,31 @@ public static class MessageFinder
         return parsed
             .OrderBy(m => m.Received ?? File.GetCreationTimeUtc(m.FilePath))
             .FirstOrDefault();
+    }
+
+    private static bool MatchesSubject(string? subject, string? taskFilter, HashSet<string>? excludeSubjects)
+    {
+        if (!string.IsNullOrEmpty(taskFilter) &&
+            !string.Equals(subject, taskFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (excludeSubjects != null &&
+            !string.IsNullOrEmpty(subject) &&
+            excludeSubjects.Contains(subject))
+            return false;
+        return true;
+    }
+
+    private static bool MatchesIdFilter(string filePath, HashSet<string>? excludeIds, HashSet<string>? includeIds)
+    {
+        if (includeIds == null && (excludeIds == null || excludeIds.Count == 0))
+            return true;
+        var idMatch = MessageIdRegex.Match(Path.GetFileName(filePath));
+        var id = idMatch.Success ? idMatch.Groups[1].Value : null;
+        if (excludeIds != null && id != null && excludeIds.Contains(id))
+            return false;
+        if (includeIds != null && (id == null || !includeIds.Contains(id)))
+            return false;
+        return true;
     }
 
     private static MessageInfo? ParseMessageFile(string filePath)

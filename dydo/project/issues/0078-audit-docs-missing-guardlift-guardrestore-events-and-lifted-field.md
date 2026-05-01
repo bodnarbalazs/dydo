@@ -10,6 +10,8 @@ date: 2026-04-09
 
 # Audit docs missing GuardLift/GuardRestore events and lifted field
 
+`audit-system.md` did not list `GuardLift` and `GuardRestore` as audited event types, and the Event Fields table omitted the `lifted` boolean that marks file operations succeeding under a lifted guard. Resolved by adding both event types to the "What Gets Audited" table, expanding the `agent` field's "Present" column, and documenting the `lifted` field.
+
 ## Description
 
 (Describe the issue)

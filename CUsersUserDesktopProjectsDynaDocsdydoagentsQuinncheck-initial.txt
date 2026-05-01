@@ -1,0 +1,438 @@
+Checking C:\Users\User\Desktop\Projects\DynaDocs\dydo...
+
+ERRORS:
+  _system/template-additions/extra-complete-gate.md
+    - Missing title (# heading)
+  _system/template-additions/extra-review-checklist.md
+    - Missing title (# heading)
+  _system/template-additions/extra-review-steps.md
+    - Missing title (# heading)
+  _system/template-additions/extra-verify.md
+    - Missing title (# heading)
+  project/decisions/014-rename-clean-to-agent-clean.md
+    - Invalid area value 'cli'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+  project/decisions/015-completions-keep-code-remove-from-docs.md
+    - Invalid area value 'cli'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+  project/decisions/016-keep-workspace-init-check.md
+    - Invalid area value 'cli'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+  project/decisions/020-worktree-usage-policy-power-option.md
+    - Invalid area value 'process'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+    - Line 97: Broken link: ../../../Templates/mode-orchestrator.template.md
+  project/decisions/021-unified-general-wait.md
+    - Line 100: Link missing .md extension: ../../../Commands/GuardCommand.cs
+    - Line 101: Link missing .md extension: ../../../Commands/WaitCommand.cs
+    - Line 102: Link missing .md extension: ../../../Services/DispatchService.cs
+    - Invalid area value 'process'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+    - Line 95: Broken link: ../../../Templates/mode-orchestrator.template.md
+    - Line 96: Broken link: ../../../Templates/mode-code-writer.template.md
+    - Line 97: Broken link: ../../../Templates/mode-reviewer.template.md
+    - Line 98: Broken link: ../../../Templates/mode-planner.template.md
+    - Line 104: Broken link: ../issues/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md
+  project/decisions/022-auto-resume-crashed-agents.md
+    - Line 98: Link missing .md extension: ../../../Services/WatchdogService.cs
+    - Line 99: Link missing .md extension: ../../../Services/WindowsTerminalLauncher.cs
+    - Line 100: Link missing .md extension: ../../../Services/LinuxTerminalLauncher.cs
+    - Line 101: Link missing .md extension: ../../../Services/MacTerminalLauncher.cs
+    - Line 102: Link missing .md extension: ../../../Services/TerminalLauncher.cs
+    - Line 103: Link missing .md extension: ../../../Services/AgentRegistry.cs
+    - Line 104: Link missing .md extension: ../../../Models/AgentSession.cs
+    - Invalid area value 'process'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+  project/inquisitions/_coverage.md
+    - Missing frontmatter
+  project/inquisitions/agent-deaths.md
+    - Invalid area value 'services'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+    - Invalid type value 'inquisition'. Must be one of: hub, concept, guide, reference, decision, pitfall, changelog, context, folder-meta, issue
+  project/inquisitions/agent-lifecycle.md
+    - Invalid area value 'services'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+    - Invalid type value 'inquisition'. Must be one of: hub, concept, guide, reference, decision, pitfall, changelog, context, folder-meta, issue
+  project/inquisitions/auto-accept-edits-behavior.md
+    - Invalid type value 'inquisition'. Must be one of: hub, concept, guide, reference, decision, pitfall, changelog, context, folder-meta, issue
+  project/inquisitions/cli-commands.md
+    - Missing frontmatter
+    - Missing title (# heading)
+  project/inquisitions/dispatch-and-messaging.md
+    - Missing frontmatter
+  project/inquisitions/guard-system.md
+    - Missing frontmatter
+  project/inquisitions/role-permission-system.md
+    - Invalid area value 'services'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+    - Invalid type value 'inquisition'. Must be one of: hub, concept, guide, reference, decision, pitfall, changelog, context, folder-meta, issue
+  project/inquisitions/stale-dydo-processes.md
+    - Invalid area value 'process-lifecycle'. Must be one of: frontend, backend, microservices, platform, general, understand, guides, reference, project
+    - Invalid type value 'inquisition'. Must be one of: hub, concept, guide, reference, decision, pitfall, changelog, context, folder-meta, issue
+  project/inquisitions/worktree-system.md
+    - Missing frontmatter
+
+WARNINGS:
+  project/changelog/2026/2026-04-09/investigate-wait-flag-bug.md
+    - Missing summary paragraph after title
+  project/changelog/2026/2026-04-26/investigate-worktree-race-review-fixes.md
+    - Missing summary paragraph after title
+  project/changelog/2026/2026-04-26/triage-roles-docs.md
+    - Missing summary paragraph after title
+  project/changelog/2026/2026-04-27/fix-ci-after-audit-recovery.md
+    - Missing summary paragraph after title
+  project/changelog/2026/2026-04-29/fix-watchdog-structured-logging.md
+    - Missing summary paragraph after title
+  project/decisions/009-claude-native-features-evaluation.md
+    - Missing summary paragraph after title
+  project/decisions/014-rename-clean-to-agent-clean.md
+    - Missing summary paragraph after title
+  project/decisions/015-completions-keep-code-remove-from-docs.md
+    - Missing summary paragraph after title
+  project/decisions/016-keep-workspace-init-check.md
+    - Missing summary paragraph after title
+  project/decisions/017-stale-free-semantics.md
+    - Missing summary paragraph after title
+  project/decisions/018-zombie-working-state-recovery.md
+    - Missing summary paragraph after title
+  project/decisions/019-reviewer-verdict-routing.md
+    - Missing summary paragraph after title
+  project/inquisitions/_coverage.md
+    - Orphan doc: not reachable from project/_index.md
+  project/inquisitions/agent-deaths.md
+    - Missing summary paragraph after title
+  project/inquisitions/agent-lifecycle.md
+    - Missing summary paragraph after title
+  project/inquisitions/auto-accept-edits-behavior.md
+    - Missing summary paragraph after title
+  project/inquisitions/dispatch-and-messaging.md
+    - Missing summary paragraph after title
+  project/inquisitions/guard-system.md
+    - Missing summary paragraph after title
+  project/inquisitions/role-permission-system.md
+    - Missing summary paragraph after title
+  project/inquisitions/stale-dydo-processes.md
+    - Missing summary paragraph after title
+  project/inquisitions/worktree-system.md
+    - Missing summary paragraph after title
+  project/issues/0028-worktree-system-documentation-significantly-lags-implementation.md
+    - Missing summary paragraph after title
+  project/issues/0033-decision-doc-002-has-stale-role-names-and-incomplete-file-list.md
+    - Missing summary paragraph after title
+  project/issues/0034-templates-and-customization-doc-has-incomplete-shipped-hooks-table.md
+    - Missing summary paragraph after title
+  project/issues/0041-roles-and-permissions-md-missing-requires-dispatch-and-dispatch-restriction-cons.md
+    - Missing summary paragraph after title
+  project/issues/0042-roles-and-permissions-md-ispathallowed-flow-description-is-wrong.md
+    - Missing summary paragraph after title
+  project/issues/0065-guard-lift-mechanism-entirely-undocumented.md
+    - Missing summary paragraph after title
+  project/issues/0078-audit-docs-missing-guardlift-guardrestore-events-and-lifted-field.md
+    - Missing summary paragraph after title
+  project/issues/0079-audit-docs-misleading-about-delta-chain-depth-50-practical-behavior.md
+    - Missing summary paragraph after title
+  project/issues/0082-snapshotref-depth-is-write-only-in-production-code.md
+    - Missing summary paragraph after title
+  project/issues/0083-audit-docs-missing-performance-characteristics-and-behavioral-limits.md
+    - Missing summary paragraph after title
+  project/issues/0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md
+    - Missing summary paragraph after title
+  project/issues/0109-reviewer-cannot-dispatch-merge-code-writer-when-dispatch-chain-originates-from-a.md
+    - Missing summary paragraph after title
+  project/issues/0110-code-writer-release-lacks-a-requires-commit-gate-uncommitted-worktree-changes-ar.md
+    - Missing summary paragraph after title
+  project/issues/0111-stale-active-queue-marker-not-auto-cleared-dead-agent-active-slot-blocks-all-sub.md
+    - Missing summary paragraph after title
+  project/issues/0112-worktree-marker-shape-is-crash-fragile-orphan-markers-across-multiple-workspaces.md
+    - Missing summary paragraph after title
+  project/issues/0119-filereadretrytests-read-exclusivelylockedfile-retriesandsucceeds-flakes-under-su.md
+    - Missing summary paragraph after title
+  project/issues/0120-watchdogservicetests-ensurerunning-spawnedfromworktree-setsworkingdirectorytomai.md
+    - Missing summary paragraph after title
+  project/issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md
+    - Missing summary paragraph after title
+  project/issues/0135-flaky-test-watchdogservicetests-logger-startevent-recordedwithanchorpid-dispose.md
+    - Missing summary paragraph after title
+  project/issues/0136-flaky-test-pathutilsdiscoverytests-finddocsfolder-returnsdydoroot-whenconfigexis.md
+    - Missing summary paragraph after title
+  project/issues/0137-flaky-test-worktreecommandtests-initsettings-copiessettingswithreadpermission-fi.md
+    - Missing summary paragraph after title
+  project/issues/0138-auto-resume-launches-terminal-in-user-home-dir-not-project-root.md
+    - Missing summary paragraph after title
+  project/issues/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md
+    - Missing summary paragraph after title
+  project/issues/0142-dydo-dispatch-must-refuse-to-run-in-background-silent-no-launch-when-run-with-ru.md
+    - Missing summary paragraph after title
+  project/issues/0143-watchdog-re-resumes-already-resumed-agent-on-subsequent-ticks-3-terminals-for-th.md
+    - Missing summary paragraph after title
+    - Orphan doc: not reachable from project/_index.md
+  project/issues/0144-auto-resume-opens-in-new-window-should-reuse-the-original-window-as-a-new-tab-wh.md
+    - Missing summary paragraph after title
+    - Orphan doc: not reachable from project/_index.md
+  project/issues/0145-powershell-routed-dydo-wait-requires-approval-every-re-arm-breaks-unattended-wai.md
+    - Missing summary paragraph after title
+    - Orphan doc: not reachable from project/_index.md
+  project/issues/0146-docs-writer-reviewer-workflows-don-t-gate-on-dydo-check-schema-drift-accumulates.md
+    - Missing summary paragraph after title
+    - Orphan doc: not reachable from project/_index.md
+  project/issues/0147-wait-fails-to-trigger-on-a-message-that-arrives-during-the-wait-re-arm-gap-race.md
+    - Missing summary paragraph after title
+    - Orphan doc: not reachable from project/_index.md
+  project/issues/resolved/0001-code-writers-don-t-get-nudges-on-release-attempts-if-they-haven-t-dispatched-to.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0002-agents-default-to-creating-decision-docs-unnecessarily.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0004-dead-code-markerstore-duplicates-agentregistry-marker-logic.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0006-duplicated-file-lock-pattern-in-dispatchservice-and-queueservice.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0007-five-separate-hand-rolled-yaml-frontmatter-parsers.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0008-doc-code-mismatch-worktree-inheritance-vs-child-worktree-creation.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0010-excessive-parameter-counts-on-dispatchservice-methods.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0011-judge-role-missing-write-permission-for-dydo-project-inquisitions.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0012-path-traversal-via-in-task-name-allows-worktree-directory-escape.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0013-unvalidated-worktreeid-in-cleanup-cli-enables-arbitrary-directory-deletion.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0014-worktree-teardown-sequence-duplicated-3-times-rule-of-three.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0015-linuxterminallauncher-trylaunch-duplicates-getarguments-logic.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0016-macterminallauncher-launch-duplicates-getarguments-logic.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0017-terminal-launcher-tests-verify-getarguments-but-production-uses-trylaunch-launch.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0018-runprocesswithexitcode-masks-failures-when-only-void-override-is-set.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0019-missing-separator-in-git-commands-allows-theoretical-flag-injection.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0020-inconsistent-git-c-usage-between-cleanup-and-merge-paths.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0021-near-duplicate-process-runner-methods-across-worktreecommand-and-dispatchservice.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0022-countworktreereferences-and-countliveworktreereferences-are-near-duplicates.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0023-dead-code-terminallauncher-macterminals-array-never-referenced.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0024-test-only-pass-through-methods-on-terminallauncher-have-no-production-callers.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0025-duplicated-bashpostclaudecheck-in-linuxterminallauncher-and-macterminallauncher.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0026-unescaped-agentname-in-powershell-env-var-assignment-inconsistent-escaping.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0027-rungitforworktree-has-no-timeout-unlike-worktreecommand-runprocess.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0029-storeinitialframeworkhashes-skips-doc-binary-files-losing-user-edits-on-first-up.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0030-reanchor-insertion-order-reversal-with-shared-upper-anchors.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0031-getoldstockcontent-uses-new-embedded-content-as-fallback-when-user-edits-and-fra.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0032-accumulateresult-warned-files-not-counted-in-summary-totals.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0035-test-generatemodefile-testwriter-skipscodingstandards-has-misleading-name.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0036-allmodes-test-theories-only-cover-6-of-9-modes.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0037-init-storesframeworkhashes-test-too-weak-to-catch-missing-hashes.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0038-findlineindex-anchor-collision-with-common-markdown-patterns-like.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0039-pathpermissionchecker-is-dead-production-code.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0040-ispathallowed-logic-duplicated-between-pathpermissionchecker-and-agentregistry.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0043-roles-and-permissions-md-incomplete-glob-pattern-documentation.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0044-roles-and-permissions-md-role-schema-sample-missing-canorchestrate-and-condition.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0045-inconsistent-case-sensitivity-in-roleconstraintevaluator.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0046-globmatcher-recompiles-regex-on-every-call-without-caching.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0047-panel-limit-constraint-counts-requesting-agent-against-itself.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0048-h10-h11-h12-labels-are-doc-only-with-no-code-traceability.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0049-completionprovider-arrays-are-stale-missing-commands-roles-subcommands-and-optio.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0050-helpcommandtests-tests-a-hardcoded-copy-of-help-text-not-the-actual-implementati.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0051-commandsmoketests-rootcommand-canbebuilt-missing-worktreecommand.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0052-12-smoke-test-txt-files-committed-to-commands-directory.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0053-dydo-commands-md-discrepancies-validate-misplaced-judge-permissions-incomplete.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0054-initcommand-outputs-unquoted-dydo-human-in-export-example.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0055-guard-lift-self-escalation-agents-can-bypass-rbac-by-writing-marker-file.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0056-interpreter-execution-bypasses-bash-file-operation-analysis.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0057-command-substitution-and-variable-expansion-bypass-file-operation-analysis.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0058-dangerouspatterns-has-gaps-for-rm-rf-powershell-and-nvme-devices.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0059-nudge-patterns-match-content-inside-command-arguments-causing-false-positives.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0060-off-limits-bypass-inconsistency-between-direct-reads-and-bash-reads.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0061-dead-code-in-offlimitsservice-checkcommand-and-related-methods-70-lines.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0062-nudge-evaluation-runs-before-dangerous-pattern-detection-can-shadow-security-che.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0063-redundant-getcurrentagent-filesystem-reads-per-guard-invocation.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0064-h19-indirect-dydo-invocation-documented-as-hard-coded-but-is-configurable-nudge.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0066-git-merge-worktree-block-and-human-only-command-restriction-lack-guardrail-ids.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0067-s3-unread-message-delivery-behaves-as-hard-rule-but-categorized-as-soft-block.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0068-duplicate-lookslikepath-implementations-in-offlimitsservice-and-bashcommandanaly.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0069-stage-2-agents-can-read-all-agents-mode-files-via-off-limits-bypass-undocumented.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0070-listsessionfiles-includes-baseline-files-in-results-inflating-session-count.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0071-o-n-2-cumulative-i-o-from-session-file-rewrites-on-every-guard-event.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0072-cdn-dependency-without-version-pin-or-sri-hash-in-audit-visualization.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0073-getsession-crashes-on-session-ids-containing-path-separators.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0074-executeshowsession-does-not-resolve-compacted-snapshot-refs.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0075-duplicate-mergedevent-and-timelineentry-classes-with-identical-fields.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0076-one-type-per-file-violations-mergedevent-and-timelineentry.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0077-dead-code-unused-truncatecommand-wrapper-and-geteventcolor-js-function.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0080-computebaselineid-does-not-sort-files-folders-before-hashing.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0081-silent-exception-swallowing-in-audit-loading-masks-data-corruption.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0084-removezombiedirectory-uses-junction-unsafe-directory-delete.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0085-bash-c-sh-c-bypasses-guard-file-operation-analysis.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0086-command-substitution-hiding-entire-write-operations-bypasses-guard-block.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0087-off-limits-bypass-inconsistency-for-bash-reads-still-present.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0088-deletedirectoryjunctionsafe-has-unguarded-file-getattributes-exceptions-leave-pa.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0089-unescaped-mainprojectroot-in-inherited-worktree-cleanup-cd-on-linux-mac.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0090-junction-list-hardcoded-in-5-locations-across-c-bash-and-powershell.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0091-collectleafdirectories-misidentifies-worktree-roots-for-non-empty-orphaned-direc.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0092-no-tests-for-deletedirectoryjunctionsafe-core-scenario-reparse-point-handling.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0093-thin-test-coverage-for-validateworktreeid-missing-backslash-and-path-traversal-c.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0094-normalizeworktreepath-fallback-only-strips-first-segment-for-nested-worktree-pat.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0095-watchdog-spawns-with-caller-s-cwd-pins-worktree-directory-against-deletion.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0096-finddydoroot-resolves-to-worktree-spawns-duplicate-watchdog-with-worktree-scoped.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0097-watchdog-run-has-no-cancellation-parent-pid-or-signal-handling-outlives-its-purp.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0098-dydo-worktree-prune-does-not-sweep-orphan-worktree-local-watchdog-pid-files.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0100-isworktreecontext-uses-unanchored-substring-match-on-cwd.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0102-dydo-agent-release-does-not-revive-a-dead-watchdog-released-auto-close-tabs-leak.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0103-no-reclaim-path-for-working-agents-whose-claude-process-is-dead-requires-destruc.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0104-dydo-worktree-cleanup-follows-junctions-and-recursively-deletes-target-contents.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0105-dydo-worktree-prune-walks-into-registered-worktree-subdirectories-fixed.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0106-dydo-worktree-cleanup-must-clear-agent-marker-even-when-directory-removal-fails.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0107-dydo-worktree-merge-silently-self-merges-when-run-from-inside-the-source-worktre.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0113-dydo-agent-clean-name-force-does-not-remove-worktree-markers-all-force-does-asym.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0114-dydo-issue-create-lacks-a-body-flag-producing-empty-issue-files.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0115-dydo-issue-create-assigns-ids-that-collide-with-historical-resolved-issues-resol.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0116-watchdogservicetests-pollandcleanup-skipsworkingagents-flakes-when-sibling-pathu.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0117-watchdogservicetests-stop-returnstrue-whenprocessisrunning-flakes-on-ci-linux-be.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0118-roleconstraintevaluator-crap-score-regressed-past-30-limit-32-0-after-0045-case.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0121-watchdog-kills-re-dispatched-agents-in-poll-gap-stale-decision-clearautoclose-rm.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0122-watchdog-kills-linux-terminal-emulator-process-via-argv-leak.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0123-releaseagent-leaves-auto-close-true-on-disk-opens-kill-window.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0124-windows-launcher-silently-closes-terminal-when-claude-exits-non-released.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0125-state-file-read-write-unsynchronized-between-watchdog-and-registry.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0126-watchdog-leaks-forever-when-findancestorprocess-claude-returns-null.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0127-watchdog-anchor-pinned-to-first-dispatcher-s-claude-only.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0128-findancestorprocess-substring-match-too-broad-claude-vs-claudia.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0129-watchdog-has-zero-structured-logging-kill-class-is-undiagnosable.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0131-shellprocessnames-missing-fish-dash-tcsh-csh-nu-ksh.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0132-watchdog-cli-substring-match-has-undocumented-load-bearing-invariant.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0134-auto-close-mechanism-broken-releaseagent-clears-auto-close-prematurely-v1-3-9-re.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0139-inboxservice-printinboxitem-no-longer-emits-file-line-for-message-items.md
+    - Missing summary paragraph after title
+  project/issues/resolved/0140-reserveagent-refuses-stale-dispatch-reclaim-with-no-live-launcher.md
+    - Missing summary paragraph after title
+  project/tasks/auto-close-smoke-v141.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/auto-resume-smoke-v141.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/cleanup-docs-check-backlog.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/discuss-with-user.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/fix-auto-resume-multi-spawn.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/fix-docs-quality-workflow.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/fix-pwsh-wait-approval.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/fix-wait-guard-deadlock.md
+    - Missing summary paragraph after title
+  project/tasks/fix-wait-race.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/investigate-pwsh-wait-approval.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/investigate-wait-race.md
+    - Orphan doc: not reachable from project/_index.md
+  project/tasks/wait-deadlock-smoke-v141.md
+    - Orphan doc: not reachable from project/_index.md
+
+Found 41 errors, 185 warnings in 846 files.
+
+Checking agent assignments...
+Agent 'Brian' has stale session (claimed 50 hours ago).
+
+Found errors.

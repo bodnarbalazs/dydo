@@ -155,10 +155,10 @@
   "frameworkHashes": {
     "_system/templates/agent-workflow.template.md": "fa7a9fc2d3499ccb80b67d156462a947fdad1dbea10610e82728bdb4081c2ee7",
     "_system/templates/mode-code-writer.template.md": "0e07aa3d6e302278630547b704ac7e5b2bebbbaa250dd4df846dbf885d995643",
-    "_system/templates/mode-reviewer.template.md": "827aa08d9571aee18221371aa4eb57f715764f3dc7727b871169cb96c019f8d3",
+    "_system/templates/mode-reviewer.template.md": "ed0900aede23f459129d18367db8e31a42b133cae451b626e5eacd5fbcc26e34",
     "_system/templates/mode-co-thinker.template.md": "05f41e66d62d4c8812d6b92678572c206bfc9fece3891948d3b4dd611db35ead",
     "_system/templates/mode-planner.template.md": "b5acd3039a54f9e9365fd1f59b04cc412864abf9798b0696afbe05b34e1e3d41",
-    "_system/templates/mode-docs-writer.template.md": "405e1aeff415c63d72958587a0e7717573a77b477659e784331e5a11dd7dc960",
+    "_system/templates/mode-docs-writer.template.md": "bf7350c5a9cbff027a4e916e6153ed99455edfb7bad288e3bc73fd6ee0214d93",
     "reference/about-dynadocs.md": "7f449f8fc1f364e985f0076d4471fc8c1a90c4ced77f7961b9c8c7640fac2466",
     "reference/dydo-commands.md": "cb862bd8b07ff2686d205887b74236570c1a1bcb6015bb42d8d3557f779da039",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",

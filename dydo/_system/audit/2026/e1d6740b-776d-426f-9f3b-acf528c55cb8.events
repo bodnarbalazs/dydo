@@ -1,0 +1,5 @@
+{"ts":"2026-05-01T11:19:06.6752582Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Wendy\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T11:19:10.6659252Z","event":"Claim","agent":"Wendy"}
+{"ts":"2026-05-01T11:19:17.1041913Z","event":"Role","role":"co-thinker","task":"auto-close-smoke-v141"}
+{"ts":"2026-05-01T11:19:19.7950614Z","event":"Blocked","tool":"bash","cmd":"dydo msg --to Brian --subject auto-close-smoke-v141 --body \u0022Onboarded. Releasing.\u0022","reason":"Missing general wait"}
+{"ts":"2026-05-01T11:19:29.8057383Z","event":"Release","agent":"Wendy"}

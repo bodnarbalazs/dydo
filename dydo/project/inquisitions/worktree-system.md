@@ -1,4 +1,11 @@
+---
+area: project
+type: inquisition
+---
+
 # Worktree System — Inquisition Report
+
+Feature investigation of the worktree system — `WorktreeCommand`, the cross-platform terminal launchers, the worktree branches inside `DispatchService`, and the supporting `FileLock` and `ProcessUtils` code. The report cross-references architecture and dispatch docs and the worktree test suites; staffed with four reviewer scouts (quality, security, docs).
 
 ## 2026-04-07 — Charlie
 

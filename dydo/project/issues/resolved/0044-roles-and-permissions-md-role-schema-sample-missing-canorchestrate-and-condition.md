@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # roles-and-permissions.md role schema sample missing CanOrchestrate and ConditionalMustReads
 
+Resolved low-severity docs finding: the role schema sample in `roles-and-permissions.md` omitted the `canOrchestrate` and `conditionalMustReads` fields. Fixed in commit `5ffcb54` by adding both fields to the sample with pointers to `orchestrator.role.json` and decision 013; verified by Charlie.
+
 ## Description
 
 (Describe the issue)

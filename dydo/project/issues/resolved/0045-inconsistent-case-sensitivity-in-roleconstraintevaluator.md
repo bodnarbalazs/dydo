@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # Inconsistent case sensitivity in RoleConstraintEvaluator
 
+Resolved low-severity correctness bug: `RoleConstraintEvaluator.CanRelease` and `CanDispatch` already used `OrdinalIgnoreCase`, but the `CanTakeRole` branches (role-transition, requires-prior, panel-limit) were case-sensitive. Fixed by unifying on case-insensitive comparison everywhere; cherry-picked from Emma's recovery branch as `2fba407`.
+
 ## Description
 
 (Describe the issue)

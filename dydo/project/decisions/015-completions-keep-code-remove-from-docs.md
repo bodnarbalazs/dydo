@@ -2,10 +2,12 @@
 type: decision
 status: accepted
 date: 2026-03-30
-area: cli
+area: project
 ---
 
 # 015 — Shell Completions: Keep Code, Remove from Docs
+
+The shell-completion infrastructure works for the static command tree but doesn't deliver dynamic completions, the part users actually want. Rather than ripping it out or shipping a half-feature, this decision keeps the code in place and removes the user-facing documentation pointers, leaving the plumbing for whoever picks up dynamic completions later.
 
 ## Context
 

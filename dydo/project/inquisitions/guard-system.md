@@ -1,4 +1,11 @@
+---
+area: project
+type: inquisition
+---
+
 # Guard System Inquisition
+
+Feature investigation of the guard system — `GuardCommand` and `GuardLiftCommand` (~1400 lines), `BashCommandAnalyzer`, `OffLimitsService`, `MustReadTracker`, `PathPermissionChecker`, `GuardLiftService`, and the supporting config / nudge / glob utilities. Cross-checked against the guard-system understanding doc and guardrails reference; staffed by three reviewer scouts (security, quality, docs) and one test-writer.
 
 ## 2026-04-09 — Brian
 

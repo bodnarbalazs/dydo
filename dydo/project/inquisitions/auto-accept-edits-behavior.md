@@ -5,6 +5,8 @@ type: inquisition
 
 # Auto-accept-edits behavior inquiry
 
+Mechanism inquiry into why Edit/Write tool calls auto-approve in some Claude Code projects (e.g., LC) but prompt in others (e.g., DynaDocs) on the same machine. The user wanted the underlying mechanism — settings-file precedence, allowed-tools resolution, mode/role interaction — not a fix.
+
 ## 2026-04-18 — Frank
 
 ### Claim under investigation

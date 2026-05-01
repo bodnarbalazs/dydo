@@ -10,6 +10,8 @@ date: 2026-04-09
 
 # Guard lift mechanism entirely undocumented
 
+The guard-lift mechanism (CLI usage, marker file, RBAC bypass behavior, off-limits interaction, audit trail with `lifted: true`, self-escalation protection) had no presence in `guard-system.md` despite being a load-bearing escape hatch. Resolved by adding a dedicated "Guard Lift" section covering all of the above plus its intended use cases.
+
 ## Description
 
 (Describe the issue)

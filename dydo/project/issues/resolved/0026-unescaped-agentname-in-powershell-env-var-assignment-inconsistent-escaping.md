@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # Unescaped agentName in PowerShell env var assignment (inconsistent escaping)
 
+Resolved low-severity injection finding: `agentName` and `windowName` were emitted into PowerShell `env:` assignments without escaping, while sibling assignments did escape. Fixed in commit `7756e7e` by applying the same `.Replace`-based escaping to both fields.
+
 ## Description
 
 (Describe the issue)

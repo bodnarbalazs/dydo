@@ -1,5 +1,5 @@
 ---
-area: process
+area: project
 type: decision
 status: accepted
 date: 2026-04-29
@@ -95,12 +95,12 @@ After ~2 weeks of lived practice:
 
 ## Affects
 
-- [Services/WatchdogService.cs](../../../Services/WatchdogService.cs) — new resume-detection + launch trigger pass.
-- [Services/WindowsTerminalLauncher.cs](../../../Services/WindowsTerminalLauncher.cs) — `LaunchResume` path.
-- [Services/LinuxTerminalLauncher.cs](../../../Services/LinuxTerminalLauncher.cs) — same.
-- [Services/MacTerminalLauncher.cs](../../../Services/MacTerminalLauncher.cs) — same.
-- [Services/TerminalLauncher.cs](../../../Services/TerminalLauncher.cs) — façade routing.
-- [Services/AgentRegistry.cs](../../../Services/AgentRegistry.cs) — reset `resume-attempts` on claim/release.
-- [Models/AgentSession.cs](../../../Models/AgentSession.cs) — referenced (no edit) for session ID source.
+- `Services/WatchdogService.cs` — new resume-detection + launch trigger pass.
+- `Services/WindowsTerminalLauncher.cs` — `LaunchResume` path.
+- `Services/LinuxTerminalLauncher.cs` — same.
+- `Services/MacTerminalLauncher.cs` — same.
+- `Services/TerminalLauncher.cs` — façade routing.
+- `Services/AgentRegistry.cs` — reset `resume-attempts` on claim/release.
+- `Models/AgentSession.cs` — referenced (no edit) for session ID source.
 - [Decision 021 — Unified General Wait](./021-unified-general-wait.md) — provides the backgrounded `dydo wait` startup pattern this decision reuses.
 - [Issue #0130 — Stale-Working Reclaim Silently Archives In-Flight Work](../issues/0130-stale-working-reclaim-silently-archives-in-flight-work.md) — companion: this decision avoids the archive path for transient crashes; #0130's reclaim path remains the fallback for crashes past the cap.

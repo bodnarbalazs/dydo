@@ -1,0 +1,15 @@
+{"ts":"2026-05-01T11:19:10.5072802Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T11:19:14.3799138Z","event":"Claim","agent":"Iris"}
+{"ts":"2026-05-01T11:19:19.3292478Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\f424ff43-wait-deadlock-smoke-v141.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-01T11:19:22.6867137Z","event":"Role","role":"co-thinker","task":"wait-deadlock-smoke-v141"}
+{"ts":"2026-05-01T11:19:25.302791Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\f424ff43-wait-deadlock-smoke-v141.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T11:19:30.2670973Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\f424ff43-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T11:20:13.1394836Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\db5d4bdf-msg-wait-deadlock-smoke-v141.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T11:20:18.1629581Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\db5d4bdf-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T12:49:03.525722Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\a8b1ef9d-4ed4-4423-9b99-baaacd144936\\tasks\\bet8bvthq.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T12:49:08.9077425Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\a8b1ef9d-4ed4-4423-9b99-baaacd144936\\tasks\\bet8bvthq.output","tool":"read"}
+{"ts":"2026-05-01T12:49:14.9795712Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\5d68931a-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T12:49:26.0017042Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\9671753d-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T12:49:28.9589108Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Iris\\inbox\\743c408c-msg-wait-deadlock-smoke-v141.md","tool":"read"}
+{"ts":"2026-05-01T12:49:38.0502586Z","event":"Blocked","tool":"bash","cmd":"dydo agent release","reason":"Missing general wait"}
+{"ts":"2026-05-01T12:49:43.3986231Z","event":"Release","agent":"Iris"}

@@ -1,4 +1,11 @@
+---
+area: project
+type: reference
+---
+
 # File Coverage Heatmap
+
+Auto-generated heatmap of inquisition coverage per source file over a 365-day lookback. Each file gets a score reflecting how recently and how heavily it has been touched by inquisition activity; the table groups files by folder and flags gaps (zero-score) and stale (decayed) entries to inform what to investigate next.
 
 Generated: 2026-04-08 21:03 UTC
 Lookback: 365 days

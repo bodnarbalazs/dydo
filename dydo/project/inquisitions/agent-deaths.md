@@ -1,9 +1,11 @@
 ---
-area: services
+area: project
 type: inquisition
 ---
 
 # Agent Deaths Inquisition
+
+Investigation into a critical class of bugs where dispatched agents were dying mid-work without releasing — observed across DynaDocs and the LC project. Looks at `WatchdogService`, `AgentRegistry`, terminal launchers, and process utilities; cross-references DynaDocs and LC audit history; lists scout dispatches and suspect commits. The report documents the root-cause hunt and resulting findings.
 
 ## 2026-04-28 — Jack
 

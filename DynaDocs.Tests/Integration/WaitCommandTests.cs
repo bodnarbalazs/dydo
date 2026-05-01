@@ -673,18 +673,77 @@ public class WaitCommandTests : IntegrationTestBase
     #region Deadlock Recovery Tests
 
     [Fact]
-    public async Task WaitGeneral_SkipsMessage_AlreadyInUnreadAtStart()
+    public void MessageFinder_FindMessage_ExcludesIdsInExcludeSet()
     {
-        // Bug A: WaitGeneral previously popped on any unread message — including ones
-        // already in agent.UnreadMessages — and removed the _general-wait marker on exit,
-        // deadlocking the orchestrator's read tool. The wait must now snapshot the unread
-        // set at startup and skip those IDs.
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            WriteMessageFileDirect(inboxPath, "deadbeef", "Brian", "subj", "stale", DateTime.UtcNow);
+
+            var excludeIds = new HashSet<string>(["deadbeef"], StringComparer.OrdinalIgnoreCase);
+            var result = MessageFinder.FindMessage(inboxPath, null, excludeSubjects: null, excludeIds: excludeIds);
+
+            Assert.Null(result);
+        }
+        finally { Directory.Delete(inboxPath, true); }
+    }
+
+    #endregion
+
+    #region Unified Delivered-State Tests (#0147)
+
+    [Fact]
+    public async Task WaitGeneral_FiresOnSecondMessage_ArrivedDuringRearmGap()
+    {
+        // The #0147 race: msg1 fires W1, agent processes it (Read depletes UnreadMessages),
+        // registers W2 — but msg2 arrived during the W1-exit → W2-register gap, so msg2's
+        // file is on disk at W2's start. Pre-#0147 the snapshot filter swallowed msg2; with
+        // UnreadMessages-driven semantics, W2 fires on msg2 because it is in the canonical set.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
-        var staleId = CreateMessageFileReturningId("Adele", "Brian", "stale-subject", "Already-known");
         var registry = new AgentRegistry(TestDir);
-        registry.AddUnreadMessage("Adele", staleId);
+
+        var msg1Id = CreateMessageFileReturningId("Adele", "Brian", "first", "old");
+        var msg2Id = CreateMessageFileReturningId("Adele", "Charlie", "second", "fresh");
+        // Simulate post-Read for msg1: file persists, id depleted from UnreadMessages.
+        // msg2 stays in UnreadMessages (not yet Read).
+        registry.ClearAllUnreadMessages("Adele");
+        registry.AddUnreadMessage("Adele", msg2Id);
+
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Charlie");
+            result.AssertStdoutContains("second");
+            Assert.DoesNotContain("first", result.Stdout);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_DoesNotFire_WhenInboxFileExistsButUnreadMessagesEmpty()
+    {
+        // #0141 stays fixed under #0147 semantics: a stale file on disk (post-Read,
+        // pre-`inbox clear`) must not fire the wait. The unified definition keeps the
+        // property because the id is not in UnreadMessages, so the inclusion-set excludes it.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        CreateMessageFile("Adele", "Brian", "stale", "post-Read leftover");
+        new AgentRegistry(TestDir).ClearAllUnreadMessages("Adele");
 
         ProcessUtils.IsProcessRunningOverride = _ => false;
         try
@@ -700,17 +759,92 @@ public class WaitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public void MessageFinder_FindMessage_ExcludesIdsInExcludeSet()
+    public async Task WaitGeneral_FiresOnArrivalDuringActiveWait_NotJustPostRegistration()
+    {
+        // Forward functionality: a wait already running fires when a NEW message lands
+        // via the production path (DeliverInboxMessage writes the file and updates
+        // UnreadMessages). Exercises the full canonical signal end-to-end.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var dropped = false;
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
+
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!dropped)
+            {
+                dropped = true;
+                MessageService.DeliverInboxMessage(
+                    new AgentRegistry(TestDir), "Brian", "Adele", "hi", "fresh");
+            }
+            return true;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Brian");
+            result.AssertStdoutContains("fresh");
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
+    }
+
+    [Fact]
+    public async Task DeliverInboxMessage_AddsToUnreadMessages_EvenWhenTargetReleased()
+    {
+        // The unified definition holds across agent status: a message sent to a Released
+        // target still enters the canonical "not yet delivered" set so a future wait fires
+        // on it. Removing the prior Working-only conditional is what closes this gap.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        // Brian was never claimed — has no Working state. The message must still register.
+        var id = MessageService.DeliverInboxMessage(registry, "Adele", "Brian", "hello", "subj");
+
+        var unread = registry.GetAgentState("Brian")?.UnreadMessages ?? new();
+        Assert.Contains(id, unread);
+    }
+
+    [Fact]
+    public void FindMessage_IncludeIds_OnlyMatchesListedIds()
     {
         var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(inboxPath);
         try
         {
-            WriteMessageFileDirect(inboxPath, "deadbeef", "Brian", "subj", "stale", DateTime.UtcNow);
+            WriteMessageFileDirect(inboxPath, "abc123", "Brian", "subj-a", "body", DateTime.UtcNow);
+            WriteMessageFileDirect(inboxPath, "deadbeef", "Charlie", "subj-b", "body", DateTime.UtcNow);
 
-            var excludeIds = new HashSet<string>(["deadbeef"], StringComparer.OrdinalIgnoreCase);
-            var result = MessageFinder.FindMessage(inboxPath, null, excludeSubjects: null, excludeIds: excludeIds);
+            var only = new HashSet<string>(["abc123"], StringComparer.OrdinalIgnoreCase);
+            var result = MessageFinder.FindMessage(inboxPath, null,
+                excludeSubjects: null, excludeIds: null, includeIds: only);
 
+            Assert.NotNull(result);
+            Assert.Equal("Brian", result.From);
+        }
+        finally { Directory.Delete(inboxPath, true); }
+    }
+
+    [Fact]
+    public void FindMessage_IncludeIds_EmptySet_ReturnsNull()
+    {
+        var inboxPath = Path.Combine(Path.GetTempPath(), "dydo-test-inbox-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(inboxPath);
+        try
+        {
+            WriteMessageFileDirect(inboxPath, "abc123", "Brian", "subj", "body", DateTime.UtcNow);
+            var none = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var result = MessageFinder.FindMessage(inboxPath, null, includeIds: none);
             Assert.Null(result);
         }
         finally { Directory.Delete(inboxPath, true); }
@@ -754,17 +888,16 @@ public class WaitCommandTests : IntegrationTestBase
     [Fact]
     public async Task WaitGeneral_StaysAliveWhenInboxFilesExistButStateMdEmpty()
     {
-        // Bug #0141: WaitGeneral previously snapshotted from agent.UnreadMessages — which
-        // is depleted by the Read tool — while MessageFinder scans the inbox dir. The
-        // divergence caused the wait to "find" already-known messages and exit, removing
-        // the marker and deadlocking the agent. Snapshotting from the inbox dir aligns
-        // both sides on the same source of truth.
+        // Bug #0141 stays fixed under #0147 semantics: a file on disk whose id is NOT in
+        // UnreadMessages (post-Read state) must not fire the wait. The unified definition
+        // keeps this property because the inclusion-set is sourced from UnreadMessages.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
-        // Two old files in inbox; state.md is NOT updated (simulates post-Read state).
         CreateMessageFile("Adele", "Brian", "stale-1", "Old1");
         CreateMessageFile("Adele", "Brian", "stale-2", "Old2");
+        // Simulate post-Read state: Read tool depletes UnreadMessages but leaves files.
+        new AgentRegistry(TestDir).ClearAllUnreadMessages("Adele");
 
         ProcessUtils.IsProcessRunningOverride = _ => false;
         try
@@ -784,14 +917,16 @@ public class WaitCommandTests : IntegrationTestBase
     [Fact]
     public async Task WaitGeneral_FiresOnGenuinelyNewArrivalAfterReadDepletedStateMd()
     {
-        // Forward functionality: with stale files snapshotted, a NEW message arriving
-        // after the wait starts must still fire the wait — only IDs already on disk at
-        // wait-start are excluded.
+        // Forward functionality with #0147 semantics: stale files (post-Read, not in
+        // UnreadMessages) coexist with a fresh arrival (in UnreadMessages). The wait
+        // must fire on the fresh one and ignore the stale ones.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
         CreateMessageFile("Adele", "Brian", "stale-1", "Old1");
         CreateMessageFile("Adele", "Brian", "stale-2", "Old2");
+        // Stale files simulate post-Read: file persists, UnreadMessages depleted.
+        new AgentRegistry(TestDir).ClearAllUnreadMessages("Adele");
 
         var droppedFresh = false;
         var originalPollMs = WaitCommand.PollIntervalMs;
@@ -1067,6 +1202,9 @@ public class WaitCommandTests : IntegrationTestBase
             """;
 
         File.WriteAllText(Path.Combine(inboxPath, $"{id}-msg-{subject}.md"), content);
+        // Mirror the production write path: every delivered file is paired with an
+        // UnreadMessages entry so WaitGeneral's inclusion-set semantics fire on it.
+        new AgentRegistry(TestDir).AddUnreadMessage(agentName, id);
         return id;
     }
 

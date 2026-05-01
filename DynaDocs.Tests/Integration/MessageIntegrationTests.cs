@@ -208,8 +208,11 @@ public class MessageIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Message_ToInactiveAgent_WithForce_DoesNotUpdateUnreadMessages()
+    public async Task Message_ToInactiveAgent_WithForce_UpdatesUnreadMessages()
     {
+        // #0147: file-on-disk implies id-in-UnreadMessages regardless of target status.
+        // A message forced to a Released target must enter the canonical set so a wait
+        // at the target's next claim fires on it.
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
@@ -218,7 +221,7 @@ public class MessageIntegrationTests : IntegrationTestBase
         var registry = new AgentRegistry(TestDir);
         var brianState = registry.GetAgentState("Brian");
         Assert.NotNull(brianState);
-        Assert.Empty(brianState.UnreadMessages);
+        Assert.Single(brianState.UnreadMessages);
     }
 
     [Fact]

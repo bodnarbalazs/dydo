@@ -82,9 +82,10 @@ public static class MessageService
 
         File.WriteAllText(filePath, content);
 
-        var targetState = registry.GetAgentState(toName);
-        if (targetState != null && targetState.Status == Models.AgentStatus.Working)
-            registry.AddUnreadMessage(toName, messageId);
+        // Unconditional: file-on-disk implies id-in-UnreadMessages. WaitGeneral fires on
+        // inbox-files ∩ UnreadMessages, so a Released target must still enter the canonical
+        // set or the message would be invisible to a future wait after re-claim. (#0147)
+        registry.AddUnreadMessage(toName, messageId);
 
         return messageId;
     }

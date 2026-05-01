@@ -1,5 +1,5 @@
 ---
-area: process
+area: project
 type: decision
 status: accepted
 date: 2026-04-29
@@ -92,13 +92,13 @@ These tests are part of the slice that fixes #0133, not part of the simplificati
 
 ## Affects
 
-- [Templates/mode-orchestrator.template.md](../../../Templates/mode-orchestrator.template.md) — Dispatch section rewrite (drop per-task waits), general-wait step after the role-set step.
-- [Templates/mode-code-writer.template.md](../../../Templates/mode-code-writer.template.md) — General-wait step after the role-set step.
-- [Templates/mode-reviewer.template.md](../../../Templates/mode-reviewer.template.md) — Same.
-- [Templates/mode-planner.template.md](../../../Templates/mode-planner.template.md) — Same.
+- `Templates/mode-orchestrator.template.md` — Dispatch section rewrite (drop per-task waits), general-wait step after the role-set step.
+- `Templates/mode-code-writer.template.md` — General-wait step after the role-set step.
+- `Templates/mode-reviewer.template.md` — Same.
+- `Templates/mode-planner.template.md` — Same.
 - All other `Templates/mode-*.template.md` — Same.
-- [Commands/GuardCommand.cs](../../../Commands/GuardCommand.cs) — `OrchestratorMissingGeneralWait` → `MissingGeneralWait`.
-- [Commands/WaitCommand.cs](../../../Commands/WaitCommand.cs) — #0133 fix landing here as a prerequisite slice.
-- [Services/DispatchService.cs](../../../Services/DispatchService.cs) — Drop dispatch-time task-wait registration; add `--wait` release constraint on the dispatched agent.
+- `Commands/GuardCommand.cs` — `OrchestratorMissingGeneralWait` → `MissingGeneralWait`.
+- `Commands/WaitCommand.cs` — #0133 fix landing here as a prerequisite slice.
+- `Services/DispatchService.cs` — Drop dispatch-time task-wait registration; add `--wait` release constraint on the dispatched agent.
 - [Decision 005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md) — Partially superseded for the *what `--wait` means* question; "fresh agent for review feedback" stance unchanged.
-- [Issue #0133](../issues/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) — Hard prerequisite. Must ship first or in the same release with regression tests.
+- [Issue #0133](../issues/resolved/0133-orchestrator-general-wait-deadlock-recurs-bcff3f4-incomplete.md) — Hard prerequisite. Must ship first or in the same release with regression tests.

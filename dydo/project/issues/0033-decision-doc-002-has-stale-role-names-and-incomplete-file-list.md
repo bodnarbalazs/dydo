@@ -10,6 +10,8 @@ date: 2026-04-08
 
 # Decision doc 002 has stale role names and incomplete file list
 
+Audit of decision doc 002 (template update system) flagged stale metadata and an incomplete shipped-hooks list. Resolved by flipping the status from `proposed` to `accepted`, adding the two missing hook points (`extra-complete-gate`, `extra-test-guidance`) to both the Shipped Hook Points and Changes Required sections, and confirming no stale role names remained.
+
 ## Description
 
 (Describe the issue)

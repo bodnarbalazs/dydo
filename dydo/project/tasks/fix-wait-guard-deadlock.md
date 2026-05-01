@@ -9,6 +9,8 @@ updated: 2026-04-30T22:21:20.5271664Z
 
 # Task: fix-wait-guard-deadlock
 
+Code-writer task implementing Zelda's plan for issue #0141: align `WaitCommand.WaitGeneral`'s snapshot with the inbox-dir scanner (so the wait stops auto-exiting on already-known unreads) and fix the multi-writer race on the wait marker. Includes a user-directed override on Step 3 — duplicate registration must fail with a NONZERO exit code instead of returning Success — to break the agent habit of defensively re-registering waits.
+
 # Brief: fix-wait-guard-deadlock (#0141)
 
 You are a code-writer. Today is 2026-04-30. Implement Zelda's plan exactly as written, with one user-directed override (see below). Build, run tests, commit, dispatch reviewer, message Brian, release. No worktrees.

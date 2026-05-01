@@ -315,7 +315,11 @@ public static class InitCommand
         };
     }
 
-    private const string DydoAllowEntry = "Bash(dydo:*)";
+    private static readonly string[] DydoAllowEntries =
+    {
+        "Bash(dydo:*)",
+        "PowerShell(dydo:*)"
+    };
 
     private static void ConfigureClaudeHooks(string projectRoot)
     {
@@ -366,9 +370,12 @@ public static class InitCommand
         var allow = permissions["allow"]?.AsArray() ?? new JsonArray();
         permissions["allow"] = allow;
 
-        var hasEntry = allow.Any(entry => entry?.GetValue<string>() == DydoAllowEntry);
-        if (!hasEntry)
-            allow.Add((JsonNode)DydoAllowEntry);
+        foreach (var entry in DydoAllowEntries)
+        {
+            var hasEntry = allow.Any(existing => existing?.GetValue<string>() == entry);
+            if (!hasEntry)
+                allow.Add((JsonNode)entry);
+        }
     }
 
     private static JsonNode LoadJsonSettings(string settingsPath)

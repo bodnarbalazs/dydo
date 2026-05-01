@@ -11,35 +11,35 @@ Index of 2026-03-30 documentation.
 
 ## Contents
 
-- [Agent List Queued Status](./agent-list-queued-status.md)
-- [Docs V13 Impl](./docs-v13-impl.md)
-- [Docs V13 Update](./docs-v13-update.md)
-- [Excalidraw Workflows](./excalidraw-workflows.md)
-- [Fix All Path Formats Merge](./fix-all-path-formats-merge.md)
-- [Fix All Path Formats](./fix-all-path-formats.md)
-- [Fix Autoclose Race](./fix-autoclose-race.md)
-- [Fix Ci Linux Round3](./fix-ci-linux-round3.md)
-- [Fix Guard Lift Negative](./fix-guard-lift-negative.md)
-- [Fix Inquisition State Isolation](./fix-inquisition-state-isolation.md)
-- [Fix Inquisitor Release Constraint](./fix-inquisitor-release-constraint.md)
-- [Fix Queue Broken](./fix-queue-broken.md)
-- [Fix Queue Debug](./fix-queue-debug.md)
-- [Fix Read Permissions Final](./fix-read-permissions-final.md)
-- [Inquisition Guard System V2](./inquisition-guard-system-v2.md)
-- [Inquisition Guard System](./inquisition-guard-system.md)
-- [Investigate Charlie Autoclose](./investigate-charlie-autoclose.md)
-- [Queue Race 1](./queue-race-1.md)
-- [Queue Race 2](./queue-race-2.md)
-- [Queue Test 1](./queue-test-1.md)
-- [Queue Test 2](./queue-test-2.md)
-- [Queue Verify 1](./queue-verify-1.md)
-- [Queue Verify 2](./queue-verify-2.md)
-- [Queue Verify 3](./queue-verify-3.md)
-- [Queue Verify 4](./queue-verify-4.md)
-- [Queue Verify 5](./queue-verify-5.md)
-- [Queue Verify 6](./queue-verify-6.md)
-- [Smoke Final2 A Merge](./smoke-final2-a-merge.md)
-- [Smoke Final2 B Merge](./smoke-final2-b-merge.md)
-- [Smoke Final3 A Merge](./smoke-final3-a-merge.md)
-- [Smoke Final3 B Merge](./smoke-final3-b-merge.md)
-- [Speed Up Tests](./speed-up-tests.md)
+- [Task: agent-list-queued-status](./agent-list-queued-status.md) - Implemented queued status display in agent list.
+- [Task: docs-v13-impl](./docs-v13-impl.md) - v1.
+- [Task: docs-v13-update](./docs-v13-update.md) - (No description)
+- [Task: excalidraw-workflows](./excalidraw-workflows.md) - (No description)
+- [Task: fix-all-path-formats-merge](./fix-all-path-formats-merge.md) - Merged worktree/inquisition-guard-system into master.
+- [Task: fix-all-path-formats](./fix-all-path-formats.md) - Added MSYS/Git Bash path format (/c/Users/.
+- [Task: fix-autoclose-race](./fix-autoclose-race.md) - Fixed the auto-close race condition in WatchdogService.
+- [Task: fix-ci-linux-round3](./fix-ci-linux-round3.md) - Fixed the single CI failure on Linux: WatchdogServiceTests.
+- [Task: fix-guard-lift-negative](./fix-guard-lift-negative.md) - Added validation in GuardLiftCommand.
+- [Task: fix-inquisition-state-isolation](./fix-inquisition-state-isolation.md) - (No description)
+- [Task: fix-inquisitor-release-constraint](./fix-inquisitor-release-constraint.md) - Added RequireAll property to RoleConstraint (default true, preserving ALL semantics).
+- [Task: fix-queue-broken](./fix-queue-broken.md) - Fixed race condition where watchdog cleared queue _active.
+- [Task: fix-queue-debug](./fix-queue-debug.md) - Fixed the queue race condition where the watchdog cleared _active.
+- [Task: fix-read-permissions-final](./fix-read-permissions-final.md) - Plan ready.
+- [Task: inquisition-guard-system-v2](./inquisition-guard-system-v2.md) - You are an inquisitor investigating the guard system.
+- [Task: inquisition-guard-system](./inquisition-guard-system.md) - You are the first inquisitor to run on this project.
+- [Task: investigate-charlie-autoclose](./investigate-charlie-autoclose.md) - (No description)
+- [Task: queue-race-1](./queue-race-1.md) - Queue race test completed.
+- [Task: queue-race-2](./queue-race-2.md) - Queue race test — no code changes made.
+- [Task: queue-test-1](./queue-test-1.md) - Review changes for queue-test-1
+- [Task: queue-test-2](./queue-test-2.md) - Queue test only — no code changes.
+- [Task: queue-verify-1](./queue-verify-1.md) - Queue verification task.
+- [Task: queue-verify-2](./queue-verify-2.md) - Queue verification task - no code changes.
+- [Task: queue-verify-3](./queue-verify-3.md) - Queue verification task - no code changes.
+- [Task: queue-verify-4](./queue-verify-4.md) - Queue verification task - no code changes.
+- [Task: queue-verify-5](./queue-verify-5.md) - Queue verification task.
+- [Task: queue-verify-6](./queue-verify-6.md) - Queue verification task — no code changes.
+- [Task: smoke-final2-a-merge](./smoke-final2-a-merge.md) - Merged worktree/smoke-final2-a into master via fast-forward.
+- [Task: smoke-final2-b-merge](./smoke-final2-b-merge.md) - Merged worktree/smoke-final2-b into master (1 commit: adds Commands/smoke-final2-b.
+- [Task: smoke-final3-a-merge](./smoke-final3-a-merge.md) - Merged worktree/smoke-final3-a into master.
+- [Task: smoke-final3-b-merge](./smoke-final3-b-merge.md) - Merged worktree branch worktree/smoke-final3-b into master via fast-forward.
+- [Task: speed-up-tests](./speed-up-tests.md) - Created DynaDocs.

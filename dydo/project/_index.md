@@ -13,6 +13,7 @@ Index of project documentation.
 
 - [Documentation Upgrade Sprint](./docs-upgrade-sprint.md) - Bring dydo's own documentation up to date after the v1.
 - [v1.3.0 Release Notes](./v1.3-release.md) - Multi-agent orchestration, messaging, worktree isolation, and a simplified workflow.
+- [v1.4.0 Release Notes](./v1.4-release.md) - A wait-paradigm shift, auto-resume on crash, and a small fix tail on top of v1.
 
 ## Subfolders
 

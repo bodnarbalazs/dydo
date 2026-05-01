@@ -11,15 +11,14 @@ Index of tasks documentation.
 
 ## Contents
 
-- [Task: auto-close-smoke](./auto-close-smoke.md) - (No description)
-- [Task: discuss-auto-resume-crashed-agents](./discuss-auto-resume-crashed-agents.md) - (No description)
-- [Task: discuss-unified-general-wait](./discuss-unified-general-wait.md) - (No description)
-- [Task: fix-auto-resume-crashed-agents](./fix-auto-resume-crashed-agents.md) - (No description)
-- [Task: fix-ci-test-failures](./fix-ci-test-failures.md) - Review commit 3b58876 for fix-ci-test-failures.
-- [Task: investigate-auto-close-regression](./investigate-auto-close-regression.md) - Review commit bd3cebe — five-line revert of 8d3e3b1's  addition in ReleaseAgent (Services/AgentRegistry.
-- [Task: orchestrator-handoff](./orchestrator-handoff.md) - (No description)
-- [Task: plan-auto-resume-crashed-agents](./plan-auto-resume-crashed-agents.md) - (No description)
-- [Task: publish-general-wait-guide](./publish-general-wait-guide.md) - (No description)
-- [Task: unified-general-wait-slice1](./unified-general-wait-slice1.md) - Review Slice 1 of unified-general-wait — fix for #0133 (dydo wait deadlock).
-- [Task: unified-general-wait-slice3](./unified-general-wait-slice3.md) - (No description)
-- [Task: unified-general-wait](./unified-general-wait.md) - (No description)
+- [Task: auto-close-smoke-v140](./auto-close-smoke-v140.md) - (No description)
+- [Task: auto-resume-smoke-v140](./auto-resume-smoke-v140.md) - (No description)
+- [Task: auto-resume-smoke](./auto-resume-smoke.md) - (No description)
+- [Task: fix-auto-resume-cwd](./fix-auto-resume-cwd.md) - Review commit 473af47 for fix-auto-resume-cwd (#0138).
+- [Task: fix-ci-flake-anchor-midflight](./fix-ci-flake-anchor-midflight.md) - Review commit f26a288 for fix-ci-flake-anchor-midflight.
+- [Task: fix-issue-permissions-and-message](./fix-issue-permissions-and-message.md) - Review commit 25549b7 for fix-issue-permissions-and-message.
+- [Task: fix-master-regressions](./fix-master-regressions.md) - No-repro review for fix-master-regressions (#0139, #0140).
+- [Task: fix-wait-guard-deadlock](./fix-wait-guard-deadlock.md)
+- [Task: investigate-wait-guard-deadlock](./investigate-wait-guard-deadlock.md) - (No description)
+- [Task: readme-advertise-auto-resume](./readme-advertise-auto-resume.md) - (No description)
+- [Task: write-v1.4-release-doc](./write-v1.4-release-doc.md) - Review commit 2054f5d for write-v1.

@@ -226,10 +226,28 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
             RedirectStandardError = true
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
-        var p = Process.Start(psi) ?? throw new InvalidOperationException("git failed to start");
-        p.WaitForExit(30_000);
+
+        using var p = Process.Start(psi)
+            ?? throw new InvalidOperationException("git failed to start");
+
+        // Drain both streams concurrently. Reading after WaitForExit deadlocks
+        // when git fills the OS pipe buffer (~64 KB on Windows).
+        var stdoutTask = p.StandardOutput.ReadToEndAsync();
+        var stderrTask = p.StandardError.ReadToEndAsync();
+
+        if (!p.WaitForExit(30_000))
+        {
+            try { p.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+            throw new InvalidOperationException(
+                $"git {string.Join(' ', args)} timed out after 30s in {cwd}");
+        }
+
         if (p.ExitCode != 0)
-            throw new InvalidOperationException($"git {string.Join(' ', args)} failed in {cwd}: {p.StandardError.ReadToEnd()}");
+        {
+            var stderr = stderrTask.GetAwaiter().GetResult();
+            throw new InvalidOperationException(
+                $"git {string.Join(' ', args)} failed in {cwd} (exit {p.ExitCode}): {stderr}");
+        }
     }
 
     private void SetupMergeAgent(string agentName, string worktreeBase, string mergeSource, string worktreePath)

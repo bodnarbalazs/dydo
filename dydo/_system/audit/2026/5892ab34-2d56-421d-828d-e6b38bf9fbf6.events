@@ -175,3 +175,58 @@
 {"ts":"2026-04-30T17:09:30.9385013Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\9e8d4d2b-msg-fix-ci-flake-anchor-midflight.md","tool":"read"}
 {"ts":"2026-04-30T17:09:31.2380911Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\66fad1eb-msg-fix-ci-flake-anchor-midflight.md","tool":"read"}
 {"ts":"2026-04-30T17:09:37.6126281Z","event":"Bash","tool":"bash","cmd":"git log origin/master..HEAD --oneline 2\u003E\u00261"}
+{"ts":"2026-04-30T17:37:38.2408489Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-close-smoke-v140.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-04-30T17:37:45.3667589Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\43d2cb7d-msg-auto-resume-smoke.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T17:37:53.1696366Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\43d2cb7d-msg-auto-resume-smoke.md","tool":"read"}
+{"ts":"2026-04-30T17:38:18.6672046Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-close-smoke-v140.md","tool":"write"}
+{"ts":"2026-04-30T17:39:15.7933446Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -10; echo \u0022---AGENTS---\u0022; dydo agent list 2\u003E\u00261 | head -25","reason":"Missing general wait"}
+{"ts":"2026-04-30T17:39:32.7617781Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\e3240986-msg-auto-close-smoke-v140.md","tool":"read"}
+{"ts":"2026-04-30T17:39:59.0282223Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022dydo wait\u0022 Templates/mode-orchestrator.template.md 2\u003E\u00261 | head -20; echo \u0022---\u0022; grep -n -B2..."}
+{"ts":"2026-04-30T17:50:55.1976144Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-auto-resume-smoke-v140.md","tool":"write"}
+{"ts":"2026-04-30T17:52:52.2031627Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -10","reason":"Missing general wait"}
+{"ts":"2026-04-30T17:53:02.1959401Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\fa83b5ea-msg-auto-resume-smoke-v140.md","tool":"read"}
+{"ts":"2026-04-30T17:54:59.4013532Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022LaunchResumeTerminal\\|LaunchResume\\|workingDirectory\u0022 Services/WatchdogService.cs 2\u003E\u00261 | he..."}
+{"ts":"2026-04-30T17:55:35.2856418Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-auto-resume-cwd.md","tool":"write"}
+{"ts":"2026-04-30T17:56:33.8165337Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T17:56:40.6473615Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022watchdog\\|auto-close\\|resume\\|crash\u0022 README.md 2\u003E\u00261 | head -10; echo \u0022---\u0022; head -40 README..."}
+{"ts":"2026-04-30T18:07:36.9449468Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\349d1470-msg-fix-auto-resume-cwd.md","tool":"read"}
+{"ts":"2026-04-30T18:07:51.5363092Z","event":"Blocked","tool":"bash","cmd":"dydo msg --to Wendy --subject fix-auto-resume-cwd --body \u0022Ship the fix as-is, with the original comm...","reason":"Missing general wait"}
+{"ts":"2026-04-30T18:08:18.5524184Z","event":"Blocked","tool":"bash","cmd":"dydo msg --to Wendy --subject fix-auto-resume-cwd --body \u0022Ship the fix as-is, with the original comm...","reason":"Missing general wait"}
+{"ts":"2026-04-30T18:08:37.2926793Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all 2\u003E\u00261; echo \u0022---\u0022; dydo msg --to Wendy --subject fix-auto-resume-cwd --body \u0022S...","reason":"Missing general wait"}
+{"ts":"2026-04-30T18:09:22.4680305Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-readme-advertise-auto-resume.md","tool":"write"}
+{"ts":"2026-04-30T18:11:18.7207121Z","event":"Blocked","tool":"bash","cmd":"cat C:/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/5892ab34-2d56-42...","reason":"Unread messages"}
+{"ts":"2026-04-30T18:11:23.0095273Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\c4fb783c-msg-readme-advertise-auto-resume.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T18:11:27.6358722Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\c4fb783c-msg-readme-advertise-auto-resume.md","tool":"read"}
+{"ts":"2026-04-30T19:25:51.1740503Z","event":"Blocked","tool":"bash","cmd":"cat C:/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/5892ab34-2d56-42...","reason":"Unread messages"}
+{"ts":"2026-04-30T19:25:55.1173917Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\158b859d-msg-fix-auto-resume-cwd.md","tool":"read"}
+{"ts":"2026-04-30T19:25:55.5699861Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\d5221422-msg-fix-auto-resume-cwd.md","tool":"read"}
+{"ts":"2026-04-30T19:26:56.4961847Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-master-regressions.md","tool":"write"}
+{"ts":"2026-04-30T20:28:24.8373304Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\LC\\dydo\\agents\\Brian\\dydo-bug-report-wait-guard-deadlock.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:28:29.1243028Z","event":"Read","path":"C:\\Users\\User\\Desktop\\LC\\dydo\\agents\\Brian\\dydo-bug-report-wait-guard-deadlock.md","tool":"read"}
+{"ts":"2026-04-30T20:29:37.5487047Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-investigate-wait-guard-deadlock.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-04-30T20:29:46.604787Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\5d75c81d-msg-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:29:47.3590524Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\3313ccc7-msg-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:29:47.7705886Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\4b09a21d-msg-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:29:48.1132395Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\5d7122c4-msg-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:31:30.5223229Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all 2\u003E\u00261; echo \u0022---CI---\u0022; gh run list -L 3 2\u003E\u00261; echo \u0022---REPRO---\u0022; dotnet test...","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:31:36.9292726Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all 2\u003E\u00261; echo \u0022---CI---\u0022; gh run list -L 3 2\u003E\u00261; echo \u0022---HISTORY-INBOX---\u0022; git...","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:31:43.4222263Z","event":"Blocked","tool":"bash","cmd":"(dydo wait \u003E /dev/null 2\u003E\u00261 \u0026) ; sleep 0.5 ; dydo inbox clear --all 2\u003E\u00261; echo \u0022---CI---\u0022; gh run li...","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:31:49.3432447Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all 2\u003E\u00261; echo \u0022---CI---\u0022; gh run list -L 3 2\u003E\u00261; echo \u0022---HISTORY-INBOX---\u0022; git...","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:33:09.3150581Z","event":"Bash","tool":"bash","cmd":"echo \u0022---CI---\u0022; gh run list -L 3 2\u003E\u00261; echo \u0022---HISTORY-INBOX---\u0022; git log --oneline --all -- Servi..."}
+{"ts":"2026-04-30T20:33:34.828543Z","event":"Blocked","tool":"bash","cmd":"dotnet test --filter \u0022FullyQualifiedName~PrintInboxItem_MessageItem_IncludesFilePath|FullyQualifiedN...","reason":"Nudge (warn): Use the worktree-isolated test runner instead: python DynaDocs.Tests/coverage/run_tests.py --filter \u0022FullyQualifiedName~PrintInboxItem_MessageItem_IncludesFilePath|FullyQualifiedName~ReserveAgent_StaleAndNoLauncher_Succeeds\u0022 --no-build 2\u003E\u00261 | tail -25; echo \u0022---\u0022; dotnet test --filter \u0022FullyQualifiedName~PrintInboxItem_MessageItem_IncludesFilePath|FullyQualifiedName~ReserveAgent_StaleAndNoLauncher_Succeeds\u0022 --no-build 2\u003E\u00261 | tail -10; echo \u0022---\u0022; dotnet test --filter \u0022FullyQualifiedName~PrintInboxItem_MessageItem_IncludesFilePath|FullyQualifiedName~ReserveAgent_StaleAndNoLauncher_Succeeds\u0022 --no-build 2\u003E\u00261 | tail -10\nThis avoids DLL lock contention when multiple agents run tests concurrently."}
+{"ts":"2026-04-30T20:33:41.8845515Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py --filter \u0022FullyQualifiedName~PrintInboxItem_MessageItem_..."}
+{"ts":"2026-04-30T20:34:18.0738102Z","event":"Bash","tool":"bash","cmd":"echo \u0022---RUN 2---\u0022; python DynaDocs.Tests/coverage/run_tests.py --filter \u0022FullyQualifiedName~PrintIn..."}
+{"ts":"2026-04-30T20:37:18.9551242Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-investigate-wait-guard-deadlock.md","tool":"write"}
+{"ts":"2026-04-30T20:38:03.0385685Z","event":"Bash","tool":"bash","cmd":"echo \u0022---WAIT MARKERS---\u0022; ls -la dydo/agents/Brian/.waiting/ 2\u003E\u00261; echo \u0022---OR LOCAL---\u0022; ls -la dy..."}
+{"ts":"2026-04-30T20:56:26.696637Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -20","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:58:25.2268529Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T20:58:25.5989084Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T20:58:29.9212571Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Zelda\\plan-fix-wait-guard-deadlock.md","tool":"read"}
+{"ts":"2026-04-30T20:59:32.1672347Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-wait-guard-deadlock.md","tool":"write"}
+{"ts":"2026-04-30T21:02:02.368178Z","event":"Blocked","tool":"bash","cmd":"dydo issue create --title \u0022dydo dispatch must refuse to run in background \u00D4\u00C7\u00F6 silent no-launch when ...","reason":"Pending wait markers"}
+{"ts":"2026-05-01T09:31:53.9634221Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\e18c5f03-msg-fix-wait-guard-deadlock.md","tool":"read"}
+{"ts":"2026-05-01T09:31:54.5128127Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\fd07190f-msg-fix-wait-guard-deadlock.md","tool":"read"}
+{"ts":"2026-05-01T09:40:15.3140602Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-fix-issue-permissions-and-message.md","tool":"write"}
+{"ts":"2026-05-01T09:43:52.5818949Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T09:43:53.102556Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T09:44:46.7326691Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\brief-write-v1.4-release-doc.md","tool":"write"}

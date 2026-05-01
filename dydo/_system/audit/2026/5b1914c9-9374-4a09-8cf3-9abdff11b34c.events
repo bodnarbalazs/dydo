@@ -1,0 +1,27 @@
+{"ts":"2026-04-30T20:16:33.9397846Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-04-30T20:16:38.7457893Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-04-30T20:16:46.3825994Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f755665b-fix-master-regressions.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-30T20:16:49.1573961Z","event":"Role","role":"reviewer","task":"fix-master-regressions"}
+{"ts":"2026-04-30T20:16:51.4104015Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\reviewer.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:16:56.4725617Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-04-30T20:16:59.2357623Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-30T20:17:01.8372692Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-30T20:17:04.467051Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-30T20:17:08.9746493Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f755665b-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:17:11.674728Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:17:21.7085025Z","event":"Bash","tool":"bash","cmd":"git diff master -- Services/ Models/ Commands/ Utils/ Serialization/ Rules/ Templates/ DynaDocs.Test..."}
+{"ts":"2026-04-30T20:17:22.0719343Z","event":"Bash","tool":"bash","cmd":"git status"}
+{"ts":"2026-04-30T20:17:22.7918555Z","event":"Bash","tool":"bash","cmd":"git rev-parse HEAD master"}
+{"ts":"2026-04-30T20:17:39.1871157Z","event":"Bash","tool":"bash","cmd":"git diff --stat master"}
+{"ts":"2026-04-30T20:17:44.9029429Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T20:17:53.8808266Z","event":"Bash","tool":"bash","cmd":"git log --oneline -20 master -- dydo/_system/templates/"}
+{"ts":"2026-04-30T20:17:54.3424088Z","event":"Bash","tool":"bash","cmd":"git diff master -- dydo/_system/templates/mode-reviewer.template.md"}
+{"ts":"2026-04-30T20:18:02.6591031Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0139-inboxservice-printinboxitem-no-longer-emits-file-line-for-message-items.md","tool":"read"}
+{"ts":"2026-04-30T20:18:03.3292593Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0140-reserveagent-refuses-stale-dispatch-reclaim-with-no-live-launcher.md","tool":"read"}
+{"ts":"2026-04-30T20:18:06.076629Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Yara/"}
+{"ts":"2026-04-30T20:18:10.6216977Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\state.md","tool":"read"}
+{"ts":"2026-04-30T20:18:13.4574705Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Yara/archive/"}
+{"ts":"2026-04-30T20:18:15.959627Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Yara/archive/inbox/"}
+{"ts":"2026-04-30T20:18:18.4615863Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\archive\\inbox\\bc08306f-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T20:18:33.4899049Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-04-30T20:19:09.1606469Z","event":"Release","agent":"Adele"}

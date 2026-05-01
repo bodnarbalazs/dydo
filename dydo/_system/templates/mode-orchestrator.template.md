@@ -29,6 +29,16 @@ Don't skip! The hook guard will block you from reading/editing any other files.
 
 ---
 
+## Register General Wait
+
+Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
+
+```bash
+dydo wait    # run in background
+```
+
+---
+
 ## Verify
 
 ```bash
@@ -80,17 +90,13 @@ For sub-domains large enough to need their own coordination, dispatch a **co-thi
 
 ### 3. Dispatch
 
-For each slice, dispatch an agent and register a directed background wait:
+For each slice, dispatch an agent:
 
 ```bash
 dydo dispatch --wait --auto-close --role <role> --task <sub-task> --brief "..."
 ```
 
-```bash
-dydo wait --task <sub-task>
-```
-
-The wait must run with `run_in_background: true`. It polls for a message with subject `<sub-task>` and notifies you when it arrives. Each dispatched task gets its own background wait — this is how you track multiple parallel agents without losing messages.
+`--wait` does **not** block your session. It binds the dispatched agent to a release-block: they cannot release until they message you back on `<sub-task>`. Your general wait surfaces that reply when it lands, so keep working in parallel.
 
 Write briefs as if the sub-agent knows nothing. They don't.
 
@@ -137,13 +143,9 @@ dydo agent list    # See who's active
 dydo agent tree    # See dispatch hierarchy
 ```
 
-**Keep a general wait open.** Alongside per-task waits, run one general `dydo wait` (no `--task`) in the background and rearm it whenever it fires. Task-channel waits have priority routing, so the general wait only catches messages that don't match an active task wait — direct messages, ad-hoc questions, completion notices without subjects — and surfaces them in real time instead of waiting for your next tool call to trip the unread-messages notice.
+These two commands plus your inbox are the source of truth for what's outstanding. Your general wait (registered at claim) fires whenever a new message arrives — rearm it after handling each one.
 
-```bash
-dydo wait    # run_in_background: true — no --task; rearm on each fire
-```
-
-Background waits notify you as responses arrive. For each response:
+For each reply:
 - Did the sub-agent succeed?
 - Does the output fit with other workstreams?
 - Are there emerging conflicts?
@@ -212,6 +214,6 @@ dydo inbox clear --all
 dydo agent release
 ```
 
-The general wait dies automatically when its parent bash exits (parent-PID liveness check, ~10 s) — no explicit teardown needed.
+The general wait is torn down on release — parent-PID liveness check (~10 s) reaps the background process automatically. No explicit teardown needed.
 
 If release is blocked, something is still outstanding — check what and resolve it before proceeding.

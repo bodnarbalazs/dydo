@@ -1,0 +1,48 @@
+{"ts":"2026-04-30T19:27:06.2944061Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Yara/ 2\u003E/dev/null \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 cat C:/Use..."}
+{"ts":"2026-04-30T19:27:09.5547725Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\workflow.md","tool":"read"}
+{"ts":"2026-04-30T19:27:12.9370964Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Yara/"}
+{"ts":"2026-04-30T19:27:16.282152Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\state.md","tool":"read","reason":"No agent identity"}
+{"ts":"2026-04-30T19:27:20.407673Z","event":"Claim","agent":"Yara"}
+{"ts":"2026-04-30T19:27:23.0899642Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Yara/"}
+{"ts":"2026-04-30T19:27:25.6557055Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\workflow.md","tool":"read"}
+{"ts":"2026-04-30T19:27:30.9592135Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\inbox\\bc08306f-fix-master-regressions.md","tool":"read","reason":"No role set"}
+{"ts":"2026-04-30T19:27:36.5134143Z","event":"Role","role":"code-writer","task":"fix-master-regressions"}
+{"ts":"2026-04-30T19:27:47.7869996Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\inbox\\bc08306f-fix-master-regressions.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-04-30T19:27:53.1906353Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\inbox\\bc08306f-fix-master-regressions.md","tool":"read"}
+{"ts":"2026-04-30T19:27:56.1900982Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Yara\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-04-30T19:28:00.5718976Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-04-30T19:28:03.1357503Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-04-30T19:28:06.4718257Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-04-30T19:28:28.5535437Z","event":"Bash","tool":"bash","cmd":"git log --oneline -20 -- Services/InboxService.cs Services/MessageService.cs"}
+{"ts":"2026-04-30T19:28:29.7785536Z","event":"Bash","tool":"bash","cmd":"git log --oneline -20 -- Services/AgentRegistry.cs Services/IAgentRegistry.cs Services/DispatchServi..."}
+{"ts":"2026-04-30T19:28:30.9271838Z","event":"Read","path":"DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-30T19:28:31.9455898Z","event":"Read","path":"DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-04-30T19:28:36.8927652Z","event":"Read","path":"DynaDocs.Tests/Services/InboxServiceTests.cs","tool":"grep"}
+{"ts":"2026-04-30T19:28:38.4607069Z","event":"Read","path":"DynaDocs.Tests/Services/StaleDispatchDoubleClaimTests.cs","tool":"grep"}
+{"ts":"2026-04-30T19:28:41.8712195Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleDispatchDoubleClaimTests.cs","tool":"read"}
+{"ts":"2026-04-30T19:28:44.9848115Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxService.cs","tool":"read"}
+{"ts":"2026-04-30T19:28:51.3123309Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MessageService.cs","tool":"read"}
+{"ts":"2026-04-30T19:28:55.0508642Z","event":"Bash","tool":"bash","cmd":"git log --oneline -10 -- Utils/InboxItemParser.cs Models/InboxItem.cs 2\u003E\u00261"}
+{"ts":"2026-04-30T19:28:55.829961Z","event":"Read","path":"Utils","tool":"grep"}
+{"ts":"2026-04-30T19:28:56.635884Z","event":"Read","path":"Models","tool":"grep"}
+{"ts":"2026-04-30T19:29:02.6564471Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\InboxItem.cs","tool":"read"}
+{"ts":"2026-04-30T19:29:05.4183422Z","event":"Read","tool":"grep"}
+{"ts":"2026-04-30T19:29:09.0228431Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T19:29:11.9219727Z","event":"Read","tool":"glob"}
+{"ts":"2026-04-30T19:29:15.0235842Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\InboxItemParser.cs","tool":"read"}
+{"ts":"2026-04-30T19:29:30.8087613Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5 -- Services/InboxService.cs Services/MessageService.cs Services/InboxItemParser..."}
+{"ts":"2026-04-30T19:29:31.2231108Z","event":"Bash","tool":"bash","cmd":"git show ca5666b --stat"}
+{"ts":"2026-04-30T19:29:46.4373225Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~PrintInboxItem_MessageIt..."}
+{"ts":"2026-04-30T19:30:25.8027661Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0139-inboxservice-printinboxitem-no-longer-emits-file-line-for-message-items.md","tool":"read"}
+{"ts":"2026-04-30T19:30:26.6328451Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0140-reserveagent-refuses-stale-dispatch-reclaim-with-no-live-launcher.md","tool":"read"}
+{"ts":"2026-04-30T19:30:41.3451772Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -40"}
+{"ts":"2026-04-30T19:40:51.8905975Z","event":"Read","path":"Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-04-30T19:40:55.2681262Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-04-30T19:41:04.1137823Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\64163fa9-2ecf-4ad1-a136-a655a0b313df\\tasks\\bfe5owmq7.output","tool":"read"}
+{"ts":"2026-04-30T19:41:52.6311751Z","event":"Blocked","tool":"bash","cmd":"dydo wait --status 2\u003E\u00261 | head -20","reason":"dydo wait in foreground"}
+{"ts":"2026-04-30T20:14:11.6762299Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~PrintInboxItem_MessageIt..."}
+{"ts":"2026-04-30T20:14:56.2939566Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~PrintInboxItem_MessageIt..."}
+{"ts":"2026-04-30T20:15:11.8903945Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~PrintInboxItem_MessageIt..."}
+{"ts":"2026-04-30T20:15:45.3187784Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -10"}
+{"ts":"2026-04-30T20:15:59.331524Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-04-30T20:16:29.882263Z","event":"Release","agent":"Yara"}

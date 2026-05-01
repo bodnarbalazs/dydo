@@ -1,0 +1,39 @@
+{"ts":"2026-05-01T09:53:12.7246863Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T09:53:16.6703558Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-05-01T09:54:56.9542701Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\455a2397-write-v1.4-release-doc.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-01T09:55:00.5526725Z","event":"Role","role":"reviewer","task":"write-v1.4-release-doc"}
+{"ts":"2026-05-01T09:55:04.4578454Z","event":"Blocked","tool":"bash","cmd":"dydo whoami","reason":"Missing general wait"}
+{"ts":"2026-05-01T09:55:13.0254987Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-05-01T09:55:15.8815698Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-01T09:55:18.2974854Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-01T09:55:20.7155317Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-05-01T09:55:25.2954686Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\455a2397-write-v1.4-release-doc.md","tool":"read"}
+{"ts":"2026-05-01T09:55:28.2938475Z","event":"Bash","tool":"bash","cmd":"git show --stat 2054f5d"}
+{"ts":"2026-05-01T09:55:28.9190728Z","event":"Bash","tool":"bash","cmd":"git log v1.3.9..HEAD --oneline"}
+{"ts":"2026-05-01T09:55:31.7665141Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\v1.4-release.md","tool":"read"}
+{"ts":"2026-05-01T09:55:34.7582766Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\v1.3-release.md","tool":"read"}
+{"ts":"2026-05-01T09:56:03.673358Z","event":"Bash","tool":"bash","cmd":"git tag --contains 8d3e3b1 2\u003E\u00261; echo ---; git tag --contains 762eeda 2\u003E\u00261; echo ---; git tag --cont..."}
+{"ts":"2026-05-01T09:56:04.4383548Z","event":"Bash","tool":"bash","cmd":"git log v1.3.9..HEAD --oneline | wc -l"}
+{"ts":"2026-05-01T09:56:05.1743898Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T09:56:05.567343Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T09:56:05.9417513Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T09:56:06.0008859Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T09:56:15.1362485Z","event":"Bash","tool":"bash","cmd":"git tag --contains bd3cebe"}
+{"ts":"2026-05-01T09:56:16.659973Z","event":"Bash","tool":"bash","cmd":"git tag --contains 473af47; echo ---; git tag --contains 65705e0; echo ---; git tag --contains ca566..."}
+{"ts":"2026-05-01T09:56:17.8487283Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\resolved\\0134-auto-close-mechanism-broken-releaseagent-clears-auto-close-prematurely-v1-3-9-re.md","tool":"read"}
+{"ts":"2026-05-01T09:56:22.8374857Z","event":"Bash","tool":"bash","cmd":"git log --tags --oneline | head -20"}
+{"ts":"2026-05-01T09:56:23.4535753Z","event":"Bash","tool":"bash","cmd":"git log v1.4.0..HEAD --oneline"}
+{"ts":"2026-05-01T09:56:35.9446714Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\_index.md","tool":"read"}
+{"ts":"2026-05-01T09:56:40.5152039Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\writing-docs.md","tool":"read"}
+{"ts":"2026-05-01T09:57:07.4411131Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md","tool":"read"}
+{"ts":"2026-05-01T09:57:07.7707641Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0138-auto-resume-launches-terminal-in-user-home-dir-not-project-root.md","tool":"read"}
+{"ts":"2026-05-01T09:57:13.3834892Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-05-01T10:15:46.1842683Z","event":"Blocked","tool":"bash","cmd":"dydo check 2\u003E\u00261 | head -50","reason":"Missing general wait"}
+{"ts":"2026-05-01T10:15:59.7164414Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -40"}
+{"ts":"2026-05-01T10:26:09.5528063Z","event":"Bash","tool":"bash","cmd":"type \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\3093f48a-6917-..."}
+{"ts":"2026-05-01T10:26:12.3519274Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\3093f48a-6917-4d3a-ab3e-0693830563a9\\tasks\\blhr8j5xm.output","tool":"read"}
+{"ts":"2026-05-01T10:26:15.3081198Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\3093f48a-6917-4d3a-ab3e-0693830563a9\\tasks\\blhr8j5xm.output","tool":"read"}
+{"ts":"2026-05-01T10:26:28.0763232Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\3093f48a-6917-4d3a-ab3e-0693830563a9\\tasks\\blhr8j5xm.output","tool":"read"}
+{"ts":"2026-05-01T10:26:34.6847001Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\021-unified-general-wait.md","tool":"read"}
+{"ts":"2026-05-01T10:26:36.6210899Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-05-01T10:27:36.68648Z","event":"Release","agent":"Adele"}

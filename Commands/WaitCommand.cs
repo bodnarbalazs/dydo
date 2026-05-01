@@ -95,17 +95,27 @@ public static class WaitCommand
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
+        // Snapshot the unread set at registration. The poll loop excludes these ids,
+        // so this wait fires only on arrivals that happen AFTER registration. The
+        // agent drains the snapshot via `dydo inbox show` + Read (both unblocked while
+        // this wait is alive). Captured BEFORE CreateListeningWaitMarker so deliveries
+        // that race the marker write are NOT in the snapshot and DO fire the wait. (#0149)
+        var unreadSnapshot = CaptureUnreadSnapshot(registry, agentName);
+
         // Atomic create — Listening=true and Pid set in a single file write so the
         // bash that launched this wait can return to the parent without leaving a
         // window where guard checks observe Listening=false. (#0133)
         registry.CreateListeningWaitMarker(agentName, GeneralWaitMarker, agentName, Environment.ProcessId);
 
-        // Wait fires on inbox-files ∩ state.md.UnreadMessages, re-read each poll. The
+        // Wait fires on inbox-files ∩ (UnreadMessages − snapshot-at-registration). The
         // canonical "not yet delivered" set: writer adds via MessageService.DeliverInboxMessage
         // → AddUnreadMessage; Read removes via GuardCommand.TrackReadCompletion → MarkMessageRead.
-        // No registration-time snapshot — eliminates the W1-exit → W2-register race (#0147)
-        // and cannot re-introduce the #0141 deadlock because already-read ids are no
-        // longer in the set. (#0141 / #0147)
+        // The registration-time snapshot prevents stacked unreads (rate-of-arrival
+        // > drain) from re-firing this wait infinitely (#0149). It does NOT
+        // re-introduce #0141 (post-Read ids are absent from UnreadMessages — and
+        // would also be in the snapshot if still present at register), and it does
+        // NOT re-introduce #0147 (post-registration arrivals are not in the snapshot
+        // and pass through). (#0141 / #0147 / #0149)
         Console.WriteLine("Waiting for message...");
 
         try
@@ -121,7 +131,7 @@ public static class WaitCommand
                     : null;
                 var message = (unreadIds is null || unreadIds.Count == 0)
                     ? null
-                    : MessageFinder.FindMessage(inboxPath, null, claimedTasks, excludeIds: null, includeIds: unreadIds);
+                    : MessageFinder.FindMessage(inboxPath, null, claimedTasks, excludeIds: unreadSnapshot, includeIds: unreadIds);
                 if (message != null)
                 {
                     PrintMessage(message);
@@ -184,6 +194,14 @@ public static class WaitCommand
         {
             registry.ResetWaitMarkerListening(agentName, task);
         }
+    }
+
+    private static HashSet<string> CaptureUnreadSnapshot(AgentRegistry registry, string agentName)
+    {
+        var unread = registry.GetAgentState(agentName)?.UnreadMessages;
+        return unread is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(unread, StringComparer.OrdinalIgnoreCase);
     }
 
     internal static HashSet<string> GetActiveTaskWaitSubjects(AgentRegistry registry, string agentName)

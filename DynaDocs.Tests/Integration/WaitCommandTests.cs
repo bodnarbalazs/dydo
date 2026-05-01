@@ -694,46 +694,6 @@ public class WaitCommandTests : IntegrationTestBase
     #region Unified Delivered-State Tests (#0147)
 
     [Fact]
-    public async Task WaitGeneral_FiresOnSecondMessage_ArrivedDuringRearmGap()
-    {
-        // The #0147 race: msg1 fires W1, agent processes it (Read depletes UnreadMessages),
-        // registers W2 — but msg2 arrived during the W1-exit → W2-register gap, so msg2's
-        // file is on disk at W2's start. Pre-#0147 the snapshot filter swallowed msg2; with
-        // UnreadMessages-driven semantics, W2 fires on msg2 because it is in the canonical set.
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-
-        var registry = new AgentRegistry(TestDir);
-
-        var msg1Id = CreateMessageFileReturningId("Adele", "Brian", "first", "old");
-        var msg2Id = CreateMessageFileReturningId("Adele", "Charlie", "second", "fresh");
-        // Simulate post-Read for msg1: file persists, id depleted from UnreadMessages.
-        // msg2 stays in UnreadMessages (not yet Read).
-        registry.ClearAllUnreadMessages("Adele");
-        registry.AddUnreadMessage("Adele", msg2Id);
-
-        var originalPollMs = WaitCommand.PollIntervalMs;
-        WaitCommand.PollIntervalMs = 25;
-        ProcessUtils.IsProcessRunningOverride = _ => true;
-        try
-        {
-            StoreSessionContext();
-            var command = WaitCommand.Create();
-            var result = await RunAsync(command);
-
-            result.AssertSuccess();
-            result.AssertStdoutContains("Message received from Charlie");
-            result.AssertStdoutContains("second");
-            Assert.DoesNotContain("first", result.Stdout);
-        }
-        finally
-        {
-            ProcessUtils.IsProcessRunningOverride = null;
-            WaitCommand.PollIntervalMs = originalPollMs;
-        }
-    }
-
-    [Fact]
     public async Task WaitGeneral_DoesNotFire_WhenInboxFileExistsButUnreadMessagesEmpty()
     {
         // #0141 stays fixed under #0147 semantics: a stale file on disk (post-Read,
@@ -848,6 +808,140 @@ public class WaitCommandTests : IntegrationTestBase
             Assert.Null(result);
         }
         finally { Directory.Delete(inboxPath, true); }
+    }
+
+    #endregion
+
+    #region Snapshot-At-Registration Tests (#0149)
+
+    [Fact]
+    public async Task WaitGeneral_DoesNotFireOnPreStackedUnreads_PreventsRearmFloodDeadlock()
+    {
+        // #0149 regression: when 3 unreads are stacked before wait registers, the
+        // wait must NOT fire on them. Pre-fix, every re-arm fired immediately on
+        // the next stacked unread; combined with Decision 021's MissingGeneralWait
+        // gate on Read, the agent could not drain. Post-fix, wait blocks; the agent
+        // drains via `dydo inbox show` + Read while this wait keeps the guard happy.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        CreateMessageFile("Adele", "Brian", "first", "msg1");
+        CreateMessageFile("Adele", "Charlie", "second", "msg2");
+        CreateMessageFile("Adele", "Dana", "third", "msg3");
+        // CreateMessageFile already calls AddUnreadMessage — UnreadMessages = {msg1, msg2, msg3}.
+
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
+        // Parent dies on first liveness probe so the wait exits via parent-death (exit 2),
+        // not by firing on a stacked unread.
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+            Assert.DoesNotContain("Message received", result.Stdout);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_FiresOnPostRegistrationArrival_EvenWithPreStackedUnreads()
+    {
+        // The wait still does its job for genuinely-new arrivals when pre-stacked
+        // unreads exist. Verifies the snapshot is correctly scoped — it does not
+        // drown out the live signal.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        // Pre-stack two unreads — must be excluded from this wait's signal.
+        CreateMessageFile("Adele", "Brian", "stale-1", "old1");
+        CreateMessageFile("Adele", "Brian", "stale-2", "old2");
+
+        var dropped = false;
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
+
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!dropped)
+            {
+                dropped = true;
+                // Production-path delivery — sets Received=now and AddUnreadMessage.
+                // This id is NOT in the wait's snapshot (snapshot was taken before
+                // this delivery), so the wait must fire on it.
+                MessageService.DeliverInboxMessage(
+                    new AgentRegistry(TestDir), "Charlie", "Adele", "post-reg", "fresh");
+            }
+            return true;
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Message received from Charlie");
+            result.AssertStdoutContains("fresh");
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
+    }
+
+    [Fact]
+    public async Task WaitGeneral_StaysBlockedAfterDrain_NoSpuriousFire()
+    {
+        // After the snapshot fix, draining the pre-stacked unread should leave the
+        // wait blocking (no fire). Pre-fix, draining was impossible because Read
+        // was gated on a live wait that kept dying. Post-fix, the wait's snapshot
+        // excludes the pre-stacked id; wait blocks; agent reads the id; UnreadMessages
+        // empties; wait remains blocking with nothing to do.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        CreateMessageFileReturningId("Adele", "Brian", "stacked", "old");
+        var registry = new AgentRegistry(TestDir);
+
+        var originalPollMs = WaitCommand.PollIntervalMs;
+        WaitCommand.PollIntervalMs = 25;
+
+        var drained = false;
+        ProcessUtils.IsProcessRunningOverride = _ =>
+        {
+            if (!drained)
+            {
+                drained = true;
+                // Simulate the agent draining via Read. Stay alive so the loop runs
+                // again with empty UnreadMessages, proving no spurious fire after drain.
+                registry.ClearAllUnreadMessages("Adele");
+                return true;
+            }
+            return false;  // exit via parent/claude-death after the post-drain iteration
+        };
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+            Assert.DoesNotContain("Message received", result.Stdout);
+        }
+        finally
+        {
+            ProcessUtils.IsProcessRunningOverride = null;
+            WaitCommand.PollIntervalMs = originalPollMs;
+        }
     }
 
     #endregion

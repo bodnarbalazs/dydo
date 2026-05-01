@@ -186,6 +186,43 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ClaimAgent_SameSessionIdReclaim_RefreshesClaimedPid()
+    {
+        // #0143: after watchdog auto-resume, the resumed claude calls `dydo agent claim`
+        // with the same SessionId as before the crash. HandleExistingSession's idempotent
+        // short-circuit must refresh .session.ClaimedPid to the live process — otherwise
+        // the watchdog's next dead-PID check fires another resume and produces duplicate
+        // terminals. Identity properties (SessionId, Claimed timestamp) are preserved.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        var originalClaimed = DateTime.UtcNow.AddMinutes(-5).ToString("o");
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            $"{{\"Agent\":\"Adele\",\"SessionId\":\"sess-X\",\"Claimed\":\"{originalClaimed}\",\"ClaimedPid\":99999999}}");
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            ---
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+        registry.StorePendingSessionId("Adele", "sess-X");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent failed: {error}");
+        var refreshed = registry.GetSession("Adele");
+        Assert.NotNull(refreshed);
+        Assert.Equal("sess-X", refreshed.SessionId);                // identity preserved
+        Assert.Equal(originalClaimed, refreshed.Claimed.ToString("o")); // identity preserved
+        Assert.NotEqual(99999999, refreshed.ClaimedPid);            // PID refreshed
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
     public void GetCurrentAgent_ReturnsNull_WhenNoSessionId()
     {
         Assert.Null(_registry.GetCurrentAgent(null));

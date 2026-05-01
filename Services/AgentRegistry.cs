@@ -188,6 +188,22 @@ public partial class AgentRegistry : IAgentRegistry
         ProcessUtils.FindAncestorProcess("claude") ??
         ProcessUtils.GetParentPid(Environment.ProcessId);
 
+    private void RefreshClaimedPid(string agentName, AgentSession existingSession)
+    {
+        var newPid = ResolveClaimedPid();
+        if (newPid == existingSession.ClaimedPid) return;
+
+        var refreshed = new AgentSession
+        {
+            Agent = existingSession.Agent,
+            SessionId = existingSession.SessionId,
+            Claimed = existingSession.Claimed,
+            ClaimedPid = newPid
+        };
+        var sessionPath = Path.Combine(GetAgentWorkspace(agentName), ".session");
+        File.WriteAllText(sessionPath, JsonSerializer.Serialize(refreshed, DydoDefaultJsonContext.Default.AgentSession));
+    }
+
     // Guards the stale-dispatch reclaim path: if the original dispatch's
     // "{agent} --inbox" launcher process is still alive, the first Claude is
     // merely slow to boot — reclaiming would strand it and double-launch.
@@ -303,7 +319,14 @@ public partial class AgentRegistry : IAgentRegistry
             return true;
 
         if (existingSession.SessionId == sessionId)
+        {
+            // #0143: refresh ClaimedPid before short-circuiting. After watchdog auto-resume,
+            // .session still points at the dead pre-resume PID; without this update, the
+            // watchdog's next dead-PID check fires another resume and produces duplicate
+            // terminals. Identity preserved per Decision 022 — only the PID changes.
+            RefreshClaimedPid(agentName, existingSession);
             return true;
+        }
 
         // Stale-working reclaim (decision 018, issue #103): prior Claude's
         // session PID is dead and Status has been Working past the threshold.

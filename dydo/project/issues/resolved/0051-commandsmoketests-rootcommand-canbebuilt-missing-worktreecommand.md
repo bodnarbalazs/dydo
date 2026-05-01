@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # CommandSmokeTests.RootCommand_CanBeBuilt missing WorktreeCommand
 
+Resolved low-severity test-coverage finding: `CommandSmokeTests.RootCommand_CanBeBuilt` did not include `WorktreeCommand`, so the smoke gate didn't catch wiring regressions for that command. Fixed by adding `WorktreeCommand` to the smoke test.
+
 ## Description
 
 (Describe the issue)

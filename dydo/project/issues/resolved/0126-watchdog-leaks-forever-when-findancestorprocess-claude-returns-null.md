@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Watchdog leaks forever when FindAncestorProcess('claude') returns null
 
+Resolved medium-severity correctness bug: when `FindAncestorProcess('claude')` returned null, the anchor env var stayed unset and the liveness check short-circuited to `false`, so the watchdog never broke and leaked forever. Fixed in commit `762eeda` by introducing a file-based anchors directory with a 24h `MaxOrphanAge` cap (overridable via test hook) so an unanchored watchdog still bounds out.
+
 ## Description
 
 **Mechanism.** `WatchdogService.EnsureRunning` (Services/WatchdogService.cs:120-122) resolves the anchor PID via `ProcessUtils.FindAncestorProcess('claude')` and passes it as `DYDO_WATCHDOG_ANCHOR_PID`. `FindAncestorProcess` (Services/ProcessUtils.Ancestry.cs:37-56) walks up to 10 ancestors looking for a process whose name contains 'claude'; returns null if none found.

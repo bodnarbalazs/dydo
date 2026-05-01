@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # H19 indirect dydo invocation documented as hard-coded but is configurable nudge
 
+Resolved medium-severity docs finding: `guardrails.md` labelled H19 (indirect dydo invocation) as "hard-coded" when it's actually a default nudge whose pattern and message are user-editable in `dydo.json`, with only the severity force-restored to block. Fixed in commit `5ffcb54` by reclassifying H19 as a "severity-pinned default nudge" and splitting the Extensibility section into hard-coded versus severity-pinned categories.
+
 ## Description
 
 (Describe the issue)

@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # CollectLeafDirectories misidentifies worktree roots for non-empty orphaned directories
 
+Resolved low-severity correctness bug: `CollectLeafDirectories` recursed into subdirectories of orphaned worktrees and treated their leaves as separate roots, which prune then walked into. Fixed in commit `def1fa4` by removing `CollectLeafDirectories` and switching `ExecutePrune` to enumerate top-level worktree dirs only; coupled with resolved issue #0105.
+
 ## Description
 
 (Describe the issue)

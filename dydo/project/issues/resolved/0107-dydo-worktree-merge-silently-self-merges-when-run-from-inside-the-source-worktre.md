@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # `dydo worktree merge` silently self-merges when run from inside the source worktree, then consumes markers
 
+Resolved high-severity destructive bug: when `dydo worktree merge` was invoked from inside the source worktree directory, it self-merged (branch X into branch X), reported "Already up to date" + a contradictory `cannot delete branch` error, didn't advance master, and still consumed the merge markers — leaving the agent stuck with no sanctioned retry path. Fixed in commit `9cd0fc7` by rehoming the merge to the main repo via the `.worktree-root` marker, gating marker preservation on an ancestor check in `FinalizeMerge`, and consolidating finalize output; covered by 7 regression tests.
+
 ## Description
 
 When `dydo worktree merge` is invoked from inside the source worktree directory (i.e., CWD is `dydo/_system/.local/worktrees/<branch>` which is checked out to `worktree/<branch>`), the tool:

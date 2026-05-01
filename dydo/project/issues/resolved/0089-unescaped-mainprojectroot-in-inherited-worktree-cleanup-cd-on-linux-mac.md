@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Unescaped mainProjectRoot in inherited-worktree cleanup cd on Linux/Mac
 
+Resolved low-severity injection finding: `mainProjectRoot` was substituted into Linux/Mac inherited-worktree cleanup `cd` commands without escaping, breaking when the path contained apostrophes. Fixed in commit `3654ec6` by extracting a `BashSingleQuoteEscape` helper and applying it at five sites; covered by helper unit tests and Linux/Mac integration tests.
+
 ## Description
 
 (Describe the issue)

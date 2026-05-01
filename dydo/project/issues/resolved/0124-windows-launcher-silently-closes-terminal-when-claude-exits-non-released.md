@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Windows launcher silently closes terminal when claude exits non-released
 
+Resolved high-severity bug: with `autoClose=true`, the Windows launcher omitted PowerShell's `-NoExit` flag and the script's `if free → exit` branch had no `else`, so any non-released claude exit (watchdog kill, `/exit`, crash, context-limit) closed the terminal silently with no diagnostic. Fixed in commit `e1eac2e` by always passing `-NoExit` and emitting an explicit `exit 0` on the free path so the host terminates only when the agent actually released.
+
 ## Description
 
 **Mechanism.** `WindowsTerminalLauncher.GetArguments` (Services/WindowsTerminalLauncher.cs:11-19) builds the PowerShell command as:

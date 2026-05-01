@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Watchdog anchor pinned to first dispatcher's claude only
 
+Resolved medium-severity correctness bug: the watchdog resolved its anchor once at first start, so multi-orchestrator setups lost watchdog coverage when the first claude exited even if other agents were mid-work. Fixed in commit `762eeda` by having each dispatcher's `EnsureRunning` write a per-PID anchor marker; `ScanAnchors` prunes dead-PID files and the watchdog only exits when ALL anchors are gone.
+
 ## Description
 
 **Mechanism.** `WatchdogService.EnsureRunning` (Services/WatchdogService.cs:72-79) short-circuits when the PID file exists and the existing watchdog PID is alive. The anchor is resolved once at first start (line 120) and stored in the watchdog's environment. Only the FIRST dispatcher's resolved `claude` ancestor is the anchor for the lifetime of the watchdog.

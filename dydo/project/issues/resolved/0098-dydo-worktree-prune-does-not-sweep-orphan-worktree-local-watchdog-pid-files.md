@@ -11,6 +11,8 @@ resolved-date: 2026-04-20
 
 # dydo worktree prune does not sweep orphan worktree-local watchdog.pid files
 
+Resolved medium-severity hygiene bug: `dydo worktree prune` didn't notice or remove stranded worktree-local `watchdog.pid` files left over from prior bugs (#95-#97), so historic orphans persisted and confused diagnostics. Fixed by extending prune to walk each worktree's `watchdog.pid`, check the PID's liveness, and delete stale files.
+
 ## Description
 
 Once issues #95/#96/#97 are fixed, no *new* worktree-local `watchdog.pid` files should appear. But this repo already has accumulated orphans — e.g. `dydo/_system/.local/worktrees/inquisition-worktree-system/dydo/_system/.local/watchdog.pid` points to dead PID 27220, and there are 15 stranded worktree directories on this machine, most from long-finished sessions. `dydo worktree prune` currently does not notice these stale pid files, so they sit there indefinitely, confusing future diagnostics (the file looks authoritative but isn't).

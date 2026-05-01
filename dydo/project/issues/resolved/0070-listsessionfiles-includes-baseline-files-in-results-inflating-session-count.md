@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # ListSessionFiles includes baseline files in results, inflating session count
 
+Resolved medium-severity correctness bug: `ListSessionFiles` returned `_baseline-` files alongside session files, inflating the session count and confusing audit consumers. Fixed in commit `99a9a33` by filtering out the `_baseline-` prefix in `AuditService.ListSessionFiles` and mirroring the filter in `SnapshotCompactionService`.
+
 ## Description
 
 (Describe the issue)

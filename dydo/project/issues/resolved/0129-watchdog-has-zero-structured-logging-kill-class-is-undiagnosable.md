@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Watchdog has zero structured logging — kill class is undiagnosable
 
+Resolved medium-severity diagnosability gap: the watchdog ran as a detached background process with no logging — kill loop errors were swallowed, the top-level loop ate all exceptions, and the only artifact of a kill was its side effects. Fixed in commits `3532bd9` + `4dd5d03` by adding a structured JSONL event log at `dydo/_system/.local/watchdog.log` (start/tick/kill/parse_failure/poll_error/exit events) with 2MB rotation × 3 backups and a never-throws contract.
+
 ## Description
 
 **Mechanism.** The watchdog runs as a detached background process with no structured log output. `PollAndCleanup` swallows kill-loop errors (Services/WatchdogService.cs:273); the top-level loop swallows all exceptions (Services/WatchdogService.cs:223-226) to keep itself alive. There is no record of:

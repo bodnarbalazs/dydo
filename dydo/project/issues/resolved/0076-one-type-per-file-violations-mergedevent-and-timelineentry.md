@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # One-type-per-file violations: MergedEvent and TimelineEntry
 
+Resolved low-severity hygiene finding: `MergedEvent` and `TimelineEntry` violated the project's one-type-per-file convention. Resolved as a coupled fix to #0075 — collapsing them into a single unified type in its own file in commit `c79d107` removed both the duplication and the convention violation.
+
 ## Description
 
 (Describe the issue)

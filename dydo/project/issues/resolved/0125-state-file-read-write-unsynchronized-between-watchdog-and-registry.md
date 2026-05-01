@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # State-file read/write unsynchronized between watchdog and registry
 
+Resolved medium-severity correctness bug: the watchdog read the state file without holding the per-agent lock and `WriteStateFile` wrote non-atomically, so the watchdog could act on a logically stale-but-syntactically-valid snapshot (the underlying race behind #0121). Fixed in commit `8d3e3b1` by switching `WriteStateFile` to atomic temp+rename (same volume by construction); the per-agent lock contract from #0121 stays in place.
+
 ## Description
 
 **Mechanism.** `AgentRegistry.WriteStateFile` (Services/AgentRegistry.cs:1350-1403) rebuilds the entire state file content and writes via `File.WriteAllText` — no atomic-replace, no lock around the write itself. The lock-protected callers (`ReserveAgent`, `ClaimAgent`, `ReleaseAgent`) hold `TryAcquireLock` (Services/AgentRegistry.cs:1978) at the operation level. The watchdog's `ParseStateForWatchdog` (Services/WatchdogService.cs:412-433) reads via `File.ReadAllText` and never acquires that lock. `ClearAutoClose` (Services/WatchdogService.cs:285-295) does an unlocked RMW.

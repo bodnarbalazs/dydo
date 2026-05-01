@@ -11,6 +11,8 @@ resolved-date: 2026-04-20
 
 # dydo worktree cleanup follows junctions and recursively deletes target contents in main repo
 
+Resolved critical-severity destructive bug: `dydo worktree cleanup` followed the junction reparse points back into the main repo and recursively deleted their target contents, destroying live data in `dydo/agents`, `_system/roles`, and other junctioned paths. Fixed by routing `TeardownWorktree` through `DeleteDirectoryJunctionSafe` (which unlinks reparse points via `Directory.Delete(recursive:false)` rather than `cmd rmdir`); covered by `Cleanup_WithJunctionToMainAgents_DoesNotDeleteMainAgents` and a sibling test.
+
 ## Description
 
 (Describe the issue)

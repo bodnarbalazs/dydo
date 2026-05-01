@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # dydo agent clean <name> --force does not remove worktree markers; --all --force does (asymmetry causes broken per-agent recovery)
 
+Resolved medium-severity correctness bug: `dydo agent clean <name> --force` left worktree markers behind while `dydo agent clean --all --force` cleared them, breaking per-agent recovery from a half-cleaned state. Fixed in commit `4d59fe4` by extracting a `RemoveWorktreeMarkers` helper covering all 7 markers and wiring it into `CleanAgent`, `CleanByTask`, and `CleanAll` symmetrically; covered by repurposed and new tests.
+
 ## Description
 
 (Describe the issue)

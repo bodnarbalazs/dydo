@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # GlobMatcher recompiles regex on every call without caching
 
+Resolved low-severity perf finding: `GlobMatcher.IsMatch` rebuilt the underlying `Regex` on every call. Fixed by caching compiled regexes in a static `ConcurrentDictionary`; cherry-picked from Emma's recovery branch as `653e102`.
+
 ## Description
 
 (Describe the issue)

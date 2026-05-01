@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # Dead code: unused TruncateCommand wrapper and getEventColor JS function
 
+Resolved low-severity dead-code finding: `AuditCommand.cs` carried an unused `TruncateCommand` wrapper (unrelated to live methods of the same name elsewhere) and an unused `getEventColor` JS function in the embedded script. Fixed by deleting both; cherry-picked as `1b833a4`.
+
 ## Description
 
 (Describe the issue)

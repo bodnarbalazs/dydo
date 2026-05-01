@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # O(n^2) cumulative I/O from session file rewrites on every guard event
 
+Resolved medium-severity perf bug: each guard event triggered a full rewrite of the session JSON file, producing O(n²) cumulative I/O over a session. Fixed in commit `99a9a33` by introducing an append-only sidecar (`{sessionId}.events`, single-line JSON per event, O(1) per append); the in-memory cache path is bounded to one live session per process.
+
 ## Description
 
 (Describe the issue)

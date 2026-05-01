@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # bash -c / sh -c bypasses guard file operation analysis
 
+Resolved medium-severity security bug: the guard's bash file-operation analysis didn't descend into `bash -c` / `sh -c` / `zsh -c` payloads, so wrapping a write in `bash -c '...'` bypassed the path checks. Fixed by extracting shell-`-c` payloads via `TryAnalyzeShellC` and recursively analyzing them; commits `ea35282` and `4b162e2`.
+
 ## Description
 
 (Describe the issue)

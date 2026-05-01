@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Orchestrator general-wait deadlock recurs (bcff3f4 incomplete)
 
+Resolved high-severity bug: `dydo wait` (general) returned immediately whenever the inbox had any unread message, so the orchestrator-must-have-general-wait-active guard then blocked every subsequent tool call — wedging orchestration sessions until a human hand-cleared `unread-messages` in state.md. Fixed in commit `8b28355` (atomic `CreateListeningWaitMarker` + sentinel filter on release closes the registration race), with the rearm-gap deadlock then closed by `ca5666b`'s universal always-on general wait.
+
 ## Description
 
 **Mechanism.** `dydo wait` (general, no `--task`) returns immediately rather than blocking — both when the inbox is empty AND when there are unread messages — so the orchestrator-must-have-general-wait-active guard check fires before EVERY tool call (Bash, Read, Edit, etc.) for any agent in role `orchestrator`. Net effect: once an orchestrator has any unread inbox message, every subsequent tool call is BLOCKED unless `unread-messages` in `dydo/agents/<orch>/state.md` is hand-cleared.

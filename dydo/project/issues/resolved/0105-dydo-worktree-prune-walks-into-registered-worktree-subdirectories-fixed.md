@@ -11,6 +11,8 @@ resolved-date: 2026-04-21
 
 # dydo worktree prune walks into registered worktree subdirectories (fixed)
 
+Resolved low-severity correctness bug: `dydo worktree prune` recursed into registered worktree subdirectories. Fixed by the same `def1fa4` change that resolved #0091 — `ExecutePrune` enumerates top-level dirs only; covered by `Prune_DoesNotRecurseIntoRegisteredWorktrees` and `Prune_OrphanDirectory_WithNestedSubdirs_StillPrunes`.
+
 ## Description
 
 (Describe the issue)

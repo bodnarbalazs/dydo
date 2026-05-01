@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # dydo issue create assigns IDs that collide with historical resolved issues; resolve subcommand then refuses with "already resolved"
 
+Resolved medium-severity correctness bug: `dydo issue create` only scanned the open directory when picking the next ID, so freshly-filed issues could collide with `resolved/` files. `dydo issue resolve` then matched the resolved file first and refused with "already resolved." Fixed in commit `3654ec6` by recursing through `dydo/project/issues/**/*.md` for the next-free ID and using open-dir-wins logic in resolve, with a clear warning when both share an ID.
+
 ## Description
 
 `dydo issue create`'s ID-assignment logic appears to scan only `dydo/project/issues/*.md` (open issues) when picking the next free ID. It does not check `dydo/project/issues/resolved/*.md`. When the open directory has been cleared past a resolved-only ID, the next-free pointer skips back to a number already used by a resolved issue.

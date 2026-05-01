@@ -11,6 +11,8 @@ resolved-date: 2026-04-21
 
 # Watchdog spawns with caller's CWD — pins worktree directory against deletion
 
+Resolved high-severity correctness bug: `WatchdogService.EnsureRunning` left `ProcessStartInfo.WorkingDirectory` unset, so the spawned watchdog inherited the dispatcher's CWD. When dispatched from inside a worktree, this pinned an open Windows handle on the worktree directory and blocked later `RemoveDirectory` until the watchdog was killed. Fixed by setting `psi.WorkingDirectory` to a stable, non-worktree path before `Process.Start`, with a regression test asserting the value.
+
 ## Description
 
 `WatchdogService.EnsureRunning` (`Services/WatchdogService.cs:76-82`) constructs a `ProcessStartInfo` without setting `WorkingDirectory`. When `Process.Start` is called with `WorkingDirectory` unset, the spawned child inherits the parent's current directory. On Windows this pins an open directory handle on the CWD, blocking later `RemoveDirectory` on that path.

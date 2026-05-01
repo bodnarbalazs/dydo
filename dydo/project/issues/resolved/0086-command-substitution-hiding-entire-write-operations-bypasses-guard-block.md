@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Command substitution hiding entire write operations bypasses guard block
 
+Resolved medium-severity security bug: command substitution and backticks could hide an entire write operation from the guard. Fixed with a three-layer defense in commits `ea35282` and `4b162e2`: a bypass-attempt flag, recursive analysis of substituted content, and an outright block when bypass + any write op coincide; `AnalyzeUncertainCommand` covers variable-as-command-name.
+
 ## Description
 
 (Describe the issue)

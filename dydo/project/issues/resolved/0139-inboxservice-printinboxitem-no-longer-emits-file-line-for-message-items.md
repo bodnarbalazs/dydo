@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # InboxService.PrintInboxItem no longer emits File: line for message items
 
+Resolved medium-severity finding: an observation that `InboxService.PrintInboxItem` had stopped emitting the `File:` line on message items. Closed as no-repro on master HEAD — five consecutive runs of the targeted test passed (10/10 executions), CI green at run 25179154263, and the emit is in place via commit `22b2c5a`. Likely an environment artifact in the original observation.
+
 ## Description
 
 (Describe the issue)

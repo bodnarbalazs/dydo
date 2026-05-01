@@ -13,6 +13,8 @@ renumbered-reason: ID collision with resolved issue dydo/project/issues/resolved
 
 # dydo issue create lacks a --body flag, producing empty issue files
 
+Resolved medium-severity workflow gap: `dydo issue create` accepted no body flag and always wrote placeholder Description/Reproduction/Resolution sections, forcing every newly-filed issue into a stub state that needed a follow-up edit (often via guard-lift). Fixed in commit `7811ad4` by adding `--body <text>` and `--body-file <path>` options with mutual-exclusion and missing-file guards; reference docs updated in commit `70e242f`. Six integration tests cover the new flag.
+
 ## Description
 
 `dydo issue create` accepted only `--title`, `--area`, `--severity`, `--found-by` and wrote a hardcoded placeholder body (`(Describe the issue)` / `(Steps to reproduce, if applicable)` / `(Filled when resolved)`). Every issue Brian filed during the 2026-04-26 housekeeping session (#0108 through #0113) had to be created with placeholders and then patched up via guard-lift edits to the issue file. The lack of a body flag also forced dispatched agents (Emma on #0113) to leave their issues stub-only because the orchestrator's role couldn't write to `dydo/project/issues/` without a lift.

@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # ComputeBaselineId does not sort Files/Folders before hashing
 
+Resolved low-severity correctness bug: `ComputeBaselineId` hashed `Files` and `Folders` in iteration order, so two snapshots with identical content but different list ordering hashed differently. Fixed by sorting both lists before hashing (matching the existing `DocLinks` pattern); cherry-picked as `17ff84c` with test alignment in `fc548ce`.
+
 ## Description
 
 (Describe the issue)

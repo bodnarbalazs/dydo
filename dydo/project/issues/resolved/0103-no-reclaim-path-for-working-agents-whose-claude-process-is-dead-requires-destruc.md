@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # No reclaim path for Working agents whose Claude process is dead — requires destructive agent clean --force
 
+Resolved medium-severity workflow gap: a Working agent whose claude process had died had no non-destructive reclaim path — the only option was `agent clean --force`, which discarded their workspace. Fixed by adding a stale-working reclaim path in `HandleExistingSession` (gated on stale + dead PID), which the next `dydo agent claim` triggers automatically; per decision 018.
+
 ## Description
 
 (Describe the issue)

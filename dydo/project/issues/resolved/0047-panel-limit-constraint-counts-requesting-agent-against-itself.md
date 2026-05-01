@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # Panel-limit constraint counts requesting agent against itself
 
+Resolved low-severity correctness bug: the panel-limit constraint counted the requesting agent against itself when iterating active assignments, so an idempotent re-set of the same role+task was rejected as over the limit. Fixed by skipping the requesting agent in the iteration; cherry-picked from Emma's recovery branch as `8f38040`.
+
 ## Description
 
 (Describe the issue)

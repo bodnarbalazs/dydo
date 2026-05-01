@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Duplicate LooksLikePath implementations in OffLimitsService and BashCommandAnalyzer
 
+Resolved low-severity duplication finding: `LooksLikePath` was implemented in both `OffLimitsService` and `BashCommandAnalyzer`. Fixed by deleting the `OffLimitsService` copy so `BashCommandAnalyzer.LooksLikePath` is the single implementation; verified by Adele with a repo-wide grep.
+
 ## Description
 
 (Describe the issue)

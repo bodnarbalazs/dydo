@@ -11,6 +11,8 @@ resolved-date: 2026-04-21
 
 # FindDydoRoot resolves to worktree — spawns duplicate watchdog with worktree-scoped pid file
 
+Resolved high-severity correctness bug: `PathUtils.FindDydoRoot` walked up to the nearest `dydo.json`, which inside a worktree was the worktree's own copy. Because `dydo/_system/.local` isn't junctioned back to main, dispatches from a worktree spawned a second watchdog with a worktree-scoped pid file that duplicated the main-project watchdog and re-pinned the worktree directory. Fixed by resolving the watchdog's dydo root via the `.worktree-root` marker so it lands on the main project root.
+
 ## Description
 
 `PathUtils.FindDydoRoot` (`Utils/PathUtils.Discovery.cs:11-17`, via `ConfigService.GetProjectRoot`) walks up from `Environment.CurrentDirectory` looking for the nearest `dydo.json`. Worktrees are full git checkouts, so each worktree directory contains its own `dydo.json` at the root. Crucially, only four subpaths are junctioned from the worktree back to the main repo (`Commands/WorktreeCommand.cs:475-481`): `dydo/agents`, `dydo/_system/roles`, `dydo/project/issues`, `dydo/project/inquisitions`. **`dydo/_system/.local` is NOT junctioned.**

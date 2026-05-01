@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # Thin test coverage for ValidateWorktreeId — missing backslash and path traversal cases
 
+Resolved low-severity test-coverage finding: `ValidateWorktreeId`'s tests didn't cover its backslash and path-traversal rejection branches. Fixed in commit `649b95f` by adding two Theory tests under `_RejectsUnsafeCharacters` covering both branches and asserting on discriminating error substrings.
+
 ## Description
 
 (Describe the issue)

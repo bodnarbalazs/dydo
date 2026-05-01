@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # CDN dependency without version pin or SRI hash in audit visualization
 
+Resolved medium-severity supply-chain finding: the audit visualization loaded `vis-network` from a CDN with no version pin and no SRI hash, leaving it vulnerable to CDN compromise. Fixed in commit `99a9a33` by pinning `vis-network@9.1.9` with an integrity hash and `crossorigin=anonymous`.
+
 ## Description
 
 (Describe the issue)

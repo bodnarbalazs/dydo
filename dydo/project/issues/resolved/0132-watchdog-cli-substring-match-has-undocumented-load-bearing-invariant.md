@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Watchdog CLI substring match has undocumented load-bearing invariant
 
+Resolved low-severity hygiene finding: the watchdog's kill-pattern substring (`"{agent} --inbox"`) relied on the trailing space + `--inbox` token to prevent prefix collisions like `Jack` matching `Jacky`, but this invariant was undocumented and untested. Fixed in commit `762eeda` by adding a load-bearing comment at `PollAndCleanupForAgent` and a `ParsePsEoPidArgs_PrefixCollision_NotMatched` regression test.
+
 ## Description
 
 **Mechanism.** `WatchdogService.PollAndCleanup` (Services/WatchdogService.cs:251) builds the kill pattern as `$"{agentName} --inbox"`. The trailing space + `--inbox` token is **load-bearing** for collision safety: it prevents prefix collisions like `Jack` matching `Jacky` (the space after `Jack` would have to be followed by space, but the cmdline has `y`).

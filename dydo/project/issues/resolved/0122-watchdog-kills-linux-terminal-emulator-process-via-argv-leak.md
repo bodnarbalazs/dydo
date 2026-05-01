@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Watchdog kills Linux terminal emulator process via argv leak
 
+Resolved critical-severity bug — independent root cause of Linux agent deaths. Linux terminal emulators inherit the launcher's argv, so `FindProcessesByCommandLineLinux`'s substring match on `{agent} --inbox` returned the terminal-emulator PID alongside bash/claude. `ShellProcessNames` didn't list the emulators, so the watchdog killed the host terminal and took its bash + claude children with it. Fixed in commit `06512de` by whitelisting kill targets to `ClaudeProcessNames` so terminal emulators no longer match.
+
 ## Description
 
 Independent root cause of agent deaths on Linux (e.g. C:/Users/User/Desktop/LC project).

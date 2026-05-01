@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Auto-close mechanism broken — ReleaseAgent clears auto-close prematurely (v1.3.9 regression)
 
+Resolved critical-severity regression introduced by the #0123 fix. Adding `s.AutoClose = false` to `ReleaseAgent` made released agents land in `free + auto-close: false`, but the watchdog requires `auto-close: true` to fire — so terminals were never killed. Fixed in commit `bd3cebe` by reverting the `AutoClose=false` clear; the per-agent lock from `06512de` keeps the redispatch race closed without that change.
+
 ## Description
 
 After today's six commits + tag v1.3.9, the auto-close terminal-kill mechanism is broken on every released agent. Released agents go free cleanly but the watchdog never kills their claude session — terminals stay open indefinitely.

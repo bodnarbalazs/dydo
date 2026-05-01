@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # FindAncestorProcess substring match too broad (claude vs claudia)
 
+Resolved low-severity correctness bug: `FindAncestorProcess` matched anything containing "claude" (e.g., `claudia`, `claude-dev`), and the anchor PID parser accepted `1` (init/System) which never appears gone. Fixed in commit `762eeda` by switching to exact basename match without extension and rejecting `PID <= 1` at parse time.
+
 ## Description
 
 **Mechanism.** `ProcessUtils.FindAncestorProcess` (Services/ProcessUtils.Ancestry.cs:49) does `name.Contains('claude', StringComparison.OrdinalIgnoreCase)`. Any third-party process whose name contains 'claude' would be picked as the anchor: `claudia.exe`, `claude-dev.exe`, future tooling.

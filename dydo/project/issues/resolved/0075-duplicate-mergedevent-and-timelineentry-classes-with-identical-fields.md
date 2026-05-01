@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # Duplicate MergedEvent and TimelineEntry classes with identical fields
 
+Resolved low-severity duplication finding: `MergedEvent` and `TimelineEntry` were field-identical types serving the same role. Fixed by collapsing them into a single shared type and mapping `AuditCommand.MergeTimelines` directly to it; cherry-picked as `c79d107`.
+
 ## Description
 
 (Describe the issue)

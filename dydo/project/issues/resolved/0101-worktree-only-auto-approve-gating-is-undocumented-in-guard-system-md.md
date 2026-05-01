@@ -11,6 +11,8 @@ resolved-date: 2026-04-20
 
 # Worktree-only auto-approve gating is undocumented in guard-system.md
 
+Resolved low-severity docs gap: the guard's worktree-only auto-approve emission (the `permissionDecision: "allow"` envelope that suppresses Claude Code's per-tool prompt inside dispatch worktrees) had user-visible behaviour but no presence in any user-facing doc — readers only encountered it via code-diving. Fixed by adding an "Auto-Approve JSON (Worktree-Only)" section to `guard-system.md` documenting the `IsWorktreeContext` + `EmitWorktreeAllowIfNeeded` gate and the worktree-vs-root behaviour difference.
+
 ## Description
 
 The guard emits a Claude-Code-specific JSON envelope —

@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # GetSession crashes on session IDs containing path separators
 
+Resolved low-severity correctness/security finding: `GetSession` crashed on session IDs containing path separators or traversal patterns rather than rejecting them. Fixed by validating session IDs in `AuditService` and throwing a clear exception on malformed input; cherry-picked as `e1c2886` with test alignment in `d012105`.
+
 ## Description
 
 (Describe the issue)

@@ -11,6 +11,8 @@ resolved-date: 2026-04-20
 
 # IsWorktreeContext uses unanchored substring match on CWD
 
+Resolved low-severity correctness bug: `IsWorktreeContext` used `Contains("dydo/_system/.local/worktrees/")` against the current directory, which any sibling like `worktrees-notes/` or a backup carrying the marker in its name could match — granting them the auto-approve signal. Fixed by switching to an exact path-segment match for the sequence `[dydo, _system, .local, worktrees]`; covered by two new regression tests.
+
 ## Description
 
 `Commands/GuardCommand.cs:80-86`:

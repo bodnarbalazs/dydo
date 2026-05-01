@@ -11,6 +11,8 @@ resolved-date: 2026-04-21
 
 # Watchdog Run() has no cancellation, parent-PID, or signal handling — outlives its purpose
 
+Resolved high-severity correctness bug: `WatchdogService.Run` was a bare `while (true) { Thread.Sleep(10_000); … }` loop with no cancellation, no parent-PID liveness check, no signal handlers, and no pid-file cleanup, so the watchdog routinely outlived its spawning dispatch. Fixed by recording an anchor PID in `watchdog.pid`, breaking out when the anchor disappears for several consecutive ticks, hooking `ProcessExit` / `CancelKeyPress`, and deleting the pid file in `finally`.
+
 ## Description
 
 `WatchdogService.Run` (`Services/WatchdogService.cs:142-162`) is a bare `while (true) { Thread.Sleep(10_000); … }` loop. It has:

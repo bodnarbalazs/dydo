@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Git merge worktree block and human-only command restriction lack guardrail IDs
 
+Resolved low-severity docs finding: two existing guard checks (direct `git merge` in a worktree; human-only dydo subcommands) lacked `H##` IDs in `guardrails.md`. Fixed in commit `5ffcb54` by assigning H28 and H29 and adding them to the Bash Command Safety section.
+
 ## Description
 
 (Describe the issue)

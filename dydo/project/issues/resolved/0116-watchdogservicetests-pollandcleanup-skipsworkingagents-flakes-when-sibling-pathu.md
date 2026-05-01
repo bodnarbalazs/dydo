@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # WatchdogServiceTests.PollAndCleanup_SkipsWorkingAgents flakes when sibling PathUtilsTests Dispose deletes the captured CWD
 
+Resolved low-severity flake: `WatchdogServiceTests.PollAndCleanup_SkipsWorkingAgents` captured `Environment.CurrentDirectory` at construction; if `PathUtilsTests.Dispose()` then deleted the directory it had set as CWD, the captured path became invalid. Fixed in commit `3654ec6` by switching `WatchdogServiceTests` to the test-context working directory explicitly and parking `PathUtilsTests.Dispose` on `Path.GetTempPath()`.
+
 ## Description
 
 `WatchdogServiceTests.PollAndCleanup_SkipsWorkingAgents` (and possibly other tests in the same file) captures `Environment.CurrentDirectory` at construction and uses it later for path resolution. A sibling test class — `PathUtilsTests` — `Dispose`s by deleting a temporary directory it set as CWD during its own execution. When the test runner schedules the two test classes such that `PathUtilsTests.Dispose()` fires after `WatchdogServiceTests` captured CWD but before the `PollAndCleanup_SkipsWorkingAgents` test body runs (or while it's resolving paths), the captured CWD is now a deleted directory. The watchdog service path resolution then fails (or returns paths that don't exist), and the test reports a flake.

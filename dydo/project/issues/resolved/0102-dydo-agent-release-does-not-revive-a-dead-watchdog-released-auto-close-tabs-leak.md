@@ -11,6 +11,8 @@ resolved-date: 2026-04-21
 
 # dydo agent release does not revive a dead watchdog — released auto-close tabs leak until next dispatch
 
+Resolved medium-severity correctness bug: if the watchdog had died, a released `--auto-close` agent's terminal leaked because nothing revived the watchdog until the next dispatch. Fixed in commit `0f0e31a` by having `dydo agent release` re-run `WatchdogService.EnsureRunning` after clearing the agent.
+
 ## Description
 
 (Describe the issue)

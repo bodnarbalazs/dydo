@@ -11,6 +11,8 @@ resolved-date: 2026-04-20
 
 # HandleSearchTool never emits worktree allow JSON, prompting users for Glob/Grep/Agent inside worktrees
 
+Resolved low-severity correctness bug: four guard handlers emitted the worktree-allow JSON on success so Glob/Grep/Agent calls inside a dispatch worktree wouldn't prompt, but `HandleSearchTool` returned without emitting and surfaced Claude Code's normal permission prompt. Fixed by adding the emit on `HandleSearchTool`'s success path; covered by `WorktreeGlob/Grep_Approved_OutputsAllowJson`.
+
 ## Description
 
 In `Commands/GuardCommand.cs`, four guard handlers call `EmitWorktreeAllowIfNeeded()` on their success paths so that Claude Code skips the permission prompt when the agent is operating inside a dispatch worktree:

@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # ExecuteShowSession does not resolve compacted snapshot refs
 
+Resolved medium-severity correctness bug: `ExecuteShowSession` returned the raw snapshot ref without resolving compacted entries, so sessions backed by inline/baseline/session-delta chains showed incomplete data. Fixed in commit `99a9a33` by routing through a new `ResolveSessionSnapshot` that delegates to `SnapshotCompactionService.ResolveSnapshot`.
+
 ## Description
 
 (Describe the issue)

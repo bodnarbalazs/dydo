@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Redundant GetCurrentAgent filesystem reads per guard invocation
 
+Resolved medium-severity perf finding: each iteration of the bash-op loop in the guard re-fetched the current agent from disk, multiplying filesystem reads per guard invocation. Fixed in commit `4b162e2` by adding a `cachedAgent` parameter to `CheckBashFileOperation` so the caller passes the already-fetched agent once.
+
 ## Description
 
 (Describe the issue)

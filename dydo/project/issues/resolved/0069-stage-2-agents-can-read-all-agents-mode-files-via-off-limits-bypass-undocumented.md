@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Stage 2 agents can read all agents mode files via off-limits bypass — undocumented
 
+Resolved low-severity disclosure finding: Stage-2 agents can read every agent's mode file via the off-limits bypass (`IsAnyModeFile` matches all agents' mode files, not just self), but this was undocumented. Resolved as a disclosure: commit `5ffcb54` documents the bypass and its scope in `guard-system.md`; tightening the scope to self-only is left to a future design call.
+
 ## Description
 
 (Describe the issue)

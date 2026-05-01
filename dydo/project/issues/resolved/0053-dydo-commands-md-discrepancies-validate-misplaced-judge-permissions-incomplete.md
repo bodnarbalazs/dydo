@@ -11,6 +11,8 @@ resolved-date: 2026-04-10
 
 # dydo-commands.md discrepancies — validate misplaced, judge permissions incomplete
 
+Resolved medium-severity docs finding: `dydo-commands.md` placed `validate` under the wrong section, listed incomplete judge permissions, and was missing recently-added commands. Fixed by correcting the placement, completing the judge permissions list, and filling in the missing command documentation.
+
 ## Description
 
 (Describe the issue)

@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # H10/H11/H12 labels are doc-only with no code traceability
 
+Resolved low-severity docs finding: the H10/H11/H12 labels in `guardrails.md` looked like code identifiers but had no corresponding presence in source. Fixed in commit `5ffcb54` by rewording them as doc-shorthand for the constraint-type taxonomy in `.role.json` files (role-transition, requires-prior, panel-limit), with no code IDs claimed.
+
 ## Description
 
 (Describe the issue)

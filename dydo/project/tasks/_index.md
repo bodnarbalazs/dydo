@@ -26,10 +26,12 @@ Index of tasks documentation.
 - [Task: fix-master-regressions](./fix-master-regressions.md) - No-repro review for fix-master-regressions (#0139, #0140).
 - [Task: fix-pwsh-wait-approval](./fix-pwsh-wait-approval.md) - Review commit 3808f37 for fix-pwsh-wait-approval (#0145).
 - [Task: fix-wait-guard-deadlock](./fix-wait-guard-deadlock.md) - Code-writer task implementing Zelda's plan for issue #0141: align `WaitCommand.
-- [Task: fix-wait-race](./fix-wait-race.md) - (No description)
+- [Task: fix-wait-race](./fix-wait-race.md) - Review commit b33a171 for fix-wait-race (#0147).
 - [Task: investigate-pwsh-wait-approval](./investigate-pwsh-wait-approval.md) - (No description)
+- [Task: investigate-test-runtime](./investigate-test-runtime.md) - (No description)
 - [Task: investigate-wait-guard-deadlock](./investigate-wait-guard-deadlock.md) - (No description)
 - [Task: investigate-wait-race](./investigate-wait-race.md) - (No description)
+- [Task: plan-dydo-tool-fixes](./plan-dydo-tool-fixes.md) - (No description)
 - [Task: readme-advertise-auto-resume](./readme-advertise-auto-resume.md) - (No description)
 - [Task: wait-deadlock-smoke-v141](./wait-deadlock-smoke-v141.md) - (No description)
 - [Task: write-v1.4-release-doc](./write-v1.4-release-doc.md) - Review commit 2054f5d for write-v1.

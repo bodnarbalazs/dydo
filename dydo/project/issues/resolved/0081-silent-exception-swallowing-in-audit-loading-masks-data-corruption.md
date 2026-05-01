@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # Silent exception swallowing in audit loading masks data corruption
 
+Resolved medium-severity correctness bug: four secondary catch blocks in audit loading swallowed exceptions silently, masking corrupted snapshots and baselines. Fixed by routing each through `Console.Error.WriteLine` so corruption surfaces; cherry-picked as `c381bda`.
+
 ## Description
 
 (Describe the issue)

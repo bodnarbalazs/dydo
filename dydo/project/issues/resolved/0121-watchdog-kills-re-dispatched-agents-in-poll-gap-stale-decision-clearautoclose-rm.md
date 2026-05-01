@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # Watchdog kills re-dispatched agents in poll-gap (stale-decision + ClearAutoClose RMW)
 
+Resolved critical-severity bug — root cause of the agent-deaths cluster. Two race windows: the watchdog's poll read state without a lock, decided to kill based on a stale `free + auto-close` snapshot, and didn't re-check before killing the freshly re-dispatched claude; and `ClearAutoClose`'s read-modify-write rolled back dispatcher writes that landed in between. Fixed in commits `06512de` (per-agent registry lock around `PollAndCleanup`) and `bd3cebe` (revert of the unnecessary `AutoClose=false` clear on release).
+
 ## Description
 
 Root cause of mid-work agent deaths. Two race windows:

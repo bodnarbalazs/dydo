@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # RoleConstraintEvaluator CRAP score regressed past 30 limit (32.0) after #0045 case-insensitive unification
 
+Resolved low-severity tier-coverage regression: after the #0045/#0047 changes landed, `RoleConstraintEvaluator`'s CRAP score drifted to 32.0 (over the project's 30 limit) due to elevated cyclomatic complexity and a residual branch-coverage gap. Fixed in commit `4fdd383` by extracting `CanTakeRole`'s constraint branches into separate private statics, plus three new tests in `40c5582` that close the branch-coverage gap. Result: CRAP 32→26, branch coverage 92.7%→100%.
+
 ## Description
 
 `gap_check` reports a tier-coverage failure on `Services/RoleConstraintEvaluator.cs` after the `#0045` (case-insensitive comparator unification) and `#0047` (panel-limit self-exclusion) commits cherry-picked onto master:

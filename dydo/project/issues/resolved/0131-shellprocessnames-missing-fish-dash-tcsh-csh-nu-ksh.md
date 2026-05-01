@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # ShellProcessNames missing fish/dash/tcsh/csh/nu/ksh
 
+Resolved low-severity correctness gap: `WatchdogService.ShellProcessNames` only listed `{powershell, pwsh, bash, sh, cmd, zsh}`, so users on `fish`, `dash`, `tcsh`, `csh`, `nu`, or `ksh` could see their interactive shell killed if it appeared in the matching argv. Fixed in commit `762eeda` by extending the list to cover all six.
+
 ## Description
 
 **Mechanism.** `WatchdogService.ShellProcessNames` (Services/WatchdogService.cs:9-12) contains `{powershell, pwsh, bash, sh, cmd, zsh}`. Linux users running `fish`, `dash`, `tcsh`, `csh`, `nu` (Nushell), or `ksh` as their dispatcher shell would match the kill pattern (`{agent} --inbox` substring) but not be skipped, so the watchdog's kill loop would run `Process.Kill()` against the user's interactive shell.

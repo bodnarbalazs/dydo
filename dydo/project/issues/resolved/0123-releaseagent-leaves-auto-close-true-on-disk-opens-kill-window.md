@@ -11,6 +11,8 @@ resolved-date: 2026-04-30
 
 # ReleaseAgent leaves auto-close: true on disk, opens kill window
 
+Resolved high-severity bug: `ReleaseAgent` cleared most state fields but left `AutoClose: true` on disk, so between release and the watchdog's next poll the agent sat in the lethal `free + auto-close: true` state that fed the #0121 redispatch race. Resolved as won't-fix in commit `bd3cebe` — clearing `AutoClose` on release broke the auto-close mechanism itself. The per-agent lock from `06512de` closes the race window the original issue was motivated by, without needing the field clear.
+
 ## Description
 
 **Mechanism.** `AgentRegistry.ReleaseAgent` (Services/AgentRegistry.cs:492-502) clears `Status`, `Role`, `Task`, `Since`, `WritablePaths`, `ReadOnlyPaths`, `UnreadMustReads`, `UnreadMessages` — but **not** `AutoClose`. `CleanupAfterRelease` (Services/AgentRegistry.cs:574-589) doesn't either. `ClearAutoClose` lives in the watchdog (Services/WatchdogService.cs:285) and runs only after the kill loop. So between release and the watchdog's next poll (up to 10s default), the agent is in the lethal `free + auto-close: true` state — exactly the precondition for finding #1's redispatch race.

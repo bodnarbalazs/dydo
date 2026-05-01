@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Off-limits bypass inconsistency between direct reads and bash reads
 
+Resolved medium-severity correctness bug: direct file reads and bash-routed reads applied the off-limits-bypass logic differently, so a path that the Read tool blocked could leak through `cat` (or vice versa). Fixed in commit `4b162e2` by extracting a shared `ShouldBypassOffLimits` helper and routing both pipelines through it.
+
 ## Description
 
 (Describe the issue)

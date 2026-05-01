@@ -11,6 +11,8 @@ resolved-date: 2026-04-21
 
 # dydo worktree cleanup must clear agent marker even when directory removal fails (regression guard test added)
 
+Resolved low-severity invariant: `dydo worktree cleanup` must clear the agent marker even when `RemoveDirectory` fails (otherwise the agent stays pinned to a phantom worktree). The existing cleanup order was already correct; the fix in `def1fa4` adds `Cleanup_DirectoryLocked_StillClearsAgentMarker` as a regression guard so the ordering cannot silently regress.
+
 ## Description
 
 (Describe the issue)

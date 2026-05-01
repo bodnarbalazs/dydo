@@ -11,6 +11,8 @@ resolved-date: 2026-04-26
 
 # Dead code in OffLimitsService: CheckCommand and related methods (~70 lines)
 
+Resolved medium-severity dead-code finding: `OffLimitsService` carried `CheckCommand`, `ExtractPathsFromCommand`, `CommandPathPatterns`, and `LooksLikePath` with no remaining callers (~70 lines). Fixed in commit `4b162e2` by deleting all four; verified by Adele.
+
 ## Description
 
 (Describe the issue)

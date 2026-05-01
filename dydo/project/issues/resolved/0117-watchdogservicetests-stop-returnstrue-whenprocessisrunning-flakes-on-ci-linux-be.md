@@ -11,6 +11,8 @@ resolved-date: 2026-04-27
 
 # WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning flakes on CI Linux because ping process exits inside the test window
 
+Resolved low-severity flake: the test relied on `ping` running indefinitely while it called `WatchdogService.Stop`, but on GitHub-hosted Linux runners `ping` exited within milliseconds (likely due to ICMP socket restrictions), so `Stop`'s liveness check saw a dead PID and the assertion failed. Fixed in commit `980104a` by platform-splitting — using `sleep 30` on POSIX and keeping `ping` on Windows where it's reliable — plus a tight-succession regression test.
+
 ## Description
 
 `DynaDocs.Tests/Services/WatchdogServiceTests.Stop_ReturnsTrue_WhenProcessIsRunning` consistently fails on the GitHub Actions Linux CI runner with `Assert.True() Failure`. The test passes locally and passes when the file is run in isolation; it only fails as part of the full suite on CI Linux.

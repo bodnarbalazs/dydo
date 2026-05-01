@@ -1517,6 +1517,14 @@ public partial class AgentRegistry : IAgentRegistry
                  + "and write your plan to your workspace (dydo/agents/<you>/plan-<task>.md).";
         }
 
+        if (relativePath.StartsWith("dydo/project/issues/", StringComparison.OrdinalIgnoreCase) ||
+            relativePath.StartsWith("dydo\\project\\issues\\", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Issue registry writes are reserved for co-thinker and orchestrator roles. Either:\n"
+                 + "  - Raise the issue to the human directly, OR\n"
+                 + "  - If you were dispatched by an orchestrator, send them a `dydo msg` so they can raise it to the human.";
+        }
+
         return null;
     }
 

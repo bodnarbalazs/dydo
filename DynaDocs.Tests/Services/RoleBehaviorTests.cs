@@ -166,14 +166,15 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_CoThinker_WritesDecisionsAndSelf()
+    public void PermissionMap_CoThinker_WritesDecisionsIssuesAndSelf()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["co-thinker"];
 
         Assert.Contains("dydo/agents/{self}/**", writable);
         Assert.Contains("dydo/project/decisions/**", writable);
-        Assert.Equal(2, writable.Count);
+        Assert.Contains("dydo/project/issues/**", writable);
+        Assert.Equal(3, writable.Count);
         Assert.Contains("src/**", readOnly);
         Assert.Contains("tests/**", readOnly);
     }
@@ -221,7 +222,7 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_Orchestrator_WritesTasksDecisionsAndSelf()
+    public void PermissionMap_Orchestrator_WritesTasksDecisionsIssuesAndSelf()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["orchestrator"];
@@ -229,7 +230,8 @@ public class RoleBehaviorTests : IDisposable
         Assert.Contains("dydo/agents/{self}/**", writable);
         Assert.Contains("dydo/project/tasks/**", writable);
         Assert.Contains("dydo/project/decisions/**", writable);
-        Assert.Equal(3, writable.Count);
+        Assert.Contains("dydo/project/issues/**", writable);
+        Assert.Equal(4, writable.Count);
         Assert.Contains("**", readOnly);
     }
 
@@ -353,14 +355,15 @@ public class RoleBehaviorTests : IDisposable
     [Theory]
     [InlineData("dydo/agents/Adele/notes.md", true)]
     [InlineData("dydo/project/decisions/001.md", true)]
+    [InlineData("dydo/project/issues/0001-foo.md", true)]
     [InlineData("src/Foo.cs", false)]
     [InlineData("tests/Bar.cs", false)]
-    public void IsPathAllowed_CoThinker_DecisionsAndSelf(string path, bool expected)
+    public void IsPathAllowed_CoThinker_DecisionsIssuesAndSelf(string path, bool expected)
     {
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
             sourcePaths: ["src/**"], testPaths: ["tests/**"]);
         CreateSessionFile("Adele", "test-ct", role: "co-thinker", task: "t1",
-            writablePaths: ["dydo/agents/Adele/**", "dydo/project/decisions/**"],
+            writablePaths: ["dydo/agents/Adele/**", "dydo/project/decisions/**", "dydo/project/issues/**"],
             readOnlyPaths: ["src/**", "tests/**"]);
 
         var registry = new AgentRegistry(_testDir);
@@ -442,13 +445,14 @@ public class RoleBehaviorTests : IDisposable
     [InlineData("dydo/agents/Adele/notes.md", true)]
     [InlineData("dydo/project/tasks/foo.md", true)]
     [InlineData("dydo/project/decisions/001.md", true)]
+    [InlineData("dydo/project/issues/0001-foo.md", true)]
     [InlineData("src/Foo.cs", false)]
-    public void IsPathAllowed_Orchestrator_TasksDecisionsAndSelf(string path, bool expected)
+    public void IsPathAllowed_Orchestrator_TasksDecisionsIssuesAndSelf(string path, bool expected)
     {
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
             sourcePaths: ["src/**"], testPaths: ["tests/**"]);
         CreateSessionFile("Adele", "test-orch", role: "orchestrator", task: "t1",
-            writablePaths: ["dydo/agents/Adele/**", "dydo/project/tasks/**", "dydo/project/decisions/**"],
+            writablePaths: ["dydo/agents/Adele/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**"],
             readOnlyPaths: ["**"]);
 
         var registry = new AgentRegistry(_testDir);
@@ -493,6 +497,45 @@ public class RoleBehaviorTests : IDisposable
         var result = registry.IsPathAllowed("test-judge", path, "edit", out var error);
 
         Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("code-writer", new[] { "src/**", "tests/**", "dydo/agents/Adele/**" }, new[] { "dydo/**", "project/**" })]
+    [InlineData("reviewer", new[] { "dydo/agents/Adele/**" }, new[] { "**" })]
+    [InlineData("planner", new[] { "dydo/agents/Adele/**", "dydo/project/tasks/**" }, new[] { "src/**" })]
+    [InlineData("test-writer", new[] { "dydo/agents/Adele/**", "tests/**", "dydo/project/pitfalls/**" }, new[] { "src/**" })]
+    [InlineData("inquisitor", new[] { "dydo/agents/Adele/**", "dydo/project/inquisitions/**" }, new[] { "src/**", "tests/**" })]
+    public void IsPathAllowed_NonPermittedRoles_CannotWriteIssues(
+        string role, string[] writable, string[] readOnly)
+    {
+        SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
+            sourcePaths: ["src/**"], testPaths: ["tests/**"]);
+        CreateSessionFile("Adele", $"test-issues-{role}", role: role, task: "t1",
+            writablePaths: [.. writable], readOnlyPaths: [.. readOnly]);
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.IsPathAllowed($"test-issues-{role}", "dydo/project/issues/0001-foo.md", "edit", out var error);
+
+        Assert.False(result);
+        Assert.NotEmpty(error);
+    }
+
+    [Fact]
+    public void IsPathAllowed_IssuesPath_DenialMessageMentionsAllowedRoles()
+    {
+        SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
+            sourcePaths: ["src/**"], testPaths: ["tests/**"]);
+        CreateSessionFile("Adele", "test-issues-msg", role: "code-writer", task: "t1",
+            writablePaths: ["src/**", "tests/**", "dydo/agents/Adele/**"],
+            readOnlyPaths: ["dydo/**", "project/**"]);
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.IsPathAllowed("test-issues-msg", "dydo/project/issues/0001-foo.md", "edit", out var error);
+
+        Assert.False(result);
+        Assert.Contains("co-thinker", error);
+        Assert.Contains("orchestrator", error);
+        Assert.Contains("Raise", error);
     }
 
     [Fact]

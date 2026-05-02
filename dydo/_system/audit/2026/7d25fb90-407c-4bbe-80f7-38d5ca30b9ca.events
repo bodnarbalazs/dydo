@@ -77,3 +77,4 @@
 {"ts":"2026-05-01T22:14:38.9222249Z","event":"Bash","tool":"bash","cmd":"git diff --cached --stat"}
 {"ts":"2026-05-01T22:14:47.0139929Z","event":"Bash","tool":"bash","cmd":"git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\ntest(wait): clarify drain-then-exit comment in StaysBlockedAfterDrain (..."}
 {"ts":"2026-05-01T22:15:05.2926009Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5"}
+{"ts":"2026-05-01T22:25:01.4757361Z","event":"Release","agent":"Adele"}

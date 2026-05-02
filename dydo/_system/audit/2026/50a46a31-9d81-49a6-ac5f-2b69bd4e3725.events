@@ -112,3 +112,82 @@
 {"ts":"2026-05-01T22:10:07.0326139Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
 {"ts":"2026-05-01T22:13:03.3649186Z","event":"Bash","tool":"bash","cmd":"tail -20 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
 {"ts":"2026-05-01T22:13:10.4766985Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261 | tail -30"}
+{"ts":"2026-05-01T22:18:03.5285907Z","event":"Bash","tool":"bash","cmd":"tail -40 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T22:18:07.645639Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T22:22:03.9927614Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T22:24:06.335849Z","event":"Bash","tool":"bash","cmd":"tail -40 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T22:24:13.1103703Z","event":"Bash","tool":"bash","cmd":"grep -B 2 -A 20 \u0022^Failed \u0022 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-D..."}
+{"ts":"2026-05-01T22:24:16.81225Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022Failed \u0022 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5..."}
+{"ts":"2026-05-01T22:24:20.4438835Z","event":"Bash","tool":"bash","cmd":"grep -n -i \u0022fail\u0022 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5..."}
+{"ts":"2026-05-01T22:24:24.0257024Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-49a6-ac5f-2b69bd4e3725\\tasks\\bbtapkvmc.output","tool":"read"}
+{"ts":"2026-05-01T22:25:03.4807304Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-05-01T22:25:17.9553082Z","event":"Bash","tool":"bash","cmd":"grep -n \u0022CRAP\\|cyclomatic\\|complexity\u0022 DynaDocs.Tests/coverage/gap_check.py | head -30"}
+{"ts":"2026-05-01T22:25:23.0131392Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --inspect WatchdogService --methods 2\u003E\u00261 | tail -60"}
+{"ts":"2026-05-01T22:29:53.710825Z","event":"Bash","tool":"bash","cmd":"tail -80 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T22:29:57.9028232Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T22:33:16.2170791Z","event":"Bash","tool":"bash","cmd":"tail -60 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T22:33:19.7009695Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T22:34:02.8550032Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"edit"}
+{"ts":"2026-05-01T22:34:06.1041211Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.csproj -nologo 2\u003E\u00261 | tail -10"}
+{"ts":"2026-05-01T22:34:14.7783462Z","event":"Bash","tool":"bash","cmd":"tail -80 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T22:34:18.5082554Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T22:34:29.7031288Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.Tests/DynaDocs.Tests.csproj -nologo 2\u003E\u00261 | tail -10"}
+{"ts":"2026-05-01T22:34:38.2029285Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022PollAndResumeForAgent|FindClaudeAncestor|Cl..."}
+{"ts":"2026-05-01T23:01:25.6032818Z","event":"Blocked","tool":"bash","cmd":"git log --oneline -10","reason":"Unread messages"}
+{"ts":"2026-05-01T23:01:28.5149294Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:01:33.9895128Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:02:06.0976501Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:02:12.4810584Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:02:40.8406268Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:03:01.0744859Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:03:17.2463384Z","event":"Blocked","tool":"bash","cmd":"where dydo","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:19.9181939Z","event":"Blocked","tool":"bash","cmd":"where dydo","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:27.5151468Z","event":"Blocked","tool":"bash","cmd":"where dydo","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:30.1869823Z","event":"Blocked","tool":"bash","cmd":"where dydo","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:42.8481215Z","event":"Blocked","tool":"bash","cmd":"grep -n \u0022not yet read\\|MarkInboxItemAsRead\\|inbox.*read\\|InboxRead\u0022 Commands/*.cs Services/*.cs 2\u003E/d...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:45.7952366Z","event":"Blocked","tool":"bash","cmd":"grep -n \u0022not yet read\\|MarkInboxItemAsRead\\|inbox.*read\\|InboxRead\u0022 Commands/*.cs Services/*.cs 2\u003E/d...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:48.2942933Z","event":"Blocked","tool":"bash","cmd":"echo retrying","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:51.3840846Z","event":"Blocked","tool":"bash","cmd":"echo retrying2","reason":"Unread messages"}
+{"ts":"2026-05-01T23:03:58.9985751Z","event":"Blocked","tool":"bash","cmd":"echo retrying3","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:01.6269802Z","event":"Blocked","tool":"bash","cmd":"echo retrying4","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:04.1088741Z","event":"Blocked","tool":"bash","cmd":"echo retrying5","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:16.1713001Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:04:20.2533222Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:04:23.5390756Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:26.9711836Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:30.0116329Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:33.2600746Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:36.6608642Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:39.7606076Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:43.4951961Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:04:47.1599098Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:05:47.1995112Z","event":"Blocked","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:05:50.8916578Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:05:59.8179424Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:09:22.0630433Z","event":"Blocked","tool":"bash","cmd":"(sleep 600 \u0026 echo $! \u003E /tmp/sleep_pid.txt; disown) \u0026\u0026 SLEEP_PID=$(cat /tmp/sleep_pid.txt) \u0026\u0026 echo \u0022s...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:09:26.3646769Z","event":"Blocked","tool":"bash","cmd":"(sleep 600 \u0026 echo $! \u003E /tmp/sleep_pid.txt; disown) \u0026\u0026 SLEEP_PID=$(cat /tmp/sleep_pid.txt) \u0026\u0026 echo \u0022s...","reason":"Unread messages"}
+{"ts":"2026-05-01T23:10:03.9323707Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\184d705b-msg-fix-auto-resume-defects.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:10:52.7897357Z","event":"Bash","tool":"bash","cmd":"cat \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81-4..."}
+{"ts":"2026-05-01T23:10:57.7041823Z","event":"Bash","tool":"bash","cmd":"cat dydo/agents/Charlie/.waiting/_general-wait.json 2\u003E\u00261; echo \u0022---\u0022; ps -p 44368 2\u003E\u00261 | head -3"}
+{"ts":"2026-05-01T23:11:04.6911801Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\state.md","tool":"read"}
+{"ts":"2026-05-01T23:11:10.199794Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261 | tail -30"}
+{"ts":"2026-05-01T23:16:04.5965443Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T23:20:04.5117221Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T23:21:58.6226305Z","event":"Bash","tool":"bash","cmd":"tail -30 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T23:22:16.5401029Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --inspect WatchdogService --methods 2\u003E\u00261 | tail -50"}
+{"ts":"2026-05-01T23:23:41.7525216Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"edit"}
+{"ts":"2026-05-01T23:23:45.3079098Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.csproj -nologo 2\u003E\u00261 | tail -10"}
+{"ts":"2026-05-01T23:23:53.8085976Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py --force-run 2\u003E\u00261 | tail -30"}
+{"ts":"2026-05-01T23:28:04.3784396Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T23:32:06.6660253Z","event":"Bash","tool":"bash","cmd":"wc -c \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9d81..."}
+{"ts":"2026-05-01T23:34:15.4887638Z","event":"Bash","tool":"bash","cmd":"tail -30 \u0027C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\50a46a31-9..."}
+{"ts":"2026-05-01T23:34:24.2974978Z","event":"Bash","tool":"bash","cmd":"git status --short | head -30"}
+{"ts":"2026-05-01T23:34:29.1607708Z","event":"Bash","tool":"bash","cmd":"git status"}
+{"ts":"2026-05-01T23:34:33.1222037Z","event":"Bash","tool":"bash","cmd":"git log --oneline -10"}
+{"ts":"2026-05-01T23:34:36.7133433Z","event":"Bash","tool":"bash","cmd":"git show --stat 9b27195 | head -50"}
+{"ts":"2026-05-01T23:34:41.5145997Z","event":"Bash","tool":"bash","cmd":"git diff Services/WatchdogService.cs | head -80"}
+{"ts":"2026-05-01T23:34:46.3353434Z","event":"Bash","tool":"bash","cmd":"git diff dydo/project/tasks/fix-wait-rearm-flood-deadlock-0149.md | head -30"}
+{"ts":"2026-05-01T23:35:00.6623979Z","event":"Bash","tool":"bash","cmd":"git add Services/WatchdogService.cs \u0026\u0026 git diff --cached Services/WatchdogService.cs | wc -l"}
+{"ts":"2026-05-01T23:35:17.0511525Z","event":"Bash","tool":"bash","cmd":"git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nrefactor(watchdog): split PollAndResumeForAgent \u002B ParseResumeFields hel..."}
+{"ts":"2026-05-01T23:35:22.6070595Z","event":"Bash","tool":"bash","cmd":"git log --oneline -3"}
+{"ts":"2026-05-01T23:36:15.493721Z","event":"Release","agent":"Charlie"}

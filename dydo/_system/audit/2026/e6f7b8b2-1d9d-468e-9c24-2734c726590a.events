@@ -1,0 +1,51 @@
+{"ts":"2026-05-01T23:36:02.8123643Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T23:36:06.919751Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-05-01T23:36:13.9290919Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\442d0c42-fix-auto-resume-defects.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-01T23:36:16.3031111Z","event":"Role","role":"reviewer","task":"fix-auto-resume-defects"}
+{"ts":"2026-05-01T23:36:19.5795909Z","event":"Blocked","tool":"bash","cmd":"dydo whoami","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:36:28.9599754Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-05-01T23:36:37.7735466Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-01T23:36:41.2554081Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-01T23:36:43.8394373Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-05-01T23:36:55.0360544Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\442d0c42-fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-01T23:36:58.6188526Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\archive\\20260501-204903\\plan-fix-fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-01T23:37:06.6275849Z","event":"Bash","tool":"bash","cmd":"dir dydo\\agents\\Charlie\\archive 2\u003E$null; echo \u0022---\u0022; dir dydo\\agents\\Charlie"}
+{"ts":"2026-05-01T23:39:52.6245433Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T23:39:55.3543035Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\archive\\20260501-204903\\plan-fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-01T23:39:59.1127744Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-01T23:40:02.8532049Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\auto-resume.md","tool":"read"}
+{"ts":"2026-05-01T23:40:06.4909621Z","event":"Bash","tool":"bash","cmd":"git log --oneline 756bedb..HEAD"}
+{"ts":"2026-05-01T23:40:10.6192975Z","event":"Bash","tool":"bash","cmd":"git diff --stat 0844b2f..HEAD"}
+{"ts":"2026-05-01T23:40:15.9591799Z","event":"Bash","tool":"bash","cmd":"git show --stat 9b27195"}
+{"ts":"2026-05-01T23:40:21.5146864Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs","tool":"read"}
+{"ts":"2026-05-01T23:40:24.4641195Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentState.cs","tool":"read"}
+{"ts":"2026-05-01T23:40:27.1811966Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-01T23:40:31.7972327Z","event":"Bash","tool":"bash","cmd":"git diff 0844b2f..HEAD -- Services/AgentRegistry.cs Services/IAgentRegistry.cs Services/WatchdogServ..."}
+{"ts":"2026-05-01T23:40:34.6479608Z","event":"Read","path":"C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\e6f7b8b2-1d9d-468e-9c24-2734c726590a\\tool-results\\byq3z8l2k.txt","tool":"read"}
+{"ts":"2026-05-01T23:40:42.745414Z","event":"Bash","tool":"bash","cmd":"git show a4726d8 -- Services/WatchdogService.cs DynaDocs.Tests/Services/WatchdogServiceTests.cs"}
+{"ts":"2026-05-01T23:40:48.4560182Z","event":"Bash","tool":"bash","cmd":"git diff 0844b2f..HEAD -- DynaDocs.Tests/Services/ProcessUtilsTests.cs DynaDocs.Tests/Services/Agent..."}
+{"ts":"2026-05-01T23:40:52.0701124Z","event":"Read","path":"C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\e6f7b8b2-1d9d-468e-9c24-2734c726590a\\tool-results\\bbc5ee43m.txt","tool":"read"}
+{"ts":"2026-05-01T23:40:56.9261224Z","event":"Read","path":"DynaDocs.Tests/Services/WatchdogServiceTests.cs","tool":"grep"}
+{"ts":"2026-05-01T23:41:00.0826449Z","event":"Read","path":"DynaDocs.Tests/Services/WatchdogServiceTests.cs","tool":"grep"}
+{"ts":"2026-05-01T23:41:09.3469246Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"read"}
+{"ts":"2026-05-01T23:41:13.7119393Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-05-01T23:41:24.7663383Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-05-01T23:41:41.6022646Z","event":"Bash","tool":"bash","cmd":"cat \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\e6f7b8b2-1d9d-4..."}
+{"ts":"2026-05-02T00:29:35.3210238Z","event":"Bash","tool":"bash","cmd":"git log --oneline -- dydo/_system/template-additions/ | head -5; echo \u0022---\u0022; git log --oneline 0844b..."}
+{"ts":"2026-05-02T00:29:53.534214Z","event":"Bash","tool":"bash","cmd":"git status --porcelain | head -20"}
+{"ts":"2026-05-02T00:30:01.4365692Z","event":"Bash","tool":"bash","cmd":"git reset HEAD dydo/project/issues/0138-auto-resume-launches-terminal-in-user-home-dir-not-project-r..."}
+{"ts":"2026-05-02T10:39:09.3851679Z","event":"Bash","tool":"bash","cmd":"git checkout HEAD -- dydo/project/issues/0138-auto-resume-launches-terminal-in-user-home-dir-not-pro..."}
+{"ts":"2026-05-02T10:39:26.1285989Z","event":"Bash","tool":"bash","cmd":"git diff dydo/project/decisions/022-auto-resume-crashed-agents.md | head -40"}
+{"ts":"2026-05-02T10:39:45.2410256Z","event":"Blocked","path":"dydo/project/issues/0138-auto-resume-launches-terminal-in-user-home-dir-not-project-root.md","tool":"bash","cmd":"git checkout HEAD -- dydo/project/decisions/022-auto-resume-crashed-agents.md; rm dydo/project/issue...","reason":"Agent Adele (reviewer) cannot delete dydo/project/issues/0138-auto-resume-launches-terminal-in-user-home-dir-not-project-root.md. Issue registry writes are reserved for co-thinker and orchestrator roles. Either:\n  - Raise the issue to the human directly, OR\n  - If you were dispatched by an orchestrator, send them a \u0060dydo msg\u0060 so they can raise it to the human."}
+{"ts":"2026-05-02T10:40:08.5017Z","event":"Bash","tool":"bash","cmd":"git status --porcelain | grep -v audit"}
+{"ts":"2026-05-02T10:40:43.0158575Z","event":"Read","path":"Services/WatchdogService.cs","tool":"grep"}
+{"ts":"2026-05-02T10:40:49.9844088Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md","tool":"read"}
+{"ts":"2026-05-02T10:41:21.131879Z","event":"Bash","tool":"bash","cmd":"git log --oneline -10 -- dydo/project/issues/_index.md; echo \u0022---\u0022; git log --oneline 0844b2f..HEAD ..."}
+{"ts":"2026-05-02T10:41:42.9600244Z","event":"Read","path":"Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-02T10:41:51.5737057Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-02T10:42:32.8927803Z","event":"Read","path":"DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-05-02T10:42:55.4476349Z","event":"Bash","tool":"bash","cmd":"git log --oneline 0844b2f..HEAD -- dydo/project/decisions/022-auto-resume-crashed-agents.md"}
+{"ts":"2026-05-02T10:43:10.5861733Z","event":"Bash","tool":"bash","cmd":"git diff HEAD -- dydo/project/decisions/022-auto-resume-crashed-agents.md | head -5; echo \u0022---\u0022; git..."}
+{"ts":"2026-05-02T10:43:32.6166096Z","event":"Bash","tool":"bash","cmd":"git rev-parse HEAD:dydo/project/decisions/022-auto-resume-crashed-agents.md; git rev-parse 0844b2f:d..."}
+{"ts":"2026-05-02T10:57:48.7194087Z","event":"Bash","tool":"bash","cmd":"git checkout HEAD -- dydo/project/decisions/022-auto-resume-crashed-agents.md; git diff HEAD -- dydo..."}
+{"ts":"2026-05-02T10:58:55.906082Z","event":"Release","agent":"Adele"}

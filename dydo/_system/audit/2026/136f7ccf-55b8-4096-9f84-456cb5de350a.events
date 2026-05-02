@@ -1,0 +1,36 @@
+{"ts":"2026-05-01T23:36:15.3597235Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\workflow.md","tool":"read"}
+{"ts":"2026-05-01T23:36:18.9133051Z","event":"Claim","agent":"Dexter"}
+{"ts":"2026-05-01T23:36:25.3439496Z","event":"Role","role":"docs-writer","task":"update-decision-022-auto-resume"}
+{"ts":"2026-05-01T23:36:28.4203271Z","event":"Blocked","tool":"bash","cmd":"dydo whoami","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:36:34.5003676Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\modes\\docs-writer.md","tool":"read"}
+{"ts":"2026-05-01T23:36:36.9085349Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-01T23:36:39.3474833Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\how-to-use-docs.md","tool":"read"}
+{"ts":"2026-05-01T23:36:41.8820391Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\reference\\writing-docs.md","tool":"read"}
+{"ts":"2026-05-01T23:36:45.378851Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-05-01T23:36:48.1137666Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-01T23:36:50.8625782Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\3053c704-update-decision-022-auto-resume.md","tool":"read"}
+{"ts":"2026-05-01T23:36:57.4991363Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T23:36:57.8853673Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T23:36:58.3966642Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\update-decision-022-auto-resume.md","tool":"read"}
+{"ts":"2026-05-01T23:37:06.0249667Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0144-auto-resume-opens-in-new-window-should-reuse-the-original-window-as-a-new-tab-wh.md","tool":"read"}
+{"ts":"2026-05-01T23:37:06.4842591Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md","tool":"read"}
+{"ts":"2026-05-01T23:37:09.9306522Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0152-auto-resume-race-watchdog-fires-duplicate-launches-during-the-resumed-claude-war.md","tool":"read"}
+{"ts":"2026-05-01T23:37:10.9422121Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0153-resume-attempts-is-not-reset-on-same-session-reclaims-so-the-counter-accumulates.md","tool":"read"}
+{"ts":"2026-05-01T23:37:11.9308823Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0154-linux-mac-watchdog-dies-via-anchor-gone-when-all-dispatchers-exit-while-leaf-dis.md","tool":"read"}
+{"ts":"2026-05-01T23:37:17.996861Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-01T23:37:18.8061944Z","event":"Read","path":"Services","tool":"grep"}
+{"ts":"2026-05-01T23:37:19.7217293Z","event":"Read","path":"Models","tool":"grep"}
+{"ts":"2026-05-01T23:37:22.1042721Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\ProcessUtils.Ancestry.cs","tool":"read"}
+{"ts":"2026-05-01T23:37:22.5735172Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Models\\AgentState.cs","tool":"read"}
+{"ts":"2026-05-01T23:37:25.4085006Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-05-01T23:37:30.3050057Z","event":"Read","path":"Services/AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-01T23:38:16.9307414Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"edit"}
+{"ts":"2026-05-01T23:38:29.3263519Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"edit"}
+{"ts":"2026-05-01T23:38:57.0578938Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"edit"}
+{"ts":"2026-05-01T23:39:07.5870684Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"edit"}
+{"ts":"2026-05-01T23:39:29.3718939Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"edit"}
+{"ts":"2026-05-01T23:39:32.6514202Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\022-auto-resume-crashed-agents.md","tool":"read"}
+{"ts":"2026-05-01T23:40:15.8780776Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\update-decision-022-auto-resume.md","tool":"edit"}
+{"ts":"2026-05-01T23:40:44.2124103Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\notes\\reply-update-decision-022.md","tool":"write"}
+{"ts":"2026-05-01T23:41:04.670877Z","event":"Blocked","tool":"bash","cmd":"dydo agent release","reason":"Missing general wait"}
+{"ts":"2026-05-01T23:41:09.8241978Z","event":"Release","agent":"Dexter"}

@@ -27,3 +27,25 @@
 {"ts":"2026-05-01T19:15:16.3657275Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show","reason":"Missing general wait"}
 {"ts":"2026-05-01T19:15:54.0359171Z","event":"Blocked","tool":"bash","cmd":"dydo agent status; dydo agent list","reason":"Missing general wait"}
 {"ts":"2026-05-01T19:27:03.1370707Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\d76ea5b9-msg-smoke-wait-flood-v142.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-02T12:41:13.7768217Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show | grep -E \u0022^\\[|From:|Body:\u0022 | tail -10","reason":"Missing general wait"}
+{"ts":"2026-05-02T12:41:34.8028317Z","event":"Blocked","tool":"bash","cmd":"cat dydo/agents/Noah/inbox/33bcfd21-msg-smoke-wait-deadlock-postfix.md","reason":"Unread messages"}
+{"ts":"2026-05-02T12:41:40.0440934Z","event":"Blocked","tool":"bash","cmd":"cat dydo/agents/Noah/inbox/33bcfd21-msg-smoke-wait-deadlock-postfix.md","reason":"Unread messages"}
+{"ts":"2026-05-02T12:41:45.365387Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\33bcfd21-msg-smoke-wait-deadlock-postfix.md","tool":"read"}
+{"ts":"2026-05-04T15:20:54.1700127Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\d76ea5b9-msg-smoke-wait-flood-v142.md","tool":"read"}
+{"ts":"2026-05-04T15:20:58.3548412Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\fbf69b6a-msg-smoke-wait-flood-v142.md","tool":"read"}
+{"ts":"2026-05-04T15:21:04.5116038Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\0f788255-msg-smoke-wait-flood-v142.md","tool":"read"}
+{"ts":"2026-05-04T15:21:10.8407093Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\0b5e6c0d-msg-investigate-wait-rearm-flood-deadlock-0149.md","tool":"read"}
+{"ts":"2026-05-04T15:21:16.3783087Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\107ff744-msg-investigate-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-04T15:21:21.3698304Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\09c39ad1-msg-investigate-wait-rearm-flood-deadlock-0149-inquisition.md","tool":"read"}
+{"ts":"2026-05-04T15:21:25.958132Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\f2be6eb5-msg-investigate-auto-resume-defects-ruling.md","tool":"read"}
+{"ts":"2026-05-04T15:21:29.9619538Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\e48564d8-msg-investigate-wait-rearm-flood-deadlock-0149-inquisition-ruling.md","tool":"read"}
+{"ts":"2026-05-04T15:21:33.607408Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\f90d0389-msg-plan-fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-04T15:21:37.4618758Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\4777de23-msg-plan-fix-wait-rearm-flood-deadlock-0149.md","tool":"read"}
+{"ts":"2026-05-04T15:21:44.49374Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\faf3842a-msg-update-decision-022-auto-resume.md","tool":"read"}
+{"ts":"2026-05-04T15:21:48.3024219Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\174f83ca-msg-fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-04T15:21:51.8939903Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\4fbba2b8-msg-fix-auto-resume-defects.md","tool":"read"}
+{"ts":"2026-05-04T15:21:56.0399466Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\426bb4c8-msg-smoke-wait-deadlock-postfix.md","tool":"read"}
+{"ts":"2026-05-04T15:21:59.6255029Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\145fe306-msg-smoke-wait-deadlock-postfix.md","tool":"read"}
+{"ts":"2026-05-04T15:22:04.1960769Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\b480c2d7-msg-smoke-wait-deadlock-postfix.md","tool":"read"}
+{"ts":"2026-05-04T15:22:10.2820623Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Noah\\inbox\\ae367933-standby-orchestrator.md","tool":"read"}
+{"ts":"2026-05-04T15:22:14.3387354Z","event":"Release","agent":"Noah"}

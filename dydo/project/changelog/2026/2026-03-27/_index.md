@@ -11,35 +11,35 @@ Index of 2026-03-27 documentation.
 
 ## Contents
 
-- [Task: dispatch-queue-design](./dispatch-queue-design.md) - (No description)
-- [Task: fix-ci-linux-round2](./fix-ci-linux-round2.md) - Fixed the single remaining CI failure on Linux: WhoamiConcurrencyTests.
-- [Task: fix-default-nudges](./fix-default-nudges.md) - Moved 5 indirect dydo invocation nudges (npx, dotnet, dotnet run, shell, python) from hard-coded BuiltInNudges in GuardCommand.
-- [Task: fix-inbox-discoverability](./fix-inbox-discoverability.md) - Fix for inbox file path discoverability regression.
-- [Task: fix-merge-cleanup-merge](./fix-merge-cleanup-merge.md) - Merged worktree/fix-merge-cleanup changes into master.
-- [Task: fix-merge-cleanup](./fix-merge-cleanup.md) - Set cleanupWorktreeId in merge dispatch path so worktree cleanup runs on terminal exit
-- [Task: fix-merge-discoverability-merge](./fix-merge-discoverability-merge.md) - Merged worktree/fix-merge-discoverability changes into master.
-- [Task: fix-merge-discoverability](./fix-merge-discoverability.md) - Block git merge when .
-- [Task: fix-merge-queue-impl](./fix-merge-queue-impl.md) - Fixed merge queue isolation: added NormalizeWorktreePath() call in QueueService constructor (line 23) so worktree agents resolve to the main projec...
-- [Task: fix-merge-queue](./fix-merge-queue.md) - (No description)
-- [Task: fix-path-backslash-glob](./fix-path-backslash-glob.md) - Fixed two issues: (1) ExecuteInitSettings line 105 now does .
-- [Task: fix-phantom-close](./fix-phantom-close.md) - Implemented Option 3 (wait-then-verify) to fix the phantom close TOCTOU race.
-- [Task: fix-plan-mode-matcher](./fix-plan-mode-matcher.md) - Fixed: Added EnterPlanMode|ExitPlanMode to the PreToolUse hook matcher regex in InitCommand.
-- [Task: fix-queue-defaults-merge](./fix-queue-defaults-merge.md) - Merged worktree/fix-queue-defaults into master.
-- [Task: fix-queue-defaults](./fix-queue-defaults.md) - Add EnsureDefaultQueues to ConfigFactory, fix race condition in queue slot acquisition
-- [Task: fix-reviewer-queue-hint](./fix-reviewer-queue-hint.md) - One-line change in Templates/mode-reviewer.
-- [Task: fix-wait-process-leak](./fix-wait-process-leak.md) - Implemented parent PID liveness check in both WaitForTask and WaitGeneral loops (WaitCommand.
-- [Task: fix-zombie-worktrees](./fix-zombie-worktrees.md) - Implemented dydo worktree prune command and enhanced dydo clean --all.
-- [Task: gap-check-freshness](./gap-check-freshness.md) - (No description)
-- [Task: gap-check-skip-optimization](./gap-check-skip-optimization.md) - Update 4 doc files to reflect gap_check.
-- [Task: implement-dispatch-queue](./implement-dispatch-queue.md) - Implemented dispatch queue feature: --queue flag on dydo dispatch defers terminal launch when queue has active item.
-- [Task: investigate-phantom-close](./investigate-phantom-close.md) - (No description)
-- [Task: investigate-plan-mode-block](./investigate-plan-mode-block.md) - (No description)
-- [Task: investigate-process-leak](./investigate-process-leak.md) - (No description)
-- [Task: investigate-reply-pending-race](./investigate-reply-pending-race.md) - Fix reply-pending marker race condition.
-- [Task: investigate-tilde-read-regression](./investigate-tilde-read-regression.md) - (No description)
-- [Task: smoke-comp-a-merge](./smoke-comp-a-merge.md) - Merged worktree/smoke-comp-a branch into master via fast-forward.
-- [Task: smoke-comp-b-merge](./smoke-comp-b-merge.md) - Merged worktree/smoke-comp-b into master using dydo worktree merge.
-- [Task: smoke-comp-postmortem](./smoke-comp-postmortem.md) - (No description)
-- [Task: smoke-final-a-merge](./smoke-final-a-merge.md) - Merged worktree/smoke-final-a into master (fast-forward).
-- [Task: smoke-final-b-merge](./smoke-final-b-merge.md) - Merged worktree/smoke-final-b into master.
-- [Task: verify-process-leak-fix](./verify-process-leak-fix.md) - Fixed 3 process leak bugs (TDD — tests first, then fixes, all 3275 tests pass, coverage gate clean).
+- [Dispatch Queue Design](./dispatch-queue-design.md)
+- [Fix Ci Linux Round2](./fix-ci-linux-round2.md)
+- [Fix Default Nudges](./fix-default-nudges.md)
+- [Fix Inbox Discoverability](./fix-inbox-discoverability.md)
+- [Fix Merge Cleanup Merge](./fix-merge-cleanup-merge.md)
+- [Fix Merge Cleanup](./fix-merge-cleanup.md)
+- [Fix Merge Discoverability Merge](./fix-merge-discoverability-merge.md)
+- [Fix Merge Discoverability](./fix-merge-discoverability.md)
+- [Fix Merge Queue Impl](./fix-merge-queue-impl.md)
+- [Fix Merge Queue](./fix-merge-queue.md)
+- [Fix Path Backslash Glob](./fix-path-backslash-glob.md)
+- [Fix Phantom Close](./fix-phantom-close.md)
+- [Fix Plan Mode Matcher](./fix-plan-mode-matcher.md)
+- [Fix Queue Defaults Merge](./fix-queue-defaults-merge.md)
+- [Fix Queue Defaults](./fix-queue-defaults.md)
+- [Fix Reviewer Queue Hint](./fix-reviewer-queue-hint.md)
+- [Fix Wait Process Leak](./fix-wait-process-leak.md)
+- [Fix Zombie Worktrees](./fix-zombie-worktrees.md)
+- [Gap Check Freshness](./gap-check-freshness.md)
+- [Gap Check Skip Optimization](./gap-check-skip-optimization.md)
+- [Implement Dispatch Queue](./implement-dispatch-queue.md)
+- [Investigate Phantom Close](./investigate-phantom-close.md)
+- [Investigate Plan Mode Block](./investigate-plan-mode-block.md)
+- [Investigate Process Leak](./investigate-process-leak.md)
+- [Investigate Reply Pending Race](./investigate-reply-pending-race.md)
+- [Investigate Tilde Read Regression](./investigate-tilde-read-regression.md)
+- [Smoke Comp A Merge](./smoke-comp-a-merge.md)
+- [Smoke Comp B Merge](./smoke-comp-b-merge.md)
+- [Smoke Comp Postmortem](./smoke-comp-postmortem.md)
+- [Smoke Final A Merge](./smoke-final-a-merge.md)
+- [Smoke Final B Merge](./smoke-final-b-merge.md)
+- [Verify Process Leak Fix](./verify-process-leak-fix.md)

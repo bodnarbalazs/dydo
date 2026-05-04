@@ -16,22 +16,36 @@ Index of tasks documentation.
 - [Task: auto-resume-smoke-v140](./auto-resume-smoke-v140.md) - (No description)
 - [Task: auto-resume-smoke-v141](./auto-resume-smoke-v141.md) - (No description)
 - [Task: auto-resume-smoke](./auto-resume-smoke.md) - (No description)
-- [Task: cleanup-docs-check-backlog](./cleanup-docs-check-backlog.md) - (No description)
+- [Task: cleanup-docs-check-backlog](./cleanup-docs-check-backlog.md) - Review commits b92e1b3 and 756bedb for cleanup-docs-check-backlog.
 - [Task: discuss-with-user](./discuss-with-user.md) - (No description)
 - [Task: fix-auto-resume-cwd](./fix-auto-resume-cwd.md) - Review commit 473af47 for fix-auto-resume-cwd (#0138).
+- [Task: fix-auto-resume-defects](./fix-auto-resume-defects.md) - Review the auto-resume defect bundle implementation per dydo/agents/Charlie/archive/20260501-204903/plan-fix-fix-auto-resume-defects.
 - [Task: fix-auto-resume-multi-spawn](./fix-auto-resume-multi-spawn.md) - Review commit 397011f for fix-auto-resume-multi-spawn (#0143).
 - [Task: fix-ci-flake-anchor-midflight](./fix-ci-flake-anchor-midflight.md) - Review commit f26a288 for fix-ci-flake-anchor-midflight.
 - [Task: fix-docs-quality-workflow](./fix-docs-quality-workflow.md) - Review commit e338115 for fix-docs-quality-workflow (#0146).
 - [Task: fix-issue-permissions-and-message](./fix-issue-permissions-and-message.md) - Review commit 25549b7 for fix-issue-permissions-and-message.
 - [Task: fix-master-regressions](./fix-master-regressions.md) - No-repro review for fix-master-regressions (#0139, #0140).
 - [Task: fix-pwsh-wait-approval](./fix-pwsh-wait-approval.md) - Review commit 3808f37 for fix-pwsh-wait-approval (#0145).
+- [Task: fix-test-git-helper-deadlock](./fix-test-git-helper-deadlock.md) - Fix the 30s WaitForExit cliff in WorktreeMergeSafetyIntegrationTests.
 - [Task: fix-wait-guard-deadlock](./fix-wait-guard-deadlock.md) - Code-writer task implementing Zelda's plan for issue #0141: align `WaitCommand.
 - [Task: fix-wait-race](./fix-wait-race.md) - Review commit b33a171 for fix-wait-race (#0147).
+- [Task: fix-wait-rearm-flood-deadlock-0149](./fix-wait-rearm-flood-deadlock-0149.md) - Review the WaitGeneral snapshot fix per dydo/agents/Adele/plan-fix-wait-rearm-flood-deadlock-0149.
 - [Task: investigate-pwsh-wait-approval](./investigate-pwsh-wait-approval.md) - (No description)
 - [Task: investigate-test-runtime](./investigate-test-runtime.md) - (No description)
 - [Task: investigate-wait-guard-deadlock](./investigate-wait-guard-deadlock.md) - (No description)
 - [Task: investigate-wait-race](./investigate-wait-race.md) - (No description)
+- [Task: investigate-wait-rearm-flood-deadlock-0149](./investigate-wait-rearm-flood-deadlock-0149.md) - (No description)
 - [Task: plan-dydo-tool-fixes](./plan-dydo-tool-fixes.md) - (No description)
+- [Task: plan-fix-auto-resume-defects](./plan-fix-auto-resume-defects.md) - Plan the fix for the auto-resume defect bundle (#0150 umbrella; #0151, #0152, #0153, #0154, #0144) plus the new bad-session-ID fail-fast finding ob...
+- [Task: plan-fix-wait-rearm-flood-deadlock-0149](./plan-fix-wait-rearm-flood-deadlock-0149.md) - Plan the implementation for fixing #0149 (wait re-arm flood deadlock).
 - [Task: readme-advertise-auto-resume](./readme-advertise-auto-resume.md) - (No description)
+- [Task: smoke-autoclose-postfix](./smoke-autoclose-postfix.md) - (No description)
+- [Task: smoke-autoclose-v142](./smoke-autoclose-v142.md) - (No description)
+- [Task: smoke-resume-on-crash-postfix](./smoke-resume-on-crash-postfix.md) - (No description)
+- [Task: smoke-resume-on-crash-v142](./smoke-resume-on-crash-v142.md) - (No description)
+- [Task: smoke-wait-deadlock-postfix](./smoke-wait-deadlock-postfix.md) - (No description)
+- [Task: smoke-wait-flood-v142](./smoke-wait-flood-v142.md) - (No description)
+- [Task: standby-orchestrator](./standby-orchestrator.md) - (No description)
+- [Task: update-decision-022-auto-resume](./update-decision-022-auto-resume.md) - (No description)
 - [Task: wait-deadlock-smoke-v141](./wait-deadlock-smoke-v141.md) - (No description)
 - [Task: write-v1.4-release-doc](./write-v1.4-release-doc.md) - Review commit 2054f5d for write-v1.

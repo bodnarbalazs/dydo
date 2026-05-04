@@ -517,8 +517,8 @@ public static partial class GuardCommand
                 EventType = AuditEventType.Blocked, Tool = "bash",
                 Command = TruncateCommand(command), BlockReason = "Needless cd compound"
             });
-            Console.Error.WriteLine("BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.");
-            Console.Error.WriteLine($"  If you need to change directory, run cd separately first.");
+            Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands — it breaks auto-approval for whitelisted commands.");
+            Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
             Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
             return ExitCodes.ToolError;
         }

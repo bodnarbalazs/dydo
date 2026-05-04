@@ -11,21 +11,21 @@ Index of 2026-04-05 documentation.
 
 ## Contents
 
-- [Task: add-terminal-requirements](./add-terminal-requirements.md) - Terminal compatibility section added to README.
-- [Task: fix-autoclose-worktree-hang](./fix-autoclose-worktree-hang.md) - Implemented three fixes for auto-close worktree hang: (1) Added 30s timeout to WorktreeCommand.
-- [Task: fix-final-blockers](./fix-final-blockers.md) - Fixed 2 blockers: (1) CaptureAll StringBuilder race condition was already resolved in commit 940ba9c (TextWriter.
-- [Task: fix-gap-check-blockers](./fix-gap-check-blockers.md) - Fixed 2 of 4 gap_check blockers (the other 2 were already resolved).
-- [Task: fix-init-settings-timing](./fix-init-settings-timing.md) - Fixed init-settings timing race: (1) ExecuteInitSettings now accepts optional worktreePath param, called from DispatchService after CreateGitWorktr...
-- [Task: fix-inquisition-issues-bugs](./fix-inquisition-issues-bugs.md) - Fixed issues 0009 and 0011.
-- [Task: fix-inquisition-issues-dead-code-merge-merge](./fix-inquisition-issues-dead-code-merge-merge.md) - Cleaned up stale worktree markers (.
-- [Task: fix-inquisition-issues-dead-code-merge](./fix-inquisition-issues-dead-code-merge.md) - Merged worktree/inquisition-agent-lifecycle into master.
-- [Task: fix-inquisition-issues-dead-code](./fix-inquisition-issues-dead-code.md) - Dead code cleanup and parameter refactoring for three inquisition issues.
-- [Task: fix-inquisition-issues-dedup](./fix-inquisition-issues-dedup.md) - Extracted 3 shared utilities (FileLock, FileReadRetry, FrontmatterParser) from duplicated code across the codebase.
-- [Task: fix-read-permissions-definitive](./fix-read-permissions-definitive.md) - Worktree Read allow decision implemented.
-- [Task: fix-terminal-launcher-tests](./fix-terminal-launcher-tests.md) - Fixed unprotected StringWriter pattern in 13 test files by wrapping Console.
-- [Task: fix-worktree-remove-bypass](./fix-worktree-remove-bypass.md) - Implemented all 4 fixes from Adele's brief: (1) Updated GitWorktreeAdd/RemoveRegex to use git\b[^;|&]*\bworktree pattern, catching git -C path work...
-- [Task: investigate-autoclose-regression](./investigate-autoclose-regression.md) - (No description)
-- [Task: smoke-final4-a-merge](./smoke-final4-a-merge.md) - Merged worktree/smoke-final4-a into master.
-- [Task: smoke-final4-b-merge](./smoke-final4-b-merge.md) - Merged worktree/smoke-final4-b into master (fast-forward).
-- [Task: update-verify-template](./update-verify-template.md) - Updated extra-verify.
-- [Task: verify-test-suite](./verify-test-suite.md) - Fixed flaky test: Merge_Finalize_DecodesWorktreeIdFromBranchSuffix was failing due to StringBuilder corruption from concurrent xUnit parallel test ...
+- [Add Terminal Requirements](./add-terminal-requirements.md)
+- [Fix Autoclose Worktree Hang](./fix-autoclose-worktree-hang.md)
+- [Fix Final Blockers](./fix-final-blockers.md)
+- [Fix Gap Check Blockers](./fix-gap-check-blockers.md)
+- [Fix Init Settings Timing](./fix-init-settings-timing.md)
+- [Fix Inquisition Issues Bugs](./fix-inquisition-issues-bugs.md)
+- [Fix Inquisition Issues Dead Code Merge Merge](./fix-inquisition-issues-dead-code-merge-merge.md)
+- [Fix Inquisition Issues Dead Code Merge](./fix-inquisition-issues-dead-code-merge.md)
+- [Fix Inquisition Issues Dead Code](./fix-inquisition-issues-dead-code.md)
+- [Fix Inquisition Issues Dedup](./fix-inquisition-issues-dedup.md)
+- [Fix Read Permissions Definitive](./fix-read-permissions-definitive.md)
+- [Fix Terminal Launcher Tests](./fix-terminal-launcher-tests.md)
+- [Fix Worktree Remove Bypass](./fix-worktree-remove-bypass.md)
+- [Investigate Autoclose Regression](./investigate-autoclose-regression.md)
+- [Smoke Final4 A Merge](./smoke-final4-a-merge.md)
+- [Smoke Final4 B Merge](./smoke-final4-b-merge.md)
+- [Update Verify Template](./update-verify-template.md)
+- [Verify Test Suite](./verify-test-suite.md)

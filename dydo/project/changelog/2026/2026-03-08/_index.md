@@ -11,22 +11,22 @@ Index of 2026-03-08 documentation.
 
 ## Contents
 
-- [Task: agent-messaging](./agent-messaging.md) - (No description)
-- [Task: audit-compaction-investigation](./audit-compaction-investigation.md) - (No description)
-- [Task: audit-compaction-v2](./audit-compaction-v2.md) - (No description)
-- [Task: auto-close-fix](./auto-close-fix.md) - Fix auto-close: remove -NoExit for auto-close shells, kill by PID ancestry not name
-- [Task: brief-file-embedding](./brief-file-embedding.md) - (No description)
-- [Task: check-tests](./check-tests.md) - (No description)
-- [Task: command-resiliency](./command-resiliency.md) - (No description)
-- [Task: dispatch-release-nudge](./dispatch-release-nudge.md) - (No description)
-- [Task: dispatch-release-reminder](./dispatch-release-reminder.md) - (No description)
-- [Task: dispatch-role-guardrail](./dispatch-role-guardrail.md) - (No description)
-- [Task: dispatch-wait-fix](./dispatch-wait-fix.md) - Make dispatch --wait non-blocking, enforce dydo wait runs in background
-- [Task: dispatch-wait-integration](./dispatch-wait-integration.md) - Add `--wait`/`--no-wait` as required flags on `dydo dispatch`.
-- [Task: help-meta-audit](./help-meta-audit.md) - (No description)
-- [Task: inbox-clear-sync](./inbox-clear-sync.md) - Fix inbox clear to sync UnreadMessages in agent state
-- [Task: reply-pending-guardrail](./reply-pending-guardrail.md) - When an agent is dispatched with `--wait`, the dispatched agent should not be able to release until it has sent a message back on the matching task...
-- [Task: template-update-system](./template-update-system.md) - (No description)
-- [Task: test-alpha](./test-alpha.md) - (No description)
-- [Task: test-beta](./test-beta.md) - (No description)
-- [Task: test-dispatch-flags](./test-dispatch-flags.md) - (No description)
+- [Agent Messaging](./agent-messaging.md)
+- [Audit Compaction Investigation](./audit-compaction-investigation.md)
+- [Audit Compaction V2](./audit-compaction-v2.md)
+- [Auto Close Fix](./auto-close-fix.md)
+- [Brief File Embedding](./brief-file-embedding.md)
+- [Check Tests](./check-tests.md)
+- [Command Resiliency](./command-resiliency.md)
+- [Dispatch Release Nudge](./dispatch-release-nudge.md)
+- [Dispatch Release Reminder](./dispatch-release-reminder.md)
+- [Dispatch Role Guardrail](./dispatch-role-guardrail.md)
+- [Dispatch Wait Fix](./dispatch-wait-fix.md)
+- [Dispatch Wait Integration](./dispatch-wait-integration.md)
+- [Help Meta Audit](./help-meta-audit.md)
+- [Inbox Clear Sync](./inbox-clear-sync.md)
+- [Reply Pending Guardrail](./reply-pending-guardrail.md)
+- [Template Update System](./template-update-system.md)
+- [Test Alpha](./test-alpha.md)
+- [Test Beta](./test-beta.md)
+- [Test Dispatch Flags](./test-dispatch-flags.md)

@@ -51,9 +51,9 @@ internal static class CheckAgentValidator
             if (session != null)
             {
                 var sessionAge = DateTime.UtcNow - session.Claimed;
-                if (sessionAge.TotalHours > 24)
+                if (sessionAge.TotalHours > 48)
                 {
-                    warnings.Add($"Agent '{agentName}' has stale session (claimed {sessionAge.TotalHours:F0} hours ago).");
+                    warnings.Add($"Agent '{agentName}' possibly has stale session (claimed {sessionAge.TotalHours:F0} hours ago).");
                 }
             }
         }

@@ -288,8 +288,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\b(?:python[23]?|node|ruby|perl)\s+(?:-\w+\s+)*-[ceE]\s|\bphp\s+(?:-\w+\s+)*-r\s", RegexOptions.IgnoreCase)]
     private static partial Regex InlineInterpreterRegex();
 
-    // Coaching: detect needless cd+command compounds
-    [GeneratedRegex(@"^\s*cd\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]
+    // Coaching: detect needless change-directory + command compounds.
+    // Covers Bash `cd` and PowerShell forms (Set-Location, sl, chdir, Push-Location, pushd) —
+    // all break Claude Code auto-approve when chained (`cd dir && cmd`, `Set-Location dir; cmd`).
+    [GeneratedRegex(@"^\s*(?:cd|Set-Location|sl|chdir|Push-Location|pushd)\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex CdThenCommandRegex();
 
     // Redirection patterns

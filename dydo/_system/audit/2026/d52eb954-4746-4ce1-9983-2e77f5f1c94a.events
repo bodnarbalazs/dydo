@@ -1,0 +1,10 @@
+{"ts":"2026-05-02T12:37:58.6710928Z","event":"Blocked","tool":"glob","reason":"No agent identity"}
+{"ts":"2026-05-02T12:38:01.7199664Z","event":"Bash","tool":"bash","cmd":"dir C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents"}
+{"ts":"2026-05-02T12:38:22.5576738Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/"}
+{"ts":"2026-05-02T12:38:25.2637328Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/"}
+{"ts":"2026-05-02T12:38:28.9976221Z","event":"Claim","agent":"Adele"}
+{"ts":"2026-05-02T12:38:31.9480172Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-05-02T12:38:42.0749642Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3e029178-smoke-autoclose-postfix.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-02T12:38:45.0521118Z","event":"Role","role":"co-thinker","task":"smoke-autoclose-postfix"}
+{"ts":"2026-05-02T12:38:50.2799116Z","event":"Blocked","tool":"bash","cmd":"dydo inbox clear --all 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-05-02T12:38:58.0364788Z","event":"Release","agent":"Adele"}

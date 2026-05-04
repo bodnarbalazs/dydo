@@ -11,17 +11,17 @@ Index of 2026-04-30 documentation.
 
 ## Contents
 
-- [Task: auto-close-smoke](./auto-close-smoke.md) - (No description)
-- [Task: discuss-auto-resume-crashed-agents](./discuss-auto-resume-crashed-agents.md) - (No description)
-- [Task: discuss-unified-general-wait](./discuss-unified-general-wait.md) - (No description)
-- [Task: fix-auto-resume-crashed-agents](./fix-auto-resume-crashed-agents.md) - Review commit c8e6d83 for fix-auto-resume-crashed-agents (Decision 022).
-- [Task: fix-ci-test-failures](./fix-ci-test-failures.md) - Review commit 3b58876 for fix-ci-test-failures.
-- [Task: fix-decision-021-wait-ordering](./fix-decision-021-wait-ordering.md) - (No description)
-- [Task: investigate-auto-close-regression](./investigate-auto-close-regression.md) - Review commit bd3cebe — five-line revert of 8d3e3b1's  addition in ReleaseAgent (Services/AgentRegistry.
-- [Task: orchestrator-handoff](./orchestrator-handoff.md) - (No description)
-- [Task: plan-auto-resume-crashed-agents](./plan-auto-resume-crashed-agents.md) - (No description)
-- [Task: publish-general-wait-guide](./publish-general-wait-guide.md) - Review newly-published dydo/guides/agent-general-wait.
-- [Task: unified-general-wait-slice1](./unified-general-wait-slice1.md) - Review Slice 1 of unified-general-wait — fix for #0133 (dydo wait deadlock).
-- [Task: unified-general-wait-slice2](./unified-general-wait-slice2.md) - Slice 2 of unified-general-wait (Decision 021): generalised the missing-general-wait guard from orchestrator-only to all roles with a role set, dro...
-- [Task: unified-general-wait-slice3](./unified-general-wait-slice3.md) - Slice 3 of unified-general-wait initiative.
-- [Task: unified-general-wait](./unified-general-wait.md) - (No description)
+- [Auto Close Smoke](./auto-close-smoke.md)
+- [Discuss Auto Resume Crashed Agents](./discuss-auto-resume-crashed-agents.md)
+- [Discuss Unified General Wait](./discuss-unified-general-wait.md)
+- [Fix Auto Resume Crashed Agents](./fix-auto-resume-crashed-agents.md)
+- [Fix Ci Test Failures](./fix-ci-test-failures.md)
+- [Fix Decision 021 Wait Ordering](./fix-decision-021-wait-ordering.md)
+- [Investigate Auto Close Regression](./investigate-auto-close-regression.md)
+- [Orchestrator Handoff](./orchestrator-handoff.md)
+- [Plan Auto Resume Crashed Agents](./plan-auto-resume-crashed-agents.md)
+- [Publish General Wait Guide](./publish-general-wait-guide.md)
+- [Unified General Wait Slice1](./unified-general-wait-slice1.md)
+- [Unified General Wait Slice2](./unified-general-wait-slice2.md)
+- [Unified General Wait Slice3](./unified-general-wait-slice3.md)
+- [Unified General Wait](./unified-general-wait.md)

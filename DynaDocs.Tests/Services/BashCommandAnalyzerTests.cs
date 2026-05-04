@@ -731,6 +731,46 @@ public class BashCommandAnalyzerTests
         Assert.False(isMatch);
     }
 
+    [Theory]
+    [InlineData("Set-Location /tmp && git status", "/tmp", "git status")]
+    [InlineData("Set-Location /tmp ; git status", "/tmp", "git status")]
+    [InlineData("set-location /tmp ; ls -la", "/tmp", "ls -la")]
+    [InlineData("sl /tmp ; git diff", "/tmp", "git diff")]
+    [InlineData("chdir /tmp ; ls", "/tmp", "ls")]
+    [InlineData("Push-Location /tmp ; ls", "/tmp", "ls")]
+    [InlineData("pushd /tmp && dotnet build", "/tmp", "dotnet build")]
+    public void DetectNeedlessCd_PowerShellForms_ReturnsMatch(string command, string expectedPath, string expectedRestCmd)
+    {
+        var (isMatch, cdPath, restCmd) = _analyzer.DetectNeedlessCd(command);
+
+        Assert.True(isMatch);
+        Assert.Equal(expectedPath, cdPath);
+        Assert.Equal(expectedRestCmd, restCmd);
+    }
+
+    [Theory]
+    [InlineData("Set-Location 'path with space' ; git log")]
+    [InlineData("Set-Location \"path with space\" ; git log")]
+    [InlineData("set-location 'path with space' && grep pattern file.cs")]
+    public void DetectNeedlessCd_PowerShellQuotedPath_ReturnsMatch(string command)
+    {
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd(command);
+
+        Assert.True(isMatch);
+    }
+
+    [Theory]
+    [InlineData("Set-LocationWeirdSuffix /tmp ; ls")]
+    [InlineData("slbang /tmp ; ls")]
+    [InlineData("git status; Set-Location /tmp")]
+    [InlineData("Set-Location /tmp")]
+    public void DetectNeedlessCd_PowerShellNonLeadingOrAlone_NoMatch(string command)
+    {
+        var (isMatch, _, _) = _analyzer.DetectNeedlessCd(command);
+
+        Assert.False(isMatch);
+    }
+
     #endregion
 
     #region Dangerous Patterns via Analyze

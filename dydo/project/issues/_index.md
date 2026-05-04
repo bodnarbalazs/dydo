@@ -40,7 +40,17 @@ Index of issues documentation.
 - [PowerShell-routed dydo wait requires approval every re-arm — breaks unattended wait flow](./0145-powershell-routed-dydo-wait-requires-approval-every-re-arm-breaks-unattended-wai.md) - Open medium-severity bug: `dydo wait` invoked through Claude Code's PowerShell tool prompts the human for approval on every re-arm because `.
 - [Docs-writer + reviewer workflows don't gate on dydo check — schema drift accumulates](./0146-docs-writer-reviewer-workflows-don-t-gate-on-dydo-check-schema-drift-accumulates.md) - Open medium-severity workflow gap: docs-writer and reviewer mode templates didn't require `dydo check` clean before commit/approval, so frontmatter...
 - [Wait fails to trigger on a message that arrives during the wait re-arm gap (race condition post-#0141 fix)](./0147-wait-fails-to-trigger-on-a-message-that-arrives-during-the-wait-re-arm-gap-race.md) - Open high-severity bug introduced by the #0141 fix: `WaitCommand.
-- [Test suite runtime ballooned from 3min to 10min — investigate parallelism + other speedups](./0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md) - Open medium-severity perf finding: the test suite's wall-clock time grew from ~3 minutes to ~10 minutes.
+- [Test suite runtime ballooned from 3min to 10min — investigate parallelism + other speedups](./0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md) - Diagnosed: the 10-min observation is **not** a 3× growth across the suite.
+- [Wait re-arm gap deadlocks agent when 3+ messages stack faster than agent can process](./0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md) - When an agent receives multiple unread messages in rapid succession, the background `dydo wait` fires and exits on every unread arrival, but the gu...
+- [Auto-resume on crash sometimes fails to trigger — watchdog misses dead claude process](./0150-auto-resume-on-crash-sometimes-fails-to-trigger-watchdog-misses-dead-claude-process.md) - Lived practice on v1.
+- [Watchdog never registers anchors on Windows; orphan-cap is the only thing keeping it alive](./0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)
+- [Auto-resume race: watchdog fires duplicate launches during the resumed-claude warmup gap, exhausting the resume-attempts cap](./0152-auto-resume-race-watchdog-fires-duplicate-launches-during-the-resumed-claude-war.md)
+- [resume-attempts is not reset on same-session reclaims, so the counter accumulates across crash episodes (decision 022 mismatch)](./0153-resume-attempts-is-not-reset-on-same-session-reclaims-so-the-counter-accumulates.md)
+- [Linux/Mac watchdog dies via anchor_gone when all dispatchers exit while leaf dispatched agents are still alive](./0154-linux-mac-watchdog-dies-via-anchor-gone-when-all-dispatchers-exit-while-leaf-dis.md)
+- [RBAC, off-limits, and dangerous-pattern checks bypassed for any bash chain containing a dydo subcommand](./0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md)
+- [Live workaround for #0149 deadlock is misexplained — works via #0155 bash-chain bypass, not the backgrounded wait](./0156-live-workaround-for-0149-deadlock-is-misexplained-works-via-0155-bash-chain-bypa.md)
+- [WaitCommand.cs:103-108 comment claims 'cannot re-introduce #0141 deadlock' — provably false under Decision 021](./0157-waitcommand-cs-103-108-comment-claims-cannot-re-introduce-0141-deadlock-provably.md)
+- [CreateListeningWaitMarker preserve-Since branch is dead for general waits — undocumented asymmetry vs task waits](./0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md)
 
 ## Subfolders
 

@@ -11,19 +11,19 @@ Index of 2026-04-20 documentation.
 
 ## Contents
 
-- [Task: auto-accept-edits-inquiry](./auto-accept-edits-inquiry.md) - Inquisition: why do agent Edit/Write tool calls bypass Claude Code's permission prompt in LC but not in DynaDocs?
-- [Task: dispatch-commit-gap-fix](./dispatch-commit-gap-fix.md) - (No description)
-- [Task: investigate-bugs](./investigate-bugs.md) - (No description)
-- [Task: investigate-printinboxitem-test-regression](./investigate-printinboxitem-test-regression.md) - Investigate why InboxServiceTests.
-- [Task: memory-save](./memory-save.md) - (No description)
-- [Task: phantom-unread-inbox](./phantom-unread-inbox.md) - Fix: guard blocks on unread-messages frontmatter when inbox file is missing (phantom lock)
-- [Task: reviewer-verdict-routing](./reviewer-verdict-routing.md) - Design discussion: reviewer verdicts go to the dispatching code-writer, not up the chain to the orchestrator.
-- [Task: revive-watchdog-on-release](./revive-watchdog-on-release.md) - Issue #102: dydo agent release should revive a dead watchdog.
-- [Task: silent-release-failure-audit](./silent-release-failure-audit.md) - Co-thinker investigation: multiple agents show status=working in state.
-- [Task: stale-dispatch-double-claim](./stale-dispatch-double-claim.md) - Fix: two dispatches can both claim same agent via stale-dispatch window, producing two --inbox terminals
-- [Task: stale-dydo-processes-inquiry](./stale-dydo-processes-inquiry.md) - Inquisition: map long-lived dydo processes and file-handle lifetimes to explain worktree delete-lock incidents
-- [Task: stale-free-semantics-gate](./stale-free-semantics-gate.md) - Design discussion: should GetFreeAgents also gate stale-dispatched agents on !
-- [Task: stale-working-reclaim](./stale-working-reclaim.md) - Issue #103: no reclaim path for Working agents with dead Claude process.
-- [Task: troubleshooting-zombie-working-docs](./troubleshooting-zombie-working-docs.md) - Docs addition: two new sections in dydo/guides/troubleshooting.
-- [Task: worktree-merge-escape-hatch](./worktree-merge-escape-hatch.md) - (No description)
-- [Task: worktree-merge-safety-ignore](./worktree-merge-safety-ignore.md) - Add configurable ignore list (dydo.
+- [Auto Accept Edits Inquiry](./auto-accept-edits-inquiry.md)
+- [Dispatch Commit Gap Fix](./dispatch-commit-gap-fix.md)
+- [Investigate Bugs](./investigate-bugs.md)
+- [Investigate Printinboxitem Test Regression](./investigate-printinboxitem-test-regression.md)
+- [Memory Save](./memory-save.md)
+- [Phantom Unread Inbox](./phantom-unread-inbox.md)
+- [Reviewer Verdict Routing](./reviewer-verdict-routing.md)
+- [Revive Watchdog On Release](./revive-watchdog-on-release.md)
+- [Silent Release Failure Audit](./silent-release-failure-audit.md)
+- [Stale Dispatch Double Claim](./stale-dispatch-double-claim.md)
+- [Stale Dydo Processes Inquiry](./stale-dydo-processes-inquiry.md)
+- [Stale Free Semantics Gate](./stale-free-semantics-gate.md)
+- [Stale Working Reclaim](./stale-working-reclaim.md)
+- [Troubleshooting Zombie Working Docs](./troubleshooting-zombie-working-docs.md)
+- [Worktree Merge Escape Hatch](./worktree-merge-escape-hatch.md)
+- [Worktree Merge Safety Ignore](./worktree-merge-safety-ignore.md)

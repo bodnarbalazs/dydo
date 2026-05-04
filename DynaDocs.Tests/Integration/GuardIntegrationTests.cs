@@ -690,7 +690,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("Don't chain cd with other commands");
+        result.AssertStderrContains("Don't chain cd / Set-Location with other commands");
         result.AssertStderrContains("just run: git diff --name-only");
     }
 
@@ -707,7 +707,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("Don't chain cd with other commands");
+        result.AssertStderrContains("Don't chain cd / Set-Location with other commands");
     }
 
     #endregion

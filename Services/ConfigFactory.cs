@@ -6,6 +6,17 @@ public static class ConfigFactory
 {
     public static readonly List<string> DefaultQueues = ["merge"];
 
+    /// <summary>
+    /// Dydo-internal scan-exclude entries — invariant. The check/fix loop
+    /// guarantees these are present in every project's dydo.json (preserving
+    /// any user-added entries alongside).
+    /// </summary>
+    public static readonly List<string> DydoInternalScanExclude =
+    [
+        "_system/.local/",
+        "_system/audit/"
+    ];
+
     public static readonly List<NudgeConfig> DefaultNudges =
     [
         new()
@@ -91,7 +102,8 @@ public static class ConfigFactory
                 Message = n.Message,
                 Severity = n.Severity
             }).ToList(),
-            Queues = DefaultQueues.ToList()
+            Queues = DefaultQueues.ToList(),
+            ScanExclude = DydoInternalScanExclude.ToList()
         };
     }
 
@@ -136,6 +148,37 @@ public static class ConfigFactory
         }
 
         return added;
+    }
+
+    /// <summary>
+    /// Adds any dydo-internal scan-exclude entries missing from the config.
+    /// Idempotent; user-added entries are preserved. Returns the number added.
+    /// </summary>
+    public static int EnsureDefaultScanExclude(DydoConfig config)
+    {
+        var existing = new HashSet<string>(config.ScanExclude, StringComparer.OrdinalIgnoreCase);
+        var added = 0;
+
+        foreach (var entry in DydoInternalScanExclude)
+        {
+            if (existing.Contains(entry))
+                continue;
+
+            config.ScanExclude.Add(entry);
+            added++;
+        }
+
+        return added;
+    }
+
+    /// <summary>
+    /// Returns the dydo-internal scan-exclude entries that are missing from
+    /// the config. An empty list means the invariants hold.
+    /// </summary>
+    public static List<string> FindMissingScanExcludeInvariants(DydoConfig config)
+    {
+        var existing = new HashSet<string>(config.ScanExclude, StringComparer.OrdinalIgnoreCase);
+        return DydoInternalScanExclude.Where(e => !existing.Contains(e)).ToList();
     }
 
     public static void AddHuman(DydoConfig config, string humanName, int agentCount)

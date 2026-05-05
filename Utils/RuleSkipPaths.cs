@@ -1,0 +1,27 @@
+namespace DynaDocs.Utils;
+
+/// <summary>
+/// Path-prefix predicates shared by content-shape rules (Frontmatter, Summary,
+/// BrokenLinks, Naming) so each rule consults the same definition of "framework
+/// scaffolding that shouldn't be validated as a normal doc". PR2 will move
+/// the existing inline checks in those rules onto this helper.
+/// </summary>
+public static class RuleSkipPaths
+{
+    private const string TemplatesPrefix = "_system/templates/";
+    private const string TemplateAdditionsPrefix = "_system/template-additions/";
+
+    /// <summary>
+    /// True for paths under <c>_system/templates/</c> or
+    /// <c>_system/template-additions/</c>. Input must be a forward-slash
+    /// normalized relative path (use <see cref="PathUtils.NormalizePath"/>).
+    /// </summary>
+    public static bool IsTemplateOrAddition(string normalizedRelativePath)
+    {
+        if (string.IsNullOrEmpty(normalizedRelativePath))
+            return false;
+
+        return normalizedRelativePath.StartsWith(TemplatesPrefix, StringComparison.OrdinalIgnoreCase)
+            || normalizedRelativePath.StartsWith(TemplateAdditionsPrefix, StringComparison.OrdinalIgnoreCase);
+    }
+}

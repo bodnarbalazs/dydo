@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Models;
 using DynaDocs.Services;
 
 [Collection("Integration")]
@@ -457,6 +458,67 @@ public class TemplateCommandTests : IntegrationTestBase
             Assert.True(config.FrameworkHashes.ContainsKey(binaryPath),
                 $"Expected hash for binary file '{binaryPath}' but none found");
         }
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_RestoresMissingScanExcludeInvariant()
+    {
+        await InitProjectAsync();
+
+        // User scrubbed a dydo-internal scanExclude entry — template update must restore it.
+        var configService = new ConfigService();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = configService.LoadConfig()!;
+        config.ScanExclude.Remove("_system/.local/");
+        config.ScanExclude.Add("vendor/");
+        configService.SaveConfig(config, configPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("default scan-exclude entry");
+
+        var updated = configService.LoadConfig()!;
+        Assert.Contains("_system/.local/", updated.ScanExclude);
+        Assert.Contains("vendor/", updated.ScanExclude);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_AlreadyHasScanExcludeInvariants_NoChange()
+    {
+        await InitProjectAsync();
+
+        var configService = new ConfigService();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = configService.LoadConfig()!;
+        var originalCount = config.ScanExclude.Count;
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("default scan-exclude entry", result.Stdout);
+
+        var updated = configService.LoadConfig()!;
+        Assert.Equal(originalCount, updated.ScanExclude.Count);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_Diff_DoesNotMutateScanExclude()
+    {
+        await InitProjectAsync();
+
+        var configService = new ConfigService();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = configService.LoadConfig()!;
+        config.ScanExclude.Remove("_system/.local/");
+        configService.SaveConfig(config, configPath);
+
+        var result = await RunTemplateUpdateAsync("--diff");
+
+        result.AssertSuccess();
+
+        var afterDiff = configService.LoadConfig()!;
+        Assert.DoesNotContain("_system/.local/", afterDiff.ScanExclude);
     }
 
     [Fact]

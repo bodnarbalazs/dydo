@@ -34,6 +34,9 @@ public class DydoConfig
     [JsonPropertyName("queues")]
     public List<string> Queues { get; set; } = new();
 
+    [JsonPropertyName("scanExclude")]
+    public List<string> ScanExclude { get; set; } = new();
+
     [JsonPropertyName("nudges")]
     public List<NudgeConfig> Nudges { get; set; } = new();
 

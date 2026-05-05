@@ -110,6 +110,8 @@ public static class TemplateCommand
             updated += queuesAdded;
         }
 
+        updated += EnsureScanExcludeWithReport(config, diff);
+
         if (!diff)
             configService.SaveConfig(config, configPath);
 
@@ -179,6 +181,16 @@ public static class TemplateCommand
                 config.FrameworkHashes.Remove(key);
             Console.WriteLine($"  Pruned stale hash: {key}");
         }
+    }
+
+    private static int EnsureScanExcludeWithReport(DydoConfig config, bool diff)
+    {
+        if (diff) return 0;
+
+        var added = ConfigFactory.EnsureDefaultScanExclude(config);
+        if (added > 0)
+            Console.WriteLine($"  Added {added} default scan-exclude entry(ies)");
+        return added;
     }
 
     private static void RegenerateAgentWorkspaces(string dydoRoot, DydoConfig config, bool diff)

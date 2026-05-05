@@ -35,6 +35,20 @@ public static class CheckCommand
             var configService = new ConfigService();
             var config = configService.LoadConfig();
 
+            // Config invariants
+            if (config != null)
+            {
+                var configErrors = CheckConfigValidator.Validate(config);
+                if (configErrors.Count > 0)
+                {
+                    Console.WriteLine("Checking dydo.json...");
+                    foreach (var error in configErrors)
+                        ConsoleOutput.WriteError($"  {error}");
+                    Console.WriteLine();
+                    hasErrors = true;
+                }
+            }
+
             // Documentation validation
             var basePath = ResolvePath(path);
             if (basePath != null)

@@ -41,12 +41,18 @@ public static class FixCommand
             Console.WriteLine();
 
             var parser = new MarkdownParser();
-            var scanner = new DocScanner(parser);
+            var configService = new ConfigService();
+            var scanner = new DocScanner(parser, configService);
             var docs = scanner.ScanDirectory(basePath);
 
-            // Fix naming issues
             Console.WriteLine("FIXED:");
+
+            // Restore dydo.json scan-exclude invariants
+            var configFixCount = RestoreScanExcludeInvariants(configService);
+
+            // Fix naming issues
             var (fixedCount, nameConflicts) = FixFileHandler.FixNaming(docs);
+            fixedCount += configFixCount;
 
             // Re-scan after renames
             docs = scanner.ScanDirectory(basePath);
@@ -104,5 +110,24 @@ public static class FixCommand
             return null;
         }
         return PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+    }
+
+    private static int RestoreScanExcludeInvariants(IConfigService configService)
+    {
+        var configPath = configService.FindConfigFile();
+        if (configPath == null)
+            return 0;
+
+        var config = configService.LoadConfig();
+        if (config == null)
+            return 0;
+
+        var added = ConfigFactory.EnsureDefaultScanExclude(config);
+        if (added == 0)
+            return 0;
+
+        configService.SaveConfig(config, configPath);
+        ConsoleOutput.WriteSuccess($"  ✓ Restored {added} scanExclude invariant(s) in dydo.json");
+        return added;
     }
 }

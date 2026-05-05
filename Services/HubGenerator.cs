@@ -39,7 +39,7 @@ public static class HubGenerator
         sb.AppendLine();
         sb.AppendLine("## Contents");
         sb.AppendLine();
-        sb.AppendLine(GenerateDocumentLinks(docsInFolder));
+        sb.AppendLine(GenerateDocumentLinks(docsInFolder, relativeFolderPath));
 
         var subfolders = subfolderHubs.ToList();
         if (subfolders.Count > 0)
@@ -165,10 +165,11 @@ public static class HubGenerator
         return existingHubs;
     }
 
-    private static string GenerateDocumentLinks(IEnumerable<DocFile> docs)
+    private static string GenerateDocumentLinks(IEnumerable<DocFile> docs, string relativeFolderPath)
     {
         var sb = new StringBuilder();
         var docList = docs.OrderBy(d => d.FileName).ToList();
+        var isChangelog = IsChangelogFolder(relativeFolderPath);
 
         if (docList.Count == 0)
         {
@@ -178,14 +179,13 @@ public static class HubGenerator
         {
             foreach (var doc in docList)
             {
-                var title = doc.Title ?? KebabToTitleCase(Path.GetFileNameWithoutExtension(doc.FileName));
-                var summary = doc.SummaryParagraph;
+                var fileLabel = KebabToTitleCase(Path.GetFileNameWithoutExtension(doc.FileName));
+                var title = isChangelog ? fileLabel : (doc.Title ?? fileLabel);
                 var link = $"[{title}](./{doc.FileName})";
 
-                if (!string.IsNullOrEmpty(summary))
+                if (!isChangelog && !string.IsNullOrEmpty(doc.SummaryParagraph))
                 {
-                    // Truncate summary to first sentence
-                    var firstSentence = GetFirstSentence(summary);
+                    var firstSentence = GetFirstSentence(doc.SummaryParagraph);
                     sb.AppendLine($"- {link} - {firstSentence}");
                 }
                 else
@@ -274,6 +274,13 @@ public static class HubGenerator
             "project" => "project",
             _ => "general"
         };
+    }
+
+    private static bool IsChangelogFolder(string relativeFolderPath)
+    {
+        var normalized = PathUtils.NormalizePath(relativeFolderPath);
+        return normalized.StartsWith("project/changelog/", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("project/changelog", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsExcludedPath(string relativePath)

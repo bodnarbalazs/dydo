@@ -13,7 +13,7 @@ This folder answers "What happened and why?" — the living record of project ev
 
 ## Contents
 
-- **tasks/** - Work in progress and task tracking
+- **tasks/** - Transient agent task files, not indexed (locate via `dydo whoami` / `dydo agent status`)
 - **decisions/** - Decision records
 - **changelog/** - History of completed work
 - **pitfalls/** - Known gotchas and issues

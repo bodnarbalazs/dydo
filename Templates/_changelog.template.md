@@ -43,5 +43,5 @@ Required sections:
 
 ## Related
 
-- [Tasks](../tasks/_index.md) - Work in progress
+- [Project](../_index.md) - Project hub (transient task files live under `tasks/`)
 - [Decisions](../decisions/_index.md) - Why choices were made

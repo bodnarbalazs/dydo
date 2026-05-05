@@ -114,6 +114,45 @@ public class HubGeneratorTests
         Assert.DoesNotContain("Task: fix-wait-race", hub);
     }
 
+    [Fact]
+    public void GenerateHub_ProjectFolder_AppendsTasksProse()
+    {
+        var hub = HubGenerator.GenerateHub(
+            relativeFolderPath: "project",
+            docsInFolder: [],
+            subfolderHubs: [],
+            allDocs: []);
+
+        Assert.Contains("## Tasks", hub);
+        Assert.Contains("transient", hub);
+        Assert.DoesNotContain("[Tasks](./tasks/_index.md)", hub);
+    }
+
+    [Fact]
+    public void GenerateHub_NonProjectFolder_DoesNotIncludeTasksProse()
+    {
+        var hub = HubGenerator.GenerateHub(
+            relativeFolderPath: "guides",
+            docsInFolder: [],
+            subfolderHubs: [],
+            allDocs: []);
+
+        Assert.DoesNotContain("## Tasks", hub);
+    }
+
+    [Fact]
+    public void GenerateAllHubs_DoesNotProduceProjectTasksIndex()
+    {
+        var taskDoc = MakeDoc(
+            relativePath: "project/tasks/some-task.md",
+            fileName: "some-task.md",
+            title: "Some Task");
+
+        var hubs = HubGenerator.GenerateAllHubs("/base", [taskDoc]);
+
+        Assert.False(hubs.ContainsKey("project/tasks/_index.md"));
+    }
+
     private static DocFile MakeDoc(string relativePath, string fileName, string? title, string? summary = null)
     {
         return new DocFile

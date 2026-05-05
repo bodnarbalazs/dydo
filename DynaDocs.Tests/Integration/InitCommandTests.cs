@@ -102,8 +102,7 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
 
-        // Tasks folder - hub and meta
-        AssertFileExists("dydo/project/tasks/_index.md");
+        // Tasks folder — D4: no auto-generated _index.md; meta file still present.
         AssertFileExists("dydo/project/tasks/_tasks.md");
 
         // Decisions folder - hub and meta

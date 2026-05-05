@@ -15,6 +15,9 @@ internal static class FixHubHandler
     {
         var fixedCount = 0;
 
+        // D4: drop any stale auto-generated project/tasks/_index.md before regeneration.
+        fixedCount += DeleteStaleTasksIndex(basePath);
+
         var folders = scanner.GetAllFolders(basePath)
             .OrderByDescending(f => f.Count(c => c == Path.DirectorySeparatorChar || c == '/'))
             .ToList();
@@ -27,6 +30,7 @@ internal static class FixHubHandler
 
             if (relativeFolderPath == ".") continue;
             if (IsExcludedFolder(relativeFolderPath)) continue;
+            if (relativeFolderPath.Equals("project/tasks", StringComparison.OrdinalIgnoreCase)) continue;
 
             var docsInFolder = docs.Where(d =>
             {
@@ -129,6 +133,20 @@ internal static class FixHubHandler
 
         return System.Globalization.CultureInfo.CurrentCulture
             .TextInfo.ToTitleCase(folderName.Replace("-", " "));
+    }
+
+    private static int DeleteStaleTasksIndex(string basePath)
+    {
+        var path = Path.Combine(basePath, "project", "tasks", "_index.md");
+        if (!File.Exists(path)) return 0;
+
+        var content = File.ReadAllText(path);
+        // Only delete if banner is present — never clobber a hand-written file.
+        if (!content.Contains(HubGenerator.AutoGenComment)) return 0;
+
+        File.Delete(path);
+        ConsoleOutput.WriteSuccess("  ✓ Removed stale project/tasks/_index.md (D4: tasks no longer auto-indexed)");
+        return 1;
     }
 
     private static bool IsExcludedFolder(string relativeFolderPath)

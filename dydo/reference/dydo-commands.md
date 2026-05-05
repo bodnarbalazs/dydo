@@ -181,7 +181,7 @@ dydo agent clean --all --force      # Force clean even if working
 
 **Options:**
 - `--all` - Clean all agent workspaces
-- `--force` - Force clean even if agents are working
+- `--force` - Force clean even if agents are working (human-only; claimed agents are blocked from forcing-clean other agents)
 - `--task <name>` - Clean workspaces associated with a task
 
 ---

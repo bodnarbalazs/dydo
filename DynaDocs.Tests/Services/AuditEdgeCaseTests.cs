@@ -107,26 +107,19 @@ public class AuditEdgeCaseTests : IDisposable
 
         var service = new AuditService(basePath: _testDir);
 
-        var oldStderr = Console.Error;
-        var stderrWriter = new StringWriter();
-        Console.SetError(stderrWriter);
-        try
+        IReadOnlyList<AuditSession> sessions = null!;
+        var stderr = ConsoleCapture.Stderr(() =>
         {
-            var (sessions, _) = service.LoadSessions();
+            (sessions, _) = service.LoadSessions();
+        });
 
-            // Good session is still loaded
-            Assert.Single(sessions);
-            Assert.Equal("good-session", sessions[0].SessionId);
+        // Good session is still loaded
+        Assert.Single(sessions);
+        Assert.Equal("good-session", sessions[0].SessionId);
 
-            // Warning was written to stderr
-            var stderr = stderrWriter.ToString();
-            Assert.Contains("WARNING", stderr);
-            Assert.Contains("corrupt-session", stderr);
-        }
-        finally
-        {
-            Console.SetError(oldStderr);
-        }
+        // Warning was written to stderr
+        Assert.Contains("WARNING", stderr);
+        Assert.Contains("corrupt-session", stderr);
     }
 
     #endregion

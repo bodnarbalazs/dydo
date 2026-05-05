@@ -276,22 +276,5 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
     }
 
     private static (int exitCode, string stdout, string stderr) CaptureAll(Func<int> action)
-    {
-        var outWriter = new StringWriter();
-        var errWriter = new StringWriter();
-        var origOut = Console.Out;
-        var origErr = Console.Error;
-        try
-        {
-            Console.SetOut(outWriter);
-            Console.SetError(errWriter);
-            var code = action();
-            return (code, outWriter.ToString(), errWriter.ToString());
-        }
-        finally
-        {
-            Console.SetOut(origOut);
-            Console.SetError(origErr);
-        }
-    }
+        => ConsoleCapture.All(action);
 }

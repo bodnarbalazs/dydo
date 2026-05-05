@@ -381,6 +381,8 @@ public class EndToEndFixture : IDisposable
 /// <summary>
 /// Collection definition for E2E tests.
 /// Uses a shared fixture to avoid rebuilding for each test class.
+/// Parallelism is controlled assembly-wide via AssemblyInfo.cs
+/// (DisableTestParallelization); the fixture wiring here is independent.
 /// </summary>
 [CollectionDefinition("EndToEnd")]
 public class EndToEndCollection : ICollectionFixture<EndToEndFixture> { }

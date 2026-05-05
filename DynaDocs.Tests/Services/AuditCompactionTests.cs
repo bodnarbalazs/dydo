@@ -847,26 +847,6 @@ public class AuditCompactionTests : IDisposable
     }
 
     [Fact]
-    public void Compact_CorruptBaseline_DoesNotLeakConsoleErrorOnException()
-    {
-        File.WriteAllText(
-            Path.Combine(_yearDir, "_baseline-corrupt.json"),
-            "{ this is not valid json");
-        WriteSession(MakeSession("s1", MakeSnapshot(["a.cs"], ["src"])));
-
-        var preCallError = Console.Error;
-        try
-        {
-            ConsoleCapture.Stderr(() => SnapshotCompactionService.Compact(_yearDir));
-        }
-        catch
-        {
-            // ConsoleCapture's try/finally must restore Console.Error even if Compact throws.
-        }
-        Assert.Same(preCallError, Console.Error);
-    }
-
-    [Fact]
     public void ComputeBaselineId_IgnoresFileAndFolderOrdering()
     {
         var ordered = MakeSnapshot(

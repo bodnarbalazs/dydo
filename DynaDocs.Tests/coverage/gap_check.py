@@ -671,6 +671,10 @@ def main():
     args = parser.parse_args()
 
     # 1. Decide whether to run tests
+    # tests_ok stays True on the staleness-skip path (no test process ran, so
+    # there is no failure to propagate). The two run_tests() branches below
+    # overwrite it with the actual exit-code-derived value.
+    tests_ok = True
     if args.force_run:
         tests_ok = run_tests()
         if not tests_ok:
@@ -714,7 +718,11 @@ def main():
             print(f"  ERROR: {err}")
 
     # 8. Exit
-    if has_failures or registry_errors:
+    if not tests_ok:
+        tier_check = "fail" if has_failures else "pass"
+        print(f"\n  [RESULT] Tests failed (see exit-code line above). "
+              f"Tier check: {tier_check}. Gate FAILS.")
+    if has_failures or registry_errors or not tests_ok:
         sys.exit(1)
     sys.exit(0)
 

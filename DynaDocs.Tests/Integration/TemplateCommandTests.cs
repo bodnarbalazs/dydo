@@ -544,4 +544,70 @@ public class TemplateCommandTests : IntegrationTestBase
         var afterUpdate = File.ReadAllText(docPath);
         Assert.Contains("<!-- User customization -->", afterUpdate);
     }
+
+    [Fact]
+    public async Task TemplateUpdate_MissingTypesJson_Created()
+    {
+        await InitProjectAsync();
+
+        var typesPath = Path.Combine(TestDir, "dydo/_system/types.json");
+        if (File.Exists(typesPath)) File.Delete(typesPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Created: _system/types.json");
+        Assert.True(File.Exists(typesPath));
+
+        var content = File.ReadAllText(typesPath);
+        Assert.Contains("\"hub\"", content);
+        Assert.Contains("\"inquisition\"", content);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_TypesJsonWithUserEntries_Preserved()
+    {
+        await InitProjectAsync();
+
+        var typesPath = Path.Combine(TestDir, "dydo/_system/types.json");
+        File.WriteAllText(typesPath, "[\"hub\", \"my-custom\"]");
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+
+        var content = File.ReadAllText(typesPath);
+        Assert.Contains("\"my-custom\"", content);
+        Assert.Contains("\"inquisition\"", content);
+        Assert.Contains("\"hub\"", content);
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_TypesJsonAlreadyCurrent_NoMutation()
+    {
+        await InitProjectAsync();
+
+        var typesPath = Path.Combine(TestDir, "dydo/_system/types.json");
+        var before = File.ReadAllText(typesPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        Assert.Equal(before, File.ReadAllText(typesPath));
+    }
+
+    [Fact]
+    public async Task TemplateUpdate_MalformedTypesJson_NotOverwritten()
+    {
+        await InitProjectAsync();
+
+        var typesPath = Path.Combine(TestDir, "dydo/_system/types.json");
+        var malformed = "not json {";
+        File.WriteAllText(typesPath, malformed);
+
+        var result = await RunTemplateUpdateAsync();
+
+        Assert.Equal(malformed, File.ReadAllText(typesPath));
+        Assert.Contains("malformed", result.Stderr);
+    }
 }

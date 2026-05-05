@@ -65,6 +65,7 @@ public class FolderScaffolder : IFolderScaffolder
 
         CopyBuiltInTemplates(basePath);
         ScaffoldTemplateAdditions(basePath);
+        ScaffoldTypesJson(basePath);
         new RoleDefinitionService().WriteBaseRoleDefinitions(basePath);
         CopyBuiltInAssets(basePath);
 
@@ -166,6 +167,13 @@ public class FolderScaffolder : IFolderScaffolder
                     File.WriteAllBytes(destFile, content);
             }
         }
+    }
+
+    private void ScaffoldTypesJson(string basePath)
+    {
+        var path = Path.Combine(basePath, FrontmatterTypesService.TypesJsonRelativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        WriteIfNotExists(path, TemplateGenerator.ReadBuiltInTemplate("types.json.template"));
     }
 
     private void ScaffoldTemplateAdditions(string basePath)

@@ -1,12 +1,20 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
+using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public class FrontmatterRule : RuleBase
 {
+    private readonly IFrontmatterTypesService? _typesService;
+
     public override string Name => "Frontmatter";
     public override string Description => "Every doc must have valid YAML frontmatter with required fields";
+
+    public FrontmatterRule(IFrontmatterTypesService? typesService = null)
+    {
+        _typesService = typesService;
+    }
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
@@ -19,8 +27,7 @@ public class FrontmatterRule : RuleBase
         }
 
         // Skip template files and template additions
-        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase) ||
-            normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
+        if (RuleSkipPaths.IsTemplateOrAddition(normalized))
         {
             yield break;
         }
@@ -66,13 +73,14 @@ public class FrontmatterRule : RuleBase
             yield return CreateError(doc, $"Invalid area value '{fm.Area}'. Must be one of: {string.Join(", ", Frontmatter.ValidAreas)}");
         }
 
+        var validTypes = _typesService?.GetValidTypes() ?? Frontmatter.ValidTypes;
         if (string.IsNullOrEmpty(fm.Type))
         {
             yield return CreateError(doc, "Missing required frontmatter field: type");
         }
-        else if (!Frontmatter.ValidTypes.Contains(fm.Type))
+        else if (!validTypes.Contains(fm.Type))
         {
-            yield return CreateError(doc, $"Invalid type value '{fm.Type}'. Must be one of: {string.Join(", ", Frontmatter.ValidTypes)}");
+            yield return CreateError(doc, $"Invalid type value '{fm.Type}'. Must be one of: {string.Join(", ", validTypes)}");
         }
 
         if (fm.Type == "decision")

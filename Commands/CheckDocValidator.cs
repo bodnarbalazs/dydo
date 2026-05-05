@@ -15,6 +15,7 @@ internal static class CheckDocValidator
         var parser = new MarkdownParser();
         var scanner = new DocScanner(parser);
         var linkResolver = new LinkResolver();
+        var typesService = new FrontmatterTypesService(basePath);
 
         var docs = scanner.ScanDirectory(basePath)
             .Where(d => !PathUtils.NormalizePath(d.RelativePath)
@@ -28,7 +29,7 @@ internal static class CheckDocValidator
             })
             .ToList();
 
-        var rules = CreateRules(linkResolver);
+        var rules = CreateRules(linkResolver, typesService);
         var result = new ValidationResult { TotalFilesChecked = docs.Count };
 
         foreach (var doc in docs)
@@ -50,13 +51,13 @@ internal static class CheckDocValidator
         return result;
     }
 
-    private static List<IRule> CreateRules(ILinkResolver linkResolver)
+    private static List<IRule> CreateRules(ILinkResolver linkResolver, IFrontmatterTypesService typesService)
     {
         return
         [
             new NamingRule(),
             new RelativeLinksRule(),
-            new FrontmatterRule(),
+            new FrontmatterRule(typesService),
             new SummaryRule(),
             new BrokenLinksRule(linkResolver),
             new HubFilesRule(),

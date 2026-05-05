@@ -111,6 +111,7 @@ public static class TemplateCommand
         }
 
         updated += EnsureScanExcludeWithReport(config, diff);
+        updated += EnsureTypesJson(dydoRoot, diff);
 
         if (!diff)
             configService.SaveConfig(config, configPath);
@@ -191,6 +192,103 @@ public static class TemplateCommand
         if (added > 0)
             Console.WriteLine($"  Added {added} default scan-exclude entry(ies)");
         return added;
+    }
+
+    private static int EnsureTypesJson(string dydoRoot, bool diff)
+    {
+        var path = Path.Combine(dydoRoot, FrontmatterTypesService.TypesJsonRelativePath);
+        var baseline = TemplateGenerator.ReadBuiltInTemplate("types.json.template");
+
+        if (!File.Exists(path))
+        {
+            if (!diff)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, baseline);
+            }
+            Console.WriteLine($"  Created: {FrontmatterTypesService.TypesJsonRelativePath}");
+            return 1;
+        }
+
+        var existingTypes = ParseTypesJson(path);
+        if (existingTypes == null)
+        {
+            Console.Error.WriteLine($"  Warning: {FrontmatterTypesService.TypesJsonRelativePath} is malformed; not auto-overwritten. Fix or delete the file and re-run.");
+            return 0;
+        }
+
+        var baselineTypes = ParseTypesJsonFromString(baseline) ?? Array.Empty<string>();
+        var existingSet = new HashSet<string>(existingTypes, StringComparer.Ordinal);
+        var missing = baselineTypes.Where(t => !existingSet.Contains(t)).ToList();
+        if (missing.Count == 0) return 0;
+
+        if (!diff)
+        {
+            var merged = existingTypes.Concat(missing).ToList();
+            WriteTypesJson(path, merged);
+        }
+        Console.WriteLine($"  Added {missing.Count} default type(s) to {FrontmatterTypesService.TypesJsonRelativePath}");
+        return 1;
+    }
+
+    private static string[]? ParseTypesJson(string path)
+    {
+        try { return ParseTypesJsonFromString(File.ReadAllText(path)); }
+        catch { return null; }
+    }
+
+    private static string[]? ParseTypesJsonFromString(string json)
+    {
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize(
+                json, Serialization.TypesJsonContext.Default.StringArray);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void WriteTypesJson(string path, List<string> types)
+    {
+        var sb = new StringBuilder();
+        sb.Append("[\n");
+        for (var i = 0; i < types.Count; i++)
+        {
+            sb.Append("  \"");
+            sb.Append(EscapeJsonString(types[i]));
+            sb.Append('"');
+            if (i < types.Count - 1) sb.Append(',');
+            sb.Append('\n');
+        }
+        sb.Append("]\n");
+        File.WriteAllText(path, sb.ToString());
+    }
+
+    private static string EscapeJsonString(string value)
+    {
+        var sb = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '"': sb.Append("\\\""); break;
+                case '\\': sb.Append("\\\\"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                default:
+                    if (c < 0x20)
+                        sb.Append($"\\u{(int)c:X4}");
+                    else
+                        sb.Append(c);
+                    break;
+            }
+        }
+        return sb.ToString();
     }
 
     private static void RegenerateAgentWorkspaces(string dydoRoot, DydoConfig config, bool diff)

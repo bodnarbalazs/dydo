@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Rules;
 
 using DynaDocs.Models;
 using DynaDocs.Rules;
+using DynaDocs.Services;
 using Xunit;
 
 public class FrontmatterRuleTests
@@ -378,6 +379,71 @@ public class FrontmatterRuleTests
 
         Assert.Single(violations);
         Assert.Contains("Missing frontmatter", violations[0].Message);
+    }
+
+    #endregion
+
+    #region Type vocabulary (D1)
+
+    [Fact]
+    public void Validate_AcceptsInquisitionType_FromBaseline()
+    {
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "project",
+            Type = "inquisition"
+        });
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsCustomType_FromTypesService()
+    {
+        var rule = new FrontmatterRule(new StubTypesService(["custom-type"]));
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "general",
+            Type = "custom-type"
+        });
+
+        var violations = rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_RejectsTypeNotInServiceOrBaseline()
+    {
+        var rule = new FrontmatterRule(new StubTypesService(["custom-type"]));
+        var doc = CreateDocWithFrontmatter(new Frontmatter
+        {
+            Area = "general",
+            Type = "unknown-type"
+        });
+
+        var violations = rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("Invalid type", violations[0].Message);
+        Assert.Contains("custom-type", violations[0].Message);
+    }
+
+    private sealed class StubTypesService : IFrontmatterTypesService
+    {
+        private readonly IReadOnlyList<string> _types;
+
+        public StubTypesService(IEnumerable<string> userTypes)
+        {
+            var merged = new List<string>(Frontmatter.ValidTypes);
+            foreach (var t in userTypes)
+                if (!merged.Contains(t)) merged.Add(t);
+            _types = merged;
+        }
+
+        public IReadOnlyList<string> GetValidTypes() => _types;
     }
 
     #endregion

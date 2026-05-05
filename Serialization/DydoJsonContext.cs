@@ -1,5 +1,6 @@
 namespace DynaDocs.Serialization;
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using DynaDocs.Models;
 
@@ -65,3 +66,13 @@ internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
 [JsonSourceGenerationOptions(WriteIndented = false)]
 [JsonSerializable(typeof(AuditEvent))]
 internal partial class CompactJsonContext : JsonSerializerContext { }
+
+/// <summary>
+/// Lenient JSON context for hand-edited dydo files that may contain
+/// comments or trailing commas (e.g. _system/types.json).
+/// </summary>
+[JsonSourceGenerationOptions(
+    ReadCommentHandling = JsonCommentHandling.Skip,
+    AllowTrailingCommas = true)]
+[JsonSerializable(typeof(string[]))]
+internal partial class TypesJsonContext : JsonSerializerContext { }

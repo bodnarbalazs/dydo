@@ -1,6 +1,7 @@
 namespace DynaDocs.Rules;
 
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 public class SummaryRule : RuleBase
 {
@@ -9,6 +10,9 @@ public class SummaryRule : RuleBase
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
+        if (RuleSkipPaths.IsTemplateOrAddition(PathUtils.NormalizePath(doc.RelativePath)))
+            yield break;
+
         if (string.IsNullOrEmpty(doc.Title))
         {
             yield return CreateError(doc, "Missing title (# heading)");

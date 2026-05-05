@@ -71,13 +71,39 @@ public class SummaryRuleTests
         Assert.Contains("title", violations[0].Message.ToLower());
     }
 
-    private static DocFile CreateDoc(string? title, string? summary)
+    [Fact]
+    public void Validate_SkipsTemplateAdditionWithNoTitle()
+    {
+        var doc = CreateDoc(
+            title: null,
+            summary: null,
+            relativePath: "_system/template-additions/extra-foo.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_SkipsTemplateFileWithNoTitle()
+    {
+        var doc = CreateDoc(
+            title: null,
+            summary: null,
+            relativePath: "_system/templates/mode-code-writer.template.md");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    private static DocFile CreateDoc(string? title, string? summary, string relativePath = "test.md")
     {
         return new DocFile
         {
-            FilePath = "/base/test.md",
-            RelativePath = "test.md",
-            FileName = "test.md",
+            FilePath = $"/base/{relativePath}",
+            RelativePath = relativePath,
+            FileName = Path.GetFileName(relativePath),
             Content = "# Test",
             Title = title,
             SummaryParagraph = summary

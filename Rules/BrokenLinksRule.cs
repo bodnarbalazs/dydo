@@ -18,11 +18,7 @@ public class BrokenLinksRule : RuleBase
 
     public override IEnumerable<Violation> Validate(DocFile doc, List<DocFile> allDocs, string basePath)
     {
-        var normalized = PathUtils.NormalizePath(doc.RelativePath);
-
-        // Skip template files and template additions
-        if (normalized.StartsWith("_system/templates/", StringComparison.OrdinalIgnoreCase) ||
-            normalized.StartsWith("_system/template-additions/", StringComparison.OrdinalIgnoreCase))
+        if (RuleSkipPaths.IsTemplateOrAddition(PathUtils.NormalizePath(doc.RelativePath)))
             yield break;
 
         foreach (var link in doc.Links.Where(l => l.Type != LinkType.External))

@@ -195,16 +195,30 @@ public class OrphanDocsRuleTests
     }
 
     [Fact]
-    public void Validate_WarnsOrphanInSubfolder()
+    public void Validate_TaskFile_NotFlaggedAsOrphan()
     {
+        // D4: task files are transient — never flagged as orphans, even when not linked.
         var hub = CreateDoc("project/_index.md", linksTo: []);
-        var task = CreateDoc("project/tasks/orphan-task.md");
+        var task = CreateDoc("project/tasks/some-task.md");
         var allDocs = new List<DocFile> { hub, task };
 
         var violations = _rule.Validate(task, allDocs, BasePath).ToList();
 
-        Assert.Single(violations);
-        Assert.Contains("project/_index.md", violations[0].Message);
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_TasksMetaFile_StillValidatedAsPermanentDoc()
+    {
+        // _tasks.md is folder-meta — exempted by IsFolderMetaFile, not by the task skip.
+        var hub = CreateDoc("project/_index.md", linksTo: []);
+        var meta = CreateDoc("project/tasks/_tasks.md");
+        var allDocs = new List<DocFile> { hub, meta };
+
+        var violations = _rule.Validate(meta, allDocs, BasePath).ToList();
+
+        // Folder meta — already exempted; no orphan warning.
+        Assert.Empty(violations);
     }
 
     [Fact]

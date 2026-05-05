@@ -171,6 +171,21 @@ public class HubFilesRuleTests
         Assert.Empty(violations);
     }
 
+    [Fact]
+    public void ValidateFolder_SkipsProjectTasksFolder()
+    {
+        // D4: project/tasks no longer requires _index.md — task files are transient.
+        var docs = new List<DocFile>
+        {
+            CreateDoc("project/tasks/_tasks.md"),
+            CreateDoc("project/tasks/some-task.md")
+        };
+
+        var violations = _rule.ValidateFolder("/base/project/tasks", docs, "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
     #endregion
 
     private static DocFile CreateDoc(string relativePath)

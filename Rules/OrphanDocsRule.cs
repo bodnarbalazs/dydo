@@ -23,6 +23,15 @@ public class OrphanDocsRule : RuleBase
         // Skip folder meta files (_foldername.md)
         if (IsFolderMetaFile(doc)) return [];
 
+        // Skip task files - they are transient (one per agent role-assignment) and not indexed.
+        // Meta files (_tasks.md, _index.md) still go through normal validation.
+        var normalized = PathUtils.NormalizePath(doc.RelativePath);
+        if (normalized.StartsWith("project/tasks/", StringComparison.OrdinalIgnoreCase) &&
+            !doc.FileName.StartsWith("_"))
+        {
+            return [];
+        }
+
         // Only check files in the four main documentation folders
         var mainFolder = GetMainFolder(doc.RelativePath);
         if (mainFolder == null) return [];

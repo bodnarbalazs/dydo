@@ -3,7 +3,7 @@ id: 148
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 date: 2026-05-01
 ---
@@ -44,7 +44,7 @@ Counter-reproduction: a clean solo bash run completes in 3:19 with no failures â
 
 ## Resolution
 
-(Filled when resolved)
+Addressed by the runtime-regression PR batch. PR1 (#0169 commit 12e30e9) made `gap_check.py` propagate `dotnet test`'s exit code, ending the silent coverage gate that let parallelism-induced failures slip through. PR2 (#0167 commit 405a220) disabled assembly-wide xUnit parallelism in `DynaDocs.Tests` and migrated three gate-bypass `Console`-capture sites whose per-class isolation no longer held. PR3 (#0168) fixes the redirect-without-drain pattern diagnosed above in the `Git()` helper and its siblings, and PR4 (#0170) tightens the same pattern in production `Process.Start` callers. Together these close the contributing factors behind the observed 3minâ†’10min runtime regression.
 
 ## Related
 

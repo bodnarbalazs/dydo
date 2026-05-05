@@ -218,6 +218,15 @@ Each class, interface, or enum lives in its own file. Filename matches type name
 
 Never modify files in `generated/` directories. They are overwritten by tooling.
 
+### Test Parallelism
+
+xUnit assembly-wide parallelism is disabled in `DynaDocs.Tests`. Several code paths under test mutate process-global state — `Console.Out`/`Console.Error` capture, `ProcessUtils.IsProcessRunningOverride`, the working directory — so per-class isolation is not sufficient; running classes in parallel produces flakes that even an honest coverage gate cannot see. The cost is roughly 50s of sequential overhead on a ~3:13 baseline, which we accept. If a single class genuinely benefits from internal parallelism, mark it with `[Collection(...)]` and opt that collection back in explicitly — but first verify it touches none of the shared statics above.
+
+```csharp
+// DynaDocs.Tests/AssemblyInfo.cs
+[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]
+```
+
 ---
 
 ## Conventions

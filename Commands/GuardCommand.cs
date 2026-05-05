@@ -1281,7 +1281,7 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a command is a human-only dydo command (task approve/reject, roles reset, guard lift/restore).
+    /// Check if a command is a human-only dydo command (task approve/reject, roles reset, guard lift/restore, agent clean --force).
     /// </summary>
     internal static bool IsHumanOnlyDydoCommand(string command)
     {
@@ -1366,8 +1366,10 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+merge(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitMergeRegex();
 
-    // Matches human-only dydo subcommands: task approve, task reject, roles reset, guard lift, guard restore
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:task\s+(?:approve|reject)|roles\s+reset|guard\s+(?:lift|restore))\b", RegexOptions.IgnoreCase)]
+    // Matches human-only dydo subcommands: task approve, task reject, roles reset, guard lift, guard restore, agent clean --force.
+    // The agent-clean alternative uses [^;&|]* to keep --force lookup inside one chain segment, and \b around clean/force
+    // to guard against 'cleanup' / '--forcefully' false matches. Bare 'agent clean <name>' (no --force) stays allowed.
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:task\s+(?:approve|reject)|roles\s+reset|guard\s+(?:lift|restore)|agent\s+clean\b[^;&|]*--force)\b", RegexOptions.IgnoreCase)]
     private static partial Regex HumanOnlyDydoCommandRegex();
 
     [GeneratedRegex(@"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase)]

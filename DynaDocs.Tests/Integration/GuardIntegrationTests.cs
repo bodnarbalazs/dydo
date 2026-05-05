@@ -1045,6 +1045,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dydo roles reset")]
     [InlineData("dydo guard lift Brian")]
     [InlineData("dydo guard restore Brian")]
+    [InlineData("dydo agent clean Charlie --force")]
+    [InlineData("dydo agent clean --all --force")]
     public async Task Guard_HumanOnlyCommand_AgentClaimed_Blocks(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -1065,6 +1067,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dydo roles reset")]
     [InlineData("dydo guard lift Brian")]
     [InlineData("dydo guard restore Brian")]
+    [InlineData("dydo agent clean Charlie --force")]
     public async Task Guard_HumanOnlyCommand_NoAgent_Allows(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -1081,6 +1084,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("dydo task create foo")]
     [InlineData("dydo agent status")]
     [InlineData("dydo inbox show")]
+    [InlineData("dydo agent clean Charlie")]
     public async Task Guard_NonHumanOnlyDydoCommand_AgentClaimed_Allows(string command)
     {
         await InitProjectAsync("none", "balazs", 3);

@@ -13,23 +13,44 @@ public class InquisitionTests : IntegrationTestBase
     /// </summary>
     private void InitGitRepo()
     {
+        RunGit("init");
+        RunGit("commit --allow-empty -m \"init\"");
+    }
+
+    private void RunGit(string args)
+    {
         var psi = new System.Diagnostics.ProcessStartInfo
         {
             FileName = "git",
-            Arguments = "init",
+            Arguments = args,
             WorkingDirectory = TestDir,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };
-        using var process = System.Diagnostics.Process.Start(psi);
-        process?.WaitForExit(5000);
 
-        // Create an initial commit so HEAD exists
-        psi.Arguments = "commit --allow-empty -m \"init\"";
-        using var commit = System.Diagnostics.Process.Start(psi);
-        commit?.WaitForExit(5000);
+        using var process = System.Diagnostics.Process.Start(psi)
+            ?? throw new InvalidOperationException("git failed to start");
+
+        // Drain both streams concurrently. Reading after WaitForExit deadlocks
+        // when git fills the OS pipe buffer (~64 KB on Windows).
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+
+        if (!process.WaitForExit(5000))
+        {
+            try { process.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+            throw new InvalidOperationException(
+                $"git {args} timed out after 5s in {TestDir}");
+        }
+
+        if (process.ExitCode != 0)
+        {
+            var stderr = stderrTask.GetAwaiter().GetResult();
+            throw new InvalidOperationException(
+                $"git {args} failed in {TestDir} (exit {process.ExitCode}): {stderr}");
+        }
     }
 
     #region Coverage Command — No Reports
@@ -166,6 +187,25 @@ public class InquisitionTests : IntegrationTestBase
         Assert.True(
             stdout.Contains("stale") || stdout.Contains("covered") || stdout.Contains("unknown"),
             "Dated area should show stale, covered, or unknown");
+    }
+
+    #endregion
+
+    #region RunGit Helper Tests
+
+    [Fact]
+    public void InitGitRepo_CompletesAndProducesValidRepository()
+    {
+        // Pins the contract that the RunGit helper completes its drain without
+        // throwing or hanging. Pre-fix, redirect-without-drain could deadlock
+        // and trip the 5 s timeout. This is the lighter sibling of
+        // SnapshotServiceTests.RunGit_NoisyOutput_DoesNotDeadlock — init and
+        // commit --allow-empty produce little output, so the deadlock surface is
+        // small, but the helper shape is identical and the contract is the same.
+        InitGitRepo();
+
+        Assert.True(Directory.Exists(Path.Combine(TestDir, ".git")));
+        Assert.True(File.Exists(Path.Combine(TestDir, ".git", "HEAD")));
     }
 
     #endregion

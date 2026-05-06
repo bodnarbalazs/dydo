@@ -62,8 +62,27 @@ public class SnapshotServiceTests : IDisposable
             CreateNoWindow = true
         };
 
-        using var process = Process.Start(psi);
-        process?.WaitForExit(5000);
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException("git failed to start");
+
+        // Drain both streams concurrently. Reading after WaitForExit deadlocks
+        // when git fills the OS pipe buffer (~64 KB on Windows).
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+
+        if (!process.WaitForExit(5000))
+        {
+            try { process.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+            throw new InvalidOperationException(
+                $"git {args} timed out after 5s in {_testDir}");
+        }
+
+        if (process.ExitCode != 0)
+        {
+            var stderr = stderrTask.GetAwaiter().GetResult();
+            throw new InvalidOperationException(
+                $"git {args} failed in {_testDir} (exit {process.ExitCode}): {stderr}");
+        }
     }
 
     #region CaptureSnapshot Tests
@@ -289,6 +308,31 @@ public class SnapshotServiceTests : IDisposable
         // All paths should use forward slashes
         Assert.All(snapshot.Files, f => Assert.DoesNotContain("\\", f));
         Assert.All(snapshot.Folders, f => Assert.DoesNotContain("\\", f));
+    }
+
+    #endregion
+
+    #region RunGit Helper Tests
+
+    [Fact]
+    public void RunGit_NoisyOutput_DoesNotDeadlock()
+    {
+        // Reproduces the pipe-buffer deadlock that the RunGit helper used to hit.
+        // Commit ~256 KB of text and run `git log -p`, which prints the full diff
+        // to stdout. Without concurrent stream draining the helper hangs at the
+        // 5 s timeout and throws.
+        InitGitRepo();
+        var bigContent = new string('a', 256 * 1024);
+        File.WriteAllText(Path.Combine(_testDir, "big.txt"), bigContent);
+        RunGit("add big.txt");
+        RunGit("commit -m \"big\"");
+
+        var sw = Stopwatch.StartNew();
+        RunGit("log -p");
+        sw.Stop();
+
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(10),
+            $"RunGit took {sw.Elapsed.TotalSeconds:F1}s — pipe-buffer deadlock regression?");
     }
 
     #endregion

@@ -605,6 +605,11 @@ public static class WorktreeCommand
         return p?.ExitCode ?? 1;
     }
 
+    private static readonly Dictionary<string, string?> GitNoPromptEnv = new()
+    {
+        ["GIT_TERMINAL_PROMPT"] = "0"
+    };
+
     /// <summary>
     /// Runs a process with stdout and stderr both swallowed, returning only the exit code.
     /// Used by FinalizeMerge for git checks (merge-base --is-ancestor) and best-effort
@@ -624,28 +629,14 @@ public static class WorktreeCommand
             return 0;
         }
 
-        var psi = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
-        var p = Process.Start(psi);
-        if (p == null) return 1;
-        p.StandardInput.Close();
-        p.StandardOutput.ReadToEnd();
-        p.StandardError.ReadToEnd();
-        if (!p.WaitForExit(ProcessTimeoutMs))
-        {
-            try { p.Kill(); } catch { }
-            return 1;
-        }
-        return p.ExitCode;
+        var (exitCode, _, _) = ProcessUtils.RunProcessCapture(
+            fileName,
+            arguments,
+            workingDir: null,
+            timeoutMs: ProcessTimeoutMs,
+            environment: GitNoPromptEnv,
+            redirectStdin: true);
+        return exitCode == -1 ? 1 : exitCode;
     }
 
     internal static (int ExitCode, string Stdout) RunProcessCapture(string fileName, string arguments)

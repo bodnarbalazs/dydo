@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using System.Diagnostics;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -291,31 +290,8 @@ public class FileCoverageService : IFileCoverageService
 
     private static string? RunGit(string workingDir, string arguments)
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = arguments,
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process == null) return null;
-
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit(10000);
-
-            return process.ExitCode == 0 ? output : null;
-        }
-        catch
-        {
-            return null;
-        }
+        var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture("git", arguments, workingDir, timeoutMs: 10_000);
+        return exitCode == 0 ? stdout.Trim() : null;
     }
 
     private static List<FolderCoverage> BuildFolderTree(List<FileCoverageEntry> entries)

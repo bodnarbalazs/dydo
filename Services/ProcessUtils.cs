@@ -115,4 +115,70 @@ public static partial class ProcessUtils
         }
         catch { return null; }
     }
+
+    /// <summary>
+    /// Launches a process and drains both stdout and stderr concurrently, returning
+    /// (exitCode, stdout, stderr). Concurrent draining avoids the pipe-buffer deadlock
+    /// that occurs when one stream fills (~64 KB on Windows) while the parent reads only
+    /// the other. On timeout or start failure the exit code is -1 and the drained strings
+    /// are empty; callers that need to preserve a different timeout-sentinel translate it
+    /// at the call site (e.g. WorktreeCommand.RunProcessSilent maps -1 back to 1).
+    /// </summary>
+    /// <param name="environment">Entries are merged into the child's environment; null values remove a variable. Parent env is inherited unchanged for keys not listed.</param>
+    /// <param name="redirectStdin">When true, redirects stdin and closes it immediately to signal EOF — required for git invocations that must not block on a credential prompt.</param>
+    internal static (int ExitCode, string Stdout, string Stderr) RunProcessCapture(
+        string fileName,
+        string arguments,
+        string? workingDir = null,
+        int timeoutMs = 5000,
+        IReadOnlyDictionary<string, string?>? environment = null,
+        bool redirectStdin = false)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = redirectStdin,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            if (workingDir != null) psi.WorkingDirectory = workingDir;
+            if (environment != null)
+            {
+                foreach (var kv in environment)
+                {
+                    if (kv.Value == null) psi.Environment.Remove(kv.Key);
+                    else psi.Environment[kv.Key] = kv.Value;
+                }
+            }
+
+            using var process = Process.Start(psi);
+            if (process == null) return (-1, string.Empty, string.Empty);
+
+            if (redirectStdin)
+            {
+                try { process.StandardInput.Close(); } catch { /* best-effort */ }
+            }
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
+            if (!process.WaitForExit(timeoutMs))
+            {
+                try { process.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+                try { Task.WaitAll([stdoutTask, stderrTask], 500); } catch { /* best-effort */ }
+                return (-1, string.Empty, string.Empty);
+            }
+
+            return (process.ExitCode, stdoutTask.GetAwaiter().GetResult(), stderrTask.GetAwaiter().GetResult());
+        }
+        catch
+        {
+            return (-1, string.Empty, string.Empty);
+        }
+    }
 }

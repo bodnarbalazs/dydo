@@ -1,7 +1,6 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -167,32 +166,13 @@ public static partial class InquisitionCommand
         if (HasChangesSinceOverride != null)
             return HasChangesSinceOverride(since, workingDir);
 
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = $"diff --stat HEAD@{{{since:yyyy-MM-dd}}}",
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process == null) return null;
-
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(5000);
-
-            if (process.ExitCode != 0) return null;
-            return !string.IsNullOrWhiteSpace(output);
-        }
-        catch
-        {
-            return null;
-        }
+        var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture(
+            "git",
+            $"diff --stat HEAD@{{{since:yyyy-MM-dd}}}",
+            workingDir,
+            timeoutMs: 5000);
+        if (exitCode != 0) return null;
+        return !string.IsNullOrWhiteSpace(stdout);
     }
 
     [GeneratedRegex(@"^## (\d{4}-\d{2}-\d{2})", RegexOptions.Multiline)]

@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using System.Diagnostics;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -50,32 +49,10 @@ public class SnapshotService : ISnapshotService
     /// </summary>
     private static string? GetFullGitHead(string workingDir)
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = "rev-parse HEAD",
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process == null)
-                return null;
-
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit(5000);
-
-            return process.ExitCode == 0 && !string.IsNullOrEmpty(output) ? output : null;
-        }
-        catch
-        {
-            return null;
-        }
+        var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture("git", "rev-parse HEAD", workingDir, timeoutMs: 5000);
+        if (exitCode != 0) return null;
+        var trimmed = stdout.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 
     /// <summary>
@@ -83,39 +60,14 @@ public class SnapshotService : ISnapshotService
     /// </summary>
     private static List<string> GetGitTrackedFiles(string workingDir)
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = "ls-files --full-name",
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+        var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture("git", "ls-files --full-name", workingDir, timeoutMs: 10_000);
+        if (exitCode != 0) return [];
 
-            using var process = Process.Start(psi);
-            if (process == null)
-                return [];
-
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(10000);
-
-            if (process.ExitCode != 0)
-                return [];
-
-            return output
-                .Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
-                .Select(PathUtils.NormalizePath)
-                .OrderBy(f => f)
-                .ToList();
-        }
-        catch
-        {
-            return [];
-        }
+        return stdout
+            .Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(PathUtils.NormalizePath)
+            .OrderBy(f => f)
+            .ToList();
     }
 
     /// <summary>

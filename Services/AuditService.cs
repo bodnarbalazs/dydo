@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
@@ -271,31 +270,10 @@ public partial class AuditService : IAuditService
 
     private static string? GetCurrentGitHead()
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = "rev-parse --short HEAD",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process == null)
-                return null;
-
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit(1000);
-
-            return process.ExitCode == 0 && !string.IsNullOrEmpty(output) ? output : null;
-        }
-        catch
-        {
-            return null;
-        }
+        var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture("git", "rev-parse --short HEAD", workingDir: null, timeoutMs: 1000);
+        if (exitCode != 0) return null;
+        var trimmed = stdout.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 
     [GeneratedRegex(@"^\d{4}$")]

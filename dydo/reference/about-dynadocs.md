@@ -332,7 +332,7 @@ Commands meant to be called only by agents are *italic*.
 ### Issues
 | Command | Description |
 |---------|-------------|
-| `dydo issue create --title "..." --area <area> --severity <level>` | Create an issue |
+| `dydo issue create --title "..." --area <area> --severity <level> [--summary "..."]` | Create an issue (always pass `--summary` so the file lands check-clean) |
 | `dydo issue list [--area <area>] [--all]` | List issues |
 | `dydo issue resolve <id> --summary "..."` | Resolve an issue |
 

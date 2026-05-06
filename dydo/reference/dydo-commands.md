@@ -489,10 +489,10 @@ dydo task list --all            # Include closed tasks
 Create a new issue.
 
 ```bash
-dydo issue create --title "Null ref in AuthService" --area backend --severity high
-dydo issue create --title "Missing validation" --area backend --severity medium --found-by inquisition
-dydo issue create --title "Race in queue" --area backend --severity high --body "Two workers can claim the same job."
-dydo issue create --title "Schema drift" --area backend --severity medium --body-file ./issue-body.md
+dydo issue create --title "Null ref in AuthService" --area backend --severity high --summary "Login throws NRE when the principal lacks an email claim."
+dydo issue create --title "Missing validation" --area backend --severity medium --summary "Sign-up accepts blank usernames." --found-by inquisition
+dydo issue create --title "Race in queue" --area backend --severity high --summary "Two workers can claim the same job under contention." --body "Two workers can claim the same job."
+dydo issue create --title "Schema drift" --area backend --severity medium --body-file ./issue-body.md  # no --summary → file gets a "(One-line summary)" placeholder that must be replaced before `dydo check` is clean.
 ```
 
 **Options:**
@@ -500,6 +500,7 @@ dydo issue create --title "Schema drift" --area backend --severity medium --body
 - `--area <area>` - Affected area, e.g. backend, frontend, general (required)
 - `--severity <level>` - Severity: `low`, `medium`, `high`, `critical` (required)
 - `--found-by <source>` - How it was found: `manual`, `inquisition`, `review` (optional)
+- `--summary <text>` - One-line summary rendered between the title and `## Description` (optional but recommended; omitting it inserts a `(One-line summary)` placeholder that `dydo check` flags as a warning)
 - `--body <text>` - Inline body content for the issue's Description section (optional)
 - `--body-file <path>` - Read body content from a file (optional, mutually exclusive with `--body`)
 

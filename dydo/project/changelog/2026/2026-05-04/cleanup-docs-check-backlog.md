@@ -66,3 +66,7 @@ Awaiting human approval.
 ## Approval
 
 - Approved: 2026-05-04 21:51
+
+## Resolution
+
+Superseded by the dydo-check-drift batch on master (2026-05-04 to 2026-05-06). The SummaryRule template-additions exclusion landed in PR1 (`8b71cd4`) and the project/tasks skip in PR1 (`d05f696`); the `inquisition` type enum was added in PR2 (`3213931`); the `--summary` flag + placeholder detection that closes the SummaryRule warning floor on issue files landed in PR3 (`c85947a`), with reference-doc sync committed alongside this Resolution. Earlier prep work referenced in the entry above: `fc83e31`. Each layered fix discharges one of the deferred dydo-tool defects called out under "Verify".

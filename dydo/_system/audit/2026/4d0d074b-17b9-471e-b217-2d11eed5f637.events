@@ -96,3 +96,40 @@
 {"ts":"2026-05-06T16:49:14.4071962Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8c1734db-msg-review-human-only-clean-force.md","tool":"read"}
 {"ts":"2026-05-06T16:55:30.0119404Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6a021b3c-msg-implement-pr4-production-drain.md","tool":"read"}
 {"ts":"2026-05-06T17:45:52.5896422Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3f2d0427-msg-implement-pr4-production-drain.md","tool":"read"}
+{"ts":"2026-05-06T18:05:40.9259196Z","event":"Blocked","tool":"bash","cmd":"git worktree list 2\u003E\u00261","reason":"Unread messages"}
+{"ts":"2026-05-06T18:05:47.8969881Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\0a522c8d-msg-implement-pr3-git-helper-drain.md","tool":"read"}
+{"ts":"2026-05-06T18:05:49.3573757Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\94f6b220-msg-implement-pr4-production-drain.md","tool":"read"}
+{"ts":"2026-05-06T18:06:03.920672Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261"}
+{"ts":"2026-05-06T18:06:04.9370718Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/ 2\u003E\u00261"}
+{"ts":"2026-05-06T18:06:05.8989399Z","event":"Bash","tool":"bash","cmd":"Get-Process | Where-Object { $_.Path -like \u0027*\\Projects\\DynaDocs\\dydo\\_system\\.local\\worktrees\\*\u0027 } |..."}
+{"ts":"2026-05-06T18:07:38.3985088Z","event":"Bash","tool":"bash","cmd":"git worktree prune --verbose 2\u003E\u00261"}
+{"ts":"2026-05-06T18:07:45.2207909Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261 | head -20"}
+{"ts":"2026-05-06T18:07:45.6008881Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/ 2\u003E\u00261"}
+{"ts":"2026-05-06T18:07:48.1738703Z","event":"Bash","tool":"bash","cmd":"Get-ChildItem -Path \u0022$env:TEMP\u0022 -Directory -Filter \u0022dydo-test-*\u0022 | Measure-Object | Select-Object @{..."}
+{"ts":"2026-05-06T18:08:10.9641405Z","event":"Blocked","tool":"bash","cmd":"Remove-Item -Path \u0022$PWD\\dydo\\_system\\.local\\worktrees\\pre-tag-audit\u0022 -Recurse -Force -ErrorAction Co...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-05-06T18:08:32.7017839Z","event":"Blocked","tool":"bash","cmd":"$lockPath = \u0027C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\_system\\.local\\worktrees\\pre-tag-audit\u0027; G...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-05-06T18:08:40.9770139Z","event":"Bash","tool":"bash","cmd":"Get-Process dotnet,testhost,dydo -ErrorAction SilentlyContinue | Select-Object Id, Name, StartTime |..."}
+{"ts":"2026-05-06T18:09:11.4638919Z","event":"Bash","tool":"bash","cmd":"Stop-Process -Id 64700 -Force -ErrorAction Stop; Write-Output \u0022killed 64700\u0022"}
+{"ts":"2026-05-06T18:09:37.1906238Z","event":"Bash","tool":"bash","cmd":"Get-Process dotnet,testhost,dydo -ErrorAction SilentlyContinue | Select-Object Id, Name, StartTime |..."}
+{"ts":"2026-05-06T18:09:59.6302652Z","event":"Bash","tool":"bash","cmd":"Stop-Process -Id 81460,47640,81044,74148 -Force -ErrorAction Continue 2\u003E\u00261; Write-Output \u0022killed pos..."}
+{"ts":"2026-05-06T18:10:16.9497533Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/ 2\u003E\u00261"}
+{"ts":"2026-05-06T18:13:00.1778174Z","event":"Blocked","tool":"bash","cmd":"dydo whoami 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-05-06T18:46:19.4515691Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c4c31aad-msg-pre-tag-audit.md","tool":"read"}
+{"ts":"2026-05-06T18:59:11.0328685Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\05072008-msg-no-subject.md","tool":"read"}
+{"ts":"2026-05-06T18:59:15.9047286Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/inbox/ 2\u003E\u00261 | tail -3"}
+{"ts":"2026-05-06T18:59:20.5897512Z","event":"Bash","tool":"bash","cmd":"ls -t dydo/agents/Adele/inbox/ 2\u003E\u00261 | head -3"}
+{"ts":"2026-05-06T18:59:25.5352272Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\05072008-msg-general.md","tool":"read"}
+{"ts":"2026-05-06T19:02:29.0486856Z","event":"Bash","tool":"bash","cmd":"git status --short dydo/project/issues/ 2\u003E\u00261 | head -10"}
+{"ts":"2026-05-06T19:02:29.7967067Z","event":"Bash","tool":"bash","cmd":"ls dydo/project/issues/0171* dydo/project/issues/0172* 2\u003E\u00261"}
+{"ts":"2026-05-06T19:02:55.9593557Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0171-extract-testprocess-cs-helper-for-the-three-test-side-git-invocations.md","tool":"read"}
+{"ts":"2026-05-06T19:02:56.263062Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0172-dydo-audit-replay-subcommand-referenced-by-plans-inquisitions-but-not-exposed-in.md","tool":"read"}
+{"ts":"2026-05-06T19:03:12.8054016Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/ 2\u003E\u00261; git worktree list 2\u003E\u00261 | tail -3"}
+{"ts":"2026-05-06T19:03:29.2760866Z","event":"Bash","tool":"bash","cmd":"rm \u0022dydo/project/issues/0171-extract-testprocess-cs-helper-for-the-three-test-side-git-invocations.m..."}
+{"ts":"2026-05-06T19:03:45.3934925Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0171-extract-testprocess-cs-helper-for-the-three-test-side-git-invocations.md","tool":"read"}
+{"ts":"2026-05-06T19:04:01.5239815Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0171-extract-testprocess-cs-helper-for-the-three-test-side-git-invocations.md","tool":"edit"}
+{"ts":"2026-05-06T19:04:18.7583419Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0172-dydo-audit-replay-subcommand-referenced-by-plans-inquisitions-but-not-exposed-in.md","tool":"read"}
+{"ts":"2026-05-06T19:04:28.6202435Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0172-dydo-audit-replay-subcommand-referenced-by-plans-inquisitions-but-not-exposed-in.md","tool":"edit"}
+{"ts":"2026-05-06T19:04:47.8759456Z","event":"Bash","tool":"bash","cmd":"Get-Process dotnet,testhost -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Dat..."}
+{"ts":"2026-05-06T19:05:46.6538455Z","event":"Bash","tool":"bash","cmd":"Get-Process dotnet,testhost -ErrorAction SilentlyContinue | Select-Object Id, Name, StartTime | Sort..."}
+{"ts":"2026-05-06T19:06:06.5851353Z","event":"Bash","tool":"bash","cmd":"Stop-Process -Id 32380,36120,19388,54836,5032,30484,34616 -Force -ErrorAction Continue 2\u003E\u00261; Write-O..."}
+{"ts":"2026-05-06T19:06:23.7652471Z","event":"Bash","tool":"bash","cmd":"Get-Process | Where-Object { $_.Name -like \u0027*claude*\u0027 -or $_.Name -like \u0027pwsh\u0027 -or $_.Name -like \u0027po..."}

@@ -43,5 +43,4 @@ Required sections:
 
 ## Related
 
-- [Tasks](../tasks/_index.md) - Work in progress
 - [Decisions](../decisions/_index.md) - Why choices were made

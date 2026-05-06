@@ -110,19 +110,23 @@ public class ProcessUtilsCaptureTests : IDisposable
     [Fact]
     public void RunProcessCapture_RedirectStdin_DoesNotHangOnStdinReaders()
     {
-        // git rev-parse with stdin redirected blocks reading from stdin if the helper
-        // forgets to close it. The helper should EOF stdin immediately when redirectStdin=true.
+        // git hash-object --stdin reads bytes from stdin until EOF and prints the SHA-1.
+        // If the helper forgets to close stdin, the child blocks forever waiting for input
+        // and the call hits the timeout (exit -1). With redirectStdin=true the helper must
+        // EOF stdin immediately so empty input yields the well-known empty-blob hash.
+        const string EmptyBlobSha1 = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391";
         InitMinimalRepo();
 
         var sw = Stopwatch.StartNew();
-        var (exitCode, _, _) = ProcessUtils.RunProcessCapture(
-            "git", "rev-parse --is-inside-work-tree",
+        var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture(
+            "git", "hash-object --stdin",
             _testDir,
             timeoutMs: 5000,
             redirectStdin: true);
         sw.Stop();
 
         Assert.Equal(0, exitCode);
+        Assert.Equal(EmptyBlobSha1, stdout.Trim());
         Assert.True(sw.Elapsed < TimeSpan.FromSeconds(3),
             $"Expected immediate EOF on stdin; took {sw.Elapsed.TotalSeconds:F1}s.");
     }

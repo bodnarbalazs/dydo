@@ -78,9 +78,13 @@ public class ProcessUtilsCaptureTests : IDisposable
     [Fact]
     public void RunProcessCapture_EnvironmentInjected_PreservesParentEnv()
     {
+        // The shell pieces around DYDO_TEST_VAR vary by platform: cmd's %PATH:~0,1%
+        // and sh's POSIX ${PATH%%:*} both yield a non-empty prefix of the parent PATH.
+        // ${PATH:0:1} would be cleaner but is a bashism — Linux CI uses dash for /bin/sh
+        // and rejects it with "Bad substitution" (exit 2).
         var (cmd, args) = OperatingSystem.IsWindows()
             ? ("cmd", "/c echo %DYDO_TEST_VAR%-%PATH:~0,1%")
-            : ("sh", "-c \"echo $DYDO_TEST_VAR-${PATH:0:1}\"");
+            : ("sh", "-c \"echo $DYDO_TEST_VAR-${PATH%%:*}\"");
 
         var (exitCode, stdout, _) = ProcessUtils.RunProcessCapture(
             cmd, args,
@@ -90,8 +94,8 @@ public class ProcessUtilsCaptureTests : IDisposable
 
         Assert.Equal(0, exitCode);
         Assert.StartsWith("hello-", stdout.Trim());
-        // The trailing char is the first char of PATH inherited from the parent — proves
-        // we set entries on psi.Environment rather than overwriting it.
+        // Trailing piece is a non-empty slice of the parent PATH — proves we set
+        // entries on psi.Environment rather than overwriting it.
         Assert.True(stdout.Trim().Length > "hello-".Length,
             "Expected parent PATH to be inherited and visible to the child.");
     }

@@ -14,7 +14,9 @@ public class InquisitionTests : IntegrationTestBase
     private void InitGitRepo()
     {
         RunGit("init");
-        RunGit("commit --allow-empty -m \"init\"");
+        // CI runners have no global user.email / user.name. Pass -c overrides on
+        // this invocation rather than mutating global config or the helper's env.
+        RunGit("-c user.email=test@example.com -c user.name=Test commit --allow-empty -m \"init\"");
     }
 
     private void RunGit(string args)

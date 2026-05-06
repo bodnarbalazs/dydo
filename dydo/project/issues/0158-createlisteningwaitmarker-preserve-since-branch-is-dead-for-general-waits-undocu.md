@@ -10,7 +10,7 @@ date: 2026-05-01
 
 # CreateListeningWaitMarker preserve-Since branch is dead for general waits — undocumented asymmetry vs task waits
 
-## Description
+`CreateListeningWaitMarker`'s `Since` preservation branch is unreachable for general waits because `WaitGeneral`'s `finally` always removes the marker before the next registration, so each re-arm starts with a fresh `Since`. That is fine for the proposed #0149 fix but creates an undocumented asymmetry vs task waits (which keep their dispatcher-supplied `Since`) that the method's contract implies otherwise.
 
 ## Description
 

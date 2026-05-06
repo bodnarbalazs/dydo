@@ -10,7 +10,7 @@ date: 2026-05-01
 
 # Live workaround for #0149 deadlock is misexplained — works via #0155 bash-chain bypass, not the backgrounded wait
 
-## Description
+The documented `dydo wait --cancel && (dydo wait &) && sleep 3 && ...` workaround actually functions because of the #0155 bash-chain bypass — the PreToolUse hook routes the chain to `HandleDydoBashCommand` and skips inner-segment checks — not because the backgrounded wait stays alive long enough. The published explanation in #0149 and Noah's onboarding gives agents an incorrect mental model of how the guard works and must be revised once #0149 or #0155 is fixed.
 
 ## Description
 

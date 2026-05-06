@@ -10,7 +10,7 @@ date: 2026-05-01
 
 # RBAC, off-limits, and dangerous-pattern checks bypassed for any bash chain containing a dydo subcommand
 
-## Description
+`GuardCommand.HandleBashCommand` routes any bash chain containing a `dydo` subcommand to `HandleDydoBashCommand`, which never runs `BashCommandAnalyzer.Analyze`, dangerous-pattern checks, or off-limits checks on the surrounding chain. Because the PreToolUse hook fires once per tool call, every other `&&`/`;`/`||` segment in the chain executes unchecked once the dydo segment is allowed.
 
 ## Description
 

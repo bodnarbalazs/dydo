@@ -10,7 +10,7 @@ date: 2026-05-01
 
 # WaitCommand.cs:103-108 comment claims 'cannot re-introduce #0141 deadlock' — provably false under Decision 021
 
-## Description
+The "cannot re-introduce the #0141 deadlock" claim quietly assumes the agent can issue a `Read` between wait fires to clear unread ids; Decision 021's universal must-keep-general-wait gate broke that assumption by blocking `Read` when the wait has exited. Under #0149 conditions the canonical-unread design provably re-deadlocks, so the comment now misleads future maintainers and must be rewritten when #0149 is resolved.
 
 ## Description
 

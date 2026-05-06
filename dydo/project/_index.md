@@ -23,4 +23,7 @@ Index of project documentation.
 - [Inquisitions](./inquisitions/_index.md) - Investigation reports — targeted, dispatched audits of a specific subsystem or behavior.
 - [Issues](./issues/_index.md) - Actionable work items with lifecycle tracking.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.
-- [Tasks](./tasks/_index.md) - Task tracking for work in progress.
+
+## Tasks
+
+Agent task files live under `tasks/`. They are transient (one per agent role-assignment) and not indexed; locate by name via `dydo whoami` or `dydo agent status`.

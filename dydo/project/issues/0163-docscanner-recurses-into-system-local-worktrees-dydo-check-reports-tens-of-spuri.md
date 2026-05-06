@@ -3,12 +3,14 @@ id: 163
 area: project
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-04
 ---
 
 # DocScanner recurses into _system/.local/worktrees/ - dydo check reports tens of spurious errors in projects with live worktrees
+
+`Services/DocScanner` walks every subdirectory under the dydo root with no exclusion list, so it descends into `_system/.local/worktrees/<id>/` (each entry a full project clone) and surfaces tens of spurious naming, frontmatter, and broken-link errors — scaling linearly with worktree count (~12 errors per worktree at LC, 38 errors total). `HubGenerator.IsExcludedPath` and `FixHubHandler.IsExcludedFolder` each maintain their own exclusion list; the scan stage feeding the rule pipeline does not.
 
 ## Description
 

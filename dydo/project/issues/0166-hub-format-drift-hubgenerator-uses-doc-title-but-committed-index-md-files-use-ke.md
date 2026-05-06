@@ -3,7 +3,7 @@ id: 166
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: review
 date: 2026-05-05
 ---

@@ -3,12 +3,14 @@ id: 160
 area: project
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-04
 ---
 
 # SummaryRule lacks the _system/template-additions/ skip block its three sibling rules already have
+
+`Rules/SummaryRule` has no `_system/templates/` / `_system/template-additions/` skip block, so every template-addition fragment (which intentionally has no H1, per `Templates/template-additions-readme.md`) errors as "Missing title (# heading)" on `dydo check`. The three sibling rules — `FrontmatterRule`, `BrokenLinksRule`, `NamingRule` — all carry the same 4-line skip block; SummaryRule is the outlier, producing 4 spurious errors on this project and 5 on LC.
 
 ## Description
 

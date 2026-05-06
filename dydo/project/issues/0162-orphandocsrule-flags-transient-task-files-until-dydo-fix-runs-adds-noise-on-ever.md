@@ -3,12 +3,14 @@ id: 162
 area: project
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-04
 ---
 
 # OrphanDocsRule flags transient task files until dydo fix runs - adds noise on every check after agent role-set
+
+`Rules/OrphanDocsRule` scopes `project/tasks/` in via `MainDocFolders` and BFS-checks reachability through the auto-generated `tasks/_index.md`, so every newly-created task file is flagged as an orphan until `dydo fix` runs. `FrontmatterRule` already gives task files special treatment via a separate schema; `OrphanDocsRule` is the only rule that still treats them as first-class permanent docs, producing 13 task-orphan warnings on this project alone.
 
 ## Description
 

@@ -3,12 +3,14 @@ id: 159
 area: project
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-04
 ---
 
 # Frontmatter.ValidTypes allowed-types list missing 'inquisition' - every inquisition report errors on dydo check
+
+The hardcoded `ValidTypes` list in `Models/Frontmatter.cs` omits `inquisition`, even though the type is first-class elsewhere in the system (inquisitor role, architecture's Inquisition Coverage section, twelve populated reports under `dydo/project/inquisitions/`). Every inquisition file therefore errors on `dydo check` with `Invalid type value 'inquisition'`. One-line fix: append `"inquisition"` to the list.
 
 ## Description
 

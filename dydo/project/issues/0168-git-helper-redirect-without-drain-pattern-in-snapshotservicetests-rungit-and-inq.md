@@ -3,14 +3,14 @@ id: 168
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-05
 ---
 
 # Git-helper redirect-without-drain pattern in SnapshotServiceTests.RunGit and InquisitionTests.InitGitRepo
 
-## Description
+Two test files (`SnapshotServiceTests.RunGit` and `InquisitionTests.InitGitRepo`) carry the same redirect-without-drain pattern that commit `aeee461` fixed in `WorktreeMergeSafetyIntegrationTests.Git()` for #0148: both stdout and stderr redirected, neither drained concurrently with `WaitForExit`. Lower probability per site than #0148 because the git commands they invoke (`init`, `config`, `add`, `commit`) produce less stderr, but the latent deadlock is identical and would surface intermittently as the same `Process must exit before requested information…` failure once the OS pipe buffer fills.
 
 ## Description
 

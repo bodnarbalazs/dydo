@@ -3,14 +3,14 @@ id: 169
 area: general
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-05
 ---
 
 # gap_check.py does not propagate dotnet test exit code: gate signal lies about test outcome
 
-## Description
+`gap_check.py` exits 0 when the embedded `dotnet test` invocation returns non-zero, as long as the coverage tier-pass check still succeeds — the `tests_ok` boolean from `run_tests()` is captured into a local, used to print a console message, and then never consulted by the exit-code logic. This is the trap that hid the three failures documented in #0165, and a runtime/observability hazard in its own right: every regression test for #0167 (collection misconfiguration) and #0168 (git-helper drain) relies on `gap_check.py` being honest about test outcomes.
 
 ## Description
 

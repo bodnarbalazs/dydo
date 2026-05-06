@@ -3,14 +3,14 @@ id: 170
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-05
 ---
 
 # Production Process.Start callers redirect both streams but read only stdout: same deadlock pattern as #0148
 
-## Description
+Multiple production sites (`SnapshotService`, `AuditService`, `FileCoverageService`, `InquisitionCommand`, `WorktreeCommand`) use the same `Process.Start` redirect-without-drain pattern that #0148 fixed in test code: both stdout and stderr redirected, only stdout drained, no concurrent `ReadToEndAsync`. If the spawned process produces enough stderr to fill the OS pipe buffer (~64 KB on Windows), it blocks on the stderr write, stdout never reaches EOF, and `ReadToEnd()` hangs until the per-site `WaitForExit` timeout fires — these are production hazards in their own right, currently masked in tests by `*Override` indirection.
 
 ## Description
 

@@ -3,14 +3,14 @@ id: 167
 area: general
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-05
 ---
 
 # Test parallelism breaks process-global static isolation: collection definitions misconfigured
 
-## Description
+Three of the four xunit collection definitions in `DynaDocs.Tests` are misconfigured (`DisableParallelization = true` missing on `ProcessUtils` and `EndToEnd`; no `ConsoleOutput` collection defined at all), so multiple test classes that mutate the same process-global statics — `Console.Out/Error`, `ProcessUtils.IsProcessRunningOverride`, `ProcessUtils.GetProcessNameOverride`, `ProcessUtils.PowerShellResolverOverride` — can run in parallel and stomp on each other. This is the underlying mechanism behind #0165's Console-capture cross-over under coverage; one realisation was reproduced live during this inquisition (`QueueServiceTests.FindStaleActiveEntries_DetectsDeadPid` failing because `WorktreeCommandTests` had nulled `IsProcessRunningOverride` mid-run).
 
 ## Description
 
@@ -69,3 +69,7 @@ A cleaner long-term alternative (per #0165 path 1): migrate Console-asserting te
 - #0148 — test runtime regression; the prior `Git()`-helper fix (`aeee461`) addressed one cliff but did not address this isolation problem.
 - #0165 — Console-capture cross-over under coverage; the most visible face of this same misconfiguration.
 - Inquisition: `dydo/project/inquisitions/test-runtime-regression.md` Finding #1.
+
+## Resolution
+
+Resolved by `405a220` (PR2 of the runtime-regression batch). Rather than fix the four collection definitions individually, the assembly itself was made fully sequential via `[assembly: CollectionBehavior(DisableTestParallelization = true)]` in `DynaDocs.Tests/AssemblyInfo.cs` — collapsing the cross-collection race surface to a single global ordering. The same commit migrated the three gate-bypass `Console.SetOut/SetError` sites (`AuditCompactionTests`, `AuditEdgeCaseTests`, `WorktreeMergeSafetyIntegrationTests.CaptureAll`) onto `ConsoleCapture.Stderr` / `.All` so the capture gate is no longer bypassable, and added `ParallelisationDisabledTests` to pin the assembly-level invariant via reflection. Follow-up `e3e6c47` replaced a dead `AuditCompaction` test with `ConsoleCaptureTests` to pin the contract.

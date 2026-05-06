@@ -3,12 +3,14 @@ id: 161
 area: project
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 date: 2026-05-04
 ---
 
 # dydo issue create output cannot satisfy SummaryRule - every issue stub triggers a Missing summary paragraph warning
+
+`Commands/IssueCreateHandler.BuildBodySection` emits `## Description` immediately under the H1 in all three render paths, so no content lands above `## Description` and `MarkdownParser.ExtractSummaryParagraph` returns null by construction. Every `dydo issue create` stub then trips SummaryRule's "Missing summary paragraph after title" warning, and the inquisitor template — which files most issues — passes no summary either, so inquisition-filed issues are dead-on-arrival.
 
 ## Description
 

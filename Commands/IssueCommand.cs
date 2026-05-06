@@ -41,6 +41,11 @@ public static class IssueCommand
             Description = "How the issue was found (inquisition, review, manual). Defaults to manual."
         };
 
+        var summaryOption = new Option<string?>("--summary")
+        {
+            Description = "One-line summary paragraph rendered between the title and Description."
+        };
+
         var bodyOption = new Option<string?>("--body")
         {
             Description = "Inline body content for the issue's Description section."
@@ -56,6 +61,7 @@ public static class IssueCommand
         command.Options.Add(areaOption);
         command.Options.Add(severityOption);
         command.Options.Add(foundByOption);
+        command.Options.Add(summaryOption);
         command.Options.Add(bodyOption);
         command.Options.Add(bodyFileOption);
 
@@ -65,9 +71,10 @@ public static class IssueCommand
             var area = parseResult.GetValue(areaOption)!;
             var severity = parseResult.GetValue(severityOption)!;
             var foundBy = parseResult.GetValue(foundByOption);
+            var summary = parseResult.GetValue(summaryOption);
             var body = parseResult.GetValue(bodyOption);
             var bodyFile = parseResult.GetValue(bodyFileOption);
-            return IssueCreateHandler.Execute(title, area, severity, foundBy, body, bodyFile);
+            return IssueCreateHandler.Execute(title, area, severity, foundBy, summary, body, bodyFile);
         });
 
         return command;

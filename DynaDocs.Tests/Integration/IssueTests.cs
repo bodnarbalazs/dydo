@@ -153,6 +153,81 @@ public class IssueTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Issue_Create_WithSummary_RendersBetweenTitleAndDescription()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await IssueCreateAsync("With summary", area: "general", severity: "low",
+            summary: "The thing breaks under contention.");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-with-summary.md").ReplaceLineEndings("\n");
+        Assert.Contains("# With summary\n\nThe thing breaks under contention.\n\n## Description", content);
+        Assert.DoesNotContain("(One-line summary)", content);
+    }
+
+    [Fact]
+    public async Task Issue_Create_NoSummary_InsertsPlaceholder()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await IssueCreateAsync("Plain summary", area: "general", severity: "low");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-plain-summary.md").ReplaceLineEndings("\n");
+        Assert.Contains("# Plain summary\n\n(One-line summary)\n\n## Description", content);
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithSummary_PassesSummaryRule()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await IssueCreateAsync("Real summary", area: "general", severity: "low",
+            summary: "A concrete one-line summary.");
+
+        var content = ReadFile("dydo/project/issues/0001-real-summary.md");
+        var doc = new DynaDocs.Models.DocFile
+        {
+            FilePath = "/x/0001-real-summary.md",
+            RelativePath = "dydo/project/issues/0001-real-summary.md",
+            FileName = "0001-real-summary.md",
+            Content = content,
+            Title = "Real summary",
+            SummaryParagraph = new DynaDocs.Services.MarkdownParser().ExtractSummaryParagraph(content)
+        };
+
+        var rule = new DynaDocs.Rules.SummaryRule();
+        var violations = rule.Validate(doc, [], "/x").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public async Task Issue_Create_NoSummary_PlaceholderTriggersSummaryRuleWarning()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await IssueCreateAsync("Placeholder check", area: "general", severity: "low");
+
+        var content = ReadFile("dydo/project/issues/0001-placeholder-check.md");
+        var doc = new DynaDocs.Models.DocFile
+        {
+            FilePath = "/x/0001-placeholder-check.md",
+            RelativePath = "dydo/project/issues/0001-placeholder-check.md",
+            FileName = "0001-placeholder-check.md",
+            Content = content,
+            Title = "Placeholder check",
+            SummaryParagraph = new DynaDocs.Services.MarkdownParser().ExtractSummaryParagraph(content)
+        };
+
+        var rule = new DynaDocs.Rules.SummaryRule();
+        var violations = rule.Validate(doc, [], "/x").ToList();
+
+        Assert.Single(violations);
+        Assert.Equal(DynaDocs.Models.ViolationSeverity.Warning, violations[0].Severity);
+        Assert.Contains("placeholder", violations[0].Message.ToLower());
+    }
+
+    [Fact]
     public async Task Issue_Create_BodyWithReproductionSection_OmitsDefaultPlaceholders()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -428,7 +503,7 @@ public class IssueTests : IntegrationTestBase
 
     #region Helper Methods
 
-    private async Task<CommandResult> IssueCreateAsync(string title, string area = "general", string severity = "low", string? foundBy = null, string? body = null, string? bodyFile = null)
+    private async Task<CommandResult> IssueCreateAsync(string title, string area = "general", string severity = "low", string? foundBy = null, string? body = null, string? bodyFile = null, string? summary = null)
     {
         var command = IssueCommand.Create();
         var args = new List<string> { "create", "--title", title, "--area", area, "--severity", severity };
@@ -436,6 +511,11 @@ public class IssueTests : IntegrationTestBase
         {
             args.Add("--found-by");
             args.Add(foundBy);
+        }
+        if (summary != null)
+        {
+            args.Add("--summary");
+            args.Add(summary);
         }
         if (body != null)
         {

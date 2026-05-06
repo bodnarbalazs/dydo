@@ -7,109 +7,140 @@ using DynaDocs.Utils;
 
 internal static partial class IssueCreateHandler
 {
-    public static int Execute(string title, string area, string severity, string? foundBy, string? body = null, string? bodyFile = null)
+    internal const string SummaryPlaceholder = "(One-line summary)";
+
+    public static int Execute(string title, string area, string severity, string? foundBy, string? summary = null, string? body = null, string? bodyFile = null)
     {
+        if (!TryValidateMetadata(area, severity, foundBy, out var meta))
+            return ExitCodes.ToolError;
+
+        if (!TryResolveBody(body, bodyFile, out var bodyContent))
+            return ExitCodes.ToolError;
+
+        var summaryLine = NormalizeSummary(summary);
+
+        var issuesPath = IssueCommand.GetIssuesPath();
+        Directory.CreateDirectory(issuesPath);
+
+        using var lockFile = AcquireIssueLock(Path.Combine(issuesPath, ".lock"));
+        if (lockFile == null)
+        {
+            ConsoleOutput.WriteError("Could not acquire issue lock. Another process may be creating an issue. Try again.");
+            return ExitCodes.ToolError;
+        }
+
+        var newId = ScanMaxId(issuesPath) + 1;
+        var fileName = $"{newId:D4}-{Slugify(title)}.md";
+        var filePath = Path.Combine(issuesPath, fileName);
+
+        File.WriteAllText(filePath, RenderIssueContent(newId, title, meta, summaryLine, bodyContent));
+        Console.WriteLine($"Created issue #{newId}: {fileName}");
+
+        return ExitCodes.Success;
+    }
+
+    private record IssueMeta(string Area, IssueSeverity Severity, IssueFoundBy FoundBy);
+
+    private static bool TryValidateMetadata(string area, string severity, string? foundBy, out IssueMeta meta)
+    {
+        meta = default!;
+
         if (!Frontmatter.ValidAreas.Contains(area))
         {
             ConsoleOutput.WriteError($"Invalid area '{area}'. Must be one of: {string.Join(", ", Frontmatter.ValidAreas)}");
-            return ExitCodes.ToolError;
+            return false;
         }
 
         if (!Enum.TryParse<IssueSeverity>(severity, ignoreCase: true, out var parsedSeverity))
         {
-            var valid = string.Join(", ", Enum.GetNames<IssueSeverity>().Select(n => n.ToLowerInvariant()));
-            ConsoleOutput.WriteError($"Invalid severity '{severity}'. Must be one of: {valid}");
-            return ExitCodes.ToolError;
+            ConsoleOutput.WriteError($"Invalid severity '{severity}'. Must be one of: {EnumNames<IssueSeverity>()}");
+            return false;
         }
 
         var foundByInput = foundBy ?? "manual";
         if (!Enum.TryParse<IssueFoundBy>(foundByInput, ignoreCase: true, out var parsedFoundBy))
         {
-            var valid = string.Join(", ", Enum.GetNames<IssueFoundBy>().Select(n => n.ToLowerInvariant()));
-            ConsoleOutput.WriteError($"Invalid found-by '{foundBy}'. Must be one of: {valid}");
-            return ExitCodes.ToolError;
+            ConsoleOutput.WriteError($"Invalid found-by '{foundBy}'. Must be one of: {EnumNames<IssueFoundBy>()}");
+            return false;
         }
+
+        meta = new IssueMeta(area, parsedSeverity, parsedFoundBy);
+        return true;
+    }
+
+    private static string EnumNames<T>() where T : struct, Enum =>
+        string.Join(", ", Enum.GetNames<T>().Select(n => n.ToLowerInvariant()));
+
+    private static bool TryResolveBody(string? body, string? bodyFile, out string? bodyContent)
+    {
+        bodyContent = null;
 
         if (body != null && bodyFile != null)
         {
             ConsoleOutput.WriteError("Cannot specify both --body and --body-file. Use one or the other.");
-            return ExitCodes.ToolError;
+            return false;
         }
 
-        string? bodyContent = body;
         if (bodyFile != null)
         {
             if (!File.Exists(bodyFile))
             {
                 ConsoleOutput.WriteError($"Body file not found: {bodyFile}");
-                return ExitCodes.ToolError;
+                return false;
             }
             bodyContent = File.ReadAllText(bodyFile);
         }
-
-        if (bodyContent != null)
+        else
         {
-            bodyContent = bodyContent.Trim();
-            if (bodyContent.Length == 0) bodyContent = null;
+            bodyContent = body;
         }
 
-        var issuesPath = IssueCommand.GetIssuesPath();
-        Directory.CreateDirectory(issuesPath);
+        bodyContent = bodyContent?.Trim();
+        if (bodyContent?.Length == 0) bodyContent = null;
+        return true;
+    }
 
-        var lockPath = Path.Combine(issuesPath, ".lock");
-        FileStream? lockFile = null;
-        try
+    private static string NormalizeSummary(string? summary)
+    {
+        var trimmed = summary?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? SummaryPlaceholder : trimmed;
+    }
+
+    private static FileStream? AcquireIssueLock(string lockPath)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
         {
-            for (var attempt = 0; attempt < 5; attempt++)
+            try
             {
-                try
-                {
-                    lockFile = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                    break;
-                }
-                catch (IOException) when (attempt < 4)
-                {
-                    Thread.Sleep(200);
-                }
+                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-
-            if (lockFile == null)
+            catch (IOException) when (attempt < 4)
             {
-                ConsoleOutput.WriteError("Could not acquire issue lock. Another process may be creating an issue. Try again.");
-                return ExitCodes.ToolError;
+                Thread.Sleep(200);
             }
-
-            var newId = ScanMaxId(issuesPath) + 1;
-            var slug = Slugify(title);
-            var fileName = $"{newId:D4}-{slug}.md";
-            var filePath = Path.Combine(issuesPath, fileName);
-
-            var bodySection = BuildBodySection(bodyContent);
-            var content = $"""
-                ---
-                id: {newId}
-                area: {area}
-                type: issue
-                severity: {parsedSeverity.ToString().ToLowerInvariant()}
-                status: {IssueStatus.Open.ToString().ToLowerInvariant()}
-                found-by: {parsedFoundBy.ToString().ToLowerInvariant()}
-                date: {DateTime.UtcNow:yyyy-MM-dd}
-                ---
-
-                # {title}
-
-                {bodySection}
-                """;
-
-            File.WriteAllText(filePath, content);
-            Console.WriteLine($"Created issue #{newId}: {fileName}");
         }
-        finally
-        {
-            lockFile?.Dispose();
-        }
+        return null;
+    }
 
-        return ExitCodes.Success;
+    private static string RenderIssueContent(int id, string title, IssueMeta meta, string summaryLine, string? bodyContent)
+    {
+        return $"""
+            ---
+            id: {id}
+            area: {meta.Area}
+            type: issue
+            severity: {meta.Severity.ToString().ToLowerInvariant()}
+            status: {IssueStatus.Open.ToString().ToLowerInvariant()}
+            found-by: {meta.FoundBy.ToString().ToLowerInvariant()}
+            date: {DateTime.UtcNow:yyyy-MM-dd}
+            ---
+
+            # {title}
+
+            {summaryLine}
+
+            {BuildBodySection(bodyContent)}
+            """;
     }
 
     internal static string Slugify(string title)

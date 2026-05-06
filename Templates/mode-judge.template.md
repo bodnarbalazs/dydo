@@ -168,8 +168,10 @@ The system caps at three judges per claim (guard-enforced). If the tie-breaker i
 For each **confirmed** finding, file an issue:
 
 ```bash
-dydo issue create --title "..." --area <a> --severity <s> --found-by inquisition
+dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by inquisition
 ```
+
+Always pass `--summary` so the issue file lands `dydo check`-clean.
 
 Then update the inquisition report — mark each finding with a full ruling block (see [Ruling Format](#ruling-format) above):
 

@@ -22,7 +22,7 @@ Any agent encounters out-of-scope problem → proposes to human → human approv
 
 ## Commands
 
-- `dydo issue create --title "..." --area <a> --severity <s> [--found-by <f>]`
+- `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" [--found-by <f>]` (always pass `--summary`; omitting it inserts a `(One-line summary)` placeholder that `dydo check` flags)
 - `dydo issue list [--area <a>] [--status <s>] [--all]`
 - `dydo issue resolve <id> --summary "..."`
 

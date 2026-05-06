@@ -277,7 +277,7 @@ Section: {YYYY-MM-DD} — {{AGENT_NAME}}
 Review each finding. For each one:
 1. Examine the cited evidence and the code independently
 2. Rule: CONFIRMED / FALSE POSITIVE / INCONCLUSIVE
-3. For confirmed findings, file an issue: dydo issue create --title '...' --area <a> --severity <s> --found-by inquisition
+3. For confirmed findings, file an issue: dydo issue create --title '...' --area <a> --severity <s> --summary 'one-line summary' --found-by inquisition (always pass --summary so the issue lands check-clean)
 4. Mark your ruling on each finding in the report
 
 Some findings are obvious (coding-standards violations, doc gaps) — verify they're real.

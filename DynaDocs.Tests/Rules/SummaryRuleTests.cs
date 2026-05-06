@@ -72,6 +72,28 @@ public class SummaryRuleTests
     }
 
     [Fact]
+    public void Validate_WarnsOnSummaryPlaceholder()
+    {
+        var doc = CreateDoc(title: "My Title", summary: "(One-line summary)");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Single(violations);
+        Assert.Equal(ViolationSeverity.Warning, violations[0].Severity);
+        Assert.Contains("placeholder", violations[0].Message.ToLower());
+    }
+
+    [Fact]
+    public void Validate_AcceptsRealSummary_NotJustNonEmpty()
+    {
+        var doc = CreateDoc(title: "My Title", summary: "An actual one-line summary that is not the placeholder.");
+
+        var violations = _rule.Validate(doc, [], "/base").ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
     public void Validate_SkipsTemplateAdditionWithNoTitle()
     {
         var doc = CreateDoc(

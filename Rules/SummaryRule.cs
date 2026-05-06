@@ -1,5 +1,6 @@
 namespace DynaDocs.Rules;
 
+using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -22,6 +23,12 @@ public class SummaryRule : RuleBase
         if (string.IsNullOrWhiteSpace(doc.SummaryParagraph))
         {
             yield return CreateWarning(doc, "Missing summary paragraph after title");
+            yield break;
+        }
+
+        if (doc.SummaryParagraph!.Trim() == IssueCreateHandler.SummaryPlaceholder)
+        {
+            yield return CreateWarning(doc, $"Summary is the '{IssueCreateHandler.SummaryPlaceholder}' placeholder — replace with a real one-line summary");
         }
     }
 }

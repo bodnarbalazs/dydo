@@ -178,7 +178,7 @@ Sub-agents may surface bugs or problems outside their task scope. When they do, 
 
 > "Agent [X] found [Y] while working on [Z]. Should I file an issue?"
 
-If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-by manual`
+If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by manual` — always pass `--summary` so the issue file lands `dydo check`-clean.
 
 ### 7. Report
 

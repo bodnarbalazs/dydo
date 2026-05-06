@@ -39,3 +39,60 @@
 {"ts":"2026-05-04T20:04:07.0481708Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9ed4fa5c-msg-dydo-check-drift-plan.md","tool":"read"}
 {"ts":"2026-05-04T20:04:12.5987802Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-dydo-check-drift.md","tool":"read"}
 {"ts":"2026-05-04T21:47:27.3275039Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5b270d78-msg-dydo-check-drift-plan.md","tool":"read"}
+{"ts":"2026-05-04T22:07:00.8261353Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\156e49d2-msg-investigate-audit-duplicate-key.md","tool":"read"}
+{"ts":"2026-05-04T23:14:40.3810947Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\79008db3-msg-pr1-scan-boundary.md","tool":"read"}
+{"ts":"2026-05-05T13:13:02.674772Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\dc8f9603-msg-pr1-scan-boundary.md","tool":"read"}
+{"ts":"2026-05-05T13:38:06.4865232Z","event":"Blocked","tool":"bash","cmd":"ls dydo/_system/audit/2026/2026-04-24-941f1399-145d-4804-8787-33e9d724a719.json 2\u003E\u00261 ; echo \u0022---\u0022 ; ...","reason":"Unread messages"}
+{"ts":"2026-05-05T13:38:15.4476413Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a40ff31b-msg-pr1-scan-boundary.md","tool":"read"}
+{"ts":"2026-05-05T13:38:21.3064504Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/audit/2026/2026-04-24-941f1399-145d-4804-8787-33e9d724a719.json 2\u003E\u00261 ; echo \u0022---\u0022 ; ..."}
+{"ts":"2026-05-05T13:38:21.6091078Z","event":"Bash","tool":"bash","cmd":"ls dydo/project/issues/0165*.md 2\u003E\u00261"}
+{"ts":"2026-05-05T13:38:27.2966885Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0165-tests-under-coverage-produce-3-unrelated-failures-xunit-console-capture-isolatio.md","tool":"read"}
+{"ts":"2026-05-05T13:39:08.0726381Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0165-tests-under-coverage-produce-3-unrelated-failures-xunit-console-capture-isolatio.md","tool":"edit"}
+{"ts":"2026-05-05T13:39:19.5541944Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md","tool":"read"}
+{"ts":"2026-05-05T13:39:55.4882668Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md","tool":"edit"}
+{"ts":"2026-05-05T13:47:49.2778728Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\56c8c4f1-msg-fix-hub-format-drift.md","tool":"read"}
+{"ts":"2026-05-05T14:25:52.3334082Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/ 2\u003E\u00261"}
+{"ts":"2026-05-05T14:25:52.5008391Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261"}
+{"ts":"2026-05-05T14:49:28.6802212Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\07a28fcc-msg-investigate-test-runtime-regression.md","tool":"read"}
+{"ts":"2026-05-05T17:13:19.3795763Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | tail -10","reason":"Missing general wait"}
+{"ts":"2026-05-05T17:13:31.3045594Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\75374dd0-msg-investigate-human-only-commands.md","tool":"read"}
+{"ts":"2026-05-05T17:16:49.8910627Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5535718e-msg-investigate-test-runtime-regression-ruling.md","tool":"read"}
+{"ts":"2026-05-05T17:29:06.4792315Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b0978ac2-msg-plan-human-only-clean-force.md","tool":"read"}
+{"ts":"2026-05-05T17:34:00.5934983Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\47010ebb-msg-plan-runtime-regression-batch.md","tool":"read"}
+{"ts":"2026-05-05T17:34:10.0589423Z","event":"Blocked","tool":"bash","cmd":"grep -n \u0022^## \\|^### \u0022 dydo/agents/Dexter/plan-runtime-regression-batch.md 2\u003E\u00261 | head -30","reason":"Unread messages"}
+{"ts":"2026-05-05T17:34:16.434497Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\91eda489-msg-plan-human-only-clean-force.md","tool":"read"}
+{"ts":"2026-05-05T17:34:21.9053685Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-runtime-regression-batch.md","tool":"grep"}
+{"ts":"2026-05-05T17:34:25.8375238Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-runtime-regression-batch.md","tool":"read"}
+{"ts":"2026-05-05T17:47:37.617327Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\39b0e53f-msg-fix-hub-format-drift.md","tool":"read"}
+{"ts":"2026-05-05T18:27:04.945451Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\220582c3-msg-implement-human-only-clean-force.md","tool":"read"}
+{"ts":"2026-05-05T18:28:34.7075872Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\7ca8c76a-msg-implement-human-only-clean-force.md","tool":"read"}
+{"ts":"2026-05-05T18:32:50.1680857Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6f2f9fc6-msg-docs-human-only-clean-force.md","tool":"read"}
+{"ts":"2026-05-05T18:38:42.9267943Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e76c84af-msg-implement-pr1-gap-check-exit.md","tool":"read"}
+{"ts":"2026-05-05T18:41:28.7399789Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\61ca31ef-msg-review-pr1-gap-check-exit.md","tool":"read"}
+{"ts":"2026-05-05T18:58:46.1175803Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\425782ce-msg-implement-pr1-gap-check-exit.md","tool":"read"}
+{"ts":"2026-05-05T19:01:51.4005485Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\731bb264-msg-review-hub-format-drift.md","tool":"read"}
+{"ts":"2026-05-05T19:11:03.0302576Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-05-05T19:11:18.9129253Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1c5c9e12-msg-review-hub-format-drift.md","tool":"read"}
+{"ts":"2026-05-05T19:12:53.4662521Z","event":"Blocked","tool":"bash","cmd":"ls dydo/agents/Brian/inbox/ 2\u003E\u00261","reason":"Unread messages"}
+{"ts":"2026-05-05T19:13:00.9261843Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8d9d49a7-msg-implement-pr1-gap-check-exit.md","tool":"read"}
+{"ts":"2026-05-05T19:13:01.4742299Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\a5fc4745-msg-fix-hub-format-drift.md","tool":"read"}
+{"ts":"2026-05-05T19:57:21.294762Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\877ae742-msg-implement-pr2-test-isolation.md","tool":"read"}
+{"ts":"2026-05-05T20:18:50.8367459Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d6805710-msg-implement-pr2-rule-corrections.md","tool":"read"}
+{"ts":"2026-05-05T20:18:51.0239007Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9092af29-msg-docs-pr2-test-isolation.md","tool":"read"}
+{"ts":"2026-05-05T20:25:21.4011392Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\687542e2-msg-implement-pr2-test-isolation.md","tool":"read"}
+{"ts":"2026-05-05T20:31:28.6846724Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\81977ad6-msg-implement-pr2-rule-corrections.md","tool":"read"}
+{"ts":"2026-05-05T20:44:12.1310091Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8d8b9b4d-msg-fix-pr2-dead-test.md","tool":"read"}
+{"ts":"2026-05-05T20:46:15.0993608Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ff9900b8-msg-implement-pr2-rule-corrections.md","tool":"read"}
+{"ts":"2026-05-05T20:47:31.9105366Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9ef13d3f-msg-implement-pr2-rule-corrections.md","tool":"read"}
+{"ts":"2026-05-06T10:32:00.731396Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8194b57c-msg-fix-pr2-dead-test.md","tool":"read"}
+{"ts":"2026-05-06T12:28:17.9382178Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\390655fe-msg-implement-pr3-issue-summary.md","tool":"read"}
+{"ts":"2026-05-06T13:00:46.8206Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\331a657f-msg-implement-pr3-issue-summary.md","tool":"read"}
+{"ts":"2026-05-06T13:00:47.2123064Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\fe17e38a-msg-implement-pr3-issue-summary.md","tool":"read"}
+{"ts":"2026-05-06T13:05:39.6789223Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\2afe39d0-msg-review-fix-pr2-dead-test.md","tool":"read"}
+{"ts":"2026-05-06T13:17:17.3037772Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\70386b08-msg-fix-hub-format-drift.md","tool":"read"}
+{"ts":"2026-05-06T13:36:38.2896081Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\0e0a0609-msg-implement-pr3-git-helper-drain.md","tool":"read"}
+{"ts":"2026-05-06T14:15:11.9228633Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\795c75c3-msg-implement-pr3-git-helper-drain.md","tool":"read"}
+{"ts":"2026-05-06T16:35:01.4854732Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8e147268-msg-implement-pr4-production-drain.md","tool":"read"}
+{"ts":"2026-05-06T16:49:14.4071962Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8c1734db-msg-review-human-only-clean-force.md","tool":"read"}
+{"ts":"2026-05-06T16:55:30.0119404Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6a021b3c-msg-implement-pr4-production-drain.md","tool":"read"}
+{"ts":"2026-05-06T17:45:52.5896422Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3f2d0427-msg-implement-pr4-production-drain.md","tool":"read"}

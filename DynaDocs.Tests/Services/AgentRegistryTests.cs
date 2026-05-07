@@ -3038,5 +3038,93 @@ public class AgentRegistryTests : IDisposable
         Assert.Contains("resume-attempts: 1", content);
     }
 
+    [Fact]
+    public void IncrementResumeAttempts_PersistsLaunchedPid_RoundTrips()
+    {
+        // #0173: launched-pid is what IsBadSessionFailFast reads to distinguish
+        // "still rehydrating" from "genuinely failed". Round-trip must work both
+        // ways: increment writes it, parser reads it back.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            resume-attempts: 0
+            ---
+            """);
+        var registry = new AgentRegistry(_testDir);
+
+        registry.IncrementResumeAttempts("Adele", preResumePid: 1111, launchedPid: 2222);
+
+        var content = File.ReadAllText(Path.Combine(workspace, "state.md"));
+        Assert.Contains("launched-pid: 2222", content);
+        var state = registry.GetAgentState("Adele")!;
+        Assert.Equal(2222, state.LaunchedPid);
+    }
+
+    [Fact]
+    public void RecordResumeLaunch_PersistsLaunchedPid_WithoutBumpingCounter()
+    {
+        // The watchdog calls this AFTER IncrementResumeAttempts has already bumped
+        // the counter — RecordResumeLaunch must update only the launched-pid field
+        // and leave resume-attempts untouched.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            resume-attempts: 2
+            ---
+            """);
+        var registry = new AgentRegistry(_testDir);
+
+        var ok = registry.RecordResumeLaunch("Adele", 9999);
+
+        Assert.True(ok);
+        var state = registry.GetAgentState("Adele")!;
+        Assert.Equal(9999, state.LaunchedPid);
+        Assert.Equal(2, state.ResumeAttempts);
+    }
+
+    [Fact]
+    public void ResetResumeBookkeeping_ClearsLaunchedPid_OnSameSessionReclaim()
+    {
+        // Symmetry to ClaimAgent_SameSessionIdReclaim_ResetsResumeAttempts: the
+        // same-session reclaim path zeroes the resume budget. launched-pid must
+        // be cleared alongside resume-attempts/last-resume-launched-at/pre-resume-pid
+        // or a stale value would poison the next crash episode's IsBadSessionFailFast.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            $"{{\"Agent\":\"Adele\",\"SessionId\":\"sess-X\",\"Claimed\":\"{DateTime.UtcNow.AddMinutes(-5):o}\",\"ClaimedPid\":99999999}}");
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            resume-attempts: 2
+            last-resume-launched-at: 2026-04-01T00:00:00.0000000Z
+            pre-resume-pid: 12345
+            launched-pid: 67890
+            ---
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+        registry.StorePendingSessionId("Adele", "sess-X");
+
+        Assert.True(registry.ClaimAgent("Adele", out var error), error);
+        var state = registry.GetAgentState("Adele")!;
+        Assert.Null(state.LaunchedPid);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
     #endregion
 }

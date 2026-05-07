@@ -235,6 +235,22 @@ public class ProcessUtilsTests
     [InlineData("claude-dev", "claude", false)]
     [InlineData("anthropicclaude", "claude", false)]
     [InlineData(null, "claude", false)]
+    // #0151 augment: post-update self-rename on Windows. The OS retains
+    // "claude.exe.old.<unix-ms>" for the running process's lifetime; both the
+    // anchor matcher and the kill whitelist must recognise it.
+    [InlineData("claude.exe.old.1777935765627", "claude", true)]
+    [InlineData("CLAUDE.EXE.OLD.42", "claude", true)]
+    [InlineData("claude.exe.old", "claude", false)]              // missing timestamp
+    [InlineData("claude.exe.old.", "claude", false)]             // empty timestamp
+    [InlineData("claude.exe.old.abc", "claude", false)]          // non-numeric timestamp
+    [InlineData("xclaude.exe.old.42", "claude", false)]          // anchored — no prefix bypass
+    [InlineData("claude.exe.old.42x", "claude", false)]          // anchored — no suffix bypass
+    [InlineData("node", "node", true)]
+    [InlineData("node.exe", "node", true)]
+    [InlineData("NODE.EXE", "node", true)]
+    [InlineData("node-gyp", "node", false)]
+    [InlineData("node-gyp.exe", "node", false)]
+    [InlineData("nodejs", "node", false)]
     public void MatchesProcessName_ExactBasename(string? actual, string needle, bool expected)
         => Assert.Equal(expected, ProcessUtils.MatchesProcessName(actual, needle));
 

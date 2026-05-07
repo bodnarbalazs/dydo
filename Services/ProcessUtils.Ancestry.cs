@@ -2,6 +2,7 @@ namespace DynaDocs.Services;
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 public static partial class ProcessUtils
 {
@@ -58,9 +59,10 @@ public static partial class ProcessUtils
     /// <summary>
     /// Walks up the process tree returning the first ancestor that looks like the
     /// running claude binary. Linux/Mac: basename "claude". Windows: basename "claude"
-    /// OR "node" (the official npm distribution is a Node script). Mirrors
-    /// WatchdogService.ClaudeProcessNames so anchoring and ClaimedPid capture share
-    /// one source of truth. Closes #0151.
+    /// OR "node" (the official npm distribution is a Node script). MatchesProcessName
+    /// also covers the post-update "claude.exe.old.&lt;unix-ms&gt;" rename so anchoring,
+    /// ClaimedPid capture, and the watchdog's kill-target whitelist share one source
+    /// of truth. Closes #0151.
     /// </summary>
     public static int? FindClaudeAncestor(int maxDepth = 10)
     {
@@ -90,12 +92,29 @@ public static partial class ProcessUtils
         return null;
     }
 
-    // Closes #0128: "claudia.exe", "claude-dev.exe" — anything that merely contains
-    // "claude" — must NOT be picked as the watchdog anchor.
-    internal static bool MatchesProcessName(string? actualName, string needle) =>
-        actualName != null &&
-        Path.GetFileNameWithoutExtension(actualName)
+    // Anchored regex per known needle. Closes #0128 ("claudia.exe", "claude-dev.exe"
+    // must NOT match) and #0151's post-update rename (after a Claude Code self-update
+    // on Windows the running image name becomes "claude.exe.old.<unix-ms>"; the OS
+    // retains that name for the running process's lifetime). The "node" entry covers
+    // Windows where claude ships as a Node script. Other needles fall through to the
+    // literal-stem path so unrelated callers (FindAncestorProcess("dotnet"), etc.)
+    // keep their existing semantics.
+    private static readonly Dictionary<string, Regex> ProcessNameRegexes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["claude"] = new Regex(@"^claude(\.exe(\.old\.\d+)?)?$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+        ["node"] = new Regex(@"^node(\.exe)?$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+    };
+
+    internal static bool MatchesProcessName(string? actualName, string needle)
+    {
+        if (actualName == null) return false;
+        if (ProcessNameRegexes.TryGetValue(needle, out var rx))
+            return rx.IsMatch(actualName);
+        return Path.GetFileNameWithoutExtension(actualName)
             .Equals(needle, StringComparison.OrdinalIgnoreCase);
+    }
 
     private static int? GetParentPidWindows(int pid)
     {

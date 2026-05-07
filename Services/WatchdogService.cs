@@ -12,15 +12,6 @@ public static class WatchdogService
         "fish", "dash", "tcsh", "csh", "nu", "ksh"
     };
 
-    // Targets the watchdog is allowed to kill. Whitelist (not skip-list) so every other
-    // process — terminal emulators, editors, anything future — is fail-closed protected.
-    // Linux/Mac claude binary is "claude"; on Windows it ships as a Node script so the
-    // resolved process name is "node".
-    internal static readonly HashSet<string> ClaudeProcessNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "claude", "node"
-    };
-
     /// <summary>
     /// When set, EnsureRunning uses this instead of Process.Start.
     /// Enables testing without spawning real watchdog processes.
@@ -65,12 +56,14 @@ public static class WatchdogService
     internal const int ResumeAttemptsCap = 3;
 
     /// <summary>
-    /// Window after a resume launch during which the watchdog suppresses additional
-    /// resume attempts for the same agent. Sized for claude --resume rehydration
-    /// (tens of seconds on real conversations) plus dydo claim hook latency.
-    /// Closes #0152.
+    /// Belt-and-braces ceiling between resume launches for the same agent. The
+    /// authoritative liveness signal is <see cref="IsBadSessionFailFast"/>'s
+    /// launched-PID check; this gate exists to bound how often we rapid-fire
+    /// respawn the same dead session in pathological cases. Raised from 60s to
+    /// 5min after #0173 observed multi-minute rehydrations on long conversations
+    /// (rehydration deltas of 8/32/10 minutes in audit data). Closes #0152, #0173.
     /// </summary>
-    internal static readonly TimeSpan ResumeWarmupGate = TimeSpan.FromSeconds(60);
+    internal static readonly TimeSpan ResumeWarmupGate = TimeSpan.FromMinutes(5);
 
     /// <summary>Test hook — shrink the warmup gate so cap-race tests stay fast.</summary>
     internal static TimeSpan? ResumeWarmupGateOverride { get; set; }
@@ -440,6 +433,7 @@ public static class WatchdogService
         int ClaimedPid,
         DateTime? LastResumeAt,
         int? PreResumePid,
+        int? LaunchedPid,
         string? WindowId,
         int Cap,
         TimeSpan Gate);
@@ -463,6 +457,14 @@ public static class WatchdogService
             return;
         }
 
+        // Silent-skip: warmup elapsed but the launched claude is still alive (slow
+        // rehydration on long conversations — 8/32/10-minute deltas observed in
+        // #0173 audit). Don't emit resume_blocked, don't relaunch, just wait. The
+        // log line is reserved for confirmed-dead launches per the locked decision
+        // on #0173 (Q3 silent-skip).
+        if (IsLaunchedClaudeStillAlive(ctx))
+            return;
+
         var newCount = registry.IncrementResumeAttempts(ctx.AgentName, ctx.ClaimedPid);
         if (newCount < 0) return; // lock contention — try again next tick
 
@@ -476,6 +478,12 @@ public static class WatchdogService
         var launchedPid = LaunchResumeOverride != null
             ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab)
             : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab);
+
+        // PID > 1 only — 0/1 mean launch failed or returned an init-like sentinel.
+        // Leaving LaunchedPid null in that case lets the next tick's liveness check
+        // fall back to the wall-clock gate (legacy behaviour).
+        if (launchedPid > 1)
+            registry.RecordResumeLaunch(ctx.AgentName, launchedPid);
 
         WatchdogLogger.LogResume(dydoRoot, ctx.AgentName, ctx.SessionId, newCount, launchedPid);
     }
@@ -500,7 +508,7 @@ public static class WatchdogService
             var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
             var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
 
-            var (status, attempts, lastResumeAt, preResumePid, windowId) = ParseResumeFields(statePath);
+            var (status, attempts, lastResumeAt, preResumePid, launchedPid, windowId) = ParseResumeFields(statePath);
             if (status != "working") return null;
             if (attempts >= cap) return null;
 
@@ -515,7 +523,7 @@ public static class WatchdogService
                 return null;
 
             return new ResumeContext(agentName, session.SessionId, pid, lastResumeAt,
-                preResumePid, windowId, cap, gate);
+                preResumePid, launchedPid, windowId, cap, gate);
         }
         finally
         {
@@ -537,15 +545,35 @@ public static class WatchdogService
 
     /// <summary>
     /// True when the warmup window has elapsed AND the live ClaimedPid still equals
-    /// the PID we observed at the last launch — meaning the resumed claude never
-    /// refreshed its PID (never reached HandleExistingSession). Saturating the cap
-    /// here turns repeated redundant terminals into 1.
+    /// the PID we observed at the last launch AND the launched resume terminal's
+    /// claude PID is dead — meaning the resumed claude never refreshed its PID and
+    /// is provably gone. The launched-PID liveness check distinguishes "still
+    /// rehydrating" (alive but slow) from "genuinely failed" (dead) — the false
+    /// positive that drove #0173. Saturating the cap here turns repeated redundant
+    /// terminals into 1. Legacy state.md without launched-pid (null) falls through
+    /// to the prior wall-clock-only behaviour for backward compatibility.
     /// </summary>
     private static bool IsBadSessionFailFast(ResumeContext ctx) =>
         ctx.LastResumeAt.HasValue
             && DateTime.UtcNow - ctx.LastResumeAt.Value >= ctx.Gate
             && ctx.PreResumePid.HasValue
-            && ctx.ClaimedPid == ctx.PreResumePid.Value;
+            && ctx.ClaimedPid == ctx.PreResumePid.Value
+            && (!ctx.LaunchedPid.HasValue || !ProcessUtils.IsProcessRunning(ctx.LaunchedPid.Value));
+
+    /// <summary>
+    /// True when the warmup window has elapsed but the launched claude PID is
+    /// still alive — i.e. rehydration is taking longer than the gate but has not
+    /// failed. Used to silent-skip the resume_blocked log emission per the
+    /// #0173 locked decision (Q3): the log line is reserved for confirmed-dead
+    /// launches, so a slow rehydration produces no log line at all (next tick
+    /// re-checks; either it eventually claims, or the launched PID dies and
+    /// IsBadSessionFailFast fires).
+    /// </summary>
+    private static bool IsLaunchedClaudeStillAlive(ResumeContext ctx) =>
+        ctx.LastResumeAt.HasValue
+            && DateTime.UtcNow - ctx.LastResumeAt.Value >= ctx.Gate
+            && ctx.LaunchedPid.HasValue
+            && ProcessUtils.IsProcessRunning(ctx.LaunchedPid.Value);
 
     private static string ResolveResumeWorkingDirectory(string agentDir, string projectRoot)
     {
@@ -559,22 +587,23 @@ public static class WatchdogService
         catch { return projectRoot; }
     }
 
-    private static (string? status, int attempts, DateTime? lastResumeAt, int? preResumePid, string? windowId)
+    private static (string? status, int attempts, DateTime? lastResumeAt, int? preResumePid, int? launchedPid, string? windowId)
         ParseResumeFields(string statePath)
     {
         try
         {
             var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
-            if (fields == null) return (null, 0, null, null, null);
+            if (fields == null) return (null, 0, null, null, null, null);
             fields.TryGetValue("status", out var status);
             return (
                 status,
                 ParseIntField(fields, "resume-attempts", 0),
                 ParseTimestampField(fields, "last-resume-launched-at"),
                 ParseNullableIntField(fields, "pre-resume-pid"),
+                ParseNullableIntField(fields, "launched-pid"),
                 ParseNonNullStringField(fields, "window-id"));
         }
-        catch { return (null, 0, null, null, null); }
+        catch { return (null, 0, null, null, null, null); }
     }
 
     private static int ParseIntField(Dictionary<string, string> fields, string key, int defaultValue)
@@ -606,10 +635,14 @@ public static class WatchdogService
 
     private static bool IsNullSentinel(string? v) => v is null or "null" or "";
 
-    // Whitelist target: claude (Linux/Mac) or node (Windows). Every other matching PID
-    // — terminal emulators that carry the prompt in their argv (gnome-terminal,
-    // konsole, alacritty, kitty, …), bash wrappers, editors that happen to substring-
-    // match — is fail-closed protected. Closes #0122.
+    // Whitelist target: claude (Linux/Mac, including the post-update
+    // "claude.exe.old.<unix-ms>" rename on Windows) or node (Windows, where
+    // claude ships as a Node script). Every other matching PID — terminal
+    // emulators that carry the prompt in their argv (gnome-terminal, konsole,
+    // alacritty, kitty, …), bash wrappers, editors that happen to substring-
+    // match — is fail-closed protected. Routing through MatchesProcessName
+    // keeps the kill-side and anchor-side rename coverage in lockstep
+    // (closes #0122, augments #0151).
     private static int KillClaudeProcesses(string dydoRoot, string agentName, string pattern,
                                            List<int> pids, string? dispatchedBy, string? since)
     {
@@ -619,7 +652,9 @@ public static class WatchdogService
             try
             {
                 var procName = ProcessUtils.GetProcessName(pid);
-                if (procName == null || !ClaudeProcessNames.Contains(procName))
+                if (procName == null) continue;
+                if (!ProcessUtils.MatchesProcessName(procName, "claude") &&
+                    !ProcessUtils.MatchesProcessName(procName, "node"))
                     continue;
                 killsAttempted++;
                 WatchdogLogger.LogKill(dydoRoot, agentName, pid, procName, pattern,

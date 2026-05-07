@@ -218,10 +218,20 @@ public interface IAgentRegistry
     /// <summary>
     /// Atomically increments the agent's resume-attempts counter, records the
     /// current UTC time as last-resume-launched-at, and stores the supplied
-    /// pre-resume PID. Returns the new attempts value, or -1 if the per-agent
-    /// lock is contended (caller should defer to the next watchdog poll).
+    /// pre-resume PID and launched PID. Returns the new attempts value, or -1
+    /// if the per-agent lock is contended (caller should defer to the next
+    /// watchdog poll).
     /// </summary>
-    int IncrementResumeAttempts(string agentName, int? preResumePid = null);
+    int IncrementResumeAttempts(string agentName, int? preResumePid = null, int? launchedPid = null);
+
+    /// <summary>
+    /// Atomically updates the agent's launched-pid field without bumping the
+    /// resume counter. Used by the watchdog after a launcher returns a non-zero
+    /// PID, so the next tick's liveness check can distinguish a live-but-slow
+    /// rehydration from a dead launch. Returns false if the per-agent lock is
+    /// contended.
+    /// </summary>
+    bool RecordResumeLaunch(string agentName, int launchedPid);
 
     /// <summary>
     /// Atomically sets the agent's resume-attempts counter to the cap. Used by

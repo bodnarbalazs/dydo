@@ -68,4 +68,15 @@ public class AgentState
     /// claude never reached its claim hook and we fail fast. Cleared on claim/release.
     /// </summary>
     public int? PreResumePid { get; set; }
+
+    /// <summary>
+    /// PID of the resume terminal process the watchdog launched at the most recent
+    /// auto-resume. Used by <see cref="DynaDocs.Services.WatchdogService.IsBadSessionFailFast"/>
+    /// to distinguish "still rehydrating" (launched claude is alive but slow to refresh
+    /// its ClaimedPid) from "genuinely failed" (launched claude is dead). The wall-clock
+    /// warmup gate alone produces false positives on long rehydrations — the launched-PID
+    /// liveness check is what makes the watchdog log honest. Cleared on claim/release.
+    /// Closes #0173.
+    /// </summary>
+    public int? LaunchedPid { get; set; }
 }

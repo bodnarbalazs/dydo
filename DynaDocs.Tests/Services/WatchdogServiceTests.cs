@@ -1830,6 +1830,163 @@ public class WatchdogServiceTests : IDisposable
         Assert.Equal(projectRoot, capturedWorkingDirectory);
     }
 
+    [Fact]
+    public void PollAndResumeForAgent_LaunchedPidAlive_PastWarmup_DoesNotEmitResumeBlocked()
+    {
+        // #0173 regression: with the wall-clock-only IsBadSessionFailFast, every
+        // rehydration that took longer than the gate produced a false `resume_blocked`
+        // line — driving balazs's "50% -> 33% -> 0%" perception. The fix: also require
+        // the launched-PID to be dead. When it's alive past the gate, the watchdog
+        // silent-skips this tick — no relaunch, no log emission, just wait for the
+        // next tick.
+        var logPath = SetLogPathOverride();
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 1,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-120),
+            preResumePid: 99999999, launchedPid: 12345);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        // ClaimedPid (99999999) dead, but LaunchedPid (12345) ALIVE — the resumed
+        // claude is rehydrating, not dead. Without the liveness check the wall-clock
+        // gate alone would saturate the cap and emit resume_blocked.
+        ProcessUtils.IsProcessRunningOverride = pid => pid == 12345;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+        Assert.Equal(1, ReadResumeAttempts(dydoRoot, "Adele"));
+        var lines = ReadLogLines(logPath);
+        Assert.DoesNotContain(lines, l => l["event"].GetString() == "resume_blocked");
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_LaunchedPidDead_PastWarmup_EmitsResumeBlocked()
+    {
+        // Counter-test: when the launched PID is dead AND ClaimedPid still equals
+        // pre-resume-pid (no refresh) past the gate, the resume genuinely failed.
+        // Saturate the cap and emit resume_blocked — the log line is now an honest
+        // signal that the resumed claude is provably gone.
+        var logPath = SetLogPathOverride();
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 1,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-120),
+            preResumePid: 99999999, launchedPid: 12345);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        // Both ClaimedPid and LaunchedPid dead.
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+        Assert.Equal(3, ReadResumeAttempts(dydoRoot, "Adele"));
+        var lines = ReadLogLines(logPath);
+        Assert.Single(lines, l => l["event"].GetString() == "resume_blocked");
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_LegacyState_NoLaunchedPid_PreservesPreFixBehavior()
+    {
+        // Backward-compat: a state.md from before #0173 has no launched-pid line
+        // (or "null"). IsBadSessionFailFast must fall through to the wall-clock-only
+        // predicate so existing in-flight sessions saturate the cap on bad-session
+        // exactly as they did pre-fix.
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 1,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-120),
+            preResumePid: 99999999, launchedPid: null);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _) => { launchCount++; return 0; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount);
+        Assert.Equal(3, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_LaunchSucceeds_PersistsLaunchedPidToState()
+    {
+        // After a successful launch (PID > 1), the watchdog must write the launched
+        // PID back to state.md so the next tick's IsBadSessionFailFast can read it.
+        // Without this, the liveness check has nothing to liveness-check.
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _) => 54321;
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        var statePath = Path.Combine(dydoRoot, "agents", "Adele", "state.md");
+        var content = File.ReadAllText(statePath);
+        Assert.Contains("launched-pid: 54321", content);
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_LaunchFailed_LeavesLaunchedPidNull()
+    {
+        // Symmetric to the success case: when the launcher returns 0 (or 1), don't
+        // poison state.md with a sentinel that would never appear gone — leave
+        // launched-pid null so the next tick's IsBadSessionFailFast falls back to
+        // the wall-clock gate (legacy behaviour).
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _) => 0;
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        var statePath = Path.Combine(dydoRoot, "agents", "Adele", "state.md");
+        var content = File.ReadAllText(statePath);
+        Assert.Contains("launched-pid: null", content);
+    }
+
+    [Fact]
+    public void PollAndCleanup_KillsPostUpdateRenamedClaude()
+    {
+        // #0151 augment: after a Claude Code self-update on Windows, the running
+        // process's image name becomes "claude.exe.old.<unix-ms>". The kill whitelist
+        // must recognise this rename via MatchesProcessName, or auto-close silently
+        // no-ops on the renamed image.
+        using var dummy = StartDummyProcess();
+        WriteAgentState("Adele", status: "free", autoClose: true);
+
+        WatchdogService.FindProcessesOverride = _ => [dummy.Id];
+        ProcessUtils.GetProcessNameOverride = pid => pid == dummy.Id ? "claude.exe.old.1777935765627" : null;
+
+        try
+        {
+            WatchdogService.PollAndCleanup(_testDir);
+        }
+        finally
+        {
+            WatchdogService.FindProcessesOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+        }
+
+        dummy.WaitForExit(5000);
+        Assert.True(dummy.HasExited, "post-update renamed claude.exe.old.<ts> must be killed");
+    }
+
     #endregion
 
     private void WriteAgentState(string agentName, string status, bool autoClose, string? windowId = null, int resumeAttempts = 0)
@@ -1882,12 +2039,13 @@ public class WatchdogServiceTests : IDisposable
     }
 
     private void WriteResumeAgentState(string dydoRoot, string agentName, string status, int resumeAttempts,
-        DateTime? lastResumeLaunchedAt = null, int? preResumePid = null, string? windowId = null)
+        DateTime? lastResumeLaunchedAt = null, int? preResumePid = null, int? launchedPid = null, string? windowId = null)
     {
         var agentDir = Path.Combine(dydoRoot, "agents", agentName);
         Directory.CreateDirectory(agentDir);
         var lastAtStr = lastResumeLaunchedAt.HasValue ? lastResumeLaunchedAt.Value.ToString("o") : "null";
         var preStr = preResumePid?.ToString() ?? "null";
+        var launchedStr = launchedPid?.ToString() ?? "null";
         var widStr = windowId ?? "null";
         File.WriteAllText(Path.Combine(agentDir, "state.md"), $$"""
             ---
@@ -1902,6 +2060,7 @@ public class WatchdogServiceTests : IDisposable
             resume-attempts: {{resumeAttempts}}
             last-resume-launched-at: {{lastAtStr}}
             pre-resume-pid: {{preStr}}
+            launched-pid: {{launchedStr}}
             started: null
             writable-paths: []
             readonly-paths: []

@@ -261,7 +261,8 @@ public class CheckAgentValidatorTests : IDisposable
         public void ClearAllDispatchWaitMarkers(string agentName) { }
         public string? GetSessionContext() => null;
         public void StoreSessionContext(string sessionId, string? agentName = null) { }
-        public int IncrementResumeAttempts(string agentName, int? preResumePid = null) => 0;
+        public int IncrementResumeAttempts(string agentName, int? preResumePid = null, int? launchedPid = null) => 0;
+        public bool RecordResumeLaunch(string agentName, int launchedPid) => true;
         public bool SaturateResumeAttempts(string agentName, int cap) => true;
     }
 

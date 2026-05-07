@@ -215,6 +215,7 @@ public partial class AgentRegistry : IAgentRegistry
             s.ResumeAttempts = 0;
             s.LastResumeLaunchedAt = null;
             s.PreResumePid = null;
+            s.LaunchedPid = null;
         });
     }
 
@@ -401,6 +402,7 @@ public partial class AgentRegistry : IAgentRegistry
             s.ResumeAttempts = 0;
             s.LastResumeLaunchedAt = null;
             s.PreResumePid = null;
+            s.LaunchedPid = null;
             if (!wasDispatched)
             {
                 s.WindowId = null;
@@ -560,6 +562,7 @@ public partial class AgentRegistry : IAgentRegistry
                 s.ResumeAttempts = 0;
                 s.LastResumeLaunchedAt = null;
                 s.PreResumePid = null;
+                s.LaunchedPid = null;
                 // Leave AutoClose untouched. The watchdog needs `free + auto-close: true`
                 // post-release to kill claude (Services/WatchdogService.cs:359). The
                 // redispatch race that earlier motivated clearing this here is closed by
@@ -1619,7 +1622,7 @@ public partial class AgentRegistry : IAgentRegistry
         });
     }
 
-    public int IncrementResumeAttempts(string agentName, int? preResumePid = null)
+    public int IncrementResumeAttempts(string agentName, int? preResumePid = null, int? launchedPid = null)
     {
         if (!TryAcquireLock(agentName, out _))
             return -1;
@@ -1629,8 +1632,34 @@ public partial class AgentRegistry : IAgentRegistry
             state.ResumeAttempts += 1;
             state.LastResumeLaunchedAt = DateTime.UtcNow;
             state.PreResumePid = preResumePid;
+            state.LaunchedPid = launchedPid;
             WriteStateFile(agentName, state);
             return state.ResumeAttempts;
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
+    }
+
+    /// <summary>
+    /// Updates only LaunchedPid for an agent without incrementing the resume counter.
+    /// Used by the watchdog when the launcher returns a non-zero PID after the
+    /// counter has already been bumped — the launched PID needs to land in state.md
+    /// before the next watchdog tick reads it for liveness checking. Returns false
+    /// if the per-agent lock is contended (caller may retry on the next tick;
+    /// LaunchedPid stays null until then, falling back to the wall-clock gate).
+    /// </summary>
+    public bool RecordResumeLaunch(string agentName, int launchedPid)
+    {
+        if (!TryAcquireLock(agentName, out _))
+            return false;
+        try
+        {
+            var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
+            state.LaunchedPid = launchedPid;
+            WriteStateFile(agentName, state);
+            return true;
         }
         finally
         {
@@ -1692,6 +1721,7 @@ public partial class AgentRegistry : IAgentRegistry
             resume-attempts: {state.ResumeAttempts}
             last-resume-launched-at: {(state.LastResumeLaunchedAt.HasValue ? state.LastResumeLaunchedAt.Value.ToString("o") : "null")}
             pre-resume-pid: {state.PreResumePid?.ToString() ?? "null"}
+            launched-pid: {state.LaunchedPid?.ToString() ?? "null"}
             started: {(state.Since.HasValue ? state.Since.Value.ToString("o") : "null")}
             writable-paths: [{string.Join(", ", state.WritablePaths.Select(p => $"\"{p}\""))}]
             readonly-paths: [{string.Join(", ", state.ReadOnlyPaths.Select(p => $"\"{p}\""))}]
@@ -1780,6 +1810,11 @@ public partial class AgentRegistry : IAgentRegistry
         {
             if (v is "null" or "") return;
             if (int.TryParse(v, out var p)) s.PreResumePid = p;
+        },
+        ["launched-pid"] = (s, v) =>
+        {
+            if (v is "null" or "") return;
+            if (int.TryParse(v, out var p)) s.LaunchedPid = p;
         },
         ["started"] = (s, v) => { if (v != "null" && DateTime.TryParse(v, out var dt)) s.Since = dt; },
         ["writable-paths"] = (s, v) => s.WritablePaths = ParsePathList(v),

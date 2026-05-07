@@ -2021,6 +2021,135 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
+    public void PollAndResumeForAgent_ResumeOutcome_Failed_OnLaunchedPidDead()
+    {
+        // PR3 of agent-crash-fixes: pair every IsBadSessionFailFast resume_blocked with a
+        // terminal resume_outcome=failed so the 4-bucket categorisation (a/b/c/d) gets a
+        // one-line signal of every confirmed-dead launch. The pre-resume-pid path is the
+        // post-PR1 honest fail-fast — no rehydration false positives.
+        var logPath = SetLogPathOverride();
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 1,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-120),
+            preResumePid: 99999999, launchedPid: 12345);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-fail", 99999999);
+        // Both ClaimedPid and LaunchedPid dead → IsBadSessionFailFast fires.
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => 0;
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        var lines = ReadLogLines(logPath);
+        var outcome = lines.Single(l => l["event"].GetString() == "resume_outcome");
+        Assert.Equal("failed", outcome["outcome"].GetString());
+        Assert.Equal("Adele", outcome["agent"].GetString());
+        Assert.Equal("sess-fail", outcome["session_id"].GetString());
+        Assert.Equal("launched_pid_dead", outcome["reason"].GetString());
+        Assert.Equal(1, outcome["attempts"].GetInt32());
+        // ElapsedSeconds rounds via int cast, so >= 119 is a safe lower bound (we set -120s).
+        Assert.True(outcome["elapsed_seconds"].GetInt32() >= 119);
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_ResumeOutcome_Failed_ClearsLastResumeLaunchedAt_PreventingDoubleEmit()
+    {
+        // PR3 idempotency: failed and gave_up are mutually exclusive per episode. The failed
+        // path must clear LastResumeLaunchedAt so the gave_up tick-check on the next poll
+        // cycle sees a null timestamp and skips. Without this, every IsBadSessionFailFast
+        // hit would also produce a duplicate gave_up line.
+        var logPath = SetLogPathOverride();
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 1,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-120),
+            preResumePid: 99999999, launchedPid: 12345);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-fail", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => 0;
+
+        // Two consecutive polls — second poll must NOT re-emit failed or fire a gave_up.
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        var lines = ReadLogLines(logPath);
+        var outcomes = lines.Where(l => l["event"].GetString() == "resume_outcome").ToList();
+        Assert.Single(outcomes);
+        Assert.Equal("failed", outcomes[0]["outcome"].GetString());
+
+        var statePath = Path.Combine(dydoRoot, "agents", "Adele", "state.md");
+        Assert.Contains("last-resume-launched-at: null", File.ReadAllText(statePath));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_ResumeOutcome_GaveUp_OnCapReached_EmittedOnce()
+    {
+        // PR3: when natural cap saturation occurs (3 successive launches, none of them
+        // hitting IsBadSessionFailFast — e.g. each crash hits a different ClaimedPid),
+        // the next tick after the gate elapses must emit resume_outcome=gave_up exactly
+        // once. Subsequent ticks must be silent (idempotency via cleared LastResumeLaunchedAt).
+        var logPath = SetLogPathOverride();
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 3,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-120),
+            preResumePid: 11111111, launchedPid: 22222222);
+        // ClaimedPid != preResumePid → IsBadSessionFailFast doesn't fire even though
+        // attempts >= cap. (TryReadResumeContext returns null on attempts >= cap, but
+        // the gave_up tick-check runs first and emits.)
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-give", 33333333);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+
+        var launchCount = 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+
+        // Three polls — first emits gave_up, the next two must be silent.
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal(0, launchCount); // cap saturation prevents any new launches
+        var lines = ReadLogLines(logPath);
+        var outcomes = lines.Where(l => l["event"].GetString() == "resume_outcome").ToList();
+        Assert.Single(outcomes);
+        Assert.Equal("gave_up", outcomes[0]["outcome"].GetString());
+        Assert.Equal("cap_reached", outcomes[0]["reason"].GetString());
+        Assert.Equal(3, outcomes[0]["attempts"].GetInt32());
+
+        // Cleared LastResumeLaunchedAt is the one-shot guard.
+        var statePath = Path.Combine(dydoRoot, "agents", "Adele", "state.md");
+        Assert.Contains("last-resume-launched-at: null", File.ReadAllText(statePath));
+        // ResumeAttempts stays at cap so no further launches are attempted.
+        Assert.Equal(3, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_ResumeOutcome_GaveUp_NotEmitted_BeforeGateElapses()
+    {
+        // Symmetry: cap reached but warmup gate has not yet elapsed since the last launch.
+        // Don't emit gave_up yet — the resumed claude could still rehydrate. Wait for the
+        // gate to expire before declaring the episode terminal.
+        var logPath = SetLogPathOverride();
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 3,
+            lastResumeLaunchedAt: DateTime.UtcNow.AddSeconds(-5),
+            preResumePid: 11111111, launchedPid: 22222222);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-still-warming", 33333333);
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+        WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        var lines = ReadLogLines(logPath);
+        Assert.DoesNotContain(lines, l => l["event"].GetString() == "resume_outcome");
+    }
+
+    [Fact]
     public void PollAndCleanup_KillsPostUpdateRenamedClaude()
     {
         // #0151 augment: after a Claude Code self-update on Windows, the running
@@ -2329,12 +2458,35 @@ public class WatchdogServiceTests : IDisposable
             WatchdogLogger.LogTick(_testDir, 1, 0);
             WatchdogLogger.LogKill(_testDir, "Adele", 999, "claude", "Adele --inbox", "free", true, null, null);
             WatchdogLogger.LogResume(_testDir, "Adele", "sess-abc", 1, 12345);
+            WatchdogLogger.LogResumeOutcome(_testDir, "Adele", "sess-abc", "succeeded", 1, 30, "same_session_reclaim");
             WatchdogLogger.LogParseFailure(_testDir, "x", "y");
             WatchdogLogger.LogPollError(_testDir, "boom");
             WatchdogLogger.LogExit(_testDir, "cancelled");
         });
 
         Assert.Null(ex);
+    }
+
+    [Fact]
+    public void Logger_LogResumeOutcome_EmitsExpectedJson()
+    {
+        // PR3 of agent-crash-fixes: pins the resume_outcome event's wire format. The
+        // follow-up inquisition uses these fields to compute the 4-bucket categorisation
+        // — any rename or shape change here breaks downstream queries silently.
+        var logPath = SetLogPathOverride();
+
+        WatchdogLogger.LogResumeOutcome(_testDir, "Brian", "sess-pr3", "succeeded",
+            attempts: 2, elapsedSeconds: 1928, reason: "same_session_reclaim");
+
+        var lines = ReadLogLines(logPath);
+        var outcome = lines.Single(l => l["event"].GetString() == "resume_outcome");
+        Assert.Equal("Brian", outcome["agent"].GetString());
+        Assert.Equal("sess-pr3", outcome["session_id"].GetString());
+        Assert.Equal("succeeded", outcome["outcome"].GetString());
+        Assert.Equal(2, outcome["attempts"].GetInt32());
+        Assert.Equal(1928, outcome["elapsed_seconds"].GetInt32());
+        Assert.Equal("same_session_reclaim", outcome["reason"].GetString());
+        Assert.True(outcome.ContainsKey("ts"));
     }
 
     [Fact]

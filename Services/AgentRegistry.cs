@@ -278,7 +278,11 @@ public partial class AgentRegistry : IAgentRegistry
             if (IsIdempotentReclaim(existingSession, state, sessionId))
                 return true;
 
-            SetupAgentWorkspace(agentName, sessionId, human, IsDispatchedOrQueued(state));
+            // Capture the prior session/state BEFORE SetupAgentWorkspace overwrites .session and
+            // resets state.md — the recovery_kind classification needs the pre-reset values.
+            // Closes the PR3 instrumentation half of the agent-crash-fixes batch.
+            SetupAgentWorkspace(agentName, sessionId, human, IsDispatchedOrQueued(state),
+                priorSession: existingSession, priorState: state);
             return true;
         }
         finally
@@ -340,12 +344,18 @@ public partial class AgentRegistry : IAgentRegistry
             // watchdog's next dead-PID check fires another resume and produces duplicate
             // terminals. Identity preserved per Decision 022 — only the PID changes.
             RefreshClaimedPid(agentName, existingSession);
+
             // #0153: a same-session reclaim is a successful resume — clear the resume
             // bookkeeping so the next crash episode starts from a clean budget. Without
             // this, the cap accumulates across crashes and long-lived agents eventually
             // become silently un-resumable. Decision 022 reads "claim" as inclusive of
             // same-session reclaims; the spec wording is updated alongside this commit.
+            // The local `state` snapshot (from GetAgentState above) is unaffected by the
+            // disk-side reset, so RecoveryClassifier can read its pre-reset values for
+            // the recovery_kind="auto" Claim audit + resume_outcome=succeeded log.
             ResetResumeBookkeeping(agentName);
+            RecoveryClassifier.EmitAutoRecovery(_basePath, _auditService, sessionId,
+                agentName, human, existingSession, state);
             return true;
         }
 
@@ -371,7 +381,8 @@ public partial class AgentRegistry : IAgentRegistry
         return false;
     }
 
-    private void SetupAgentWorkspace(string agentName, string sessionId, string? human, bool wasDispatched)
+    private void SetupAgentWorkspace(string agentName, string sessionId, string? human, bool wasDispatched,
+        AgentSession? priorSession = null, AgentState? priorState = null)
     {
         var workspace = GetAgentWorkspace(agentName);
         Directory.CreateDirectory(workspace);
@@ -428,10 +439,16 @@ public partial class AgentRegistry : IAgentRegistry
         }
         catch { /* Snapshot failure should not block agent claim */ }
 
+        var (recoveryKind, predecessorSession, attemptsAtClaim) =
+            RecoveryClassifier.ClassifyFreshSetup(priorSession, priorState);
+
         LogLifecycleEvent(sessionId, new AuditEvent
         {
             EventType = AuditEventType.Claim,
-            AgentName = agentName
+            AgentName = agentName,
+            RecoveryKind = recoveryKind,
+            ResumePredecessorSession = predecessorSession,
+            ResumeAttemptsAtClaim = attemptsAtClaim
         }, agentName, human, snapshot);
 
         try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
@@ -1666,10 +1683,12 @@ public partial class AgentRegistry : IAgentRegistry
     }
 
     /// <summary>
-    /// Sets ResumeAttempts to the cap value directly (without incrementing). Used by the
-    /// watchdog's bad-session-ID fail-fast path: if the resumed claude never refreshes its
-    /// PID after the warmup window, additional retries are pointless. Saturating the cap
-    /// here turns repeated failed launches into a single one. Reset semantics still apply:
+    /// Sets ResumeAttempts to the cap value directly (without incrementing) AND clears
+    /// LastResumeLaunchedAt — both signal "this resume episode is over, no more launches."
+    /// Used by the watchdog's bad-session-ID fail-fast path (<c>WatchdogService.IsBadSessionFailFast</c>)
+    /// and by PR3's gave_up tick-check, which is idempotent because clearing
+    /// LastResumeLaunchedAt makes the predicate <c>LastResumeLaunchedAt != null &amp;&amp;
+    /// ResumeAttempts &gt;= cap</c> false until the next launch. Reset semantics still apply:
     /// dydo agent claim or release clears the saturation.
     /// </summary>
     public bool SaturateResumeAttempts(string agentName, int cap)
@@ -1680,6 +1699,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
             state.ResumeAttempts = cap;
+            state.LastResumeLaunchedAt = null;
             WriteStateFile(agentName, state);
             return true;
         }

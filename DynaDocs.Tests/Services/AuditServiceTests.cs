@@ -633,4 +633,62 @@ public class AuditServiceTests : IDisposable
     }
 
     #endregion
+
+    #region PR3 Recovery Kind Persistence
+
+    [Fact]
+    public void ClaimEvent_PopulatesRecoveryKind_AndPredecessor()
+    {
+        // PR3 of agent-crash-fixes: AuditService must persist the new recovery_kind /
+        // resume_predecessor_session / resume_attempts_at_claim fields verbatim through
+        // both the in-memory cache write path and the on-disk reload path. AgentRegistry
+        // computes the values; AuditService is the durable boundary the inquisition reads.
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "pr3-recovery-test";
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Claim,
+            AgentName = "Brian",
+            RecoveryKind = "auto",
+            ResumePredecessorSession = "prev-session-uuid",
+            ResumeAttemptsAtClaim = 2
+        }, agentName: "Brian", human: "balazs");
+
+        // Force reload from disk to prove the wire format round-trips, not just the cache.
+        var freshService = new AuditService(basePath: _testDir);
+        var session = freshService.GetSession(sessionId);
+
+        Assert.NotNull(session);
+        var claim = session.Events.Single(e => e.EventType == AuditEventType.Claim);
+        Assert.Equal("auto", claim.RecoveryKind);
+        Assert.Equal("prev-session-uuid", claim.ResumePredecessorSession);
+        Assert.Equal(2, claim.ResumeAttemptsAtClaim);
+    }
+
+    [Fact]
+    public void NonClaimEvents_DoNotEmitRecoveryKindFields()
+    {
+        // Bounded-growth contract: the new fields are only meaningful on Claim events.
+        // Read/Write/Edit/etc. must not pollute the audit log with three null keys
+        // — JsonIgnoreCondition.WhenWritingNull keeps them out of the on-disk JSON.
+        var service = new AuditService(basePath: _testDir);
+        var sessionId = "pr3-no-pollution";
+
+        service.LogEvent(sessionId, new AuditEvent
+        {
+            EventType = AuditEventType.Read,
+            Path = "src/foo.cs"
+        });
+
+        var year = DateTime.UtcNow.Year.ToString();
+        var sessionFile = Directory.GetFiles(Path.Combine(_auditDir, year), $"*-{sessionId}.json").Single();
+        var raw = File.ReadAllText(sessionFile);
+
+        Assert.DoesNotContain("recovery_kind", raw);
+        Assert.DoesNotContain("resume_predecessor_session", raw);
+        Assert.DoesNotContain("resume_attempts_at_claim", raw);
+    }
+
+    #endregion
 }

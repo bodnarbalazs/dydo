@@ -92,6 +92,18 @@ public static partial class WatchdogLogger
             new ResumeBlockedEvent(Now(), "resume_blocked", agent, sessionId, reason, preResumePid),
             WatchdogLogJsonContext.Default.ResumeBlockedEvent);
 
+    /// <summary>
+    /// Terminal-state event for a resume episode (PR3 of agent-crash-fixes): "succeeded"
+    /// (same-session reclaim observed), "failed" (launched PID dead past warmup), or "gave_up"
+    /// (cap reached without a refresh). Emitted exactly once per episode — see PollAndResumeForAgent's
+    /// gave_up tick-check + ResetResumeBookkeeping piggyback for idempotency.
+    /// </summary>
+    public static void LogResumeOutcome(string dydoRoot, string agent, string sessionId, string outcome,
+                                        int attempts, int elapsedSeconds, string reason) =>
+        Write(dydoRoot,
+            new ResumeOutcomeEvent(Now(), "resume_outcome", agent, sessionId, outcome, attempts, elapsedSeconds, reason),
+            WatchdogLogJsonContext.Default.ResumeOutcomeEvent);
+
     public static void LogParseFailure(string dydoRoot, string statePath, string reason) =>
         Write(dydoRoot,
             new ParseFailureEvent(Now(), "parse_failure", statePath, reason),
@@ -153,6 +165,16 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("reason")] string Reason,
         [property: JsonPropertyName("pre_resume_pid")] int PreResumePid);
 
+    private sealed record ResumeOutcomeEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("agent")] string Agent,
+        [property: JsonPropertyName("session_id")] string SessionId,
+        [property: JsonPropertyName("outcome")] string Outcome,
+        [property: JsonPropertyName("attempts")] int Attempts,
+        [property: JsonPropertyName("elapsed_seconds")] int ElapsedSeconds,
+        [property: JsonPropertyName("reason")] string Reason);
+
     private sealed record ParseFailureEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event,
@@ -174,6 +196,7 @@ public static partial class WatchdogLogger
     [JsonSerializable(typeof(KillEvent))]
     [JsonSerializable(typeof(ResumeEvent))]
     [JsonSerializable(typeof(ResumeBlockedEvent))]
+    [JsonSerializable(typeof(ResumeOutcomeEvent))]
     [JsonSerializable(typeof(ParseFailureEvent))]
     [JsonSerializable(typeof(PollErrorEvent))]
     [JsonSerializable(typeof(ExitEvent))]

@@ -458,21 +458,44 @@ public static class WatchdogService
         string SessionId,
         int ClaimedPid,
         DateTime? LastResumeAt,
+        int Attempts,
         int? PreResumePid,
         int? LaunchedPid,
         string? WindowId,
         int Cap,
         TimeSpan Gate);
 
+    private sealed record GaveUpContext(
+        string AgentName,
+        string SessionId,
+        int Attempts,
+        int Cap,
+        int ElapsedSeconds);
+
     private static void PollAndResumeForAgent(string dydoRoot, string agentDir)
     {
+        var projectRoot = Path.GetDirectoryName(dydoRoot) ?? Directory.GetCurrentDirectory();
+
+        // PR3 of agent-crash-fixes: emit resume_outcome=gave_up at most once per episode when
+        // the cap was reached on the natural increment path (no IsBadSessionFailFast). Run
+        // before TryReadResumeContext, which would otherwise return null on cap-saturated
+        // agents and skip the rest of the poll. SaturateResumeAttempts clears
+        // LastResumeLaunchedAt so the next tick's predicate is false until a new launch.
+        var giveUpCtx = TryReadGaveUpContext(agentDir);
+        if (giveUpCtx != null)
+        {
+            WatchdogLogger.LogResumeOutcome(dydoRoot, giveUpCtx.AgentName, giveUpCtx.SessionId,
+                outcome: "gave_up", attempts: giveUpCtx.Attempts,
+                elapsedSeconds: giveUpCtx.ElapsedSeconds, reason: "cap_reached");
+            new AgentRegistry(projectRoot).SaturateResumeAttempts(giveUpCtx.AgentName, giveUpCtx.Cap);
+        }
+
         var ctx = TryReadResumeContext(agentDir);
         if (ctx == null) return;
 
         // Drop the lock before delegating to the registry — IncrementResumeAttempts
         // takes its own lock; the launcher must NOT hold the agent's claim lock or
         // the resumed claude would block on its first claim.
-        var projectRoot = Path.GetDirectoryName(dydoRoot) ?? Directory.GetCurrentDirectory();
         var registry = new AgentRegistry(projectRoot);
 
         if (IsBadSessionFailFast(ctx))
@@ -480,6 +503,16 @@ public static class WatchdogService
             registry.SaturateResumeAttempts(ctx.AgentName, ctx.Cap);
             WatchdogLogger.LogResumeBlocked(dydoRoot, ctx.AgentName, ctx.SessionId,
                 reason: "no_refresh_after_warmup", preResumePid: ctx.PreResumePid!.Value);
+
+            // PR3: pair every resume_blocked with a terminal resume_outcome=failed event so
+            // the 4-bucket categorisation gets a one-line signal of every confirmed-dead
+            // launch. SaturateResumeAttempts above also cleared LastResumeLaunchedAt, so
+            // gave_up's tick-check on the next poll won't double-fire — failed and gave_up
+            // are mutually exclusive per episode.
+            var elapsed = (int)(DateTime.UtcNow - ctx.LastResumeAt!.Value).TotalSeconds;
+            WatchdogLogger.LogResumeOutcome(dydoRoot, ctx.AgentName, ctx.SessionId,
+                outcome: "failed", attempts: ctx.Attempts,
+                elapsedSeconds: elapsed, reason: "launched_pid_dead");
             return;
         }
 
@@ -556,7 +589,47 @@ public static class WatchdogService
                 return null;
 
             return new ResumeContext(agentName, session.SessionId, pid, lastResumeAt,
-                preResumePid, launchedPid, windowId, cap, gate);
+                attempts, preResumePid, launchedPid, windowId, cap, gate);
+        }
+        finally
+        {
+            AgentRegistry.ReleaseLockAtPath(lockPath);
+        }
+    }
+
+    /// <summary>
+    /// PR3 of agent-crash-fixes: detects an agent whose resume episode has terminated by
+    /// natural cap saturation and is ready for a one-shot <c>resume_outcome=gave_up</c>
+    /// emission. Predicate: status=working AND attempts &gt;= cap AND LastResumeLaunchedAt
+    /// is set AND the warmup gate has elapsed since that launch. The bad-session-fail-fast
+    /// path emits its own <c>failed</c> outcome and clears LastResumeLaunchedAt, so a
+    /// failed-then-gave_up double-fire cannot happen.
+    /// </summary>
+    private static GaveUpContext? TryReadGaveUpContext(string agentDir)
+    {
+        var statePath = Path.Combine(agentDir, "state.md");
+        if (!File.Exists(statePath)) return null;
+
+        var lockPath = Path.Combine(agentDir, ".claim.lock");
+        var agentName = Path.GetFileName(agentDir);
+        if (!AgentRegistry.TryAcquireLockAtPath(lockPath, agentName, out _)) return null;
+
+        try
+        {
+            var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
+            var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
+
+            var (status, attempts, lastResumeAt, _, _, _) = ParseResumeFields(statePath);
+            if (status != "working") return null;
+            if (attempts < cap) return null;
+            if (lastResumeAt == null) return null;
+            if (DateTime.UtcNow - lastResumeAt.Value < gate) return null;
+
+            var session = TryReadSession(Path.Combine(agentDir, ".session"));
+            if (session?.SessionId == null) return null;
+
+            var elapsed = (int)(DateTime.UtcNow - lastResumeAt.Value).TotalSeconds;
+            return new GaveUpContext(agentName, session.SessionId, attempts, cap, elapsed);
         }
         finally
         {

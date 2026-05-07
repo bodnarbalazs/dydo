@@ -127,4 +127,35 @@ public class AuditEvent
     [JsonPropertyName("lifted")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? Lifted { get; set; }
+
+    /// <summary>
+    /// Categorises a Claim event for the 4-bucket recovery analysis (PR3 of agent-crash-fixes):
+    /// "fresh" (no prior session), "auto" (same-session reclaim after a watchdog resume launch),
+    /// "manual" (new session ID after an unreleased prior session — typically a user-initiated
+    /// re-claim with no `resume` event in between). Null on non-Claim events and on idempotent
+    /// reclaims that did not follow a resume launch.
+    /// </summary>
+    [JsonPropertyName("recovery_kind")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RecoveryKind { get; set; }
+
+    /// <summary>
+    /// Prior <c>.session.SessionId</c> at the moment of a Claim event when the agent had an
+    /// unreleased prior session. Equal to the new session ID for "auto" recovery (same-session
+    /// reclaim); differs for "manual". Null on "fresh" claims and on non-Claim events. Lets the
+    /// follow-up inquisition trace recovery chains without correlating watchdog.log.
+    /// </summary>
+    [JsonPropertyName("resume_predecessor_session")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ResumePredecessorSession { get; set; }
+
+    /// <summary>
+    /// Snapshot of <c>state.ResumeAttempts</c> captured at Claim time, before the same-session
+    /// reclaim path resets the resume budget. Lets the follow-up inquisition compute "how many
+    /// auto-resumes preceded this claim" without joining against watchdog.log. Null on Claim
+    /// events that lacked prior resume bookkeeping.
+    /// </summary>
+    [JsonPropertyName("resume_attempts_at_claim")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? ResumeAttemptsAtClaim { get; set; }
 }

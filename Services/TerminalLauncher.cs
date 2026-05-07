@@ -168,14 +168,14 @@ public class TerminalLauncher
     public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
         => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
 
-    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
-        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory);
+    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
+        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
 
-    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null)
-        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory);
+    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
+        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
 
-    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
-        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory);
+    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
+        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
 
     public static string GetITermTabScript(string shellCommand, string postCheck, string? windowId = null)
         => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck, windowId);
@@ -221,14 +221,14 @@ public class TerminalLauncher
     }
 
     public static int LaunchResumeTerminal(string agentName, string sessionId, string? workingDirectory = null,
-        string? windowName = null, bool useTab = false)
+        string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null)
     {
         return new TerminalLauncher(ProcessStarterOverride)
-            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab);
+            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot);
     }
 
     public int LaunchResume(string agentName, string sessionId, string? workingDirectory = null,
-        string? windowName = null, bool useTab = false)
+        string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null)
     {
         try
         {
@@ -237,11 +237,11 @@ public class TerminalLauncher
                     $"Working directory no longer exists: {workingDirectory}");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab);
+                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab);
+                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot);
 
-            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory);
+            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
             if (pid == 0)
                 throw new InvalidOperationException("No terminal found");
             return pid;

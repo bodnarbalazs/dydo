@@ -72,7 +72,8 @@ public static class WindowsTerminalLauncher
         return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
     }
 
-    public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
+    public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
+        string? worktreeId = null, string? mainProjectRoot = null)
     {
         var escapedSession = sessionId.Replace("'", "''");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
@@ -80,12 +81,32 @@ public static class WindowsTerminalLauncher
         // Re-arm the general wait in the background so the resumed claude session
         // has reachability without re-executing its workflow. (#022 + #021 launcher pattern)
         var waitStart = "Start-Process -WindowStyle Hidden -FilePath dydo -ArgumentList 'wait' | Out-Null; ";
-        return $"-NoExit -Command \"{agentEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; " +
-               $"{waitStart}claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}\"";
+        var resumeBody = $"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; " +
+                         $"{waitStart}claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}";
+
+        // Symmetry with GetArguments worktree path (#0175): wrap the resume body in
+        // Set-Location → junctions → init-settings → try/finally cleanup so the
+        // resumed claude lands in the worktree with the same environment the
+        // dispatcher tab had — and the worktree is cleaned up on its release.
+        if (worktreeId != null && mainProjectRoot != null)
+        {
+            var escapedRoot = mainProjectRoot.Replace("'", "''");
+            var wtDir = $"'{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'";
+            return $"-NoExit -Command \"{agentEnv}" +
+                   $"Set-Location {wtDir}; " +
+                   WorktreeCommand.GeneratePsJunctionScript(escapedRoot, isVariable: false) +
+                   $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
+                   $"Start-Sleep -Seconds 1; " +
+                   $"try {{ {resumeBody} }} " +
+                   $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
+        }
+
+        return $"-NoExit -Command \"{agentEnv}{resumeBody}\"";
     }
 
     public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId,
-        string? workingDirectory = null, string? windowName = null, bool useTab = false)
+        string? workingDirectory = null, string? windowName = null, bool useTab = false,
+        string? worktreeId = null, string? mainProjectRoot = null)
     {
         var shell = ProcessUtils.ResolvePowerShell();
 
@@ -105,7 +126,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -119,7 +140,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory),
+            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot),
             UseShellExecute = true
         };
         if (workingDirectory != null)

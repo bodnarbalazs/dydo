@@ -40,29 +40,44 @@ public static class MacTerminalLauncher
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
-    private static (string shellCommand, string postCheck) BuildResumeShellComponents(string agentName, string sessionId, string? workingDirectory)
+    private static (string shellCommand, string postCheck) BuildResumeShellComponents(string agentName, string sessionId,
+        string? workingDirectory, string? worktreeId = null, string? mainProjectRoot = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var agentExport = $"export DYDO_AGENT={agentName}; ";
         var escapedSession = sessionId.Replace("\\\"", "\\\\\\\"");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("\"", "\\\"");
-        var shellCommand = $"{cdPrefix}{agentExport}unset CLAUDECODE; " +
+
+        // Symmetry with the BuildShellComponents dispatch path (#0175): worktree
+        // setup recreates junctions + init-settings; cleanup runs on tab exit so
+        // the worktree never lingers after a resumed agent releases.
+        string wtSetup = "", wtCleanup = "";
+        if (worktreeId != null && mainProjectRoot != null)
+        {
+            wtSetup = TerminalLauncher.WorktreeSetupScript(worktreeId, mainProjectRoot);
+            wtCleanup = "; cd '" + TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot) + "' && " +
+                        TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
+        }
+
+        var shellCommand = $"{cdPrefix}{agentExport}{wtSetup}unset CLAUDECODE; " +
                            $"(dydo wait >/dev/null 2>&1 &) ; " +
                            $"claude --resume \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
-        return (shellCommand, "");
+        return (shellCommand, wtCleanup);
     }
 
-    public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null)
+    public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
+        string? worktreeId = null, string? mainProjectRoot = null)
     {
-        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory);
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
     public static int LaunchResume(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string sessionId, string? workingDirectory = null,
-        string? windowName = null, bool useTab = false)
+        string? windowName = null, bool useTab = false,
+        string? worktreeId = null, string? mainProjectRoot = null)
     {
-        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory);
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
 
         var runningTerminal = terminalDetector.GetRunningTerminal();
         var useITerm = runningTerminal == "iTerm"

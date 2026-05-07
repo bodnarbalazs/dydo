@@ -410,16 +410,14 @@ public partial class AgentRegistry : IAgentRegistry
             }
         });
 
-        // Anchor the watchdog to this claim's claude ancestor. RegisterAnchor is a
-        // best-effort no-op when the helper returns null (test contexts, unusual
-        // parent chains). Closes #0154 — without this, leaf agents whose dispatcher
-        // has already exited lose watchdog coverage and silently never resume.
-        try
-        {
-            var dydoRoot = _configService.GetDydoRoot(_basePath);
-            if (dydoRoot != null)
-                WatchdogService.RegisterAnchor(dydoRoot, ProcessUtils.FindClaudeAncestor());
-        }
+        // Anchor the watchdog to this claim's claude ancestor. RegisterMainAnchor
+        // routes through PathUtils.FindMainDydoRoot so the anchor always lands in
+        // the MAIN dydo root, never a worktree's — the watchdog only reads main.
+        // Pass _basePath so the worktree-walkback seed is the registry's project
+        // root rather than the process CWD (matters when the claim runs inside a
+        // worktree dispatcher whose CWD is the worktree dir).
+        // Closes #0154 (anchor-on-claim) and #0174 (worktree-claim wrong-dir).
+        try { WatchdogService.RegisterMainAnchor(ProcessUtils.FindClaudeAncestor(), _basePath); }
         catch { /* anchoring is best-effort; never fail a claim because of it */ }
 
         ProjectSnapshot? snapshot = null;

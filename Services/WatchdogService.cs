@@ -38,10 +38,13 @@ public static class WatchdogService
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this instead of TerminalLauncher.LaunchResumeTerminal.
-    /// Test hook — receives (agentName, sessionId, workingDirectory, windowName, useTab),
-    /// returns the (faked) launched PID.
+    /// Test hook — receives (agentName, sessionId, workingDirectory, windowName, useTab,
+    /// worktreeId, mainProjectRoot), returns the (faked) launched PID. The worktreeId/
+    /// mainProjectRoot pair carries the worktree context so the resume launcher can wrap
+    /// the resumed claude in the same Set-Location / init-settings / cleanup envelope as
+    /// the original dispatch (Finding #4 of agent-crashes inquisition; closes #0175).
     /// </summary>
-    internal static Func<string, string, string?, string?, bool, int>? LaunchResumeOverride { get; set; }
+    internal static Func<string, string, string?, string?, bool, string?, string?, int>? LaunchResumeOverride { get; set; }
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this cap instead of ResumeAttemptsCap.
@@ -181,6 +184,24 @@ public static class WatchdogService
         {
             stream.Close();
         }
+    }
+
+    /// <summary>
+    /// Single-source helper for "register an anchor in the MAIN dydo root, never a
+    /// worktree." Both <see cref="EnsureRunning()"/> and the agent-claim site in
+    /// <c>AgentRegistry</c> route through here so the main-vs-worktree resolution
+    /// rule is enforced by construction. Closes #0174 — previously the claim-time
+    /// callsite resolved its own dydo root via <c>_configService.GetDydoRoot</c>,
+    /// which lands inside a worktree when the claimer's basepath is a worktree.
+    /// <paramref name="startPath"/> seeds the worktree-walkback search; pass the
+    /// caller's basepath so test fixtures with synthetic project roots resolve
+    /// against the fixture rather than the host process CWD.
+    /// </summary>
+    public static void RegisterMainAnchor(int? anchorPid, string? startPath = null)
+    {
+        var mainDydoRoot = PathUtils.FindMainDydoRoot(startPath);
+        if (mainDydoRoot == null) return;
+        RegisterAnchor(mainDydoRoot, anchorPid);
     }
 
     // PID <= 1 is init/System; never write that — it would never appear gone and would
@@ -475,9 +496,16 @@ public static class WatchdogService
         // iTerm window id (Mac), so resume into it as a new tab.
         var useTab = ctx.WindowId != null;
 
+        // #0175: thread the worktree context through to the resume launcher so the
+        // resumed claude is wrapped in the same Set-Location / init-settings / try-
+        // finally-cleanup envelope as the original dispatch. Without this the resume
+        // tab lacks junctions and never runs `dydo worktree cleanup` on release.
+        var worktreeId = ResolveResumeWorktreeId(agentDir);
+        var mainProjectRoot = projectRoot;
+
         var launchedPid = LaunchResumeOverride != null
-            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab)
-            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab);
+            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot)
+            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot);
 
         // PID > 1 only — 0/1 mean launch failed or returned an init-like sentinel.
         // Leaving LaunchedPid null in that case lets the next tick's liveness check
@@ -585,6 +613,22 @@ public static class WatchdogService
             return Directory.Exists(path) ? path : projectRoot;
         }
         catch { return projectRoot; }
+    }
+
+    // The .worktree marker stores the worktree id (e.g. "implement-pr2" or
+    // "parent/child"); set by DispatchService at worktree-creation time. Returns
+    // null when the agent is not in a worktree, so the resume launcher's worktree
+    // wrapper is bypassed for main-project claims.
+    private static string? ResolveResumeWorktreeId(string agentDir)
+    {
+        var marker = Path.Combine(agentDir, ".worktree");
+        if (!File.Exists(marker)) return null;
+        try
+        {
+            var id = File.ReadAllText(marker).Trim();
+            return string.IsNullOrEmpty(id) ? null : id;
+        }
+        catch { return null; }
     }
 
     private static (string? status, int attempts, DateTime? lastResumeAt, int? preResumePid, int? launchedPid, string? windowId)

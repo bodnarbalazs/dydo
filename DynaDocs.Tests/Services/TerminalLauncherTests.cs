@@ -2724,6 +2724,134 @@ public class TerminalLauncherTests
         }
     }
 
+    // #0175 regression: the resume launch path skipped the worktree wrapper that
+    // the original dispatch performed. Without these tests, a refactor could
+    // re-introduce the silent-data-loss case where a resumed worktree agent
+    // releases without ever running `dydo worktree cleanup`.
+
+    [Fact]
+    public void GetWindowsResumeArguments_WithWorktree_IncludesSetupAndCleanup()
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments(
+            "Brian", "sess-abc",
+            workingDirectory: null,
+            worktreeId: "fix-bug",
+            mainProjectRoot: "C:/proj");
+
+        Assert.Contains("Set-Location 'C:/proj/dydo/_system/.local/worktrees/fix-bug'", args);
+        Assert.Contains("dydo worktree init-settings --main-root 'C:/proj'", args);
+        Assert.Contains("Start-Sleep -Seconds 1", args);
+        Assert.Contains("try {", args);
+        Assert.Contains("finally {", args);
+        Assert.Contains("dydo worktree cleanup fix-bug --agent Brian", args);
+        Assert.Contains("claude --resume 'sess-abc'", args);
+    }
+
+    [Fact]
+    public void GetWindowsResumeArguments_WithoutWorktree_OmitsWrapper()
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments("Brian", "sess-abc");
+
+        Assert.DoesNotContain("Set-Location", args);
+        Assert.DoesNotContain("init-settings", args);
+        Assert.DoesNotContain("worktree cleanup", args);
+        Assert.Contains("claude --resume 'sess-abc'", args);
+    }
+
+    [Fact]
+    public void GetLinuxResumeArguments_WithWorktree_IncludesSetupAndCleanup()
+    {
+        var args = TerminalLauncher.GetLinuxResumeArguments(
+            "gnome-terminal", "Brian", "sess-abc",
+            workingDirectory: null,
+            worktreeId: "fix-bug",
+            mainProjectRoot: "/home/dev/proj");
+
+        Assert.Contains("cd '/home/dev/proj/dydo/_system/.local/worktrees/fix-bug'", args);
+        Assert.Contains("dydo worktree init-settings --main-root '/home/dev/proj'", args);
+        Assert.Contains("dydo worktree cleanup fix-bug --agent Brian", args);
+        Assert.Contains("claude --resume 'sess-abc'", args);
+    }
+
+    [Fact]
+    public void GetLinuxResumeArguments_WithoutWorktree_OmitsWrapper()
+    {
+        var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Brian", "sess-abc");
+
+        Assert.DoesNotContain("init-settings", args);
+        Assert.DoesNotContain("worktree cleanup", args);
+        Assert.Contains("claude --resume 'sess-abc'", args);
+    }
+
+    [Fact]
+    public void GetMacResumeArguments_WithWorktree_IncludesSetupAndCleanup()
+    {
+        var args = TerminalLauncher.GetMacResumeArguments(
+            "Brian", "sess-abc",
+            workingDirectory: null,
+            worktreeId: "fix-bug",
+            mainProjectRoot: "/Users/dev/proj");
+
+        Assert.Contains("cd '/Users/dev/proj/dydo/_system/.local/worktrees/fix-bug'", args);
+        Assert.Contains("dydo worktree init-settings --main-root '/Users/dev/proj'", args);
+        Assert.Contains("dydo worktree cleanup fix-bug --agent Brian", args);
+        Assert.Contains("claude --resume", args);
+    }
+
+    [Fact]
+    public void BuildResumeBashCommand_WithWorktree_UsesForwardSlashes_NotPlatformSeparator()
+    {
+        // Cross-platform regression: the worktree path embedded in the bash command
+        // must always be forward-slash regardless of host platform. Path.Combine
+        // would inject '\' on Windows and break the bash here-string. (The body
+        // does contain a literal '\' inside the bash escape sequence \e[?1004l —
+        // assert specifically on the worktree path segment, not the whole body.)
+        var body = LinuxTerminalLauncher.BuildResumeBashCommand(
+            "Brian", "sess-abc",
+            worktreeId: "fix-bug",
+            mainProjectRoot: "/home/dev/proj");
+
+        Assert.Contains("/home/dev/proj/dydo/_system/.local/worktrees/fix-bug", body);
+        Assert.DoesNotContain("/home/dev/proj\\", body);
+        Assert.DoesNotContain("worktrees\\", body);
+    }
+
+    [Fact]
+    public void TryLaunchResume_WithWorktree_PassesWrapperToTerminal()
+    {
+        var recorder = new RecordingProcessStarter();
+        var pid = LinuxTerminalLauncher.TryLaunchResume(
+            recorder, TerminalLauncher.LinuxTerminals,
+            "Brian", "sess-abc",
+            workingDirectory: null,
+            worktreeId: "fix-bug",
+            mainProjectRoot: "/home/dev/proj");
+
+        Assert.NotEqual(0, pid);
+        var args = recorder.Started[0].Arguments;
+        Assert.Contains("init-settings --main-root '/home/dev/proj'", args);
+        Assert.Contains("dydo worktree cleanup fix-bug --agent Brian", args);
+    }
+
+    [Fact]
+    public void WindowsLaunchResume_WithWorktree_EmbedsWrapperInWtArguments()
+    {
+        var recorder = new RecordingProcessStarter();
+        WindowsTerminalLauncher.LaunchResume(
+            recorder, "Brian", "sess-abc",
+            workingDirectory: null,
+            windowName: null,
+            useTab: false,
+            worktreeId: "fix-bug",
+            mainProjectRoot: "C:/proj");
+
+        Assert.NotEmpty(recorder.Started);
+        var args = recorder.Started[0].Arguments;
+        // wt escapes ';' as '\;' so the assertion uses the escaped form.
+        Assert.Contains("Set-Location 'C:/proj/dydo/_system/.local/worktrees/fix-bug'", args);
+        Assert.Contains("dydo worktree cleanup fix-bug --agent Brian", args);
+    }
+
     #endregion
 }
 

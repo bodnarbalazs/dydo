@@ -48,16 +48,30 @@ public static class LinuxTerminalLauncher
     /// Body that replaces the fresh-launch <c>unset CLAUDECODE; … ; exec bash</c>
     /// segment in any LinuxTerminals entry. The cd-prefix and DYDO_* exports come
     /// from the surrounding base args (preserved); we only swap in the resume
-    /// claude invocation plus a backgrounded <c>dydo wait</c>.
+    /// claude invocation plus a backgrounded <c>dydo wait</c>. When worktreeId and
+    /// mainProjectRoot are non-null the body is wrapped in the same setup/cleanup
+    /// envelope as the original dispatch (Finding #4; closes #0175).
     /// </summary>
-    internal static string BuildResumeBashCommand(string agentName, string sessionId)
+    internal static string BuildResumeBashCommand(string agentName, string sessionId,
+        string? worktreeId = null, string? mainProjectRoot = null)
     {
         var escapedSession = sessionId.Replace("'", "'\\''");
         var escapedPrompt = TerminalLauncher.BashSingleQuoteEscape(TerminalLauncher.ResumeContinuationPrompt);
-        return $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE; " +
-               $"(dydo wait >/dev/null 2>&1 &) ; " +
-               $"claude --resume '{escapedSession}' '{escapedPrompt}'; " +
-               $"printf '\\e[?1004l'; exec bash";
+        var resumeBody = $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE; " +
+                         $"(dydo wait >/dev/null 2>&1 &) ; " +
+                         $"claude --resume '{escapedSession}' '{escapedPrompt}'; " +
+                         $"printf '\\e[?1004l'";
+
+        if (worktreeId != null && mainProjectRoot != null)
+        {
+            var escapedRoot = TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot);
+            return TerminalLauncher.WorktreeSetupScript(worktreeId, mainProjectRoot) +
+                   resumeBody +
+                   $"; cd '{escapedRoot}' && {TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName)}" +
+                   "; exec bash";
+        }
+
+        return resumeBody + "; exec bash";
     }
 
     /// <summary>
@@ -66,12 +80,13 @@ public static class LinuxTerminalLauncher
     /// --inbox'` token the existing LinuxTerminals entries always emit. Avoids a
     /// parallel 9-arm switch (CRAP) that mirrors the existing config table.
     /// </summary>
-    public static string GetResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null)
+    public static string GetResumeArguments(string terminalName, string agentName, string sessionId,
+        string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
     {
         var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
         return SwapInResumeBody(config.GetArguments(agentName, workingDirectory),
-            BuildResumeBashCommand(agentName, sessionId));
+            BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot));
     }
 
     private static string SwapInResumeBody(string baseArgs, string resumeBashBody)
@@ -88,9 +103,10 @@ public static class LinuxTerminalLauncher
     }
 
     public static int TryLaunchResume(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
-        string agentName, string sessionId, string? workingDirectory = null)
+        string agentName, string sessionId, string? workingDirectory = null,
+        string? worktreeId = null, string? mainProjectRoot = null)
     {
-        var resumeBody = BuildResumeBashCommand(agentName, sessionId);
+        var resumeBody = BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot);
         foreach (var terminal in terminals)
         {
             try

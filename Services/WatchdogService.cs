@@ -187,12 +187,17 @@ public static class WatchdogService
     }
 
     /// <summary>
-    /// Single-source helper for "register an anchor in the MAIN dydo root, never a
-    /// worktree." Both <see cref="EnsureRunning()"/> and the agent-claim site in
-    /// <c>AgentRegistry</c> route through here so the main-vs-worktree resolution
-    /// rule is enforced by construction. Closes #0174 — previously the claim-time
-    /// callsite resolved its own dydo root via <c>_configService.GetDydoRoot</c>,
-    /// which lands inside a worktree when the claimer's basepath is a worktree.
+    /// Helper for the agent-claim anchor write: resolves the MAIN dydo root
+    /// (never a worktree) via <see cref="PathUtils.FindMainDydoRoot"/> and
+    /// delegates to <see cref="RegisterAnchor"/>. <see cref="EnsureRunning()"/>
+    /// has its own equivalent path — it calls <see cref="PathUtils.FindMainDydoRoot"/>
+    /// directly and invokes <see cref="RegisterAnchor"/>, so the main-vs-worktree
+    /// rule is upheld at each call site independently rather than enforced
+    /// through a shared chokepoint. Any new anchor-registration site MUST
+    /// resolve the main dydo root the same way. Closes #0174 — previously the
+    /// claim-time callsite resolved its own dydo root via
+    /// <c>_configService.GetDydoRoot</c>, which lands inside a worktree when
+    /// the claimer's basepath is a worktree.
     /// <paramref name="startPath"/> seeds the worktree-walkback search; pass the
     /// caller's basepath so test fixtures with synthetic project roots resolve
     /// against the fixture rather than the host process CWD.

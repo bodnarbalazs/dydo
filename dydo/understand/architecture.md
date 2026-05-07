@@ -76,6 +76,8 @@ A task lifecycle tracks work through states: pending → in-progress → review-
 
 Every agent session produces a JSON audit file in `dydo/_system/audit/YYYY/`. Sessions capture a project snapshot (files, folders, doc links) and timestamped events (reads, writes, blocks, role changes). Compaction reduces storage via baseline+delta compression. An HTML replay visualization shows agent activity as an animated timeline.
 
+The Claim event optionally carries three nullable fields recording how a session reached its current state: `recovery_kind` (`fresh` | `auto` | `manual` — `auto` if the watchdog reclaimed the same `SessionId`, `manual` if the user re-claimed with a new session via e.g. `claude <agent> --inbox`), `resume_predecessor_session` (the prior session id when `recovery_kind != 'fresh'`), and `resume_attempts_at_claim` (a snapshot of `state.ResumeAttempts` preserved across the bookkeeping reset, so inquisitors can count auto-resume attempts that preceded a manual recovery without joining against the watchdog log). All three are emitted with `JsonIgnoreCondition.WhenWritingNull`, so pre-v1.4.6 audit JSONs parse forward-compatibly. The terminal-state counterpart per resume episode is the `resume_outcome` event written to the watchdog log (see Watchdog). See [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md); enriched schema landed in commit `036b88c`.
+
 ---
 
 ## Worktree Dispatch
@@ -136,6 +138,7 @@ A background monitoring process that handles lifecycle events for dispatched age
 - **Auto-close**: When `--auto-close` is set on dispatch, the watchdog polls the target agent's state every 10 seconds. When the agent releases, the watchdog closes its terminal.
 - **Queue advancement**: Monitors named dispatch queues and launches deferred terminals when the active item completes.
 - **Orphan detection**: Identifies agents that are stuck in Working state without an active process (parent PID liveness checks).
+- **Resume outcome**: For each crash-resume episode (see [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md)), the watchdog log records a `resume_outcome` event at the terminal state — `outcome` (`succeeded` | `failed` | `gave_up`), `attempts`, `elapsed_seconds`, and `reason` (`same_session_reclaim` | `launched_pid_dead` | `cap_reached`). `SaturateResumeAttempts` clears `LastResumeLaunchedAt` on termination so each episode emits exactly once. Paired with `recovery_kind` on the corresponding Claim audit event, the two enable a 4-bucket categorisation of recoveries (auto succeeded, auto failed, not attempted, manual). Enriched in v1.4.6 (commit `036b88c`).
 
 The watchdog runs as a background process spawned by the dispatch command. It's stateless — all state is derived from the filesystem (agent state files, queue markers).
 

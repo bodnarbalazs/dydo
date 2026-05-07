@@ -97,7 +97,7 @@ If you discover a bug or problem outside the current task scope during review, r
 
 > "I found [X]. Should I file an issue?"
 
-If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-by review`
+If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by review` — always pass `--summary` so the issue file lands `dydo check`-clean.
 
 ---
 

@@ -133,3 +133,45 @@
 {"ts":"2026-05-06T19:05:46.6538455Z","event":"Bash","tool":"bash","cmd":"Get-Process dotnet,testhost -ErrorAction SilentlyContinue | Select-Object Id, Name, StartTime | Sort..."}
 {"ts":"2026-05-06T19:06:06.5851353Z","event":"Bash","tool":"bash","cmd":"Stop-Process -Id 32380,36120,19388,54836,5032,30484,34616 -Force -ErrorAction Continue 2\u003E\u00261; Write-O..."}
 {"ts":"2026-05-06T19:06:23.7652471Z","event":"Bash","tool":"bash","cmd":"Get-Process | Where-Object { $_.Name -like \u0027*claude*\u0027 -or $_.Name -like \u0027pwsh\u0027 -or $_.Name -like \u0027po..."}
+{"ts":"2026-05-06T19:21:41.9826862Z","event":"Bash","tool":"bash","cmd":"gh run list --branch master --limit 5 2\u003E\u00261"}
+{"ts":"2026-05-06T19:22:01.4019266Z","event":"Bash","tool":"bash","cmd":"gh run view 25451659138 --log-failed 2\u003E\u00261 | tail -80"}
+{"ts":"2026-05-06T19:22:42.3491259Z","event":"Bash","tool":"bash","cmd":"gh run view 25451659138 --log-failed 2\u003E\u00261 | grep -i \u0022Failed\u0022 | grep -v \u0022Passed\\|Failed:\u0022 | head -30"}
+{"ts":"2026-05-06T19:23:32.9835817Z","event":"Bash","tool":"bash","cmd":"gh run view 25451659138 --log-failed 2\u003E\u00261 | grep -A 20 \u0022RunProcessCapture_EnvironmentInjected\u0022 | hea..."}
+{"ts":"2026-05-06T20:19:40.5147165Z","event":"Blocked","tool":"bash","cmd":"git log --oneline -5 2\u003E\u00261","reason":"Unread messages"}
+{"ts":"2026-05-06T20:19:46.2264506Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e95052f6-msg-pre-tag-bookkeeping.md","tool":"read"}
+{"ts":"2026-05-06T20:20:04.738069Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5 2\u003E\u00261"}
+{"ts":"2026-05-06T20:20:05.1035077Z","event":"Bash","tool":"bash","cmd":"gh run list --branch master --limit 3 2\u003E\u00261"}
+{"ts":"2026-05-06T20:45:51.3410351Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f84f1fe6-msg-fix-ci-failures.md","tool":"read"}
+{"ts":"2026-05-06T20:59:18.1140569Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c0bf7cb8-msg-fix-ci-failures.md","tool":"read"}
+{"ts":"2026-05-06T21:05:27.0143703Z","event":"Blocked","tool":"bash","cmd":"dydo whoami 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-05-06T21:05:35.8801139Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | grep -E \u0022^\\[\u0022 | tail -5","reason":"Missing general wait"}
+{"ts":"2026-05-06T21:05:42.1084279Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\4d0d074b-17b9-471e-b217-2d11eed5f637\\tasks\\baoxq9buc.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-06T21:05:51.2189843Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\4d0d074b-17b9-471e-b217-2d11eed5f637\\tasks\\baoxq9buc.output","tool":"read"}
+{"ts":"2026-05-06T21:05:58.821823Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\4d0d074b-17b9-471e-b217-2d11eed5f637\\tasks\\b8igskope.output","tool":"read"}
+{"ts":"2026-05-06T21:08:42.9798806Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\_issues.md","tool":"read"}
+{"ts":"2026-05-06T21:08:43.6184193Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\changelog\\_changelog.md","tool":"read"}
+{"ts":"2026-05-06T21:08:57.6243031Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\_issues.md","tool":"edit"}
+{"ts":"2026-05-06T21:08:59.3595228Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0164-skip-pattern-blocks-duplicated-across-rules-with-no-central-source-of-truth-sile.md","tool":"read"}
+{"ts":"2026-05-06T21:09:16.0132315Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0164-skip-pattern-blocks-duplicated-across-rules-with-no-central-source-of-truth-sile.md","tool":"edit"}
+{"ts":"2026-05-06T21:15:48.8596397Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5e92acf4-msg-fix-changelog-broken-link.md","tool":"read"}
+{"ts":"2026-05-06T21:21:35.38344Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1e45cb95-msg-run-dydo-fix-pre-tag.md","tool":"read"}
+{"ts":"2026-05-06T21:30:33.6783789Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\93dd62ca-msg-run-dydo-fix-pre-tag.md","tool":"read"}
+{"ts":"2026-05-06T21:50:18.4709383Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5819edaa-msg-investigate-agent-crashes.md","tool":"read"}
+{"ts":"2026-05-07T11:00:01.6771323Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\2afed186-msg-plan-agent-crash-fixes.md","tool":"read"}
+{"ts":"2026-05-07T11:07:45.5533563Z","event":"Bash","tool":"bash","cmd":"wc -l dydo/project/inquisitions/agent-crashes.md 2\u003E\u00261"}
+{"ts":"2026-05-07T11:07:46.9776242Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-agent-crash-fixes.md","tool":"grep"}
+{"ts":"2026-05-07T11:07:51.7936441Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-agent-crash-fixes.md","tool":"read"}
+{"ts":"2026-05-07T11:13:22.5991314Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\7acea38a-msg-append-survivorship-bias-caveat.md","tool":"read"}
+{"ts":"2026-05-07T11:55:38.3489473Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-05-07T11:55:39.3178836Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"grep"}
+{"ts":"2026-05-07T11:55:46.2235912Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-05-07T13:47:40.1088499Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5590908d-msg-implement-pr1-honest-resume-gating.md","tool":"read"}
+{"ts":"2026-05-07T14:24:38.3929754Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c351b547-msg-implement-pr1-honest-resume-gating.md","tool":"read"}
+{"ts":"2026-05-07T15:24:38.1891432Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\33e4165e-msg-implement-pr2-worktree-anchor-and-wrapper.md","tool":"read"}
+{"ts":"2026-05-07T16:20:53.9881514Z","event":"Bash","tool":"bash","cmd":"ls -lt dydo/_system/audit/2026/4090052a*.events 2\u003E\u00261 | head -3"}
+{"ts":"2026-05-07T16:21:02.0248369Z","event":"Bash","tool":"bash","cmd":"tail -1 dydo/_system/audit/2026/4090052a-7b28-491b-b0e7-8e1266ca1fb8.events 2\u003E\u00261"}
+{"ts":"2026-05-07T16:21:16.5328971Z","event":"Blocked","tool":"bash","cmd":"dydo agent clean Charlie --force","reason":"Human-only command"}
+{"ts":"2026-05-07T16:27:13.7770561Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\4d0d074b-17b9-471e-b217-2d11eed5f637\\tasks\\biaparg5o.output","tool":"read"}
+{"ts":"2026-05-07T16:27:47.2895604Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | grep -E \u0022^\\[\u0022 | tail -3","reason":"Missing general wait"}
+{"ts":"2026-05-07T16:28:03.9444454Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\400ef586-msg-review-pr2-worktree-anchor.md","tool":"read"}
+{"ts":"2026-05-07T16:57:50.8205907Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\66a3ee9f-msg-review-pr2-worktree-anchor-v2.md","tool":"read"}

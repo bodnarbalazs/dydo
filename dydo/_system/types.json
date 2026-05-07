@@ -1,0 +1,16 @@
+// dydo type vocabulary. Built-in types are merged on `dydo template update`;
+// user-added types are preserved. Append new strings to extend the vocabulary.
+// See dydo/reference/configuration.md for details.
+[
+  "hub",
+  "concept",
+  "guide",
+  "reference",
+  "decision",
+  "pitfall",
+  "changelog",
+  "context",
+  "folder-meta",
+  "issue",
+  "inquisition"
+]

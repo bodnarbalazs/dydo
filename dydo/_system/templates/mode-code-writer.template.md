@@ -88,7 +88,7 @@ If you encounter a bug or problem outside your current task scope, propose it to
 
 > "I found [X]. Should I file an issue?"
 
-If approved: `dydo issue create --title "..." --area <a> --severity <s> --found-by manual`
+If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by manual` — always pass `--summary` so the issue file lands `dydo check`-clean.
 
 **If guard blocks you:**
 - Check your role: `dydo agent status`

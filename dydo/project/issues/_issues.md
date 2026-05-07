@@ -50,4 +50,3 @@ Issues are numbered (0001, 0002...). Resolved issues move to the `resolved/` sub
 ## Related
 
 - [Pitfalls](../pitfalls/_index.md) — Known gotchas (different from issues)
-- [Tasks](../tasks/_index.md) — Work tracking

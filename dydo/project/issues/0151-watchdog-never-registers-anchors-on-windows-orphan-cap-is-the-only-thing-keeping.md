@@ -20,6 +20,26 @@ Root cause for #0150 on Windows. WatchdogService.EnsureRunning calls RegisterAnc
 
 (Steps to reproduce, if applicable)
 
+## Augmented 2026-05-06 — `claude.exe.old.<unix-ms>` post-update case (inquisition Finding #3)
+
+A third `MatchesProcessName` blind spot surfaced in the same family: after a Claude Code self-update on Windows, the running claude process's image name becomes `claude.exe.old.<unix-ms>` (Claude Code renames the prior `claude.exe` on disk and drops the new binary in place; the OS retains the old image name for the running process's lifetime).
+
+Concrete observation in `dydo/_system/.local/watchdog.log`:
+
+```
+{"ts":"2026-05-06T21:09:35Z","event":"start","anchor_pid":57332,"anchor_name":"claude.exe.old.1777935765627",...}
+```
+
+Walking `MatchesProcessName` (`Services/ProcessUtils.Ancestry.cs:95-98`):
+- `Path.GetFileNameWithoutExtension("claude.exe.old.1777935765627")` strips the last `.<token>` segment → `"claude.exe.old"`.
+- `"claude.exe.old".Equals("claude")` → false. `"claude.exe.old".Equals("node")` → false.
+
+Concrete consequences:
+- Any new `dydo agent claim` whose claude ancestor is the post-update process fails `FindClaudeAncestor` and either falls back to a non-claude PID or returns null. (Existing anchors written before the rename keep working — the file is keyed by PID, not name.)
+- `KillClaudeProcesses` (`Services/WatchdogService.cs:621-622`) filters by `ClaudeProcessNames.Contains(procName)`. A `claude.exe.old.<ts>` target fails the whitelist and the auto-close kill silently no-ops.
+
+Resolution should broaden the matcher to recognise the rename pattern, e.g. a regex equivalent of `^claude(\.exe(\.old\.\d+)?)?$` plus `^node(\.exe)?$`. The Linux/Mac matcher is unaffected (no analogous rename behaviour).
+
 ## Resolution
 
 (Filled when resolved)

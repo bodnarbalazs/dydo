@@ -73,6 +73,12 @@ public static class ConfigFactory
             Message = "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
             Severity = "warn"
         },
+        new()
+        {
+            Pattern = @"\buntil\s+\[",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Severity = "warn"
+        },
     ];
 
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

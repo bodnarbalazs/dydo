@@ -15,6 +15,7 @@ public static class WorktreeCommand
     internal static Func<string, string, int>? RunProcessWithExitCodeOverride;
     internal static Func<string, string, (int ExitCode, string Stdout)>? RunProcessCaptureOverride;
     internal static Func<string, string, int>? RunProcessSilentOverride;
+    internal static Func<string, bool>? RemoveZombieDirectoryOverride;
 
     public static Command Create()
     {
@@ -328,10 +329,13 @@ public static class WorktreeCommand
             return ExitCodes.Success;
         }
 
-        TeardownWorktree(worktreePath, mainRoot);
+        var removed = TeardownWorktree(worktreePath, mainRoot);
         DeleteWorktreeBranch(worktreeId, mainRoot);
 
-        Console.WriteLine($"Worktree {worktreeId}: cleaned up.");
+        if (removed)
+            Console.WriteLine($"Worktree {worktreeId}: cleaned up.");
+        else
+            Console.WriteLine($"Worktree {worktreeId}: marker removed; directory remains (in use by another process — see warning above). Will retry on next prune.");
         return ExitCodes.Success;
     }
 
@@ -733,14 +737,20 @@ public static class WorktreeCommand
     /// git's --force removal on Windows can follow reparse points into main-repo junction
     /// targets (destroying agent workspaces). By wiping the directory ourselves first,
     /// git's remove only has to tidy up metadata for a missing working tree.
+    ///
+    /// Returns true when the worktree directory is gone after teardown, false when it
+    /// remains on disk (e.g. Windows file-lock held by another process). Callers branch
+    /// the user-facing log so it never claims success when the directory is still there
+    /// (issue #179).
     /// </summary>
-    internal static void TeardownWorktree(string worktreePath, string? mainRoot = null)
+    internal static bool TeardownWorktree(string worktreePath, string? mainRoot = null)
     {
         PreserveAuditFiles(worktreePath);
         foreach (var sub in JunctionSubpaths)
             RemoveJunction(Path.Combine(worktreePath, sub));
         RemoveZombieDirectory(worktreePath);
         RemoveGitWorktree(worktreePath, mainRoot);
+        return !Directory.Exists(worktreePath);
     }
 
     internal static void RemoveJunction(string junctionPath)
@@ -806,19 +816,31 @@ public static class WorktreeCommand
         }
     }
 
-    internal static void RemoveZombieDirectory(string worktreePath)
+    /// <summary>
+    /// Removes an unregistered worktree directory using the junction-safe deletion path.
+    /// Returns true when the directory is gone afterwards (or was never there); false when
+    /// the deletion failed (typically a Windows file-lock — the WARNING on stderr explains
+    /// why). Callers thread the bool through to the user-facing log so it never claims
+    /// success when the directory is still on disk (issue #179).
+    /// </summary>
+    internal static bool RemoveZombieDirectory(string worktreePath)
     {
+        if (RemoveZombieDirectoryOverride != null)
+            return RemoveZombieDirectoryOverride(worktreePath);
+
         // git worktree remove only works for registered worktrees.
         // Zombie directories (unregistered) need direct deletion.
         // Uses junction-safe deletion to avoid following junctions into the main repo.
-        if (!Directory.Exists(worktreePath)) return;
+        if (!Directory.Exists(worktreePath)) return true;
         try
         {
             DeleteDirectoryJunctionSafe(worktreePath);
+            return !Directory.Exists(worktreePath);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"WARNING: Could not remove directory {worktreePath}: {ex.Message}");
+            return false;
         }
     }
 
@@ -958,12 +980,13 @@ public static class WorktreeCommand
         RemoveAllMarkers(workspace);
 
         var refsRemaining = 0;
+        var directoryRemoved = true;
         var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath != null)
         {
             refsRemaining = CountWorktreeReferences(registry, worktreeId);
             if (refsRemaining == 0)
-                TeardownWorktree(worktreePath, mainRoot);
+                directoryRemoved = TeardownWorktree(worktreePath, mainRoot);
         }
 
         // Prune stale worktree references (no-op if the directory is still present).
@@ -979,7 +1002,10 @@ public static class WorktreeCommand
 
         if (branchDeleteExit == 0)
         {
-            Console.WriteLine($"Merge finalized. Worktree {worktreeId} branch deleted.");
+            if (directoryRemoved)
+                Console.WriteLine($"Merge finalized. Worktree {worktreeId} branch deleted.");
+            else
+                Console.WriteLine($"Merge applied to {baseBranch}, branch {mergeSource} deleted, but worktree directory at {worktreePath} remains (in use by another process — see warning above). Will retry on next prune.");
         }
         else
         {
@@ -1017,9 +1043,12 @@ public static class WorktreeCommand
 
                 Console.WriteLine($"Pruning orphaned worktree: {worktreeId}");
                 ReportStrandedWatchdogPid(dir);
-                TeardownWorktree(dir, mainRoot);
+                var removed = TeardownWorktree(dir, mainRoot);
                 DeleteWorktreeBranch(worktreeId, mainRoot);
-                orphansRemoved++;
+                if (removed)
+                    orphansRemoved++;
+                else
+                    Console.WriteLine($"  Worktree {worktreeId}: directory remains (in use by another process — see warning above). Will retry on next prune.");
             }
         }
 

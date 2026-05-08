@@ -291,4 +291,51 @@ public class ConfigFactoryTests
 
         Assert.DoesNotMatch(forceNudge.Pattern, command);
     }
+
+    [Theory]
+    [InlineData("until [ -s /tmp/claude/foo ]; do sleep 1; done")]
+    [InlineData("until [ ! -f /tmp/lock ]; do sleep 2; done")]
+    [InlineData("until  [ -e foo ]; do :; done")]
+    public void DefaultNudges_MatchesOpenEndedUntilLoop_AsWarn(string command)
+    {
+        var matchingNudge = FindUntilLoopNudge();
+
+        Assert.Matches(matchingNudge.Pattern, command);
+        Assert.Equal("warn", matchingNudge.Severity);
+        Assert.Contains("0177", matchingNudge.Message);
+    }
+
+    [Theory]
+    [InlineData("for i in {1..30}; do test -f x; sleep 1; done")]
+    [InlineData("gh run watch 12345")]
+    [InlineData("dydo wait")]
+    [InlineData("dydo wait --task foo")]
+    [InlineData("while [ ! -f x ]; do sleep 1; done")]
+    public void DefaultNudges_DoesNotMatchValidPollingPatterns(string command)
+    {
+        var untilNudge = FindUntilLoopNudge();
+
+        Assert.DoesNotMatch(untilNudge.Pattern, command);
+    }
+
+    [Fact]
+    public void DefaultNudges_UntilLoopNudge_IsIdempotent_InEnsureDefaultNudges()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+        var firstCount = config.Nudges.Count(n => n.Pattern == @"\buntil\s+\[");
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+        var secondCount = config.Nudges.Count(n => n.Pattern == @"\buntil\s+\[");
+
+        Assert.Equal(1, firstCount);
+        Assert.Equal(1, secondCount);
+        Assert.Equal(0, added);
+    }
+
+    private static NudgeConfig FindUntilLoopNudge()
+    {
+        var nudge = ConfigFactory.DefaultNudges.FirstOrDefault(n => n.Pattern == @"\buntil\s+\[");
+        Assert.NotNull(nudge);
+        return nudge;
+    }
 }

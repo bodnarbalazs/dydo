@@ -1945,6 +1945,67 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
+    public void Cleanup_DirectoryRemovalFails_DoesNotPrintCleanedUp()
+    {
+        // Issue #179: when RemoveZombieDirectory cannot delete the worktree directory
+        // (typically a Windows file-lock held by another process), the user-facing log
+        // must NOT claim "cleaned up" — that misleading line, paired with the WARNING
+        // already on stderr, seeded the (refuted) "watchdog kill-heuristic" hypothesis
+        // during the 2026-05-08 agent-crash investigation.
+        var worktreeId = "Adele-locked-20260508";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        Directory.CreateDirectory(worktreePath);
+
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+
+        WorktreeCommand.RemoveZombieDirectoryOverride = _ => false;
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var stdout = CaptureStdout(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+            Assert.DoesNotContain("cleaned up", stdout);
+            Assert.Contains("directory remains", stdout);
+            Assert.Contains(worktreeId, stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RemoveZombieDirectoryOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Prune_DirectoryRemovalFails_DoesNotCountAsRemoved()
+    {
+        // Issue #179, prune variant: when teardown fails, prune must not include the
+        // worktree in its 'Pruned N orphaned worktree(s)' count, and must surface the
+        // partial-state line so the user knows to retry.
+        var worktreesDir = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees");
+        var orphanDir = Path.Combine(worktreesDir, "orphan-locked-20260508");
+        Directory.CreateDirectory(orphanDir);
+
+        var ws = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(ws);
+
+        WorktreeCommand.RemoveZombieDirectoryOverride = _ => false;
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecutePrune(_registry));
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("directory remains", stdout);
+            Assert.Contains("Pruned 0 orphaned worktree(s)", stdout);
+        }
+        finally
+        {
+            WorktreeCommand.RemoveZombieDirectoryOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
     public void DeleteDirectoryJunctionSafe_NonExistentPath_NoOp()
     {
         var missing = Path.Combine(_testDir, "no-such-dir-" + Guid.NewGuid().ToString("N")[..8]);

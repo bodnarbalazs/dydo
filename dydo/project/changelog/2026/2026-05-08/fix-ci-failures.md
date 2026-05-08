@@ -1,10 +1,7 @@
 ---
 area: general
-name: fix-ci-failures
-status: human-reviewed
-created: 2026-05-06T20:21:51.8691208Z
-assigned: Brian
-updated: 2026-05-06T20:44:39.8658037Z
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: fix-ci-failures
@@ -83,3 +80,7 @@ NO PRODUCTION CHANGES. NO UNRELATED CHANGES. NO OUT-OF-SCOPE WORK.
 - Notes: Surgical, test-only fix. InitGitRepo: -c key=val on the commit invocation is the right scope (no global mutation, helper signature unchanged); divergence from WorktreeMergeSafetyIntegrationTests' git-config form is acceptable. ProcessUtilsCaptureTests: /c/Users/User/bin is correct POSIX (longest :* suffix removed -> first PATH entry remains as a non-empty prefix), preserves the test's intent; comment explains the dash-vs-bash WHY. run_tests.py 4131/4131 pass; gap_check.py 140/140 modules pass (exit 0). dydo check has 56 errors but all pre-existing on parent 49c0759 and tracked by existing issues (#0159 inquisition type, #0166 hub/index drift, etc.) - none introduced by this commit.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-05-08 12:36

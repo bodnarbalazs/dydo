@@ -1,9 +1,7 @@
 ---
 area: general
-name: plan-agent-crash-fixes
-status: pending
-created: 2026-05-07T10:41:14.9456720Z
-assigned: Brian
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: plan-agent-crash-fixes
@@ -21,3 +19,7 @@ Plan implementation of clear-cut fixes from `dydo/project/inquisitions/agent-cra
 ## Review Summary
 
 (Pending — awaiting Adele review of the plan; counter-recommendation on PR1 boundary is the load-bearing decision.)
+
+## Approval
+
+- Approved: 2026-05-08 12:36

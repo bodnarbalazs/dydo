@@ -1,10 +1,7 @@
 ---
 area: general
-name: implement-pr1-honest-resume-gating
-status: human-reviewed
-created: 2026-05-07T11:49:37.1749874Z
-assigned: Brian
-updated: 2026-05-07T13:46:34.8898058Z
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: implement-pr1-honest-resume-gating
@@ -108,3 +105,7 @@ GATES:
 Code is clean, tests are meaningful (regression test for balazs's 'feels broken' bug is named clearly and pins the exact failure mode), no AI slop, anti-slop mandate respected. Ship PR1.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-05-08 12:36

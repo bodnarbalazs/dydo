@@ -1,10 +1,7 @@
 ---
 area: general
-name: implement-pr2-worktree-anchor-and-wrapper
-status: review-pending
-created: 2026-05-07T14:25:51.3749011Z
-assigned: Brian
-updated: 2026-05-07T15:22:54.7039160Z
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: implement-pr2-worktree-anchor-and-wrapper
@@ -112,3 +109,7 @@ PR3 DEFERRED — no resume_outcome event, no recovery_kind on Claim, no resume_p
 
 REVIEW BRIEF
 Confirm the anchor-write site routes through RegisterMainAnchor and resolves to the main dydo root regardless of basepath. Confirm the resume-launch path recreates junctions and runs cleanup on all three platforms. Verify the LaunchResumeOverride signature change covers every call site. Spot-check the cross-platform path-handling assertions in TerminalLauncherTests. After approval, baton-pass back to Adele on this same task.
+
+## Approval
+
+- Approved: 2026-05-08 12:36

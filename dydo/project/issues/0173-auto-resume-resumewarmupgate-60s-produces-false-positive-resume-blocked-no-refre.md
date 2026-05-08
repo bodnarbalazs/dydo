@@ -35,6 +35,33 @@ Finding #1 (with subordinate Finding #5) of inquisition `dydo/project/inquisitio
 
 **Regression trace:** maps to commit `9b27195` (2026-05-02, v1.4.3) which introduced both the warmup gate and `IsBadSessionFailFast`. v1.4.6 install does not change the symptom (no `Services/` changes vs v1.4.5).
 
+### Magnitude (augmented 2026-05-08 — Frank, judge ruling on Dexter's silent-death root-cause inquisition Finding #4)
+
+The original "Direct evidence" table sampled 4 sessions on a single day. A wider classification over the **full 10-day watchdog log retention** (2026-04-29 17:25Z → 2026-05-08 11:08Z) puts a hard number on the false-positive rate: **13 of 16 `resume_blocked: no_refresh_after_warmup` events are false positives (81.25%)**, 2 of 16 are true crashes (12.5%), 1 of 16 is unknown (6.25%).
+
+| sid | agent | resume_blocked at | sidecar tail | classification |
+|---|---|---|---|---|
+| 5a32806b | Brian | 2026-05-04 21:40 | Release 21:47 | FP |
+| 1317c9ea | Brian | 2026-05-05 17:29 | Release 17:49 | FP |
+| 1f852665 | Charlie | 2026-05-05 17:48 | Release 18:28 | FP |
+| 0e1a3c6e | Emma | 2026-05-05 18:29 | Release next-day 13:17 | FP |
+| 3ec202b5 | Charlie | 2026-05-05 18:31 | Release 18:32 | FP |
+| 243f8444 | Frank | 2026-05-05 18:31 | Release 19:10 | FP |
+| a0027be6 | Charlie | 2026-05-05 19:21 | Release 20:31 | FP |
+| 8b52b181 | Charlie | 2026-05-06 13:28 | Release 13:36 | FP |
+| f9936e33 | Brian | 2026-05-06 16:17 | Release 16:48 | FP |
+| 04d1191f | Frank | 2026-05-06 16:45 | Release 16:55 | FP |
+| **4c2838f8** | Brian | 2026-05-06 18:04 | NO_SIDECAR | UNKNOWN (likely TC) |
+| 61f51876 | Brian | 2026-05-07 12:30 | Release 13:47 | FP |
+| 5dbe5e3c | Charlie | 2026-05-07 13:40 | Release 14:38 | FP |
+| **4090052a** | Charlie | 2026-05-07 15:47 | Bash `until [ -s ... ]`; no Release/no later Claim | TRUE CRASH (#0177) |
+| 1f878107 | Charlie | 2026-05-07 16:32 | re-Claim 17:10, Bash 17:13, Release 17:38 | FP |
+| **fd17b834** | Charlie | 2026-05-07 23:17 | NO_SIDECAR | TRUE CRASH (upstream CC silent-exit, #0180) |
+
+**Operational implication:** every prior crash-rate / auto-resume-success-rate analysis grounded in `resume_blocked` counts is overstated by ~5×. The watchdog's recovery is fundamentally healthy — most "blocked" sessions kept living, and at least one (`1f878107`) shows a successful post-resume_blocked re-Claim by a fresh claude.exe instance. Until this issue is resolved, treat `resume_blocked: no_refresh_after_warmup` as a **noise signal**, not a failure signal — confirm via the audit sidecar tail before drawing conclusions.
+
+The 81% rate raises the urgency on the three resolution options below; option 2 (liveness check on `launched_pid`) and option 3 (degrade to log-only without saturating cap) both directly remove the false positives. Option 1 (raise gate to 5 min) reduces the rate but does not eliminate it and would still saturate the cap on the genuinely slow rehydrations.
+
 ## Reproduction
 
 1. Dispatch any agent that runs a non-trivial workload (e.g. an inquisitor reading sidecars).

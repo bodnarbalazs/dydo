@@ -1,10 +1,7 @@
 ---
 area: general
-name: run-dydo-fix-pre-tag
-status: human-reviewed
-created: 2026-05-06T21:00:34.9389682Z
-assigned: Brian
-updated: 2026-05-06T21:22:00.8283618Z
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: run-dydo-fix-pre-tag
@@ -67,3 +64,7 @@ After approval, balazs is clear to push the tag.
 - Notes: PASS. 95d7224 verified: 4 auto-gen files, +29/-60, scope matches brief exactly. project/_index.md (Tasks link -> prose paragraph), inquisitions/_index.md (+3 entries: dydo-check-drift, pre-tag-audit, test-runtime-regression), issues/_index.md (#0151-#0158 summary backfills, #0159-#0172 added, #0164 source-lacks-summary confirmed - already flagged to Adele OOS), tasks/_index.md (deleted, pre-image carried auto-gen banner). No non-auto-gen file touched. Changelog hubs no-op in this commit (#0166 fix at 844579f confirmed working); HEAD's follow-up 016318c drops the now-broken _changelog.md link to tasks/_index.md. dydo check: 0 errors / 0 warnings on 926 files (only output warning is a pre-existing Adele stale-session note - unrelated). gap_check.py at HEAD (016318c): 4131/0 tests, 140/140 modules pass tier (worktree-isolated, 4m 16s). balazs is clear to push the tag.
 
 Awaiting human approval.
+
+## Approval
+
+- Approved: 2026-05-08 12:36

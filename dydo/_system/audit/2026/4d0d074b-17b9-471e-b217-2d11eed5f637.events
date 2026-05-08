@@ -175,3 +175,28 @@
 {"ts":"2026-05-07T16:27:47.2895604Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | grep -E \u0022^\\[\u0022 | tail -3","reason":"Missing general wait"}
 {"ts":"2026-05-07T16:28:03.9444454Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\400ef586-msg-review-pr2-worktree-anchor.md","tool":"read"}
 {"ts":"2026-05-07T16:57:50.8205907Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\66a3ee9f-msg-review-pr2-worktree-anchor-v2.md","tool":"read"}
+{"ts":"2026-05-07T17:38:30.8852225Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\69937078-msg-review-pr2-worktree-anchor-v2.md","tool":"read"}
+{"ts":"2026-05-07T17:45:31.466143Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\e0c2da3b-msg-fix-pr2-xmldoc.md","tool":"read"}
+{"ts":"2026-05-07T17:46:33.1573276Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bb8097c6-msg-fix-pr2-xmldoc.md","tool":"read"}
+{"ts":"2026-05-07T18:27:41.9960224Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b82f27c1-msg-fix-pr2-xmldoc.md","tool":"read"}
+{"ts":"2026-05-07T18:27:42.7904075Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8ba8ec8b-msg-fix-pr2-xmldoc.md","tool":"read"}
+{"ts":"2026-05-07T18:43:10.3768604Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-agent-crash-fixes.md","tool":"read"}
+{"ts":"2026-05-07T18:43:14.4116511Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Brian/ 2\u003E\u00261 | head -10"}
+{"ts":"2026-05-07T18:43:21.0985542Z","event":"Bash","tool":"bash","cmd":"git log --diff-filter=D --name-only -1 -- \u0027dydo/agents/Brian/plan-agent-crash-fixes.md\u0027 2\u003E\u00261; git lo..."}
+{"ts":"2026-05-07T18:43:25.9145511Z","event":"Bash","tool":"bash","cmd":"find dydo -name \u0027plan-agent-crash-fixes.md\u0027 2\u003E\u00261"}
+{"ts":"2026-05-07T18:43:30.5214558Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\archive\\20260507-110855\\plan-agent-crash-fixes.md","tool":"read"}
+{"ts":"2026-05-07T21:10:22.2056823Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5eab79e0-msg-implement-pr3-instrumentation.md","tool":"read"}
+{"ts":"2026-05-07T22:39:25.9446593Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d84c6160-msg-implement-pr3-instrumentation.md","tool":"read"}
+{"ts":"2026-05-07T22:50:12.0752827Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9e2f3cd3-msg-docs-pr3-instrumentation.md","tool":"read"}
+{"ts":"2026-05-07T23:01:11.6996048Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3bdd5e77-msg-investigate-agent-crashes-followup.md","tool":"read"}
+{"ts":"2026-05-07T23:39:44.672094Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\00de891d-msg-investigate-watchdog-killing-active-agents.md","tool":"read"}
+{"ts":"2026-05-08T10:54:37.8774288Z","event":"Blocked","tool":"bash","cmd":"ls -t dydo/agents/Adele/inbox/*05526037* 2\u003E\u00261","reason":"Unread messages"}
+{"ts":"2026-05-08T10:54:42.3985631Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\05526037-msg-general.md","tool":"read"}
+{"ts":"2026-05-08T11:33:04.6591546Z","event":"Blocked","tool":"bash","cmd":"ls -t dydo/agents/Adele/inbox/*bd8f7780* 2\u003E\u00261","reason":"Unread messages"}
+{"ts":"2026-05-08T11:33:09.0752516Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\bd8f7780-msg-general.md","tool":"read"}
+{"ts":"2026-05-08T11:50:58.8916813Z","event":"Bash","tool":"bash","cmd":"claude --version 2\u003E\u00261"}
+{"ts":"2026-05-08T11:51:47.4775704Z","event":"Bash","tool":"bash","cmd":"gh api repos/anthropics/claude-code/issues/15001 --jq \u0027{number, title, state, closed_at}\u0027 2\u003E\u00261; gh a..."}
+{"ts":"2026-05-08T11:54:28.5339292Z","event":"Bash","tool":"bash","cmd":"gh api repos/anthropics/claude-code/releases/latest --jq \u0027{tag_name, published_at, name}\u0027 2\u003E\u00261"}
+{"ts":"2026-05-08T11:54:47.4840778Z","event":"Bash","tool":"bash","cmd":"gh api repos/anthropics/claude-code/issues/55424 --jq \u0027{title, state, created_at, updated_at, commen..."}
+{"ts":"2026-05-08T12:24:08.1447019Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\196b4608-msg-ship-pre-tag-final-fixes.md","tool":"read"}
+{"ts":"2026-05-08T12:33:18.8344693Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\c008ce6c-msg-ship-pre-tag-final-fixes.md","tool":"read"}

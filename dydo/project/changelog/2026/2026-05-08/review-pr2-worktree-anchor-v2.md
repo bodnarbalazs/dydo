@@ -1,9 +1,7 @@
 ---
 area: general
-name: review-pr2-worktree-anchor-v2
-status: pending
-created: 2026-05-07T16:27:08.0662078Z
-assigned: Charlie
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: review-pr2-worktree-anchor-v2
@@ -21,3 +19,7 @@ assigned: Charlie
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-05-08 12:36

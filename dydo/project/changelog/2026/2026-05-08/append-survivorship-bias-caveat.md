@@ -1,9 +1,7 @@
 ---
 area: general
-name: append-survivorship-bias-caveat
-status: pending
-created: 2026-05-07T11:09:03.1495058Z
-assigned: Brian
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: append-survivorship-bias-caveat
@@ -21,3 +19,7 @@ assigned: Brian
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-05-08 12:36

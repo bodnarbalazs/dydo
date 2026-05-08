@@ -1,9 +1,7 @@
 ---
 area: general
-name: fix-changelog-broken-link
-status: pending
-created: 2026-05-06T21:09:53.6072984Z
-assigned: Charlie
+type: changelog
+date: 2026-05-08
 ---
 
 # Task: fix-changelog-broken-link
@@ -21,3 +19,7 @@ assigned: Charlie
 ## Review Summary
 
 (Pending)
+
+## Approval
+
+- Approved: 2026-05-08 12:36

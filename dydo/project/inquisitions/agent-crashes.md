@@ -977,3 +977,267 @@ Each finding was independently verified by reading the cited evidence directly, 
 
 The headline correction is decisive: **fd17b834 was not "Charlie died after one Read."** It was a 10-minute judge turn that filed three issues, posted a verdict, idled, and was killed by an upstream Claude Code Windows silent-exit regression that does not produce any OS event-log entry. The dydo-side audit and watchdog behaviour are correct; there is no kill-heuristic, no detection lag, and no missing crash mode. The `resume_blocked: no_refresh_after_warmup` log line is **noise** in 81% of cases, not a failure signal — every prior crash-rate analysis grounded in raw `resume_blocked` counts is overstated by ~5×.
 
+---
+
+## Final pre-tag scrutiny audit (v1.4.7) — 2026-05-08 — Dexter (inquisitor)
+
+### Scope
+
+- **Entry point:** Final pre-tag defense-in-depth audit before balazs pushes v1.4.7. v1.4.8 will not follow for some time, so v1.4.7 must stand alone.
+- **Commits in scope (v1.4.6..HEAD = 79489d5):**
+  - `e80730c` PR1 — resume_blocked log honesty (LaunchedPid round-trip + silent-skip + post-update kill whitelist)
+  - `de50134` PR2 — worktree anchors in main + LaunchResume worktree wrapper
+  - `87d9f6f` doc fix — RegisterMainAnchor xmldoc
+  - `036b88c` PR3 — RecoveryClassifier + resume_outcome event + 3 nullable Claim fields + SaturateResumeAttempts clears LastResumeLaunchedAt
+  - `5bcbe0f` doc — architecture.md schema docs (PR3)
+  - `3c34dd2` final cleanup — truthful TeardownWorktree log + until-poll warn-nudge
+  - `cdaf920` doc — survivorship-bias caveat to agent-crashes.md
+  - `016318c` doc — drop broken tasks/_index.md link from _changelog.md
+- **Files investigated (read):** Services/WatchdogService.cs, Services/AgentRegistry.cs, Services/RecoveryClassifier.cs, Services/WorktreeManager.cs (cleanup boundary), Services/TerminalLauncher.cs, Models/AgentState.cs, Models/AuditEvent.cs, Templates/dydo.json (nudges), DynaDocs.Tests/* relevant test files.
+- **Approach:** code-walk + grep audit + targeted test runs (no source changes); incremental save of findings.
+
+### Findings
+
+#### 1. Cross-PR resume happy + failed paths thread cleanly through PR1/PR2/PR3
+- **Concern:** A
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** Walked the resume context end-to-end through `Services/WatchdogService.cs:475-555`, `:563-598`, `:608-638`, and `Services/AgentRegistry.cs:1640-1710`. The state machine at the watchdog tick is:
+  - **Happy path (auto-recover):** crash → tick reads ctx, IncrementResumeAttempts (`ClaimedPid`) → LaunchResume (PR2 wrapper) → RecordResumeLaunch persists `LaunchedPid` if >1. Within warmup gate, `lastResumeAt` window blocks re-fires (`:588`). After warmup, `IsLaunchedClaudeStillAlive` (PR1 silent-skip, `:678-682`) suppresses repeated `resume_blocked` until claude rehydrates. On rehydration, `HandleExistingSession` (`AgentRegistry.cs:340-359`) RefreshClaimedPid → ResetResumeBookkeeping → EmitAutoRecovery (`recovery_kind=auto`, `resume_outcome=succeeded`, reason=`same_session_reclaim`).
+  - **Failed path (launched_pid_dead):** after warmup, `IsBadSessionFailFast` (`:662-667`) detects dead launched PID with stuck ClaimedPid → `SaturateResumeAttempts` (sets attempts=cap AND clears LastResumeLaunchedAt) → emits `resume_blocked` + `resume_outcome=failed`. Next tick: `TryReadGaveUpContext` predicate is false (lastResumeAt==null), `TryReadResumeContext` is null (attempts>=cap). No double-emission.
+  - **Gave-up path (cap_reached):** natural increments push attempts to cap, launched claude is alive but never claims. After warmup: `IsBadSessionFailFast` cannot fire (`TryReadResumeContext` returns null at `:579` once attempts>=cap), so flow goes through `TryReadGaveUpContext` instead → emits `resume_outcome=gave_up`, then SaturateResumeAttempts clears LastResumeLaunchedAt for one-shot guarantee.
+- **PR2 worktree-wrapper interaction:** `LaunchResume` (`Services/TerminalLauncher.cs:230-256`) only adds wd/junctions/init-settings/cleanup envelope around the resumed claude tab; it doesn't read or mutate watchdog state. SaturateResumeAttempts clearing LastResumeLaunchedAt cannot affect the resume tab's own lifecycle. No interaction issue.
+- **PR1 silent-skip interaction:** `IsLaunchedClaudeStillAlive` is reached only via `TryReadResumeContext` (which returns null when attempts>=cap). Once Saturate fires, silent-skip cannot run — it's structurally bypassed. No interaction issue.
+- **Verdict:** The semantic shift in PR3 (Saturate also clearing LastResumeLaunchedAt) is correctly contained: it only matters at the gave_up-tick predicate, which is the consumer paired with it. No reader of LastResumeLaunchedAt assumes non-null when ResumeAttempts is at cap (see Finding #3 / Concern C).
+
+#### 2. Pre-existing race: SaturateResumeAttempts can resurrect attempts=cap on a freshly-claimed agent (PR3 widens but does not introduce)
+- **Concern:** A (timing edge case)
+- **Classification:** latent-bug, pre-existing
+- **Severity:** low
+- **Evidence:** In `Services/WatchdogService.cs:484-491` and `:501-516`, `TryReadGaveUpContext` / `TryReadResumeContext` release the per-agent lock before SaturateResumeAttempts re-acquires it via `new AgentRegistry(projectRoot).SaturateResumeAttempts(...)`. Between these two lock-release/lock-acquire moments, a competing `dydo agent claim` can run `ResetResumeBookkeeping` (`AgentRegistry.cs:211-219`, attempts=0). The watchdog's stale Saturate then overwrites attempts=cap on the freshly-claimed agent. Result: a claim that succeeded but with no remaining auto-resume budget. Pre-PR3 the same race existed via the `IsBadSessionFailFast`→Saturate path; PR3 ADDS one more call site (the gave_up tick-check) which slightly widens the window over the prior baseline.
+- **Why low severity:** (a) microsecond-scale window; (b) the user already has an active claim — the only loss is that the *next* crash of this same session won't auto-resume; (c) the user can still re-claim manually; (d) ResumeAttemptsAtClaim audit field captures the prior state for inquisitor analysis.
+- **Proposed action:** out-of-scope-already-tracked. Track in a follow-up issue post-tag (mention as residual-debt for v1.4.8 backlog). Not a tag blocker.
+
+#### 3. LastResumeLaunchedAt readers are all null-safe; no consumer assumes non-null at cap
+- **Concern:** C
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** Enumerated all readers via `Grep LastResumeLaunchedAt`:
+  - `Services/RecoveryClassifier.cs:32` — `priorState?.LastResumeLaunchedAt != null ? "auto" : "manual"`. Tests for null. Post-gave_up reclaim (where Saturate has cleared it) is correctly classified as `manual` with `resume_attempts_at_claim=cap` preserved — the auto-failed-then-manual case is recoverable from the audit pair `(recovery_kind="manual", resume_attempts_at_claim>0)`.
+  - `Services/RecoveryClassifier.cs:51` — gating EmitAutoRecovery on non-null prior LastResumeLaunchedAt. Same null-safe shape.
+  - `Services/WatchdogService.cs:622-626` — gave_up tick-check predicate. Explicit `if (lastResumeAt == null) return null;` guard.
+  - `Services/WatchdogService.cs:663` — `IsBadSessionFailFast` uses `ctx.LastResumeAt.HasValue && ...`. Null-safe.
+  - `Services/WatchdogService.cs:679` — `IsLaunchedClaudeStillAlive` uses `ctx.LastResumeAt.HasValue && ...`. Null-safe.
+  - `Services/WatchdogService.cs:588` — warmup gate, behind `if (lastResumeAt.HasValue && ...)`. Null-safe.
+- No reader assumes non-null when ResumeAttempts==cap. SaturateResumeAttempts clearing it is consistent with all consumers.
+
+#### 4. AuditEvent backward-compat pin test exists and is green
+- **Concern:** B
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** `DynaDocs.Tests/Models/AuditEventBackwardCompatTests.cs` (5 tests) covers:
+  - Pre-PR3 Claim event JSON (no `recovery_kind`, no `resume_predecessor_session`, no `resume_attempts_at_claim`) deserializes via `DydoDefaultJsonContext` with all three new fields = null (`:18-38`).
+  - Same shape via `CompactJsonContext` (sidecar lines) (`:41-54`).
+  - Round-trip preservation (`:57-76`) and emission contract: `JsonIgnoreCondition.WhenWritingNull` keeps null fields out of the wire format (`:79-96`).
+  - All three buckets (`fresh`/`auto`/`manual`) accepted (`:99-117`).
+- Ran filtered `python DynaDocs.Tests/coverage/run_tests.py --filter "FullyQualifiedName~AuditEventBackwardCompatTests|FullyQualifiedName~ConfigFactoryTests"` → 54/54 passed.
+
+#### 5. Pre-PR1 state.md (no `launched-pid` line) parses cleanly; legacy fall-through preserved
+- **Concern:** B
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** State parser is field-keyed at `Services/AgentRegistry.cs:1810-1843` — when `launched-pid:` line is absent (pre-PR1 state files), the parser's StateFieldParsers dictionary entry is simply not invoked, leaving `state.LaunchedPid = null` (default). Existing fields (`pre-resume-pid`, `last-resume-launched-at`) tolerate the literal `"null"` string (`:1828-1830`, `:1822-1825`). The `IsBadSessionFailFast` predicate at `Services/WatchdogService.cs:662-667` falls through to wall-clock-only when `LaunchedPid` is null — preserving pre-fix behaviour by design.
+- BC regression test at `DynaDocs.Tests/Services/WatchdogServiceTests.cs:1955-1978` (`PollAndResumeForAgent_LegacyState_NoLaunchedPid_PreservesPreFixBehavior`) runs in the test slice and passes.
+
+#### 6. EnsureDefaultNudges adds the new until-poll nudge idempotently
+- **Concern:** B
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** `Services/ConfigFactory.cs:120-140` keys the dedupe set on the regex pattern itself; the new nudge pattern `\buntil\s+\[` (defined at `:78-81`) participates without special-casing. Idempotency pin test `DynaDocs.Tests/Services/ConfigFactoryTests.cs:321-333` asserts a second EnsureDefaultNudges call adds zero entries when the pattern is already present. Existing dydo.json files (without the nudge) on `dydo template update` / `dydo fix` will gain it once and only once.
+
+#### 7. FixHubHandler.DeleteStaleTasksIndex correctly banner-gates deletion; no test pin
+- **Concern:** B
+- **Classification:** coverage-gap (small)
+- **Severity:** low
+- **Evidence:** `Commands/FixHubHandler.cs:138-150` deletes `project/tasks/_index.md` only when the file content contains `HubGenerator.AutoGenComment` (`Services/HubGenerator.cs:13`, the `<!-- Auto-generated by 'dydo fix'... -->` marker). Hand-written files are preserved by the same banner check. Search for `DeleteStaleTasksIndex|StaleTasksIndex` in `DynaDocs.Tests/` returns no matches — no direct regression pin. `HubGeneratorTests.cs:153` only asserts the file is *not regenerated*, which is a weaker invariant than "stale auto-gen file is deleted on next dydo fix."
+- **Proposed action:** out-of-scope-already-tracked / file a v1.4.8 follow-up to add a banner-gated deletion test. Not a tag blocker — the function logic is small and correct by inspection (banner check before deletion eliminates the only real risk: clobbering a hand-written file).
+
+#### 8. until-poll nudge regex FP probe — clean for realistic agent commands; brief's "single-bracket only" claim is incorrect
+- **Concern:** D
+- **Classification:** docs-gap (in the brief, not in the code)
+- **Severity:** low
+- **Evidence:** Pattern is `\buntil\s+\[` (`Services/ConfigFactory.cs:78`). Empirical FP probe (Python regex against 19 representative cases, ad-hoc script run and deleted):
+  - **Matches (correct, all are open-ended polls):** `until [ ... ]; do`, `until [[ ... ]]; do`, `until  [  ... ]; do` (extra ws), and string-literal forms like `echo "until [...]"`.
+  - **Non-matches (correct, not polls):** `until cmd1; do`, `until ! ping ...; do`, `while [ ... ]; do`, `for i in ...; do`, `gh run watch`, `dydo wait`, `runtil [`, `a_until [`, `Until [`, `UNTIL [`.
+- **Brief's claim** that "the pattern matches single-bracket only" is wrong — the regex matches both `until [` and `until [[`. **But matching `until [[` is the correct behaviour**: both forms are open-ended bash polls and merit the same warning. The regex is fine; only the brief's prose mischaracterises it. Test coverage at `DynaDocs.Tests/Services/ConfigFactoryTests.cs:295-319` covers single-bracket positive + non-bracket negative; double-bracket is uncovered but the correct outcome for it is to match.
+- **String-literal "FP" cases** (e.g. `echo "until [foo]"`): the warn-nudge fires. This is benign — the warning informs the agent that they wrote a polling-shaped string, and they can re-run. Not a blocker.
+- **Verdict:** regex is correct. Brief prose is a docs-gap (downstream of this audit, not a v1.4.7 commit issue).
+
+#### 9. Cleanup-log truthfulness (3c34dd2 Fix 1) is honest at the Directory.Exists boundary
+- **Concern:** E
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** `Commands/WorktreeCommand.cs:746-754` — `TeardownWorktree` returns `!Directory.Exists(worktreePath)` as the final ground truth, after running PreserveAuditFiles → RemoveJunction loop → RemoveZombieDirectory → RemoveGitWorktree. Both call sites that consume the bool branch the user-facing log truthfully:
+  - `Commands/WorktreeCommand.cs:332-339` (`dydo worktree cleanup` cmd):  `removed ? "cleaned up." : "marker removed; directory remains (in use by another process — see warning above). Will retry on next prune."`
+  - `Commands/WorktreeCommand.cs:1046-1052` (`dydo worktree prune` orphan loop): same two-state log.
+- **Windows edge cases probed:**
+  - **Junctions:** `RemoveJunction` (`:756-776`) uses `cmd /c rmdir` (no `/s`) on Windows, which removes the junction without recursing into target. Subsequent `Directory.Exists(worktreePath)` is on the worktree root, not the junction — the worktree root is a real directory. After deletion attempts, Directory.Exists tells the truth.
+  - **Symlinks/reparse points at depth:** `DeleteDirectoryJunctionSafe` (`:785-804`) explicitly detects `FileAttributes.ReparsePoint` and unlinks via `Directory.Delete(subDir, recursive: false)`. No following into junction targets.
+  - **Race with another process:** if another process re-creates the directory after our delete attempt, `Directory.Exists` returns true → log says "directory remains" — which is the truth at that instant. Honest.
+  - **Windows DELETE_PENDING:** if a handle is still open, the directory may be visible to Directory.Exists momentarily after delete returns. Log says "directory remains, will retry on next prune" — which is correct: next prune cycle catches it. Honest.
+  - **Permission denied:** would surface as exception in RemoveZombieDirectory, which prints `WARNING:` to stderr (`:842`) and returns false → final Directory.Exists is true (we didn't actually delete) → log says "directory remains — see warning above". Honest.
+- The `removed` bool truly reflects disk truth as of the moment of return.
+
+#### 10. Integration smoke clean at HEAD
+- **Concern:** F
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:**
+  - `dotnet build` clean: 0 warnings, 0 errors, 4.08s.
+  - `dydo check` (system v1.4.6 binary): 0/0 errors, 0/0 warnings in 949 files. Exit 0. (Stale-Adele session warning is operational, not a doc-validation issue, and is from prior work — see git status pre-audit.)
+  - `dotnet bin/Debug/net10.0/dydo.dll check` (dev binary, v1.4.7 build): 0/0 errors, 0/0 warnings in 949 files. Exit 0. (`dotnet run -- check` is blocked by the dydo on-PATH nudge; running the compiled DLL directly is the equivalent dev-binary check.)
+  - Worktree-isolated test slice for the resume code paths (`WatchdogServiceTests | AgentRegistryTests | RecoveryClassifier | TerminalLauncher`): "Tests passed" (the run_tests.py runner emits "Tests passed" on success and surfaces failures explicitly; no failures emitted).
+  - BC pin tests + ConfigFactoryTests: 54/54 passed.
+  - Brief's HEAD baseline (run_tests 4194/4194, gap_check 141/141 modules) was just confirmed by the user — accepted without re-running the 30+ minute full suite to avoid pointless context burn.
+
+#### 11. No v1.4.7 commit attempts to address #0176 in code
+- **Concern:** G
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** `git log v1.4.6..HEAD --oneline --grep="0176|deploy|deployment"` returns nothing. `git diff v1.4.6..HEAD --stat` shows only Services/Models/Commands/Templates/Docs/Tests changes; no installer or version-bump artefacts. The deployment gap (running pre-fix watchdog binary on a host that committed PR1+PR2+PR3) is correctly framed as a runtime/process gap that balazs handles by reinstalling the dotnet tool — not as a code defect.
+
+#### 12. agent-crashes.md narrative is internally consistent across the survivorship-bias correction
+- **Concern:** G
+- **Classification:** clean
+- **Severity:** —
+- **Evidence:** The inquisition file has four superimposed sections (Brian 2026-05-06, methodology caveat appended via `cdaf920`, Dexter 2026-05-08 followup with 84-89% reframing, Charlie/Frank judges 2026-05-08). No claim contradicts another:
+  - Brian's "75%" is preserved as a historical claim — the methodology caveat at `:294-302` explicitly bounds it (`"correct only as the success rate of the resumes the watchdog actually attempted — not the crash-recovery rate from the user's perspective"`).
+  - Dexter's followup 84-89% measures the same denominator (attempts) on a larger sample (n=19) — directly comparable to Brian's 75% (n=4) as a refinement, not a contradiction.
+  - Frank's 81% measures a different metric: of `resume_blocked` log lines, the FP rate (lines logged for sessions that did successfully recover). Lives at `:974`. Distinct from the recovery rate. Labelled clearly in Frank's summary.
+- The convention of appending corrections rather than retroactively editing the original is appropriate for an inquisition log; future readers can trace the evolution. Internally consistent.
+
+### Hypotheses tested and not reproduced
+
+- **Cross-PR timing race producing a *new* defect (Concern A):** walked the failed and gave_up paths in detail looking for an interaction the PR3 review missed. The Saturate-clears-LastResumeLaunchedAt invariant holds across all consumers and the existing pre-PR3 race window (Finding #2 above) is unchanged in shape — slightly wider footprint, same severity envelope. No new failure mode introduced.
+- **State parser silently dropping unknown new fields on round-trip:** confirmed parser is dict-keyed (no panic on unknown fields, no panic on missing fields). Both directions BC-safe.
+
+### Confidence: high (Concerns A, B, C, D, E, G); medium-high (Concern F)
+
+Concerns A/B/C/D/E/G covered by direct code inspection plus targeted pin tests. Concern F took the user's HEAD baseline (`4194/4194`, `141/141`) on faith rather than re-running — partial, but the full suite ran at HEAD just before this audit, the targeted resume slice ran clean here, and `dotnet build` + `dydo check` (both system and dev) at HEAD are 0/0.
+
+What was NOT examined thoroughly:
+- Linux/Mac platform-specific behaviour of TeardownWorktree (junction handling is Windows-specific; the code handles the symlink case at `Commands/WorktreeCommand.cs:769` but a live cross-platform smoke wasn't run from this audit — out of scope for a single-machine pre-tag audit and consistent with prior inquisition coverage caveats).
+- Live reproduction of the timing race in Finding #2 (microsecond window; would require an instrumented test harness).
+- gave_up tick-check on a real long-lived watchdog (the BC + cross-PR walk is from code; integration evidence comes from PR3's test pins which I sampled).
+
+### TAG-READINESS VERDICT — GO
+
+All critical concerns (A, B) are definitive: no new cross-PR interaction defects introduced; backward compatibility preserved across the v1.4.6→v1.4.7 boundary (audit JSON, state.md, dydo.json nudges, stale tasks/_index.md). Source-of-truth tests pass. Two minor non-blocking observations:
+
+1. **Pre-existing Saturate-vs-claim race** (Finding #2) — latent, low-severity, not introduced by these PRs but slightly widened by PR3's added gave_up call site. Track in a v1.4.8 follow-up issue post-tag; not a tag blocker.
+2. **DeleteStaleTasksIndex banner-gated deletion lacks a direct test pin** (Finding #7) — small coverage gap; correctness by inspection. Track in a v1.4.8 follow-up; not a tag blocker.
+
+No must-fix items. **balazs is clear to push v1.4.7.**
+
+### Judge rulings (Emma — 2026-05-08)
+
+Independent review of all 12 findings against the cited evidence and the source code at HEAD (79489d5).
+
+#### Finding #1 — Cross-PR resume paths thread cleanly
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/WatchdogService.cs (lines 475-555, 600-638, 662-682), Services/AgentRegistry.cs (lines 211-219, 332-360, 1640-1710, 1810-1843), Services/RecoveryClassifier.cs (full file), Services/TerminalLauncher.cs (LaunchResume — opened to confirm watchdog state is not touched).
+- **Independent verification:** Walked the three paths myself. Confirmed `SaturateResumeAttempts` (`AgentRegistry.cs:1694-1709`) sets attempts=cap AND clears LastResumeLaunchedAt in a single locked write. Confirmed `TryReadResumeContext` (`WatchdogService.cs:579`) returns null on `attempts >= cap`, so `IsBadSessionFailFast` and `IsLaunchedClaudeStillAlive` are unreachable post-Saturate — Dexter's structural-bypass claim holds. Confirmed gave_up tick-check (`:608-638`) reads attempts/lastResumeAt with explicit null guards (`:625`) before emitting. Confirmed `HandleExistingSession` (`AgentRegistry.cs:340-359`) calls ResetResumeBookkeeping before EmitAutoRecovery so the disk state matches the audit pair.
+- **Alternative explanations considered:** Could the gave_up tick-check fire AFTER a failed-path Saturate has cleared LastResumeLaunchedAt? No — gave_up's predicate at `:625` requires `lastResumeAt != null`, which Saturate has just nulled. Mutually exclusive per episode, exactly as Dexter claims.
+
+#### Finding #2 — Pre-existing Saturate-vs-claim race
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/WatchdogService.cs (lines 484-491, 501-516, 563-598, 608-638), Services/AgentRegistry.cs (lines 211-219, 332-360, 1694-1709).
+- **Independent verification:** Confirmed `TryReadResumeContext` releases the per-agent lock in its `finally` block (`:594-597`) before returning, and `TryReadGaveUpContext` does the same (`:634-637`). The Saturate calls at `:490` and `:503` then re-acquire the lock fresh inside `SaturateResumeAttempts` (`AgentRegistry.cs:1696`). Between release and re-acquire a competing `ClaimAgent` → `HandleExistingSession` → `ResetResumeBookkeeping` (`:211-219`, sets attempts=0) can land. The watchdog's stale Saturate then writes attempts=cap on a freshly-claimed agent. Pre-PR3 the same window existed via the failed-path Saturate; PR3 adds one more call site (gave_up). Race is real and slightly wider in v1.4.7 than v1.4.6.
+- **Alternative explanations considered:** Could the second lock acquire snapshot a fresh state and bail? No — `SaturateResumeAttempts` (`:1700-1704`) reads state, mutates `ResumeAttempts` and `LastResumeLaunchedAt` unconditionally, then writes. No precondition check on `Status` or `Since`. The bug is in the absence of revalidation, not in the lock itself.
+- **Issue:** #0181
+
+#### Finding #3 — LastResumeLaunchedAt readers are all null-safe
+- **Judge ruling:** CONFIRMED
+- **Files examined:** RecoveryClassifier.cs (lines 32, 51-52), WatchdogService.cs (lines 588, 622-626, 662-667, 678-682). Independently grepped `LastResumeLaunchedAt|LastResumeAt` across the whole tree to verify Dexter's reader enumeration is exhaustive.
+- **Independent verification:** The grep returned only the readers Dexter cited plus mutation sites at `AgentRegistry.cs:216` (ResetResumeBookkeeping), `:414` (claim), `:578` (release), `:1648` (Increment), `:1702` (Saturate), `:1740` (state-file format), `:1825` (parser). Mutation sites don't read; reader sites are the same six Dexter listed and all use either `?.`, `.HasValue && ...`, or an explicit `if (... == null) return null;` guard before dereferencing.
+- **Alternative explanations considered:** None — exhaustive grep, all readers null-safe.
+
+#### Finding #4 — AuditEvent backward-compat pin test exists and is green
+- **Judge ruling:** CONFIRMED
+- **Files examined:** DynaDocs.Tests/Models/AuditEventBackwardCompatTests.cs (full file, 119 lines).
+- **Independent verification:** Read the full test file. Confirmed exactly five test methods at the cited line ranges (`:18-38`, `:41-54`, `:57-76`, `:79-96`, `:99-117`). Each test's assertions match Dexter's claim — pre-PR3 JSON shape deserializes with the three new fields null, `JsonIgnoreCondition.WhenWritingNull` keeps null fields out of emitted JSON, all three buckets (fresh/auto/manual) round-trip. The test file's xmldoc explicitly notes balazs requested this pin.
+- **Alternative explanations considered:** Did not re-run the 30+ minute full suite. Took Dexter's 54/54 filtered run on faith — the inquisitor's run-line evidence is concrete and the targeted slice is small enough that a re-run would replicate.
+
+#### Finding #5 — Pre-PR1 state.md parses cleanly; legacy fall-through preserved
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/AgentRegistry.cs (lines 1810-1843, the `StateFieldParsers` dictionary), Services/WatchdogService.cs (lines 662-667), DynaDocs.Tests/Services/WatchdogServiceTests.cs (lines 1955-1978).
+- **Independent verification:** Read the parser. `StateFieldParsers` is a `Dictionary<string, Action<AgentState, string>>`; missing field lines are simply not invoked, leaving defaults. The `launched-pid` parser (`:1832-1836`) explicitly tolerates `"null"` and `""`. `IsBadSessionFailFast` at `:662-667` requires `ctx.LaunchedPid.HasValue` for the dead-launched-PID branch but falls through `(!ctx.LaunchedPid.HasValue || ...)` to the wall-clock-only path when null. Pre-PR1 state.md has no `launched-pid` line → LaunchedPid stays null → fall-through path matches pre-fix behaviour.
+- **Alternative explanations considered:** Could the parser panic on unrecognised fields if a v1.4.7 produces something v1.4.6 can't read? No — `StateFieldParsers` is keyed by string; unknown keys are silently dropped (the parsing loop is `if (parsers.TryGetValue(...))`). Both directions are BC-safe.
+
+#### Finding #6 — EnsureDefaultNudges adds the until-poll nudge idempotently
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/ConfigFactory.cs (lines 76-81, 116-140), DynaDocs.Tests/Services/ConfigFactoryTests.cs (lines 295-333).
+- **Independent verification:** Read the function. Dedupe key is `n.Pattern` via `HashSet<string>` (`:122`); the new nudge's pattern `\buntil\s+\[` is just another entry, no special-casing. Idempotency test at `:321-333` constructs a default config, asserts the nudge appears once, runs `EnsureDefaultNudges` again, and asserts no addition.
+- **Alternative explanations considered:** Could the dedupe key collide with another default nudge's pattern? Searched all `DefaultNudges` patterns in `ConfigFactory.cs:50-81` — six distinct patterns, no overlap.
+
+#### Finding #7 — DeleteStaleTasksIndex correctly banner-gates deletion; no test pin
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Commands/FixHubHandler.cs (lines 138-150), Services/HubGenerator.cs (line 13). Grepped `DeleteStaleTasksIndex|StaleTasksIndex` across DynaDocs.Tests/ — no matches.
+- **Independent verification:** The function reads the file content, checks `Contains(HubGenerator.AutoGenComment)` (`:145`), and only deletes on banner match. Hand-written `_index.md` files are preserved. The single-branch logic is correct by inspection. The test gap is real — no direct deletion-path coverage.
+- **Alternative explanations considered:** Is the banner check vulnerable to substring-spoof in a hand-written file? In principle yes — if a user copies the auto-gen banner verbatim into a hand-written `_index.md`, dydo fix would delete it. This is a defensible design (the banner is explicitly documented as the auto-gen marker), but a stricter check (e.g. file ending with banner) would be safer. Out of scope for the current finding.
+- **Issue:** #0182
+
+#### Finding #8 — until-poll nudge regex is correct; brief's prose is wrong
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Services/ConfigFactory.cs (line 78), DynaDocs.Tests/Services/ConfigFactoryTests.cs (lines 295-319).
+- **Independent verification:** Pattern `\buntil\s+\[` matches both `until [` and `until [[` (regex `[` matches the first `[` of `[[`). Both forms are open-ended bash polls — matching is the correct behaviour. Tests cover single-bracket positive (`:295-306`) and non-bracket negatives (`:308-319`). Dexter's empirical FP probe (19 cases) is consistent with my reading.
+- **Alternative explanations considered:** Could the nudge fire spuriously on a benign `until` keyword followed by `[`? Searched: bash's `until` is always a control-flow keyword followed by a command list; the only pattern with `[` next is `[ ... ]` (single-bracket test) or the double-bracket extended-test form — both polls. The regex correctly excludes `until ! ping`, `until cmd`, `until something_else`. No legitimate FP shape found.
+- **Issue:** none — the docs-gap is in Dexter's *brief* (downstream of this audit, not in v1.4.7 commits). The brief is ephemeral; no need to file an issue against an inquisitor's working note.
+
+#### Finding #9 — TeardownWorktree cleanup-log is honest at the Directory.Exists boundary
+- **Judge ruling:** CONFIRMED
+- **Files examined:** Commands/WorktreeCommand.cs (lines 332-339, 740-754, 756-776, 785-804, 819-845, 1040-1052).
+- **Independent verification:** Read the function. `TeardownWorktree` (`:746-754`) returns `!Directory.Exists(worktreePath)` after the cleanup steps. Both call sites — `cleanup` at `:332-339` and `prune` at `:1046-1052` — branch the user-facing log on the bool with truthful messages ("cleaned up." vs "directory remains; will retry on next prune"). `RemoveJunction` uses `cmd /c rmdir` without `/s` on Windows — removes the junction, not the target. `DeleteDirectoryJunctionSafe` checks `FileAttributes.ReparsePoint` and uses `recursive: false` for reparse points. `RemoveZombieDirectory` writes `WARNING:` to stderr (`:842`) and returns false on exception so the final `Directory.Exists` reflects disk truth.
+- **Alternative explanations considered:** Could `Directory.Exists` lie on Windows under DELETE_PENDING? Possible — but the log says "directory remains, will retry on next prune," which is the correct user-facing message regardless of whether the directory is genuinely there or in DELETE_PENDING limbo. Honest at the boundary.
+
+#### Finding #10 — Integration smoke clean at HEAD (with one post-audit caveat)
+- **Judge ruling:** CONFIRMED at audit time; one new dydo-check FP introduced by the audit text itself, see post-audit observation below
+- **Files examined:** Verified with `dotnet build` (`0 Warning(s), 0 Error(s)`) and `dydo check` at HEAD.
+- **Independent verification:** Re-ran `dotnet build` — clean. Re-ran `dydo check` — see post-audit observation below.
+- **Alternative explanations considered:** Could the test slice's "Tests passed" emission mask a failure? Took the `run_tests.py` framing on faith; the prior baseline (4194/4194) was confirmed by balazs.
+
+#### Finding #11 — No v1.4.7 commit attempts to address #0176
+- **Judge ruling:** CONFIRMED
+- **Files examined:** `git log v1.4.6..HEAD` (11 commits), `git log v1.4.6..HEAD --grep="0176|deploy|deployment"` (empty).
+- **Independent verification:** Re-ran both commands. Eleven commits since v1.4.6, none reference the deployment gap. The runtime/process gap (running the pre-fix binary on the dev host) is correctly framed as a deployment concern outside the v1.4.7 commit scope.
+- **Alternative explanations considered:** Could a commit silently address #0176 without a grep-match keyword? Inspected the commit titles — all six PR commits are clearly about resume_blocked / worktree anchors / RecoveryClassifier / log truthfulness / nudges / docs. No installer or version-bump artefact.
+
+#### Finding #12 — agent-crashes.md narrative is internally consistent
+- **Judge ruling:** CONFIRMED
+- **Files examined:** This file (full read across the four superimposed sections).
+- **Independent verification:** Brian's 75% (n=4), Dexter's 84-89% (n=19), Frank's 81% are not contradictions — Brian and Dexter measure the same denominator (resume attempts) and Dexter's 84-89% is a refinement on a larger sample. Frank's 81% measures a different metric (resume_blocked log-line FP rate) and is labelled distinctly. The methodology caveat (commit `cdaf920`) bounds Brian's claim explicitly.
+- **Alternative explanations considered:** Could a future reader confuse the three percentages? The caveat at `:294-302` and Frank's section labelling are explicit — confusion is unlikely.
+
+### Post-audit observation — `dydo check` introduced FP in audit text
+
+When I re-ran `dydo check` at HEAD as part of validating Finding #10, it returned an error on line 1070 of this file: `Wikilink found: <double-left-bracket … double-right-bracket>` (1 error, 0 warnings in 950 files).
+
+Dexter's audit text on line 1070 illustrates the until-poll nudge's matches with a literal double-bracketed extended-test token inside backticks. `Rules/RelativeLinksRule.cs:18-20` does not exempt code-spans, so the double-bracket-pair literal is parsed as a wikilink and reported as an error.
+
+This is downstream of the v1.4.7 commits — the FP is in the audit document text, not in the code under audit. But it does mean that when this worktree's inquisition file lands on master, `dydo check` on master will turn red on a doc-text FP. **balazs should either edit line 1070 to avoid the bracket-pair illustration before merging, or accept a transient `dydo check` failure on master until the rule is taught about code-spans.**
+
+Code verdict is unaffected. Tag-readiness unchanged.
+
+### TAG-READINESS VERDICT — GO (independent confirmation)
+
+**Emma's independent verdict: GO. balazs is clear to push v1.4.7.**
+
+All 12 findings independently verified. Two confirmed non-blocking items have been escalated to issue tickets:
+
+1. Finding #2 → issue #0181 (pre-existing Saturate-vs-claim race; v1.4.8).
+2. Finding #7 → issue #0182 (DeleteStaleTasksIndex banner-gated deletion test pin; v1.4.8).
+
+Finding #8's docs-gap is in Dexter's brief (working note), not in v1.4.7 commits — no issue filed.
+
+**Pre-merge note for balazs:** the audit text introduced a `dydo check` Wikilink FP at line 1070 of this file. Edit before merging the worktree if you want master's `dydo check` to stay green. This does not affect the v1.4.7 release artefact.
+

@@ -11,6 +11,7 @@ Index of inquisitions documentation.
 
 ## Contents
 
+- [Inquisition: Agent Crashes Mid-Task & Auto-Resume Degradation](./agent-crashes.md) - Investigation triggered by balazs's complaint that agent crashes have grown more frequent and the v1.
 - [Agent Deaths Inquisition](./agent-deaths.md) - Investigation into a critical class of bugs where dispatched agents were dying mid-work without releasing — observed across DynaDocs and the LC pro...
 - [Agent Lifecycle Inquisition](./agent-lifecycle.md) - Investigation of the agent lifecycle subsystem — claiming, release, workspace archival, dispatch markers, reply-pending markers — across `AgentRegi...
 - [Auto-accept-edits behavior inquiry](./auto-accept-edits-behavior.md) - Mechanism inquiry into why Edit/Write tool calls auto-approve in some Claude Code projects (e.

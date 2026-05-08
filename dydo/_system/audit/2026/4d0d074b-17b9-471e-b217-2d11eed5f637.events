@@ -208,3 +208,5 @@
 {"ts":"2026-05-08T13:06:37.011476Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0177-open-ended-bash-poll-loops-until-s-while-tail-f-in-agent-shell-calls-crash-claud.md","tool":"edit"}
 {"ts":"2026-05-08T13:38:54.3423562Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | grep -E \u0022^\\[\u0022 | tail -3","reason":"Missing general wait"}
 {"ts":"2026-05-08T13:39:11.4917324Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\5b88021d-msg-pre-tag-v147-final-audit.md","tool":"read"}
+{"ts":"2026-05-08T14:06:26.7352723Z","event":"Release","agent":"Adele"}
+{"ts":"2026-05-08T14:06:47.6470793Z","event":"Blocked","path":"C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\feedback_delegate_dont_run_errands.md","tool":"write","reason":"No agent identity"}

@@ -154,6 +154,11 @@
       "pattern": "\\bdydo\\s\u002Bworktree\\s\u002Bmerge\\b[^;|\u0026]*--force\\b",
       "message": "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted work in the source worktree. If the branch has not advanced, the correct action is usually to commit first, or to run \u0060dydo worktree cleanup\u0060 for a genuine no-op. Re-run the same command to proceed anyway.",
       "severity": "warn"
+    },
+    {
+      "pattern": "\\buntil\\s\u002B\\[",
+      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060, or \u0060dydo wait\u0060 for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+      "severity": "warn"
     }
   ],
   "frameworkHashes": {

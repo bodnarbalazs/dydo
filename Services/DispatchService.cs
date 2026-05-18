@@ -82,7 +82,7 @@ public static class DispatchService
             return (null, $"{existing} is already working on task '{opts.Task}'. If you need to re-dispatch, have them release first.");
 
         var (selection, selectionError) = !string.IsNullOrEmpty(opts.To)
-            ? AgentSelector.SelectExplicit(registry, opts.To, currentHuman, opts.Role, opts.Task)
+            ? AgentSelector.SelectExplicit(registry, opts.To, currentHuman, opts.Role, opts.Task, senderName)
             : AgentSelector.SelectAutomatic(registry, currentHuman, opts.Role, opts.Task, senderName, origin);
 
         if (selection == null)

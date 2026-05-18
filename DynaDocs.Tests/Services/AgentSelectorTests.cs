@@ -1,6 +1,9 @@
 namespace DynaDocs.Tests.Services;
 
+using System.Text.Json;
 using DynaDocs.Commands;
+using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 using DynaDocs.Tests.Integration;
 
@@ -97,5 +100,105 @@ public class AgentSelectorTests : IntegrationTestBase
         // Adele is testuser's agent, not alice's → falls through to pool
         Assert.NotNull(result);
         Assert.Null(error);
+    }
+
+    [Fact]
+    public async Task SelectAutomatic_DoesNotPickSenderFromPool()
+    {
+        // Regression for issue #0108: when an orchestrator fires sequential dispatches
+        // and ends up stale-working with a dead session pid (e.g. after watchdog
+        // auto-resume), the auto-selector must not route the next dispatch back to
+        // the sender — that hijacks the sender's identity in the new terminal.
+        await InitProjectAsync("none", "testuser", 3);
+
+        // Busy out the other agents so Brian is the only free-looking candidate.
+        var dispatch = DispatchCommand.Create();
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-a", "--brief", "A", "--to", "Adele", "--no-launch", "--no-wait");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-c", "--brief", "C", "--to", "Charlie", "--no-launch", "--no-wait");
+
+        // Brian: stale-working with a session pid that probes as dead.
+        WriteWorkingState("Brian", DateTime.UtcNow.AddMinutes(-10));
+        WriteSession("Brian", pid: 999999);
+        AgentRegistry.IsSessionPidAliveOverride = _ => false;
+
+        try
+        {
+            var registry = new AgentRegistry(TestDir);
+            var (result, error) = AgentSelector.SelectAutomatic(
+                registry, "testuser", "reviewer", "new-task", senderName: "Brian", origin: "Brian");
+
+            Assert.Null(result);
+            Assert.NotNull(error);
+            Assert.Contains("No free agents", error);
+        }
+        finally
+        {
+            AgentRegistry.IsSessionPidAliveOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task SelectExplicit_RejectsSelfDispatch()
+    {
+        // Regression for issue #0108: `dispatch --to <self>` would orphan the sender's
+        // session in the same way the auto-selector path does. SelectExplicit must
+        // refuse the dispatch before reserving the agent.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        var (result, error) = AgentSelector.SelectExplicit(
+            registry, to: "Brian", currentHuman: "testuser", role: "code-writer",
+            task: "self-task", senderName: "Brian");
+
+        Assert.Null(result);
+        Assert.NotNull(error);
+        Assert.Contains("yourself", error, StringComparison.OrdinalIgnoreCase);
+
+        // And Brian must still be free — a rejected explicit dispatch must not
+        // leave him reserved.
+        var brian = registry.GetAgentState("Brian");
+        Assert.NotNull(brian);
+        Assert.Equal(AgentStatus.Free, brian.Status);
+    }
+
+    private void WriteWorkingState(string agentName, DateTime since)
+    {
+        var workspace = Path.Combine(TestDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
+            ---
+            agent: {{agentName}}
+            role: null
+            task: null
+            status: working
+            assigned: testuser
+            dispatched-by: null
+            dispatched-by-role: null
+            window-id: null
+            auto-close: false
+            started: {{since.ToUniversalTime():o}}
+            writable-paths: []
+            readonly-paths: []
+            unread-must-reads: []
+            unread-messages: []
+            task-role-history: {}
+            ---
+            """);
+    }
+
+    private void WriteSession(string agentName, int? pid)
+    {
+        var workspace = Path.Combine(TestDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        var session = new AgentSession
+        {
+            Agent = agentName,
+            SessionId = "test-session-" + agentName,
+            Claimed = DateTime.UtcNow.AddMinutes(-15),
+            ClaimedPid = pid
+        };
+        File.WriteAllText(
+            Path.Combine(workspace, ".session"),
+            JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
     }
 }

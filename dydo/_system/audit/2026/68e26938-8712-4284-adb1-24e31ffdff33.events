@@ -1,0 +1,50 @@
+{"ts":"2026-05-18T16:20:57.6974344Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\CLAUDE.md","tool":"read","reason":"No agent identity"}
+{"ts":"2026-05-18T16:21:01.7143708Z","event":"Bash","tool":"bash","cmd":"type \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md\u0022"}
+{"ts":"2026-05-18T16:21:05.6631388Z","event":"Bash","tool":"bash","cmd":"cat /c/Users/User/Desktop/Projects/DynaDocs/dydo/index.md"}
+{"ts":"2026-05-18T16:21:10.6847632Z","event":"Claim","agent":"Adele","recovery_kind":"fresh"}
+{"ts":"2026-05-18T16:21:13.6592264Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\workflow.md","tool":"read"}
+{"ts":"2026-05-18T16:21:19.5221581Z","event":"Role","role":"co-thinker","task":"investigate-self-dispatch-identity-hijack-bug"}
+{"ts":"2026-05-18T16:21:24.0607252Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-18T16:21:34.5303922Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-05-18T16:21:38.1731859Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-18T16:21:39.0127241Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-18T16:21:43.4282929Z","event":"Read","path":"C:\\Users\\User\\Desktop\\LC\\dydo\\agents\\Frank\\bug-report-self-dispatch-identity-hijack.md","tool":"read"}
+{"ts":"2026-05-18T16:21:52.6346606Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:21:52.6972365Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:22:04.1110283Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs","tool":"read"}
+{"ts":"2026-05-18T16:22:04.4052312Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"read"}
+{"ts":"2026-05-18T16:22:15.4892797Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-18T16:22:20.4557234Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-18T16:22:21.8735672Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-18T16:22:25.4448293Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-18T16:22:29.8204696Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-18T16:22:34.8872103Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-18T16:22:44.6307352Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-18T16:24:20.3633713Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:24:21.7156311Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-05-18T16:24:27.584651Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"grep"}
+{"ts":"2026-05-18T16:52:38.317554Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:52:38.7828996Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:52:38.7969976Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:52:45.7466797Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}
+{"ts":"2026-05-18T16:52:46.3248514Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0130-stale-working-reclaim-silently-archives-in-flight-work.md","tool":"read"}
+{"ts":"2026-05-18T16:53:07.9264984Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo","tool":"grep"}
+{"ts":"2026-05-18T16:53:08.5516637Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\017-stale-free-semantics.md","tool":"read"}
+{"ts":"2026-05-18T16:53:18.4591541Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:53:18.7259277Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T16:53:25.3367192Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions","tool":"grep"}
+{"ts":"2026-05-18T16:53:30.3409672Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project","tool":"grep"}
+{"ts":"2026-05-18T16:54:05.3420255Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}
+{"ts":"2026-05-18T16:54:22.3274303Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"edit"}
+{"ts":"2026-05-18T16:55:50.3989831Z","event":"Role","role":"orchestrator","task":"investigate-self-dispatch-identity-hijack-bug"}
+{"ts":"2026-05-18T16:55:58.6342513Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\orchestrator.md","tool":"read"}
+{"ts":"2026-05-18T16:56:40.5110261Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-fix-issue-0108-self-dispatch-hijack.md","tool":"write"}
+{"ts":"2026-05-18T17:30:45.3278491Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8f2aae3a-msg-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T17:30:57.3255191Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-18T17:30:57.3604718Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"read"}
+{"ts":"2026-05-18T17:31:08.5132296Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"grep"}
+{"ts":"2026-05-18T17:31:17.7671901Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"read"}
+{"ts":"2026-05-18T18:52:26.219862Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\09f9d231-msg-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T18:58:20.0559748Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6e6943c7-msg-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T18:58:24.4209327Z","event":"Bash","tool":"bash","cmd":"git status; git log --oneline -10"}
+{"ts":"2026-05-18T19:03:12.8583299Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\resolved\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}

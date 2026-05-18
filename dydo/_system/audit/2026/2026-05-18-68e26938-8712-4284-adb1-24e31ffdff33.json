@@ -1,0 +1,15 @@
+{
+  "session": "68e26938-8712-4284-adb1-24e31ffdff33",
+  "human": "balazs",
+  "started": "2026-05-18T16:20:57.5063742Z",
+  "git_head": "f76f2a9",
+  "events": [
+    {
+      "ts": "2026-05-18T16:20:57.5051673Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\Desktop\\LC\\dydo\\agents\\Frank\\bug-report-self-dispatch-identity-hijack.md",
+      "tool": "read",
+      "reason": "No agent identity"
+    }
+  ]
+}

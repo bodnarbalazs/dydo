@@ -7,8 +7,12 @@ public static class AgentSelector
     public record SelectionResult(string AgentName);
 
     public static (SelectionResult? result, string? error) SelectExplicit(
-        AgentRegistry registry, string to, string? currentHuman, string role, string task)
+        AgentRegistry registry, string to, string? currentHuman, string role, string task,
+        string senderName)
     {
+        if (string.Equals(to, senderName, StringComparison.OrdinalIgnoreCase))
+            return (null, "Cannot dispatch to yourself; this would orphan your session. Pick a different agent or omit --to.");
+
         if (!registry.IsValidAgentName(to))
             return (null, $"Agent '{to}' does not exist.");
 
@@ -34,7 +38,7 @@ public static class AgentSelector
 
         if (reserved == null)
         {
-            reserved = TryReserveFromPool(registry, currentHuman, role, task);
+            reserved = TryReserveFromPool(registry, currentHuman, role, task, senderName);
 
             if (reserved == null)
                 return (null, FormatNoAgentsError(currentHuman));
@@ -64,13 +68,14 @@ public static class AgentSelector
     }
 
     private static string? TryReserveFromPool(
-        AgentRegistry registry, string? currentHuman, string role, string task)
+        AgentRegistry registry, string? currentHuman, string role, string task, string senderName)
     {
         var freeAgents = string.IsNullOrEmpty(currentHuman)
             ? registry.GetFreeAgents()
             : registry.GetFreeAgentsForHuman(currentHuman);
 
         var eligible = freeAgents
+            .Where(a => !string.Equals(a.Name, senderName, StringComparison.OrdinalIgnoreCase))
             .Where(a => registry.CanTakeRole(a.Name, role, task, out _))
             .OrderBy(a => registry.HasPendingInbox(a.Name) ? 1 : 0)
             .ThenBy(a => a.Name)

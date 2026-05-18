@@ -82,10 +82,14 @@ public class DispatchCommandTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Claim Adele (makes it Working status)
+        // Mark Brian busy via an initial dispatch (no claimed sender → no self-collision)
+        var initialDispatch = await DispatchAsync("code-writer", "busy-task", "Brief", to: "Brian");
+        initialDispatch.AssertSuccess();
+
+        // Claim Adele, then dispatch from Adele to the now-busy Brian
         await ClaimAgentAsync("Adele");
 
-        var result = await DispatchAsync("code-writer", "my-task", "Brief", to: "Adele");
+        var result = await DispatchAsync("code-writer", "my-task", "Brief", to: "Brian");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("not free");

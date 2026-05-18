@@ -1,0 +1,9 @@
+{"ts":"2026-05-18T18:52:28.9015505Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md","tool":"read"}
+{"ts":"2026-05-18T18:52:34.1876505Z","event":"Claim","agent":"Brian","recovery_kind":"fresh"}
+{"ts":"2026-05-18T18:52:41.8071639Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\4a45b3c2-fix-issue-0108-self-dispatch-hijack.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-18T18:52:46.6888687Z","event":"Role","role":"code-writer","task":"fix-issue-0108-self-dispatch-hijack"}
+{"ts":"2026-05-18T18:52:53.7105593Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-18T18:52:59.6251877Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-05-18T18:53:04.1166127Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\4a45b3c2-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T18:53:37.1200015Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-05-18T18:53:56.3894909Z","event":"Release","agent":"Brian"}

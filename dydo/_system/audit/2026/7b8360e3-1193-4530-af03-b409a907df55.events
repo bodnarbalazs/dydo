@@ -1,0 +1,51 @@
+{"ts":"2026-05-18T16:56:53.3835759Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md","tool":"read"}
+{"ts":"2026-05-18T16:56:58.3488954Z","event":"Claim","agent":"Brian","recovery_kind":"fresh"}
+{"ts":"2026-05-18T16:57:05.4043729Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\75e53cf4-fix-issue-0108-self-dispatch-hijack.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-18T16:57:09.0820172Z","event":"Role","role":"code-writer","task":"fix-issue-0108-self-dispatch-hijack"}
+{"ts":"2026-05-18T16:57:12.2216655Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\75e53cf4-fix-issue-0108-self-dispatch-hijack.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-18T16:57:17.8838731Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\75e53cf4-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T16:57:21.7324354Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-05-18T16:57:29.2816787Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-18T16:57:29.7803712Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-18T16:57:30.21146Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-05-18T16:57:48.3027168Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"read"}
+{"ts":"2026-05-18T16:57:48.6905412Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs","tool":"read"}
+{"ts":"2026-05-18T16:57:53.8746596Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"read"}
+{"ts":"2026-05-18T16:57:57.638404Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\IntegrationTestBase.cs","tool":"read"}
+{"ts":"2026-05-18T16:58:03.600706Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T16:58:08.2229936Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleDispatchDoubleClaimTests.cs","tool":"read"}
+{"ts":"2026-05-18T16:58:11.3086809Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\StaleWorkingReclaimTests.cs","tool":"read"}
+{"ts":"2026-05-18T16:58:16.9469798Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}
+{"ts":"2026-05-18T16:58:22.8278978Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-18T16:58:26.4430354Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-18T16:58:31.2086524Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-18T16:59:23.7932678Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services","tool":"grep"}
+{"ts":"2026-05-18T16:59:24.8681703Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"grep"}
+{"ts":"2026-05-18T17:00:10.018799Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"edit"}
+{"ts":"2026-05-18T17:03:54.1456704Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"edit"}
+{"ts":"2026-05-18T17:03:58.5880136Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"edit"}
+{"ts":"2026-05-18T17:04:05.7978773Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs","tool":"edit"}
+{"ts":"2026-05-18T17:04:09.7698152Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T17:04:18.0911048Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"edit"}
+{"ts":"2026-05-18T17:04:32.029958Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"edit"}
+{"ts":"2026-05-18T17:05:10.6531499Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"edit"}
+{"ts":"2026-05-18T17:05:22.8243664Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~AgentSelectorTests\u0022"}
+{"ts":"2026-05-18T17:05:52.9946571Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"edit"}
+{"ts":"2026-05-18T17:05:59.2817948Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"edit"}
+{"ts":"2026-05-18T17:06:03.2681914Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~AgentSelectorTests\u0022"}
+{"ts":"2026-05-18T17:07:00.0303233Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-05-18T17:11:02.0135988Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs","tool":"read"}
+{"ts":"2026-05-18T17:11:38.3862947Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs","tool":"read"}
+{"ts":"2026-05-18T17:11:42.0904848Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T17:11:45.178488Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T17:11:49.4221981Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\WorkflowTests.cs","tool":"read"}
+{"ts":"2026-05-18T17:11:53.6106533Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs","tool":"grep"}
+{"ts":"2026-05-18T17:12:05.5881343Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs","tool":"edit"}
+{"ts":"2026-05-18T17:12:10.636315Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~Dispatch_ToBusyAgent_Fai..."}
+{"ts":"2026-05-18T17:24:32.0587263Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py"}
+{"ts":"2026-05-18T17:28:52.1206183Z","event":"Blocked","tool":"bash","cmd":"dydo agent release","reason":"Missing general wait"}
+{"ts":"2026-05-18T17:29:15.5160773Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T17:29:36.1712368Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services","tool":"grep"}
+{"ts":"2026-05-18T17:30:19.9112949Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\.handback-0108.md","tool":"write"}
+{"ts":"2026-05-18T17:30:29.6608046Z","event":"Release","agent":"Brian"}
+{"ts":"2026-05-18T17:30:34.8367349Z","event":"Bash","tool":"bash","cmd":"del \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\.handback-0108.md\u0022"}

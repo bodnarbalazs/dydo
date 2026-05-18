@@ -1,0 +1,37 @@
+{"ts":"2026-05-18T18:53:57.7062374Z","event":"Bash","tool":"bash","cmd":"ls C:/Users/User/Desktop/Projects/DynaDocs/dydo/agents/Charlie/ 2\u003E\u00261 | head -20"}
+{"ts":"2026-05-18T18:54:02.1649905Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md","tool":"read"}
+{"ts":"2026-05-18T18:54:06.2233487Z","event":"Claim","agent":"Charlie","recovery_kind":"fresh"}
+{"ts":"2026-05-18T18:54:14.1402041Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\97f4a064-fix-issue-0108-self-dispatch-hijack.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-18T18:54:18.2043317Z","event":"Role","role":"reviewer","task":"fix-issue-0108-self-dispatch-hijack"}
+{"ts":"2026-05-18T18:54:21.0341867Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\reviewer.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-18T18:54:27.1301394Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-05-18T18:54:31.1747149Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\97f4a064-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T18:54:36.9845146Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-18T18:54:39.9572769Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-18T18:54:43.5570031Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-05-18T18:54:51.4253062Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T18:54:54.7801521Z","event":"Blocked","tool":"bash","cmd":"cd C:/Users/User/Desktop/Projects/DynaDocs \u0026\u0026 ls dydo/agents/Charlie/archive/inbox/ 2\u003E\u00261 | head -30","reason":"Needless cd compound"}
+{"ts":"2026-05-18T18:54:57.7002183Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Charlie/archive/inbox/ 2\u003E\u00261 | head -30"}
+{"ts":"2026-05-18T18:55:01.5002302Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Charlie/archive/inbox/ 2\u003E\u00261 | grep -i \u00220108\\|self-dispatch\u0022 | head -10"}
+{"ts":"2026-05-18T18:55:04.8776481Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\archive\\inbox\\f54dfb87-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
+{"ts":"2026-05-18T18:55:08.7774608Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Charlie/notes/ 2\u003E\u00261 | tail -20"}
+{"ts":"2026-05-18T18:55:11.8088764Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\state.md","tool":"read"}
+{"ts":"2026-05-18T18:55:14.5984025Z","event":"Bash","tool":"bash","cmd":"git log --oneline -20 2\u003E\u00261"}
+{"ts":"2026-05-18T18:55:17.6106527Z","event":"Bash","tool":"bash","cmd":"git diff --stat HEAD 2\u003E\u00261"}
+{"ts":"2026-05-18T18:55:21.6773266Z","event":"Bash","tool":"bash","cmd":"git diff HEAD -- Services/AgentSelector.cs Services/DispatchService.cs 2\u003E\u00261"}
+{"ts":"2026-05-18T18:55:24.9904949Z","event":"Bash","tool":"bash","cmd":"git diff HEAD -- DynaDocs.Tests/Services/AgentSelectorTests.cs DynaDocs.Tests/Integration/DispatchCo..."}
+{"ts":"2026-05-18T18:55:29.2119285Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentSelector.cs","tool":"read"}
+{"ts":"2026-05-18T18:55:32.6901916Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\DispatchService.cs","tool":"read"}
+{"ts":"2026-05-18T18:55:37.7132966Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\resolved\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}
+{"ts":"2026-05-18T18:55:41.8294082Z","event":"Bash","tool":"bash","cmd":"git diff HEAD -- dydo/project/issues/_index.md dydo/project/issues/resolved/_index.md 2\u003E\u00261"}
+{"ts":"2026-05-18T18:55:55.4238981Z","event":"Bash","tool":"bash","cmd":"git log --oneline -5 -- dydo/project/inquisitions/agent-crashes.md 2\u003E\u00261"}
+{"ts":"2026-05-18T18:55:59.2654526Z","event":"Bash","tool":"bash","cmd":"git diff HEAD -- dydo/project/inquisitions/agent-crashes.md 2\u003E\u00261 | head -5"}
+{"ts":"2026-05-18T18:56:04.1340052Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -40"}
+{"ts":"2026-05-18T18:56:35.2031285Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentSelectorTests.cs","tool":"read"}
+{"ts":"2026-05-18T18:56:45.848724Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Integration\\DispatchCommandTests.cs","tool":"read"}
+{"ts":"2026-05-18T18:57:00.5703584Z","event":"Bash","tool":"bash","cmd":"git log --oneline --all -- dydo/project/issues/0181-saturate-vs-claim-race-watchdog-overwrites-fresh..."}
+{"ts":"2026-05-18T18:57:04.4305827Z","event":"Bash","tool":"bash","cmd":"git log --oneline --all -- dydo/project/issues/0182-fixhubhandler-deletestaletasksindex-banner-gated..."}
+{"ts":"2026-05-18T18:57:18.6207917Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T18:57:21.7180125Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-18T18:58:13.0109501Z","event":"Blocked","tool":"bash","cmd":"dydo agent release 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-05-18T18:58:22.2620205Z","event":"Release","agent":"Charlie"}

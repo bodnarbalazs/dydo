@@ -5,9 +5,15 @@ using DynaDocs.Utils;
 
 public class DocGraph : IDocGraph
 {
+    private readonly ILinkResolver _linkResolver;
     private readonly Dictionary<string, List<(string Target, int LineNumber)>> _outgoing = new();
     private readonly Dictionary<string, List<(string Source, int LineNumber)>> _incoming = new();
     private readonly HashSet<string> _allDocs = [];
+
+    public DocGraph(ILinkResolver linkResolver)
+    {
+        _linkResolver = linkResolver;
+    }
 
     public void Build(List<DocFile> docs, string basePath)
     {
@@ -28,12 +34,8 @@ public class DocGraph : IDocGraph
 
             foreach (var link in doc.Links)
             {
-                if (link.Type == LinkType.External) continue;
-
-                var resolvedPath = DocLinkResolver.Resolve(doc, link, basePath);
-                if (resolvedPath == null) continue;
-
-                var targetPath = PathUtils.NormalizeForKey(resolvedPath);
+                var targetPath = _linkResolver.ResolveToRelativeKey(doc, link, basePath);
+                if (targetPath == null) continue;
                 if (!_allDocs.Contains(targetPath)) continue;
 
                 _outgoing[sourcePath].Add((targetPath, link.LineNumber));

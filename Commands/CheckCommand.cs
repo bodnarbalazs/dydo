@@ -30,87 +30,19 @@ public static class CheckCommand
     {
         try
         {
-            var hasErrors = false;
-            var hasWarnings = false;
             var configService = new ConfigService();
             var config = configService.LoadConfig();
+            var configHasErrors = ValidateConfig(config);
 
-            // Config invariants
-            if (config != null)
-            {
-                var configErrors = CheckConfigValidator.Validate(config);
-                if (configErrors.Count > 0)
-                {
-                    Console.WriteLine("Checking dydo.json...");
-                    foreach (var error in configErrors)
-                        ConsoleOutput.WriteError($"  {error}");
-                    Console.WriteLine();
-                    hasErrors = true;
-                }
-            }
-
-            // Documentation validation
-            var basePath = ResolvePath(path);
-            if (basePath != null)
-            {
-                Console.WriteLine($"Checking {basePath}...");
-                Console.WriteLine();
-
-                var result = CheckDocValidator.Validate(basePath);
-                ConsoleOutput.WriteViolations(result);
-
-                if (result.HasErrors)
-                    hasErrors = true;
-                if (result.WarningCount > 0)
-                    hasWarnings = true;
-            }
-            else if (string.IsNullOrEmpty(path))
-            {
-                Console.WriteLine("No docs folder found.");
-            }
-            else
-            {
-                ConsoleOutput.WriteError($"Path not found: {path}");
+            var docsOutcome = ValidateDocs(path);
+            if (docsOutcome.IsToolError)
                 return ExitCodes.ToolError;
-            }
 
-            // Agent validation (only if config exists)
-            if (config != null)
-            {
-                Console.WriteLine();
-                Console.WriteLine("Checking agent assignments...");
+            var agentHasWarnings = ValidateAgents(config, configService);
 
-                var agentWarnings = CheckAgentValidator.Validate(config, configService);
-                if (agentWarnings.Count > 0)
-                {
-                    hasWarnings = true;
-                    foreach (var warning in agentWarnings)
-                    {
-                        ConsoleOutput.WriteWarning(warning);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("  No issues found.");
-                }
-            }
-
-            Console.WriteLine();
-            if (hasErrors)
-            {
-                Console.WriteLine("Found errors.");
-                return ExitCodes.ValidationErrors;
-            }
-            else if (hasWarnings)
-            {
-                Console.WriteLine("Found warnings (no errors).");
-                return ExitCodes.Success;
-            }
-            else
-            {
-                Console.WriteLine("All checks passed.");
-                return ExitCodes.Success;
-            }
+            return WriteSummary(
+                configHasErrors || docsOutcome.HasErrors,
+                docsOutcome.HasWarnings || agentHasWarnings);
         }
         catch (Exception ex)
         {
@@ -119,15 +51,87 @@ public static class CheckCommand
         }
     }
 
-    private static string? ResolvePath(string? path)
+    private static bool ValidateConfig(Models.DydoConfig? config)
     {
-        if (!string.IsNullOrEmpty(path))
+        if (config == null) return false;
+        var errors = CheckConfigValidator.Validate(config);
+        if (errors.Count == 0) return false;
+        Console.WriteLine("Checking dydo.json...");
+        foreach (var error in errors)
+            ConsoleOutput.WriteError($"  {error}");
+        Console.WriteLine();
+        return true;
+    }
+
+    private record DocsOutcome(bool IsToolError, bool HasErrors, bool HasWarnings);
+
+    private static DocsOutcome ValidateDocs(string? path)
+    {
+        var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        var reportScope = ResolveReportScope(path);
+
+        if (!string.IsNullOrEmpty(path) && reportScope == null)
         {
-            if (File.Exists(path) || Directory.Exists(path))
-                return Path.GetFullPath(path);
-            return null;
+            ConsoleOutput.WriteError($"Path not found: {path}");
+            return new DocsOutcome(true, false, false);
+        }
+        if (basePath != null && reportScope != null)
+        {
+            if (CheckDocValidator.IsUnderScope(basePath, reportScope))
+                reportScope = null;
+            else if (!CheckDocValidator.IsUnderScope(reportScope, basePath))
+            {
+                ConsoleOutput.WriteError($"Path is outside the docs tree: {path}");
+                return new DocsOutcome(true, false, false);
+            }
+        }
+        if (basePath == null)
+        {
+            Console.WriteLine("No docs folder found.");
+            return new DocsOutcome(false, false, false);
         }
 
-        return PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        Console.WriteLine($"Checking {reportScope ?? basePath}...");
+        Console.WriteLine();
+        var result = CheckDocValidator.Validate(basePath, reportScope);
+        ConsoleOutput.WriteViolations(result);
+        return new DocsOutcome(false, result.HasErrors, result.WarningCount > 0);
+    }
+
+    private static bool ValidateAgents(Models.DydoConfig? config, IConfigService configService)
+    {
+        if (config == null) return false;
+        Console.WriteLine();
+        Console.WriteLine("Checking agent assignments...");
+        var warnings = CheckAgentValidator.Validate(config, configService);
+        if (warnings.Count == 0)
+        {
+            Console.WriteLine("  No issues found.");
+            return false;
+        }
+        foreach (var warning in warnings)
+            ConsoleOutput.WriteWarning(warning);
+        return true;
+    }
+
+    private static int WriteSummary(bool hasErrors, bool hasWarnings)
+    {
+        Console.WriteLine();
+        if (hasErrors)
+        {
+            Console.WriteLine("Found errors.");
+            return ExitCodes.ValidationErrors;
+        }
+        Console.WriteLine(hasWarnings ? "Found warnings (no errors)." : "All checks passed.");
+        return ExitCodes.Success;
+    }
+
+    private static string? ResolveReportScope(string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return null;
+        if (File.Exists(path) || Directory.Exists(path))
+            return Path.GetFullPath(path);
+        return null;
     }
 }

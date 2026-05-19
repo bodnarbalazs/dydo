@@ -5,6 +5,7 @@ using DynaDocs.Models;
 public interface ILinkResolver
 {
     bool ResolveLink(DocFile sourceDoc, LinkInfo link, List<DocFile> allDocs, string basePath);
+    string? ResolveToRelativeKey(DocFile sourceDoc, LinkInfo link, string basePath);
     string? FindFileByName(string fileName, List<DocFile> allDocs);
     bool ValidateAnchor(string? anchor, DocFile targetDoc);
 }

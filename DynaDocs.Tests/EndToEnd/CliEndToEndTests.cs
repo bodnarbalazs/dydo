@@ -147,6 +147,56 @@ public class CliEndToEndTests : IDisposable
     }
 
     [Fact]
+    public async Task Check_Subfolder_AcceptsLinksToTargetsOutsideSubfolder()
+    {
+        var initResult = await RunDydoAsync("init none --name testuser --agents 2");
+        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
+
+        var fixtureSrc = Path.Combine(AppContext.BaseDirectory, "TestData", "link-validator");
+        Assert.True(Directory.Exists(fixtureSrc), $"fixture missing: {fixtureSrc}");
+
+        var fixtureDst = Path.Combine(_testDir, "dydo", "x", "y", "z");
+        Directory.CreateDirectory(Path.Combine(fixtureDst, "sub"));
+        foreach (var file in Directory.GetFiles(fixtureSrc, "*.md"))
+            File.Copy(file, Path.Combine(fixtureDst, Path.GetFileName(file)));
+        foreach (var file in Directory.GetFiles(Path.Combine(fixtureSrc, "sub"), "*.md"))
+            File.Copy(file, Path.Combine(fixtureDst, "sub", Path.GetFileName(file)));
+
+        var checkResult = await RunDydoAsync("check dydo/x/y/z");
+
+        Assert.True(checkResult.ExitCode <= 1,
+            $"check crashed:\nStderr: {checkResult.Stderr}\nStdout: {checkResult.Stdout}");
+        Assert.DoesNotContain("Broken link:", checkResult.Stdout);
+    }
+
+    [Fact]
+    public async Task Check_NonExistentPath_ReturnsToolError()
+    {
+        var initResult = await RunDydoAsync("init none --name testuser --agents 2");
+        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
+
+        var result = await RunDydoAsync("check does-not-exist-path");
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Contains("Path not found", result.Stdout + result.Stderr);
+    }
+
+    [Fact]
+    public async Task Check_PathOutsideDocsTree_ReturnsToolError()
+    {
+        var initResult = await RunDydoAsync("init none --name testuser --agents 2");
+        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
+
+        var outside = Path.Combine(_testDir, "elsewhere");
+        Directory.CreateDirectory(outside);
+
+        var result = await RunDydoAsync($"check \"{outside}\"");
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Contains("outside the docs tree", result.Stdout + result.Stderr);
+    }
+
+    [Fact]
     public async Task Init_ThenWhoami_ShowsHumanInfo()
     {
         // Initialize

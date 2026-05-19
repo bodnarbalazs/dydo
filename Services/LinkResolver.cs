@@ -9,6 +9,9 @@ public class LinkResolver : ILinkResolver
     {
         if (link.Type == LinkType.External) return true;
 
+        if (link.Target.Length == 0)
+            return ValidateAnchor(link.Anchor, sourceDoc);
+
         var resolvedPath = PathUtils.ResolvePath(
             Path.Combine(basePath, sourceDoc.RelativePath),
             link.Target
@@ -25,6 +28,19 @@ public class LinkResolver : ILinkResolver
         }
 
         return true;
+    }
+
+    public string? ResolveToRelativeKey(DocFile sourceDoc, LinkInfo link, string basePath)
+    {
+        if (link.Type == LinkType.External) return null;
+        if (link.Target.Length == 0) return null;
+
+        var resolvedPath = PathUtils.ResolvePath(
+            Path.Combine(basePath, sourceDoc.RelativePath),
+            link.Target
+        );
+        var relative = Path.GetRelativePath(basePath, resolvedPath);
+        return PathUtils.NormalizeForKey(relative);
     }
 
     public string? FindFileByName(string fileName, List<DocFile> allDocs)

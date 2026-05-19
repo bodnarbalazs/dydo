@@ -6,7 +6,7 @@ using Xunit;
 
 public class DocGraphTests
 {
-    private readonly DocGraph _graph = new();
+    private readonly DocGraph _graph = new(new LinkResolver());
 
     [Fact]
     public void Build_CreatesGraphFromDocs()

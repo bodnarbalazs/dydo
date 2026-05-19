@@ -140,6 +140,78 @@ public class BrokenLinksRuleTests
 
     #endregion
 
+    #region Cross-folder (#0185)
+
+    [Fact]
+    public void Validate_AcceptsCrossFolderLink_WhenAllDocsContainsTarget()
+    {
+        var source = CreateDoc("project/decisions/0001-foo.md",
+            links: [CreateLink("../../understand/architecture.md", LinkType.Markdown)]);
+        var target = CreateDoc("understand/architecture.md");
+        var allDocs = new List<DocFile> { source, target };
+
+        var violations = _rule.Validate(source, allDocs, BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_AcceptsTwoLevelParentLink_AcrossFolders()
+    {
+        var source = CreateDoc("a/b/c/source.md",
+            links: [CreateLink("../../foo/bar.md", LinkType.Markdown)]);
+        var target = CreateDoc("a/foo/bar.md");
+        var allDocs = new List<DocFile> { source, target };
+
+        var violations = _rule.Validate(source, allDocs, BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    #endregion
+
+    #region Anchor-only (#0186)
+
+    [Fact]
+    public void Validate_AcceptsAnchorOnlyLink_WhenAnchorExistsOnSamePage()
+    {
+        var source = CreateDoc("guide.md",
+            anchors: ["section"],
+            links: [CreateLinkWithAnchor("", "section", LinkType.Markdown)]);
+
+        var violations = _rule.Validate(source, [source], BasePath).ToList();
+
+        Assert.Empty(violations);
+    }
+
+    [Fact]
+    public void Validate_ReportsAnchorOnlyLink_WhenAnchorDoesNotExist()
+    {
+        var source = CreateDoc("guide.md",
+            anchors: ["section"],
+            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+
+        var violations = _rule.Validate(source, [source], BasePath).ToList();
+
+        Assert.Single(violations);
+        Assert.Contains("#missing", violations[0].Message);
+    }
+
+    [Fact]
+    public void Validate_DoesNotEmitEmptyTargetError_ForAnchorOnlyLink()
+    {
+        var source = CreateDoc("guide.md",
+            anchors: ["section"],
+            links: [CreateLinkWithAnchor("", "missing", LinkType.Markdown)]);
+
+        var violations = _rule.Validate(source, [source], BasePath).ToList();
+
+        Assert.Single(violations);
+        Assert.DoesNotMatch(@"Broken link:\s*$", violations[0].Message);
+    }
+
+    #endregion
+
     private static DocFile CreateDoc(string relativePath, List<LinkInfo>? links = null, List<string>? anchors = null)
     {
         var fullPath = Path.GetFullPath(Path.Combine(BasePath, relativePath));

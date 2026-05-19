@@ -28,8 +28,9 @@ public class BrokenLinksRule : RuleBase
                 continue;
             }
 
-            // For non-markdown links (images, etc.), check if file exists on disk
-            if (!link.Target.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            // For non-markdown links (images, etc.), check if file exists on disk.
+            // Empty target ([label](#anchor)) flows to the resolver branch below.
+            if (link.Target.Length > 0 && !link.Target.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
                 var resolvedPath = PathUtils.ResolvePath(
                     Path.Combine(basePath, doc.RelativePath),

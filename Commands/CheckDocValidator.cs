@@ -10,18 +10,18 @@ using DynaDocs.Utils;
 /// </summary>
 internal static class CheckDocValidator
 {
-    public static ValidationResult Validate(string basePath)
+    public static ValidationResult Validate(string basePath, string? reportScope = null)
     {
         var parser = new MarkdownParser();
         var scanner = new DocScanner(parser);
         var linkResolver = new LinkResolver();
         var typesService = new FrontmatterTypesService(basePath);
 
-        var docs = scanner.ScanDirectory(basePath)
+        var allDocs = scanner.ScanDirectory(basePath)
             .Where(d => !PathUtils.NormalizePath(d.RelativePath)
                 .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        var folders = scanner.GetAllFolders(basePath)
+        var allFolders = scanner.GetAllFolders(basePath)
             .Where(f =>
             {
                 var rel = PathUtils.NormalizePath(Path.GetRelativePath(basePath, f));
@@ -29,26 +29,42 @@ internal static class CheckDocValidator
             })
             .ToList();
 
-        var rules = CreateRules(linkResolver, typesService);
-        var result = new ValidationResult { TotalFilesChecked = docs.Count };
+        var docsToValidate = reportScope == null
+            ? allDocs
+            : allDocs.Where(d => IsUnderScope(d.FilePath, reportScope)).ToList();
+        var foldersToValidate = reportScope == null
+            ? allFolders
+            : allFolders.Where(f => IsUnderScope(f, reportScope)).ToList();
 
-        foreach (var doc in docs)
+        var rules = CreateRules(linkResolver, typesService);
+        var result = new ValidationResult { TotalFilesChecked = docsToValidate.Count };
+
+        foreach (var doc in docsToValidate)
         {
             foreach (var rule in rules)
             {
-                result.AddRange(rule.Validate(doc, docs, basePath));
+                result.AddRange(rule.Validate(doc, allDocs, basePath));
             }
         }
 
-        foreach (var folder in folders)
+        foreach (var folder in foldersToValidate)
         {
             foreach (var rule in rules)
             {
-                result.AddRange(rule.ValidateFolder(folder, docs, basePath));
+                result.AddRange(rule.ValidateFolder(folder, allDocs, basePath));
             }
         }
 
         return result;
+    }
+
+    internal static bool IsUnderScope(string fullPath, string scopePath)
+    {
+        var normPath = PathUtils.NormalizeForKey(fullPath);
+        var normScope = PathUtils.NormalizeForKey(scopePath).TrimEnd('/');
+        if (normScope.Length == 0)
+            return true;
+        return normPath == normScope || normPath.StartsWith(normScope + "/", StringComparison.Ordinal);
     }
 
     private static List<IRule> CreateRules(ILinkResolver linkResolver, IFrontmatterTypesService typesService)

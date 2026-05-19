@@ -53,6 +53,28 @@ public class PathUtilsDiscoveryTests : IDisposable
         Assert.DoesNotContain("\\", result);
     }
 
+    [Fact]
+    public void ResolvePath_HandlesMixedSeparators()
+    {
+        var source = Path.Combine(_testDir, "sub", "file.md");
+        var expected = PathUtils.NormalizePath(Path.GetFullPath(Path.Combine(_testDir, "other.md")));
+
+        var result = PathUtils.ResolvePath(source, "../other.md");
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void ResolvePath_CollapsesParentSegments()
+    {
+        var source = Path.Combine(_testDir, "a", "b", "c", "source.md");
+        var expected = PathUtils.NormalizePath(Path.GetFullPath(Path.Combine(_testDir, "a", "foo", "bar.md")));
+
+        var result = PathUtils.ResolvePath(source, "../../foo/bar.md");
+
+        Assert.Equal(expected, result);
+    }
+
     [Theory]
     [InlineData("a/b/file.md", "a/b/other.md", "./other.md")]
     [InlineData("a/file.md", "a/b/other.md", "./b/other.md")]

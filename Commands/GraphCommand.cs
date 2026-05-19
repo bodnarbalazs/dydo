@@ -60,7 +60,7 @@ public static class GraphCommand
                     .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            var graph = new DocGraph();
+            var graph = new DocGraph(new LinkResolver());
             graph.Build(docs, basePath);
 
             var targetPath = ResolveTargetFile(file, basePath, docs);
@@ -171,7 +171,7 @@ public static class GraphCommand
                     .StartsWith("agents/", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            var graph = new DocGraph();
+            var graph = new DocGraph(new LinkResolver());
             graph.Build(docs, basePath);
 
             GraphDisplayHandler.ShowStats(graph, top);

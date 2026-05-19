@@ -106,7 +106,7 @@ public class SnapshotService : ISnapshotService
         {
             var parser = new MarkdownParser();
             var scanner = new DocScanner(parser);
-            var graph = new DocGraph();
+            var graph = new DocGraph(new LinkResolver());
 
             // Scan all docs in dydo folder
             var docs = scanner.ScanDirectory(dydoRoot);

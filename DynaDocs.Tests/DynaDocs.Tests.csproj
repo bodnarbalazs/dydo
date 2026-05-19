@@ -29,4 +29,8 @@
     <Folder Include="TestResults\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="TestData\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

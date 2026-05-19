@@ -676,6 +676,8 @@ public static class WorktreeCommand
         Path.Combine("dydo", "_system", "roles"),
         Path.Combine("dydo", "project", "issues"),
         Path.Combine("dydo", "project", "inquisitions"),
+        Path.Combine("dydo", "project", "backlog"),
+        Path.Combine("dydo", "project", "future-features"),
     ];
 
     /// <summary>

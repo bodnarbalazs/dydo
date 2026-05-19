@@ -150,6 +150,7 @@ public class RoleBehaviorTests : IDisposable
         Assert.Contains("Services/**", writable);
         Assert.Contains("DynaDocs.Tests/**", writable);
         Assert.Contains("dydo/agents/{self}/**", writable);
+        Assert.Contains("dydo/project/backlog/**", writable);
         Assert.Contains("dydo/**", readOnly);
         Assert.Contains("project/**", readOnly);
     }
@@ -174,7 +175,8 @@ public class RoleBehaviorTests : IDisposable
         Assert.Contains("dydo/agents/{self}/**", writable);
         Assert.Contains("dydo/project/decisions/**", writable);
         Assert.Contains("dydo/project/issues/**", writable);
-        Assert.Equal(3, writable.Count);
+        Assert.Contains("dydo/project/backlog/**", writable);
+        Assert.Equal(4, writable.Count);
         Assert.Contains("src/**", readOnly);
         Assert.Contains("tests/**", readOnly);
     }
@@ -231,7 +233,8 @@ public class RoleBehaviorTests : IDisposable
         Assert.Contains("dydo/project/tasks/**", writable);
         Assert.Contains("dydo/project/decisions/**", writable);
         Assert.Contains("dydo/project/issues/**", writable);
-        Assert.Equal(4, writable.Count);
+        Assert.Contains("dydo/project/backlog/**", writable);
+        Assert.Equal(5, writable.Count);
         Assert.Contains("**", readOnly);
     }
 
@@ -254,10 +257,11 @@ public class RoleBehaviorTests : IDisposable
         var perms = BuildPerms(["src/**"], ["tests/**"]);
         var (writable, readOnly) = perms["judge"];
 
-        Assert.Equal(3, writable.Count);
+        Assert.Equal(4, writable.Count);
         Assert.Contains("dydo/agents/{self}/**", writable);
         Assert.Contains("dydo/project/issues/**", writable);
         Assert.Contains("dydo/project/inquisitions/**", writable);
+        Assert.Contains("dydo/project/backlog/**", writable);
         Assert.Contains("src/**", readOnly);
         Assert.Contains("tests/**", readOnly);
     }
@@ -314,6 +318,7 @@ public class RoleBehaviorTests : IDisposable
     [InlineData("src/sub/Bar.cs", true)]
     [InlineData("tests/UnitTests.cs", true)]
     [InlineData("dydo/agents/Adele/notes.md", true)]
+    [InlineData("dydo/project/backlog/idea.md", true)]
     [InlineData("dydo/project/tasks/foo.md", false)]
     [InlineData("dydo/agents/Brian/notes.md", false)]
     public void IsPathAllowed_CodeWriter_WritePaths(string path, bool expected)
@@ -321,7 +326,7 @@ public class RoleBehaviorTests : IDisposable
         SetupConfig(["Adele", "Brian"], new() { ["testuser"] = ["Adele", "Brian"] },
             sourcePaths: ["src/**"], testPaths: ["tests/**"]);
         CreateSessionFile("Adele", "test-cw", role: "code-writer", task: "t1",
-            writablePaths: ["src/**", "tests/**", "dydo/agents/Adele/**"],
+            writablePaths: ["src/**", "tests/**", "dydo/agents/Adele/**", "dydo/project/backlog/**"],
             readOnlyPaths: ["dydo/**", "project/**"]);
 
         var registry = new AgentRegistry(_testDir);
@@ -356,6 +361,7 @@ public class RoleBehaviorTests : IDisposable
     [InlineData("dydo/agents/Adele/notes.md", true)]
     [InlineData("dydo/project/decisions/001.md", true)]
     [InlineData("dydo/project/issues/0001-foo.md", true)]
+    [InlineData("dydo/project/backlog/idea.md", true)]
     [InlineData("src/Foo.cs", false)]
     [InlineData("tests/Bar.cs", false)]
     public void IsPathAllowed_CoThinker_DecisionsIssuesAndSelf(string path, bool expected)
@@ -363,7 +369,7 @@ public class RoleBehaviorTests : IDisposable
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
             sourcePaths: ["src/**"], testPaths: ["tests/**"]);
         CreateSessionFile("Adele", "test-ct", role: "co-thinker", task: "t1",
-            writablePaths: ["dydo/agents/Adele/**", "dydo/project/decisions/**", "dydo/project/issues/**"],
+            writablePaths: ["dydo/agents/Adele/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
             readOnlyPaths: ["src/**", "tests/**"]);
 
         var registry = new AgentRegistry(_testDir);
@@ -446,13 +452,14 @@ public class RoleBehaviorTests : IDisposable
     [InlineData("dydo/project/tasks/foo.md", true)]
     [InlineData("dydo/project/decisions/001.md", true)]
     [InlineData("dydo/project/issues/0001-foo.md", true)]
+    [InlineData("dydo/project/backlog/idea.md", true)]
     [InlineData("src/Foo.cs", false)]
     public void IsPathAllowed_Orchestrator_TasksDecisionsIssuesAndSelf(string path, bool expected)
     {
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] },
             sourcePaths: ["src/**"], testPaths: ["tests/**"]);
         CreateSessionFile("Adele", "test-orch", role: "orchestrator", task: "t1",
-            writablePaths: ["dydo/agents/Adele/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**"],
+            writablePaths: ["dydo/agents/Adele/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
             readOnlyPaths: ["**"]);
 
         var registry = new AgentRegistry(_testDir);

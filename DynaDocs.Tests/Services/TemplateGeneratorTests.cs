@@ -1060,6 +1060,20 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
+    public void GenerateBacklogMetaMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateBacklogMetaMd();
+        Assert.NotEmpty(content);
+    }
+
+    [Fact]
+    public void GenerateFutureFeaturesMetaMd_ReturnsValidContent()
+    {
+        var content = TemplateGenerator.GenerateFutureFeaturesMetaMd();
+        Assert.NotEmpty(content);
+    }
+
+    [Fact]
     public void GenerateFallbackAboutMd_ReturnsValidContent()
     {
         var content = TemplateGenerator.GenerateFallbackAboutMd();

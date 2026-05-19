@@ -119,6 +119,8 @@ For informal notes during exploration:
 dydo/agents/{{AGENT_NAME}}/notes-<topic>.md
 ```
 
+Concrete next-step slices → `dydo/project/backlog/<slug>.md`; far-out ideas → `dydo/project/future-features/<slug>.md`.
+
 ---
 
 ## Complete

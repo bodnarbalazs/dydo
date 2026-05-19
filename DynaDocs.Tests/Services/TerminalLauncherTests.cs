@@ -1829,7 +1829,7 @@ public class TerminalLauncherTests
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: TestWorktreeId);
 
         // Each junction subpath should have a ReparsePoint attribute check
-        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions" };
+        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions", "dydo/project/backlog", "dydo/project/future-features" };
         foreach (var path in junctionPaths)
         {
             Assert.Contains("ReparsePoint", args,
@@ -1855,7 +1855,7 @@ public class TerminalLauncherTests
 
         // Find each 'rmdir /s /q' usage and verify it's guarded by a ReparsePoint check.
         // If any 'rmdir /s /q' appears for junction paths without a guard, the test fails.
-        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions" };
+        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions", "dydo/project/backlog", "dydo/project/future-features" };
         foreach (var path in junctionPaths)
         {
             var rmdirPattern = $"rmdir /s /q";
@@ -1877,7 +1877,7 @@ public class TerminalLauncherTests
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", worktreeId: "my-task", mainProjectRoot: @"C:\project");
 
-        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions" };
+        var junctionPaths = new[] { "dydo/agents", "dydo/_system/roles", "dydo/project/issues", "dydo/project/inquisitions", "dydo/project/backlog", "dydo/project/future-features" };
         foreach (var path in junctionPaths)
         {
             var pathContextStart = args.IndexOf(path);
@@ -2309,6 +2309,8 @@ public class TerminalLauncherTests
         Assert.Contains("Junction", args);
         Assert.Contains("dydo/project/issues", args);
         Assert.Contains("dydo/project/inquisitions", args);
+        Assert.Contains("dydo/project/backlog", args);
+        Assert.Contains("dydo/project/future-features", args);
     }
 
     [Fact]
@@ -2332,6 +2334,8 @@ public class TerminalLauncherTests
         Assert.Contains("ln -s", script);
         Assert.Contains("dydo/project/issues", script);
         Assert.Contains("dydo/project/inquisitions", script);
+        Assert.Contains("dydo/project/backlog", script);
+        Assert.Contains("dydo/project/future-features", script);
     }
 
     [Fact]
@@ -2340,6 +2344,8 @@ public class TerminalLauncherTests
         var script = TerminalLauncher.WorktreeSetupScript("my-task", "/repo");
         Assert.Contains("ln -s '/repo/dydo/project/issues' dydo/project/issues", script);
         Assert.Contains("ln -s '/repo/dydo/project/inquisitions' dydo/project/inquisitions", script);
+        Assert.Contains("ln -s '/repo/dydo/project/backlog' dydo/project/backlog", script);
+        Assert.Contains("ln -s '/repo/dydo/project/future-features' dydo/project/future-features", script);
     }
 
     [Theory]

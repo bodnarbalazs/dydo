@@ -14,6 +14,8 @@ This folder answers "What happened and why?" — the living record of project ev
 ## Contents
 
 - **tasks/** - Transient agent task files, not indexed (locate via `dydo whoami` / `dydo agent status`)
+- **backlog/** - Identified, scoped work not yet in flight (`type: context`)
+- **future-features/** - Ideas not in scope for the current version
 - **decisions/** - Decision records
 - **changelog/** - History of completed work
 - **pitfalls/** - Known gotchas and issues

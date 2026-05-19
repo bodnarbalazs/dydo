@@ -6,7 +6,8 @@
     "dydo/agents/{self}/**",
     "dydo/project/tasks/**",
     "dydo/project/decisions/**",
-    "dydo/project/issues/**"
+    "dydo/project/issues/**",
+    "dydo/project/backlog/**"
   ],
   "readOnlyPaths": [
     "**"

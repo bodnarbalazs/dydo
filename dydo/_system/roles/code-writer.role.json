@@ -5,7 +5,8 @@
   "writablePaths": [
     "{source}",
     "{tests}",
-    "dydo/agents/{self}/**"
+    "dydo/agents/{self}/**",
+    "dydo/project/backlog/**"
   ],
   "readOnlyPaths": [
     "dydo/**",

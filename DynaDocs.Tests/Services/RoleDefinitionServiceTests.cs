@@ -676,6 +676,18 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("dydo/project/issues/**", judge.WritablePaths);
     }
 
+    [Theory]
+    [InlineData("code-writer")]
+    [InlineData("co-thinker")]
+    [InlineData("orchestrator")]
+    [InlineData("judge")]
+    public void GetBaseRoleDefinitions_BacklogWriters_CanWriteBacklog(string roleName)
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var role = roles.Single(r => r.Name == roleName);
+        Assert.Contains("dydo/project/backlog/**", role.WritablePaths);
+    }
+
     [Fact]
     public void WriteBaseRoleDefinitions_RoundTrips_JudgeWritablePaths()
     {
@@ -686,6 +698,7 @@ public class RoleDefinitionServiceTests : IDisposable
 
         Assert.Contains("dydo/project/inquisitions/**", judge.WritablePaths);
         Assert.Contains("dydo/project/issues/**", judge.WritablePaths);
+        Assert.Contains("dydo/project/backlog/**", judge.WritablePaths);
     }
 
     [Fact]

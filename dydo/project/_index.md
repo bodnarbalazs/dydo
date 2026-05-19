@@ -17,9 +17,10 @@ Index of project documentation.
 
 ## Subfolders
 
+- [Backlog](./backlog/_index.md) - Identified, scoped, ready-ish work that isn't in flight and isn't yet an active task.
 - [Changelog](./changelog/_index.md) - Chronological record of completed work.
 - [Decisions](./decisions/_index.md) - Decision Records documenting choices that required deliberation.
-- [Future-features](./future-features/_index.md) - Speculative feature ideas that are worth capturing but not yet committed to a release.
+- [Future-features](./future-features/_index.md) - Ideas and features which should be implemented, but not for the current version for various reasons, like complexity, cost, etc.
 - [Inquisitions](./inquisitions/_index.md) - Investigation reports — targeted, dispatched audits of a specific subsystem or behavior.
 - [Issues](./issues/_index.md) - Actionable work items with lifecycle tracking.
 - [Pitfalls](./pitfalls/_index.md) - Known gotchas and issues that catch people repeatedly.

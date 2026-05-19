@@ -36,3 +36,4 @@ Index of decisions documentation.
 - [020 — Worktree Usage Policy: Power Option, Not Default](./020-worktree-usage-policy-power-option.md) - Worktrees are reframed from "default for parallel code work" (Decision 011) to a **power option** orchestrators reach for only in narrow, sized cas...
 - [021 — Unified General Wait for All Roles](./021-unified-general-wait.md) - Every claimed agent registers a single always-active general wait once their role is set, replacing the orchestrator-only general-wait policy.
 - [022 — Auto-Resume Crashed Agents](./022-auto-resume-crashed-agents.md) - When the watchdog detects that an agent's claude process has died while `state.
+- [023 — Backlog and Future-Features Doc Categories](./023-backlog-doc-category.md) - `dydo/project/` gains two new doc-categories — `backlog/` and `future-features/` — added as defaults to every `dydo init`.

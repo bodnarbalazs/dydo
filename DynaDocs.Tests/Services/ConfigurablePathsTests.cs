@@ -158,10 +158,11 @@ public class ConfigurablePathsTests : IDisposable
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        // Orchestrator: writes workspace + tasks + decisions; reads everything
+        // Orchestrator: writes workspace + tasks + decisions + backlog; reads everything
         Assert.Contains("dydo/agents/{self}/**", perms["orchestrator"].Writable);
         Assert.Contains("dydo/project/tasks/**", perms["orchestrator"].Writable);
         Assert.Contains("dydo/project/decisions/**", perms["orchestrator"].Writable);
+        Assert.Contains("dydo/project/backlog/**", perms["orchestrator"].Writable);
         Assert.Contains("**", perms["orchestrator"].ReadOnly);
 
         // Inquisitor: writes workspace + inquisitions; reads source + tests
@@ -170,11 +171,12 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Contains("src/**", perms["inquisitor"].ReadOnly);
         Assert.Contains("tests/**", perms["inquisitor"].ReadOnly);
 
-        // Judge: writes workspace + issues + inquisitions; reads source + tests
+        // Judge: writes workspace + issues + inquisitions + backlog; reads source + tests
         Assert.Contains("dydo/agents/{self}/**", perms["judge"].Writable);
         Assert.Contains("dydo/project/issues/**", perms["judge"].Writable);
         Assert.Contains("dydo/project/inquisitions/**", perms["judge"].Writable);
-        Assert.Equal(3, perms["judge"].Writable.Count);
+        Assert.Contains("dydo/project/backlog/**", perms["judge"].Writable);
+        Assert.Equal(4, perms["judge"].Writable.Count);
         Assert.Contains("src/**", perms["judge"].ReadOnly);
         Assert.Contains("tests/**", perms["judge"].ReadOnly);
     }

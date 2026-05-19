@@ -18,6 +18,8 @@ public class FolderScaffolder : IFolderScaffolder
         new("project/changelog", "Change history", "project"),
         new("project/pitfalls", "Known issues and gotchas", "project"),
         new("project/issues", "Actionable work items with lifecycle", "project"),
+        new("project/backlog", "Identified, scoped work not yet in flight", "project"),
+        new("project/future-features", "Ideas not in scope for current version", "project"),
         new("_system", "System configuration (committed)", "_system"),
         new("_system/roles", "Role definition files", "_system"),
         new("_system/templates", "Project-local template overrides", "_system"),
@@ -51,6 +53,8 @@ public class FolderScaffolder : IFolderScaffolder
         ("project/changelog/_changelog.md", TemplateGenerator.GenerateChangelogMetaMd),
         ("project/pitfalls/_pitfalls.md", TemplateGenerator.GeneratePitfallsMetaMd),
         ("project/issues/_issues.md", TemplateGenerator.GenerateIssuesMetaMd),
+        ("project/backlog/_backlog.md", TemplateGenerator.GenerateBacklogMetaMd),
+        ("project/future-features/_future-features.md", TemplateGenerator.GenerateFutureFeaturesMetaMd),
     ];
 
     public void Scaffold(string basePath) =>

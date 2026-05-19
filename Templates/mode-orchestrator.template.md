@@ -180,6 +180,8 @@ Sub-agents may surface bugs or problems outside their task scope. When they do, 
 
 If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by manual` — always pass `--summary` so the issue file lands `dydo check`-clean.
 
+Non-blocking sub-agent findings → `dydo/project/backlog/` (not `issues/`); on pickup flip `status: in-flight`, on done move to `backlog/done/`.
+
 ### 7. Report
 
 The user will ask questions. Common ones:

@@ -173,6 +173,8 @@ dydo issue create --title "..." --area <a> --severity <s> --summary "one-line su
 
 Always pass `--summary` so the issue file lands `dydo check`-clean.
 
+Confirmed-but-non-blocking findings → `dydo/project/backlog/<slug>.md` instead of `issues/`.
+
 Then update the inquisition report — mark each finding with a full ruling block (see [Ruling Format](#ruling-format) above):
 
 ```markdown

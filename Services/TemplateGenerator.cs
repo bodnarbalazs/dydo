@@ -1436,6 +1436,22 @@ public static class TemplateGenerator
     }
 
     /// <summary>
+    /// Generate the _backlog.md meta file describing the backlog folder.
+    /// </summary>
+    public static string GenerateBacklogMetaMd()
+    {
+        return ReadTemplateOrThrow("_backlog.template.md");
+    }
+
+    /// <summary>
+    /// Generate the _future-features.md meta file describing the future-features folder.
+    /// </summary>
+    public static string GenerateFutureFeaturesMetaMd()
+    {
+        return ReadTemplateOrThrow("_future-features.template.md");
+    }
+
+    /// <summary>
     /// Generate the _understand.md meta file describing the understand folder.
     /// </summary>
     public static string GenerateUnderstandMetaMd()

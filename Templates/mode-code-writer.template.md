@@ -90,6 +90,8 @@ If you encounter a bug or problem outside your current task scope, propose it to
 
 If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by manual` — always pass `--summary` so the issue file lands `dydo check`-clean.
 
+Non-blocking follow-ups (not bugs) skip approval — file directly to `dydo/project/backlog/<slug>.md` (`type: context`).
+
 **If guard blocks you:**
 - Check your role: `dydo agent status`
 - Need to edit docs? Dispatch to docs-writer

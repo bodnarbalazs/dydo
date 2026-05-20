@@ -92,4 +92,46 @@ public class AgentLifecycleHandlersTests : IDisposable
 
         Assert.Equal(ExitCodes.Success, exit);
     }
+
+    [Fact]
+    public void ExecuteClaim_Auto_StaleEnvVarMismatch_RefusedWithoutClaiming()
+    {
+        // Pool order is [Charlie, Zelda], so `claim auto` would pick Charlie (first free).
+        // DYDO_AGENT names Zelda — a mismatch. The refusal must happen BEFORE ClaimAuto runs,
+        // so no agent is left half-claimed. Regression test for the review BLOCKER where the
+        // auto branch claimed first and checked the stale env afterwards.
+        Environment.SetEnvironmentVariable("DYDO_AGENT", "Zelda");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+
+        int exit = 0;
+        var stderr = ConsoleCapture.Stderr(() =>
+        {
+            exit = AgentLifecycleHandlers.ExecuteClaim("auto");
+        });
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Contains("DYDO_AGENT is set to 'Zelda'", stderr);
+        // No claim leaked — neither agent has a .session file.
+        Assert.False(File.Exists(Path.Combine(_testDir, "dydo", "agents", "Charlie", ".session")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "dydo", "agents", "Zelda", ".session")));
+    }
+
+    [Fact]
+    public void ExecuteClaim_Auto_StaleEnvVarMatchesAutoTarget_Allowed()
+    {
+        // DYDO_AGENT names Charlie, which is exactly the agent `claim auto` would pick
+        // (first free in pool order) — the re-claim shape; allowed.
+        Environment.SetEnvironmentVariable("DYDO_AGENT", "Charlie");
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        new AgentRegistry(_testDir).StorePendingSessionId("Charlie", "test-session-charlie");
+
+        int exit = 0;
+        ConsoleCapture.Stdout(() =>
+        {
+            exit = AgentLifecycleHandlers.ExecuteClaim("auto");
+        });
+
+        Assert.Equal(ExitCodes.Success, exit);
+        Assert.True(File.Exists(Path.Combine(_testDir, "dydo", "agents", "Charlie", ".session")));
+    }
 }

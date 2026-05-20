@@ -2891,27 +2891,10 @@ public class TerminalLauncherTests
             "watchdog must inherit no agent identity — scrubbed in psi.Environment");
     }
 
-    [Fact]
-    public void WindowsTerminalLauncher_PinsDydoAgentOnChildProcess()
-    {
-        var starter = new RecordingProcessStarter();
-        WindowsTerminalLauncher.Launch(starter, "Zelda");
-
-        Assert.NotEmpty(starter.Started);
-        foreach (var psi in starter.Started)
-            Assert.Equal("Zelda", psi.Environment["DYDO_AGENT"]);
-    }
-
-    [Fact]
-    public void WindowsTerminalLauncher_LaunchResume_PinsDydoAgentOnChildProcess()
-    {
-        var starter = new RecordingProcessStarter();
-        WindowsTerminalLauncher.LaunchResume(starter, "Zelda", "sid-zelda");
-
-        Assert.NotEmpty(starter.Started);
-        foreach (var psi in starter.Started)
-            Assert.Equal("Zelda", psi.Environment["DYDO_AGENT"]);
-    }
+    // No WindowsTerminalLauncher pin test: Windows launchers keep UseShellExecute=true, which
+    // is incompatible with ProcessStartInfo.Environment (Process.Start throws). DYDO_AGENT is
+    // pinned in-shell via the launcher's PowerShell command string instead — covered by the
+    // GetWindowsArguments DYDO_AGENT export assertions above (#region DYDO_AGENT Tests).
 
     [Fact]
     public void LinuxTerminalLauncher_TryLaunch_PinsDydoAgentOnChildProcess()

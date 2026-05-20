@@ -12,35 +12,7 @@ internal static class AgentLifecycleHandlers
         var envAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
 
         if (nameOrLetter.Equals("auto", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!registry.ClaimAuto(out var claimedAgent, out var autoError))
-            {
-                ConsoleOutput.WriteError(autoError);
-                return ExitCodes.ToolError;
-            }
-
-            // #0193: refuse when a stale DYDO_AGENT was inherited from an upstream shell and
-            // points at a different agent than the one auto picked. With F1 in place this is
-            // already UX-only (the env path's ownership check rejects the mismatch downstream),
-            // but the early refusal gives the operator a clear error instead of a downstream
-            // surprise. We do not refuse when DYDO_AGENT equals the auto-chosen name — that is
-            // the standard re-claim-in-same-shell shape.
-            if (!string.IsNullOrEmpty(envAgent) &&
-                !envAgent.Equals(claimedAgent, StringComparison.OrdinalIgnoreCase))
-            {
-                ConsoleOutput.WriteError(StaleEnvClaimError(envAgent));
-                return ExitCodes.ToolError;
-            }
-
-            Console.WriteLine($"Agent identity assigned to this process: {claimedAgent}");
-            Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(claimedAgent)}");
-
-            var human = registry.GetCurrentHuman();
-            if (!string.IsNullOrEmpty(human))
-                Console.WriteLine($"  Assigned human: {human}");
-
-            return ExitCodes.Success;
-        }
+            return ExecuteClaimAuto(registry, envAgent);
 
         var name = nameOrLetter;
         if (nameOrLetter.Length == 1 && char.IsLetter(nameOrLetter[0]))
@@ -75,6 +47,46 @@ internal static class AgentLifecycleHandlers
         var currentHuman = registry.GetCurrentHuman();
         if (!string.IsNullOrEmpty(currentHuman))
             Console.WriteLine($"  Assigned human: {currentHuman}");
+
+        return ExitCodes.Success;
+    }
+
+    // The `dydo agent claim auto` path. Extracted from ExecuteClaim so that method's
+    // cyclomatic complexity stays under tier T1's CRAP gate.
+    private static int ExecuteClaimAuto(AgentRegistry registry, string? envAgent)
+    {
+        // #0193: refuse a stale DYDO_AGENT BEFORE ClaimAuto mutates state — symmetric with
+        // the explicit-name branch in ExecuteClaim. We resolve the agent auto would pick (the
+        // first free agent for this human — the same selection ClaimAuto makes) and refuse if
+        // DYDO_AGENT names a different one. Refusing pre-claim avoids leaving a half-claimed
+        // agent on rejection. The same-name case (re-claim in the same shell) is allowed;
+        // an unresolvable target falls through so ClaimAuto can surface its own error.
+        if (!string.IsNullOrEmpty(envAgent))
+        {
+            var autoHuman = registry.GetCurrentHuman();
+            var autoTarget = string.IsNullOrEmpty(autoHuman)
+                ? null
+                : registry.GetFreeAgentsForHuman(autoHuman).FirstOrDefault()?.Name;
+            if (autoTarget != null &&
+                !envAgent.Equals(autoTarget, StringComparison.OrdinalIgnoreCase))
+            {
+                ConsoleOutput.WriteError(StaleEnvClaimError(envAgent));
+                return ExitCodes.ToolError;
+            }
+        }
+
+        if (!registry.ClaimAuto(out var claimedAgent, out var autoError))
+        {
+            ConsoleOutput.WriteError(autoError);
+            return ExitCodes.ToolError;
+        }
+
+        Console.WriteLine($"Agent identity assigned to this process: {claimedAgent}");
+        Console.WriteLine($"  Workspace: {registry.GetAgentWorkspace(claimedAgent)}");
+
+        var human = registry.GetCurrentHuman();
+        if (!string.IsNullOrEmpty(human))
+            Console.WriteLine($"  Assigned human: {human}");
 
         return ExitCodes.Success;
     }

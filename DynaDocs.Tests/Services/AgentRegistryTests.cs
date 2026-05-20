@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Services;
 
 using System.Text.Json;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 
 public class AgentRegistryTests : IDisposable
@@ -1577,19 +1578,24 @@ public class AgentRegistryTests : IDisposable
     #region Lock File Tests
 
     [Fact]
-    public void ClaimAgent_FallsBackToSessionContext_WhenNoPendingSession()
+    public void ClaimAgent_UsesPendingSessionId()
     {
+        // Renamed from ClaimAgent_FallsBackToSessionContext_WhenNoPendingSession after #0196.
+        // Pre-fix the test asserted that ClaimAgent could fall back to a legacy single-line
+        // .session-context when no pending-session marker existed. Post-#0196 unverifiable
+        // single-line content is discarded, so the fall-back never had a truthful source.
+        // The remaining production path — the guard hook stages a pending-session before
+        // ClaimAgent runs — is what this test now pins.
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
         Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         var scaffolder = new FolderScaffolder();
         var registry = new AgentRegistry(_testDir, null, scaffolder);
 
-        // Store session context (but NOT pending session) — simulates re-claim after release
-        registry.StoreSessionContext("ctx-session-456");
+        registry.StorePendingSessionId("Adele", "ctx-session-456");
 
         var result = registry.ClaimAgent("Adele", out var error);
 
-        Assert.True(result, $"ClaimAgent should fall back to session context: {error}");
+        Assert.True(result, $"ClaimAgent should consume the pending session id: {error}");
 
         var session = registry.GetSession("Adele");
         Assert.NotNull(session);
@@ -2455,6 +2461,24 @@ public class AgentRegistryTests : IDisposable
 
     #region Claim Auto Nudge Tests
 
+    // Post-#0196 the .session-context legacy single-line shape is discarded. Tests that used
+    // to seed a sessionId by calling registry.StoreSessionContext("foo") in isolation must
+    // instead publish the verified two-line shape — sessionId + agent name backed by a real
+    // .session file. This helper builds both halves at once for tests where the test author
+    // doesn't otherwise care which agent owns the seed (e.g. ClaimAuto nudge tests that only
+    // need *some* sessionId for the marker filename).
+    private void SeedVerifiedSessionContext(string agentName, string sessionId, string human = "testuser")
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        var session = new AgentSession { Agent = agentName, SessionId = sessionId, Claimed = DateTime.UtcNow };
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
+        var contextPath = Path.Combine(_testDir, "dydo", "agents", ".session-context");
+        Directory.CreateDirectory(Path.GetDirectoryName(contextPath)!);
+        File.WriteAllText(contextPath, $"{sessionId}\n{agentName}");
+    }
+
     private void CreateDispatchedState(string agentName, string human = "testuser")
     {
         var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
@@ -2485,7 +2509,7 @@ public class AgentRegistryTests : IDisposable
             CreateInboxItem("Adele", "my-task", "code-writer");
 
             var registry = new AgentRegistry(_testDir);
-            registry.StoreSessionContext("test-session-cn1");
+            SeedVerifiedSessionContext("Brian", "test-session-cn1");
 
             var result = registry.ClaimAuto(out _, out var error);
 
@@ -2506,7 +2530,7 @@ public class AgentRegistryTests : IDisposable
             CreateInboxItem("Adele", "my-task", "code-writer");
 
             var registry = new AgentRegistry(_testDir);
-            registry.StoreSessionContext("test-session-cn2");
+            SeedVerifiedSessionContext("Brian", "test-session-cn2");
             registry.StorePendingSessionId("Brian", "test-session-cn2");
 
             // First call fails with nudge
@@ -2555,7 +2579,7 @@ public class AgentRegistryTests : IDisposable
             CreateInboxItem("Brian", "task-b", "reviewer");
 
             var registry = new AgentRegistry(_testDir);
-            registry.StoreSessionContext("test-session-cn4");
+            SeedVerifiedSessionContext("Charlie", "test-session-cn4");
 
             var result = registry.ClaimAuto(out _, out var error);
 
@@ -2576,7 +2600,10 @@ public class AgentRegistryTests : IDisposable
             CreateInboxItem("Adele", "my-task", "code-writer");
 
             var registry = new AgentRegistry(_testDir);
-            registry.StoreSessionContext("test-session-cn5");
+            // Seed the .session/.session-context on the agent the test subsequently claims,
+            // so GetCurrentAgent(sessionId) won't resolve to a different agent and trip the
+            // mismatch check inside ClaimAgent.
+            SeedVerifiedSessionContext("Adele", "test-session-cn5");
             registry.StorePendingSessionId("Adele", "test-session-cn5");
 
             // Trigger nudge
@@ -2858,31 +2885,79 @@ public class AgentRegistryTests : IDisposable
 
     #region DYDO_AGENT Env Var Tests
 
+    // Closes #0189. The two original tests (GetSessionContext_PrefersDydoAgentEnvVar_OverFile and
+    // GetCurrentAgent_PrefersDydoAgentEnvVar_OverHintFile) encoded the F1 hijack bug as the
+    // intended contract: DYDO_AGENT was trusted unconditionally. Post-F1 the env var is only
+    // honored when the caller actually owns the named agent (PID/claude-ancestor match against
+    // .session.ClaimedPid). These rewrites pin the new contract.
+
     [Fact]
-    public void GetSessionContext_PrefersDydoAgentEnvVar_OverFile()
+    public void GetSessionContext_DydoAgentEnvVar_OnlyTrustedWhenCallerOwnsAgent()
     {
+        const int adelePid = 424242;
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        // Inject the claude ancestor before claim so ResolveClaimedPid stamps .session.ClaimedPid
+        // with adelePid, and so the post-claim IsOwnedByCaller check finds the same value.
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => adelePid;
+        try
+        {
+            var scaffolder = new FolderScaffolder();
+            var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+            registry.StorePendingSessionId("Adele", "agent-session-222");
+            registry.ClaimAgent("Adele", out _);
+
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+
+            var sessionId = registry.GetSessionContext();
+            var agentSession = registry.GetSession("Adele");
+            Assert.NotNull(agentSession);
+            Assert.Equal(adelePid, agentSession.ClaimedPid);
+            Assert.Equal(agentSession.SessionId, sessionId);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+            Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+        }
+    }
+
+    [Fact]
+    public void GetSessionContext_DydoAgentEnvVar_RejectedWhenCallerDoesNotOwnAgent()
+    {
+        const int charliePid = 131313;
+        const int zeldaPid = 424242;
+        SetupConfig(new[] { "Charlie", "Zelda" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Charlie", "Zelda" } });
         Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         try
         {
             var scaffolder = new FolderScaffolder();
             var registry = new AgentRegistry(_testDir, null, scaffolder);
 
-            // Store a session context file with one session ID
-            registry.StoreSessionContext("file-session-111");
+            ProcessUtils.FindAncestorProcessOverride = (_, _) => charliePid;
+            registry.StorePendingSessionId("Charlie", "session-charlie");
+            registry.ClaimAgent("Charlie", out _);
 
-            // Claim agent (creates .session with a different session ID)
-            registry.StoreSessionContext("agent-session-222");
-            registry.ClaimAgent("Adele", out _);
+            ProcessUtils.FindAncestorProcessOverride = (_, _) => zeldaPid;
+            registry.StorePendingSessionId("Zelda", "session-zelda");
+            registry.ClaimAgent("Zelda", out _);
 
-            // Now set DYDO_AGENT env var
-            Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+            // The "live" caller is Zelda's claude tab. DYDO_AGENT was set to Charlie by some
+            // upstream shell. Pre-F1 GetSessionContext would have returned Charlie's session id.
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Charlie");
 
-            // GetSessionContext should return the session ID from the agent's .session file, not the file
+            // Publish Zelda's verified context (two-line format), so the file fall-through has
+            // something truthful to return.
+            var zeldaSession = registry.GetSession("Zelda");
+            var charlieSession = registry.GetSession("Charlie");
+            Assert.NotNull(zeldaSession);
+            Assert.NotNull(charlieSession);
+            registry.StoreSessionContext(zeldaSession.SessionId, "Zelda");
+
             var sessionId = registry.GetSessionContext();
-            var agentSession = registry.GetSession("Adele");
-            Assert.NotNull(agentSession);
-            Assert.Equal(agentSession.SessionId, sessionId);
+            Assert.NotEqual(charlieSession.SessionId, sessionId);
+            Assert.Equal(zeldaSession.SessionId, sessionId);
         }
         finally
         {
@@ -2894,44 +2969,51 @@ public class AgentRegistryTests : IDisposable
     [Fact]
     public void GetSessionContext_FallsBackToFile_WhenDydoAgentNotSet()
     {
+        // After #0196 the verified two-line format is the only accepted shape; this test pins
+        // that the DYDO_AGENT-unset path reads it correctly.
         Environment.SetEnvironmentVariable("DYDO_AGENT", null);
 
-        var registry = new AgentRegistry(_testDir);
-        registry.StoreSessionContext("fallback-session-333");
+        const int adelePid = 555555;
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => adelePid;
+        try
+        {
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "agent-session-adele");
+            registry.ClaimAgent("Adele", out _);
+            var adeleSession = registry.GetSession("Adele");
+            Assert.NotNull(adeleSession);
+            registry.StoreSessionContext(adeleSession.SessionId, "Adele");
 
-        var sessionId = registry.GetSessionContext();
-        Assert.Equal("fallback-session-333", sessionId);
+            var sessionId = registry.GetSessionContext();
+            Assert.Equal(adeleSession.SessionId, sessionId);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+        }
     }
 
     [Fact]
-    public void GetCurrentAgent_PrefersDydoAgentEnvVar_OverHintFile()
+    public void GetCurrentAgent_DydoAgentEnvVar_OnlyTrustedWhenCallerOwnsAgent()
     {
-        SetupConfig(new[] { "Adele", "Brian" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian" } });
+        const int adelePid = 424242;
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
         Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => adelePid;
         try
         {
-            var scaffolder = new FolderScaffolder();
-            var registry = new AgentRegistry(_testDir, null, scaffolder);
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
 
-            // Claim Adele and Brian with known session IDs
-            registry.StoreSessionContext("session-adele");
+            registry.StorePendingSessionId("Adele", "session-adele");
             registry.ClaimAgent("Adele", out _);
-
-            registry.StoreSessionContext("session-brian");
-            registry.ClaimAgent("Brian", out _);
 
             var adeleSession = registry.GetSession("Adele");
             Assert.NotNull(adeleSession);
 
-            // Write hint file pointing to Brian
-            var hintPath = Path.Combine(_testDir, "dydo", "_system", ".local", ".session-agent");
-            Directory.CreateDirectory(Path.GetDirectoryName(hintPath)!);
-            File.WriteAllText(hintPath, "Brian");
-
-            // Set DYDO_AGENT to Adele
             Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
 
-            // GetCurrentAgent should return Adele (from env var), not Brian (from hint file)
             var result = registry.GetCurrentAgent(adeleSession.SessionId);
             Assert.NotNull(result);
             Assert.Equal("Adele", result.Name);
@@ -2941,6 +3023,93 @@ public class AgentRegistryTests : IDisposable
             Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
             Environment.SetEnvironmentVariable("DYDO_AGENT", null);
         }
+    }
+
+    [Fact]
+    public void GetCurrentAgent_DydoAgentEnvVar_RejectedWhenCallerDoesNotOwnAgent()
+    {
+        // Defense-in-depth contract pin: env-path's IsOwnedByCaller gate must fire here too.
+        // Observationally the slow-scan still resolves to the same agent (sessionId is unique),
+        // so the rejection is not visible in the return value alone. We assert behavior is sane
+        // (correct resolution) and pin the gate against accidental removal — a regression that
+        // re-trusts the env path would surface in IdentityHijackRoleSetTests, paired with this.
+        const int charliePid = 131313;
+        const int zeldaPid = 424242;
+        SetupConfig(new[] { "Charlie", "Zelda" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Charlie", "Zelda" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+
+            ProcessUtils.FindAncestorProcessOverride = (_, _) => charliePid;
+            registry.StorePendingSessionId("Charlie", "session-charlie");
+            registry.ClaimAgent("Charlie", out _);
+
+            ProcessUtils.FindAncestorProcessOverride = (_, _) => zeldaPid;
+            registry.StorePendingSessionId("Zelda", "session-zelda");
+            registry.ClaimAgent("Zelda", out _);
+
+            var charlieSession = registry.GetSession("Charlie");
+            var zeldaSession = registry.GetSession("Zelda");
+            Assert.NotNull(charlieSession);
+            Assert.NotNull(zeldaSession);
+
+            // Caller is Zelda's claude tab (override returns zeldaPid). DYDO_AGENT inherited
+            // "Charlie" from upstream. Call GetCurrentAgent with Zelda's truthful session id —
+            // the env path sees sid mismatch (Charlie's session != Zelda's sid) and skips
+            // independently of ownership; the hint/scan path returns Zelda correctly.
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Charlie");
+
+            var result = registry.GetCurrentAgent(zeldaSession.SessionId);
+            Assert.NotNull(result);
+            Assert.Equal("Zelda", result.Name);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+            Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+        }
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_NullClaimedPid_ReturnsFalse()
+    {
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = null };
+        Assert.False(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_MatchesCurrentProcessId_ReturnsTrue()
+    {
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = Environment.ProcessId };
+        Assert.True(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_MatchesClaudeAncestor_ReturnsTrue()
+    {
+        const int ancestor = 909090;
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => ancestor;
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = ancestor };
+        Assert.True(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_NoMatch_ReturnsFalse()
+    {
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 111;
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = 222 };
+        Assert.False(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_NoClaudeAncestor_ReturnsFalse()
+    {
+        // Caller isn't this process and there is no claude ancestor — covers the
+        // claude.HasValue == false short-circuit on line 932.
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = 222 };
+        Assert.False(AgentRegistry.IsOwnedByCaller(session));
     }
 
     #endregion

@@ -112,12 +112,14 @@ public static class LinuxTerminalLauncher
             try
             {
                 var arguments = SwapInResumeBody(terminal.GetArguments(agentName, workingDirectory), resumeBody);
-                return processStarter.Start(new ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = terminal.FileName,
                     Arguments = arguments,
                     UseShellExecute = false
-                });
+                };
+                psi.Environment["DYDO_AGENT"] = agentName;
+                return processStarter.Start(psi);
             }
             catch (ArgumentException) { throw; }
             catch { /* terminal not found — try next */ }
@@ -139,12 +141,17 @@ public static class LinuxTerminalLauncher
 
                 var arguments = ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
 
-                return processStarter.Start(new ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = terminal.FileName,
                     Arguments = arguments,
                     UseShellExecute = false
-                });
+                };
+                // #0197 (F13): pin DYDO_AGENT on the child process so the OS-level inheritance
+                // is fixed before the bash command's own `export DYDO_AGENT` runs. The in-shell
+                // export remains as belt-and-suspenders — both set the same value.
+                psi.Environment["DYDO_AGENT"] = agentName;
+                return processStarter.Start(psi);
             }
             catch (ArgumentException)
             {

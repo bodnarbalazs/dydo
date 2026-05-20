@@ -917,6 +917,49 @@ public partial class AgentRegistry : IAgentRegistry
             .ToList();
     }
 
+    // Closes #0183 (F1): the env-var fast paths in GetSessionContext / GetCurrentAgent used
+    // to trust DYDO_AGENT unconditionally, so a parent shell that set DYDO_AGENT=X could
+    // make a `dydo` subprocess in a different agent's claude tab impersonate X. Now we
+    // require the named agent's ClaimedPid to match either this process or its claude
+    // ancestor. Honest dispatched-terminal callers pass (their .session.ClaimedPid is the
+    // claude PID their terminal spawned). Plain-shell attackers fail (no claude ancestor;
+    // PID mismatch). Override hook on ProcessUtils.FindClaudeAncestor lets tests inject.
+    internal static bool IsOwnedByCaller(AgentSession session)
+    {
+        if (session.ClaimedPid is not int claimedPid) return false;
+        if (Environment.ProcessId == claimedPid) return true;
+        var claude = ProcessUtils.FindClaudeAncestor();
+        return claude.HasValue && claude.Value == claimedPid;
+    }
+
+    /// <summary>
+    /// Verifies the calling process actually owns the named agent — used at the wait-marker
+    /// callsite (#0195/F11) so an attacker with stale DYDO_AGENT can't register a marker that
+    /// holds another agent's general-wait slot. Returns false when no session exists for
+    /// the agent. Closes #0195.
+    /// </summary>
+    public bool VerifyCallerOwnsAgent(string agentName)
+    {
+        var session = GetSession(agentName);
+        return session != null && IsOwnedByCaller(session);
+    }
+
+    // Fastest path of GetCurrentAgent — extracted so the outer method's cyclomatic complexity
+    // stays under tier T1's CRAP gate. The env fast-path returns the agent only when DYDO_AGENT
+    // names a valid claimed agent whose session matches AND IsOwnedByCaller (post-F1).
+    private AgentState? TryResolveCurrentAgentFromEnvVar(string sessionId)
+    {
+        var envAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
+        if (string.IsNullOrEmpty(envAgent) || !IsValidAgentName(envAgent))
+            return null;
+
+        var envSession = GetSession(envAgent);
+        if (envSession?.SessionId == sessionId && IsOwnedByCaller(envSession))
+            return GetAgentState(envAgent);
+
+        return null;
+    }
+
     /// <summary>
     /// Gets the current agent for a given session ID.
     /// Uses a hint file to avoid scanning all agents when possible.
@@ -926,14 +969,8 @@ public partial class AgentRegistry : IAgentRegistry
         if (string.IsNullOrEmpty(sessionId))
             return null;
 
-        // Fastest path: check DYDO_AGENT env var
-        var envAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
-        if (!string.IsNullOrEmpty(envAgent) && IsValidAgentName(envAgent))
-        {
-            var envSession = GetSession(envAgent);
-            if (envSession?.SessionId == sessionId)
-                return GetAgentState(envAgent);
-        }
+        var envHit = TryResolveCurrentAgentFromEnvVar(sessionId);
+        if (envHit != null) return envHit;
 
         // Fast path: check agent hint file
         var hintPath = GetAgentHintPath();
@@ -1042,7 +1079,7 @@ public partial class AgentRegistry : IAgentRegistry
         if (!string.IsNullOrEmpty(agentName))
         {
             var session = GetSession(agentName);
-            if (session != null) return session.SessionId;
+            if (session != null && IsOwnedByCaller(session)) return session.SessionId;
         }
 
         return _sessionManager.GetSessionContext();

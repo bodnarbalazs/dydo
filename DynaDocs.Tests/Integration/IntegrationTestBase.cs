@@ -26,6 +26,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
     private readonly IProcessStarter? _originalBrowserLauncherStarter;
     private readonly Func<string, string, string, int>? _originalCreateGitWorktreeOverride;
+    private readonly Func<string, int, int?>? _originalFindAncestorOverride;
 
     protected IntegrationTestBase()
     {
@@ -43,11 +44,19 @@ public abstract class IntegrationTestBase : IDisposable
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
         _originalBrowserLauncherStarter = AuditCommand.BrowserLauncherOverride;
         _originalCreateGitWorktreeOverride = DispatchService.CreateGitWorktreeOverride;
+        _originalFindAncestorOverride = ProcessUtils.FindAncestorProcessOverride;
 
         // Prevent tests from launching real terminals, browsers, or git worktree operations
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
         AuditCommand.BrowserLauncherOverride = new NoOpProcessStarter();
         DispatchService.CreateGitWorktreeOverride = (_, _, _) => 0;
+
+        // Pin the claude-ancestor lookup to this test process so .session.ClaimedPid stamped
+        // during claim, and AgentRegistry.IsOwnedByCaller's check downstream, both resolve
+        // to a stable value regardless of where dotnet test was launched from. Without this,
+        // integration tests pass only when run under a real claude shell (developer machine)
+        // and fail in CI. Reset in Dispose. Closes test fallout from #0183/F1 + #0195/F11.
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => Environment.ProcessId;
 
         // Clear env vars that leak into dispatch logic
         Environment.SetEnvironmentVariable("DYDO_WINDOW", null);
@@ -68,6 +77,7 @@ public abstract class IntegrationTestBase : IDisposable
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
         AuditCommand.BrowserLauncherOverride = _originalBrowserLauncherStarter;
         DispatchService.CreateGitWorktreeOverride = _originalCreateGitWorktreeOverride;
+        ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))
@@ -179,7 +189,15 @@ public abstract class IntegrationTestBase : IDisposable
         StoreSessionContext();
 
         var command = AgentCommand.Create();
-        return await RunAsync(command, "claim", nameOrAuto);
+        var result = await RunAsync(command, "claim", nameOrAuto);
+
+        // Refresh the .session-context with the verified two-line shape (TestSessionId +
+        // freshly-claimed agentName). The pre-claim StoreSessionContext call above could
+        // only write the legacy single-line shape (no .session file existed yet), which
+        // post-#0196 reads as null — so subsequent commands wouldn't resolve the agent.
+        StoreSessionContext();
+
+        return result;
     }
 
     /// <summary>
@@ -242,14 +260,40 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
-    /// Store session context (simulates guard hook).
+    /// Store session context (simulates guard hook). Post-#0196 the
+    /// session-context file is only honored when the verified two-line format
+    /// (sessionId\nagentName) cross-checks against the per-agent .session file —
+    /// so this helper scans agents/ for the .session that owns TestSessionId
+    /// and writes the verified format. Pre-claim (no .session yet) it falls
+    /// back to the legacy single-line shape, which post-#0196 reads as null
+    /// but doesn't matter for tests that only need the context published before
+    /// they claim (e.g. ClaimAgentAsync's call before the claim runs).
     /// </summary>
     protected void StoreSessionContext()
     {
         var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
         var dir = Path.GetDirectoryName(contextPath);
         if (dir != null) Directory.CreateDirectory(dir);
-        File.WriteAllText(contextPath, TestSessionId);
+
+        string content = TestSessionId;
+        var agentsDir = Path.Combine(DydoDir, "agents");
+        if (Directory.Exists(agentsDir))
+        {
+            foreach (var sessionFile in Directory.EnumerateFiles(agentsDir, ".session", SearchOption.AllDirectories))
+            {
+                string body;
+                try { body = File.ReadAllText(sessionFile); }
+                catch { continue; }
+                if (body.Contains($"\"{TestSessionId}\""))
+                {
+                    var agentName = Path.GetFileName(Path.GetDirectoryName(sessionFile)!);
+                    content = $"{TestSessionId}\n{agentName}";
+                    break;
+                }
+            }
+        }
+
+        File.WriteAllText(contextPath, content);
     }
 
     /// <summary>

@@ -164,8 +164,10 @@ public class AgentSessionManager
             var (sessionId, agentName) = ParseSessionContext(content);
             if (string.IsNullOrEmpty(sessionId)) return null;
 
-            // No agent name (old format or first-phase write) — return as-is
-            if (string.IsNullOrEmpty(agentName)) return sessionId;
+            // #0196: drop the legacy single-line read. Only the verified two-line format
+            // (sessionId\nagentName cross-checked against the per-agent .session file) is
+            // accepted; unverifiable single-line content is discarded.
+            if (string.IsNullOrEmpty(agentName)) return null;
 
             // Verify: the agent's .session file should confirm this session ID
             var agentSession = GetSession(agentName);

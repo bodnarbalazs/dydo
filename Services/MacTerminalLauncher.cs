@@ -99,6 +99,9 @@ public static class MacTerminalLauncher
         };
         psi.ArgumentList.Add("-e");
         psi.ArgumentList.Add(script);
+        // #0197 (F13): pin DYDO_AGENT on the child process so the OS-level inheritance
+        // is fixed before the shell command's `export DYDO_AGENT` runs.
+        psi.Environment["DYDO_AGENT"] = agentName;
 
         return processStarter.Start(psi);
     }
@@ -140,6 +143,8 @@ public static class MacTerminalLauncher
         };
         psi.ArgumentList.Add("-e");
         psi.ArgumentList.Add(script);
+        // #0197 (F13): see LaunchResume for rationale.
+        psi.Environment["DYDO_AGENT"] = agentName;
 
         return processStarter.Start(psi);
     }

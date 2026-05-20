@@ -9,12 +9,26 @@ internal static class AgentLifecycleHandlers
     public static int ExecuteClaim(string nameOrLetter)
     {
         var registry = new AgentRegistry();
+        var envAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
 
         if (nameOrLetter.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {
             if (!registry.ClaimAuto(out var claimedAgent, out var autoError))
             {
                 ConsoleOutput.WriteError(autoError);
+                return ExitCodes.ToolError;
+            }
+
+            // #0193: refuse when a stale DYDO_AGENT was inherited from an upstream shell and
+            // points at a different agent than the one auto picked. With F1 in place this is
+            // already UX-only (the env path's ownership check rejects the mismatch downstream),
+            // but the early refusal gives the operator a clear error instead of a downstream
+            // surprise. We do not refuse when DYDO_AGENT equals the auto-chosen name — that is
+            // the standard re-claim-in-same-shell shape.
+            if (!string.IsNullOrEmpty(envAgent) &&
+                !envAgent.Equals(claimedAgent, StringComparison.OrdinalIgnoreCase))
+            {
+                ConsoleOutput.WriteError(StaleEnvClaimError(envAgent));
                 return ExitCodes.ToolError;
             }
 
@@ -40,6 +54,15 @@ internal static class AgentLifecycleHandlers
             name = resolved;
         }
 
+        // #0193: refuse stale DYDO_AGENT before mutating state — same actionable message as
+        // the auto branch above.
+        if (!string.IsNullOrEmpty(envAgent) &&
+            !envAgent.Equals(name, StringComparison.OrdinalIgnoreCase))
+        {
+            ConsoleOutput.WriteError(StaleEnvClaimError(envAgent));
+            return ExitCodes.ToolError;
+        }
+
         if (!registry.ClaimAgent(name, out var error))
         {
             ConsoleOutput.WriteError(error);
@@ -55,6 +78,10 @@ internal static class AgentLifecycleHandlers
 
         return ExitCodes.Success;
     }
+
+    private static string StaleEnvClaimError(string envAgent) =>
+        $"DYDO_AGENT is set to '{envAgent}' in this shell. Claim aborted to prevent identity confusion. " +
+        "Run: $env:DYDO_AGENT=$null (PowerShell) or unset DYDO_AGENT (bash), then retry.";
 
     public static int ExecuteRelease()
     {

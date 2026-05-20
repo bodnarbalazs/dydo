@@ -129,6 +129,7 @@ public static class WindowsTerminalLauncher
                 Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
+            PinDydoAgent(psi, agentName);
             if (workingDirectory != null)
                 psi.WorkingDirectory = workingDirectory;
             return processStarter.Start(psi);
@@ -143,6 +144,7 @@ public static class WindowsTerminalLauncher
             Arguments = GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot),
             UseShellExecute = true
         };
+        PinDydoAgent(fallbackPsi, agentName);
         if (workingDirectory != null)
             fallbackPsi.WorkingDirectory = workingDirectory;
         return processStarter.Start(fallbackPsi);
@@ -176,6 +178,7 @@ public static class WindowsTerminalLauncher
                 Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
+            PinDydoAgent(psi, agentName);
             if (workingDirectory != null)
                 psi.WorkingDirectory = workingDirectory;
             return processStarter.Start(psi);
@@ -192,8 +195,19 @@ public static class WindowsTerminalLauncher
             Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory),
             UseShellExecute = true
         };
+        PinDydoAgent(fallbackPsi, agentName);
         if (workingDirectory != null)
             fallbackPsi.WorkingDirectory = workingDirectory;
         return processStarter.Start(fallbackPsi);
+    }
+
+    // #0197 (F13): pin DYDO_AGENT on the ProcessStartInfo so that even before the launched
+    // PowerShell hits its `$env:DYDO_AGENT='...'` export line, any code that runs (e.g.
+    // PowerShell profiles) sees the dispatched agent's name rather than an inherited stale
+    // value. The in-shell export remains as belt-and-suspenders. The value pinned matches
+    // what the shell-side export sets, so there's no conflict.
+    private static void PinDydoAgent(ProcessStartInfo psi, string agentName)
+    {
+        psi.Environment["DYDO_AGENT"] = agentName;
     }
 }

@@ -267,7 +267,8 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
             $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\"}}");
         var agentsDir = Path.Combine(_testDir, "dydo", "agents");
         Directory.CreateDirectory(agentsDir);
-        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), "test-session");
+        // Verified two-line format required post-#0196.
+        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), $"test-session\n{agentName}");
 
         File.WriteAllText(Path.Combine(workspace, ".worktree-base"), worktreeBase);
         File.WriteAllText(Path.Combine(workspace, ".merge-source"), mergeSource);

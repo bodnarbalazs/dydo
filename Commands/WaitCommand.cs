@@ -44,6 +44,17 @@ public static class WaitCommand
             return ExitCodes.ToolError;
         }
 
+        // #0195 (F11): refuse to register or cancel wait markers when the caller does not
+        // actually own the resolved agent. Without this, an attacker who can set DYDO_AGENT
+        // to X in a non-claude shell can hold X's general-wait slot indefinitely (or cancel
+        // a legitimate wait), even with F1's env-path ownership gate in place — the fall-
+        // through to .session-context can still resolve to a real claimed agent.
+        if (!registry.VerifyCallerOwnsAgent(agent.Name))
+        {
+            ConsoleOutput.WriteError($"Caller does not own agent {agent.Name}. Refusing to register wait marker.");
+            return ExitCodes.ToolError;
+        }
+
         if (cancel)
             return HandleCancel(registry, agent.Name, task);
 

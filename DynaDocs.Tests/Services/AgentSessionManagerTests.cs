@@ -155,7 +155,10 @@ public class AgentSessionManagerTests : IDisposable
     [Fact]
     public void StoreSessionContext_ThenGet()
     {
-        _manager.StoreSessionContext("ctx-456");
+        // Post-#0196: only the verified two-line format round-trips. Single-line stores are
+        // accepted at write time (the guard's phase-1 used to call it) but never read back.
+        WriteSession("Alice", "ctx-456");
+        _manager.StoreSessionContext("ctx-456", "Alice");
 
         var result = _manager.GetSessionContext();
         Assert.Equal("ctx-456", result);
@@ -231,15 +234,15 @@ public class AgentSessionManagerTests : IDisposable
     }
 
     [Fact]
-    public void GetSessionContext_LegacyFormat_StillWorks()
+    public void GetSessionContext_LegacySingleLineFormat_ReturnsNull()
     {
-        // Old format: just the session ID, no agent name
+        // #0196: legacy single-line content is unverifiable (no agent name to cross-check
+        // against per-agent .session files), so it is discarded rather than published.
         var contextPath = Path.Combine(_agentsPath, ".session-context");
         Directory.CreateDirectory(_agentsPath);
         File.WriteAllText(contextPath, "legacy-session-id");
 
-        var result = _manager.GetSessionContext();
-        Assert.Equal("legacy-session-id", result);
+        Assert.Null(_manager.GetSessionContext());
     }
 
     [Fact]

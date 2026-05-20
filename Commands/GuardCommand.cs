@@ -626,9 +626,10 @@ public static partial class GuardCommand
 
     private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, IAuditService auditService, bool? runInBackground)
     {
-        // Phase 1: store session ID without agent name (backwards-compatible)
-        registry.StoreSessionContext(sessionId);
-
+        // #0196: phase-1 single-line write removed. The unverifiable shape it produced is now
+        // discarded by AgentSessionManager.GetSessionContext, so writing it served no purpose
+        // beyond opening the cross-terminal race window. Only the verified phase-2 write below
+        // (with agent name) is published.
         HandleClaimSessionStorage(command, sessionId, registry);
 
         var agent = registry.GetCurrentAgent(sessionId);

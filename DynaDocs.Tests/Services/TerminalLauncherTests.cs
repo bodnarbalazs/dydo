@@ -2859,6 +2859,103 @@ public class TerminalLauncherTests
     }
 
     #endregion
+
+    #region #0197 — DYDO_AGENT scrub/pin (F13)
+
+    [Fact]
+    public void WatchdogEnsureRunning_RemovesDydoAgentFromChild()
+    {
+        ProcessStartInfo? captured = null;
+        var originalAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
+        var originalOverride = WatchdogService.StartProcessOverride;
+        Environment.SetEnvironmentVariable("DYDO_AGENT", "Charlie");
+        WatchdogService.StartProcessOverride = psi =>
+        {
+            captured = psi;
+            return null;
+        };
+        try
+        {
+            // EnsureRunning attempts to start a watchdog subprocess; the override intercepts
+            // before any real process spawn so we just inspect the psi.
+            WatchdogService.EnsureRunning();
+        }
+        finally
+        {
+            WatchdogService.StartProcessOverride = originalOverride;
+            Environment.SetEnvironmentVariable("DYDO_AGENT", originalAgent);
+        }
+
+        Assert.NotNull(captured);
+        Assert.False(captured.Environment.ContainsKey("DYDO_AGENT"),
+            "watchdog must inherit no agent identity — scrubbed in psi.Environment");
+    }
+
+    [Fact]
+    public void WindowsTerminalLauncher_PinsDydoAgentOnChildProcess()
+    {
+        var starter = new RecordingProcessStarter();
+        WindowsTerminalLauncher.Launch(starter, "Zelda");
+
+        Assert.NotEmpty(starter.Started);
+        foreach (var psi in starter.Started)
+            Assert.Equal("Zelda", psi.Environment["DYDO_AGENT"]);
+    }
+
+    [Fact]
+    public void WindowsTerminalLauncher_LaunchResume_PinsDydoAgentOnChildProcess()
+    {
+        var starter = new RecordingProcessStarter();
+        WindowsTerminalLauncher.LaunchResume(starter, "Zelda", "sid-zelda");
+
+        Assert.NotEmpty(starter.Started);
+        foreach (var psi in starter.Started)
+            Assert.Equal("Zelda", psi.Environment["DYDO_AGENT"]);
+    }
+
+    [Fact]
+    public void LinuxTerminalLauncher_TryLaunch_PinsDydoAgentOnChildProcess()
+    {
+        var starter = new RecordingProcessStarter();
+        LinuxTerminalLauncher.TryLaunch(starter, TerminalLauncher.LinuxTerminals, "Zelda");
+
+        Assert.NotEmpty(starter.Started);
+        Assert.Equal("Zelda", starter.Started[0].Environment["DYDO_AGENT"]);
+    }
+
+    [Fact]
+    public void LinuxTerminalLauncher_TryLaunchResume_PinsDydoAgentOnChildProcess()
+    {
+        var starter = new RecordingProcessStarter();
+        LinuxTerminalLauncher.TryLaunchResume(starter, TerminalLauncher.LinuxTerminals, "Zelda", "sid-zelda");
+
+        Assert.NotEmpty(starter.Started);
+        Assert.Equal("Zelda", starter.Started[0].Environment["DYDO_AGENT"]);
+    }
+
+    [Fact]
+    public void MacTerminalLauncher_Launch_PinsDydoAgentOnChildProcess()
+    {
+        var starter = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        MacTerminalLauncher.Launch(starter, detector, "Zelda");
+
+        Assert.NotEmpty(starter.Started);
+        Assert.Equal("Zelda", starter.Started[0].Environment["DYDO_AGENT"]);
+    }
+
+    [Fact]
+    public void MacTerminalLauncher_LaunchResume_PinsDydoAgentOnChildProcess()
+    {
+        var starter = new RecordingProcessStarter();
+        var detector = new TestTerminalDetector();
+        MacTerminalLauncher.LaunchResume(starter, detector, "Zelda", "sid-zelda");
+
+        Assert.NotEmpty(starter.Started);
+        Assert.Equal("Zelda", starter.Started[0].Environment["DYDO_AGENT"]);
+    }
+
+    #endregion
 }
 
 /// <summary>

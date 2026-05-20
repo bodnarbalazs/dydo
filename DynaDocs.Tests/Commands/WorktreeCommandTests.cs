@@ -740,10 +740,12 @@ public class WorktreeCommandTests : IDisposable
         File.WriteAllText(Path.Combine(workspace, ".session"),
             $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\"}}");
 
-        // Write session context so GetSessionContext returns "test-session"
+        // Write session context so GetSessionContext returns "test-session". Post-#0196
+        // only the verified two-line format (sessionId\nagentName, cross-checked against
+        // the agent's .session) is honored — write that shape.
         var agentsDir = Path.Combine(_testDir, "dydo", "agents");
         Directory.CreateDirectory(agentsDir);
-        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), "test-session");
+        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), $"test-session\n{agentName}");
     }
 
     [Fact]

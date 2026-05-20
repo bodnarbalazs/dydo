@@ -848,9 +848,9 @@ public class MessageIntegrationTests : IntegrationTestBase
         var otherSession = $"other-session-{agentName}";
         registry.StorePendingSessionId(agentName, otherSession);
 
-        // Temporarily switch session context
+        // Temporarily switch session context (verified two-line format per #0196).
         var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        File.WriteAllText(contextPath, otherSession);
+        File.WriteAllText(contextPath, $"{otherSession}\n{agentName}");
 
         var agentCmd = AgentCommand.Create();
         var result = RunAsync(agentCmd, "claim", agentName).Result;
@@ -861,9 +861,10 @@ public class MessageIntegrationTests : IntegrationTestBase
 
     private void StoreSessionContextForAgent(string agentName)
     {
+        // Verified two-line format required post-#0196.
         var otherSession = $"other-session-{agentName}";
         var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        File.WriteAllText(contextPath, otherSession);
+        File.WriteAllText(contextPath, $"{otherSession}\n{agentName}");
     }
 
     #endregion

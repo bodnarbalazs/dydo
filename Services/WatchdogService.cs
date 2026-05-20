@@ -160,6 +160,11 @@ public static class WatchdogService
                 // directory handle inside a worktree — otherwise Windows blocks worktree deletion.
                 WorkingDirectory = workingDirectory ?? ""
             };
+            // #0197 (F13): scrub inherited DYDO_AGENT so the watchdog never inherits an
+            // identity. The watchdog is a long-lived background process that must operate
+            // on every claimed agent's behalf, not as any single agent — leaving DYDO_AGENT
+            // set lets its later dydo subprocesses (e.g. resume launches) impersonate.
+            psi.Environment.Remove("DYDO_AGENT");
 
             var proc = StartProcessOverride != null ? StartProcessOverride(psi) : Process.Start(psi);
             if (proc == null)

@@ -956,6 +956,16 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         File.WriteAllText(Path.Combine(inboxPath, $"{id}-{task}.md"), content);
     }
 
+    // Post-#0196: .session-context must be the verified two-line format
+    // (sessionId\nagentName) for GetSessionContext to honour it. Helpers that
+    // act as a separate agent write the verified shape pointing at that agent.
+    private void SwitchToSeparateSessionContext(string agentName)
+    {
+        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
+        var otherSession = $"other-session-{agentName}";
+        File.WriteAllText(contextPath, $"{otherSession}\n{agentName}");
+    }
+
     private void ClaimAgentInSeparateSession(string agentName)
     {
         var registry = new AgentRegistry(TestDir);
@@ -963,8 +973,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         registry.StorePendingSessionId(agentName, otherSession);
 
         // Temporarily switch session context
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(agentName);
 
         var agentCmd = AgentCommand.Create();
         RunAsync(agentCmd, "claim", agentName).Wait();
@@ -981,9 +990,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Use the registry's SetRole to properly update the state
         // We need to temporarily switch session context to the agent's session
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var otherSession = $"other-session-{agentName}";
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(agentName);
 
         var agentCmd = AgentCommand.Create();
         RunAsync(agentCmd, "role", role, "--task", task).Wait();
@@ -994,9 +1001,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     private void ClearInboxInSeparateSession(string agentName)
     {
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var otherSession = $"other-session-{agentName}";
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(agentName);
 
         var inboxCmd = InboxCommand.Create();
         RunAsync(inboxCmd, "clear", "--all").Wait();
@@ -1006,9 +1011,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     private string ReleaseInSeparateSession(string agentName)
     {
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var otherSession = $"other-session-{agentName}";
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(agentName);
 
         var agentCmd = AgentCommand.Create();
         var result = RunAsync(agentCmd, "release").Result;
@@ -1019,9 +1022,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     private void SendMessageInSeparateSession(string fromAgent, string toAgent, string subject, string body)
     {
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var otherSession = $"other-session-{fromAgent}";
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(fromAgent);
 
         var msgCmd = MessageCommand.Create();
         RunAsync(msgCmd, "--to", toAgent, "--subject", subject, "--body", body).Wait();
@@ -1031,9 +1032,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     private string ShowInboxInSeparateSession(string agentName)
     {
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var otherSession = $"other-session-{agentName}";
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(agentName);
 
         var inboxCmd = InboxCommand.Create();
         var result = RunAsync(inboxCmd, "show").Result;
@@ -1107,9 +1106,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
     private string DispatchInSeparateSessionWithResult(string fromAgent, string role, string task, string brief, bool wait = false)
     {
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var otherSession = $"other-session-{fromAgent}";
-        File.WriteAllText(contextPath, otherSession);
+        SwitchToSeparateSessionContext(fromAgent);
 
         // Bypass no-launch nudge for the dispatching agent (not the main test session's agent)
         var workspace = Path.Combine(TestDir, "dydo", "agents", fromAgent);

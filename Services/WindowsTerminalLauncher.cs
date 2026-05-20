@@ -214,6 +214,6 @@ public static class WindowsTerminalLauncher
 
     // #0197 (F13): DYDO_AGENT is pinned as the first -Command statement under -NoProfile;
     // profiles are then re-sourced (ProfileReSource) so they observe the correct value.
-    // See dydo/agents/Brian/plan-f13-windows.md. ProcessStartInfo is deliberately left
-    // UseShellExecute=true with no psi.Environment — that combination throws in Process.Start.
+    // ProcessStartInfo is deliberately left UseShellExecute=true with no psi.Environment —
+    // that combination throws in Process.Start.
 }

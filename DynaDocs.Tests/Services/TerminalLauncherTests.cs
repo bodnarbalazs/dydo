@@ -2902,10 +2902,10 @@ public class TerminalLauncherTests
             "watchdog must inherit no agent identity — scrubbed in psi.Environment");
     }
 
-    // Windows F13 mechanism (#0197, per dydo/agents/Brian/plan-f13-windows.md): the launcher
-    // keeps UseShellExecute=true (incompatible with psi.Environment — that combination throws
-    // in Process.Start). DYDO_AGENT is instead pinned as the first -Command statement under
-    // -NoProfile, then the profiles are re-sourced so they observe the correct value.
+    // Windows F13 mechanism (#0197): the launcher keeps UseShellExecute=true (incompatible
+    // with psi.Environment — that combination throws in Process.Start). DYDO_AGENT is instead
+    // pinned as the first -Command statement under -NoProfile, then the profiles are
+    // re-sourced so they observe the correct value.
 
     // Mirrors the .NET Process.Start precondition the RecordingProcessStarter mock ignored:
     // UseShellExecute=true + a customized environment throws InvalidOperationException.

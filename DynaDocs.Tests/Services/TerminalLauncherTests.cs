@@ -110,7 +110,18 @@ public class TerminalLauncherTests
     public void GetWindowsArguments_ExactFormat()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele");
-        Assert.Equal("-NoExit -Command \"$env:DYDO_AGENT='Adele'; Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'; [Console]::Write([char]27 + '[?1004l')\"", args);
+        // #0197 (F13): -NoProfile suppresses pre-Command profile execution; the DYDO_AGENT pin
+        // is the first -Command statement, followed by the guarded profile re-source.
+        var profileReSource =
+            "foreach($__dydoP in $PROFILE.AllUsersAllHosts,$PROFILE.AllUsersCurrentHost," +
+            "$PROFILE.CurrentUserAllHosts,$PROFILE.CurrentUserCurrentHost){" +
+            "if($__dydoP -and (Test-Path -LiteralPath $__dydoP)){" +
+            "try{. $__dydoP}catch{Write-Warning ('dydo: profile load failed: ' + $_)}}}; ";
+        Assert.Equal(
+            "-NoProfile -NoExit -Command \"$env:DYDO_AGENT='Adele'; " + profileReSource +
+            "Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude 'Adele --inbox'; " +
+            "[Console]::Write([char]27 + '[?1004l')\"",
+            args);
     }
 
     [Theory]
@@ -2891,10 +2902,88 @@ public class TerminalLauncherTests
             "watchdog must inherit no agent identity — scrubbed in psi.Environment");
     }
 
-    // No WindowsTerminalLauncher pin test: Windows launchers keep UseShellExecute=true, which
-    // is incompatible with ProcessStartInfo.Environment (Process.Start throws). DYDO_AGENT is
-    // pinned in-shell via the launcher's PowerShell command string instead — covered by the
-    // GetWindowsArguments DYDO_AGENT export assertions above (#region DYDO_AGENT Tests).
+    // Windows F13 mechanism (#0197, per dydo/agents/Brian/plan-f13-windows.md): the launcher
+    // keeps UseShellExecute=true (incompatible with psi.Environment — that combination throws
+    // in Process.Start). DYDO_AGENT is instead pinned as the first -Command statement under
+    // -NoProfile, then the profiles are re-sourced so they observe the correct value.
+
+    // Mirrors the .NET Process.Start precondition the RecordingProcessStarter mock ignored:
+    // UseShellExecute=true + a customized environment throws InvalidOperationException.
+    private static bool EnvironmentWasCustomized(ProcessStartInfo psi)
+    {
+        var baseline = Environment.GetEnvironmentVariables();
+        if (psi.Environment.Count != baseline.Count) return true;
+        foreach (var kv in psi.Environment)
+            if (!baseline.Contains(kv.Key) ||
+                !string.Equals(baseline[kv.Key] as string, kv.Value, StringComparison.Ordinal))
+                return true;
+        return false;
+    }
+
+    [Fact]
+    public void WindowsLauncher_ProcessStartInfos_NeverCombineUseShellExecuteWithCustomEnvironment()
+    {
+        // Closes the methodology gap that let the original PinDydoAgent bug ship: the mock
+        // RecordingProcessStarter records the psi but never exercises Process.Start's
+        // precondition, so a UseShellExecute=true + customized-environment psi looked fine.
+        var rec = new RecordingProcessStarter();
+        WindowsTerminalLauncher.Launch(rec, "Brian");
+        WindowsTerminalLauncher.Launch(rec, "Brian", useTab: true);
+        WindowsTerminalLauncher.Launch(rec, "Brian", worktreeId: "Brian-20260520", mainProjectRoot: @"C:\project");
+        WindowsTerminalLauncher.LaunchResume(rec, "Brian", "sid-brian");
+
+        Assert.NotEmpty(rec.Started);
+        foreach (var psi in rec.Started)
+            Assert.False(psi.UseShellExecute && EnvironmentWasCustomized(psi),
+                "UseShellExecute=true with a customized environment throws in Process.Start");
+    }
+
+    [Fact]
+    public void GetWindowsArguments_PinsDydoAgentUnderNoProfileBeforeProfileReSource()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian");
+
+        Assert.Contains("-NoProfile", args);
+        Assert.Contains("$env:DYDO_AGENT='Brian'", args);
+        // Pin precedes the profile re-source.
+        Assert.True(args.IndexOf("$env:DYDO_AGENT='Brian'", StringComparison.Ordinal)
+                  < args.IndexOf("$PROFILE.AllUsersAllHosts", StringComparison.Ordinal),
+            "DYDO_AGENT must be pinned before profiles are re-sourced");
+        // Re-source precedes the claude launch.
+        Assert.True(args.IndexOf("$PROFILE.CurrentUserCurrentHost", StringComparison.Ordinal)
+                  < args.IndexOf("claude ", StringComparison.Ordinal),
+            "profiles must be re-sourced before claude launches");
+        // Profiles are loaded guarded.
+        Assert.Contains("Test-Path -LiteralPath", args);
+        Assert.Contains("catch{Write-Warning", args);
+    }
+
+    [Fact]
+    public void GetWindowsResumeArguments_PinsDydoAgentUnderNoProfileBeforeProfileReSource()
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments("Brian", "sid-brian");
+
+        Assert.Contains("-NoProfile", args);
+        Assert.Contains("$env:DYDO_AGENT='Brian'", args);
+        Assert.True(args.IndexOf("$env:DYDO_AGENT='Brian'", StringComparison.Ordinal)
+                  < args.IndexOf("$PROFILE.AllUsersAllHosts", StringComparison.Ordinal),
+            "DYDO_AGENT must be pinned before profiles are re-sourced");
+        Assert.True(args.IndexOf("$PROFILE.CurrentUserCurrentHost", StringComparison.Ordinal)
+                  < args.IndexOf("claude ", StringComparison.Ordinal),
+            "profiles must be re-sourced before claude resumes");
+        Assert.Contains("Test-Path -LiteralPath", args);
+        Assert.Contains("catch{Write-Warning", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Worktree_PinsDydoAgentBeforeSetLocation()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Brian", worktreeId: "Brian-20260520120000");
+
+        Assert.True(args.IndexOf("$env:DYDO_AGENT='Brian'", StringComparison.Ordinal)
+                  < args.IndexOf("Set-Location", StringComparison.Ordinal),
+            "the DYDO_AGENT pin must precede the worktree Set-Location/junction setup");
+    }
 
     [Fact]
     public void LinuxTerminalLauncher_TryLaunch_PinsDydoAgentOnChildProcess()

@@ -8,6 +8,17 @@ public static class WindowsTerminalLauncher
     // Disable focus event reporting that Claude Code leaves enabled on exit
     private const string TerminalReset = "; [Console]::Write([char]27 + '[?1004l')";
 
+    // #0197 (F13): re-source the user's PowerShell profiles *inside* -Command, after the
+    // DYDO_AGENT pin. Paired with -NoProfile this closes the pre-profile inheritance window:
+    // nothing runs before the pin, yet profile customisations still load. Mirrors PowerShell's
+    // native four-file load order; each load is try/guarded so a throwing profile cannot
+    // abort the dispatch.
+    private const string ProfileReSource =
+        "foreach($__dydoP in $PROFILE.AllUsersAllHosts,$PROFILE.AllUsersCurrentHost," +
+        "$PROFILE.CurrentUserAllHosts,$PROFILE.CurrentUserCurrentHost){" +
+        "if($__dydoP -and (Test-Path -LiteralPath $__dydoP)){" +
+        "try{. $__dydoP}catch{Write-Warning ('dydo: profile load failed: ' + $_)}}}; ";
+
     public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null)
     {
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
@@ -20,9 +31,12 @@ public static class WindowsTerminalLauncher
         // On any other exit (claude crash, /exit, watchdog kill, context limit), the script
         // body completes without `exit 0` and -NoExit keeps the terminal open with the claude
         // output visible — diagnostic mirror of the Linux `exec bash` fallback. (issue #0124)
-        var noExitFlag = "-NoExit ";
+        // -NoProfile: PowerShell would otherwise run profile scripts BEFORE -Command, letting
+        // them observe a stale inherited DYDO_AGENT (#0197/F13). With -NoProfile nothing runs
+        // pre-Command; agentEnv pins DYDO_AGENT first, then re-sources the profiles itself.
+        var noExitFlag = "-NoProfile -NoExit ";
 
-        var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; ";
+        var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; " + ProfileReSource;
         var windowEnv = windowName != null
             ? $"$env:DYDO_WINDOW='{windowName.Replace("'", "''")}'; "
             : "";
@@ -77,7 +91,8 @@ public static class WindowsTerminalLauncher
     {
         var escapedSession = sessionId.Replace("'", "''");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
-        var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; ";
+        // #0197 (F13): pin DYDO_AGENT first, then re-source profiles — same as GetArguments.
+        var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; " + ProfileReSource;
         // Re-arm the general wait in the background so the resumed claude session
         // has reachability without re-executing its workflow. (#022 + #021 launcher pattern)
         var waitStart = "Start-Process -WindowStyle Hidden -FilePath dydo -ArgumentList 'wait' | Out-Null; ";
@@ -92,7 +107,7 @@ public static class WindowsTerminalLauncher
         {
             var escapedRoot = mainProjectRoot.Replace("'", "''");
             var wtDir = $"'{escapedRoot}/dydo/_system/.local/worktrees/{worktreeId}'";
-            return $"-NoExit -Command \"{agentEnv}" +
+            return $"-NoProfile -NoExit -Command \"{agentEnv}" +
                    $"Set-Location {wtDir}; " +
                    WorktreeCommand.GeneratePsJunctionScript(escapedRoot, isVariable: false) +
                    $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
@@ -101,7 +116,7 @@ public static class WindowsTerminalLauncher
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
-        return $"-NoExit -Command \"{agentEnv}{resumeBody}\"";
+        return $"-NoProfile -NoExit -Command \"{agentEnv}{resumeBody}\"";
     }
 
     public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId,
@@ -197,10 +212,8 @@ public static class WindowsTerminalLauncher
         return processStarter.Start(fallbackPsi);
     }
 
-    // #0197 (F13): Windows launchers must keep UseShellExecute=true (they shell out to wt /
-    // PowerShell), which is incompatible with ProcessStartInfo.Environment — setting it makes
-    // Process.Start throw InvalidOperationException. So DYDO_AGENT cannot be OS-pinned here;
-    // the in-shell `$env:DYDO_AGENT='...'` export in GetArguments / GetResumeArguments is the
-    // only viable Windows mechanism. The watchdog and the Linux/Mac launchers use
-    // UseShellExecute=false and DO scrub/pin the env (see WatchdogService, *TerminalLauncher).
+    // #0197 (F13): DYDO_AGENT is pinned as the first -Command statement under -NoProfile;
+    // profiles are then re-sourced (ProfileReSource) so they observe the correct value.
+    // See dydo/agents/Brian/plan-f13-windows.md. ProcessStartInfo is deliberately left
+    // UseShellExecute=true with no psi.Environment — that combination throws in Process.Start.
 }

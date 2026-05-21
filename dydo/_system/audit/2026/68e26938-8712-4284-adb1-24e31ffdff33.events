@@ -48,3 +48,4 @@
 {"ts":"2026-05-18T18:58:20.0559748Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\6e6943c7-msg-fix-issue-0108-self-dispatch-hijack.md","tool":"read"}
 {"ts":"2026-05-18T18:58:24.4209327Z","event":"Bash","tool":"bash","cmd":"git status; git log --oneline -10"}
 {"ts":"2026-05-18T19:03:12.8583299Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\resolved\\0108-dual-claim-of-same-agent-across-main-tree-and-worktree-breaks-guard-hook-in-orig.md","tool":"read"}
+{"ts":"2026-05-18T19:09:46.5594316Z","event":"Release","agent":"Adele"}

@@ -3164,7 +3164,11 @@
           "dydo/agents/adele/modes/interviewer.md",
           "dydo/agents/adele/modes/tester.md"
         ],
-        "dydo/agents/adele/modes/tester.md": [
+        "dydo/_system/templates/mode-interviewer.template.md": [
+          "dydo/understand/about.md",
+          "dydo/understand/architecture.md"
+        ],
+        "dydo/_system/templates/mode-tester.template.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ],
@@ -3173,11 +3177,7 @@
           "dydo/understand/architecture.md",
           "dydo/agents/adele/modes/planner.md"
         ],
-        "dydo/_system/templates/mode-tester.template.md": [
-          "dydo/understand/about.md",
-          "dydo/understand/architecture.md"
-        ],
-        "dydo/_system/templates/mode-interviewer.template.md": [
+        "dydo/agents/adele/modes/tester.md": [
           "dydo/understand/about.md",
           "dydo/understand/architecture.md"
         ]

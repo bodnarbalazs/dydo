@@ -1,0 +1,26 @@
+{"ts":"2026-05-20T17:58:28.8802425Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md","tool":"read"}
+{"ts":"2026-05-20T17:58:34.0557418Z","event":"Claim","agent":"Brian","recovery_kind":"fresh"}
+{"ts":"2026-05-20T17:58:39.7746173Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\7771786b-identity-hijack-slice-a.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-20T17:58:43.7427299Z","event":"Role","role":"reviewer","task":"identity-hijack-slice-a"}
+{"ts":"2026-05-20T17:58:46.5464314Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\7771786b-identity-hijack-slice-a.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-20T17:58:46.9001146Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\reviewer.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-20T17:58:52.9316856Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\7771786b-identity-hijack-slice-a.md","tool":"read"}
+{"ts":"2026-05-20T17:58:53.2269403Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\reviewer.md","tool":"read"}
+{"ts":"2026-05-20T17:58:59.8294616Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-20T17:59:00.2627778Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-20T17:59:00.682275Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-05-20T17:59:05.4164839Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\review-identity-hijack-slice-a-r2.md","tool":"read"}
+{"ts":"2026-05-20T17:59:06.3153447Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\identity-hijack-slice-a.md","tool":"read"}
+{"ts":"2026-05-20T17:59:06.9502576Z","event":"Bash","tool":"bash","cmd":"git show 3842000 --stat; echo \u0022=== FULL DIFF ===\u0022; git show 3842000"}
+{"ts":"2026-05-20T17:59:13.0158296Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Brian/; echo \u0022=== git log ===\u0022; git log --oneline -6; echo \u0022=== branch diff stat vs m..."}
+{"ts":"2026-05-20T17:59:28.2735188Z","event":"Read","tool":"grep"}
+{"ts":"2026-05-20T17:59:28.8774432Z","event":"Bash","tool":"bash","cmd":"dotnet build -clp:ErrorsOnly 2\u003E\u00261 | Select-Object -Last 15"}
+{"ts":"2026-05-20T18:03:37.731906Z","event":"Bash","tool":"bash","cmd":"dotnet build -clp:ErrorsOnly 2\u003E\u00261 | Select-Object -Last 12"}
+{"ts":"2026-05-20T18:04:10.6256607Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -30"}
+{"ts":"2026-05-20T18:14:32.3779974Z","event":"Blocked","tool":"bash","cmd":"git stash list 2\u003E\u00261; echo \u0022=== check master for same errors ===\u0022; git diff master...HEAD --name-only...","reason":"git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents\u0027 stash operations will interfere. Commit your changes instead."}
+{"ts":"2026-05-20T18:14:35.725025Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== markdown files changed by branch vs master ===\u0022; git diff master...HEAD --name-only -- \u0022*...."}
+{"ts":"2026-05-20T18:14:42.4863815Z","event":"Bash","tool":"bash","cmd":"sleep 1; tail -30 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\6..."}
+{"ts":"2026-05-20T18:14:53.894108Z","event":"Blocked","tool":"bash","cmd":"until [ -s \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\61c8f261...","reason":"Nudge (warn): Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060, or \u0060dydo wait\u0060 for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177)."}
+{"ts":"2026-05-20T18:14:57.9942084Z","event":"Bash","tool":"bash","cmd":"tail -40 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\61c8f261-a..."}
+{"ts":"2026-05-20T18:15:25.4777297Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\review-identity-hijack-slice-a-r3.md","tool":"write"}
+{"ts":"2026-05-20T21:08:12.1427545Z","event":"Release","agent":"Brian"}

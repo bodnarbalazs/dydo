@@ -260,59 +260,135 @@
       "folders_added": [],
       "folders_removed": [],
       "doc_links_added": {
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/claude.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/index.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-worktree-write-permissions/claude.md": [
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/index.md"
-        ],
-        "dydo/_system/.local/worktrees/worktree-smoke-test-2/claude.md": [
-          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/index.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/welcome.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/about.md",
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/about.md": [
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_reference.md": [
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/glossary.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/_index.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_index.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/coverage-tools.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/guardrails.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/roles/_index.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/guardrails.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/coverage-tools.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/testing-strategy.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/009-crap-per-method-metric.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/getting-started.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/templates-and-customization.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/audit-system.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_project.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_index.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/docs-upgrade-sprint.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/v1.3-release.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/changelog/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/future-features/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/issues/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/pitfalls/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/tasks/_index.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/v1.3-release.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/006-drop-interviewer-role.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/003-agent-messaging.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/docs-upgrade-sprint.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/v1.3-release.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/customizing-roles.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/getting-started.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/testing-strategy.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/writing-good-briefs.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_guides.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/_index.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/index.md"
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md"
         ],
-        "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/roles-and-permissions.md"
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/writing-good-briefs.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/multi-agent-workflows.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
         ],
-        "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/welcome.md": [
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/about.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/glossary.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/project/_index.md",
-          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/index.md"
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
         ],
-        "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/glossary.md": [
-          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/roles-and-permissions.md"
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/testing-strategy.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/009-crap-per-method-metric.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/coverage-tools.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/getting-started.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/customizing-roles.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/roles/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/architecture.md"
         ],
         "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/welcome.md": [
           "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/about.md",
@@ -326,135 +402,59 @@
           "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/project/_index.md",
           "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/architecture.md"
+        "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/understand/roles-and-permissions.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/customizing-roles.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/roles/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
+        "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/welcome.md": [
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/about.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/architecture.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/reference/about-dynadocs.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/glossary.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/guides/_index.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/reference/_index.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/project/_index.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/getting-started.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md"
+        "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/glossary.md": [
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/agent-lifecycle.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/reference/audit-system.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/understand/roles-and-permissions.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md": [
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/welcome.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/about.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/testing-strategy.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/009-crap-per-method-metric.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/coverage-tools.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/writing-good-briefs.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/dispatch-and-messaging.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/multi-agent-workflows.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_guides.md": [
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/glossary.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md"
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/coding-standards.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/customizing-roles.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/getting-started.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/testing-strategy.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/writing-good-briefs.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/docs-upgrade-sprint.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/v1.3-release.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/v1.3-release.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/005-fresh-agent-over-wait-for-feedback.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/006-drop-interviewer-role.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/004-terminal-grouping-over-dashboard.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/003-agent-messaging.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/docs-upgrade-sprint.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/v1.3-release.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/changelog/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/future-features/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/issues/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/pitfalls/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/tasks/_index.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_project.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_index.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/audit-system.md": [
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/glossary.md": [
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/getting-started.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/templates-and-customization.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/coverage-tools.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/testing-strategy.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/009-crap-per-method-metric.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/guardrails.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/agent-lifecycle.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/troubleshooting.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/decisions/010-baton-passing-and-review-enforcement.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md"
-        ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_index.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
           "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/audit-system.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/configuration.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/coverage-tools.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/dydo-commands.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/guardrails.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/roles/_index.md"
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/dispatch-and-messaging.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/guard-system.md",
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/roles-and-permissions.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/_reference.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/how-to-use-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/writing-docs.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/guides/_index.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/project/_index.md"
+        "dydo/_system/.local/worktrees/worktree-smoke-test-2/claude.md": [
+          "dydo/_system/.local/worktrees/worktree-smoke-test-2/dydo/index.md"
         ],
-        "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/about.md": [
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/understand/architecture.md",
-          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/reference/about-dynadocs.md"
+        "dydo/_system/.local/worktrees/fix-worktree-write-permissions/claude.md": [
+          "dydo/_system/.local/worktrees/fix-worktree-write-permissions/dydo/index.md"
+        ],
+        "dydo/_system/.local/worktrees/fix-gap-check-gaps/claude.md": [
+          "dydo/_system/.local/worktrees/fix-gap-check-gaps/dydo/index.md"
         ],
         "dydo/project/changelog/2026/2026-03-19/_index.md": [
           "dydo/project/changelog/2026/2026-03-19/fix-ci-build.md",

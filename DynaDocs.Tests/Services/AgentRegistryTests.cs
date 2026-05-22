@@ -2996,6 +2996,54 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void GetSessionContext_DydoAgentEnvVar_InvalidAgentName_FallsThroughToFile()
+    {
+        // #0208: GetSessionContext must validate the DYDO_AGENT name before probing
+        // GetSession, matching its sibling TryResolveCurrentAgentFromEnvVar. Here the env
+        // var names an out-of-pool agent ("Bogus") whose crafted .session would otherwise
+        // clear IsOwnedByCaller — without the IsValidAgentName guard GetSessionContext
+        // would return Bogus's id. With the guard it falls through to the verified file.
+        const int zeldaPid = 424242;
+        SetupConfig(new[] { "Zelda" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Zelda" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => zeldaPid;
+        try
+        {
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Zelda", "session-zelda");
+            registry.ClaimAgent("Zelda", out _);
+            var zeldaSession = registry.GetSession("Zelda");
+            Assert.NotNull(zeldaSession);
+            registry.StoreSessionContext(zeldaSession.SessionId, "Zelda");
+
+            // Craft a .session for an agent not in the pool; ClaimedPid = zeldaPid so it
+            // would clear IsOwnedByCaller under the test's ancestor override.
+            var bogusWorkspace = Path.Combine(_testDir, "dydo", "agents", "Bogus");
+            Directory.CreateDirectory(bogusWorkspace);
+            var bogusSession = new AgentSession
+            {
+                Agent = "Bogus",
+                SessionId = "session-bogus",
+                Claimed = DateTime.UtcNow,
+                ClaimedPid = zeldaPid
+            };
+            File.WriteAllText(Path.Combine(bogusWorkspace, ".session"),
+                JsonSerializer.Serialize(bogusSession, DydoDefaultJsonContext.Default.AgentSession));
+
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Bogus");
+
+            var sessionId = registry.GetSessionContext();
+            Assert.Equal(zeldaSession.SessionId, sessionId);
+            Assert.NotEqual("session-bogus", sessionId);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+            Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+        }
+    }
+
+    [Fact]
     public void GetCurrentAgent_DydoAgentEnvVar_OnlyTrustedWhenCallerOwnsAgent()
     {
         const int adelePid = 424242;

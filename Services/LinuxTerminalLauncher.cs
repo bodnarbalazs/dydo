@@ -48,17 +48,20 @@ public static class LinuxTerminalLauncher
     /// Body that replaces the fresh-launch <c>unset CLAUDECODE; … ; exec bash</c>
     /// segment in any LinuxTerminals entry. The cd-prefix and DYDO_* exports come
     /// from the surrounding base args (preserved); we only swap in the resume
-    /// claude invocation plus a backgrounded <c>dydo wait</c>. When worktreeId and
-    /// mainProjectRoot are non-null the body is wrapped in the same setup/cleanup
-    /// envelope as the original dispatch (Finding #4; closes #0175).
+    /// claude invocation. When worktreeId and mainProjectRoot are non-null the body
+    /// is wrapped in the same setup/cleanup envelope as the original dispatch
+    /// (Finding #4; closes #0175).
     /// </summary>
     internal static string BuildResumeBashCommand(string agentName, string sessionId,
         string? worktreeId = null, string? mainProjectRoot = null)
     {
         var escapedSession = sessionId.Replace("'", "'\\''");
         var escapedPrompt = TerminalLauncher.BashSingleQuoteEscape(TerminalLauncher.ResumeContinuationPrompt);
+        // #0207: no shell-spawned `dydo wait` re-arm — it is a sibling of `claude`, never
+        // a descendant, so it cannot pass the F11 ownership gate and failed silently on
+        // every resume. How a resumed agent arms its own wait is handled separately
+        // (#0207 part 2).
         var resumeBody = $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE; " +
-                         $"(dydo wait >/dev/null 2>&1 &) ; " +
                          $"claude --resume '{escapedSession}' '{escapedPrompt}'; " +
                          $"printf '\\e[?1004l'";
 

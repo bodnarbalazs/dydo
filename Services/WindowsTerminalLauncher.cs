@@ -93,11 +93,12 @@ public static class WindowsTerminalLauncher
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
         // #0197 (F13): pin DYDO_AGENT first, then re-source profiles — same as GetArguments.
         var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; " + ProfileReSource;
-        // Re-arm the general wait in the background so the resumed claude session
-        // has reachability without re-executing its workflow. (#022 + #021 launcher pattern)
-        var waitStart = "Start-Process -WindowStyle Hidden -FilePath dydo -ArgumentList 'wait' | Out-Null; ";
+        // #0207: no shell-spawned `dydo wait` re-arm here. Such a wait is a sibling of
+        // `claude`, never a descendant, so it can never pass the F11 ownership gate —
+        // it failed silently on every resume. How a resumed agent arms its own general
+        // wait is handled separately (#0207 part 2).
         var resumeBody = $"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; " +
-                         $"{waitStart}claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}";
+                         $"claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}";
 
         // Symmetry with GetArguments worktree path (#0175): wrap the resume body in
         // Set-Location → junctions → init-settings → try/finally cleanup so the

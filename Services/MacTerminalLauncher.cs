@@ -59,8 +59,11 @@ public static class MacTerminalLauncher
                         TerminalLauncher.WorktreeCleanupScript(worktreeId, agentName);
         }
 
+        // #0207: no shell-spawned `dydo wait` re-arm — it is a sibling of `claude`, never
+        // a descendant, so it cannot pass the F11 ownership gate and failed silently on
+        // every resume. How a resumed agent arms its own wait is handled separately
+        // (#0207 part 2).
         var shellCommand = $"{cdPrefix}{agentExport}{wtSetup}unset CLAUDECODE; " +
-                           $"(dydo wait >/dev/null 2>&1 &) ; " +
                            $"claude --resume \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
         return (shellCommand, wtCleanup);
     }

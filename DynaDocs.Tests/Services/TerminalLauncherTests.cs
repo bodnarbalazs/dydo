@@ -2578,27 +2578,36 @@ public class TerminalLauncherTests
         Assert.DoesNotContain("--inbox", args);
     }
 
+    // #0207 (part 1): the resume launchers no longer shell-spawn a `dydo wait`. Such a
+    // wait is a sibling of `claude`, never a descendant, so it can never pass the F11
+    // ownership gate — it came up silently un-armed on every resume. These tests pin
+    // that the doomed caller is gone.
     [Fact]
-    public void GetWindowsResumeArguments_BackgroundsDydoWaitBeforeClaude()
+    public void GetWindowsResumeArguments_DoesNotSpawnDydoWait()
     {
         var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc");
 
-        var waitIdx = args.IndexOf("Start-Process", StringComparison.Ordinal);
-        var claudeIdx = args.IndexOf("claude --resume", StringComparison.Ordinal);
-        Assert.True(waitIdx >= 0, "Resume launcher must spawn dydo wait via Start-Process");
-        Assert.Contains("'wait'", args);
-        Assert.True(claudeIdx > waitIdx, "dydo wait startup must precede claude --resume");
+        Assert.DoesNotContain("Start-Process", args);
+        Assert.DoesNotContain("'wait'", args);
+        Assert.Contains("claude --resume", args);
     }
 
     [Fact]
-    public void GetLinuxResumeArguments_BackgroundsDydoWaitBeforeClaude()
+    public void GetLinuxResumeArguments_DoesNotSpawnDydoWait()
     {
         var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc");
 
-        var waitIdx = args.IndexOf("(dydo wait", StringComparison.Ordinal);
-        var claudeIdx = args.IndexOf("claude --resume", StringComparison.Ordinal);
-        Assert.True(waitIdx >= 0, "Resume launcher must include backgrounded (dydo wait ...)");
-        Assert.True(claudeIdx > waitIdx, "(dydo wait ...) must precede claude --resume");
+        Assert.DoesNotContain("(dydo wait", args);
+        Assert.Contains("claude --resume", args);
+    }
+
+    [Fact]
+    public void GetMacResumeArguments_DoesNotSpawnDydoWait()
+    {
+        var args = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc");
+
+        Assert.DoesNotContain("(dydo wait", args);
+        Assert.Contains("claude --resume", args);
     }
 
     [Fact]

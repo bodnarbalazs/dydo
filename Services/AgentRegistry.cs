@@ -1076,7 +1076,7 @@ public partial class AgentRegistry : IAgentRegistry
     public string? GetSessionContext()
     {
         var agentName = Environment.GetEnvironmentVariable("DYDO_AGENT");
-        if (!string.IsNullOrEmpty(agentName))
+        if (!string.IsNullOrEmpty(agentName) && IsValidAgentName(agentName))
         {
             var session = GetSession(agentName);
             if (session != null && IsOwnedByCaller(session)) return session.SessionId;

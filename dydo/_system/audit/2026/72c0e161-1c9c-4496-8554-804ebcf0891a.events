@@ -1,0 +1,6 @@
+{"ts":"2026-05-22T18:20:00.2065969Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\workflow.md","tool":"read"}
+{"ts":"2026-05-22T18:20:08.9376304Z","event":"Claim","agent":"Charlie","recovery_kind":"fresh"}
+{"ts":"2026-05-22T18:20:16.9921169Z","event":"Role","role":"co-thinker","task":"spike-resume"}
+{"ts":"2026-05-22T18:33:31.8768607Z","event":"Blocked","tool":"bash","cmd":"dydo agent claim Charlie","reason":"Missing general wait"}
+{"ts":"2026-05-22T18:33:39.2741817Z","event":"Claim","agent":"Charlie","recovery_kind":"auto","resume_predecessor_session":"72c0e161-1c9c-4496-8554-804ebcf0891a","resume_attempts_at_claim":1}
+{"ts":"2026-05-22T19:49:07.8309656Z","event":"Release","agent":"Charlie"}

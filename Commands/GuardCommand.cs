@@ -185,6 +185,15 @@ public static partial class GuardCommand
         if (ctx.HasCliArgs && string.IsNullOrEmpty(sessionId))
             sessionId = registry.GetSessionContext();
 
+        // #0207 part 2: on a resumed claude session's first guarded tool call, rewrite
+        // .session.ClaimedPid from the dead pre-resume PID to the live claude ancestor,
+        // reset resume bookkeeping (#0153), and emit the recovery_kind=auto Claim event +
+        // resume_outcome=succeeded log. All gates inside the method — every non-resume call
+        // exits cheaply at step 4 (IsProcessRunning on the live ClaimedPid). Placed before
+        // Security Layer 1 so it covers every tool type uniformly and runs even when the
+        // triggering call is itself blocked downstream.
+        registry.RefreshResumedAgentSession(sessionId);
+
         var filePath = ResolveWorktreePath(ctx.FilePath);
         var action = ctx.Action;
         var bashCommand = ctx.BashCommand;

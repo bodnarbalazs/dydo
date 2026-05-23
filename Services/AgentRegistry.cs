@@ -180,6 +180,28 @@ public partial class AgentRegistry : IAgentRegistry
         state.Since.HasValue &&
         (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleWorkingMinutes;
 
+    // #0207 part 2 companion: true while a watchdog auto-resume is within its warmup window.
+    // The HandleExistingSession stale-working reclaim path uses this to refuse a concurrent
+    // manual claim during the resume warmup — closing the window in Proof A of
+    // dydo/agents/Charlie/plan-f11-guard-side.md. SaturateResumeAttempts clears
+    // LastResumeLaunchedAt, so a watchdog give-up exits this state immediately.
+    private static bool ResumeInFlight(AgentState state)
+    {
+        if (state.LastResumeLaunchedAt is not { } launchedAt) return false;
+        var gate = WatchdogService.ResumeWarmupGateOverride ?? WatchdogService.ResumeWarmupGate;
+        return DateTime.UtcNow - launchedAt < gate;
+    }
+
+    // Stale-working reclaim gate (decision 018 + #0207 part 2 companion): the agent is
+    // Working past the threshold AND its session PID is dead AND no watchdog resume is
+    // currently in flight. Extracted so HandleExistingSession's CC stays under the
+    // gap_check T1 threshold.
+    private bool IsReclaimableStaleWorking(string agentName, AgentState? state) =>
+        state != null
+        && IsStaleWorking(state)
+        && !IsSessionPidAlive(agentName)
+        && !ResumeInFlight(state);
+
     // PID to persist in .session so a later claim can probe Claude-tab liveness.
     // Prefer the nearest Claude ancestor (survives shell/subshell churn). On Windows
     // claude ships as a Node script, so FindClaudeAncestor also accepts "node" (#0151).
@@ -193,7 +215,16 @@ public partial class AgentRegistry : IAgentRegistry
     {
         var newPid = ResolveClaimedPid();
         if (newPid == existingSession.ClaimedPid) return;
+        WriteClaimedPid(agentName, existingSession, newPid);
+    }
 
+    // Writes a .session with ClaimedPid mutated to newPid, preserving Agent/SessionId/Claimed.
+    // Extracted from RefreshClaimedPid so RefreshResumedAgentSession can write a PID it has
+    // already validated against FindClaudeAncestor under the lock — without re-running
+    // ResolveClaimedPid, which would fall back to a non-claude parent shell PID if the
+    // ancestor briefly vanished after the validation step.
+    private void WriteClaimedPid(string agentName, AgentSession existingSession, int? newPid)
+    {
         var refreshed = new AgentSession
         {
             Agent = existingSession.Agent,
@@ -217,6 +248,97 @@ public partial class AgentRegistry : IAgentRegistry
             s.PreResumePid = null;
             s.LaunchedPid = null;
         });
+    }
+
+    // #0207 part 2: guard-side ClaimedPid auto-refresh. On a resumed claude session's
+    // first guarded tool call, rewrites .session.ClaimedPid from the dead pre-resume PID
+    // to the live claude ancestor — deterministic, no prompt dependence. Plays the same
+    // bookkeeping reset (#0153) + recovery audit emit role that HandleExistingSession's
+    // same-session reclaim branch did, but co-located with the proof of resume success
+    // (an actual guarded tool call executing under the new claude) so neither responsibility
+    // can be missed. The whole body is in try/catch: a guard hook MUST NEVER break a tool
+    // call. See dydo/agents/Charlie/plan-f11-guard-side.md for the trigger derivation,
+    // edge-case enumeration, and proofs. The HandleExistingSession same-session reclaim
+    // branch stays — the two paths are both reachable (explicit re-claim vs first guarded
+    // call) and the lock makes their interaction idempotent (Proof B).
+    //
+    // Steps 1–5 (the trigger predicate) live in RecoveryClassifier.ShouldRefreshResumedPid;
+    // splitting keeps this method's cyclomatic complexity under the gap_check T1 threshold.
+    internal void RefreshResumedAgentSession(string? sessionId)
+    {
+        try
+        {
+            var decision = RecoveryClassifier.ShouldRefreshResumedPid(
+                sessionId, GetCurrentAgent, GetSession);
+            if (!decision.ShouldRefresh) return;
+            RefreshResumedAgentSessionUnderLock(
+                sessionId!, decision.AgentName!, decision.Session!, decision.LivePid);
+        }
+        catch
+        {
+            // A guard hook MUST NEVER break a tool call. Silent no-op on any failure;
+            // the next guarded call will retry. Discipline matches LogAuditEvent /
+            // RunDailyValidationIfDue in GuardCommand.
+        }
+    }
+
+    // Steps 6–11 of RefreshResumedAgentSession's pseudocode: bounded-retry lock,
+    // double-check under the lock, write the live PID, reset bookkeeping, emit audit.
+    // Separated from the entry point so each half stays under the gap_check CRAP threshold.
+    private void RefreshResumedAgentSessionUnderLock(
+        string sessionId, string agentName, AgentSession session, int livePid)
+    {
+        // 6. bounded-retry lock acquisition (3× / 50 ms) — TryAcquireLock is fail-fast.
+        //    A once-per-resume hot path can afford ~150 ms; if a process is genuinely
+        //    stuck on the lock, the next guarded call retries idempotently.
+        var acquired = false;
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (TryAcquireLock(agentName, out _)) { acquired = true; break; }
+            if (attempt < 2) Thread.Sleep(50);
+        }
+        if (!acquired) return;
+
+        try
+        {
+            // 7. re-read .session under the lock — another guard call may have refreshed
+            //    first. If ClaimedPid is now live, skip (we lose the race; idempotent).
+            var fresh = GetSession(agentName);
+            if (fresh == null || fresh.SessionId != sessionId) return;
+            if (fresh.ClaimedPid is not int freshPid) return;
+            if (ProcessUtils.IsProcessRunning(freshPid)) return;
+
+            // 8. re-validate status under the lock. ResetResumeBookkeeping below routes
+            //    through UpdateAgentState whose `?? new AgentState{Name}` fallback would
+            //    silently destroy a role-bearing agent's state.md if we proceeded past
+            //    a non-Working state — the watchdog only resumes Working agents, so a
+            //    genuinely resumed agent is always Working here.
+            var priorState = GetAgentState(agentName);
+            if (priorState == null || priorState.Status != AgentStatus.Working) return;
+
+            // 9. write the already-validated livePid directly. Do NOT call RefreshClaimedPid
+            //    (which re-runs ResolveClaimedPid and could fall back to a non-claude
+            //    parent shell PID if the ancestor vanished between predicate eval and now).
+            WriteClaimedPid(agentName, fresh, livePid);
+
+            // 10. zero the resume bookkeeping (#0153). Order 9 → 10 → 11 is deliberate:
+            //     refresh is the highest-value op (it stops the watchdog firing another
+            //     redundant resume and unblocks F11), so it goes first under the lock.
+            ResetResumeBookkeeping(agentName);
+
+            // 11. emit recovery audit + watchdog log entry. EmitAutoRecovery self-gates
+            //     on priorState.LastResumeLaunchedAt != null — a user-driven claude --resume
+            //     (no watchdog launch) refreshes the PID but emits nothing. Likewise the
+            //     F2 corner (SaturateResumeAttempts cleared LastResumeLaunchedAt mid-episode)
+            //     is permanently un-emit-able from this path — functional recovery without
+            //     an audit line, by design.
+            RecoveryClassifier.EmitAutoRecovery(_basePath, _auditService, sessionId,
+                agentName, GetCurrentHuman(), fresh, priorState);
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
     }
 
     // Guards the stale-dispatch reclaim path: if the original dispatch's
@@ -362,7 +484,9 @@ public partial class AgentRegistry : IAgentRegistry
         // Stale-working reclaim (decision 018, issue #103): prior Claude's
         // session PID is dead and Status has been Working past the threshold.
         // SetupAgentWorkspace will archive the old workspace and regenerate.
-        if (state != null && IsStaleWorking(state) && !IsSessionPidAlive(agentName))
+        // Predicate is extracted so this method's cyclomatic complexity stays
+        // under the gap_check T1 threshold after the #0207 part 2 companion clause.
+        if (IsReclaimableStaleWorking(agentName, state))
         {
             Console.Error.WriteLine(
                 $"[dydo] Note: reclaimed agent {agentName} from an interrupted session. " +

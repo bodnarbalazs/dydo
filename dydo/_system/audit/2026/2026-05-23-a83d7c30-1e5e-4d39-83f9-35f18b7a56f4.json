@@ -1,0 +1,14 @@
+{
+  "session": "a83d7c30-1e5e-4d39-83f9-35f18b7a56f4",
+  "human": "balazs",
+  "started": "2026-05-23T10:47:36.9857597Z",
+  "git_head": "fe9e551",
+  "events": [
+    {
+      "ts": "2026-05-23T10:47:36.9843437Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "ls dydo/ 2\u003E\u00261 | head -30"
+    }
+  ]
+}

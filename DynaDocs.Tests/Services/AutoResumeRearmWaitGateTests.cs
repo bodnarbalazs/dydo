@@ -102,4 +102,38 @@ public class AutoResumeRearmWaitGateTests : IDisposable
         var registry = new AgentRegistry(_testDir);
         Assert.True(registry.VerifyCallerOwnsAgent("Adele"));
     }
+
+    [Fact]
+    public void GuardRefreshThenWait_PassesF11Gate()
+    {
+        // #0207 part 2 — re-expression of the prompt-driven branch's "test 3". After the
+        // guard refresh, VerifyCallerOwnsAgent returns true — which is the exact F11
+        // predicate WaitCommand applies before any wait-marker is registered. The gate
+        // now passes because the GUARD refreshed .session.ClaimedPid to the live claude,
+        // not because the agent re-claimed.
+        //
+        // We assert the F11 predicate directly instead of invoking WaitCommand.Execute,
+        // which enters an unbounded polling loop and can't be cleanly cancelled from a
+        // unit test. The companion test below (WaitWithoutClaudeAncestor_…) covers the
+        // refused side of the same predicate, so the two together pin both legs of the
+        // gate as required by the plan.
+        SetUpResumedAdele();
+        const int liveClaudePid = 222002;
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => liveClaudePid;
+        ProcessUtils.IsProcessRunningOverride = pid => pid != DeadPreResumeClaudePid;
+
+        var registry = new AgentRegistry(_testDir);
+
+        // Pre-refresh: .session.ClaimedPid is the dead pre-resume PID → F11 refuses.
+        Assert.False(registry.VerifyCallerOwnsAgent("Adele"),
+            "Sanity: before the guard refresh, F11 should refuse — .session.ClaimedPid is the dead pre-resume PID.");
+
+        // Guard's PreToolUse hook fires on the resumed session's first guarded call.
+        registry.RefreshResumedAgentSession(ResumeSessionId);
+
+        // Post-refresh: .session.ClaimedPid is the live claude → F11 accepts. WaitCommand
+        // would proceed to CreateListeningWaitMarker — the property the plan asserts.
+        Assert.True(registry.VerifyCallerOwnsAgent("Adele"),
+            "After the guard refresh, F11 should accept — .session.ClaimedPid is now the live claude ancestor.");
+    }
 }

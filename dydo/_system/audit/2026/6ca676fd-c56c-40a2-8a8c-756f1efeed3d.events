@@ -139,3 +139,46 @@
 {"ts":"2026-05-20T21:08:54.404364Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\f8702dd7-msg-identity-hijack-slice-a.md","tool":"read"}
 {"ts":"2026-05-20T21:08:54.7631596Z","event":"Bash","tool":"bash","cmd":"ls \u0022dydo/agents/Frank/\u0022 2\u003E\u00261"}
 {"ts":"2026-05-20T21:08:58.7154565Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Frank\\f13-spike-result.md","tool":"read"}
+{"ts":"2026-05-21T19:14:19.3135893Z","event":"Bash","tool":"bash","cmd":"git branch -vv 2\u003E\u00261; echo \u0022=== STATUS ===\u0022; git status 2\u003E\u00261 | head -20; echo \u0022=== LOG ===\u0022; git log ..."}
+{"ts":"2026-05-21T19:17:25.9379649Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-inquisition-link-validator-postmerge.md","tool":"write"}
+{"ts":"2026-05-21T19:17:51.1029519Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-inquisition-backlog-postmerge.md","tool":"write"}
+{"ts":"2026-05-21T19:18:31.1815637Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-inquisition-identity-hijack-postmerge.md","tool":"write"}
+{"ts":"2026-05-21T19:36:00.5042408Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\43e3bb5c-msg-link-validator-fix-verification.md","tool":"read"}
+{"ts":"2026-05-21T19:49:02.5104966Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1fbe0151-msg-identity-hijack-slice-a-verification.md","tool":"read"}
+{"ts":"2026-05-21T19:59:07.220373Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -30","reason":"Missing general wait"}
+{"ts":"2026-05-21T19:59:14.8193757Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\afb04930-msg-backlog-introduction-verification.md","tool":"read"}
+{"ts":"2026-05-22T10:04:11.3926203Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\4b9d2934-msg-identity-hijack-slice-a-verification-ruling.md","tool":"read"}
+{"ts":"2026-05-22T10:04:11.9200012Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\dab8a628-msg-backlog-introduction-verification-ruling.md","tool":"read"}
+{"ts":"2026-05-22T10:15:56.4501719Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\013648e7-msg-identity-hijack-slice-a-verification-ruling.md","tool":"read"}
+{"ts":"2026-05-22T10:15:56.9117905Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\d3b0b939-msg-backlog-introduction-verification-ruling.md","tool":"read"}
+{"ts":"2026-05-22T10:16:58.0107259Z","event":"Blocked","tool":"bash","cmd":"ls \u0022dydo/_system/.local/worktrees/backlog-introduction-verification/dydo/project/backlog/\u0022 2\u003E\u00261; ech...","reason":"Unread messages"}
+{"ts":"2026-05-22T10:17:02.0900928Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b5df6360-msg-link-validator-fix-verification-ruling.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-22T10:17:10.6633214Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b5df6360-msg-link-validator-fix-verification-ruling.md","tool":"read"}
+{"ts":"2026-05-22T10:17:16.7317652Z","event":"Bash","tool":"bash","cmd":"ls \u0022dydo/_system/.local/worktrees/backlog-introduction-verification/dydo/project/backlog/\u0022 2\u003E\u00261; ech..."}
+{"ts":"2026-05-22T10:17:24.1282989Z","event":"Bash","tool":"bash","cmd":"git worktree list 2\u003E\u00261"}
+{"ts":"2026-05-22T10:17:43.2608366Z","event":"Bash","tool":"bash","cmd":"ls \u0022dydo/_system/.local/worktrees/backlog-introduction-verification/\u0022 2\u003E\u00261 | head -20; echo \u0022=== git..."}
+{"ts":"2026-05-22T14:59:00.5874215Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-presentation-style.md","tool":"edit"}
+{"ts":"2026-05-22T14:59:34.872481Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-planner-f11-regression.md","tool":"write"}
+{"ts":"2026-05-22T15:03:41.2552691Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\log-orchestration.md","tool":"edit"}
+{"ts":"2026-05-22T15:04:43.0900675Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\695bebed-msg-identity-hijack-slice-a.md","tool":"read"}
+{"ts":"2026-05-22T15:16:42.9127006Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\60a32a3b-msg-f11-regression-fix-plan.md","tool":"read"}
+{"ts":"2026-05-22T15:16:47.0032753Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T16:47:21.7832047Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-code-writer-f11-regression.md","tool":"write"}
+{"ts":"2026-05-22T19:49:51.4464137Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\2cca7960-msg-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T19:49:57.2185872Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\f11-guard-side-refresh-findings.md","tool":"read"}
+{"ts":"2026-05-22T19:51:55.2859103Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-planner-f11-guard-side-refresh.md","tool":"write"}
+{"ts":"2026-05-22T20:31:11.4044573Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\307bb70c-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-22T20:31:16.0847291Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\plan-f11-guard-side.md","tool":"read"}
+{"ts":"2026-05-22T20:34:53.1436876Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\df8068eb-msg-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T21:00:53.2355561Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\af488390-msg-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T21:22:06.0637524Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1021412a-msg-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T21:53:00.6932424Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\1dbb89a8-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-22T21:53:04.7449648Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\plan-f11-guard-side.md","tool":"read"}
+{"ts":"2026-05-23T10:47:19.2914824Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-inquisition-f11-guard-side-plan.md","tool":"write"}
+{"ts":"2026-05-23T10:49:10.616671Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\b764a40f-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-23T10:52:08.7798154Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\4ba8cbc5-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-23T11:05:20.8694074Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\ceb28f4d-msg-f11-guard-side-plan-audit.md","tool":"read"}
+{"ts":"2026-05-23T11:32:31.2761838Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-presentation-style.md","tool":"edit"}
+{"ts":"2026-05-23T11:53:35.880151Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\80699ad2-msg-f11-guard-side-plan-audit-ruling.md","tool":"read"}
+{"ts":"2026-05-23T11:55:42.653696Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\01235fb7-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-23T13:21:37.0213063Z","event":"Bash","tool":"bash","cmd":"git log --oneline -8 2\u003E\u00261; echo \u0022=== branch ===\u0022; git branch --show-current 2\u003E\u00261"}

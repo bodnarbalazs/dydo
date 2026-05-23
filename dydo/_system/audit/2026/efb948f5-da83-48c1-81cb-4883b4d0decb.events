@@ -1,0 +1,106 @@
+{"ts":"2026-05-22T16:47:37.248491Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\workflow.md","tool":"read"}
+{"ts":"2026-05-22T16:47:42.2724605Z","event":"Claim","agent":"Brian","recovery_kind":"fresh"}
+{"ts":"2026-05-22T16:47:48.9950594Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\177650d2-f11-regression-fix.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-22T16:47:57.3816484Z","event":"Role","role":"code-writer","task":"f11-regression-fix"}
+{"ts":"2026-05-22T16:48:00.1243939Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\177650d2-f11-regression-fix.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-22T16:48:05.9268887Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\177650d2-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T16:48:09.0536142Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-05-22T16:48:09.7253394Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\plan-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T16:48:13.3138156Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-22T16:48:13.4958896Z","event":"Read","tool":"glob"}
+{"ts":"2026-05-22T16:48:16.856881Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\archive\\20260522-164741\\plan-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T16:48:20.830914Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-05-22T16:48:21.7146904Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-05-22T16:48:22.143744Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-05-22T16:48:22.6277786Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\inquisitions\\identity-hijack-slice-a-verification.md","tool":"read"}
+{"ts":"2026-05-22T16:48:27.6176694Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:28.0815456Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:28.4980119Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:29.003714Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:34.6888851Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:35.4378344Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:40.3377334Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-22T16:48:45.6576338Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-05-22T16:48:52.5901263Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"grep"}
+{"ts":"2026-05-22T16:48:56.608403Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"read"}
+{"ts":"2026-05-22T16:49:01.6220034Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"grep"}
+{"ts":"2026-05-22T16:49:04.9737969Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-05-22T16:50:37.7964999Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"edit"}
+{"ts":"2026-05-22T16:51:01.5755305Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"edit"}
+{"ts":"2026-05-22T16:51:10.1304268Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T16:51:22.073554Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T16:51:28.7687924Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T16:51:37.586205Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T16:51:54.5545308Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"read"}
+{"ts":"2026-05-22T16:52:00.390177Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"edit"}
+{"ts":"2026-05-22T16:52:16.5429327Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"edit"}
+{"ts":"2026-05-22T16:52:22.1172552Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-05-22T16:52:37.0124488Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"grep"}
+{"ts":"2026-05-22T16:53:01.2304856Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-22T16:53:15.2107613Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"read"}
+{"ts":"2026-05-22T16:53:43.2746144Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AgentRegistryTests.cs","tool":"edit"}
+{"ts":"2026-05-22T16:54:24.2542609Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-22T16:54:47.2457151Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\AgentRegistry.cs","tool":"read"}
+{"ts":"2026-05-22T16:55:37.9107707Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-05-22T16:55:43.4639255Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\ConsoleCapture.cs","tool":"read"}
+{"ts":"2026-05-22T16:56:37.0716816Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AutoResumeRearmWaitGateTests.cs","tool":"write"}
+{"ts":"2026-05-22T16:56:44.3106204Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests","tool":"grep"}
+{"ts":"2026-05-22T16:56:53.4231986Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.csproj -v q --nologo 2\u003E\u00261 | tail -20"}
+{"ts":"2026-05-22T16:56:58.6146439Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.Tests/DynaDocs.Tests.csproj -v q --nologo 2\u003E\u00261 | tail -25"}
+{"ts":"2026-05-22T16:57:07.2136039Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~AutoResumeRearmWaitGate|..."}
+{"ts":"2026-05-22T16:57:42.011611Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"read"}
+{"ts":"2026-05-22T16:57:53.5294569Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"edit"}
+{"ts":"2026-05-22T16:57:59.1253247Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py -- --filter \u0022FullyQualifiedName~AutoResumeRearmWaitGate|..."}
+{"ts":"2026-05-22T16:58:24.4185724Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -20"}
+{"ts":"2026-05-22T17:08:34.5439838Z","event":"Bash","tool":"bash","cmd":"sleep 1; tail -5 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\ef..."}
+{"ts":"2026-05-22T17:08:43.6058137Z","event":"Bash","tool":"bash","cmd":"while ! grep -qE \u0022Tests (passed|failed)|Build FAILED|error\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude..."}
+{"ts":"2026-05-22T17:09:17.5186772Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -30"}
+{"ts":"2026-05-22T17:09:56.874285Z","event":"Bash","tool":"bash","cmd":"for d in dydo/agents/*/; do name=$(basename \u0022$d\u0022); if [ -f \u0022$d/.session\u0022 ]; then echo \u0022$name: HAS .s..."}
+{"ts":"2026-05-22T17:58:27.7159846Z","event":"Bash","tool":"bash","cmd":"tail -30 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\efb948f5-d..."}
+{"ts":"2026-05-22T17:58:53.0558684Z","event":"Bash","tool":"bash","cmd":"echo \u0022--- Adele .waiting BEFORE ---\u0022; ls -la dydo/agents/Adele/.waiting/ 2\u003E/dev/null || echo \u0022(no .w..."}
+{"ts":"2026-05-22T17:59:02.5231511Z","event":"Bash","tool":"bash","cmd":"md5sum dydo/agents/Adele/.waiting/_general-wait.json; stat -c \u0027%Y %s\u0027 dydo/agents/Adele/.waiting/_ge..."}
+{"ts":"2026-05-22T18:01:43.2423631Z","event":"Bash","tool":"bash","cmd":"DYDO_AGENT=Adele dydo wait; echo \u0022EXIT_CODE=$?\u0022"}
+{"ts":"2026-05-22T18:01:51.1366518Z","event":"Bash","tool":"bash","cmd":"while ! grep -q \u0022EXIT_CODE=\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects..."}
+{"ts":"2026-05-22T18:02:21.4412068Z","event":"Blocked","path":"dydo/agents/Adele/.session","tool":"bash","cmd":"echo \u0022=== Adele .session ===\u0022; cat dydo/agents/Adele/.session; echo; echo \u0022=== Brian .session ===\u0022; ...","reason":"Off-limits: dydo/agents/*/.session"}
+{"ts":"2026-05-22T18:02:30.3377861Z","event":"Bash","tool":"bash","cmd":"$p=$PID; while($p -and $p -ne 0){ $proc=Get-CimInstance Win32_Process -Filter \u0022ProcessId=$p\u0022 -ErrorA..."}
+{"ts":"2026-05-22T18:05:44.3178635Z","event":"Bash","tool":"bash","cmd":"Write-Output \u0022=== claude.exe processes ===\u0022; Get-Process claude -ErrorAction SilentlyContinue | Sele..."}
+{"ts":"2026-05-22T18:06:49.2330035Z","event":"Bash","tool":"bash","cmd":"Write-Output \u0022=== claude.exe ===\u0022; Get-Process claude -ErrorAction SilentlyContinue | Select-Object ..."}
+{"ts":"2026-05-22T18:12:37.8031409Z","event":"Bash","tool":"bash","cmd":"ls *.ps1 *.sh scripts/ 2\u003E/dev/null; echo \u0022---\u0022; ls; echo \u0022--- csproj tool config ---\u0022; grep -iE \u0022Pac..."}
+{"ts":"2026-05-22T18:14:20.5401465Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"grep"}
+{"ts":"2026-05-22T18:15:48.2766818Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== dev apphost ===\u0022; ls -la bin/Debug/net10.0/dydo.exe 2\u003E/dev/null || echo \u0022NO dev apphost\u0022; ..."}
+{"ts":"2026-05-22T18:16:59.5563843Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== stopping current watchdog (47032, old global 1.4.7) ===\u0022; bin/Debug/net10.0/dydo.exe watch..."}
+{"ts":"2026-05-22T18:18:09.5823583Z","event":"Bash","tool":"bash","cmd":"bin/Debug/net10.0/dydo.exe dispatch --no-wait --auto-close --role co-thinker --task spike-resume --b..."}
+{"ts":"2026-05-22T18:19:59.9433639Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== new watchdog.pid ===\u0022; cat dydo/_system/.local/watchdog.pid 2\u003E/dev/null || echo \u0022(none)\u0022; ..."}
+{"ts":"2026-05-22T18:34:12.5554022Z","event":"Blocked","path":"dydo/agents/Charlie/state.md","tool":"bash","cmd":"for i in $(seq 1 20); do if [ -f dydo/agents/Charlie/.session ]; then echo \u0022[$i] .session EXISTS\u0022; b...","reason":"Off-limits: dydo/agents/*/state.md"}
+{"ts":"2026-05-22T19:45:52.8054947Z","event":"Bash","tool":"bash","cmd":"ls -la dydo/agents/Brian/.waiting/ 2\u003E/dev/null \u0026\u0026 echo \u0022--- marker pid alive? ---\u0022 \u0026\u0026 powershell -No..."}
+{"ts":"2026-05-22T19:49:00.2012225Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\f11-guard-side-refresh-findings.md","tool":"write"}
+{"ts":"2026-05-22T19:49:09.4892256Z","event":"Bash","tool":"bash","cmd":"cat \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\efb948f5-da83-4..."}
+{"ts":"2026-05-22T19:51:33.980493Z","event":"Blocked","tool":"bash","cmd":"echo \u0022=== byxpt3fv0 wait output ===\u0022; cat \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Des...","reason":"Unread messages"}
+{"ts":"2026-05-22T19:51:37.7823712Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\4dc336ee-msg-f11-regression-fix.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-22T19:51:51.6338038Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\4dc336ee-msg-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T19:53:29.7808238Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\TerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T19:53:37.4540116Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Commands\\WaitCommand.cs","tool":"edit"}
+{"ts":"2026-05-22T19:53:46.0986577Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WindowsTerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T19:53:51.0517119Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\LinuxTerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T19:53:56.5276431Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\MacTerminalLauncher.cs","tool":"edit"}
+{"ts":"2026-05-22T19:54:08.7069059Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"edit"}
+{"ts":"2026-05-22T19:54:16.1964482Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"edit"}
+{"ts":"2026-05-22T19:54:23.1698614Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\TerminalLauncherTests.cs","tool":"edit"}
+{"ts":"2026-05-22T19:54:45.1814007Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Services\\AutoResumeRearmWaitGateTests.cs","tool":"write"}
+{"ts":"2026-05-22T19:54:50.3547576Z","event":"Bash","tool":"bash","cmd":"git diff --stat -- Commands/ Services/ Models/ Rules/ Utils/ Serialization/ Program.cs Templates/ Dy..."}
+{"ts":"2026-05-22T19:55:01.528319Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.sln -v q --nologo 2\u003E\u00261 | tail -8"}
+{"ts":"2026-05-22T20:03:15.0333502Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.sln -v q --nologo 2\u003E\u00261 | tail -8"}
+{"ts":"2026-05-22T20:03:24.5025504Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/run_tests.py 2\u003E\u00261 | tail -12"}
+{"ts":"2026-05-22T20:03:35.4699527Z","event":"Bash","tool":"bash","cmd":"while ! grep -qE \u0022Tests (passed|failed)|Build FAILED|error MSB\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\cl..."}
+{"ts":"2026-05-22T20:13:52.5308541Z","event":"Bash","tool":"bash","cmd":"tail -14 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\efb948f5-d..."}
+{"ts":"2026-05-22T20:13:56.3208708Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\efb948f5-da83-48c1-81cb-4883b4d0decb\\tasks\\btzz5f95d.output","tool":"read"}
+{"ts":"2026-05-22T20:14:02.3113696Z","event":"Bash","tool":"bash","cmd":"while ! grep -qE \u0022Tests (passed|failed)\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desk..."}
+{"ts":"2026-05-22T20:14:26.3983658Z","event":"Bash","tool":"bash","cmd":"tail -10 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\efb948f5-d..."}
+{"ts":"2026-05-22T20:14:31.8006642Z","event":"Bash","tool":"bash","cmd":"python DynaDocs.Tests/coverage/gap_check.py 2\u003E\u00261 | tail -14"}
+{"ts":"2026-05-22T20:15:03.5583042Z","event":"Bash","tool":"bash","cmd":"while ! grep -qE \u0022RESULT|COVERAGE|error\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desk..."}
+{"ts":"2026-05-22T20:25:07.3879488Z","event":"Bash","tool":"bash","cmd":"tail -16 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\efb948f5-d..."}
+{"ts":"2026-05-22T20:25:17.1171439Z","event":"Bash","tool":"bash","cmd":"git branch --show-current; git add Services/AgentRegistry.cs Services/LinuxTerminalLauncher.cs Servi..."}
+{"ts":"2026-05-22T20:27:26.5211423Z","event":"Bash","tool":"bash","cmd":"git commit -m \u0022$(cat \u003C\u003C\u0027EOF\u0027\nfix(identity): #0207 part 1 \u00D4\u00C7\u00F6 drop doomed launcher-spawned dydo wait ..."}
+{"ts":"2026-05-22T20:35:30.7451464Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show 2\u003E\u00261 | head -15","reason":"Missing general wait"}
+{"ts":"2026-05-22T20:35:40.9391055Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\892ffa5e-msg-f11-regression-fix.md","tool":"read"}
+{"ts":"2026-05-22T20:39:23.0556653Z","event":"Release","agent":"Brian"}

@@ -107,14 +107,15 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Worker_BashWriteToMemoryPath_Allowed()
+    public async Task Worker_DydoCommand_Blocked()
     {
         await InitProjectAsync();
 
-        var result = await GuardWithStdinAsync(WorkerJson("Bash",
-            "{\"command\":\"tee C:/Users/test/.claude/projects/proj/memory/notes.md\"}"));
+        // A worker's dydo command would otherwise mutate the parent's session state
+        var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"dydo agent claim auto\"}"));
 
-        result.AssertSuccess();
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Sub-agents don't run dydo commands");
     }
 
     [Fact]
@@ -129,25 +130,30 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Worker_AuditEvents_CarryWorkerIdentity()
+    public async Task Worker_SystemPath_Blocked()
     {
         await InitProjectAsync();
 
-        var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"echo hello\"}"));
-        result.AssertSuccess();
+        // dydo/_system/** and dydo.json are agent-untouchable system off-limits.
+        // Use ABSOLUTE paths — that's what Claude Code's hook actually delivers.
+        var systemAbs = Path.Combine(TestDir, "dydo", "_system", "audit", "2026", "x.json").Replace('\\', '/');
+        var audit = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{systemAbs}\"}}"));
+        audit.AssertExitCode(2);
 
-        var auditRoot = Path.Combine(TestDir, "dydo", "_system", "audit");
-        var auditContent = Directory.GetFiles(auditRoot, "*", SearchOption.AllDirectories)
-            .Select(File.ReadAllText)
-            .FirstOrDefault(c => c.Contains("wkr-test-1"));
-
-        Assert.NotNull(auditContent);
-        Assert.Contains("\"agent_type\":\"reviewer\"", auditContent.Replace(" ", ""));
+        var configAbs = Path.Combine(TestDir, "dydo.json").Replace('\\', '/');
+        var config = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{configAbs}\"}}"));
+        config.AssertExitCode(2);
     }
 
     #endregion
 
     #region Native Memory Whitelist
+
+    private static string MemoryPath(params string[] tail)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).Replace('\\', '/');
+        return $"{home}/.claude/projects/proj/memory/{string.Join('/', tail)}";
+    }
 
     [Fact]
     public async Task Memory_NoIdentity_ReadAllowed()
@@ -155,7 +161,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         await InitProjectAsync();
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Read\","
-            + "\"tool_input\":{\"file_path\":\"C:/Users/test/.claude/projects/proj/memory/debugging.md\"}}";
+            + $"\"tool_input\":{{\"file_path\":\"{MemoryPath("debugging.md")}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
@@ -167,21 +173,54 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         await InitProjectAsync();
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Write\","
-            + "\"tool_input\":{\"file_path\":\"C:/Users/test/.claude/projects/proj/memory/MEMORY.md\"}}";
+            + $"\"tool_input\":{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
     }
 
-    [Theory]
-    [InlineData("C:/Users/u/.claude/projects/my-proj/memory/MEMORY.md", true)]
-    [InlineData("C:\\Users\\u\\.claude\\projects\\my-proj\\memory\\topics\\api.md", true)]
-    [InlineData("C:/Users/u/.claude/projects/my-proj/other/file.md", false)]
-    [InlineData("dydo/agents/Adele/memory/notes.md", false)]
-    [InlineData("src/Foo.cs", false)]
-    public void IsNativeMemoryPath_MatchesOnlyMemoryDir(string path, bool expected)
+    [Fact]
+    public void IsNativeMemoryPath_RealMemoryDir_Matches()
     {
-        Assert.Equal(expected, GuardCommand.IsNativeMemoryPath(path));
+        Assert.True(GuardCommand.IsNativeMemoryPath(MemoryPath("MEMORY.md")));
+        Assert.True(GuardCommand.IsNativeMemoryPath(MemoryPath("topics", "api.md")));
+    }
+
+    [Fact]
+    public void IsNativeMemoryPath_Traversal_DoesNotMatch()
+    {
+        // '../' escape out of the memory dir must not be treated as native memory
+        Assert.False(GuardCommand.IsNativeMemoryPath(MemoryPath("..", "..", "..", "secret.md")));
+    }
+
+    [Theory]
+    [InlineData("C:/Users/u/.claude/projects/my-proj/memory/MEMORY.md")]  // wrong home root
+    [InlineData("dydo/.claude/projects/x/memory/y.md")]                   // repo-internal lookalike
+    [InlineData("dydo/agents/Adele/memory/notes.md")]
+    [InlineData("src/Foo.cs")]
+    public void IsNativeMemoryPath_NonMemoryPaths_DoNotMatch(string path)
+    {
+        Assert.False(GuardCommand.IsNativeMemoryPath(path));
+    }
+
+    #endregion
+
+    #region Cross-Agent Workspace Protection
+
+    [Fact]
+    public async Task Tier1_CannotWriteAnotherAgentsWorkspace()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        await ReadMustReadsAsync();
+
+        var own = await GuardAsync("edit", "dydo/agents/Adele/plan-x.md");
+        own.AssertSuccess();
+
+        var other = await GuardAsync("edit", "dydo/agents/Brian/plan-x.md");
+        other.AssertExitCode(2);
+        other.AssertStderrContains("another agent's workspace");
     }
 
     #endregion

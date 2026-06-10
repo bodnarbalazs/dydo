@@ -1,0 +1,16 @@
+{
+  "session": "ol-probe",
+  "human": "balazs",
+  "started": "2026-06-10T16:00:53.0817343Z",
+  "git_head": "a883085",
+  "events": [
+    {
+      "ts": "2026-06-10T16:00:53.0803227Z",
+      "event": "Write",
+      "path": "C:/Users/User/Desktop/Projects/DynaDocs/dydo/_system/audit/x.json",
+      "tool": "write",
+      "agent_id": "w1",
+      "agent_type": "reviewer"
+    }
+  ]
+}

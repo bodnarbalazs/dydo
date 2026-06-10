@@ -1,0 +1,2 @@
+{"ts":"2026-06-10T16:00:53.3864717Z","event":"Write","path":"dydo/_system/audit/x.json","tool":"write","agent_id":"w1","agent_type":"reviewer"}
+{"ts":"2026-06-10T16:00:53.6633391Z","event":"Write","path":"C:/Users/User/Desktop/Projects/DynaDocs/dydo/files-off-limits.md","tool":"write","agent_id":"w1","agent_type":"reviewer"}

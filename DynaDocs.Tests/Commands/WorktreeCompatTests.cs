@@ -125,9 +125,11 @@ public class WorktreeCompatTests : IDisposable
     [Fact]
     public void ResolveWorktreePath_AbsoluteNonWorktreePath_PassesThrough()
     {
+        // Non-worktree paths pass through unchanged except for separator normalization
+        // (the '..'-collapse in ResolveWorktreePath operates on forward slashes).
         var absPath = Path.Combine(_testDir, "Commands", "Foo.cs");
         var result = GuardCommand.ResolveWorktreePath(absPath);
-        Assert.Equal(absPath, result);
+        Assert.Equal(absPath.Replace('\\', '/'), result);
     }
 
     [Fact]

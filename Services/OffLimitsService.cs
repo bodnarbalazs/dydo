@@ -28,8 +28,15 @@ public class OffLimitsService : IOffLimitsService
 
     // Hardcoded off-limits patterns for system-critical files that must never be agent-writable,
     // regardless of what's in files-off-limits.md. Prevents self-escalation attacks.
+    // dydo/_system/** (machine-managed state: audit, watchdog, worktree markers, role defs) and
+    // dydo.json (config, incl. security nudges) are agent-untouchable now that per-role RBAC,
+    // which used to gate them, is gone (Decision 024).
     private static readonly (string Pattern, Regex Compiled)[] SystemOffLimits =
-        [("dydo/agents/*/.guard-lift.json", CompileGlobToRegex("dydo/agents/*/.guard-lift.json"))];
+    [
+        ("dydo/agents/*/.guard-lift.json", CompileGlobToRegex("dydo/agents/*/.guard-lift.json")),
+        ("dydo/_system/**", CompileGlobToRegex("dydo/_system/**")),
+        ("dydo.json", CompileGlobToRegex("dydo.json")),
+    ];
 
     public void LoadPatterns(string? basePath = null)
     {
@@ -60,7 +67,10 @@ public class OffLimitsService : IOffLimitsService
 
     public string? IsPathOffLimits(string path)
     {
-        var normalizedPath = PathUtils.NormalizeForPattern(path);
+        // Claude Code delivers absolute tool paths; off-limits patterns are repo-relative.
+        // Relativize to the project root first, or none of the path-anchored patterns
+        // (dydo/_system/**, dydo/agents/*/state.md, …) would ever match in production.
+        var normalizedPath = PathUtils.NormalizeForPattern(RelativizeToProjectRoot(path));
 
         // Hardcoded system patterns — always enforced, not whitelistable
         foreach (var (pattern, compiled) in SystemOffLimits)
@@ -74,6 +84,32 @@ public class OffLimitsService : IOffLimitsService
             return null;
 
         return FindMatchingPattern(normalizedPath, _patterns, _compiledPatterns);
+    }
+
+    /// <summary>
+    /// Maps an absolute tool path back to a project-root-relative path so it can match
+    /// repo-relative off-limits patterns. Worktree paths use the main project root.
+    /// Relative paths and paths outside the project are returned unchanged.
+    /// </summary>
+    private string RelativizeToProjectRoot(string path)
+    {
+        if (!Path.IsPathRooted(path))
+            return path;
+
+        var basePath = _basePath ?? Environment.CurrentDirectory;
+        var root = PathUtils.GetMainProjectRoot(basePath) ?? _configService.GetProjectRoot(basePath);
+        if (root == null)
+            return path;
+
+        var relative = Path.GetRelativePath(root, path);
+        // Outside the project root (GetRelativePath yields a rooted path or a leading '..'
+        // segment): leave it absolute so it simply won't match any repo-relative pattern.
+        // Match '..' as a whole segment only — a dir literally named '..foo' is inside the root.
+        var firstSegment = relative.Replace('\\', '/').Split('/', 2)[0];
+        if (Path.IsPathRooted(relative) || firstSegment == "..")
+            return path;
+
+        return relative;
     }
 
     private static string? FindMatchingPattern(string normalizedPath, List<string> patterns, List<Regex> compiled)

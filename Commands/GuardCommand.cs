@@ -171,22 +171,6 @@ public static partial class GuardCommand
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
     {
-        // Fail-open: a guard that crashes must not lock the agent out of every tool.
-        // Deliberate blocks are exit-code returns, never exceptions, so this only
-        // catches genuine internal errors (corrupt state files, IO races, bugs).
-        try
-        {
-            return ExecuteCore(cliAction, cliPath, cliCommand);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"WARNING: dydo guard internal error, allowing tool call: {ex.Message}");
-            return ExitCodes.Success;
-        }
-    }
-
-    private static int ExecuteCore(string? cliAction, string? cliPath, string? cliCommand)
-    {
         var ctx = ParseInput(cliAction, cliPath, cliCommand);
 
         if (!ctx.HasCliArgs && string.IsNullOrEmpty(ctx.SessionId))
@@ -195,9 +179,39 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        var offLimitsService = new OffLimitsService();
+        // Init/config load fails CLOSED: a guard that can't load its own rules must not
+        // wave tool calls through. Loading off-limits patterns and the registry happens
+        // here, outside the fail-open boundary below.
+        OffLimitsService offLimitsService;
+        AgentRegistry registry;
+        try
+        {
+            offLimitsService = new OffLimitsService();
+            offLimitsService.LoadPatterns();
+            registry = new AgentRegistry();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"BLOCKED: dydo guard could not initialize ({ex.Message}).");
+            return ExitCodes.ToolError;
+        }
+
+        // Decision logic fails OPEN: an unexpected fault evaluating one call must not
+        // brick the agent on every subsequent tool. Deliberate blocks are returns, not throws.
+        try
+        {
+            return Decide(ctx, offLimitsService, registry);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"WARNING: dydo guard internal error, allowing tool call: {ex.Message}");
+            return ExitCodes.Success;
+        }
+    }
+
+    private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, AgentRegistry registry)
+    {
         var bashAnalyzer = new BashCommandAnalyzer();
-        var registry = new AgentRegistry();
         var auditService = new AuditService();
 
         RunDailyValidationIfDue();
@@ -222,29 +236,23 @@ public static partial class GuardCommand
         var searchPath = ResolveWorktreePath(ctx.SearchPath);
         var runInBackground = ctx.RunInBackground;
 
-        // Load off-limits patterns
-        offLimitsService.LoadPatterns();
-
         // ============================================================
         // TIER-2 WORKER LANE (Decision 024): calls carrying agent_id come from
         // sub-agents / workflow workers. Workers are anonymous — no claim, no role
         // state, no staged onboarding, no must-reads. Only the universal layers
-        // apply: off-limits, dangerous-bash patterns, and nudges.
+        // apply: off-limits, dangerous-bash patterns, nudges, and the shared bash
+        // safety checks (git stash/merge, dydo-command handling).
         // ============================================================
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
-            return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, registry, auditService);
+            return HandleWorkerCall(ctx, filePath, searchPath, runInBackground, offLimitsService, bashAnalyzer, registry, auditService);
         }
 
         // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
         // it lives outside the repo and outside dydo's jurisdiction (Decision 024 §5).
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = ActionAuditMap.GetValueOrDefault(action ?? "", AuditEventType.Read),
-                Path = filePath, Tool = toolName
-            });
+            EmitWorktreeAllowIfNeeded();
             return ExitCodes.Success;
         }
 
@@ -353,6 +361,10 @@ public static partial class GuardCommand
 
         // Per-role path RBAC removed (Decision 024 §2): off-limits + nudges are the
         // universal enforcement; coarse scope belongs to native permission profiles.
+        // The one identity-scoped exception that survives: no cross-agent workspace writes.
+        var crossAgent = BlockIfCrossAgentWorkspace(filePath, agent, toolName, null, sessionId, registry, auditService);
+        if (crossAgent != null) return crossAgent.Value;
+
         var eventType = ActionAuditMap.GetValueOrDefault(action ?? "", AuditEventType.Edit);
         LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
@@ -366,139 +378,80 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Native auto-memory paths (~/.claude/projects/&lt;project&gt;/memory/) are outside the
-    /// repo and outside dydo's jurisdiction — always readable and writable.
+    /// repo and outside dydo's jurisdiction — always readable and writable. Anchored to
+    /// the real user profile and requires 'memory' to be the immediate child of the
+    /// project directory, so neither a repo-internal lookalike nor a '..' escape qualifies.
     /// </summary>
     internal static bool IsNativeMemoryPath(string filePath)
     {
-        var normalized = filePath.Replace('\\', '/');
-        var idx = normalized.IndexOf("/.claude/projects/", StringComparison.OrdinalIgnoreCase);
-        return idx >= 0 && normalized.IndexOf("/memory/", idx, StringComparison.OrdinalIgnoreCase) >= 0;
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).Replace('\\', '/').TrimEnd('/');
+        if (string.IsNullOrEmpty(home))
+            return false;
+
+        var normalized = PathUtils.CollapseRelativeSegments(filePath);
+        var root = $"{home}/.claude/projects/";
+        if (!normalized.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var afterProject = normalized[root.Length..];
+        var slash = afterProject.IndexOf('/');
+        if (slash < 0)
+            return false;
+
+        var rest = afterProject[(slash + 1)..];
+        return rest.Equals("memory", StringComparison.OrdinalIgnoreCase)
+            || rest.StartsWith("memory/", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
     /// Tier-2 worker lane: sub-agent / workflow-worker tool calls (agent_id present).
-    /// Applies only the universal layers — off-limits, dangerous bash, nudges — and
-    /// audits under the worker's agent_id/agent_type instead of the parent identity.
+    /// Workers are anonymous (no claim/role/onboarding). Bash reuses the shared
+    /// pipeline (dangerous patterns, nudges, git-safety, off-limits) minus the Tier-1
+    /// identity gates; direct file ops get the universal off-limits check (native
+    /// memory exempt). RBAC and must-reads do not apply.
     /// </summary>
     private static int HandleWorkerCall(
-        GuardContext ctx, string? filePath, string? searchPath,
+        GuardContext ctx, string? filePath, string? searchPath, bool? runInBackground,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry, IAuditService auditService)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
-            return HandleWorkerBash(ctx, offLimitsService, bashAnalyzer, registry, auditService);
+            return HandleBashCommand(ctx.BashCommand!, ctx.SessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
         {
-            var offLimitsPattern = offLimitsService.IsPathOffLimits(checkPath);
-            if (offLimitsPattern != null)
-            {
-                LogAuditEvent(auditService, ctx.SessionId, registry, WorkerEvent(ctx, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked, Path = checkPath, Tool = ctx.ToolName,
-                    BlockReason = $"Off-limits: {offLimitsPattern}"
-                }));
-                Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-                Console.Error.WriteLine($"  Path: {checkPath}");
-                Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                return ExitCodes.ToolError;
-            }
+            var offLimitsBlock = BlockIfPathOffLimits(checkPath, ctx.ToolName, ctx.SessionId, offLimitsService, registry, auditService);
+            if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
-        LogAuditEvent(auditService, ctx.SessionId, registry, WorkerEvent(ctx, new AuditEvent
-        {
-            EventType = ActionAuditMap.GetValueOrDefault(ctx.Action ?? "", AuditEventType.Read),
-            Path = checkPath, Tool = ctx.ToolName
-        }));
-
         EmitWorktreeAllowIfNeeded();
-
         return ExitCodes.Success;
     }
 
-    private static int HandleWorkerBash(
-        GuardContext ctx, IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, IAuditService auditService)
+    /// <summary>
+    /// Shared off-limits check for a direct (non-bash) file/search path. Returns an exit
+    /// code if the path is off-limits, null otherwise. One copy for every lane so the
+    /// block message and audit shape cannot drift.
+    /// </summary>
+    private static int? BlockIfPathOffLimits(
+        string path, string? toolName, string? sessionId,
+        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
     {
-        var command = ctx.BashCommand!;
-        var sessionId = ctx.SessionId;
+        var offLimitsPattern = offLimitsService.IsPathOffLimits(path);
+        if (offLimitsPattern == null)
+            return null;
 
-        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
-        if (isDangerous)
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
         {
-            LogAuditEvent(auditService, sessionId, registry, WorkerEvent(ctx, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {dangerReason}"
-            }));
-            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
-            Console.Error.WriteLine($"  Reason: {dangerReason}");
-            Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
-            return ExitCodes.ToolError;
-        }
-
-        var nudged = CheckNudges(command, sessionId, registry, auditService);
-        if (nudged != null) return nudged.Value;
-
-        var analysis = bashAnalyzer.Analyze(command);
-
-        foreach (var warning in analysis.Warnings)
-            Console.Error.WriteLine($"WARNING: {warning}");
-
-        if (analysis.HasBypassAttempt && analysis.Operations.Any(op =>
-            op.Type is FileOperationType.Write or FileOperationType.Delete
-            or FileOperationType.Move or FileOperationType.Copy
-            or FileOperationType.PermissionChange))
-        {
-            LogAuditEvent(auditService, sessionId, registry, WorkerEvent(ctx, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = "Write with bypass attempt (command substitution/variable expansion)"
-            }));
-            Console.Error.WriteLine("BLOCKED: Command contains bypass patterns (command substitution or variable expansion) "
-                + "that make file operation analysis unreliable.");
-            Console.Error.WriteLine("  Write operations cannot be verified. Use literal paths instead.");
-            return ExitCodes.ToolError;
-        }
-
-        foreach (var op in analysis.Operations)
-        {
-            if (IsNativeMemoryPath(op.Path))
-                continue;
-
-            var offLimitsPattern = offLimitsService.IsPathOffLimits(op.Path);
-            if (offLimitsPattern != null)
-            {
-                LogAuditEvent(auditService, sessionId, registry, WorkerEvent(ctx, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
-                    Command = TruncateCommand(command), BlockReason = $"Off-limits: {offLimitsPattern}"
-                }));
-                Console.Error.WriteLine("BLOCKED: Command references off-limits path.");
-                Console.Error.WriteLine($"  Path: {op.Path}");
-                Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                Console.Error.WriteLine($"  Detected: {op.Type} via {op.Command}");
-                return ExitCodes.ToolError;
-            }
-        }
-
-        LogAuditEvent(auditService, sessionId, registry, WorkerEvent(ctx, new AuditEvent
-        {
-            EventType = AuditEventType.Bash, Tool = "bash", Command = TruncateCommand(command)
-        }));
-
-        EmitWorktreeAllowIfNeeded();
-
-        return ExitCodes.Success;
-    }
-
-    private static AuditEvent WorkerEvent(GuardContext ctx, AuditEvent @event)
-    {
-        @event.AgentId = ctx.AgentId;
-        @event.AgentType = ctx.AgentType;
-        return @event;
+            EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
+            BlockReason = $"Off-limits: {offLimitsPattern}"
+        });
+        Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
+        Console.Error.WriteLine($"  Path: {path}");
+        Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+        Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+        return ExitCodes.ToolError;
     }
 
     private static int? CheckDirectFileOffLimits(
@@ -510,20 +463,7 @@ public static partial class GuardCommand
         if (action == "read" && ShouldBypassOffLimits(filePath, agentForOffLimits))
             return null;
 
-        var offLimitsPattern = offLimitsService.IsPathOffLimits(filePath);
-        if (offLimitsPattern == null)
-            return null;
-
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-            BlockReason = $"Off-limits: {offLimitsPattern}"
-        });
-        Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-        Console.Error.WriteLine($"  Path: {filePath}");
-        Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-        Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
-        return ExitCodes.ToolError;
+        return BlockIfPathOffLimits(filePath, toolName, sessionId, offLimitsService, registry, auditService);
     }
 
     internal static bool ShouldBypassOffLimits(string filePath, AgentState? agent)
@@ -615,20 +555,8 @@ public static partial class GuardCommand
 
         if (!string.IsNullOrEmpty(searchPath))
         {
-            var offLimitsPattern = offLimitsService.IsPathOffLimits(searchPath);
-            if (offLimitsPattern != null)
-            {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked, Path = searchPath, Tool = toolName,
-                    BlockReason = $"Off-limits: {offLimitsPattern}"
-                });
-                Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-                Console.Error.WriteLine($"  Path: {searchPath}");
-                Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
-                return ExitCodes.ToolError;
-            }
+            var offLimitsBlock = BlockIfPathOffLimits(searchPath, toolName, sessionId, offLimitsService, registry, auditService);
+            if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
         LogAuditEvent(auditService, sessionId, registry, new AuditEvent
@@ -651,12 +579,24 @@ public static partial class GuardCommand
         IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry,
         IAuditService auditService,
-        bool? runInBackground = null)
+        bool? runInBackground = null,
+        bool isWorker = false)
     {
         // Handle dydo commands first — they have their own safety checks and shouldn't be
-        // subject to nudge pattern matching on their argument text (fixes false positives)
+        // subject to nudge pattern matching on their argument text (fixes false positives).
+        // Tier-2 workers are blocked outright: dydo identity/dispatch/messaging is the
+        // orchestrator's job, and routing a worker through HandleDydoBashCommand would
+        // resolve and mutate the PARENT's session state (shared session_id).
         if (IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId))
+        {
+            if (isWorker)
+            {
+                Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — identity, dispatch, and");
+                Console.Error.WriteLine("  messaging belong to the top-level orchestrator, not a worker.");
+                return ExitCodes.ToolError;
+            }
             return HandleDydoBashCommand(command, sessionId, registry, auditService, runInBackground);
+        }
 
         // Hardcoded dangerous patterns — security checks before configurable nudges
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
@@ -691,6 +631,12 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
             return ExitCodes.ToolError;
         }
+
+        // Tier-2 workers are anonymous: skip the Tier-1 identity gates (unread
+        // messages / pending state / must-reads) and go straight to the universal
+        // git-safety + off-limits op analysis with no agent context.
+        if (isWorker)
+            return AnalyzeAndCheckBashOperations(command, sessionId, agent: null, offLimitsService, bashAnalyzer, registry, auditService, isWorker: true);
 
         // Non-dydo bash: check agent state, then analyze command
         return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
@@ -920,7 +866,7 @@ public static partial class GuardCommand
     private static int AnalyzeAndCheckBashOperations(
         string command, string? sessionId, AgentState? agent,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, IAuditService auditService)
+        AgentRegistry registry, IAuditService auditService, bool isWorker = false)
     {
         // git stash is only safe in worktrees (isolated stash stack); block otherwise
         if (GitStashRegex().IsMatch(command))
@@ -989,7 +935,7 @@ public static partial class GuardCommand
 
         foreach (var op in analysis.Operations)
         {
-            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService, agent);
+            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService, agent, isWorker);
             if (blocked != null) return blocked.Value;
         }
 
@@ -1006,11 +952,15 @@ public static partial class GuardCommand
     internal static int? CheckBashFileOperation(
         FileOperation op, string command, string? sessionId,
         IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService,
-        AgentState? cachedAgent = null)
+        AgentState? cachedAgent = null, bool isWorker = false)
     {
-        // For reads, apply the same bootstrap/mode file bypass as direct reads (#60)
+        // For reads, apply the same bootstrap/mode file bypass as direct reads (#60).
+        // Native memory is exempt for any op type (out of dydo's jurisdiction).
+        // Tier-2 workers get neither the onboarding bootstrap bypass nor the staged
+        // read gate below — only the universal off-limits check applies to them.
         var agent = cachedAgent ?? registry.GetCurrentAgent(sessionId);
-        var skipOffLimits = op.Type is FileOperationType.Read && ShouldBypassOffLimits(op.Path, agent);
+        var skipOffLimits = IsNativeMemoryPath(op.Path)
+            || (!isWorker && op.Type is FileOperationType.Read && ShouldBypassOffLimits(op.Path, agent));
 
         var offLimitsPattern = skipOffLimits ? null : offLimitsService.IsPathOffLimits(op.Path);
         if (offLimitsPattern != null)
@@ -1027,8 +977,9 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // Staged access control for read operations (mirrors HandleReadOperation)
-        if (op.Type is FileOperationType.Read)
+        // Staged access control for read operations (mirrors HandleReadOperation).
+        // Workers are anonymous and exempt — they never onboard.
+        if (!isWorker && op.Type is FileOperationType.Read)
         {
             if (!IsReadAllowed(op.Path, agent))
             {
@@ -1043,8 +994,48 @@ public static partial class GuardCommand
             }
         }
 
-        // Per-role path RBAC removed (Decision 024 §2) — writes past off-limits are allowed.
+        // Per-role path RBAC removed (Decision 024 §2), but an agent still cannot write
+        // INTO another agent's workspace (cross-agent tampering — plans/notes/inbox).
+        if (IsWriteLikeOp(op.Type))
+            return BlockIfCrossAgentWorkspace(op.Path, agent, "bash", command, sessionId, registry, auditService);
+
         return null;
+    }
+
+    internal static bool IsWriteLikeOp(FileOperationType type) =>
+        type is FileOperationType.Write or FileOperationType.Delete
+            or FileOperationType.Move or FileOperationType.Copy
+            or FileOperationType.PermissionChange;
+
+    /// <summary>
+    /// Off-limits protects each agent's system files (state.md/.session/workflow/modes),
+    /// but the rest of a workspace (plans, notes, inbox) needs an identity-scoped check:
+    /// an agent may write only its own dydo/agents/&lt;self&gt;/ tree, never another's.
+    /// Tier-2 workers (agent == null here) are anonymous and not subject to this.
+    /// </summary>
+    private static int? BlockIfCrossAgentWorkspace(
+        string? filePath, AgentState? agent, string? toolName, string? command,
+        string? sessionId, AgentRegistry registry, IAuditService auditService)
+    {
+        if (agent == null || string.IsNullOrEmpty(filePath) || !IsOtherAgentWorkspace(filePath, agent.Name))
+            return null;
+
+        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
+        {
+            EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
+            Command = command != null ? TruncateCommand(command) : null,
+            BlockReason = "Cross-agent workspace write"
+        });
+        Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} cannot write into another agent's workspace.");
+        Console.Error.WriteLine($"  Path: {filePath}");
+        Console.Error.WriteLine("  Each agent owns only dydo/agents/<self>/. Use dydo msg to coordinate.");
+        return ExitCodes.ToolError;
+    }
+
+    internal static bool IsOtherAgentWorkspace(string filePath, string agentName)
+    {
+        var match = AgentWorkspaceRegex().Match(filePath.Replace('\\', '/'));
+        return match.Success && !string.Equals(match.Groups[1].Value, agentName, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -1224,7 +1215,9 @@ public static partial class GuardCommand
         if (string.IsNullOrEmpty(path))
             return path;
 
-        var resolved = path;
+        // Collapse '.'/'..' lexically first so no traversal sequence reaches a
+        // path-based guard check (off-limits, native-memory, cross-agent).
+        var resolved = PathUtils.CollapseRelativeSegments(path);
 
         // Only resolve relative paths to absolute when CWD is inside a worktree
         if (!Path.IsPathRooted(resolved) && PathUtils.GetMainProjectRoot(Environment.CurrentDirectory) != null)
@@ -1519,6 +1512,9 @@ public static partial class GuardCommand
 
     [GeneratedRegex(@"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase)]
     private static partial Regex AgentWorkflowRegex();
+
+    [GeneratedRegex(@"dydo/agents/([^/]+)/", RegexOptions.IgnoreCase)]
+    private static partial Regex AgentWorkspaceRegex();
 
     [GeneratedRegex(@"dydo/agents/[^/]+/modes/[^/]+\.md$", RegexOptions.IgnoreCase)]
     private static partial Regex AgentModeFileRegex();

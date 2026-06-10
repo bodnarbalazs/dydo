@@ -1686,23 +1686,6 @@ public partial class AgentRegistry : IAgentRegistry
     public string? GetAgentNameFromLetter(char letter) =>
         PresetAgentNames.GetNameFromLetter(letter);
 
-    private string GetRelativePath(string path)
-    {
-        if (Path.IsPathRooted(path))
-        {
-            var projectRoot = _configService.GetProjectRoot(_basePath) ?? _basePath;
-            // In worktrees, use the main project root so paths resolve correctly
-            var mainRoot = PathUtils.GetMainProjectRoot(_basePath);
-            if (mainRoot != null)
-                projectRoot = mainRoot;
-            var relative = Path.GetRelativePath(projectRoot, path);
-            return PathUtils.NormalizePath(relative);
-        }
-        return PathUtils.NormalizePath(path);
-    }
-
-    private static bool MatchesGlob(string path, string pattern) => GlobMatcher.IsMatch(path, pattern);
-
     public void SetDispatchMetadata(string agentName, string? windowId, bool autoClose)
     {
         UpdateAgentState(agentName, s =>

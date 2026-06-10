@@ -22,6 +22,21 @@ public class PathUtilsTests
     }
 
     [Theory]
+    [InlineData("a/b/c", "a/b/c")]
+    [InlineData("a/./b", "a/b")]
+    [InlineData("a/b/../c", "a/c")]
+    [InlineData("a/b/../../c", "c")]
+    [InlineData("C:/x/y/../z", "C:/x/z")]
+    [InlineData("C:\\x\\y\\..\\z", "C:/x/z")]
+    [InlineData("/home/u/.claude/projects/p/memory/../../../../etc/secret", "/home/u/etc/secret")]
+    [InlineData("a/../../escape", "../escape")]      // relative escape kept (can't be mistaken for a trusted root)
+    [InlineData("/a/../../escape", "/escape")]        // rooted '..' at top is dropped
+    public void CollapseRelativeSegments_ResolvesDotDot(string input, string expected)
+    {
+        Assert.Equal(expected, PathUtils.CollapseRelativeSegments(input));
+    }
+
+    [Theory]
     [InlineData("Coding Standards", "coding-standards")]
     [InlineData("CodingStandards", "coding-standards")]
     [InlineData("CODING_STANDARDS", "coding-standards")]

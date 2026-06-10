@@ -32,6 +32,36 @@ public class OffLimitsServiceTests : IDisposable
     #region Loading Patterns
 
     [Fact]
+    public void IsPathOffLimits_MatchesAbsolutePath_ViaRelativization()
+    {
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
+            # Files Off-Limits
+
+            ```
+            dydo/agents/*/state.md
+            ```
+            """);
+
+        var service = new OffLimitsService();
+        service.LoadPatterns(_testDir);
+
+        var relative = "dydo/agents/Brian/state.md";
+        var absolute = Path.Combine(_testDir, "dydo", "agents", "Brian", "state.md");
+
+        // Both the repo-relative and the absolute form (what Claude Code actually sends)
+        // must match the repo-relative pattern.
+        Assert.NotNull(service.IsPathOffLimits(relative));
+        Assert.NotNull(service.IsPathOffLimits(absolute));
+
+        // The hardcoded system patterns must also match absolute paths.
+        Assert.NotNull(service.IsPathOffLimits(Path.Combine(_testDir, "dydo", "_system", "audit", "x.json")));
+        Assert.NotNull(service.IsPathOffLimits(Path.Combine(_testDir, "dydo.json")));
+
+        // A path outside the project root is not off-limits.
+        Assert.Null(service.IsPathOffLimits("C:/elsewhere/dydo/_system/x.json"));
+    }
+
+    [Fact]
     public void LoadPatterns_LoadsFromMarkdownCodeBlock()
     {
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """

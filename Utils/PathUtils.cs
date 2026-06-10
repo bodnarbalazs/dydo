@@ -60,6 +60,47 @@ public static partial class PathUtils
     }
 
     /// <summary>
+    /// Lexically collapses '.' and '..' segments without touching the filesystem,
+    /// preserving the path's form (drive prefix, leading slash, relative-ness).
+    /// A '..' that would escape a relative root is kept verbatim so the result can
+    /// never be mistaken for a path under a trusted root. Used to defeat
+    /// traversal evasion ('.../memory/../../secret') before any path-based guard check.
+    /// </summary>
+    public static string CollapseRelativeSegments(string path)
+    {
+        var p = path.Replace('\\', '/');
+
+        var prefix = "";
+        if (p.Length >= 2 && char.IsLetter(p[0]) && p[1] == ':')
+        {
+            prefix = p[..2];
+            p = p[2..];
+        }
+
+        var rooted = p.StartsWith('/');
+        var stack = new List<string>();
+        foreach (var seg in p.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (seg == ".")
+                continue;
+            if (seg == "..")
+            {
+                if (stack.Count > 0 && stack[^1] != "..")
+                    stack.RemoveAt(stack.Count - 1);
+                else if (!rooted)
+                    stack.Add("..");
+                // rooted '..' at the top is dropped — can't escape the root
+            }
+            else
+            {
+                stack.Add(seg);
+            }
+        }
+
+        return prefix + (rooted ? "/" : "") + string.Join('/', stack);
+    }
+
+    /// <summary>
     /// Rewrites an absolute path inside a git worktree back to the equivalent main-project path.
     /// Detects the worktree marker <c>dydo/_system/.local/worktrees/</c>, identifies the worktree
     /// root via <c>dydo.json</c> presence, and remaps to the main-project equivalent.

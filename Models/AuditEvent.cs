@@ -80,6 +80,20 @@ public class AuditEvent
     public int? ExitCode { get; set; }
 
     /// <summary>
+    /// Sub-agent instance id (Tier-2 worker calls only). Events without it are Tier-1.
+    /// </summary>
+    [JsonPropertyName("agent_id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AgentId { get; set; }
+
+    /// <summary>
+    /// Sub-agent type, which carries the worker's role (Tier-2 worker calls only).
+    /// </summary>
+    [JsonPropertyName("agent_type")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AgentType { get; set; }
+
+    /// <summary>
     /// The role set (for Role events).
     /// </summary>
     [JsonPropertyName("role")]

@@ -89,11 +89,6 @@ public interface IAgentRegistry
     AgentSession? GetSession(string agentName);
 
     /// <summary>
-    /// Checks if a path is allowed for the current agent's role.
-    /// </summary>
-    bool IsPathAllowed(string? sessionId, string path, string action, out string error);
-
-    /// <summary>
     /// Validates that an agent name is valid.
     /// </summary>
     bool IsValidAgentName(string name);

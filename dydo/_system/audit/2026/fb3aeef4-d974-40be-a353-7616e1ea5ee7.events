@@ -1,0 +1,16 @@
+{"ts":"2026-05-23T14:35:31.4907499Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\workflow.md","tool":"read"}
+{"ts":"2026-05-23T14:35:36.3069319Z","event":"Claim","agent":"Emma","recovery_kind":"fresh"}
+{"ts":"2026-05-23T14:35:43.0183504Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\49cc7e45-spike-f11-plain.md","tool":"read","reason":"No role set"}
+{"ts":"2026-05-23T14:35:45.875853Z","event":"Role","role":"co-thinker","task":"spike-f11-plain"}
+{"ts":"2026-05-23T14:35:48.754961Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\49cc7e45-spike-f11-plain.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-23T14:35:51.2321944Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\co-thinker.md","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-23T14:35:57.4769697Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-05-23T14:36:03.1053088Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\49cc7e45-spike-f11-plain.md","tool":"read"}
+{"ts":"2026-05-23T14:37:45.6750989Z","event":"Claim","agent":"Emma","recovery_kind":"auto","resume_predecessor_session":"fb3aeef4-d974-40be-a353-7616e1ea5ee7","resume_attempts_at_claim":1}
+{"ts":"2026-05-23T14:37:45.7030925Z","event":"Blocked","tool":"bash","cmd":"dydo whoami","reason":"Missing general wait"}
+{"ts":"2026-05-23T16:29:53.8115181Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\fb3aeef4-d974-40be-a353-7616e1ea5ee7\\tasks\\bj7k9livl.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-23T16:30:00.0261367Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\fb3aeef4-d974-40be-a353-7616e1ea5ee7\\tasks\\bj7k9livl.output","tool":"read"}
+{"ts":"2026-05-23T16:30:07.6842929Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\7976617e-msg-spike-f11-plain.md","tool":"read"}
+{"ts":"2026-05-23T16:31:23.6150303Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\fb3aeef4-d974-40be-a353-7616e1ea5ee7\\tasks\\ben4uze7o.output","tool":"read"}
+{"ts":"2026-05-23T16:31:31.4905911Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\inbox\\062e32b4-msg-spike-f11-plain.md","tool":"read"}
+{"ts":"2026-05-23T16:32:17.0582236Z","event":"Release","agent":"Emma"}

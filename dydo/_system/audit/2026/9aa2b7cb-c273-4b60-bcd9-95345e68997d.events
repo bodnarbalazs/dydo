@@ -75,3 +75,10 @@
 {"ts":"2026-05-23T11:37:14.2203344Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\tasks\\f11-guard-side-replan.md","tool":"edit"}
 {"ts":"2026-05-23T11:54:33.7784062Z","event":"Blocked","tool":"bash","cmd":"dydo inbox show","reason":"Missing general wait"}
 {"ts":"2026-05-23T11:54:42.6525452Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\e365e3f9-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-23T14:33:09.0144146Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\9aa2b7cb-c273-4b60-bcd9-95345e68997d\\tasks\\bna7koinj.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-23T14:33:16.5591361Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\9aa2b7cb-c273-4b60-bcd9-95345e68997d\\tasks\\bna7koinj.output","tool":"read"}
+{"ts":"2026-05-23T14:34:32.2228281Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\9aa2b7cb-c273-4b60-bcd9-95345e68997d\\tasks\\bo828739n.output","tool":"read"}
+{"ts":"2026-05-23T14:44:19.5372616Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\70ebe589-msg-f11-guard-side-impl.md","tool":"read"}
+{"ts":"2026-05-23T15:56:25.86152Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\log-f11-guard-side-replan.md","tool":"edit"}
+{"ts":"2026-05-23T15:56:29.3300989Z","event":"Release","agent":"Charlie"}
+{"ts":"2026-05-23T16:19:16.1592587Z","event":"Claim","agent":"Charlie","recovery_kind":"fresh"}

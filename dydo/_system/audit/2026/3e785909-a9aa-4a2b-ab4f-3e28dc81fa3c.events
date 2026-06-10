@@ -167,3 +167,53 @@
 {"ts":"2026-05-23T14:24:12.8620645Z","event":"Bash","tool":"bash","cmd":"grep -rn \u0022dotnet pack\\|dotnet tool install\\|dotnet publish\\|nupkg\u0022 .github/ 2\u003E\u00261 | head -10"}
 {"ts":"2026-05-23T14:29:21.4071787Z","event":"Bash","tool":"bash","cmd":"grep -E \u0022Version|VersionPrefix\u0022 DynaDocs.csproj 2\u003E\u00261 | head -5"}
 {"ts":"2026-05-23T14:29:26.7100559Z","event":"Blocked","path":"nupkg","tool":"bash","cmd":"rm -rf nupkg 2\u003E\u00261; dotnet pack DynaDocs.csproj -c Release -o nupkg 2\u003E\u00261 | tail -15","reason":"Agent Dexter (code-writer) cannot delete nupkg. Code-writer role can only edit configured source/test paths and own workspace."}
+{"ts":"2026-05-23T14:29:30.0189685Z","event":"Bash","tool":"bash","cmd":"dotnet pack DynaDocs.csproj -c Release -o nupkg 2\u003E\u00261 | tail -15"}
+{"ts":"2026-05-23T14:29:42.5021337Z","event":"Bash","tool":"bash","cmd":"dotnet tool update -g dydo --add-source ./nupkg --no-cache --version 1.5.0 2\u003E\u00261 | tail -10"}
+{"ts":"2026-05-23T14:33:29.2010326Z","event":"Blocked","tool":"bash","cmd":"taskkill /IM dydo.exe /F 2\u003E\u00261 | Out-String","reason":"Missing general wait"}
+{"ts":"2026-05-23T14:33:40.4479974Z","event":"Bash","tool":"bash","cmd":"taskkill /IM dydo.exe /F 2\u003E\u00261 | Out-String"}
+{"ts":"2026-05-23T14:35:03.2799579Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"grep"}
+{"ts":"2026-05-23T14:35:07.2305233Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"read"}
+{"ts":"2026-05-23T14:36:24.9299738Z","event":"Bash","tool":"bash","cmd":"sleep 3 \u0026\u0026 cat \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e78..."}
+{"ts":"2026-05-23T14:36:33.0976193Z","event":"Bash","tool":"bash","cmd":"cat \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e785909-a9aa-4..."}
+{"ts":"2026-05-23T14:36:53.2732168Z","event":"Blocked","path":"dydo/agents/Emma/.session","tool":"bash","cmd":"cat dydo/agents/Emma/.session 2\u003E\u00261; echo \u0022---\u0022; cat dydo/agents/Emma/state.md 2\u003E\u00261 | head -20","reason":"Off-limits: dydo/agents/*/.session"}
+{"ts":"2026-05-23T14:36:57.3585054Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\state.md","tool":"read"}
+{"ts":"2026-05-23T14:37:05.2538568Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\.session","tool":"read"}
+{"ts":"2026-05-23T14:37:12.5595119Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Emma/.waiting/ 2\u003E\u00261; echo \u0022---watchdog log size BEFORE kill---\u0022; stat -c %s dydo/_sys..."}
+{"ts":"2026-05-23T14:37:26.2732687Z","event":"Bash","tool":"bash","cmd":"Get-Process -Id 51168 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Forma..."}
+{"ts":"2026-05-23T14:37:37.3882908Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"grep"}
+{"ts":"2026-05-23T14:37:41.8024881Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\Services\\WatchdogService.cs","tool":"grep"}
+{"ts":"2026-05-23T14:37:48.1130064Z","event":"Bash","tool":"bash","cmd":"Get-Process -Name claude -ErrorAction SilentlyContinue | Select-Object Id,StartTime | Sort-Object St..."}
+{"ts":"2026-05-23T14:38:17.8883499Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\.session","tool":"read"}
+{"ts":"2026-05-23T14:38:31.5333111Z","event":"Blocked","path":"dydo/agents/Emma/state.md","tool":"bash","cmd":"echo \u0022---(b) wait marker present:---\u0022; ls dydo/agents/Emma/.waiting/ 2\u003E\u00261\necho \u0022---(c) state.md resu...","reason":"Off-limits: dydo/agents/*/state.md"}
+{"ts":"2026-05-23T14:38:35.5193268Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Emma\\state.md","tool":"read"}
+{"ts":"2026-05-23T14:38:44.0845303Z","event":"Bash","tool":"bash","cmd":"echo \u0022---(b) wait marker:---\u0022; ls dydo/agents/Emma/.waiting/ 2\u003E\u00261\necho \u0022---(d) audit dir for Emma\u0027s ..."}
+{"ts":"2026-05-23T14:38:52.3288108Z","event":"Bash","tool":"bash","cmd":"echo \u0022---(d) recovery_kind=auto Claim event:---\u0022\ngrep -o \u0022recovery_kind[^,]*\u0022 dydo/_system/audit/202..."}
+{"ts":"2026-05-23T14:44:49.2070747Z","event":"Bash","tool":"bash","cmd":"cat \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e785909-a9aa-4..."}
+{"ts":"2026-05-23T14:45:02.2032603Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Frank/inbox/ 2\u003E\u00261"}
+{"ts":"2026-05-23T14:45:08.8941627Z","event":"Bash","tool":"bash","cmd":"Get-Process -Name claude -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Date)...."}
+{"ts":"2026-05-23T14:47:16.4971365Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\inbox\\b0c3f13e-msg-f11-guard-side-impl.md","tool":"read"}
+{"ts":"2026-05-23T14:47:34.7190586Z","event":"Bash","tool":"bash","cmd":"Get-Process -Name claude -ErrorAction SilentlyContinue | Sort-Object StartTime -Descending | Select-..."}
+{"ts":"2026-05-23T14:48:56.8912481Z","event":"Blocked","path":"dydo/agents/Frank/.pending-session","tool":"bash","cmd":"cat dydo/agents/Frank/.pending-session 2\u003E\u00261; echo \u0022---\u0022; ls dydo/agents/Frank/ 2\u003E\u00261","reason":"Off-limits: dydo/agents/*/.pending-session"}
+{"ts":"2026-05-23T14:49:05.1438659Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Frank/ 2\u003E\u00261"}
+{"ts":"2026-05-23T14:50:06.5403097Z","event":"Bash","tool":"bash","cmd":"cat \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e785909-a9aa-4..."}
+{"ts":"2026-05-23T14:50:30.0206195Z","event":"Bash","tool":"bash","cmd":"Get-Process -Name claude -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Date)...."}
+{"ts":"2026-05-23T14:50:49.5447138Z","event":"Bash","tool":"bash","cmd":"ls \u0022/c/Users/User/Desktop/Projects/DynaDocs/dydo/_system/.local/worktrees/\u0022 2\u003E\u00261 | tail -10"}
+{"ts":"2026-05-23T15:30:14.173803Z","event":"Bash","tool":"bash","cmd":"cat \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e785909-a9aa-4..."}
+{"ts":"2026-05-23T15:30:19.2631175Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Grace\\.session","tool":"read"}
+{"ts":"2026-05-23T15:32:39.7361312Z","event":"Bash","tool":"bash","cmd":"cat \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e785909-a9aa-4..."}
+{"ts":"2026-05-23T15:32:51.5609098Z","event":"Bash","tool":"bash","cmd":"echo \u0022---PRE-KILL snapshot:---\u0022\necho \u0022watchdog.log size: $(stat -c %s dydo/_system/.local/watchdog.l..."}
+{"ts":"2026-05-23T15:33:05.7271909Z","event":"Bash","tool":"bash","cmd":"ls dydo/_system/.local/worktrees/spike-f11-wt/dydo/_system/audit/2026/ 2\u003E\u00261 | grep \u00220466af0e\u0022 2\u003E\u00261"}
+{"ts":"2026-05-23T15:33:10.5650848Z","event":"Bash","tool":"bash","cmd":"Get-Process -Id 56408 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table; S..."}
+{"ts":"2026-05-23T15:33:32.5134997Z","event":"Bash","tool":"bash","cmd":"until grep -q \u00220466af0e-5ff2-4be5-b081-d21a064ad9f0.*resume_outcome\u0022 dydo/_system/.local/watchdog.lo..."}
+{"ts":"2026-05-23T15:35:41.7742639Z","event":"Bash","tool":"bash","cmd":"tail -20 dydo/_system/.local/watchdog.log | grep -E \u0022Grace|0466af0e\u0022 | tail -10"}
+{"ts":"2026-05-23T15:35:55.6981729Z","event":"Bash","tool":"bash","cmd":"stat -c \u0022%s %y\u0022 \u0022/c/Users/User/AppData/Local/Temp/claude/C--Users-User-Desktop-Projects-DynaDocs/3e7..."}
+{"ts":"2026-05-23T15:37:12.5663969Z","event":"Bash","tool":"bash","cmd":"git diff --stat Commands/ Services/ DynaDocs.Tests/ 2\u003E\u00261 | grep -v \u0022warning:\u0022; echo \u0022---untracked te..."}
+{"ts":"2026-05-23T15:38:18.9174593Z","event":"Bash","tool":"bash","cmd":"git diff --stat Commands/GuardCommand.cs Services/AgentRegistry.cs Services/RecoveryClassifier.cs Dy..."}
+{"ts":"2026-05-23T15:38:23.6314555Z","event":"Bash","tool":"bash","cmd":"git diff --stat Commands/GuardCommand.cs Services/AgentRegistry.cs Services/RecoveryClassifier.cs Dy..."}
+{"ts":"2026-05-23T15:38:28.22062Z","event":"Bash","tool":"bash","cmd":"git diff --stat HEAD -- Commands/GuardCommand.cs Services/AgentRegistry.cs Services/RecoveryClassifi..."}
+{"ts":"2026-05-23T15:38:32.059032Z","event":"Bash","tool":"bash","cmd":"git status -s Commands/ Services/ DynaDocs.Tests/ DynaDocs.csproj 2\u003E\u00261"}
+{"ts":"2026-05-23T15:38:35.1808373Z","event":"Bash","tool":"bash","cmd":"git status -s | head -20"}
+{"ts":"2026-05-23T15:38:40.7039142Z","event":"Bash","tool":"bash","cmd":"git status 2\u003E\u00261 | head -30"}
+{"ts":"2026-05-23T15:38:48.3012669Z","event":"Bash","tool":"bash","cmd":"git log --oneline -10"}
+{"ts":"2026-05-23T15:38:53.0153373Z","event":"Bash","tool":"bash","cmd":"git show d23eb9d --stat 2\u003E\u00261 | head -30"}
+{"ts":"2026-05-23T15:41:26.2329931Z","event":"Release","agent":"Dexter"}

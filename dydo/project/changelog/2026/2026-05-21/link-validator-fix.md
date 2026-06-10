@@ -29,7 +29,7 @@ Plan deviations:
 - TestData fixture is staged-and-now-committed (run_tests.py copies dirty files into the worktree, but untracked directories surface only as a single ?? entry in porcelain output, so the first test run could not see them; staging and committing makes the fixture survive both run_tests.py and bare dotnet test).
 
 Known pre-existing whole-tree errors not caused by this slice (unchanged from pre-fix in count, but error message text now correctly reads 'Broken link: #section' instead of the empty 'Broken link: '):
-- project/issues/_index.md:80, project/issues/0186-*:11,17, project/issues/0188-*:19 — all '#section' anchor-only links inside literal '[label](#section)' patterns documenting the bug.
+- project/issues/_index.md:80, project/issues/0186-*:11,17, project/issues/0188-*:19 — all `#section` anchor-only links inside literal `[label](#section)` patterns documenting the bug.
 - project/tasks/identity-hijack-fix-plan.md:15 — '../../agents/Dexter/plan-identity-hijack-fix.md' (cross-tree to agents/, which is excluded from allDocs).
 None of these are in code-writer writable paths; a docs-writer follow-up should backtick-escape the issue-file patterns or otherwise neutralise the noise.
 
@@ -66,7 +66,7 @@ Plan deviations:
 - TestData fixture is staged-and-now-committed (run_tests.py copies dirty files into the worktree, but untracked directories surface only as a single ?? entry in porcelain output, so the first test run could not see them; staging and committing makes the fixture survive both run_tests.py and bare dotnet test).
 
 Known pre-existing whole-tree errors not caused by this slice (unchanged from pre-fix in count, but error message text now correctly reads 'Broken link: #section' instead of the empty 'Broken link: '):
-- project/issues/_index.md:80, project/issues/0186-*:11,17, project/issues/0188-*:19 — all '#section' anchor-only links inside literal '[label](#section)' patterns documenting the bug.
+- project/issues/_index.md:80, project/issues/0186-*:11,17, project/issues/0188-*:19 — all `#section` anchor-only links inside literal `[label](#section)` patterns documenting the bug.
 - project/tasks/identity-hijack-fix-plan.md:15 — '../../agents/Dexter/plan-identity-hijack-fix.md' (cross-tree to agents/, which is excluded from allDocs).
 None of these are in code-writer writable paths; a docs-writer follow-up should backtick-escape the issue-file patterns or otherwise neutralise the noise.
 

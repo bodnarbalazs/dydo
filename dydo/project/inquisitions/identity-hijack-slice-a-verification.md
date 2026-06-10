@@ -1,9 +1,11 @@
 ---
-area: identity-hijack-slice-a-verification
+area: project
 type: inquisition
 ---
 
 # Inquisition — identity-hijack Slice A (post-implementation verification)
+
+Post-implementation QA of the identity-hijack Slice A merge into `master` — confirms whether the DYDO_AGENT hijack class (F1/F8/F10/F11/F12/F13) is closed flawlessly before release. Scope covers the four shipped commits across `Services/`, `Commands/`, and the touched test files, gated against the identity test subset and the full suite. Findings drive merge/no-merge guidance and identify follow-up follow-ups, if any.
 
 ## 2026-05-21 — Dexter
 

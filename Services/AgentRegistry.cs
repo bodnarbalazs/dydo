@@ -272,7 +272,7 @@ public partial class AgentRegistry : IAgentRegistry
                 sessionId, GetCurrentAgent, GetSession);
             if (!decision.ShouldRefresh) return;
             RefreshResumedAgentSessionUnderLock(
-                sessionId!, decision.AgentName!, decision.Session!, decision.LivePid);
+                sessionId!, decision.AgentName!, decision.LivePid);
         }
         catch
         {
@@ -286,7 +286,7 @@ public partial class AgentRegistry : IAgentRegistry
     // double-check under the lock, write the live PID, reset bookkeeping, emit audit.
     // Separated from the entry point so each half stays under the gap_check CRAP threshold.
     private void RefreshResumedAgentSessionUnderLock(
-        string sessionId, string agentName, AgentSession session, int livePid)
+        string sessionId, string agentName, int livePid)
     {
         // 6. bounded-retry lock acquisition (3× / 50 ms) — TryAcquireLock is fail-fast.
         //    A once-per-resume hot path can afford ~150 ms; if a process is genuinely
@@ -1675,95 +1675,9 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
-    public bool IsPathAllowed(string? sessionId, string path, string action, out string error)
-    {
-        error = string.Empty;
-
-        var agent = GetCurrentAgent(sessionId);
-        if (agent == null)
-        {
-            error = "No agent identity assigned to this session. Run 'dydo agent claim auto' first.";
-            return false;
-        }
-
-        if (string.IsNullOrEmpty(agent.Role))
-        {
-            error = $"Agent {agent.Name} has no role set. Run 'dydo agent role <role>' first.";
-            return false;
-        }
-
-        // Normalize path
-        var relativePath = GetRelativePath(path);
-
-        // Check read-only first
-        foreach (var pattern in agent.ReadOnlyPaths)
-        {
-            if (pattern == "**" || MatchesGlob(relativePath, pattern))
-            {
-                // Check if explicitly allowed
-                var isAllowed = agent.WritablePaths.Any(ap => MatchesGlob(relativePath, ap));
-                if (!isAllowed)
-                {
-                    error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role, relativePath)}";
-                    return false;
-                }
-            }
-        }
-
-        // If no writable paths, nothing is allowed
-        if (agent.WritablePaths.Count == 0)
-        {
-            error = $"Agent {agent.Name} ({agent.Role}) has no write permissions.";
-            return false;
-        }
-
-        // Check if path matches any writable pattern
-        var allowed = agent.WritablePaths.Any(pattern => MatchesGlob(relativePath, pattern));
-        if (!allowed)
-        {
-            error = $"Agent {agent.Name} ({agent.Role}) cannot {action} {relativePath}. {GetRoleRestrictionMessage(agent.Role, relativePath)}";
-            return false;
-        }
-
-        return true;
-    }
-
     public RoleDefinition? GetRoleDefinition(string roleName)
     {
         return _roleDefinitions.GetValueOrDefault(roleName);
-    }
-
-    private string GetRoleRestrictionMessage(string role, string? relativePath = null)
-    {
-        var pathNudge = relativePath != null ? GetPathSpecificNudge(relativePath) : null;
-        if (pathNudge != null)
-            return pathNudge;
-
-        return _roleDefinitions.TryGetValue(role, out var def) ? def.DenialHint ?? "" : "";
-    }
-
-    /// <summary>
-    /// Returns a targeted nudge for known "wrong destination" paths, or null if no special case applies.
-    /// </summary>
-    private static string? GetPathSpecificNudge(string relativePath)
-    {
-        if (relativePath.StartsWith(".claude/plans/", StringComparison.OrdinalIgnoreCase) ||
-            relativePath.StartsWith(".claude\\plans\\", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Dydo agents don't use Claude Code's built-in plans. "
-                 + "Switch to planner mode ('dydo agent role planner --task <name>') "
-                 + "and write your plan to your workspace (dydo/agents/<you>/plan-<task>.md).";
-        }
-
-        if (relativePath.StartsWith("dydo/project/issues/", StringComparison.OrdinalIgnoreCase) ||
-            relativePath.StartsWith("dydo\\project\\issues\\", StringComparison.OrdinalIgnoreCase))
-        {
-            return "Issue registry writes are reserved for co-thinker and orchestrator roles. Either:\n"
-                 + "  - Raise the issue to the human directly, OR\n"
-                 + "  - If you were dispatched by an orchestrator, send them a `dydo msg` so they can raise it to the human.";
-        }
-
-        return null;
     }
 
     public bool IsValidAgentName(string name) =>

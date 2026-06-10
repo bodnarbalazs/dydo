@@ -59,42 +59,6 @@ public class GuardLiftTests : IntegrationTestBase
         result.AssertStderrContains("off-limits");
     }
 
-    [Fact]
-    public async Task Guard_UnliftedAgent_BlockedByRBAC()
-    {
-        await SetupClaimedAgent();
-        // No lift — should be blocked by RBAC for dydo/** path
-        var result = await GuardAsync("write", "dydo/some-file.md");
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Fact]
-    public async Task Guard_ExpiredLift_BlockedByRBAC()
-    {
-        await SetupClaimedAgent();
-
-        // Create an already-expired lift marker in the agent workspace
-        var markerPath = Path.Combine(TestDir, "dydo", "agents", "Adele", ".guard-lift.json");
-        var marker = new DynaDocs.Models.GuardLiftMarker
-        {
-            Agent = "Adele",
-            LiftedBy = "testuser",
-            LiftedAt = DateTime.UtcNow.AddMinutes(-10),
-            ExpiresAt = DateTime.UtcNow.AddMinutes(-5) // expired 5 min ago
-        };
-        var json = System.Text.Json.JsonSerializer.Serialize(marker,
-            DynaDocs.Serialization.DydoDefaultJsonContext.Default.GuardLiftMarker);
-        File.WriteAllText(markerPath, json);
-
-        var result = await GuardAsync("write", "dydo/some-file.md");
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-
-        // Marker file should have been cleaned up
-        Assert.False(File.Exists(markerPath));
-    }
-
     // ================================================================
     // Guard pipeline: bash file operations with lifted guard
     // ================================================================

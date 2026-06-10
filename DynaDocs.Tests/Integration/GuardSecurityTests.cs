@@ -586,19 +586,8 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
-    // CheckBashFileOperation coverage — bash write operations vs RBAC
+    // CheckBashFileOperation coverage — bash file operations
     // ================================================================
-
-    [Fact]
-    public async Task BashWriteOperation_BlockedByRbac()
-    {
-        await SetupClaimedAgent();
-
-        // Write to a path outside code-writer permissions via bash
-        var result = await GuardWithStdinAsync(
-            BashJson("tee dydo/some-protected-file.md"));
-        result.AssertExitCode(2);
-    }
 
     [Fact]
     public async Task BashReadOperation_AllowedForClaimedAgent()

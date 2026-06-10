@@ -110,21 +110,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("dydo agent role <role> --task <task-name>");
     }
 
-    [Fact]
-    public async Task Guard_RoleViolation_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("reviewer"); // Reviewers can only read, not write
-        await ReadMustReadsAsync();
-
-        // Try to write outside allowed paths
-        var result = await GuardAsync("edit", "src/code.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
     #endregion
 
     #region Stage 0 - No Identity (Bootstrap Only)
@@ -1174,8 +1159,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStderrContains("NOTICE");
-        result.AssertStderrContains("dydo dispatch");
-        result.AssertStderrContains("subagent inherits");
+        result.AssertStderrContains("Tier-2 worker lane");
     }
 
     [Fact]
@@ -1190,8 +1174,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStderrContains("NOTICE");
-        result.AssertStderrContains("dydo dispatch");
-        result.AssertStderrContains("subagent inherits");
+        result.AssertStderrContains("Tier-2 worker lane");
     }
 
     [Fact]

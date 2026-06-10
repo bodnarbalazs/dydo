@@ -36,11 +36,12 @@ internal static class RecoveryClassifier
     /// <summary>
     /// Decision returned by <see cref="ShouldRefreshResumedPid"/>. <c>ShouldRefresh=false</c>
     /// means one of the trigger clauses is unmet and the caller must return without touching
-    /// .session. When true, <c>AgentName</c>, <c>Session</c>, and <c>LivePid</c> carry the
-    /// resolved values the under-lock refresh needs.
+    /// .session. When true, <c>AgentName</c> and <c>LivePid</c> carry the resolved values the
+    /// under-lock refresh needs — the pre-lock session snapshot is intentionally not carried
+    /// because the under-lock half re-reads .session to defeat the race with a concurrent winner.
     /// </summary>
     internal readonly record struct ResumedPidRefreshDecision(
-        bool ShouldRefresh, string? AgentName, AgentSession? Session, int LivePid);
+        bool ShouldRefresh, string? AgentName, int LivePid);
 
     /// <summary>
     /// #0207 part 2 trigger predicate (steps 1–5 of the plan's RefreshResumedAgentSession
@@ -74,7 +75,7 @@ internal static class RecoveryClassifier
         var livePid = ProcessUtils.FindClaudeAncestor();
         if (livePid is not int live) return default;
 
-        return new ResumedPidRefreshDecision(true, agent.Name, session, live);
+        return new ResumedPidRefreshDecision(true, agent.Name, live);
     }
 
     /// <summary>

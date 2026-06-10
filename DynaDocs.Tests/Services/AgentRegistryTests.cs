@@ -539,15 +539,6 @@ public class AgentRegistryTests : IDisposable
         Assert.Contains("No agent identity assigned", error);
     }
 
-    [Fact]
-    public void IsPathAllowed_FailsWithError_WhenNoAgentClaimed()
-    {
-        var result = _registry.IsPathAllowed(null, "src/file.cs", "edit", out var error);
-
-        Assert.False(result);
-        Assert.Contains("No agent identity assigned", error);
-    }
-
     #region Agent Management Tests
 
     private void SetupConfig(string[] agents, Dictionary<string, string[]> assignments)
@@ -1554,23 +1545,6 @@ public class AgentRegistryTests : IDisposable
         // Switch again — should still succeed (TaskRoleHistory persists, not just current role)
         var result3 = registry.SetRole("test-session-nudge14", "planner", "my-task", out var err3);
         Assert.True(result3, $"Second switch after fulfilling dispatched role should also succeed: {err3}");
-    }
-
-    [Fact]
-    public void IsPathAllowed_NudgesToPlannerMode_WhenWritingToClaudePlans()
-    {
-        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
-        CreateSessionFile("Adele", "test-session-plans");
-
-        var registry = new AgentRegistry(_testDir);
-        registry.SetRole("test-session-plans", "reviewer", "some-task", out _);
-
-        var result = registry.IsPathAllowed("test-session-plans", ".claude/plans/toasty-stirring-allen.md", "write", out var error);
-
-        Assert.False(result);
-        Assert.Contains("planner mode", error);
-        Assert.Contains("workspace", error);
-        Assert.DoesNotContain("Reviewer role can only edit own workspace", error);
     }
 
     #endregion

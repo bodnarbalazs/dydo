@@ -225,7 +225,6 @@ public class CheckAgentValidatorTests : IDisposable
         public List<AgentState> GetFreeAgents() => [];
         public List<AgentState> GetFreeAgentsForHuman(string human) => [];
         public AgentState? GetCurrentAgent(string? sessionId) => null;
-        public bool IsPathAllowed(string? sessionId, string path, string action, out string error) { error = ""; return true; }
         public bool IsValidAgentName(string name) => true;
         public string? GetAgentNameFromLetter(char letter) => null;
         public string? GetCurrentHuman() => "tester";

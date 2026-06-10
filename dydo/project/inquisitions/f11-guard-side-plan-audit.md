@@ -1,5 +1,5 @@
 ---
-area: f11-guard-side-plan-audit
+area: project
 type: inquisition
 ---
 

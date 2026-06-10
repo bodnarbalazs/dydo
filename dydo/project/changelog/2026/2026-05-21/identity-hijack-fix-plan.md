@@ -10,7 +10,7 @@ Plan the implementation slice that closes the identity-hijack bug class (F1–F1
 
 Deliverable: a concrete implementation plan a code-writer can execute. Includes slice decomposition (bundling decisions with justifications), files-per-slice, test list, F1 fix-shape recommendation with code-read justification, verification recipe, worktree decision, coordination notes, and open questions for the user.
 
-Plan: [dydo/agents/Dexter/plan-identity-hijack-fix.md](../../agents/Dexter/plan-identity-hijack-fix.md)
+Plan (archived): `dydo/agents/Dexter/archive/20260519-175829/plan-identity-hijack-fix.md`
 
 ## Progress
 

@@ -182,3 +182,26 @@
 {"ts":"2026-05-23T11:53:35.880151Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\80699ad2-msg-f11-guard-side-plan-audit-ruling.md","tool":"read"}
 {"ts":"2026-05-23T11:55:42.653696Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\01235fb7-msg-f11-guard-side-replan.md","tool":"read"}
 {"ts":"2026-05-23T13:21:37.0213063Z","event":"Bash","tool":"bash","cmd":"git log --oneline -8 2\u003E\u00261; echo \u0022=== branch ===\u0022; git branch --show-current 2\u003E\u00261"}
+{"ts":"2026-05-23T14:33:15.1908061Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\6ca676fd-c56c-40a2-8a8c-756f1efeed3d\\tasks\\bgcfqq1at.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-05-23T14:33:15.4679129Z","event":"Blocked","tool":"bash","cmd":"dydo whoami 2\u003E\u00261","reason":"Missing general wait"}
+{"ts":"2026-05-23T14:33:26.6788629Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\6ca676fd-c56c-40a2-8a8c-756f1efeed3d\\tasks\\bgcfqq1at.output","tool":"read"}
+{"ts":"2026-05-23T15:53:18.5992247Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\notes-presentation-style.md","tool":"edit"}
+{"ts":"2026-05-23T15:54:18.4891911Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-cothinker-task-lock-deadlock.md","tool":"write"}
+{"ts":"2026-05-23T15:56:26.567044Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\4ff46380-msg-f11-guard-side-replan.md","tool":"read"}
+{"ts":"2026-05-23T16:19:43.273502Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\8e936ddf-msg-task-lock-deadlock-fix.md","tool":"read"}
+{"ts":"2026-05-23T16:30:46.4055782Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-cothinker-crash-resume-session-id.md","tool":"write","reason":"Unread messages"}
+{"ts":"2026-05-23T16:30:53.1025888Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\af2f32d4-msg-spike-f11-plain.md","tool":"read"}
+{"ts":"2026-05-23T16:31:53.1491263Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\brief-cothinker-crash-resume-session-id.md","tool":"write"}
+{"ts":"2026-05-23T16:32:44.2527799Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\313b72e4-msg-task-lock-deadlock-fix.md","tool":"read"}
+{"ts":"2026-05-23T16:35:40.9114297Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\abcb352a-msg-task-lock-deadlock-fix.md","tool":"read"}
+{"ts":"2026-05-23T16:35:51.6512487Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Dexter\\plan-task-lock-deadlock-fix.md","tool":"read"}
+{"ts":"2026-05-23T16:38:46.9317357Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\632b4929-msg-f11-guard-side-impl.md","tool":"read"}
+{"ts":"2026-05-23T16:41:13.0581673Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\3c0216b8-msg-crash-resume-session-id-investigation.md","tool":"read"}
+{"ts":"2026-05-23T16:50:09.6592011Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\de2f8cab-msg-crash-resume-session-id-investigation.md","tool":"read"}
+{"ts":"2026-05-23T18:15:25.5256039Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\9e0abacb-msg-f11-guard-side-impl.md","tool":"read"}
+{"ts":"2026-05-23T18:17:47.0790968Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\4da63a23-msg-task-lock-deadlock-fix.md","tool":"read"}
+{"ts":"2026-05-23T18:32:26.5650315Z","event":"Bash","tool":"bash","cmd":"until dydo inbox show 2\u003E\u00261 | grep -q \u0022Grace\u0022; do sleep 5; done"}
+{"ts":"2026-05-24T17:43:31.2608147Z","event":"Bash","tool":"bash","cmd":"git log --oneline -3 2\u003E\u00261; echo \u0022=== branch ===\u0022; git branch --show-current 2\u003E\u00261"}
+{"ts":"2026-05-24T17:43:44.8425115Z","event":"Bash","tool":"bash","cmd":"git log --oneline --all -8 2\u003E\u00261; echo \u0022=== status ===\u0022; git status 2\u003E\u00261 | head -10; echo \u0022=== master..."}
+{"ts":"2026-05-24T17:44:12.6241327Z","event":"Bash","tool":"bash","cmd":"git show d23eb9d --stat 2\u003E\u00261 | head -40"}
+{"ts":"2026-05-24T17:44:13.3326289Z","event":"Bash","tool":"bash","cmd":"git diff HEAD --stat 2\u003E\u00261 | head -20"}

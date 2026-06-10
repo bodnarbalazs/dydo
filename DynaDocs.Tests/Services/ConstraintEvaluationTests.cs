@@ -314,25 +314,6 @@ public class ConstraintEvaluationTests : IDisposable
     }
 
     [Fact]
-    public void GetRoleRestrictionMessage_ReadsDenialHintFromRoleDefinition()
-    {
-        SetupWithRoleFiles(["Adele"], new() { ["testuser"] = ["Adele"] });
-        CreateStateFile("Adele");
-
-        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
-        var sessionJson = $"{{\"Agent\":\"Adele\",\"SessionId\":\"test-hint\",\"Claimed\":\"{DateTime.UtcNow:o}\"}}";
-        File.WriteAllText(Path.Combine(workspace, ".session"), sessionJson);
-        File.WriteAllText(Path.Combine(workspace, "state.md"),
-            "---\nagent: Adele\nstatus: working\nassigned: testuser\nrole: reviewer\ntask: t1\nwritable-paths: [\"dydo/agents/Adele/**\"]\nreadonly-paths: [\"**\"]\ntask-role-history: {}\n---\n# Adele — Session State\n");
-
-        var registry = new AgentRegistry(_testDir);
-        var result = registry.IsPathAllowed("test-hint", "src/Foo.cs", "edit", out var error);
-
-        Assert.False(result);
-        Assert.Contains("Reviewer role can only edit own workspace", error);
-    }
-
-    [Fact]
     public void CanTakeRole_RoleWithNoConstraints_AllowedTrivially()
     {
         SetupWithRoleFiles(["Adele"], new() { ["testuser"] = ["Adele"] });

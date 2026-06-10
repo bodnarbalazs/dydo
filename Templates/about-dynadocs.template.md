@@ -348,6 +348,7 @@ Commands meant to be called only by agents are *italic*.
 | `dydo roles create <name>` | Scaffold a custom role |
 | `dydo roles reset` | Regenerate base role files |
 | `dydo validate` | Validate configuration and roles |
+| `dydo sync` | Compile roles into native .claude/ agents + skills |
 
 ### Workspace
 | Command | Description |

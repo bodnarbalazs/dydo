@@ -67,6 +67,7 @@ public static class HelpCommand
         Console.WriteLine("  roles create <name>    Scaffold a new custom role definition");
         Console.WriteLine("  roles reset            Regenerate base role files (human only)");
         Console.WriteLine("  roles reset --all      Remove all roles and regenerate base (human only)");
+        Console.WriteLine("  sync                   Compile roles into native .claude/ agents + skills");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate config, roles, templates, agent state");

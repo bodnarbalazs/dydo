@@ -7,7 +7,13 @@ riderModule.iml
 
 nul
 DynaDocs.sln.DotSettings.user
-.claude
+
+# Claude Code: ignore machine-local config, but SHARE dydo-generated native
+# agents/skills via the repo (Decision 024 — they are project artifacts).
+.claude/*
+!.claude/agents/
+!.claude/skills/
+!.claude/settings.json
 
 # DynaDocs agent workspaces (local state)
 dydo/agents/

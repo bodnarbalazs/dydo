@@ -16,7 +16,6 @@ using DynaDocs.Models;
 [JsonSerializable(typeof(PathsConfig))]
 [JsonSerializable(typeof(AgentsConfig))]
 [JsonSerializable(typeof(DispatchConfig))]
-[JsonSerializable(typeof(TasksConfig))]
 [JsonSerializable(typeof(WorktreeConfig))]
 [JsonSerializable(typeof(MergeSafetyConfig))]
 [JsonSerializable(typeof(RoleDefinition))]
@@ -40,17 +39,7 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(HookInput))]
 [JsonSerializable(typeof(ToolInputData))]
 [JsonSerializable(typeof(AgentSession))]
-[JsonSerializable(typeof(AuditEvent))]
-[JsonSerializable(typeof(AuditSession))]
-[JsonSerializable(typeof(ProjectSnapshot))]
-[JsonSerializable(typeof(List<AuditEvent>))]
-[JsonSerializable(typeof(List<AuditSession>))]
-[JsonSerializable(typeof(TimelineEntry))]
-[JsonSerializable(typeof(List<TimelineEntry>))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
-[JsonSerializable(typeof(SnapshotBaseline))]
-[JsonSerializable(typeof(SnapshotRef))]
-[JsonSerializable(typeof(SnapshotDelta))]
 [JsonSerializable(typeof(WaitMarker))]
 [JsonSerializable(typeof(ReplyPendingMarker))]
 [JsonSerializable(typeof(DispatchMarker))]
@@ -59,13 +48,6 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(QueueEntry))]
 [JsonSerializable(typeof(QueueActiveEntry))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
-
-/// <summary>
-/// Compact (non-indented) JSON context for sidecar event files (one event per line).
-/// </summary>
-[JsonSourceGenerationOptions(WriteIndented = false)]
-[JsonSerializable(typeof(AuditEvent))]
-internal partial class CompactJsonContext : JsonSerializerContext { }
 
 /// <summary>
 /// Lenient JSON context for hand-edited dydo files that may contain

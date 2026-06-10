@@ -33,13 +33,11 @@ public class HelpCommandTests
         Assert.Contains("review", output);
         Assert.Contains("workspace", output);
         Assert.Contains("whoami", output);
-        Assert.Contains("audit", output);
         Assert.Contains("completions", output);
         Assert.Contains("template", output);
         Assert.Contains("roles", output);
         Assert.Contains("validate", output);
         Assert.Contains("issue", output);
-        Assert.Contains("inquisition", output);
         Assert.Contains("queue", output);
         Assert.Contains("worktree", output);
         Assert.Contains("version", output);
@@ -74,7 +72,6 @@ public class HelpCommandTests
         Assert.Contains("task approve", output);
         Assert.Contains("task reject", output);
         Assert.Contains("task list", output);
-        Assert.Contains("task compact", output);
     }
 
     [Fact]
@@ -136,13 +133,11 @@ public class HelpCommandTests
         Assert.Contains("Dispatch & Inbox Commands:", output);
         Assert.Contains("Messaging Commands:", output);
         Assert.Contains("Workspace Commands:", output);
-        Assert.Contains("Audit Commands:", output);
         Assert.Contains("Role Commands:", output);
         Assert.Contains("Validation Commands:", output);
         Assert.Contains("Template Commands:", output);
         Assert.Contains("Task Commands:", output);
         Assert.Contains("Issue Commands:", output);
-        Assert.Contains("Inquisition Commands:", output);
         Assert.Contains("Queue Commands:", output);
         Assert.Contains("Worktree Commands:", output);
         Assert.Contains("Utility:", output);

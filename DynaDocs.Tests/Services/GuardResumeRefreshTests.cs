@@ -160,27 +160,6 @@ public class GuardResumeRefreshTests : IDisposable
             DydoDefaultJsonContext.Default.AgentSession);
     }
 
-    private List<AuditEvent> ReadAllEventsForSession(string sessionId)
-    {
-        var auditDir = Path.Combine(_testDir, "dydo", "_system", "audit");
-        if (!Directory.Exists(auditDir)) return new();
-        foreach (var yearDir in Directory.GetDirectories(auditDir))
-        {
-            var file = Directory.GetFiles(yearDir, $"*-{sessionId}.json").FirstOrDefault();
-            if (file == null) continue;
-            var session = JsonSerializer.Deserialize(File.ReadAllText(file),
-                DydoDefaultJsonContext.Default.AuditSession);
-            if (session == null) continue;
-            AuditService.MergeSidecarEvents(yearDir, sessionId, session);
-            return session.Events.ToList();
-        }
-        return new();
-    }
-
-    private int CountClaimAutoEvents(string sessionId) =>
-        ReadAllEventsForSession(sessionId)
-            .Count(e => e.EventType == AuditEventType.Claim && e.RecoveryKind == "auto");
-
     // Configures the "the live claude ancestor is X, ClaimedPid Y is dead, all other
     // PIDs are alive" shape that the trigger predicate expects on a resumed session.
     private void ConfigureResumedAncestry(int liveAncestor = LiveClaudePid, int deadPid = DeadPreResumePid)
@@ -227,7 +206,7 @@ public class GuardResumeRefreshTests : IDisposable
     }
 
     [Fact]
-    public void GuardRefreshOnResume_EmitsRecoveryAuditAndResumeOutcome()
+    public void GuardRefreshOnResume_EmitsResumeOutcome()
     {
         SetUpResumedAdele();
         ConfigureResumedAncestry();
@@ -236,13 +215,6 @@ public class GuardResumeRefreshTests : IDisposable
         var registry = new AgentRegistry(_testDir);
 
         registry.RefreshResumedAgentSession(ResumeSessionId);
-
-        Assert.Equal(1, CountClaimAutoEvents(ResumeSessionId));
-        var claim = ReadAllEventsForSession(ResumeSessionId)
-            .Single(e => e.EventType == AuditEventType.Claim && e.RecoveryKind == "auto");
-        Assert.Equal("Adele", claim.AgentName);
-        Assert.Equal(ResumeSessionId, claim.ResumePredecessorSession);
-        Assert.Equal(2, claim.ResumeAttemptsAtClaim);
 
         Assert.True(File.Exists(watchdogLog), "resume_outcome line must be written to the watchdog log");
         var line = File.ReadAllLines(watchdogLog).Single(l => !string.IsNullOrWhiteSpace(l));
@@ -264,7 +236,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
-        Assert.Equal(1, CountClaimAutoEvents(ResumeSessionId));
         Assert.Equal(LiveClaudePid, ReadSession("Adele")!.ClaimedPid);
     }
 
@@ -289,7 +260,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.Equal(beforeBytes, File.ReadAllBytes(SessionPathOf("Adele")));
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -306,7 +276,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.Equal(beforeBytes, File.ReadAllBytes(SessionPathOf("Adele")));
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -322,7 +291,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.Equal(LiveClaudePid, ReadSession("Adele")!.ClaimedPid);
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -335,7 +303,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.False(File.Exists(SessionPathOf("Adele")));
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -349,7 +316,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.False(File.Exists(SessionPathOf("Adele")));
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -369,7 +335,6 @@ public class GuardResumeRefreshTests : IDisposable
         Assert.Equal(beforeBytes, File.ReadAllBytes(SessionPathOf("Adele")));
         Assert.False(File.Exists(StatePathOf("Adele")),
             "No state.md must NOT be created by a no-op refresh.");
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -387,7 +352,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.Equal(LiveClaudePid, ReadSession("Adele")!.ClaimedPid);
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     // -----------------------------------------------------------------------------
@@ -417,7 +381,6 @@ public class GuardResumeRefreshTests : IDisposable
         sw.Stop();
 
         Assert.Equal(beforeBytes, File.ReadAllBytes(SessionPathOf("Adele")));
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
         // The bounded retry sleeps twice (between the 3 attempts) = ~100 ms. Assert with a
         // generous floor (60 ms) so OS scheduling slack on slow CI doesn't flake the test
         // while still pinning the "we actually waited, didn't hard fail-fast" invariant.
@@ -556,7 +519,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.Equal(beforeBytes, File.ReadAllBytes(SessionPathOf("Adele")));
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
 
         // Now the recycling process exits → IsProcessRunning(DeadPreResumePid)=false.
         ProcessUtils.IsProcessRunningOverride = pid => pid != DeadPreResumePid;
@@ -564,7 +526,6 @@ public class GuardResumeRefreshTests : IDisposable
         registry.RefreshResumedAgentSession(ResumeSessionId);
 
         Assert.Equal(LiveClaudePid, ReadSession("Adele")!.ClaimedPid);
-        Assert.Equal(1, CountClaimAutoEvents(ResumeSessionId));
     }
 
     [Fact]
@@ -606,7 +567,6 @@ public class GuardResumeRefreshTests : IDisposable
         Assert.Equal(LiveClaudePid, ReadSession("Adele")!.ClaimedPid);
 
         // Audit emit + resume_outcome both landed.
-        Assert.Equal(1, CountClaimAutoEvents(ResumeSessionId));
         Assert.True(File.Exists(mainLog), "resume_outcome should land in the main watchdog log");
         var line = File.ReadAllLines(mainLog).Single(l => !string.IsNullOrWhiteSpace(l));
         var outcome = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(line)!;
@@ -633,7 +593,6 @@ public class GuardResumeRefreshTests : IDisposable
         // Functional recovery: ClaimedPid refreshed.
         Assert.Equal(LiveClaudePid, ReadSession("Adele")!.ClaimedPid);
         // No audit emission.
-        Assert.Equal(0, CountClaimAutoEvents(ResumeSessionId));
     }
 
     // -----------------------------------------------------------------------------

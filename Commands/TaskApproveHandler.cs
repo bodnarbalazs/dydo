@@ -61,27 +61,7 @@ internal static class TaskApproveHandler
 
         var content = File.ReadAllText(taskPath);
 
-        var assignedMatch = Regex.Match(content, @"assigned: (\w+)");
-        var assigned = assignedMatch.Success ? assignedMatch.Groups[1].Value : null;
-
-        var createdMatch = Regex.Match(content, @"created: (.+)");
-        DateTime? taskCreated = null;
-        if (createdMatch.Success && DateTime.TryParse(
-                createdMatch.Groups[1].Value,
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.AdjustToUniversal,
-                out var dt))
-            taskCreated = dt;
-
-        var areaMatch = Regex.Match(content, @"area: ([\w-]+)");
-        var area = areaMatch.Success ? areaMatch.Groups[1].Value : "general";
-
-        var (created, modified, deleted) = CollectFileChanges(configService, assigned, taskCreated);
-
-        PrintFileChanges(created, modified, deleted);
-
         content = TransformFrontmatter(content);
-        content = UpdateFilesChangedSection(content, created, modified, deleted);
         content = AddApprovalSection(content, notes);
 
         var changelogFilePath = GetChangelogPath(configService, sanitizedName);
@@ -103,82 +83,7 @@ internal static class TaskApproveHandler
         Console.WriteLine($"Changelog entry created: {relativeChangelogPath}");
         Console.WriteLine("Hub files updated.");
 
-        CheckAutoCompact(configService);
-
         return ExitCodes.Success;
-    }
-
-    private static (List<string> Created, List<string> Modified, List<string> Deleted) CollectFileChanges(
-        ConfigService configService, string? assigned, DateTime? taskCreated)
-    {
-        var created = new List<string>();
-        var modified = new List<string>();
-        var deleted = new List<string>();
-
-        try
-        {
-            var auditService = new AuditService(configService);
-            var (sessions, _) = auditService.LoadSessions();
-
-            foreach (var session in sessions)
-            {
-                if (!string.IsNullOrEmpty(assigned) &&
-                    !string.Equals(session.AgentName, assigned, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                foreach (var evt in session.Events)
-                {
-                    if (taskCreated.HasValue && evt.Timestamp < taskCreated.Value)
-                        continue;
-
-                    if (string.IsNullOrEmpty(evt.Path)) continue;
-
-                    var normalizedPath = evt.Path.Replace('\\', '/');
-                    if (normalizedPath.Contains("dydo/", StringComparison.OrdinalIgnoreCase)) continue;
-
-                    ClassifyEvent(evt.EventType, evt.Path!, created, modified, deleted);
-                }
-            }
-        }
-        catch
-        {
-            // Audit service failure should not block approval
-        }
-
-        return (created, modified, deleted);
-    }
-
-    private static void ClassifyEvent(AuditEventType eventType, string path, List<string> created, List<string> modified, List<string> deleted)
-    {
-        switch (eventType)
-        {
-            case AuditEventType.Write:
-                if (!created.Contains(path) && !modified.Contains(path))
-                    created.Add(path);
-                break;
-            case AuditEventType.Edit:
-                if (!modified.Contains(path) && !created.Contains(path))
-                    modified.Add(path);
-                break;
-            case AuditEventType.Delete:
-                created.Remove(path);
-                modified.Remove(path);
-                if (!deleted.Contains(path))
-                    deleted.Add(path);
-                break;
-        }
-    }
-
-    private static void PrintFileChanges(List<string> created, List<string> modified, List<string> deleted)
-    {
-        if (created.Count > 0 || modified.Count > 0 || deleted.Count > 0)
-        {
-            Console.WriteLine("Files changed (from audit logs):");
-            foreach (var f in created) Console.WriteLine($"  + {f}");
-            foreach (var f in modified) Console.WriteLine($"  ~ {f}");
-            foreach (var f in deleted) Console.WriteLine($"  - {f}");
-            Console.WriteLine();
-        }
     }
 
     private static string TransformFrontmatter(string content)
@@ -193,21 +98,6 @@ internal static class TaskApproveHandler
         return content;
     }
 
-    private static string UpdateFilesChangedSection(string content, List<string> created, List<string> modified, List<string> deleted)
-    {
-        if (created.Count == 0 && modified.Count == 0 && deleted.Count == 0)
-            return content;
-
-        var filesSection = "## Files Changed\n\n";
-        foreach (var f in created) filesSection += $"{f} — Created\n";
-        foreach (var f in modified) filesSection += $"{f} — Modified\n";
-        foreach (var f in deleted) filesSection += $"{f} — Deleted\n";
-
-        content = Regex.Replace(content, @"## Files Changed\s*\n[\s\S]*?(?=\n## |\z)",
-            filesSection.TrimEnd() + "\n\n");
-
-        return content;
-    }
 
     private static string AddApprovalSection(string content, string? notes)
     {
@@ -265,33 +155,4 @@ internal static class TaskApproveHandler
         }
     }
 
-    private static void CheckAutoCompact(ConfigService configService)
-    {
-        try
-        {
-            var config = configService.LoadConfig();
-            var interval = config?.Tasks.AutoCompactInterval ?? 20;
-            if (interval <= 0) return;
-
-            var counterPath = TaskCompactHandler.GetCounterPath(configService);
-            var count = 0;
-            if (File.Exists(counterPath) && int.TryParse(File.ReadAllText(counterPath).Trim(), out var parsed))
-                count = parsed;
-
-            count++;
-
-            if (count >= interval)
-            {
-                Console.WriteLine($"Auto-compacting audit snapshots ({count} approvals since last compact)...");
-                TaskCompactHandler.RunCompaction(configService);
-                count = 0;
-            }
-
-            File.WriteAllText(counterPath, count.ToString());
-        }
-        catch
-        {
-            // Auto-compact failure should not affect approval
-        }
-    }
 }

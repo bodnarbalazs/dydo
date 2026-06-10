@@ -1019,31 +1019,6 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task SetRole_FiltersAlreadyReadFromAudit()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        // Read the mode file via guard (which logs audit)
-        var modeFilePath = "dydo/agents/Adele/modes/code-writer.md";
-        await GuardAsync("read", modeFilePath);
-
-        // Now set role — the mode file should not be in unread list since we read it
-        await SetRoleAsync("code-writer", "test-task");
-
-        var registry = new AgentRegistry(TestDir);
-        var state = registry.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(state);
-
-        // Mode file should NOT be in unread list (was already read)
-        Assert.DoesNotContain(state.UnreadMustReads,
-            p => p.Equals(modeFilePath, StringComparison.OrdinalIgnoreCase));
-
-        // But other must-reads should still be there
-        Assert.Contains(state.UnreadMustReads, p => p.Contains("about.md"));
-    }
-
-    [Fact]
     public async Task Release_NotBlockedBy_GeneralWaitSentinel()
     {
         // The _general-wait sentinel marker is started at claim time once decision 021

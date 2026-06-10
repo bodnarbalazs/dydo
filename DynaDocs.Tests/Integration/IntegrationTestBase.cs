@@ -24,7 +24,6 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
-    private readonly IProcessStarter? _originalBrowserLauncherStarter;
     private readonly Func<string, string, string, int>? _originalCreateGitWorktreeOverride;
     private readonly Func<string, int, int?>? _originalFindAncestorOverride;
 
@@ -42,13 +41,11 @@ public abstract class IntegrationTestBase : IDisposable
         _originalErr = Console.Error;
         _originalIn = Console.In;
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
-        _originalBrowserLauncherStarter = AuditCommand.BrowserLauncherOverride;
         _originalCreateGitWorktreeOverride = DispatchService.CreateGitWorktreeOverride;
         _originalFindAncestorOverride = ProcessUtils.FindAncestorProcessOverride;
 
         // Prevent tests from launching real terminals, browsers, or git worktree operations
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
-        AuditCommand.BrowserLauncherOverride = new NoOpProcessStarter();
         DispatchService.CreateGitWorktreeOverride = (_, _, _) => 0;
 
         // Pin the claude-ancestor lookup to this test process so .session.ClaimedPid stamped
@@ -75,7 +72,6 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
-        AuditCommand.BrowserLauncherOverride = _originalBrowserLauncherStarter;
         DispatchService.CreateGitWorktreeOverride = _originalCreateGitWorktreeOverride;
         ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
 

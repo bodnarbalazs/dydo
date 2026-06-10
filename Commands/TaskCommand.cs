@@ -17,7 +17,6 @@ public static class TaskCommand
         command.Subcommands.Add(CreateApproveCommand());
         command.Subcommands.Add(CreateRejectCommand());
         command.Subcommands.Add(CreateListCommand());
-        command.Subcommands.Add(CreateCompactCommand());
 
         return command;
     }
@@ -179,17 +178,6 @@ public static class TaskCommand
         return command;
     }
 
-    private static Command CreateCompactCommand()
-    {
-        var command = new Command("compact", "Compact audit snapshots");
-
-        command.SetAction(parseResult =>
-        {
-            return TaskCompactHandler.Execute();
-        });
-
-        return command;
-    }
 
     internal static string GetTasksPath()
     {

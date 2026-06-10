@@ -95,54 +95,22 @@ public class GuardResumeRefreshGuardLevelTests : IDisposable
     }
 
     [Fact]
-    public void GuardEmitsClaimRecoveryAuto_BeforeToolAuditEvent()
+    public void GuardRefreshesResumedSession_OnFirstGuardedCall()
     {
-        // H1 of the plan: the refresh runs before Security Layer 1, so a resumed session's
-        // first guarded call (including a *blocked* call) produces the recovery_kind=auto
-        // event ahead of the tool's own audit event. We exercise the CLI-args branch
-        // (H3) via `dydo guard --action read --path README.md`.
+        // The refresh runs before Security Layer 1, so a resumed session's first guarded
+        // call (including a *blocked* one) rewrites the dead ClaimedPid to the live ancestor.
+        // Exercises the CLI-args branch via `dydo guard --action read --path README.md`.
         SetUpResumedAdele();
         ProcessUtils.FindAncestorProcessOverride = (_, _) => LiveClaudePid;
         ProcessUtils.IsProcessRunningOverride = pid => pid != DeadPreResumePid;
 
         var command = GuardCommand.Create();
-        var result = command.Parse(new[] { "--action", "read", "--path", "README.md" }).Invoke();
+        command.Parse(new[] { "--action", "read", "--path", "README.md" }).Invoke();
 
-        // Read all events from the audit session and check ordering.
-        var events = ReadAllEventsForSession(ResumeSessionId);
-
-        // Find the recovery Claim event.
-        var claimIdx = events.FindIndex(e => e.EventType == AuditEventType.Claim && e.RecoveryKind == "auto");
-        Assert.True(claimIdx >= 0, "Resumed session's first guarded call must emit a recovery_kind=auto Claim event.");
-
-        // The tool's own Read event must come AFTER the Claim event (or not at all if it was
-        // blocked — H1 still pins the ordering invariant). We assert claim is at index 0 of
-        // its kind: any Read in this session was emitted by THIS call, so it comes after.
-        for (var i = 0; i < claimIdx; i++)
-            Assert.NotEqual(AuditEventType.Read, events[i].EventType);
-
-        // Also pin: side-effects of refresh actually happened.
         var refreshedSession = JsonSerializer.Deserialize(
             File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Adele", ".session")),
             DydoDefaultJsonContext.Default.AgentSession);
         Assert.NotNull(refreshedSession);
         Assert.Equal(LiveClaudePid, refreshedSession!.ClaimedPid);
-    }
-
-    private List<AuditEvent> ReadAllEventsForSession(string sessionId)
-    {
-        var auditDir = Path.Combine(_testDir, "dydo", "_system", "audit");
-        if (!Directory.Exists(auditDir)) return new();
-        foreach (var yearDir in Directory.GetDirectories(auditDir))
-        {
-            var file = Directory.GetFiles(yearDir, $"*-{sessionId}.json").FirstOrDefault();
-            if (file == null) continue;
-            var session = JsonSerializer.Deserialize(File.ReadAllText(file),
-                DydoDefaultJsonContext.Default.AuditSession);
-            if (session == null) continue;
-            AuditService.MergeSidecarEvents(yearDir, sessionId, session);
-            return session.Events.ToList();
-        }
-        return new();
     }
 }

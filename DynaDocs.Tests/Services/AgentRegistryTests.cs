@@ -288,105 +288,6 @@ public class AgentRegistryTests : IDisposable
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
-    [Fact]
-    public void ClaimAgent_FreshAgent_LogsRecoveryKindFresh()
-    {
-        // PR3 of agent-crash-fixes: fresh claims (no prior .session) emit a Claim audit event
-        // with recovery_kind="fresh" and null predecessor/attempts. Lets the follow-up
-        // inquisition's 4-bucket categorisation distinguish first-time claims from recoveries.
-        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
-
-        var registry = new AgentRegistry(_testDir);
-        registry.StorePendingSessionId("Adele", "sess-fresh-1");
-        Assert.True(registry.ClaimAgent("Adele", out var err), err);
-
-        var claim = ReadClaimAuditEvent("sess-fresh-1");
-        Assert.NotNull(claim);
-        Assert.Equal("fresh", claim.RecoveryKind);
-        Assert.Null(claim.ResumePredecessorSession);
-        Assert.Null(claim.ResumeAttemptsAtClaim);
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
-    }
-
-    [Fact]
-    public void ClaimAgent_SameSessionResume_LogsAuto_WithPredecessorSession()
-    {
-        // PR3: same-session reclaim after a watchdog auto-resume launches emits a Claim audit
-        // event with recovery_kind="auto", predecessor=current sessionId, and attempts=prior
-        // resume count (captured pre-reset). This is the "(a) attempted+succeeded" bucket.
-        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
-        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
-        Directory.CreateDirectory(workspace);
-        File.WriteAllText(Path.Combine(workspace, ".session"),
-            $"{{\"Agent\":\"Adele\",\"SessionId\":\"sess-auto\",\"Claimed\":\"{DateTime.UtcNow.AddMinutes(-5):o}\",\"ClaimedPid\":99999999}}");
-        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
-            ---
-            agent: Adele
-            status: working
-            assigned: testuser
-            resume-attempts: 2
-            last-resume-launched-at: {{DateTime.UtcNow.AddMinutes(-2):o}}
-            pre-resume-pid: 12345
-            ---
-            """);
-
-        var registry = new AgentRegistry(_testDir);
-        registry.StorePendingSessionId("Adele", "sess-auto");
-        Assert.True(registry.ClaimAgent("Adele", out var err), err);
-
-        var claim = ReadClaimAuditEvent("sess-auto");
-        Assert.NotNull(claim);
-        Assert.Equal("auto", claim.RecoveryKind);
-        Assert.Equal("sess-auto", claim.ResumePredecessorSession);
-        Assert.Equal(2, claim.ResumeAttemptsAtClaim);
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
-    }
-
-    [Fact]
-    public void ClaimAgent_NewSessionAfterUnreleased_LogsManual_WithPredecessorSession()
-    {
-        // PR3: a new sessionId reclaiming an agent whose prior unreleased session has a dead
-        // PID (stale-working reclaim, decision 018) and no resume bookkeeping is the "(d)
-        // manual recovery" bucket — the user re-launched `agent --inbox` themselves rather
-        // than relying on the watchdog. recovery_kind="manual" + predecessor=prior sessionId.
-        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
-        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
-        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
-        Directory.CreateDirectory(workspace);
-        File.WriteAllText(Path.Combine(workspace, ".session"),
-            $"{{\"Agent\":\"Adele\",\"SessionId\":\"sess-prior\",\"Claimed\":\"{DateTime.UtcNow.AddMinutes(-30):o}\",\"ClaimedPid\":99999999}}");
-        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
-            ---
-            agent: Adele
-            status: working
-            assigned: testuser
-            resume-attempts: 0
-            last-resume-launched-at: null
-            started: {{DateTime.UtcNow.AddMinutes(-30):o}}
-            ---
-            """);
-        AgentRegistry.IsSessionPidAliveOverride = _ => false; // prior PID dead → stale-working reclaim
-
-        var registry = new AgentRegistry(_testDir);
-        registry.StorePendingSessionId("Adele", "sess-new-manual");
-        try
-        {
-            Assert.True(registry.ClaimAgent("Adele", out var err), err);
-
-            var claim = ReadClaimAuditEvent("sess-new-manual");
-            Assert.NotNull(claim);
-            Assert.Equal("manual", claim.RecoveryKind);
-            Assert.Equal("sess-prior", claim.ResumePredecessorSession);
-            Assert.Equal(0, claim.ResumeAttemptsAtClaim);
-        }
-        finally
-        {
-            AgentRegistry.IsSessionPidAliveOverride = null;
-            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
-        }
-    }
 
     [Fact]
     public void ClaimAgent_SameSessionResume_EmitsResumeOutcomeSucceeded_ToWatchdogLog()
@@ -433,25 +334,6 @@ public class AgentRegistryTests : IDisposable
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
-    private AuditEvent? ReadClaimAuditEvent(string sessionId)
-    {
-        var auditDir = Path.Combine(_testDir, "dydo", "_system", "audit");
-        if (!Directory.Exists(auditDir)) return null;
-
-        foreach (var yearDir in Directory.GetDirectories(auditDir))
-        {
-            var sessionFile = Directory.GetFiles(yearDir, $"*-{sessionId}.json").FirstOrDefault();
-            if (sessionFile == null) continue;
-
-            var session = System.Text.Json.JsonSerializer.Deserialize(
-                File.ReadAllText(sessionFile),
-                DynaDocs.Serialization.DydoDefaultJsonContext.Default.AuditSession);
-            if (session == null) continue;
-            DynaDocs.Services.AuditService.MergeSidecarEvents(yearDir, sessionId, session);
-            return session.Events.FirstOrDefault(e => e.EventType == AuditEventType.Claim);
-        }
-        return null;
-    }
 
     [Fact]
     public void ReleaseAgent_ClearsResumeBookkeepingFields()

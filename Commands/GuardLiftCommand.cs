@@ -62,7 +62,6 @@ public static class GuardLiftCommand
         }
 
         var registry = new AgentRegistry();
-        var auditService = new AuditService();
 
         if (!registry.IsValidAgentName(agentName))
         {
@@ -87,13 +86,6 @@ public static class GuardLiftCommand
         var liftService = new GuardLiftService();
         liftService.Lift(agentName, human, minutes);
 
-        var sessionId = registry.GetSessionContext();
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.GuardLift,
-            AgentName = agentName
-        });
-
         if (minutes.HasValue)
             Console.WriteLine($"Guard lifted for {agentName}. RBAC restrictions suspended for {minutes} minutes.");
         else
@@ -104,9 +96,6 @@ public static class GuardLiftCommand
 
     private static int ExecuteRestore(string agentName)
     {
-        var registry = new AgentRegistry();
-        var auditService = new AuditService();
-
         var liftService = new GuardLiftService();
         if (!liftService.IsLifted(agentName))
         {
@@ -116,31 +105,7 @@ public static class GuardLiftCommand
 
         liftService.Restore(agentName);
 
-        var sessionId = registry.GetSessionContext();
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.GuardRestore,
-            AgentName = agentName
-        });
-
         Console.WriteLine($"Guard restored for {agentName}. RBAC restrictions resumed.");
         return ExitCodes.Success;
-    }
-
-    private static void LogAuditEvent(IAuditService auditService, string? sessionId, IAgentRegistry registry, AuditEvent @event)
-    {
-        if (string.IsNullOrEmpty(sessionId))
-            return;
-
-        try
-        {
-            var agent = registry.GetCurrentAgent(sessionId);
-            var human = registry.GetCurrentHuman();
-            auditService.LogEvent(sessionId, @event, agent?.Name, human);
-        }
-        catch
-        {
-            // Audit logging should never break the command
-        }
     }
 }

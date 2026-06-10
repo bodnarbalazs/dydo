@@ -62,13 +62,6 @@ public static class HelpCommand
         Console.WriteLine("  workspace init         Initialize agent workspaces");
         Console.WriteLine("  workspace check        Verify workflow before session end");
         Console.WriteLine();
-        Console.WriteLine("Audit Commands:");
-        Console.WriteLine("  audit                  Generate activity replay visualization");
-        Console.WriteLine("  audit /2025            Filter to specific year");
-        Console.WriteLine("  audit --list           List available sessions");
-        Console.WriteLine("  audit --session <id>   Show details for a session");
-        Console.WriteLine("  audit compact [year]   Compact audit snapshots (baseline+delta)");
-        Console.WriteLine();
         Console.WriteLine("Role Commands:");
         Console.WriteLine("  roles list             List loaded role definitions");
         Console.WriteLine("  roles create <name>    Scaffold a new custom role definition");
@@ -87,7 +80,6 @@ public static class HelpCommand
         Console.WriteLine("  task approve <name>    Approve task (human only)");
         Console.WriteLine("  task reject <name>     Reject task (human only)");
         Console.WriteLine("  task list              List tasks");
-        Console.WriteLine("  task compact           Compact audit snapshots");
         Console.WriteLine();
         Console.WriteLine("  review complete <task> Complete a code review");
         Console.WriteLine();
@@ -95,9 +87,6 @@ public static class HelpCommand
         Console.WriteLine("  issue create             Create a new issue");
         Console.WriteLine("  issue list               List issues");
         Console.WriteLine("  issue resolve <id>       Resolve an issue");
-        Console.WriteLine();
-        Console.WriteLine("Inquisition Commands:");
-        Console.WriteLine("  inquisition coverage     Show inquisition coverage across areas");
         Console.WriteLine();
         Console.WriteLine("Queue Commands:");
         Console.WriteLine("  queue create <name>    Create a transient queue");

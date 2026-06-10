@@ -85,11 +85,10 @@ public class PhantomUnreadInboxTests : IDisposable
         // No inbox file for deadbeef — pure phantom.
 
         var registry = new AgentRegistry(_testDir);
-        var auditService = new AuditService(basePath: _testDir);
         var agent = registry.GetAgentState(AgentName)!;
 
         var result = GuardCommand.NotifyUnreadMessages(
-            agent, "src/foo.cs", "Read", null, auditService, TestSessionId, registry);
+            agent, "src/foo.cs", "Read", null, TestSessionId, registry);
 
         Assert.Null(result);
         var healed = registry.GetAgentState(AgentName)!;
@@ -104,11 +103,10 @@ public class PhantomUnreadInboxTests : IDisposable
         // No file for deadbeef — phantom.
 
         var registry = new AgentRegistry(_testDir);
-        var auditService = new AuditService(basePath: _testDir);
         var agent = registry.GetAgentState(AgentName)!;
 
         var result = GuardCommand.NotifyUnreadMessages(
-            agent, "src/foo.cs", "Read", null, auditService, TestSessionId, registry);
+            agent, "src/foo.cs", "Read", null, TestSessionId, registry);
 
         Assert.Equal(ExitCodes.ToolError, result);
         var healed = registry.GetAgentState(AgentName)!;
@@ -124,11 +122,10 @@ public class PhantomUnreadInboxTests : IDisposable
         WriteInboxMessage("bbbb2222", from: "Charlie", subject: "world");
 
         var registry = new AgentRegistry(_testDir);
-        var auditService = new AuditService(basePath: _testDir);
         var agent = registry.GetAgentState(AgentName)!;
 
         var result = GuardCommand.NotifyUnreadMessages(
-            agent, "src/foo.cs", "Read", null, auditService, TestSessionId, registry);
+            agent, "src/foo.cs", "Read", null, TestSessionId, registry);
 
         Assert.Equal(ExitCodes.ToolError, result);
         var preserved = registry.GetAgentState(AgentName)!;

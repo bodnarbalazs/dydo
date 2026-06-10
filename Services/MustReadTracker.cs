@@ -8,27 +8,24 @@ public class MustReadTracker
 {
     private readonly string _basePath;
     private readonly IConfigService _configService;
-    private readonly IAuditService _auditService;
     private readonly Func<string, string> _getAgentWorkspace;
 
     public MustReadTracker(
         string basePath,
         IConfigService configService,
-        IAuditService auditService,
         Func<string, string> getAgentWorkspace)
     {
         _basePath = basePath;
         _configService = configService;
-        _auditService = auditService;
         _getAgentWorkspace = getAgentWorkspace;
     }
 
     /// <summary>
     /// Computes the list of must-read files for a given role by inspecting the mode file's links.
-    /// Filters out files already read in the current audit session.
+    /// Read-completion is tracked live by the guard (state-based), so this returns the full list.
     /// </summary>
     public List<string> ComputeUnreadMustReads(
-        string agentName, string role, string? sessionId, string? task = null,
+        string agentName, string role, string? task = null,
         List<ConditionalMustRead>? conditionalMustReads = null, InboxMetadataReader? inboxReader = null)
     {
         var workspace = _getAgentWorkspace(agentName);
@@ -71,31 +68,7 @@ public class MustReadTracker
         AddConditionalMustReads(mustReads, workspace, task, projectRoot, agentName,
             conditionalMustReads ?? [], inboxReader);
 
-        mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-
-        // Filter out files already read in this session
-        if (!string.IsNullOrEmpty(sessionId))
-        {
-            try
-            {
-                var session = _auditService.GetSession(sessionId);
-                if (session != null)
-                {
-                    var readPaths = session.Events
-                        .Where(e => e.EventType == AuditEventType.Read && !string.IsNullOrEmpty(e.Path))
-                        .Select(e => NormalizeMustReadPath(e.Path!))
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                    mustReads.RemoveAll(p => readPaths.Contains(NormalizeMustReadPath(p)));
-                }
-            }
-            catch
-            {
-                // Audit service failure should not block role setting
-            }
-        }
-
-        return mustReads;
+        return mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     /// <summary>

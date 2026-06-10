@@ -27,19 +27,17 @@ public partial class AgentRegistry : IAgentRegistry
     private readonly string _basePath;
     private readonly IConfigService _configService;
     private readonly IFolderScaffolder _folderScaffolder;
-    private readonly IAuditService _auditService;
     private readonly DydoConfig? _config;
     private readonly Dictionary<string, (List<string> Writable, List<string> ReadOnly)> _rolePermissions;
     private readonly Dictionary<string, RoleDefinition> _roleDefinitions;
     private readonly InboxMetadataReader _inboxReader;
     private readonly AgentSessionManager _sessionManager;
 
-    public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null, IAuditService? auditService = null)
+    public AgentRegistry(string? basePath = null, IConfigService? configService = null, IFolderScaffolder? folderScaffolder = null)
     {
         _basePath = basePath ?? PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         _configService = configService ?? new ConfigService();
         _folderScaffolder = folderScaffolder ?? new FolderScaffolder();
-        _auditService = auditService ?? new AuditService(_configService, _basePath);
         _config = _configService.LoadConfig(_basePath);
         _inboxReader = new InboxMetadataReader(GetAgentWorkspace);
         _sessionManager = new AgentSessionManager(
@@ -326,14 +324,10 @@ public partial class AgentRegistry : IAgentRegistry
             //     redundant resume and unblocks F11), so it goes first under the lock.
             ResetResumeBookkeeping(agentName);
 
-            // 11. emit recovery audit + watchdog log entry. EmitAutoRecovery self-gates
+            // 11. emit watchdog resume_outcome log entry. EmitAutoRecovery self-gates
             //     on priorState.LastResumeLaunchedAt != null — a user-driven claude --resume
-            //     (no watchdog launch) refreshes the PID but emits nothing. Likewise the
-            //     F2 corner (SaturateResumeAttempts cleared LastResumeLaunchedAt mid-episode)
-            //     is permanently un-emit-able from this path — functional recovery without
-            //     an audit line, by design.
-            RecoveryClassifier.EmitAutoRecovery(_basePath, _auditService, sessionId,
-                agentName, GetCurrentHuman(), fresh, priorState);
+            //     (no watchdog launch) refreshes the PID but emits nothing.
+            RecoveryClassifier.EmitAutoRecovery(_basePath, agentName, fresh, priorState);
         }
         finally
         {
@@ -476,8 +470,7 @@ public partial class AgentRegistry : IAgentRegistry
             // disk-side reset, so RecoveryClassifier can read its pre-reset values for
             // the recovery_kind="auto" Claim audit + resume_outcome=succeeded log.
             ResetResumeBookkeeping(agentName);
-            RecoveryClassifier.EmitAutoRecovery(_basePath, _auditService, sessionId,
-                agentName, human, existingSession, state);
+            RecoveryClassifier.EmitAutoRecovery(_basePath, agentName, existingSession, state);
             return true;
         }
 
@@ -554,26 +547,6 @@ public partial class AgentRegistry : IAgentRegistry
         // Closes #0154 (anchor-on-claim) and #0174 (worktree-claim wrong-dir).
         try { WatchdogService.RegisterMainAnchor(ProcessUtils.FindClaudeAncestor(), _basePath); }
         catch { /* anchoring is best-effort; never fail a claim because of it */ }
-
-        ProjectSnapshot? snapshot = null;
-        try
-        {
-            var snapshotService = new SnapshotService(_configService);
-            snapshot = snapshotService.CaptureSnapshot(_basePath);
-        }
-        catch { /* Snapshot failure should not block agent claim */ }
-
-        var (recoveryKind, predecessorSession, attemptsAtClaim) =
-            RecoveryClassifier.ClassifyFreshSetup(priorSession, priorState);
-
-        LogLifecycleEvent(sessionId, new AuditEvent
-        {
-            EventType = AuditEventType.Claim,
-            AgentName = agentName,
-            RecoveryKind = recoveryKind,
-            ResumePredecessorSession = predecessorSession,
-            ResumeAttemptsAtClaim = attemptsAtClaim
-        }, agentName, human, snapshot);
 
         try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
 
@@ -682,12 +655,6 @@ public partial class AgentRegistry : IAgentRegistry
             try { var hintPath = GetAgentHintPath(); if (File.Exists(hintPath)) File.Delete(hintPath); } catch { }
 
             var human = GetCurrentHuman();
-            LogLifecycleEvent(sessionId, new AuditEvent
-            {
-                EventType = AuditEventType.Release,
-                AgentName = agent.Name
-            }, agent.Name, human);
-
             UpdateAgentState(agent.Name, s =>
             {
                 s.Status = AgentStatus.Free;
@@ -854,7 +821,7 @@ public partial class AgentRegistry : IAgentRegistry
         writable = writable.Select(p => p.Replace("{self}", agent.Name)).ToList();
         readOnly = readOnly.Select(p => p.Replace("{self}", agent.Name)).ToList();
 
-        var mustReads = ComputeUnreadMustReads(agent.Name, role, sessionId, task);
+        var mustReads = ComputeUnreadMustReads(agent.Name, role, task);
         var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
         var dispatchedFromRole = !string.IsNullOrEmpty(task) ? GetDispatchedFromRole(agent.Name, task) : null;
 
@@ -879,14 +846,6 @@ public partial class AgentRegistry : IAgentRegistry
 
         if (!string.IsNullOrEmpty(task))
             AutoCreateTaskFile(task, agent.Name);
-
-        var human = GetCurrentHuman();
-        LogLifecycleEvent(sessionId, new AuditEvent
-        {
-            EventType = AuditEventType.Role,
-            Role = role,
-            Task = task
-        }, agent.Name, human);
 
         return true;
     }
@@ -2311,7 +2270,7 @@ public partial class AgentRegistry : IAgentRegistry
     /// Computes the list of must-read files for a given role by inspecting the mode file's links.
     /// Filters out files already read in the current audit session.
     /// </summary>
-    private List<string> ComputeUnreadMustReads(string agentName, string role, string? sessionId, string? task = null)
+    private List<string> ComputeUnreadMustReads(string agentName, string role, string? task = null)
     {
         var workspace = GetAgentWorkspace(agentName);
         var modeFilePath = Path.Combine(workspace, "modes", $"{role}.md");
@@ -2355,32 +2314,8 @@ public partial class AgentRegistry : IAgentRegistry
         MustReadTracker.AddConditionalMustReads(mustReads, workspace, task, projectRoot,
             agentName, conditionalMustReads, _inboxReader);
 
-        // Deduplicate
-        mustReads = mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-
-        // Filter out files already read in this session
-        if (!string.IsNullOrEmpty(sessionId))
-        {
-            try
-            {
-                var session = _auditService.GetSession(sessionId);
-                if (session != null)
-                {
-                    var readPaths = session.Events
-                        .Where(e => e.EventType == AuditEventType.Read && !string.IsNullOrEmpty(e.Path))
-                        .Select(e => NormalizeMustReadPath(e.Path!))
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                    mustReads.RemoveAll(p => readPaths.Contains(NormalizeMustReadPath(p)));
-                }
-            }
-            catch
-            {
-                // Audit service failure should not block role setting
-            }
-        }
-
-        return mustReads;
+        // Read-completion is tracked live by the guard (state-based); return the full list.
+        return mustReads.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     /// <summary>
@@ -2418,13 +2353,6 @@ public partial class AgentRegistry : IAgentRegistry
     public void ClearAllUnreadMessages(string agentName)
     {
         UpdateAgentState(agentName, s => s.UnreadMessages.Clear());
-    }
-
-    private static string NormalizeMustReadPath(string path)
-    {
-        var normalized = PathUtils.NormalizeWorktreePath(path)?.Replace('\\', '/') ?? path.Replace('\\', '/');
-        var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
-        return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
     }
 
     #endregion
@@ -2551,29 +2479,6 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     private void ReleaseLock(string agentName) =>
         ReleaseLockAtPath(GetLockFilePath(agentName));
-
-    #endregion
-
-    #region Audit Logging
-
-    /// <summary>
-    /// Helper to log lifecycle events (claim, release, role) with proper error handling.
-    /// </summary>
-    private void LogLifecycleEvent(string? sessionId, AuditEvent @event, string? agentName, string? human, ProjectSnapshot? snapshot = null)
-    {
-        if (string.IsNullOrEmpty(sessionId))
-            return;
-
-        try
-        {
-            _auditService.LogEvent(sessionId, @event, agentName, human, snapshot);
-        }
-        catch
-        {
-            // Audit logging should never break agent operations
-            // Silently ignore errors
-        }
-    }
 
     #endregion
 

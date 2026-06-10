@@ -8,7 +8,7 @@ public static class CompletionProvider
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
         "dispatch", "inbox", "message", "msg", "wait", "task", "issue",
-        "review", "inquisition", "workspace", "whoami", "audit",
+        "review", "workspace", "whoami",
         "completions", "complete", "template", "roles", "validate",
         "watchdog", "worktree", "queue", "version", "help"
     ];
@@ -24,7 +24,7 @@ public static class CompletionProvider
     private static readonly Dictionary<string, string[]> SubcommandLists = new()
     {
         ["agent"] = ["claim", "release", "status", "list", "role", "tree", "new", "rename", "remove", "reassign", "clean"],
-        ["task"] = ["approve", "create", "list", "ready-for-review", "reject", "compact"],
+        ["task"] = ["approve", "create", "list", "ready-for-review", "reject"],
         ["review"] = ["complete"],
         ["init"] = ["claude", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
@@ -32,7 +32,6 @@ public static class CompletionProvider
         ["workspace"] = ["init", "check"],
         ["graph"] = ["stats"],
         ["issue"] = ["create", "list", "resolve"],
-        ["inquisition"] = ["coverage"],
         ["roles"] = ["list", "create", "reset"],
         ["template"] = ["update"],
         ["worktree"] = ["cleanup", "merge", "init-settings", "prune"],

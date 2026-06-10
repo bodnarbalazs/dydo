@@ -16,7 +16,6 @@ public class CommandSmokeTests
         var commands = new Func<System.CommandLine.Command>[]
         {
             AgentCommand.Create,
-            AuditCommand.Create,
             CheckCommand.Create,
             CleanCommand.Create,
             CompleteCommand.Create,
@@ -28,7 +27,6 @@ public class CommandSmokeTests
             HelpCommand.Create,
             InboxCommand.Create,
             IndexCommand.Create,
-            InquisitionCommand.Create,
             IssueCommand.Create,
             MessageCommand.Create,
             InitCommand.Create,
@@ -61,7 +59,6 @@ public class CommandSmokeTests
             var rootCommand = new System.CommandLine.RootCommand("Test")
             {
                 AgentCommand.Create(),
-                AuditCommand.Create(),
                 CheckCommand.Create(),
                 CompleteCommand.Create(),
                 CompletionsCommand.Create(),
@@ -72,7 +69,6 @@ public class CommandSmokeTests
                 HelpCommand.Create(),
                 InboxCommand.Create(),
                 IndexCommand.Create(),
-                InquisitionCommand.Create(),
                 IssueCommand.Create(),
                 MessageCommand.Create(),
                 InitCommand.Create(),
@@ -93,7 +89,7 @@ public class CommandSmokeTests
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
             // Must match Program.cs: 27 Create() commands + 1 inline (version) = 28
-            Assert.Equal(28, rootCommand.Subcommands.Count);
+            Assert.Equal(26, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

@@ -511,7 +511,7 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         registry = new AgentRegistry(_testDir);
 
-        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry, new NoOpAuditService());
+        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.True(File.Exists(markerPath), "Marker file should be created on first encounter");
@@ -530,10 +530,10 @@ public class GuardCommandTests : IDisposable
         registry = new AgentRegistry(_testDir);
 
         // First call: blocks
-        GuardCommand.CheckNudges("dangerous-command", "sess-1", registry, new NoOpAuditService());
+        GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
 
         // Second call: allows
-        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry, new NoOpAuditService());
+        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
 
         Assert.Null(result);
         Assert.False(File.Exists(markerPath), "Marker file should be deleted on second encounter");
@@ -556,13 +556,13 @@ public class GuardCommandTests : IDisposable
         var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
 
         // Trigger pattern A only
-        GuardCommand.CheckNudges("risky-alpha", "sess-1", registry, new NoOpAuditService());
+        GuardCommand.CheckNudges("risky-alpha", "sess-1", registry);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should exist");
         Assert.False(File.Exists(markerB), "Marker for pattern B should not exist");
 
         // Trigger pattern B
-        GuardCommand.CheckNudges("risky-beta", "sess-1", registry, new NoOpAuditService());
+        GuardCommand.CheckNudges("risky-beta", "sess-1", registry);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should still exist");
         Assert.True(File.Exists(markerB), "Marker for pattern B should now exist");
@@ -610,16 +610,6 @@ public class GuardCommandTests : IDisposable
                 ]
             }
             """);
-    }
-
-    private class NoOpAuditService : IAuditService
-    {
-        public void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null, ProjectSnapshot? snapshot = null) { }
-        public AuditSession? GetSession(string sessionId) => null;
-        public (IReadOnlyList<AuditSession> Sessions, bool LimitReached) LoadSessions(string? yearFilter = null) => ([], false);
-        public IReadOnlyList<string> ListSessionFiles(string? yearFilter = null) => [];
-        public string GetAuditPath() => "";
-        public void EnsureAuditFolder() { }
     }
 
     #endregion

@@ -71,7 +71,6 @@ public class CliEndToEndTests : IDisposable
     [InlineData("check")]
     [InlineData("agent")]
     [InlineData("guard")]
-    [InlineData("audit")]
     [InlineData("dispatch")]
     [InlineData("inbox")]
     [InlineData("task")]

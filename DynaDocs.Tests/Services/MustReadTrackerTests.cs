@@ -37,7 +37,6 @@ public class MustReadTrackerTests : IDisposable
 {
     private readonly string _testDir;
     private readonly FakeConfigService _configService;
-    private readonly FakeAuditService _auditService;
     private readonly MustReadTracker _tracker;
 
     public MustReadTrackerTests()
@@ -45,11 +44,9 @@ public class MustReadTrackerTests : IDisposable
         _testDir = Path.Combine(Path.GetTempPath(), "dydo-mustread-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_testDir);
         _configService = new FakeConfigService(_testDir);
-        _auditService = new FakeAuditService();
         _tracker = new MustReadTracker(
             _testDir,
             _configService,
-            _auditService,
             agent => Path.Combine(_testDir, "agents", agent));
     }
 
@@ -124,43 +121,6 @@ public class MustReadTrackerTests : IDisposable
         Assert.Single(result); // only the mode file itself
     }
 
-    [Fact]
-    public void ComputeUnreadMustReads_WithSession_FiltersAlreadyRead()
-    {
-        CreateLinkedFile("docs/about.md", "---\nmust-read: true\n---\n# About");
-        CreateModeFile("Alice", "code-writer", "# Mode\n\n[About](../../../docs/about.md)");
-
-        _auditService.SessionToReturn = new AuditSession
-        {
-            SessionId = "sess-1",
-            Events =
-            [
-                new AuditEvent
-                {
-                    EventType = AuditEventType.Read,
-                    Path = "docs/about.md"
-                }
-            ]
-        };
-
-        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", "sess-1");
-
-        Assert.DoesNotContain(result, r => r.Contains("about.md"));
-    }
-
-    [Fact]
-    public void ComputeUnreadMustReads_AuditServiceThrows_StillReturnsResults()
-    {
-        CreateLinkedFile("docs/about.md", "---\nmust-read: true\n---\n# About");
-        CreateModeFile("Alice", "code-writer", "# Mode\n\n[About](../../../docs/about.md)");
-
-        _auditService.ShouldThrow = true;
-
-        var result = _tracker.ComputeUnreadMustReads("Alice", "code-writer", "sess-1");
-
-        Assert.True(result.Count >= 1);
-    }
-
     #region Conditional Must-Reads (Decision 013)
 
     [Fact]
@@ -202,7 +162,7 @@ public class MustReadTrackerTests : IDisposable
         CreateLinkedFile("dydo/guides/how-to-review-worktree-merges.md",
             "---\nmust-read: true\n---\n# How to Review Merges");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x-merge",
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", task: "feature-x-merge",
             conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.Contains(result, r => r.Contains("how-to-review-worktree-merges.md"));
@@ -216,7 +176,7 @@ public class MustReadTrackerTests : IDisposable
         CreateLinkedFile("dydo/guides/how-to-review-worktree-merges.md",
             "---\nmust-read: true\n---\n# How to Review Merges");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x",
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", task: "feature-x",
             conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.DoesNotContain(result, r => r.Contains("how-to-review-worktree-merges.md"));
@@ -230,7 +190,7 @@ public class MustReadTrackerTests : IDisposable
         CreateLinkedFile("dydo/project/tasks/feature-x.md",
             "---\nname: feature-x\nstatus: review-pending\n---\n# Task: feature-x\n\nImplement feature X.");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "feature-x",
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", task: "feature-x",
             conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.Contains(result, r => r.Contains("feature-x.md"));
@@ -241,7 +201,7 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: null,
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", task: null,
             conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.Single(result);
@@ -252,7 +212,7 @@ public class MustReadTrackerTests : IDisposable
     {
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
-        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", null, task: "nonexistent-task",
+        var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", task: "nonexistent-task",
             conditionalMustReads: TestConditionalMustReads.Reviewer);
 
         Assert.Single(result);
@@ -569,25 +529,6 @@ public class MustReadTrackerTests : IDisposable
         public string GetChangelogPath(string? startPath = null) => Path.Combine(_basePath, "changelog");
         public string GetIssuesPath(string? startPath = null) => Path.Combine(_basePath, "issues");
         public (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config) => (true, null);
-    }
-
-    private class FakeAuditService : IAuditService
-    {
-        public AuditSession? SessionToReturn { get; set; }
-        public bool ShouldThrow { get; set; }
-
-        public void LogEvent(string sessionId, AuditEvent @event, string? agentName = null, string? human = null, ProjectSnapshot? snapshot = null) { }
-
-        public AuditSession? GetSession(string sessionId)
-        {
-            if (ShouldThrow) throw new IOException("audit failure");
-            return SessionToReturn;
-        }
-
-        public (IReadOnlyList<AuditSession> Sessions, bool LimitReached) LoadSessions(string? yearFilter = null) => ([], false);
-        public IReadOnlyList<string> ListSessionFiles(string? yearFilter = null) => [];
-        public string GetAuditPath() => "";
-        public void EnsureAuditFolder() { }
     }
 
     #endregion

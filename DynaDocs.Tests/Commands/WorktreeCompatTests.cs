@@ -556,19 +556,6 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void LogAuditEvent_NullSessionId_ReturnsImmediately()
-    {
-        // Should not throw — exits early on null sessionId
-        GuardCommand.LogAuditEvent(new AuditService(), null, new AgentRegistry(), new AuditEvent());
-    }
-
-    [Fact]
-    public void LogAuditEvent_EmptySessionId_ReturnsImmediately()
-    {
-        GuardCommand.LogAuditEvent(new AuditService(), "", new AgentRegistry(), new AuditEvent());
-    }
-
-    [Fact]
     public void ShouldBypassOffLimits_BootstrapFile_ReturnsTrue()
     {
         Assert.True(GuardCommand.ShouldBypassOffLimits("dydo/index.md", null));
@@ -607,9 +594,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Read, Path = "README.md", Command = "cat" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-guard-test"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "cat README.md", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "cat README.md", null, offLimits, registry);
         Assert.Null(result);
     }
 
@@ -620,9 +606,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Write, Path = "output.txt", Command = "echo" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-guard-write"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "echo hi > output.txt", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "echo hi > output.txt", null, offLimits, registry);
         Assert.Null(result);
     }
 
@@ -632,9 +617,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Delete, Path = "temp.log", Command = "rm" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-guard-del"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "rm temp.log", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "rm temp.log", null, offLimits, registry);
         Assert.Null(result);
     }
 
@@ -644,9 +628,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Move, Path = "a.txt", Command = "mv" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-guard-mv"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "mv a.txt b.txt", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "mv a.txt b.txt", null, offLimits, registry);
         Assert.Null(result);
     }
 
@@ -656,9 +639,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Copy, Path = "a.txt", Command = "cp" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-guard-cp"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "cp a.txt b.txt", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "cp a.txt b.txt", null, offLimits, registry);
         Assert.Null(result);
     }
 
@@ -669,9 +651,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Read, Path = "Commands/GuardCommand.cs", Command = "cat" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-read"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "cat Commands/GuardCommand.cs", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "cat Commands/GuardCommand.cs", null, offLimits, registry);
         Assert.NotNull(result);
         Assert.Equal(2, result.Value);
     }
@@ -683,9 +664,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Read, Path = "README.md", Command = "cat" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-bootstrap"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "cat README.md", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "cat README.md", null, offLimits, registry);
         Assert.Null(result);
     }
 
@@ -695,9 +675,8 @@ public class WorktreeCompatTests : IDisposable
         var op = new FileOperation { Type = FileOperationType.Read, Path = "dydo/index.md", Command = "cat" };
         var offLimits = new OffLimitsService();
         var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-index"));
-        var audit = new AuditService();
 
-        var result = GuardCommand.CheckBashFileOperation(op, "cat dydo/index.md", null, offLimits, registry, audit);
+        var result = GuardCommand.CheckBashFileOperation(op, "cat dydo/index.md", null, offLimits, registry);
         Assert.Null(result);
     }
 

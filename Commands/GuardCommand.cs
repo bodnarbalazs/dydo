@@ -116,12 +116,6 @@ public static partial class GuardCommand
             Console.WriteLine(WorktreeAllowJson);
     }
     private static readonly HashSet<string> WriteActions = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
-    private static readonly Dictionary<string, AuditEventType> ActionAuditMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["write"] = AuditEventType.Write,
-        ["edit"] = AuditEventType.Edit,
-        ["delete"] = AuditEventType.Delete,
-    };
 
     private record struct GuardContext(
         string? FilePath, string? Action, string? BashCommand,
@@ -212,7 +206,6 @@ public static partial class GuardCommand
     private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, AgentRegistry registry)
     {
         var bashAnalyzer = new BashCommandAnalyzer();
-        var auditService = new AuditService();
 
         RunDailyValidationIfDue();
 
@@ -245,7 +238,7 @@ public static partial class GuardCommand
         // ============================================================
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
-            return HandleWorkerCall(ctx, filePath, searchPath, runInBackground, offLimitsService, bashAnalyzer, registry, auditService);
+            return HandleWorkerCall(ctx, filePath, searchPath, runInBackground, offLimitsService, bashAnalyzer, registry);
         }
 
         // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
@@ -258,7 +251,7 @@ public static partial class GuardCommand
 
         var routed = RouteToolLayers(
             filePath, action, bashCommand, toolName, searchPath, runInBackground,
-            sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+            sessionId, offLimitsService, bashAnalyzer, registry);
         if (routed != null) return routed.Value;
 
         // ============================================================
@@ -271,11 +264,11 @@ public static partial class GuardCommand
         // For Read operations, apply staged access control
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
         {
-            return HandleReadOperation(filePath, toolName, agent, sessionId, registry, auditService);
+            return HandleReadOperation(filePath, toolName, agent, sessionId, registry);
         }
 
         // For write/edit operations
-        return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry, auditService);
+        return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry);
     }
 
     /// <summary>
@@ -287,37 +280,32 @@ public static partial class GuardCommand
         string? filePath, string? action, string? bashCommand, string? toolName,
         string? searchPath, bool? runInBackground, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, IAuditService auditService)
+        AgentRegistry registry)
     {
         // SECURITY LAYER 1: off-limits patterns for direct file operations.
         // For reads, bootstrap/mode files bypass off-limits based on staged access.
         if (!string.IsNullOrEmpty(filePath))
         {
-            var blocked = CheckDirectFileOffLimits(filePath, action, toolName, sessionId, offLimitsService, registry, auditService);
+            var blocked = CheckDirectFileOffLimits(filePath, action, toolName, sessionId, offLimitsService, registry);
             if (blocked != null) return blocked.Value;
         }
 
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(toolName, bashCommand))
         {
-            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground);
+            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry, runInBackground);
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — require
         // Stage 2 (identity + role) because they scan broadly across directories.
         if (toolName != null && SearchTools.Contains(toolName))
         {
-            return HandleSearchTool(searchPath, toolName, sessionId, offLimitsService, registry, auditService);
+            return HandleSearchTool(searchPath, toolName, sessionId, offLimitsService, registry);
         }
 
         // SECURITY LAYER 2.6: Dydo agents must not use Claude Code's built-in plan mode.
         if (toolName == "enterplanmode" || toolName == "exitplanmode")
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = toolName,
-                BlockReason = "Built-in plan mode is not allowed for dydo agents"
-            });
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
             Console.Error.WriteLine("  To plan: switch to planner role ('dydo agent role planner --task <name>')");
             Console.Error.WriteLine("  For working notes: write to your workspace (dydo/agents/<you>/notes-<topic>.md)");
@@ -329,32 +317,27 @@ public static partial class GuardCommand
 
     private static int HandleWriteOperation(
         string? filePath, string? action, string? toolName, AgentState? agent,
-        string? sessionId, AgentRegistry registry, IAuditService auditService)
+        string? sessionId, AgentRegistry registry)
     {
         if (string.IsNullOrEmpty(filePath))
             return ExitCodes.Success;
 
-        var identityBlock = RequireWriteIdentity(agent, filePath, toolName, auditService, sessionId, registry);
+        var identityBlock = RequireWriteIdentity(agent, filePath, toolName, sessionId, registry);
         if (identityBlock != null) return identityBlock.Value;
 
         // Re-read agent once after identity check (identity check may have modified state)
         agent = registry.GetCurrentAgent(sessionId);
         if (agent != null)
         {
-            var blocked = NotifyUnreadMessages(agent, filePath, toolName, null, auditService, sessionId, registry);
+            var blocked = NotifyUnreadMessages(agent, filePath, toolName, null, sessionId, registry);
             if (blocked != null) return blocked.Value;
 
-            blocked = CheckPendingState(agent, filePath, toolName, null, auditService, sessionId, registry);
+            blocked = CheckPendingState(agent, filePath, toolName, null, sessionId, registry);
             if (blocked != null) return blocked.Value;
         }
 
         if (agent != null && agent.UnreadMustReads.Count > 0)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-                BlockReason = "Must-read files not yet read"
-            });
             WriteMustReadError(agent);
             return ExitCodes.ToolError;
         }
@@ -362,14 +345,8 @@ public static partial class GuardCommand
         // Per-role path RBAC removed (Decision 024 §2): off-limits + nudges are the
         // universal enforcement; coarse scope belongs to native permission profiles.
         // The one identity-scoped exception that survives: no cross-agent workspace writes.
-        var crossAgent = BlockIfCrossAgentWorkspace(filePath, agent, toolName, null, sessionId, registry, auditService);
+        var crossAgent = BlockIfCrossAgentWorkspace(filePath, agent, toolName, null, sessionId, registry);
         if (crossAgent != null) return crossAgent.Value;
-
-        var eventType = ActionAuditMap.GetValueOrDefault(action ?? "", AuditEventType.Edit);
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = eventType, Path = filePath, Tool = toolName
-        });
 
         EmitWorktreeAllowIfNeeded();
 
@@ -413,15 +390,15 @@ public static partial class GuardCommand
     private static int HandleWorkerCall(
         GuardContext ctx, string? filePath, string? searchPath, bool? runInBackground,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, IAuditService auditService)
+        AgentRegistry registry)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
-            return HandleBashCommand(ctx.BashCommand!, ctx.SessionId, offLimitsService, bashAnalyzer, registry, auditService, runInBackground, isWorker: true);
+            return HandleBashCommand(ctx.BashCommand!, ctx.SessionId, offLimitsService, bashAnalyzer, registry, runInBackground, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
         {
-            var offLimitsBlock = BlockIfPathOffLimits(checkPath, ctx.ToolName, ctx.SessionId, offLimitsService, registry, auditService);
+            var offLimitsBlock = BlockIfPathOffLimits(checkPath, ctx.ToolName, ctx.SessionId, offLimitsService, registry);
             if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
@@ -436,17 +413,12 @@ public static partial class GuardCommand
     /// </summary>
     private static int? BlockIfPathOffLimits(
         string path, string? toolName, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+        IOffLimitsService offLimitsService, AgentRegistry registry)
     {
         var offLimitsPattern = offLimitsService.IsPathOffLimits(path);
         if (offLimitsPattern == null)
             return null;
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
-            BlockReason = $"Off-limits: {offLimitsPattern}"
-        });
         Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
         Console.Error.WriteLine($"  Path: {path}");
         Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
@@ -456,14 +428,14 @@ public static partial class GuardCommand
 
     private static int? CheckDirectFileOffLimits(
         string filePath, string? action, string? toolName, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+        IOffLimitsService offLimitsService, AgentRegistry registry)
     {
         var agentForOffLimits = registry.GetCurrentAgent(sessionId);
 
         if (action == "read" && ShouldBypassOffLimits(filePath, agentForOffLimits))
             return null;
 
-        return BlockIfPathOffLimits(filePath, toolName, sessionId, offLimitsService, registry, auditService);
+        return BlockIfPathOffLimits(filePath, toolName, sessionId, offLimitsService, registry);
     }
 
     internal static bool ShouldBypassOffLimits(string filePath, AgentState? agent)
@@ -479,29 +451,20 @@ public static partial class GuardCommand
 
     private static int HandleReadOperation(
         string? filePath, string? toolName, AgentState? agent, string? sessionId,
-        AgentRegistry registry, IAuditService auditService)
+        AgentRegistry registry)
     {
         if (!IsReadAllowed(filePath, agent))
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-                BlockReason = agent == null ? "No agent identity" : "No role set"
-            });
             WriteAccessDeniedError(agent?.Name, null);
             return ExitCodes.ToolError;
         }
 
         if (agent != null)
         {
-            var blocked = CheckPendingState(agent, filePath, toolName, null, auditService, sessionId, registry);
+            var blocked = CheckPendingState(agent, filePath, toolName, null, sessionId, registry);
             if (blocked != null) return blocked.Value;
         }
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Read, Path = filePath, Tool = toolName
-        });
 
         TrackReadCompletion(agent, filePath, sessionId, registry);
 
@@ -534,16 +497,16 @@ public static partial class GuardCommand
 
     private static int HandleSearchTool(
         string? searchPath, string? toolName, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService)
+        IOffLimitsService offLimitsService, AgentRegistry registry)
     {
         var searchAgent = registry.GetCurrentAgent(sessionId);
-        var blocked = RequireIdentityAndRole(searchAgent, searchPath, toolName, auditService, sessionId, registry);
+        var blocked = RequireIdentityAndRole(searchAgent, searchPath, toolName, sessionId, registry);
         if (blocked != null) return blocked.Value;
 
-        blocked = NotifyUnreadMessages(searchAgent!, searchPath, toolName, null, auditService, sessionId, registry);
+        blocked = NotifyUnreadMessages(searchAgent!, searchPath, toolName, null, sessionId, registry);
         if (blocked != null) return blocked.Value;
 
-        blocked = CheckPendingState(searchAgent!, searchPath, toolName, null, auditService, sessionId, registry);
+        blocked = CheckPendingState(searchAgent!, searchPath, toolName, null, sessionId, registry);
         if (blocked != null) return blocked.Value;
 
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
@@ -555,14 +518,10 @@ public static partial class GuardCommand
 
         if (!string.IsNullOrEmpty(searchPath))
         {
-            var offLimitsBlock = BlockIfPathOffLimits(searchPath, toolName, sessionId, offLimitsService, registry, auditService);
+            var offLimitsBlock = BlockIfPathOffLimits(searchPath, toolName, sessionId, offLimitsService, registry);
             if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Read, Path = searchPath, Tool = toolName
-        });
 
         EmitWorktreeAllowIfNeeded();
 
@@ -578,7 +537,6 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry,
-        IAuditService auditService,
         bool? runInBackground = null,
         bool isWorker = false)
     {
@@ -595,18 +553,13 @@ public static partial class GuardCommand
                 Console.Error.WriteLine("  messaging belong to the top-level orchestrator, not a worker.");
                 return ExitCodes.ToolError;
             }
-            return HandleDydoBashCommand(command, sessionId, registry, auditService, runInBackground);
+            return HandleDydoBashCommand(command, sessionId, registry, runInBackground);
         }
 
         // Hardcoded dangerous patterns — security checks before configurable nudges
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command), BlockReason = $"Dangerous pattern: {dangerReason}"
-            });
             Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
             Console.Error.WriteLine($"  Reason: {dangerReason}");
             Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
@@ -614,18 +567,13 @@ public static partial class GuardCommand
         }
 
         // Configurable nudges — after hardcoded security checks
-        var nudged = CheckNudges(command, sessionId, registry, auditService);
+        var nudged = CheckNudges(command, sessionId, registry);
         if (nudged != null) return nudged.Value;
 
         // COACHING: Block needless cd+command compounds
         var (isCdChain, cdPath, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
         if (isCdChain)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command), BlockReason = "Needless cd compound"
-            });
             Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands — it breaks auto-approval for whitelisted commands.");
             Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
             Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
@@ -636,13 +584,13 @@ public static partial class GuardCommand
         // messages / pending state / must-reads) and go straight to the universal
         // git-safety + off-limits op analysis with no agent context.
         if (isWorker)
-            return AnalyzeAndCheckBashOperations(command, sessionId, agent: null, offLimitsService, bashAnalyzer, registry, auditService, isWorker: true);
+            return AnalyzeAndCheckBashOperations(command, sessionId, agent: null, offLimitsService, bashAnalyzer, registry, isWorker: true);
 
         // Non-dydo bash: check agent state, then analyze command
-        return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry, auditService);
+        return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry);
     }
 
-    internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry, IAuditService auditService)
+    internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry)
     {
         // Always include block-severity default nudges (H19/H20) even if removed from config.
         // These are security-critical and must not be removable via dydo.json editing.
@@ -675,12 +623,6 @@ public static partial class GuardCommand
                 if (!File.Exists(markerPath))
                 {
                     File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked, Tool = "bash",
-                        Command = TruncateCommand(command),
-                        BlockReason = $"Nudge (warn): {message}"
-                    });
                     Console.Error.WriteLine($"BLOCKED: {message}");
                     Console.Error.WriteLine("  (Run the same command again to proceed anyway.)");
                     return ExitCodes.ToolError;
@@ -691,12 +633,6 @@ public static partial class GuardCommand
             }
 
             // Block severity: always block
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = $"Nudge (block): {message}"
-            });
             Console.Error.WriteLine($"BLOCKED: {message}");
             return ExitCodes.ToolError;
         }
@@ -739,7 +675,7 @@ public static partial class GuardCommand
         return nudges;
     }
 
-    private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, IAuditService auditService, bool? runInBackground)
+    private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, bool? runInBackground)
     {
         // #0196: phase-1 single-line write removed. The unverifiable shape it produced is now
         // discarded by AgentSessionManager.GetSessionContext, so writing it served no purpose
@@ -753,12 +689,6 @@ public static partial class GuardCommand
         {
             if (agent != null)
             {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked, Tool = "bash",
-                    Command = TruncateCommand(command),
-                    BlockReason = "Human-only command"
-                });
                 Console.Error.WriteLine("BLOCKED: This command is human-only. Agents cannot run it.");
                 return ExitCodes.ToolError;
             }
@@ -766,11 +696,6 @@ public static partial class GuardCommand
 
         if (IsDydoWaitCommand(command) && runInBackground != true)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command), BlockReason = "dydo wait in foreground"
-            });
             Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work.");
             return ExitCodes.ToolError;
         }
@@ -779,7 +704,7 @@ public static partial class GuardCommand
         {
             if (agent != null)
             {
-                var blocked = CheckPendingState(agent, null, "bash", TruncateCommand(command), auditService, sessionId, registry);
+                var blocked = CheckPendingState(agent, null, "bash", TruncateCommand(command), sessionId, registry);
                 if (blocked != null) return blocked.Value;
             }
         }
@@ -824,15 +749,15 @@ public static partial class GuardCommand
     private static int HandleNonDydoBash(
         string command, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, IAuditService auditService)
+        AgentRegistry registry)
     {
         var agent = registry.GetCurrentAgent(sessionId);
         if (agent != null)
         {
-            var blocked = NotifyUnreadMessages(agent, null, "bash", command, auditService, sessionId, registry);
+            var blocked = NotifyUnreadMessages(agent, null, "bash", command, sessionId, registry);
             if (blocked != null) return blocked.Value;
 
-            blocked = CheckPendingState(agent, null, "bash", command, auditService, sessionId, registry);
+            blocked = CheckPendingState(agent, null, "bash", command, sessionId, registry);
             if (blocked != null) return blocked.Value;
 
             // Must-read enforcement for write-like operations
@@ -849,24 +774,19 @@ public static partial class GuardCommand
 
                 if (hasWriteOps || isGitMerge)
                 {
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked, Tool = "bash",
-                        Command = TruncateCommand(command), BlockReason = "Must-read files not yet read"
-                    });
                     WriteMustReadError(agent);
                     return ExitCodes.ToolError;
                 }
             }
         }
 
-        return AnalyzeAndCheckBashOperations(command, sessionId, agent, offLimitsService, bashAnalyzer, registry, auditService);
+        return AnalyzeAndCheckBashOperations(command, sessionId, agent, offLimitsService, bashAnalyzer, registry);
     }
 
     private static int AnalyzeAndCheckBashOperations(
         string command, string? sessionId, AgentState? agent,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, IAuditService auditService, bool isWorker = false)
+        AgentRegistry registry, bool isWorker = false)
     {
         // git stash is only safe in worktrees (isolated stash stack); block otherwise
         if (GitStashRegex().IsMatch(command))
@@ -876,11 +796,6 @@ public static partial class GuardCommand
                 const string reason = "git stash is unsafe in multi-agent environments. "
                     + "Stashes are a global stack -- other agents' stash operations will interfere. "
                     + "Commit your changes instead.";
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked, Tool = "bash",
-                    Command = TruncateCommand(command), BlockReason = reason
-                });
                 Console.Error.WriteLine($"BLOCKED: {reason}");
                 return ExitCodes.ToolError;
             }
@@ -899,11 +814,6 @@ public static partial class GuardCommand
                 {
                     const string reason = "Use dydo worktree merge to merge worktree branches. "
                         + "Do not use git merge directly.";
-                    LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                    {
-                        EventType = AuditEventType.Blocked, Tool = "bash",
-                        Command = TruncateCommand(command), BlockReason = reason
-                    });
                     Console.Error.WriteLine($"BLOCKED: {reason}");
                     return ExitCodes.ToolError;
                 }
@@ -921,12 +831,6 @@ public static partial class GuardCommand
             or FileOperationType.Move or FileOperationType.Copy
             or FileOperationType.PermissionChange))
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash",
-                Command = TruncateCommand(command),
-                BlockReason = "Write with bypass attempt (command substitution/variable expansion)"
-            });
             Console.Error.WriteLine("BLOCKED: Command contains bypass patterns (command substitution or variable expansion) "
                 + "that make file operation analysis unreliable.");
             Console.Error.WriteLine("  Write operations cannot be verified. Use literal paths instead.");
@@ -935,14 +839,10 @@ public static partial class GuardCommand
 
         foreach (var op in analysis.Operations)
         {
-            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, auditService, agent, isWorker);
+            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, agent, isWorker);
             if (blocked != null) return blocked.Value;
         }
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Bash, Tool = "bash", Command = TruncateCommand(command)
-        });
 
         EmitWorktreeAllowIfNeeded();
 
@@ -951,7 +851,7 @@ public static partial class GuardCommand
 
     internal static int? CheckBashFileOperation(
         FileOperation op, string command, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry, IAuditService auditService,
+        IOffLimitsService offLimitsService, AgentRegistry registry,
         AgentState? cachedAgent = null, bool isWorker = false)
     {
         // For reads, apply the same bootstrap/mode file bypass as direct reads (#60).
@@ -965,11 +865,6 @@ public static partial class GuardCommand
         var offLimitsPattern = skipOffLimits ? null : offLimitsService.IsPathOffLimits(op.Path);
         if (offLimitsPattern != null)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
-                Command = TruncateCommand(command), BlockReason = $"Off-limits: {offLimitsPattern}"
-            });
             Console.Error.WriteLine("BLOCKED: Command references off-limits path.");
             Console.Error.WriteLine($"  Path: {op.Path}");
             Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
@@ -983,12 +878,6 @@ public static partial class GuardCommand
         {
             if (!IsReadAllowed(op.Path, agent))
             {
-                LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-                {
-                    EventType = AuditEventType.Blocked, Tool = "bash", Path = op.Path,
-                    Command = TruncateCommand(command),
-                    BlockReason = agent == null ? "No agent identity" : "No role set"
-                });
                 WriteAccessDeniedError(agent?.Name, null);
                 return ExitCodes.ToolError;
             }
@@ -997,7 +886,7 @@ public static partial class GuardCommand
         // Per-role path RBAC removed (Decision 024 §2), but an agent still cannot write
         // INTO another agent's workspace (cross-agent tampering — plans/notes/inbox).
         if (IsWriteLikeOp(op.Type))
-            return BlockIfCrossAgentWorkspace(op.Path, agent, "bash", command, sessionId, registry, auditService);
+            return BlockIfCrossAgentWorkspace(op.Path, agent, "bash", command, sessionId, registry);
 
         return null;
     }
@@ -1015,17 +904,11 @@ public static partial class GuardCommand
     /// </summary>
     private static int? BlockIfCrossAgentWorkspace(
         string? filePath, AgentState? agent, string? toolName, string? command,
-        string? sessionId, AgentRegistry registry, IAuditService auditService)
+        string? sessionId, AgentRegistry registry)
     {
         if (agent == null || string.IsNullOrEmpty(filePath) || !IsOtherAgentWorkspace(filePath, agent.Name))
             return null;
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-            Command = command != null ? TruncateCommand(command) : null,
-            BlockReason = "Cross-agent workspace write"
-        });
         Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} cannot write into another agent's workspace.");
         Console.Error.WriteLine($"  Path: {filePath}");
         Console.Error.WriteLine("  Each agent owns only dydo/agents/<self>/. Use dydo msg to coordinate.");
@@ -1043,25 +926,15 @@ public static partial class GuardCommand
     /// </summary>
     private static int? RequireIdentityAndRole(
         AgentState? agent, string? path, string? toolName,
-        IAuditService auditService, string? sessionId, IAgentRegistry registry)
+        string? sessionId, IAgentRegistry registry)
     {
         if (agent == null)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
-                BlockReason = "No agent identity"
-            });
             WriteAccessDeniedError(null, null);
             return ExitCodes.ToolError;
         }
         if (string.IsNullOrEmpty(agent.Role))
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
-                BlockReason = "No role set"
-            });
             WriteAccessDeniedError(agent.Name, null);
             return ExitCodes.ToolError;
         }
@@ -1070,26 +943,16 @@ public static partial class GuardCommand
 
     private static int? RequireWriteIdentity(
         AgentState? agent, string? filePath, string? toolName,
-        IAuditService auditService, string? sessionId, IAgentRegistry registry)
+        string? sessionId, IAgentRegistry registry)
     {
         if (agent == null)
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-                BlockReason = "No agent identity"
-            });
             Console.Error.WriteLine("BLOCKED: No agent identity assigned to this process.");
             Console.Error.WriteLine("  Run 'dydo agent claim auto' to claim an agent identity.");
             return ExitCodes.ToolError;
         }
         if (string.IsNullOrEmpty(agent.Role))
         {
-            LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-            {
-                EventType = AuditEventType.Blocked, Path = filePath, Tool = toolName,
-                BlockReason = "No role set"
-            });
             Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
             Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
             Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
@@ -1122,7 +985,7 @@ public static partial class GuardCommand
     /// </summary>
     internal static int? NotifyUnreadMessages(
         AgentState agent, string? path, string? toolName, string? command,
-        IAuditService auditService, string? sessionId, IAgentRegistry registry)
+        string? sessionId, IAgentRegistry registry)
     {
         // Self-heal phantom ids — drop ids whose inbox file is missing. Without this, a
         // non-atomic inbox clear (crash mid-operation, manual cleanup) leaves the
@@ -1144,12 +1007,6 @@ public static partial class GuardCommand
         if (agent.UnreadMessages.Count == 0)
             return null;
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
-            Command = command != null ? TruncateCommand(command) : null,
-            BlockReason = "Unread messages"
-        });
 
         Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
         foreach (var msgId in agent.UnreadMessages)
@@ -1178,19 +1035,13 @@ public static partial class GuardCommand
     /// </summary>
     private static int? CheckPendingState(
         AgentState agent, string? path, string? toolName, string? command,
-        IAuditService auditService, string? sessionId, AgentRegistry registry)
+        string? sessionId, AgentRegistry registry)
     {
         var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
         var missingGeneralWait = MissingGeneralWait(agent, registry);
         if (pendingMarkers.Count == 0 && !missingGeneralWait)
             return null;
 
-        LogAuditEvent(auditService, sessionId, registry, new AuditEvent
-        {
-            EventType = AuditEventType.Blocked, Path = path, Tool = toolName,
-            Command = command != null ? TruncateCommand(command) : null,
-            BlockReason = pendingMarkers.Count > 0 ? "Pending wait markers" : "Missing general wait"
-        });
 
         WritePendingStateBlock(pendingMarkers, missingGeneralWait);
         return ExitCodes.ToolError;
@@ -1586,33 +1437,6 @@ public static partial class GuardCommand
         var normalized = filePath.Replace('\\', '/');
         var match = InboxMessageIdRegex().Match(normalized);
         return match.Success ? match.Groups[1].Value : null;
-    }
-
-    /// <summary>
-    /// Helper to log an audit event with proper error handling.
-    /// </summary>
-    internal static void LogAuditEvent(
-        IAuditService auditService,
-        string? sessionId,
-        IAgentRegistry registry,
-        AuditEvent @event)
-    {
-        if (string.IsNullOrEmpty(sessionId))
-            return;
-
-        try
-        {
-            // Get agent info for session metadata
-            var agent = registry.GetCurrentAgent(sessionId);
-            var human = registry.GetCurrentHuman();
-
-            auditService.LogEvent(sessionId, @event, agent?.Name, human);
-        }
-        catch
-        {
-            // Audit logging should never break the guard
-            // Silently ignore errors
-        }
     }
 
     /// <summary>

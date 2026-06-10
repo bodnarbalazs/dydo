@@ -25,9 +25,6 @@ public class DydoConfig
     [JsonPropertyName("dispatch")]
     public DispatchConfig Dispatch { get; set; } = new();
 
-    [JsonPropertyName("tasks")]
-    public TasksConfig Tasks { get; set; } = new();
-
     [JsonPropertyName("worktree")]
     public WorktreeConfig Worktree { get; set; } = new();
 

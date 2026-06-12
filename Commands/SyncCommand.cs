@@ -145,13 +145,22 @@ public static partial class SyncCommand
     {
         var lines = content.Split('\n');
         var n = 0;
+        var inFence = false;
         for (var i = 0; i < lines.Length; i++)
         {
+            if (lines[i].TrimStart().StartsWith("```"))
+            {
+                inFence = !inFence;
+                continue;
+            }
+            if (inFence)
+                continue; // never renumber or reset on a literal "N." or "# comment" inside a code fence
+
             var m = OrderedItemRegex().Match(lines[i]);
             if (m.Success)
                 lines[i] = $"{m.Groups[1].Value}{++n}. {m.Groups[3].Value}";
             else if (lines[i].StartsWith('#'))
-                n = 0; // a heading starts a fresh list; prose/code/blank between items don't
+                n = 0; // a heading starts a fresh list; prose/blank between items don't
         }
         return string.Join('\n', lines);
     }
@@ -225,7 +234,7 @@ public static partial class SyncCommand
     [GeneratedRegex(@"^(\s*)(\d+)\. (.*)$")]
     private static partial Regex OrderedItemRegex();
 
-    [GeneratedRegex(@"^## Must-Reads\b.*?(?=^## )", RegexOptions.Singleline | RegexOptions.Multiline)]
+    [GeneratedRegex(@"^## Must-Reads\b.*?(?=^## |\z)", RegexOptions.Singleline | RegexOptions.Multiline)]
     private static partial Regex MustReadsSectionRegex();
 
     [GeneratedRegex(@"\[[^\]]*\]\(([^)]+)\)")]

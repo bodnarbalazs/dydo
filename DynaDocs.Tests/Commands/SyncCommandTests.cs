@@ -119,6 +119,16 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void RenumberOrderedLists_IgnoresContentInsideCodeFences()
+    {
+        // Inquisition finding: a literal "1." or "# comment" inside a ```fence``` must not
+        // be renumbered or reset the running count.
+        var input = "1. first\n```bash\n# a shell comment\n1. not a list item\n```\n2. second";
+        var result = SyncCommand.RenumberOrderedLists(input);
+        Assert.Equal("1. first\n```bash\n# a shell comment\n1. not a list item\n```\n2. second", result);
+    }
+
+    [Fact]
     public void SyncCommand_Run_GeneratesAllWorkerRoles()
     {
         var originalDir = Directory.GetCurrentDirectory();

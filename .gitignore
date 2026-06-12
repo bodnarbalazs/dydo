@@ -13,6 +13,7 @@ DynaDocs.sln.DotSettings.user
 .claude/*
 !.claude/agents/
 !.claude/skills/
+!.claude/workflows/
 !.claude/settings.json
 
 # DynaDocs agent workspaces (local state)

@@ -86,8 +86,59 @@ public class SyncCommandTests : IDisposable
         var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
         // A writer role gets Edit/Write AND writer-stance prose — not the read-only contradiction
         Assert.Contains("Edit, Write", agent);
-        Assert.Contains("implement and modify code", agent);
-        Assert.DoesNotContain("you do not modify it", agent);
+        Assert.Contains("produce and modify the project's files", agent);
+        Assert.DoesNotContain("read-only", agent);
+
+        // The skill description must be role-correct, not reviewer-hardcoded
+        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "code-writer", "SKILL.md"));
+        Assert.DoesNotContain("reviewing a code change", skill);
+        Assert.Contains("working as a code-writer", skill);
+    }
+
+    [Fact]
+    public void ExtractMustReads_IsRoleSpecific()
+    {
+        // docs-writer's must-reads come from ITS template (writing-docs, not coding-standards)
+        var docsWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "docs-writer");
+        var mustReads = SyncCommand.ExtractMustReads(docsWriter, _testDir);
+
+        Assert.Contains("dydo/reference/writing-docs.md", mustReads);
+        Assert.DoesNotContain("dydo/guides/coding-standards.md", mustReads);
+        // Reviewer's are different — code standards, not writing-docs
+        var reviewerMustReads = SyncCommand.ExtractMustReads(_reviewer, _testDir);
+        Assert.Contains("dydo/guides/coding-standards.md", reviewerMustReads);
+    }
+
+    [Fact]
+    public void RenumberOrderedLists_ContinuesAcrossProse_ResetsOnHeading()
+    {
+        // A list interrupted by prose/code keeps numbering; a new heading restarts it.
+        var input = "## A\n1. one\n2. two\n\nsome prose\n3. three\n\n## B\n1. fresh";
+        var result = SyncCommand.RenumberOrderedLists(input);
+        Assert.Equal("## A\n1. one\n2. two\n\nsome prose\n3. three\n\n## B\n1. fresh", result);
+    }
+
+    [Fact]
+    public void SyncCommand_Run_GeneratesAllWorkerRoles()
+    {
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{\"version\":1}");
+            Directory.SetCurrentDirectory(_testDir);
+
+            SyncCommand.Create().Parse([]).Invoke();
+
+            foreach (var role in new[] { "code-writer", "reviewer", "test-writer", "docs-writer" })
+            {
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")), $"missing agent: {role}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")), $"missing skill: {role}");
+            }
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
     }
 
     [Fact]

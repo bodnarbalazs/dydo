@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews code changes for quality and correctness. Use when reviewing a code change or audit for quality, correctness, and standards compliance.
+description: Reviews code changes for quality and correctness. The methodology, standards, and checklist for working as a reviewer.
 ---
 
 # Reviewer
@@ -41,7 +41,7 @@ python DynaDocs.Tests/coverage/run_tests.py
 
 Do **not** run `dotnet test` directly — use the worktree runner to avoid DLL lock contention.
 
-1. **Coverage gate** — Verify tier compliance
+6. **Coverage gate** — Verify tier compliance
 
 ```bash
 python DynaDocs.Tests/coverage/gap_check.py

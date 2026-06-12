@@ -23,7 +23,13 @@ public static partial class SyncCommand
     private static readonly HashSet<string> OrchestrationSections = new(StringComparer.OrdinalIgnoreCase)
     {
         "Must-Reads", "Set Role", "Register General Wait", "Verify", "Complete",
+        "Read the Plan or Brief First",
     };
+
+    // Tier-2 worker roles (Decision 024): spawned by orchestrators/workflows to do scoped
+    // task work. Tier-1 roles (orchestrator, co-thinker) are named terminal agents, not
+    // native sub-agents, and oversight roles (planner, inquisitor, judge) stay Tier-1 for now.
+    private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer"];
 
     public static Command Create()
     {
@@ -35,11 +41,14 @@ public static partial class SyncCommand
     private static int Execute()
     {
         var projectRoot = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
-        var reviewer = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "reviewer");
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions()
+            .Where(r => WorkerRoles.Contains(r.Name))
+            .ToList();
 
-        SyncRole(reviewer, projectRoot);
+        foreach (var role in roles)
+            SyncRole(role, projectRoot);
 
-        Console.WriteLine("Synced 1 role to .claude/ (agents + skills).");
+        Console.WriteLine($"Synced {roles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", roles.Select(r => r.Name))}");
         return ExitCodes.Success;
     }
 
@@ -52,7 +61,7 @@ public static partial class SyncCommand
         Directory.CreateDirectory(agentDir);
         Directory.CreateDirectory(skillDir);
 
-        File.WriteAllText(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role));
+        File.WriteAllText(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role, ExtractMustReads(role, projectRoot)));
         File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, methodology));
     }
 
@@ -62,19 +71,20 @@ public static partial class SyncCommand
     /// for the codebase, so it gets no Edit/Write — that is how "reviewers don't write
     /// code" becomes natively enforced rather than guard-RBAC enforced.
     /// </summary>
-    private static string BuildAgent(RoleDefinition role)
+    private static string BuildAgent(RoleDefinition role, List<string> mustReads)
     {
         var readOnly = IsReadOnlyRole(role);
         var tools = readOnly
             ? "Read, Grep, Glob, Bash"
             : "Read, Grep, Glob, Bash, Edit, Write";
         var stance = readOnly
-            ? "You are read-only: you assess and report on code, you do not modify it."
-            : "You implement and modify code as the task requires.";
-        var descriptionSuffix = readOnly ? " Use to assess changes without modifying source." : "";
+            ? "You are read-only: you assess and report, you do not modify the project's files."
+            : "You produce and modify the project's files as your task requires.";
+        var descriptionSuffix = readOnly ? " Use to assess changes without modifying the project." : "";
 
-        var contextBlock = "\n\nRead these for project context before working:\n"
-            + string.Join('\n', MustReadPaths().Select(p => $"- {p}")) + "\n";
+        var contextBlock = mustReads.Count == 0 ? "" :
+            "\n\nRead these for project context before working:\n"
+            + string.Join('\n', mustReads.Select(p => $"- {p}")) + "\n";
 
         return $"""
             ---
@@ -93,7 +103,7 @@ public static partial class SyncCommand
     private static string BuildSkill(RoleDefinition role, string methodology) => $"""
         ---
         name: {role.Name}
-        description: {role.Description} Use when reviewing a code change or audit for quality, correctness, and standards compliance.
+        description: {role.Description} The methodology, standards, and checklist for working as a {role.Name}.
         ---
 
         {methodology}
@@ -140,21 +150,38 @@ public static partial class SyncCommand
             var m = OrderedItemRegex().Match(lines[i]);
             if (m.Success)
                 lines[i] = $"{m.Groups[1].Value}{++n}. {m.Groups[3].Value}";
-            else if (lines[i].Trim().Length > 0)
-                n = 0; // a non-blank, non-item line ends the run; blank lines don't
+            else if (lines[i].StartsWith('#'))
+                n = 0; // a heading starts a fresh list; prose/code/blank between items don't
         }
         return string.Join('\n', lines);
     }
 
-    private static List<string> MustReadPaths()
+    /// <summary>
+    /// The role's static must-reads, taken from the [links] in the mode template's
+    /// "## Must-Reads" section (normalized to dydo-relative paths) so each role points at
+    /// its own context. Conditional must-reads are task-runtime and left to the workflow.
+    /// </summary>
+    internal static List<string> ExtractMustReads(RoleDefinition role, string projectRoot)
     {
-        // The base worker must-read set. Conditional must-reads are task-runtime and left
-        // to the workflow that spawns the worker.
-        return [
-            "dydo/understand/about.md",
-            "dydo/understand/architecture.md",
-            "dydo/guides/coding-standards.md",
-        ];
+        var template = TemplateGenerator.ResolveIncludes(
+            TemplateGenerator.ReadBuiltInTemplate(role.TemplateFile), projectRoot);
+
+        var section = MustReadsSectionRegex().Match(template);
+        if (!section.Success)
+            return [];
+
+        return LinkTargetRegex().Matches(section.Value)
+            .Select(m => NormalizeMustReadTarget(m.Groups[1].Value))
+            .Where(p => p.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            .Distinct()
+            .ToList();
+    }
+
+    private static string NormalizeMustReadTarget(string target)
+    {
+        var path = target.Replace('\\', '/');
+        path = Regex.Replace(path, @"^(\.\./)+", "");   // strip the ../../.. climb out of modes/
+        return path.StartsWith("dydo/", StringComparison.OrdinalIgnoreCase) ? path : "dydo/" + path;
     }
 
     private static string StripFrontmatter(string content)
@@ -197,4 +224,10 @@ public static partial class SyncCommand
 
     [GeneratedRegex(@"^(\s*)(\d+)\. (.*)$")]
     private static partial Regex OrderedItemRegex();
+
+    [GeneratedRegex(@"^## Must-Reads\b.*?(?=^## )", RegexOptions.Singleline | RegexOptions.Multiline)]
+    private static partial Regex MustReadsSectionRegex();
+
+    [GeneratedRegex(@"\[[^\]]*\]\(([^)]+)\)")]
+    private static partial Regex LinkTargetRegex();
 }

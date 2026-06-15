@@ -307,7 +307,7 @@ public static partial class GuardCommand
         if (toolName == "enterplanmode" || toolName == "exitplanmode")
         {
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
-            Console.Error.WriteLine("  To plan: switch to planner role ('dydo agent role planner --task <name>')");
+            Console.Error.WriteLine("  To plan: write a plan to your workspace (dydo/agents/<you>/plan-<topic>.md), applying the planner skill.");
             Console.Error.WriteLine("  For working notes: write to your workspace (dydo/agents/<you>/notes-<topic>.md)");
             return ExitCodes.ToolError;
         }

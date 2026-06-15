@@ -324,7 +324,9 @@ public static class TemplateGenerator
     {
         var roles = LoadRolesForTemplate(basePath);
         if (roles.Count == 0)
-            roles = RoleDefinitionService.GetBaseRoleDefinitions();
+            roles = RoleDefinitionService.GetBaseRoleDefinitions()
+                .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
+                .ToList();
 
         roles.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 
@@ -514,7 +516,6 @@ public static class TemplateGenerator
             | `reviewer` | `dydo/agents/{agentName}/**` | Everything else |
             | `co-thinker` | `dydo/agents/{agentName}/**`, `dydo/project/decisions/**` | {formattedAll} |
             | `docs-writer` | `dydo/**` | `dydo/agents/**`, {formattedSource} |
-            | `planner` | `dydo/agents/{agentName}/**`, `dydo/project/tasks/**` | {formattedSource} |
             | `test-writer` | `dydo/agents/{agentName}/**`, {formattedTests}, `dydo/project/pitfalls/**` | {formattedSource} |
 
             The guard system enforces these permissions. If blocked, either:
@@ -927,7 +928,6 @@ public static class TemplateGenerator
             "code-writer" => "implement code",
             "reviewer" => "review code and provide feedback",
             "co-thinker" => "think through problems collaboratively",
-            "planner" => "design implementation plans",
             "docs-writer" => "write documentation",
             "test-writer" => "write tests and report issues",
             _ => "complete your assigned work"
@@ -938,7 +938,6 @@ public static class TemplateGenerator
             "code-writer" => $"{formattedSource}, {formattedTests}",
             "reviewer" => $"`dydo/agents/{agentName}/**` (workspace only)",
             "co-thinker" => $"`dydo/agents/{agentName}/**`, `dydo/project/decisions/**`",
-            "planner" => $"`dydo/agents/{agentName}/**`, `dydo/project/tasks/**`",
             "docs-writer" => "`dydo/**` (except agents/)",
             "test-writer" => $"`dydo/agents/{agentName}/**`, {formattedTests}, `dydo/project/pitfalls/**`",
             _ => "(check with dydo agent status)"
@@ -997,6 +996,7 @@ public static class TemplateGenerator
     public static IReadOnlyList<string> GetModeNames()
     {
         return RoleDefinitionService.GetBaseRoleDefinitions()
+            .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
             .Select(r => r.Name)
             .ToList();
     }
@@ -1328,7 +1328,6 @@ public static class TemplateGenerator
             | Role | Can Edit | Purpose |
             |------|----------|---------|
             | `co-thinker` | `decisions/**`, agent workspace | Explore ideas, scope requirements |
-            | `planner` | `tasks/**`, agent workspace | Design implementation |
             | `code-writer` | source + test directories | Implement features |
             | `test-writer` | test directories, `pitfalls/**`, agent workspace | Write tests, report bugs |
             | `reviewer` | agent workspace | Review code |

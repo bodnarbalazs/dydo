@@ -1025,7 +1025,7 @@ public class DispatchCommandTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "nudge-test", "planner");
+        SetTaskRoleHistory("Adele", "nudge-test", "co-thinker");
         await SetRoleAsync("orchestrator", "nudge-test");
 
         var command = DispatchCommand.Create();
@@ -1043,7 +1043,7 @@ public class DispatchCommandTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "nudge-test", "planner");
+        SetTaskRoleHistory("Adele", "nudge-test", "co-thinker");
         await SetRoleAsync("orchestrator", "nudge-test");
 
         var command = DispatchCommand.Create();
@@ -1078,7 +1078,7 @@ public class DispatchCommandTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "nudge-test", "planner");
+        SetTaskRoleHistory("Adele", "nudge-test", "co-thinker");
         await SetRoleAsync("orchestrator", "nudge-test");
 
         // First attempt creates marker
@@ -1221,8 +1221,8 @@ public class DispatchCommandTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
 
-        // Orchestrator requires planner history — create it
-        SetTaskRoleHistory("Adele", "my-task", "planner");
+        // Orchestrator requires co-thinker history — create it
+        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
         await SetRoleAsync("orchestrator", "my-task");
 
         var result = await DispatchAsync("code-writer", "my-task", "Implement feature", wait: true, noWait: false);

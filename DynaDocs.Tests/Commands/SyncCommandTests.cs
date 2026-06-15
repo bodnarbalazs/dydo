@@ -152,6 +152,41 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
+    public void SyncCommand_Run_GeneratesPlannerSkill_ButNoPlannerAgent()
+    {
+        // Decision 024: planner is skill-only. `dydo sync` emits its SKILL.md so the
+        // orchestrator can apply the planning methodology, but never an agent definition
+        // (there is no planner sub-agent to spawn and no claimable planner identity).
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{\"version\":1}");
+            Directory.SetCurrentDirectory(_testDir);
+
+            SyncCommand.Create().Parse([]).Invoke();
+
+            Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")),
+                "planner skill must be generated");
+            Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")),
+                "planner must NOT get a native agent definition");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void SyncSkillOnlyRole_WritesSkillButNoAgent()
+    {
+        var planner = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "planner");
+        SyncCommand.SyncSkillOnlyRole(planner, _testDir);
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "planner", "SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", "planner.md")));
+    }
+
+    [Fact]
     public void RenumberOrderedLists_FixesDuplicateNumbering()
     {
         // A list whose numbering was broken by an included continuation (…4. then 4./5.)

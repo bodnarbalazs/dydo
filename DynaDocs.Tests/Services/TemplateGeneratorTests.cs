@@ -34,8 +34,6 @@ public class TemplateGeneratorTests
     [InlineData("mode-planner.template.md")]
     [InlineData("mode-docs-writer.template.md")]
     [InlineData("mode-test-writer.template.md")]
-    [InlineData("mode-inquisitor.template.md")]
-    [InlineData("mode-judge.template.md")]
     [InlineData("mode-orchestrator.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
@@ -89,16 +87,17 @@ public class TemplateGeneratorTests
     {
         var modes = TemplateGenerator.GetModeNames();
 
-        Assert.Equal(9, modes.Count);
+        Assert.Equal(6, modes.Count);
         Assert.Contains("code-writer", modes);
         Assert.Contains("reviewer", modes);
         Assert.Contains("co-thinker", modes);
-        Assert.Contains("planner", modes);
         Assert.Contains("docs-writer", modes);
         Assert.Contains("test-writer", modes);
         Assert.Contains("orchestrator", modes);
-        Assert.Contains("inquisitor", modes);
-        Assert.Contains("judge", modes);
+        // planner is skill-only: it gets no per-agent mode file.
+        Assert.DoesNotContain("planner", modes);
+        Assert.DoesNotContain("inquisitor", modes);
+        Assert.DoesNotContain("judge", modes);
     }
 
     [Fact]
@@ -128,17 +127,6 @@ public class TemplateGeneratorTests
         Assert.Contains("Adele", content);
         Assert.Contains("workspace only", content.ToLowerInvariant());
         Assert.Contains("cannot edit source code", content.ToLowerInvariant());
-    }
-
-    [Fact]
-    public void GenerateModeFile_Planner_SkipsCodingStandards()
-    {
-        var content = TemplateGenerator.GenerateModeFile("Adele", "planner");
-
-        Assert.Contains("about.md", content);
-        Assert.Contains("architecture.md", content);
-        // Planner doesn't need coding standards yet
-        Assert.DoesNotContain("coding-standards.md", content);
     }
 
     [Fact]
@@ -204,12 +192,13 @@ public class TemplateGeneratorTests
     {
         var content = TemplateGenerator.GenerateWorkflowFile("Adele");
 
-        Assert.Contains("modes/planner.md", content);
         Assert.Contains("modes/code-writer.md", content);
         Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
         Assert.Contains("modes/test-writer.md", content);
+        // planner is skill-only: it is not listed as a claimable mode.
+        Assert.DoesNotContain("modes/planner.md", content);
     }
 
     [Fact]
@@ -292,11 +281,8 @@ public class TemplateGeneratorTests
     [InlineData("code-writer")]
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
-    [InlineData("planner")]
     [InlineData("docs-writer")]
     [InlineData("test-writer")]
-    [InlineData("inquisitor")]
-    [InlineData("judge")]
     [InlineData("orchestrator")]
     public void GenerateModeFile_AllModes_HaveValidFrontmatter(string mode)
     {
@@ -311,11 +297,8 @@ public class TemplateGeneratorTests
     [InlineData("code-writer", "Set Role")]
     [InlineData("reviewer", "Set Role")]
     [InlineData("co-thinker", "Set Role")]
-    [InlineData("planner", "Set Role")]
     [InlineData("docs-writer", "Set Role")]
     [InlineData("test-writer", "Set Role")]
-    [InlineData("inquisitor", "Set Role")]
-    [InlineData("judge", "Set Role")]
     [InlineData("orchestrator", "Set Role")]
     public void GenerateModeFile_AllModes_HaveSetRoleSection(string mode, string expectedSection)
     {
@@ -329,11 +312,8 @@ public class TemplateGeneratorTests
     [InlineData("code-writer")]
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
-    [InlineData("planner")]
     [InlineData("docs-writer")]
     [InlineData("test-writer")]
-    [InlineData("inquisitor")]
-    [InlineData("judge")]
     [InlineData("orchestrator")]
     public void GenerateModeFile_AllModes_RegisterGeneralWaitStep(string mode)
     {
@@ -347,11 +327,8 @@ public class TemplateGeneratorTests
     [InlineData("code-writer")]
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
-    [InlineData("planner")]
     [InlineData("docs-writer")]
     [InlineData("test-writer")]
-    [InlineData("inquisitor")]
-    [InlineData("judge")]
     [InlineData("orchestrator")]
     public void GenerateModeFile_AllModes_GeneralWaitStepFollowsRoleStep(string mode)
     {
@@ -691,12 +668,13 @@ public class TemplateGeneratorTests
         Assert.Contains("code-writer", table);
         Assert.Contains("reviewer", table);
         Assert.Contains("co-thinker", table);
-        Assert.Contains("planner", table);
         Assert.Contains("docs-writer", table);
         Assert.Contains("test-writer", table);
         Assert.Contains("orchestrator", table);
-        Assert.Contains("inquisitor", table);
-        Assert.Contains("judge", table);
+        // planner is skill-only: it is not a claimable role in the role table.
+        Assert.DoesNotContain("planner", table);
+        Assert.DoesNotContain("inquisitor", table);
+        Assert.DoesNotContain("judge", table);
     }
 
     [Fact]
@@ -706,7 +684,7 @@ public class TemplateGeneratorTests
 
         Assert.Contains("[modes/code-writer.md](modes/code-writer.md)", table);
         Assert.Contains("[modes/reviewer.md](modes/reviewer.md)", table);
-        Assert.Contains("[modes/planner.md](modes/planner.md)", table);
+        Assert.DoesNotContain("[modes/planner.md](modes/planner.md)", table);
     }
 
     [Fact]
@@ -905,8 +883,9 @@ public class TemplateGeneratorTests
         Assert.Contains("reviewer", content);
         Assert.Contains("co-thinker", content);
         Assert.Contains("docs-writer", content);
-        Assert.Contains("planner", content);
         Assert.Contains("test-writer", content);
+        // planner is skill-only: it is not listed as a claimable role.
+        Assert.DoesNotContain("planner", content);
     }
 
     [Fact]
@@ -985,7 +964,6 @@ public class TemplateGeneratorTests
     [InlineData("code-writer", "implement code")]
     [InlineData("reviewer", "review code and provide feedback")]
     [InlineData("co-thinker", "think through problems collaboratively")]
-    [InlineData("planner", "design implementation plans")]
     [InlineData("docs-writer", "write documentation")]
     [InlineData("test-writer", "write tests and report issues")]
     public void GenerateFallbackModeFile_KnownModes_HaveCorrectDescription(string modeName, string expectedDesc)
@@ -1027,7 +1005,6 @@ public class TemplateGeneratorTests
     [InlineData("code-writer")]
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
-    [InlineData("planner")]
     [InlineData("docs-writer")]
     [InlineData("test-writer")]
     public void GenerateFallbackModeFile_AllKnownModes_HaveEditPermissions(string modeName)

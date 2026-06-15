@@ -87,7 +87,7 @@ public class GuardLiftTests : IntegrationTestBase
         LiftGuard("Adele");
 
         // Change role
-        await SetRoleAsync("planner", "test-task");
+        await SetRoleAsync("docs-writer", "test-task");
         await ReadMustReadsAsync();
 
         // Lift should still be active

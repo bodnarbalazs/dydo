@@ -240,13 +240,17 @@ public class InitCheckIntegrationTests : IntegrationTestBase
         var claimResult = await ClaimAgentAsync("Adele");
         claimResult.AssertSuccess();
 
-        // Assert - Modes folder and all 6 mode files exist after claim
+        // Assert - Modes folder and all claimable mode files exist after claim
         Assert.True(Directory.Exists(modesPath), "Modes folder should exist after claim");
 
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "test-writer", "orchestrator" };
         foreach (var mode in expectedModes)
         {
             AssertFileExists($"dydo/agents/Adele/modes/{mode}.md");
         }
+
+        // planner is skill-only: claiming an agent must not write a per-agent planner mode file.
+        Assert.False(File.Exists(Path.Combine(modesPath, "planner.md")),
+            "Skill-only planner must not get a per-agent mode file");
     }
 }

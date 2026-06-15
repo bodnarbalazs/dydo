@@ -124,11 +124,11 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_ReturnsAllNineRoles()
+    public void PermissionMap_ReturnsAllBaseRoles()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        Assert.Equal(9, perms.Count);
+        Assert.Equal(7, perms.Count);
         Assert.Contains("code-writer", perms.Keys);
         Assert.Contains("reviewer", perms.Keys);
         Assert.Contains("co-thinker", perms.Keys);
@@ -136,8 +136,8 @@ public class RoleBehaviorTests : IDisposable
         Assert.Contains("planner", perms.Keys);
         Assert.Contains("test-writer", perms.Keys);
         Assert.Contains("orchestrator", perms.Keys);
-        Assert.Contains("inquisitor", perms.Keys);
-        Assert.Contains("judge", perms.Keys);
+        Assert.DoesNotContain("inquisitor", perms.Keys);
+        Assert.DoesNotContain("judge", perms.Keys);
     }
 
     [Fact]
@@ -239,34 +239,6 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_Inquisitor_WritesInquisitionsAndSelf()
-    {
-        var perms = BuildPerms(["src/**"], ["tests/**"]);
-        var (writable, readOnly) = perms["inquisitor"];
-
-        Assert.Contains("dydo/agents/{self}/**", writable);
-        Assert.Contains("dydo/project/inquisitions/**", writable);
-        Assert.Equal(2, writable.Count);
-        Assert.Contains("src/**", readOnly);
-        Assert.Contains("tests/**", readOnly);
-    }
-
-    [Fact]
-    public void PermissionMap_Judge_OnlyWritesSelfWorkspace()
-    {
-        var perms = BuildPerms(["src/**"], ["tests/**"]);
-        var (writable, readOnly) = perms["judge"];
-
-        Assert.Equal(4, writable.Count);
-        Assert.Contains("dydo/agents/{self}/**", writable);
-        Assert.Contains("dydo/project/issues/**", writable);
-        Assert.Contains("dydo/project/inquisitions/**", writable);
-        Assert.Contains("dydo/project/backlog/**", writable);
-        Assert.Contains("src/**", readOnly);
-        Assert.Contains("tests/**", readOnly);
-    }
-
-    [Fact]
     public void PermissionMap_UsesConfiguredSourceAndTestPaths()
     {
         var perms = BuildPerms(
@@ -360,7 +332,7 @@ public class RoleBehaviorTests : IDisposable
         var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
         Assert.False(canTake);
-        Assert.Contains("Orchestrator requires prior co-thinker or planner experience", reason);
+        Assert.Contains("Orchestrator requires prior co-thinker experience", reason);
     }
 
     [Fact]
@@ -390,16 +362,18 @@ public class RoleBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void CanTakeRole_OrchestratorWithPlannerHistory_Allowed()
+    public void CanTakeRole_OrchestratorWithPlannerHistoryOnly_Blocked()
     {
+        // planner is skill-only (Decision 024) — its history no longer graduates
+        // an agent to orchestrator; only co-thinker experience does.
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] });
         CreateStateFile("Adele", taskRoleHistory: new() { ["my-task"] = ["planner"] });
 
         var registry = new AgentRegistry(_testDir);
         var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
-        Assert.True(canTake);
-        Assert.Empty(reason);
+        Assert.False(canTake);
+        Assert.Contains("Orchestrator requires prior co-thinker experience", reason);
     }
 
     [Fact]
@@ -429,95 +403,6 @@ public class RoleBehaviorTests : IDisposable
 
     #endregion
 
-    #region CanTakeRole — Judge Panel Limit
-
-    [Fact]
-    public void CanTakeRole_Judge_ZeroActiveJudges_Allowed()
-    {
-        SetupConfig(["Adele", "Brian"], new() { ["testuser"] = ["Adele", "Brian"] });
-        CreateStateFile("Adele");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("Adele", "judge", "dispute-1", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
-    }
-
-    [Fact]
-    public void CanTakeRole_Judge_TwoActiveJudges_Allowed()
-    {
-        SetupConfig(["Adele", "Brian", "Claire"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire"] });
-
-        CreateStateFile("Adele", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Claire");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("Claire", "judge", "dispute-1", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
-    }
-
-    [Fact]
-    public void CanTakeRole_Judge_ThreeActiveJudges_Blocked()
-    {
-        SetupConfig(["Adele", "Brian", "Claire", "David"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire", "David"] });
-
-        CreateStateFile("Adele", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Claire", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("David");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
-
-        Assert.False(canTake);
-        Assert.Contains("Maximum 3 judges", reason);
-        Assert.Contains("dispute-1", reason);
-    }
-
-    [Fact]
-    public void CanTakeRole_Judge_ThreeJudgesButOneFree_Allowed()
-    {
-        SetupConfig(["Adele", "Brian", "Claire", "David"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire", "David"] });
-
-        CreateStateFile("Adele", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Claire", role: "judge", task: "dispute-1", status: AgentStatus.Free);
-        CreateStateFile("David");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
-    }
-
-    [Fact]
-    public void CanTakeRole_Judge_ThreeOnTaskX_AllowedOnTaskY()
-    {
-        SetupConfig(["Adele", "Brian", "Claire", "David"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire", "David"] });
-
-        CreateStateFile("Adele", role: "judge", task: "task-x", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "task-x", status: AgentStatus.Working);
-        CreateStateFile("Claire", role: "judge", task: "task-x", status: AgentStatus.Working);
-        CreateStateFile("David");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("David", "judge", "task-y", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
-    }
-
-    #endregion
-
     #region SetRole — Behavior
 
     [Fact]
@@ -540,10 +425,7 @@ public class RoleBehaviorTests : IDisposable
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
     [InlineData("docs-writer")]
-    [InlineData("planner")]
     [InlineData("test-writer")]
-    [InlineData("inquisitor")]
-    [InlineData("judge")]
     public void SetRole_ValidRoleName_Succeeds(string role)
     {
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] });
@@ -559,7 +441,7 @@ public class RoleBehaviorTests : IDisposable
     public void SetRole_Orchestrator_WithRequiredHistory_Succeeds()
     {
         SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] });
-        CreateSessionFile("Adele", "test-orch-ok", taskRoleHistory: new() { ["my-task"] = ["planner"] });
+        CreateSessionFile("Adele", "test-orch-ok", taskRoleHistory: new() { ["my-task"] = ["co-thinker"] });
 
         var registry = new AgentRegistry(_testDir);
         var result = registry.SetRole("test-orch-ok", "orchestrator", "my-task", out var error);
@@ -574,7 +456,7 @@ public class RoleBehaviorTests : IDisposable
         CreateSessionFile("Adele", "test-history");
 
         var registry = new AgentRegistry(_testDir);
-        registry.SetRole("test-history", "planner", "my-task", out _);
+        registry.SetRole("test-history", "co-thinker", "my-task", out _);
 
         registry = new AgentRegistry(_testDir);
         registry.SetRole("test-history", "code-writer", "my-task", out _);
@@ -583,7 +465,7 @@ public class RoleBehaviorTests : IDisposable
         var state = registry.GetCurrentAgent("test-history");
         Assert.NotNull(state);
         Assert.True(state.TaskRoleHistory.ContainsKey("my-task"));
-        Assert.Contains("planner", state.TaskRoleHistory["my-task"]);
+        Assert.Contains("co-thinker", state.TaskRoleHistory["my-task"]);
         Assert.Contains("code-writer", state.TaskRoleHistory["my-task"]);
     }
 

@@ -204,47 +204,11 @@ public class ConfigFactoryTests
         Assert.Null(matchingNudge);
     }
 
-    [Theory]
-    [InlineData("dydo dispatch --role inquisitor --task audit-auth --no-wait --brief test")]
-    [InlineData("dydo dispatch --task audit-auth --role inquisitor --no-wait --brief test")]
-    [InlineData("dydo dispatch --no-wait --role inquisitor --task foo --brief bar")]
-    public void DefaultNudges_MatchesInquisitorDispatchWithoutNewWindow(string command)
+    [Fact]
+    public void DefaultNudges_HasNoInquisitorNudge()
     {
-        var matchingNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
-        {
-            var regex = new System.Text.RegularExpressions.Regex(n.Pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            return regex.IsMatch(command);
-        });
-
-        Assert.NotNull(matchingNudge);
-        Assert.Equal("warn", matchingNudge.Severity);
-    }
-
-    [Theory]
-    [InlineData("dydo dispatch --role inquisitor --new-window --task audit-auth --no-wait --brief test")]
-    [InlineData("dydo dispatch --new-window --role inquisitor --task audit-auth --no-wait --brief test")]
-    [InlineData("dydo dispatch --role inquisitor --task foo --new-window --no-wait --brief bar")]
-    public void DefaultNudges_DoesNotMatchInquisitorDispatchWithNewWindow(string command)
-    {
-        // Should not match the inquisitor nudge (may match other nudges, but not the inquisitor one)
-        var inquisitorNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
-            n.Pattern.Contains("inquisitor"));
-        Assert.NotNull(inquisitorNudge);
-
-        Assert.DoesNotMatch(inquisitorNudge.Pattern, command);
-    }
-
-    [Theory]
-    [InlineData("dydo dispatch --role code-writer --task fix-bug --no-wait --brief test")]
-    [InlineData("dydo dispatch --role reviewer --task fix-bug --no-wait --brief test")]
-    [InlineData("dydo dispatch --role orchestrator --task plan --no-wait --brief test")]
-    public void DefaultNudges_DoesNotMatchNonInquisitorDispatch(string command)
-    {
-        var inquisitorNudge = ConfigFactory.DefaultNudges.FirstOrDefault(n =>
-            n.Pattern.Contains("inquisitor"));
-        Assert.NotNull(inquisitorNudge);
-
-        Assert.DoesNotMatch(inquisitorNudge.Pattern, command);
+        // The inquisitor role is retired (Decision 024); its dispatch nudge is gone.
+        Assert.DoesNotContain(ConfigFactory.DefaultNudges, n => n.Pattern.Contains("inquisitor"));
     }
 
     [Theory]

@@ -6,6 +6,14 @@ using DynaDocs.Serialization;
 
 public class RoleDefinitionService : IRoleDefinitionService
 {
+    /// <summary>
+    /// Roles that <c>dydo sync</c> compiles into a skill but that are NOT claimable Tier-1
+    /// identities (Decision 024): they appear in <see cref="GetBaseRoleDefinitions"/> only to
+    /// drive skill generation, and are excluded from the on-disk role roster written by
+    /// <see cref="WriteBaseRoleDefinitions"/> (which feeds the guard's claimable-role set).
+    /// </summary>
+    public static readonly HashSet<string> SkillOnlyRoles = new(StringComparer.OrdinalIgnoreCase) { "planner" };
+
     public static List<RoleDefinition> GetBaseRoleDefinitions()
     {
         return
@@ -59,9 +67,9 @@ public class RoleDefinitionService : IRoleDefinitionService
                     {
                         Type = "dispatch-restriction",
                         TargetRole = "code-writer",
-                        RequiredRoles = ["code-writer", "inquisitor", "test-writer"],
+                        RequiredRoles = ["code-writer", "test-writer"],
                         OnlyWhenDispatched = true,
-                        Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer, inquisitor, or test-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
+                        Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer or test-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
                     }
                 ],
                 ConditionalMustReads =
@@ -140,48 +148,8 @@ public class RoleDefinitionService : IRoleDefinitionService
                     new RoleConstraint
                     {
                         Type = "requires-prior",
-                        RequiredRoles = ["co-thinker", "planner"],
-                        Message = "You are a {current_role}. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification."
-                    }
-                ]
-            },
-            new RoleDefinition
-            {
-                Name = "inquisitor",
-                Description = "Conducts documentation and knowledge audits.",
-                Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/inquisitions/**"],
-                ReadOnlyPaths = ["{source}", "{tests}"],
-                TemplateFile = "mode-inquisitor.template.md",
-                CanOrchestrate = true,
-                Constraints =
-                [
-                    new RoleConstraint
-                    {
-                        Type = "requires-dispatch",
-                        RequiredRoles = ["judge", "inquisitor"],
-                        RequireAll = false,
-                        OnlyWhenDispatched = true,
-                        Message = "Cannot release: dispatched inquisitors must dispatch a judge or another inquisitor before releasing.\n  dydo dispatch --no-wait --auto-close --role judge --task {task} --brief \"Judge findings for {task}\""
-                    }
-                ]
-            },
-            new RoleDefinition
-            {
-                Name = "judge",
-                Description = "Evaluates inquisition reports and arbitrates disputes.",
-                Base = true,
-                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/issues/**", "dydo/project/inquisitions/**", "dydo/project/backlog/**"],
-                ReadOnlyPaths = ["{source}", "{tests}"],
-                TemplateFile = "mode-judge.template.md",
-                CanOrchestrate = true,
-                Constraints =
-                [
-                    new RoleConstraint
-                    {
-                        Type = "panel-limit",
-                        MaxCount = 3,
-                        Message = "Maximum 3 judges already active on task '{task}'. Escalate to the human."
+                        RequiredRoles = ["co-thinker"],
+                        Message = "You are a {current_role}. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification."
                     }
                 ]
             }
@@ -321,7 +289,7 @@ public class RoleDefinitionService : IRoleDefinitionService
         var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
         Directory.CreateDirectory(rolesDir);
 
-        foreach (var role in GetBaseRoleDefinitions())
+        foreach (var role in GetBaseRoleDefinitions().Where(r => !SkillOnlyRoles.Contains(r.Name)))
         {
             var filePath = Path.Combine(rolesDir, $"{role.Name}.role.json");
             var json = JsonSerializer.Serialize(role, DydoConfigJsonContext.Default.RoleDefinition);

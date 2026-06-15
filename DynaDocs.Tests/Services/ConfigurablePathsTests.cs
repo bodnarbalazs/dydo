@@ -143,18 +143,18 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_Returns9Entries()
+    public void PermissionMap_Returns7Entries()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        Assert.Equal(9, perms.Count);
+        Assert.Equal(7, perms.Count);
         Assert.True(perms.ContainsKey("orchestrator"));
-        Assert.True(perms.ContainsKey("inquisitor"));
-        Assert.True(perms.ContainsKey("judge"));
+        Assert.False(perms.ContainsKey("inquisitor"));
+        Assert.False(perms.ContainsKey("judge"));
     }
 
     [Fact]
-    public void PermissionMap_OversightRoles_HaveCorrectPermissions()
+    public void PermissionMap_Orchestrator_HasCorrectPermissions()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
@@ -164,21 +164,6 @@ public class ConfigurablePathsTests : IDisposable
         Assert.Contains("dydo/project/decisions/**", perms["orchestrator"].Writable);
         Assert.Contains("dydo/project/backlog/**", perms["orchestrator"].Writable);
         Assert.Contains("**", perms["orchestrator"].ReadOnly);
-
-        // Inquisitor: writes workspace + inquisitions; reads source + tests
-        Assert.Contains("dydo/agents/{self}/**", perms["inquisitor"].Writable);
-        Assert.Contains("dydo/project/inquisitions/**", perms["inquisitor"].Writable);
-        Assert.Contains("src/**", perms["inquisitor"].ReadOnly);
-        Assert.Contains("tests/**", perms["inquisitor"].ReadOnly);
-
-        // Judge: writes workspace + issues + inquisitions + backlog; reads source + tests
-        Assert.Contains("dydo/agents/{self}/**", perms["judge"].Writable);
-        Assert.Contains("dydo/project/issues/**", perms["judge"].Writable);
-        Assert.Contains("dydo/project/inquisitions/**", perms["judge"].Writable);
-        Assert.Contains("dydo/project/backlog/**", perms["judge"].Writable);
-        Assert.Equal(4, perms["judge"].Writable.Count);
-        Assert.Contains("src/**", perms["judge"].ReadOnly);
-        Assert.Contains("tests/**", perms["judge"].ReadOnly);
     }
 
     [Fact]

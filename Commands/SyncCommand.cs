@@ -15,7 +15,13 @@ using DynaDocs.Utils;
 /// The role JSON supplies the metadata (name, description, permission shape → tool
 /// profile). The mode template supplies the methodology prose, minus the old-runtime
 /// orchestration sections (claim / wait / dispatch / release) which the native model
-/// replaces. MVP: the reviewer slice; Sprint 3 loops over the remaining worker roles.
+/// replaces.
+///
+/// Two emission shapes (Decision 024 native pivot):
+/// - Worker roles (code-writer, reviewer, test-writer, docs-writer) emit BOTH an agent
+///   definition and a skill — they are spawned as typed sub-agents.
+/// - Skill-only roles (planner) emit a skill but NO agent: planner is a methodology the
+///   orchestrator/co-thinker applies in their own thread, not a claimable identity.
 /// </summary>
 public static partial class SyncCommand
 {
@@ -27,9 +33,16 @@ public static partial class SyncCommand
     };
 
     // Tier-2 worker roles (Decision 024): spawned by orchestrators/workflows to do scoped
-    // task work. Tier-1 roles (orchestrator, co-thinker) are named terminal agents, not
-    // native sub-agents, and oversight roles (planner, inquisitor, judge) stay Tier-1 for now.
+    // task work — they emit BOTH a native sub-agent and a skill. Tier-1 roles (orchestrator,
+    // co-thinker) are named terminal agents, not sub-agents, so they are not synced here.
     private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer"];
+
+    // Skill-only roles (Decision 024): a methodology the Tier-1 agent applies in its own
+    // thread (planner = the orchestrator's planning discipline). They emit a skill but NO
+    // agent — there is no sub-agent to spawn and no claimable identity. Sourced from the
+    // single SkillOnlyRoles set on RoleDefinitionService so the sync emitter and the
+    // claimable-surface filters can never drift apart.
+    private static readonly HashSet<string> SkillOnlyRoles = RoleDefinitionService.SkillOnlyRoles;
 
     public static Command Create()
     {
@@ -41,28 +54,42 @@ public static partial class SyncCommand
     private static int Execute()
     {
         var projectRoot = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
-        var roles = RoleDefinitionService.GetBaseRoleDefinitions()
-            .Where(r => WorkerRoles.Contains(r.Name))
-            .ToList();
+        var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
 
-        foreach (var role in roles)
+        var workerRoles = baseRoles.Where(r => WorkerRoles.Contains(r.Name)).ToList();
+        foreach (var role in workerRoles)
             SyncRole(role, projectRoot);
 
-        Console.WriteLine($"Synced {roles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", roles.Select(r => r.Name))}");
+        var skillOnlyRoles = baseRoles.Where(r => SkillOnlyRoles.Contains(r.Name)).ToList();
+        foreach (var role in skillOnlyRoles)
+            SyncSkillOnlyRole(role, projectRoot);
+
+        Console.WriteLine($"Synced {workerRoles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", workerRoles.Select(r => r.Name))}");
+        Console.WriteLine($"Synced {skillOnlyRoles.Count} skill-only role(s) to .claude/ (skills only): {string.Join(", ", skillOnlyRoles.Select(r => r.Name))}");
         return ExitCodes.Success;
     }
 
     internal static void SyncRole(RoleDefinition role, string projectRoot)
     {
-        var methodology = ExtractMethodology(role, projectRoot);
-
         var agentDir = Path.Combine(projectRoot, ".claude", "agents");
-        var skillDir = Path.Combine(projectRoot, ".claude", "skills", role.Name);
         Directory.CreateDirectory(agentDir);
-        Directory.CreateDirectory(skillDir);
-
         File.WriteAllText(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role, ExtractMustReads(role, projectRoot)));
-        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, methodology));
+
+        WriteSkill(role, projectRoot);
+    }
+
+    /// <summary>
+    /// Emits only the skill for a role, never an agent. Decision 024: planner is a
+    /// methodology the Tier-1 agent applies, not a spawnable sub-agent.
+    /// </summary>
+    internal static void SyncSkillOnlyRole(RoleDefinition role, string projectRoot) =>
+        WriteSkill(role, projectRoot);
+
+    private static void WriteSkill(RoleDefinition role, string projectRoot)
+    {
+        var skillDir = Path.Combine(projectRoot, ".claude", "skills", role.Name);
+        Directory.CreateDirectory(skillDir);
+        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
     }
 
     /// <summary>

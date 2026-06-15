@@ -740,8 +740,9 @@ public class MessageIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
         await ClaimAgentAsync("Adele");
-        // Use inquisitor — has CanOrchestrate=true and no role-assignment constraints
-        await SetRoleAsync("inquisitor", "test-task");
+        // orchestrator is the CanOrchestrate role; graduate via co-thinker first.
+        await SetRoleAsync("co-thinker", "test-task");
+        await SetRoleAsync("orchestrator", "test-task");
 
         var registry = new AgentRegistry(TestDir);
         var oversight = registry.GetActiveOversightAgents();

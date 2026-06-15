@@ -132,7 +132,7 @@ public class ConstraintEvaluationTests : IDisposable
         var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
         Assert.False(canTake);
-        Assert.Contains("Orchestrator requires prior co-thinker or planner experience", reason);
+        Assert.Contains("Orchestrator requires prior co-thinker experience", reason);
     }
 
     [Fact]
@@ -149,16 +149,17 @@ public class ConstraintEvaluationTests : IDisposable
     }
 
     [Fact]
-    public void DataDriven_RequiresPrior_AllowsOrchestratorAfterPlanner()
+    public void DataDriven_RequiresPrior_BlocksOrchestratorAfterPlannerOnly()
     {
+        // planner no longer graduates to orchestrator (Decision 024 — skill-only role).
         SetupWithRoleFiles(["Adele"], new() { ["testuser"] = ["Adele"] });
         CreateStateFile("Adele", taskRoleHistory: new() { ["my-task"] = ["planner"] });
 
         var registry = new AgentRegistry(_testDir);
         var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
-        Assert.True(canTake);
-        Assert.Empty(reason);
+        Assert.False(canTake);
+        Assert.Contains("Orchestrator requires prior co-thinker experience", reason);
     }
 
     [Fact]
@@ -171,60 +172,6 @@ public class ConstraintEvaluationTests : IDisposable
         registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
         Assert.Contains("code-writer", reason);
-    }
-
-    #endregion
-
-    #region panel-limit constraint
-
-    [Fact]
-    public void DataDriven_PanelLimit_AllowsWhenUnderLimit()
-    {
-        SetupWithRoleFiles(["Adele", "Brian"], new() { ["testuser"] = ["Adele", "Brian"] });
-        CreateStateFile("Adele");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("Adele", "judge", "dispute-1", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
-    }
-
-    [Fact]
-    public void DataDriven_PanelLimit_BlocksWhenAtLimit()
-    {
-        SetupWithRoleFiles(["Adele", "Brian", "Claire", "David"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire", "David"] });
-
-        CreateStateFile("Adele", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Claire", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("David");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
-
-        Assert.False(canTake);
-        Assert.Contains("Maximum 3 judges", reason);
-        Assert.Contains("dispute-1", reason);
-    }
-
-    [Fact]
-    public void DataDriven_PanelLimit_AllowsWhenFreeAgentDoesntCount()
-    {
-        SetupWithRoleFiles(["Adele", "Brian", "Claire", "David"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire", "David"] });
-
-        CreateStateFile("Adele", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Claire", role: "judge", task: "dispute-1", status: AgentStatus.Free);
-        CreateStateFile("David");
-
-        var registry = new AgentRegistry(_testDir);
-        var canTake = registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
     }
 
     #endregion
@@ -255,26 +202,7 @@ public class ConstraintEvaluationTests : IDisposable
         registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
         Assert.Equal(
-            "You are a code-writer. Orchestrator requires prior co-thinker or planner experience on this task. Ask the user for clarification.",
-            reason);
-    }
-
-    [Fact]
-    public void DataDriven_MessageSubstitution_JudgeMessage_ExactMatch()
-    {
-        SetupWithRoleFiles(["Adele", "Brian", "Claire", "David"],
-            new() { ["testuser"] = ["Adele", "Brian", "Claire", "David"] });
-
-        CreateStateFile("Adele", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Brian", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("Claire", role: "judge", task: "dispute-1", status: AgentStatus.Working);
-        CreateStateFile("David");
-
-        var registry = new AgentRegistry(_testDir);
-        registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
-
-        Assert.Equal(
-            "Maximum 3 judges already active on task 'dispute-1'. Escalate to the human.",
+            "You are a code-writer. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification.",
             reason);
     }
 

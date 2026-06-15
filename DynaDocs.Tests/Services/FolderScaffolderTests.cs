@@ -133,7 +133,7 @@ public class FolderScaffolderTests : IDisposable
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
         Assert.False(Directory.Exists(modesPath), "Modes folder should NOT exist after scaffold");
 
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "test-writer" };
         foreach (var mode in expectedModes)
         {
             var modePath = Path.Combine(modesPath, $"{mode}.md");
@@ -262,7 +262,7 @@ public class FolderScaffolderTests : IDisposable
         var modesPath = Path.Combine(agentsPath, "TestAgent", "modes");
         Assert.True(Directory.Exists(modesPath), "Modes folder should exist after regenerate");
 
-        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "planner", "docs-writer", "test-writer" };
+        var expectedModes = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "test-writer", "orchestrator" };
         foreach (var mode in expectedModes)
         {
             var modePath = Path.Combine(modesPath, $"{mode}.md");
@@ -271,6 +271,10 @@ public class FolderScaffolderTests : IDisposable
             var content = File.ReadAllText(modePath);
             Assert.Contains("TestAgent", content);
         }
+
+        // planner is skill-only: a claimed agent gets no per-agent planner mode file.
+        Assert.False(File.Exists(Path.Combine(modesPath, "planner.md")),
+            "Skill-only planner must not get a per-agent mode file");
     }
 
     [Fact]
@@ -284,12 +288,13 @@ public class FolderScaffolderTests : IDisposable
         var workflowPath = Path.Combine(agentsPath, "TestAgent", "workflow.md");
         var content = File.ReadAllText(workflowPath);
 
-        Assert.Contains("modes/planner.md", content);
         Assert.Contains("modes/code-writer.md", content);
         Assert.Contains("modes/co-thinker.md", content);
         Assert.Contains("modes/reviewer.md", content);
         Assert.Contains("modes/docs-writer.md", content);
         Assert.Contains("modes/test-writer.md", content);
+        // planner is skill-only: the workflow file lists no planner mode link.
+        Assert.DoesNotContain("modes/planner.md", content);
     }
 
     [Fact]

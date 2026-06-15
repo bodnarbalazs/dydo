@@ -122,8 +122,9 @@ public class AgentRegistryTests : IDisposable
     [Fact]
     public void KnownRoles_AreDocumented()
     {
-        // Verify the expected roles are documented
-        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer" };
+        // Verify the expected claimable roles are documented. planner is skill-only
+        // (Decision 024) and no longer claimable via `dydo agent role`.
+        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "test-writer", "orchestrator" };
         Assert.Equal(6, knownRoles.Length);
     }
 
@@ -132,7 +133,6 @@ public class AgentRegistryTests : IDisposable
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
     [InlineData("docs-writer")]
-    [InlineData("planner")]
     [InlineData("test-writer")]
     public void SetRole_AcceptsAllKnownRoles(string role)
     {
@@ -777,11 +777,11 @@ public class AgentRegistryTests : IDisposable
 
         var registry = new AgentRegistry(_testDir);
 
-        // Should allow planner, test-writer, etc. on same task
-        var canTakePlanner = registry.CanTakeRole("Adele", "planner", "my-task", out var reason1);
+        // Should allow co-thinker, test-writer, etc. on same task
+        var canTakeCoThinker = registry.CanTakeRole("Adele", "co-thinker", "my-task", out var reason1);
         var canTakeTester = registry.CanTakeRole("Adele", "test-writer", "my-task", out var reason2);
 
-        Assert.True(canTakePlanner, reason1);
+        Assert.True(canTakeCoThinker, reason1);
         Assert.True(canTakeTester, reason2);
     }
 
@@ -807,11 +807,11 @@ public class AgentRegistryTests : IDisposable
         var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
 
         Assert.False(canTake);
-        Assert.Contains("Orchestrator requires prior co-thinker or planner experience", reason);
+        Assert.Contains("Orchestrator requires prior co-thinker experience", reason);
     }
 
     [Fact]
-    public void CanTakeRole_AllowsOrchestratorWithPlannerHistory()
+    public void CanTakeRole_AllowsOrchestratorWithCoThinkerHistory()
     {
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
 
@@ -822,7 +822,7 @@ public class AgentRegistryTests : IDisposable
             agent: Adele
             status: free
             assigned: testuser
-            task-role-history: { "my-task": ["planner"] }
+            task-role-history: { "my-task": ["co-thinker"] }
             ---
             # Adele — Session State
             """);
@@ -830,94 +830,6 @@ public class AgentRegistryTests : IDisposable
         var registry = new AgentRegistry(_testDir);
 
         var canTake = registry.CanTakeRole("Adele", "orchestrator", "my-task", out var reason);
-
-        Assert.True(canTake);
-        Assert.Empty(reason);
-    }
-
-    [Fact]
-    public void CanTakeRole_BlocksJudgeWhenThreeAlreadyActive()
-    {
-        SetupConfig(
-            new[] { "Adele", "Brian", "Claire", "David" },
-            new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian", "Claire", "David" } });
-
-        // Create 3 active judges on the same task
-        foreach (var name in new[] { "Adele", "Brian", "Claire" })
-        {
-            var workspace = Path.Combine(_testDir, "dydo", "agents", name);
-            Directory.CreateDirectory(workspace);
-            File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
-                ---
-                agent: {{name}}
-                status: working
-                assigned: testuser
-                role: judge
-                task: dispute-1
-                task-role-history: {}
-                ---
-                # {{name}} — Session State
-                """);
-        }
-
-        // David wants to become the 4th judge
-        var davidWorkspace = Path.Combine(_testDir, "dydo", "agents", "David");
-        Directory.CreateDirectory(davidWorkspace);
-        File.WriteAllText(Path.Combine(davidWorkspace, "state.md"), """
-            ---
-            agent: David
-            status: free
-            assigned: testuser
-            task-role-history: {}
-            ---
-            # David — Session State
-            """);
-
-        var registry = new AgentRegistry(_testDir);
-
-        var canTake = registry.CanTakeRole("David", "judge", "dispute-1", out var reason);
-
-        Assert.False(canTake);
-        Assert.Contains("Maximum 3 judges", reason);
-    }
-
-    [Fact]
-    public void CanTakeRole_AllowsJudgeWhenFewerThanThreeActive()
-    {
-        SetupConfig(
-            new[] { "Adele", "Brian", "Claire" },
-            new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Brian", "Claire" } });
-
-        // Only 1 active judge
-        var adeleWorkspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
-        Directory.CreateDirectory(adeleWorkspace);
-        File.WriteAllText(Path.Combine(adeleWorkspace, "state.md"), """
-            ---
-            agent: Adele
-            status: working
-            assigned: testuser
-            role: judge
-            task: dispute-1
-            task-role-history: {}
-            ---
-            # Adele — Session State
-            """);
-
-        var clairePath = Path.Combine(_testDir, "dydo", "agents", "Claire");
-        Directory.CreateDirectory(clairePath);
-        File.WriteAllText(Path.Combine(clairePath, "state.md"), """
-            ---
-            agent: Claire
-            status: free
-            assigned: testuser
-            task-role-history: {}
-            ---
-            # Claire — Session State
-            """);
-
-        var registry = new AgentRegistry(_testDir);
-
-        var canTake = registry.CanTakeRole("Claire", "judge", "dispute-1", out var reason);
 
         Assert.True(canTake);
         Assert.Empty(reason);
@@ -1018,8 +930,8 @@ public class AgentRegistryTests : IDisposable
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
     [InlineData("docs-writer")]
-    [InlineData("planner")]
     [InlineData("test-writer")]
+    [InlineData("orchestrator")]
     public void SetRole_RejectsInvalidRole_ButAcceptsValidRole(string role)
     {
         // Valid roles should fail with "No agent identity assigned", not "Invalid role"
@@ -1045,8 +957,8 @@ public class AgentRegistryTests : IDisposable
     [Fact]
     public void AllSixRoles_AreRecognized()
     {
-        // This test ensures we have exactly 6 valid roles
-        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "planner", "test-writer" };
+        // This test ensures we have exactly 6 claimable roles (planner is skill-only).
+        var knownRoles = new[] { "code-writer", "reviewer", "co-thinker", "docs-writer", "test-writer", "orchestrator" };
 
         foreach (var role in knownRoles)
         {
@@ -1425,7 +1337,7 @@ public class AgentRegistryTests : IDisposable
         Assert.True(result2, $"Switching after fulfilling dispatched role should succeed without nudge: {err2}");
 
         // Switch again — should still succeed (TaskRoleHistory persists, not just current role)
-        var result3 = registry.SetRole("test-session-nudge14", "planner", "my-task", out var err3);
+        var result3 = registry.SetRole("test-session-nudge14", "docs-writer", "my-task", out var err3);
         Assert.True(result3, $"Second switch after fulfilling dispatched role should also succeed: {err3}");
     }
 

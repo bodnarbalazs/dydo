@@ -90,7 +90,7 @@ public class RoleDefinitionServiceTests : IDisposable
     #region BuildPermissionMap
 
     [Fact]
-    public void BuildPermissionMap_ReturnsAllNineRoles()
+    public void BuildPermissionMap_ReturnsAllBaseRoles()
     {
         var pathSets = new Dictionary<string, List<string>>
         {
@@ -100,11 +100,13 @@ public class RoleDefinitionServiceTests : IDisposable
         var roles = RoleDefinitionService.GetBaseRoleDefinitions();
         var result = _service.BuildPermissionMap(roles, pathSets);
 
-        Assert.Equal(9, result.Count);
+        Assert.Equal(7, result.Count);
         Assert.Contains("code-writer", result.Keys);
         Assert.Contains("reviewer", result.Keys);
         Assert.Contains("orchestrator", result.Keys);
-        Assert.Contains("judge", result.Keys);
+        Assert.Contains("planner", result.Keys);
+        Assert.DoesNotContain("inquisitor", result.Keys);
+        Assert.DoesNotContain("judge", result.Keys);
     }
 
     [Fact]
@@ -274,16 +276,18 @@ public class RoleDefinitionServiceTests : IDisposable
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
         var files = Directory.GetFiles(rolesDir, "*.role.json");
 
-        Assert.Equal(9, files.Length);
+        // Six claimable Tier-1 roles. planner is skill-only (no role file);
+        // inquisitor/judge are retired (Decision 024).
+        Assert.Equal(6, files.Length);
         Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "reviewer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "co-thinker.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "docs-writer.role.json");
-        Assert.Contains(files, f => Path.GetFileName(f) == "planner.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "test-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "orchestrator.role.json");
-        Assert.Contains(files, f => Path.GetFileName(f) == "inquisitor.role.json");
-        Assert.Contains(files, f => Path.GetFileName(f) == "judge.role.json");
+        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "planner.role.json");
+        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "inquisitor.role.json");
+        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "judge.role.json");
     }
 
     [Fact]
@@ -292,7 +296,11 @@ public class RoleDefinitionServiceTests : IDisposable
         _service.WriteBaseRoleDefinitions(_testDir);
 
         var loaded = _service.LoadRoleDefinitions(_testDir);
-        var original = RoleDefinitionService.GetBaseRoleDefinitions();
+        // Skill-only roles (planner) are not written to disk, so compare against the
+        // claimable subset only.
+        var original = RoleDefinitionService.GetBaseRoleDefinitions()
+            .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
+            .ToList();
 
         Assert.Equal(original.Count, loaded.Count);
 
@@ -623,12 +631,6 @@ public class RoleDefinitionServiceTests : IDisposable
         var orchestrator = loaded.Single(r => r.Name == "orchestrator");
         Assert.True(orchestrator.CanOrchestrate);
 
-        var inquisitor = loaded.Single(r => r.Name == "inquisitor");
-        Assert.True(inquisitor.CanOrchestrate);
-
-        var judge = loaded.Single(r => r.Name == "judge");
-        Assert.True(judge.CanOrchestrate);
-
         var codeWriter = loaded.Single(r => r.Name == "code-writer");
         Assert.False(codeWriter.CanOrchestrate);
     }
@@ -647,40 +649,10 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.True(dispatchConstraint.RequireAll);
     }
 
-    [Fact]
-    public void WriteBaseRoleDefinitions_RoundTrips_RequireAll()
-    {
-        _service.WriteBaseRoleDefinitions(_testDir);
-
-        var loaded = _service.LoadRoleDefinitions(_testDir);
-
-        var inquisitor = loaded.Single(r => r.Name == "inquisitor");
-        var constraint = inquisitor.Constraints.Single(c => c.Type == "requires-dispatch");
-        Assert.False(constraint.RequireAll);
-        Assert.Equal(["judge", "inquisitor"], constraint.RequiredRoles);
-    }
-
-    [Fact]
-    public void GetBaseRoleDefinitions_Judge_CanWriteInquisitions()
-    {
-        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
-        var judge = roles.Single(r => r.Name == "judge");
-        Assert.Contains("dydo/project/inquisitions/**", judge.WritablePaths);
-    }
-
-    [Fact]
-    public void GetBaseRoleDefinitions_Judge_CanWriteIssues()
-    {
-        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
-        var judge = roles.Single(r => r.Name == "judge");
-        Assert.Contains("dydo/project/issues/**", judge.WritablePaths);
-    }
-
     [Theory]
     [InlineData("code-writer")]
     [InlineData("co-thinker")]
     [InlineData("orchestrator")]
-    [InlineData("judge")]
     public void GetBaseRoleDefinitions_BacklogWriters_CanWriteBacklog(string roleName)
     {
         var roles = RoleDefinitionService.GetBaseRoleDefinitions();
@@ -689,27 +661,33 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
-    public void WriteBaseRoleDefinitions_RoundTrips_JudgeWritablePaths()
-    {
-        _service.WriteBaseRoleDefinitions(_testDir);
-
-        var loaded = _service.LoadRoleDefinitions(_testDir);
-        var judge = loaded.Single(r => r.Name == "judge");
-
-        Assert.Contains("dydo/project/inquisitions/**", judge.WritablePaths);
-        Assert.Contains("dydo/project/issues/**", judge.WritablePaths);
-        Assert.Contains("dydo/project/backlog/**", judge.WritablePaths);
-    }
-
-    [Fact]
-    public void GetBaseRoleDefinitions_ReviewerDispatchRestriction_AllowsInquisitorDispatcher()
+    public void GetBaseRoleDefinitions_ReviewerDispatchRestriction_AllowsCodeWriterAndTestWriter()
     {
         var roles = RoleDefinitionService.GetBaseRoleDefinitions();
         var reviewer = roles.Single(r => r.Name == "reviewer");
         var constraint = reviewer.Constraints.Single(c => c.Type == "dispatch-restriction");
 
-        Assert.Contains("inquisitor", constraint.RequiredRoles!);
         Assert.Contains("code-writer", constraint.RequiredRoles!);
+        Assert.Contains("test-writer", constraint.RequiredRoles!);
+        Assert.DoesNotContain("inquisitor", constraint.RequiredRoles!);
+    }
+
+    [Fact]
+    public void GetBaseRoleDefinitions_DropsRetiredRoles()
+    {
+        var names = RoleDefinitionService.GetBaseRoleDefinitions().Select(r => r.Name).ToList();
+        Assert.DoesNotContain("inquisitor", names);
+        Assert.DoesNotContain("judge", names);
+    }
+
+    [Fact]
+    public void GetBaseRoleDefinitions_Planner_IsSkillOnly()
+    {
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        // planner stays in the base definitions to drive skill generation...
+        Assert.Contains(roles, r => r.Name == "planner");
+        // ...but is flagged skill-only, so it is not written as a claimable role file.
+        Assert.Contains("planner", RoleDefinitionService.SkillOnlyRoles);
     }
 
     #endregion
@@ -870,7 +848,9 @@ public class RoleDefinitionServiceTests : IDisposable
         _service.WriteBaseRoleDefinitions(_testDir);
 
         var loaded = _service.LoadRoleDefinitions(_testDir);
-        var original = RoleDefinitionService.GetBaseRoleDefinitions();
+        // Skill-only roles (planner) are not written to disk; compare the claimable subset.
+        var original = RoleDefinitionService.GetBaseRoleDefinitions()
+            .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name));
 
         foreach (var orig in original)
         {

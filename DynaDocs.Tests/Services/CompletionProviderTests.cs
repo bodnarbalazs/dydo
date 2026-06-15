@@ -43,15 +43,23 @@ public class CompletionProviderTests
     [InlineData("reviewer")]
     [InlineData("co-thinker")]
     [InlineData("docs-writer")]
-    [InlineData("planner")]
     [InlineData("test-writer")]
     [InlineData("orchestrator")]
-    [InlineData("inquisitor")]
-    [InlineData("judge")]
     public void Roles_ContainsRole(string role)
     {
         var completions = CompletionProvider.GetOptionValueCompletions("--role")!.ToList();
         Assert.Contains(role, completions);
+    }
+
+    [Theory]
+    [InlineData("planner")]
+    [InlineData("inquisitor")]
+    [InlineData("judge")]
+    public void Roles_ExcludesNonClaimableRoles(string role)
+    {
+        // planner is skill-only; inquisitor/judge are retired (Decision 024).
+        var completions = CompletionProvider.GetOptionValueCompletions("--role")!.ToList();
+        Assert.DoesNotContain(role, completions);
     }
 
     [Theory]

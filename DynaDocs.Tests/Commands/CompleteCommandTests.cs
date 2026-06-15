@@ -119,8 +119,10 @@ public class CompleteCommandTests : IDisposable
         Assert.Contains("reviewer", completions);
         Assert.Contains("co-thinker", completions);
         Assert.Contains("docs-writer", completions);
-        Assert.Contains("planner", completions);
         Assert.Contains("test-writer", completions);
+        Assert.Contains("orchestrator", completions);
+        // planner is skill-only (Decision 024) — not a claimable role completion.
+        Assert.DoesNotContain("planner", completions);
     }
 
     [Fact]

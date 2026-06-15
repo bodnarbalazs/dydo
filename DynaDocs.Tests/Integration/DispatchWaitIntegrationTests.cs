@@ -82,7 +82,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         var inboxCmd = InboxCommand.Create();
         await RunAsync(inboxCmd, "clear", "--all");
 
-        var result = await DispatchAsync("planner", "design", "Task emerged from thinking", noWait: true);
+        var result = await DispatchAsync("code-writer", "design", "Task emerged from thinking", noWait: true);
 
         result.AssertSuccess();
         Assert.DoesNotContain("Don't forget", result.Stdout);
@@ -139,9 +139,9 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Brian needs oversight role for --wait; set planner history for orchestrator graduation
+        // Brian needs oversight role for --wait; set co-thinker history for orchestrator graduation
         await ClaimAgentAsync("Brian");
-        SetTaskRoleHistory("Brian", "auth", "planner");
+        SetTaskRoleHistory("Brian", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
 
         var result = await DispatchAsync("reviewer", "auth", "Review this", wait: true);
@@ -307,7 +307,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
@@ -329,7 +329,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
@@ -354,7 +354,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
@@ -399,7 +399,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
 
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
@@ -441,7 +441,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
 
         // Adele dispatches with --wait to Brian (needs oversight role)
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement auth", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
@@ -607,74 +607,14 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Brian is dispatched as a planner (not code-writer)
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "planner", "auth", "Plan auth");
+        // Brian is dispatched as a co-thinker (not code-writer)
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "co-thinker", "auth", "Think about auth");
         ClaimAgentInSeparateSession("Brian");
-        SetRoleInState("Brian", "planner", "auth");
+        SetRoleInState("Brian", "co-thinker", "auth");
         ClearInboxInSeparateSession("Brian");
 
         var releaseResult = ReleaseInSeparateSession("Brian");
         Assert.DoesNotContain("dispatched code-writers must dispatch a reviewer", releaseResult);
-    }
-
-    #endregion
-
-    #region Inquisitor Release Enforcement
-
-    [Fact]
-    public async Task Release_BlockedForDispatchedInquisitor_WithoutJudgeDispatch()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Adele dispatches inquisitor task to Brian
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit-docs", "Audit documentation");
-        ClaimAgentInSeparateSession("Brian");
-        SetRoleInState("Brian", "inquisitor", "audit-docs");
-        ClearInboxInSeparateSession("Brian");
-
-        // Brian tries to release without dispatching a judge
-        var releaseResult = ReleaseInSeparateSession("Brian");
-
-        Assert.Contains("dispatched inquisitors must dispatch a judge or another inquisitor", releaseResult);
-        Assert.Contains("--role judge", releaseResult);
-    }
-
-    [Fact]
-    public async Task Release_SucceedsForDispatchedInquisitor_AfterJudgeDispatch()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Adele dispatches inquisitor task to Brian
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit-docs", "Audit documentation");
-        ClaimAgentInSeparateSession("Brian");
-        SetRoleInState("Brian", "inquisitor", "audit-docs");
-        ClearInboxInSeparateSession("Brian");
-
-        // Brian dispatches a judge for the same task
-        DispatchInSeparateSession("Brian", "judge", "audit-docs", "Judge audit findings");
-
-        // Brian releases — should succeed
-        var releaseResult = ReleaseInSeparateSession("Brian");
-        Assert.DoesNotContain("dispatched inquisitors must dispatch a judge or another inquisitor", releaseResult);
-    }
-
-    [Fact]
-    public async Task Release_SucceedsForDispatchedInquisitor_AfterInquisitorRedispatch()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Adele dispatches inquisitor task to Brian
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit-docs", "Audit documentation");
-        ClaimAgentInSeparateSession("Brian");
-        SetRoleInState("Brian", "inquisitor", "audit-docs");
-        ClearInboxInSeparateSession("Brian");
-
-        // Brian re-dispatches another inquisitor (instead of a judge)
-        DispatchInSeparateSession("Brian", "inquisitor", "audit-docs", "Re-dispatch to worktree");
-
-        // Brian releases — should succeed (requireAll=false, inquisitor satisfies the constraint)
-        var releaseResult = ReleaseInSeparateSession("Brian");
-        Assert.DoesNotContain("dispatched inquisitors must dispatch a judge or another inquisitor", releaseResult);
     }
 
     #endregion
@@ -686,13 +626,15 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Inquisitor should be able to use --wait (canOrchestrate = true)
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "audit", "Audit");
+        // Orchestrator should be able to use --wait (canOrchestrate = true).
+        // Orchestrator graduation requires prior co-thinker history on the task.
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "orchestrator", "audit", "Audit");
         ClaimAgentInSeparateSession("Brian");
-        SetRoleInState("Brian", "inquisitor", "audit");
+        SetTaskRoleHistory("Brian", "audit", "co-thinker");
+        SetRoleInState("Brian", "orchestrator", "audit");
         ClearInboxInSeparateSession("Brian");
 
-        var result = DispatchInSeparateSessionWithResult("Brian", "judge", "audit", "Judge this", wait: true);
+        var result = DispatchInSeparateSessionWithResult("Brian", "code-writer", "audit", "Implement this", wait: true);
 
         Assert.DoesNotContain("reserved for oversight roles", result);
     }
@@ -718,10 +660,11 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "testuser", 3);
 
-        // Use inquisitor — has CanOrchestrate=true and no role-assignment constraints
-        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "inquisitor", "deploy", "Audit deploy");
+        // Use orchestrator — has CanOrchestrate=true. Graduation requires prior co-thinker.
+        CreateInboxItemWithOrigin("Brian", "Adele", "Adele", "orchestrator", "deploy", "Plan deploy");
         ClaimAgentInSeparateSession("Brian");
-        SetRoleInState("Brian", "inquisitor", "deploy");
+        SetTaskRoleHistory("Brian", "deploy", "co-thinker");
+        SetRoleInState("Brian", "orchestrator", "deploy");
         ClearInboxInSeparateSession("Brian");
 
         // Write verified format: sessionId + agentName
@@ -778,7 +721,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
 
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
 
         var result = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
@@ -814,7 +757,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         // Adele dispatches code-writer to Brian with --wait; clear inbox + reply marker
         // so we isolate the dispatch-wait release-block from other guardrails.
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();
@@ -841,7 +784,7 @@ public class DispatchWaitIntegrationTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
 
         await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "auth", "planner");
+        SetTaskRoleHistory("Adele", "auth", "co-thinker");
         await SetRoleAsync("orchestrator", "auth");
         var dispatchResult = await DispatchAsync("code-writer", "auth", "Implement", to: "Brian", wait: true);
         dispatchResult.AssertSuccess();

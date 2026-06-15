@@ -14,6 +14,12 @@ export const meta = {
 // before escalating instead of burning tokens on a stuck slice.
 const MAX_REVIEW_ROUNDS = 5
 
+// Appended to every code-writer prompt. Declared here (not below the helpers) so it
+// is initialized before the phase body runs — a `const` is in the temporal dead zone
+// until its declaration executes, and the phase body calls codePrompt() before that.
+const RAISE_HAND_NOTE =
+  '\n\nIf the brief is ambiguous, contradicts the codebase, or you find yourself thrashing on the same root cause across rounds, set raiseHand=true with a reason instead of guessing — a human will step in.'
+
 // Worker structured outputs. Both carry a `raiseHand` circuit-breaker so any
 // worker can proactively pull the human in mid-loop, independent of the cap.
 const CODE_RESULT = {
@@ -41,11 +47,15 @@ const REVIEW_RESULT = {
 
 phase('Slice')
 const slices = normalizeSlices(args)
-log(`Sprint: ${slices.length} slice(s) — ${slices.map(s => s.name).join(', ')}.`)
+// Worktree isolation exists to keep PARALLEL slices from clobbering each other's
+// files and build outputs — so it only applies when there's more than one slice.
+// A lone slice has nothing to isolate from, and the harness's worktree branches
+// from a base commit that can predate in-progress branch work (it would hide the
+// very code the slice builds on), so a single slice runs in the main working tree.
+const ISOLATE = slices.length > 1
+log(`Sprint: ${slices.length} slice(s) — ${slices.map(s => s.name).join(', ')}. ${ISOLATE ? 'Worktree-isolated (parallel).' : 'In-tree (single slice).'}`)
 
 phase('Implement & review')
-// Slices have disjoint file sets, so they run in parallel; each code-writer is
-// isolated in its own git worktree to avoid build-lock and cross-contamination.
 const results = (await parallel(slices.map(slice => () => runSlice(slice)))).filter(Boolean)
 
 phase('Report')
@@ -61,13 +71,14 @@ return {
 async function runSlice(slice) {
   let feedback = null
   for (let round = 1; round <= MAX_REVIEW_ROUNDS; round++) {
-    const code = await agent(codePrompt(slice, feedback, round), {
+    const codeOpts = {
       agentType: 'code-writer',
-      isolation: 'worktree',
       label: `code:${slice.name}#${round}`,
       phase: 'Implement & review',
       schema: CODE_RESULT,
-    })
+    }
+    if (ISOLATE) codeOpts.isolation = 'worktree'
+    const code = await agent(codePrompt(slice, feedback, round), codeOpts)
     if (!code || code.raiseHand)
       return escalate(slice, 'code-writer', round, code?.reason ?? 'code-writer did not return a result', { summary: code?.summary })
 
@@ -100,9 +111,6 @@ function normalizeSlices(a) {
     ? { name: `slice-${i + 1}`, brief: s }
     : { name: s.name ?? `slice-${i + 1}`, brief: s.brief })
 }
-
-const RAISE_HAND_NOTE =
-  '\n\nIf the brief is ambiguous, contradicts the codebase, or you find yourself thrashing on the same root cause across rounds, set raiseHand=true with a reason instead of guessing — a human will step in.'
 
 function codePrompt(slice, feedback, round) {
   const base = `You are implementing sprint slice "${slice.name}".\n\nBrief:\n${slice.brief}\n\nImplement it fully, add or adjust tests, and run the worktree-isolated test runner + coverage gate before finishing. Return a structured result.`

@@ -22,8 +22,6 @@ public class TemplateOverrideTests : IntegrationTestBase
         AssertFileExists("dydo/_system/templates/mode-planner.template.md");
         AssertFileExists("dydo/_system/templates/mode-docs-writer.template.md");
         AssertFileExists("dydo/_system/templates/mode-test-writer.template.md");
-        AssertFileExists("dydo/_system/templates/mode-inquisitor.template.md");
-        AssertFileExists("dydo/_system/templates/mode-judge.template.md");
         AssertFileExists("dydo/_system/templates/mode-orchestrator.template.md");
     }
 
@@ -144,9 +142,12 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("agent-workflow.template.md", templateNames);
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
+        Assert.Contains("mode-planner.template.md", templateNames);
+        Assert.DoesNotContain("mode-inquisitor.template.md", templateNames);
+        Assert.DoesNotContain("mode-judge.template.md", templateNames);
 
-        // Should have all expected templates (10 total: 1 workflow + 9 modes)
-        Assert.Equal(10, templateNames.Count);
+        // 8 total: 1 workflow + 7 modes (planner kept as skill source; inquisitor/judge dropped)
+        Assert.Equal(8, templateNames.Count);
     }
 
     [Fact]

@@ -41,12 +41,7 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(AgentSession))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(WaitMarker))]
-[JsonSerializable(typeof(ReplyPendingMarker))]
-[JsonSerializable(typeof(DispatchMarker))]
-[JsonSerializable(typeof(DispatchWaitMarker))]
 [JsonSerializable(typeof(GuardLiftMarker))]
-[JsonSerializable(typeof(QueueEntry))]
-[JsonSerializable(typeof(QueueActiveEntry))]
 internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
 
 /// <summary>

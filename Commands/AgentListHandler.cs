@@ -70,11 +70,9 @@ internal static class AgentListHandler
 
         var freeCount = agents.Count(a => a.Status == AgentStatus.Free);
         var dispatchedCount = agents.Count(a => a.Status == AgentStatus.Dispatched);
-        var queuedCount = agents.Count(a => a.Status == AgentStatus.Queued);
         var workingCount = agents.Count(a => a.Status == AgentStatus.Working);
         Console.WriteLine();
         var parts = new List<string> { $"{freeCount} free", $"{dispatchedCount} dispatched" };
-        if (queuedCount > 0) parts.Add($"{queuedCount} queued");
         parts.Add($"{workingCount} working");
         Console.WriteLine($"Total: {agents.Count} agents ({string.Join(", ", parts)})");
 
@@ -161,11 +159,9 @@ internal static class AgentListHandler
 
         var freeCount = filteredAgents.Count(a => a.Status == AgentStatus.Free);
         var dispatchedCount = filteredAgents.Count(a => a.Status == AgentStatus.Dispatched);
-        var queuedCount = filteredAgents.Count(a => a.Status == AgentStatus.Queued);
         var workingCount = filteredAgents.Count(a => a.Status == AgentStatus.Working);
         Console.WriteLine();
         var parts = new List<string> { $"{freeCount} free", $"{dispatchedCount} dispatched" };
-        if (queuedCount > 0) parts.Add($"{queuedCount} queued");
         parts.Add($"{workingCount} working");
         Console.WriteLine($"Total: {filteredAgents.Count} agents ({string.Join(", ", parts)})");
 

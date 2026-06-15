@@ -107,8 +107,7 @@ dydo inbox show                          # Check dispatched work
 dydo inbox clear --all                   # Archive processed items
 
 # Dispatch
-dydo dispatch --wait --auto-close --role <r> --task <t> --brief "..."     # Oversight roles only (orchestrator, inquisitor, judge)
-dydo dispatch --no-wait --auto-close --role <r> --task <t> --brief "..."  # All other roles
+dydo dispatch --auto-close --role <r> --task <t> --brief "..."  # Reserve + assign + launch a terminal for the target agent
 
 # Messaging
 dydo msg --to <agent> --body "..."                   # Send message

@@ -74,12 +74,10 @@ Certain operations are gated by **soft-blocks** — one-time stops that pass on 
 An agent can hand off work by dispatching another agent:
 
 ```bash
-dydo dispatch --no-wait --auto-close --role <role> --task <task> --brief "..."
+dydo dispatch --auto-close --role <role> --task <task> --brief "..."
 ```
 
-This creates an inbox item in the target agent's workspace and optionally launches a new terminal. The `--wait` flag (restricted to oversight roles) creates a wait marker so the dispatcher blocks until a response arrives.
-
-When dispatching on the **same task** the agent was dispatched for, the reply obligation passes to the new agent (baton-passing). See [Dispatch and Messaging](./dispatch-and-messaging.md) for full details.
+This reserves the target agent (status becomes `Dispatched`), writes a single assignment inbox item carrying the role and brief, and launches a new terminal. The launched agent claims, reads its assignment, and sets its role. The dispatcher does not block. See [Dispatch and Messaging](./dispatch-and-messaging.md) for full details.
 
 ---
 
@@ -94,15 +92,12 @@ dydo agent release
 **Pre-release validation** blocks release if:
 - Unprocessed inbox items exist
 - Active wait markers exist
-- A reply obligation is pending (message not sent back to upstream agent)
-- A worktree merge is pending
-- A dispatched code-writer hasn't dispatched a reviewer
 
 **Cleanup on release:**
 1. State reset — Role, task, permissions, must-reads, and messages cleared. Status set to Free.
 2. Session teardown — `.session` file deleted, session hints cleared.
 3. Workspace archive — Non-system files moved to `archive/{timestamp}/`. Archive pruned to 30 entries max.
-4. Marker cleanup — Wait markers, reply-pending markers, review-dispatched markers, and nudge markers all deleted.
+4. Marker cleanup — Wait markers and nudge markers all deleted.
 
 ---
 

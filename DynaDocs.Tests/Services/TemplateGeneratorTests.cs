@@ -361,24 +361,31 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateModeFile_Orchestrator_ReframesWaitAsReleaseBlockOnCallee()
+    public void GenerateModeFile_Orchestrator_DoesNotReferenceRemovedDispatchFlags()
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", "orchestrator");
 
-        Assert.Contains("release-block", content);
-        Assert.Contains("cannot release until they message you back", content);
+        // The slimmed dispatch has no --wait/--no-wait/--worktree/--queue flags.
+        Assert.DoesNotContain("--wait", content);
+        Assert.DoesNotContain("--no-wait", content);
+        Assert.DoesNotContain("--worktree", content);
+        Assert.DoesNotContain("--queue", content);
+        // It still teaches the slimmed dispatch.
+        Assert.Contains("dydo dispatch", content);
     }
 
     [Theory]
     [InlineData("code-writer")]
     [InlineData("reviewer")]
     [InlineData("docs-writer")]
-    public void GenerateModeFile_DispatchedRoles_HaveDispatchWaitReleaseNote(string mode)
+    public void GenerateModeFile_DispatchedRoles_DoNotPinRemovedWaitReleaseNote(string mode)
     {
         var content = TemplateGenerator.GenerateModeFile("TestAgent", mode);
 
-        Assert.Contains("if your dispatcher used `--wait`", content);
-        Assert.Contains("cannot release", content);
+        // The dispatch-wait release-block was removed; guidance must not reference --wait.
+        Assert.DoesNotContain("if your dispatcher used `--wait`", content);
+        Assert.DoesNotContain("--wait", content);
+        Assert.DoesNotContain("--no-wait", content);
     }
 
     #region Asset Tests

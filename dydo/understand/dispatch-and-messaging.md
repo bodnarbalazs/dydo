@@ -11,31 +11,26 @@ How agents communicate: dispatching work, inbox delivery, direct messaging, and 
 
 ## Dispatch
 
-Dispatching creates an inbox item in the target agent's workspace and optionally launches a new terminal for them.
+Dispatching reserves the target agent (status becomes `Dispatched`), writes a single assignment inbox item carrying the role and brief, and launches a new terminal for them. The launched agent claims, reads its assignment from the inbox, and sets its role. The dispatcher does not block — it returns as soon as the agent is launched.
 
 ```bash
-dydo dispatch --no-wait --auto-close --role <role> --task <task> --brief "Work description"
+dydo dispatch --auto-close --role <role> --task <task> --brief "Work description"
 ```
 
 **Key options:**
 - `--role` (required): Role for the target agent
 - `--task` (required): Task name
 - `--brief` / `--brief-file`: Work description
-- `--to`: Explicit agent target (skips auto-selection)
+- `--to` / `--agent`: Explicit agent target (skips auto-selection)
 - `--files`: File patterns for context (informational, not restrictive)
 - `--escalate`: Mark as escalated
 - `--auto-close`: Auto-close the target's terminal after release
 - `--tab` / `--new-window`: Terminal launch mode
 - `--no-launch`: Write to inbox without launching a terminal
-- `--worktree`: Run the target in an isolated git worktree
 
-### --wait vs --no-wait
+### Launch Bridge
 
-One of these is required on every dispatch.
-
-**`--wait`**: The dispatcher creates a wait marker and blocks (via `dydo wait`) until the target sends a message back. Restricted to **oversight roles only** (orchestrator, inquisitor, judge).
-
-**`--no-wait`**: The dispatcher continues immediately. Standard for non-oversight roles. The target works independently and reports back via messaging if needed.
+Dispatch reserves the agent via `ReserveAgent`, setting its status to `Dispatched`. The launched agent then claims that reservation. If the launch never produces a live session, the watchdog's stale-dispatch reclaim returns the agent to a re-dispatchable state, so a failed launch never strands an agent.
 
 ### Auto-Close
 
@@ -50,22 +45,6 @@ Dispatch launches a new terminal with `claude "<agentName> --inbox"`:
 - **Inherited window**: Child dispatches inherit the parent's `DYDO_WINDOW` environment variable, grouping related agents in the same window
 
 Platform support: Windows Terminal (Windows 11), iTerm2 (macOS recommended).
-
-### Worktree Dispatch
-
-`--worktree` creates an isolated git worktree so the target agent works on a separate branch:
-
-1. A new branch `worktree/{id}` is created
-2. The worktree directory is set up at `dydo/_system/.local/worktrees/{id}`
-3. Four junctions/symlinks share state: `dydo/agents/`, `dydo/_system/roles/`, `dydo/project/issues/`, `dydo/project/inquisitions/`
-4. Markers are stored in the agent's workspace: `.worktree` (ID), `.worktree-path` (directory), `.worktree-base` (target branch), `.worktree-root` (main project root)
-
-Child dispatches from within a worktree have three paths:
-- **Nested child** (`--worktree`): Creates a new child worktree with a hierarchical ID (e.g., `parent/child`)
-- **Inheritance** (default): Child inherits the parent's worktree markers and works in the same worktree
-- **Merge dispatch**: When the agent has a `.needs-merge` marker, the child launches in the main repo to perform the merge, receiving `.merge-source` and `.worktree-hold` markers
-
-Worktrees are cleaned up via `dydo worktree cleanup` on release, with `dydo worktree prune` handling orphans.
 
 ### Double-Dispatch Protection
 
@@ -102,7 +81,7 @@ dydo inbox clear --all     # Archive all items
 dydo inbox clear --id <id> # Archive a single item
 ```
 
-Items are **moved** (not deleted) to `archive/inbox/`. If an item has `reply_required: true`, clearing it creates a reply-pending marker — the agent cannot release until a message is sent back upstream.
+Items are **moved** (not deleted) to `archive/inbox/`. Unprocessed inbox items block release — the agent must clear its inbox before `dydo agent release` succeeds (the unread-inbox release gate).
 
 ---
 
@@ -117,19 +96,19 @@ dydo msg --to <agent> --subject <task> --body "..."
 
 ### Subject and Task Context
 
-The `--subject` field correlates messages to specific tasks. When a message is sent with a subject matching a reply-pending marker, the obligation is automatically fulfilled and the marker is removed.
+The `--subject` field correlates messages to specific tasks. A task-channel `dydo wait --task <subject>` only wakes on messages carrying the matching subject.
 
 ### Restrictions
 
 - **No self-messaging** (H21): Cannot send messages to yourself
 - **No cross-human messaging** (H22): Cannot message agents assigned to a different human (unless `--force` is used)
-- **Released target rejection**: `dydo msg` to a non-Working target hard-rejects. Use `--force` to write to the released inbox anyway, or redirect to an active orchestrator (a matching `--subject` discharges the same reply-pending marker either way)
+- **Released target rejection**: `dydo msg` to a non-Working target hard-rejects. Use `--force` to write to the released inbox anyway, or redirect to an active agent
 
 ---
 
 ## Wait
 
-Orchestrators and other oversight roles use `dydo wait` to block until a response arrives.
+Every claimed agent runs a general `dydo wait` in the background to receive messages in real time. Agents can also run task-channel waits to block until a response on a specific subject arrives.
 
 ```bash
 dydo wait --task <task-name>   # Wait for message with matching subject
@@ -162,30 +141,22 @@ dydo wait --cancel                 # Cancel all waits
 
 ## The Feedback Loop
 
-The dispatch → message → release cycle forms a feedback loop that coordinates multi-agent work.
-
-### Baton-Passing
-
-When an agent dispatches another agent on the **same task**, the reply obligation passes to the new agent. The sender's reply-pending marker is cleared, and the receiver inherits `reply_required: true`. This chains naturally:
+The dispatch → work → message → release cycle forms a feedback loop that coordinates multi-agent work.
 
 ```
-Orchestrator (--wait) → Code-writer → Reviewer
-                                       │
-                                       └─ messages Orchestrator on completion
+Orchestrator → Code-writer → Reviewer
+                              │
+                              └─ messages Orchestrator on completion
 ```
 
-Only the last agent in the chain needs to send a message back. Each intermediate agent's obligation is cleared when it dispatches the next one on the same task.
+Agents report results by messaging the dispatcher (or origin) on the task's subject. The dispatcher's general wait surfaces those messages as they arrive.
 
-### Review Enforcement
-
-Dispatched code-writers (those with a `DispatchedBy` origin) cannot release without first dispatching a reviewer for the same task (H25). This ensures every orchestrated code change goes through review. Code-writers started directly by a human are exempt from this rule.
-
-### Orchestrator Wait Pattern
+### Orchestrator Coordination Pattern
 
 A typical orchestrator workflow:
 
-1. Dispatch multiple agents with `--wait --auto-close`
-2. Run `dydo wait --task <name>` in background for each
+1. Dispatch multiple agents with `--auto-close`, each on a disjoint file slice
+2. Keep the general wait running in the background to receive their messages
 3. As responses arrive, assess results
 4. Dispatch follow-up work or report back to the human
 

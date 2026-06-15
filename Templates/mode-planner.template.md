@@ -136,10 +136,10 @@ When the plan is ready:
 ### Option A: Dispatch to Code-Writer
 
 ```bash
-dydo dispatch --no-wait --auto-close --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
+dydo dispatch --auto-close --role code-writer --task <task-name> --brief "Plan ready. See agents/{{AGENT_NAME}}/plan-<task-name>.md"
 ```
 
-**Baton-passing:** By dispatching the code-writer on the same task, your reply obligation to whoever dispatched you is fulfilled.
+After dispatching the code-writer, your work is handed off — the plan is in their hands.
 
 ### Option B: Transition Yourself to Code-Writer
 

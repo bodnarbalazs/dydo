@@ -108,7 +108,7 @@ public class TerminalLauncher
 
     internal static string WorktreeSetupScript(string worktreeId, string? mainProjectRoot = null)
     {
-        // Worktree is already created by DispatchService.CreateGitWorktree() before terminal launch.
+        // Worktree is assumed to already exist before terminal launch.
         // This script only cd's into it and sets up symlinks.
         if (mainProjectRoot != null)
         {
@@ -194,9 +194,9 @@ public class TerminalLauncher
     {
         try
         {
-            // A queued dispatch can outlive its worktree (e.g. a merger finalized
-            // while the dispatch was waiting). Bail before Process.Start so the
-            // target doesn't crash on ERROR_DIRECTORY (0x8007010b).
+            // A dispatch can outlive its working directory (e.g. a merger finalized
+            // and tore down the worktree before launch). Bail before Process.Start so
+            // the target doesn't crash on ERROR_DIRECTORY (0x8007010b).
             if (workingDirectory != null && !Directory.Exists(workingDirectory))
                 throw new DirectoryNotFoundException(
                     $"Working directory no longer exists: {workingDirectory}");

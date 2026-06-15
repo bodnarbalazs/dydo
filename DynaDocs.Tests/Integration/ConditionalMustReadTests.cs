@@ -58,7 +58,7 @@ public class ConditionalMustReadTests : IntegrationTestBase
 
         // Dispatch with a very minimal brief (just whitespace-ish)
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "my-task", "--brief", "x", "--no-launch", "--no-wait" };
+        var args = new[] { "--role", "code-writer", "--task", "my-task", "--brief", "x", "--no-launch" };
         BypassNoLaunchNudge("my-task");
         var result = await RunAsync(command, args);
 
@@ -434,8 +434,7 @@ public class ConditionalMustReadTests : IntegrationTestBase
         string role,
         string task,
         string brief,
-        string? to = null,
-        bool noWait = true)
+        string? to = null)
     {
         var command = DispatchCommand.Create();
         var args = new List<string>
@@ -448,7 +447,6 @@ public class ConditionalMustReadTests : IntegrationTestBase
 
         BypassNoLaunchNudge(task);
         if (to != null) { args.Add("--to"); args.Add(to); }
-        if (noWait) { args.Add("--no-wait"); }
 
         return await RunAsync(command, args.ToArray());
     }

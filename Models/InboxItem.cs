@@ -17,5 +17,4 @@ public class InboxItem
     public string? Type { get; init; }
     public string? Subject { get; init; }
     public string? Body { get; init; }
-    public bool ReplyRequired { get; init; }
 }

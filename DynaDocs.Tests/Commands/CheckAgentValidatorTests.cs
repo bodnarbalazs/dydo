@@ -249,15 +249,6 @@ public class CheckAgentValidatorTests : IDisposable
         public void ResetWaitMarkerListening(string agentName, string task) { }
         public List<WaitMarker> GetNonListeningWaitMarkers(string agentName) => [];
         public RoleDefinition? GetRoleDefinition(string roleName) => null;
-        public void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo) { }
-        public bool HasDispatchMarker(string agentName, string task, string targetRole) => false;
-        public void ClearAllDispatchMarkers(string agentName) { }
-        public void CreateDispatchWaitMarker(string calleeName, string task, string dispatcherAgent, string? dispatcherRole) { }
-        public List<DispatchWaitMarker> GetDispatchWaitMarkers(string agentName) => [];
-        public bool MarkDispatchWaitReplied(string agentName, string task) => false;
-        public DispatchWaitMarker? GetUnrepliedDispatchWait(string agentName, string task) => null;
-        public bool HasUnrepliedDispatchWait(string agentName, string task) => false;
-        public void ClearAllDispatchWaitMarkers(string agentName) { }
         public string? GetSessionContext() => null;
         public void StoreSessionContext(string sessionId, string? agentName = null) { }
         public int IncrementResumeAttempts(string agentName, int? preResumePid = null, int? launchedPid = null) => 0;

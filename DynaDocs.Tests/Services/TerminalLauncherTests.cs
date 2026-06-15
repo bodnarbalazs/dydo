@@ -290,6 +290,98 @@ public class TerminalLauncherTests
 
     #endregion
 
+    #region Top-Level Launch Entry Points
+
+    [Fact]
+    public void LaunchNewTerminal_StartsProcess_AndReturnsPid()
+    {
+        var recorder = new RecordingProcessStarter();
+        var original = TerminalLauncher.ProcessStarterOverride;
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        try
+        {
+            var pid = TerminalLauncher.LaunchNewTerminal("Adele");
+
+            Assert.NotEmpty(recorder.Started);
+            Assert.Equal(Environment.ProcessId, pid);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = original;
+        }
+    }
+
+    [Fact]
+    public void LaunchResumeTerminal_StartsProcess_AndReturnsPid()
+    {
+        var recorder = new RecordingProcessStarter();
+        var original = TerminalLauncher.ProcessStarterOverride;
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        try
+        {
+            var pid = TerminalLauncher.LaunchResumeTerminal("Adele", "sess-123");
+
+            Assert.NotEmpty(recorder.Started);
+            Assert.Equal(Environment.ProcessId, pid);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = original;
+        }
+    }
+
+    [Fact]
+    public void LaunchNewTerminal_MissingWorkingDirectory_PrintsManualCommand_ReturnsZero()
+    {
+        var recorder = new RecordingProcessStarter();
+        var original = TerminalLauncher.ProcessStarterOverride;
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        try
+        {
+            var missing = Path.Combine(Path.GetTempPath(), "dydo-no-such-" + Guid.NewGuid().ToString("N")[..8]);
+
+            var output = ConsoleCapture.Stdout(() =>
+            {
+                var pid = TerminalLauncher.LaunchNewTerminal("Adele", missing);
+                Assert.Equal(0, pid);
+            });
+
+            Assert.Empty(recorder.Started);
+            Assert.Contains("claude", output);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = original;
+        }
+    }
+
+    [Fact]
+    public void LaunchResumeTerminal_MissingWorkingDirectory_PrintsManualCommand_ReturnsZero()
+    {
+        var recorder = new RecordingProcessStarter();
+        var original = TerminalLauncher.ProcessStarterOverride;
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        try
+        {
+            var missing = Path.Combine(Path.GetTempPath(), "dydo-no-such-" + Guid.NewGuid().ToString("N")[..8]);
+
+            var output = ConsoleCapture.Stdout(() =>
+            {
+                var pid = TerminalLauncher.LaunchResumeTerminal("Adele", "sess-123", missing);
+                Assert.Equal(0, pid);
+            });
+
+            Assert.Empty(recorder.Started);
+            Assert.Contains("--resume", output);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = original;
+        }
+    }
+
+    #endregion
+
     #region Behavior Tests with IProcessStarter
 
     [Fact]

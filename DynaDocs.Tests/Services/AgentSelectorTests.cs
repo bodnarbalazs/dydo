@@ -17,9 +17,9 @@ public class AgentSelectorTests : IntegrationTestBase
 
         // Dispatch to all agents to mark them as "dispatched" (busy)
         var dispatch = DispatchCommand.Create();
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-1", "--brief", "Brief A", "--to", "Adele", "--no-launch", "--no-wait");
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-2", "--brief", "Brief B", "--to", "Brian", "--no-launch", "--no-wait");
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-3", "--brief", "Brief C", "--to", "Charlie", "--no-launch", "--no-wait");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-1", "--brief", "Brief A", "--to", "Adele", "--no-launch");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-2", "--brief", "Brief B", "--to", "Brian", "--no-launch");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-3", "--brief", "Brief C", "--to", "Charlie", "--no-launch");
 
         var registry = new AgentRegistry(TestDir);
         var (result, error) = AgentSelector.SelectAutomatic(
@@ -37,9 +37,9 @@ public class AgentSelectorTests : IntegrationTestBase
 
         // Dispatch to all agents
         var dispatch = DispatchCommand.Create();
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-1", "--brief", "Brief A", "--to", "Adele", "--no-launch", "--no-wait");
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-2", "--brief", "Brief B", "--to", "Brian", "--no-launch", "--no-wait");
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-3", "--brief", "Brief C", "--to", "Charlie", "--no-launch", "--no-wait");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-1", "--brief", "Brief A", "--to", "Adele", "--no-launch");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-2", "--brief", "Brief B", "--to", "Brian", "--no-launch");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-3", "--brief", "Brief C", "--to", "Charlie", "--no-launch");
 
         var registry = new AgentRegistry(TestDir);
         var (result, error) = AgentSelector.SelectAutomatic(
@@ -113,8 +113,8 @@ public class AgentSelectorTests : IntegrationTestBase
 
         // Busy out the other agents so Brian is the only free-looking candidate.
         var dispatch = DispatchCommand.Create();
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-a", "--brief", "A", "--to", "Adele", "--no-launch", "--no-wait");
-        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-c", "--brief", "C", "--to", "Charlie", "--no-launch", "--no-wait");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-a", "--brief", "A", "--to", "Adele", "--no-launch");
+        await RunAsync(dispatch, "--role", "code-writer", "--task", "task-c", "--brief", "C", "--to", "Charlie", "--no-launch");
 
         // Brian: stale-working with a session pid that probes as dead.
         WriteWorkingState("Brian", DateTime.UtcNow.AddMinutes(-10));

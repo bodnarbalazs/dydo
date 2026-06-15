@@ -726,7 +726,7 @@ public class DispatchCommandTests : IntegrationTestBase
         await InitProjectAsync("none", "testuser", 3);
 
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "my-task", "--no-launch", "--no-wait" };
+        var args = new[] { "--role", "code-writer", "--task", "my-task", "--no-launch" };
         var result = await RunAsync(command, args);
 
         result.AssertExitCode(2);
@@ -748,8 +748,7 @@ public class DispatchCommandTests : IntegrationTestBase
             "--task", "my-task",
             "--brief", "Inline brief",
             "--brief-file", briefPath,
-            "--no-launch",
-            "--no-wait"
+            "--no-launch"
         };
         var result = await RunAsync(command, args);
 
@@ -955,7 +954,7 @@ public class DispatchCommandTests : IntegrationTestBase
 
         // Dispatch WITHOUT bypassing the nudge (call command directly)
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch" };
         var result = await RunAsync(command, args);
 
         result.AssertExitCode(2);
@@ -971,7 +970,7 @@ public class DispatchCommandTests : IntegrationTestBase
         await SetRoleAsync("orchestrator", "nudge-test");
 
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch" };
 
         // First attempt: fails with nudge
         var result1 = await RunAsync(command, args);
@@ -989,7 +988,7 @@ public class DispatchCommandTests : IntegrationTestBase
         // No agent claimed — no sender context
 
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch" };
         var result = await RunAsync(command, args);
 
         result.AssertSuccess();
@@ -1004,7 +1003,7 @@ public class DispatchCommandTests : IntegrationTestBase
 
         // First attempt creates marker
         var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
+        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch" };
         await RunAsync(command, args);
 
         // Marker should exist
@@ -1014,220 +1013,6 @@ public class DispatchCommandTests : IntegrationTestBase
         // Release cleans up markers
         await ReleaseAgentAsync();
         Assert.False(File.Exists(markerPath));
-    }
-
-    #endregion
-
-    #region --no-wait Nudge Tests
-
-    [Fact]
-    public async Task Dispatch_NoWait_OrchestratorFirstAttempt_FailsWithNudge()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "nudge-test", "co-thinker");
-        await SetRoleAsync("orchestrator", "nudge-test");
-
-        var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
-        BypassNoLaunchNudge("nudge-test");
-        var result = await RunAsync(command, args);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("--wait so dispatched");
-        result.AssertStderrContains("run again");
-    }
-
-    [Fact]
-    public async Task Dispatch_NoWait_OrchestratorSecondAttempt_Succeeds()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "nudge-test", "co-thinker");
-        await SetRoleAsync("orchestrator", "nudge-test");
-
-        var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
-        BypassNoLaunchNudge("nudge-test");
-
-        // First attempt: fails with nudge
-        var result1 = await RunAsync(command, args);
-        result1.AssertExitCode(2);
-
-        // Second attempt: passes
-        BypassNoLaunchNudge("nudge-test");
-        var result2 = await RunAsync(command, args);
-        result2.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Dispatch_NoWait_WithoutSender_SkipsNudge()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        // No agent claimed — no sender context
-
-        var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
-        var result = await RunAsync(command, args);
-
-        result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Dispatch_NoWait_OrchestratorMarkerCleanedOnRelease()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        SetTaskRoleHistory("Adele", "nudge-test", "co-thinker");
-        await SetRoleAsync("orchestrator", "nudge-test");
-
-        // First attempt creates marker
-        var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "nudge-test", "--brief", "Test brief", "--no-launch", "--no-wait" };
-        BypassNoLaunchNudge("nudge-test");
-        await RunAsync(command, args);
-
-        // Marker should exist
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.no-wait-nudge-nudge-test");
-        Assert.True(File.Exists(markerPath));
-
-        // Release cleans up markers
-        await ReleaseAgentAsync();
-        Assert.False(File.Exists(markerPath));
-    }
-
-    [Fact]
-    public async Task Dispatch_NoWait_CodeWriter_SkipsNudge()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "nudge-test");
-
-        var result = await DispatchAsync("reviewer", "nudge-test", "Brief", noWait: true);
-        result.AssertSuccess();
-    }
-
-    #endregion
-
-    #region --worktree Tests
-
-    [Fact]
-    public async Task Dispatch_WithWorktreeAndNoLaunch_Fails()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "my-task", "--brief", "Brief", "--worktree", "--no-launch", "--no-wait" };
-        var result = await RunAsync(command, args);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("Cannot specify both --worktree and --no-launch");
-    }
-
-    [Fact]
-    public async Task Dispatch_WithWorktree_CreatesMarkerFile()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Brief", worktree: true);
-
-        result.AssertSuccess();
-
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
-        Assert.True(File.Exists(markerPath), "Worktree marker file should exist");
-
-        var content = File.ReadAllText(markerPath).Trim();
-        // Worktree ID is now the task name (not agent-name + timestamp)
-        Assert.Equal("my-task", content);
-    }
-
-    [Fact]
-    public async Task Dispatch_WithoutWorktree_NoWorktreeMarkerFile()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Brief");
-
-        result.AssertSuccess();
-
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
-        Assert.False(File.Exists(markerPath), "Worktree marker file should not exist");
-    }
-
-    [Fact]
-    public async Task Dispatch_WithWorktree_CombinesWithAutoClose()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Brief", worktree: true, autoClose: true);
-
-        result.AssertSuccess();
-
-        var wtMarker = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
-        Assert.True(File.Exists(wtMarker));
-
-        var statePath = Path.Combine(TestDir, "dydo/agents/Adele/state.md");
-        var stateContent = File.ReadAllText(statePath);
-        Assert.Contains("auto-close: true", stateContent);
-    }
-
-    [Fact]
-    public async Task Dispatch_WithWorktree_CombinesWithTab()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Brief", worktree: true, tab: true);
-
-        result.AssertSuccess();
-
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.worktree");
-        Assert.True(File.Exists(markerPath));
-    }
-
-    [Fact]
-    public async Task Dispatch_WithWorktree_CombinesWithTo()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Brief", to: "Brian", worktree: true);
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Brian");
-
-        var markerPath = Path.Combine(TestDir, "dydo/agents/Brian/.worktree");
-        Assert.True(File.Exists(markerPath));
-    }
-
-    #endregion
-
-    #region --wait Privilege Tests
-
-    [Fact]
-    public async Task Dispatch_WaitBlockedForCodeWriter()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "my-task");
-
-        var result = await DispatchAsync("reviewer", "my-task", "Review this", wait: true, noWait: false);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("--wait flag is reserved for oversight roles");
-    }
-
-    [Fact]
-    public async Task Dispatch_WaitAllowedForOrchestrator()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-
-        // Orchestrator requires co-thinker history — create it
-        SetTaskRoleHistory("Adele", "my-task", "co-thinker");
-        await SetRoleAsync("orchestrator", "my-task");
-
-        var result = await DispatchAsync("code-writer", "my-task", "Implement feature", wait: true, noWait: false);
-
-        result.AssertSuccess();
     }
 
     #endregion
@@ -1301,10 +1086,7 @@ public class DispatchCommandTests : IntegrationTestBase
         bool escalate = false,
         bool tab = false,
         bool newWindow = false,
-        bool autoClose = false,
-        bool noWait = true,
-        bool wait = false,
-        bool worktree = false)
+        bool autoClose = false)
     {
         var command = DispatchCommand.Create();
         var args = new List<string>
@@ -1312,14 +1094,10 @@ public class DispatchCommandTests : IntegrationTestBase
             "--role", role,
             "--task", task,
             "--brief", brief,
+            "--no-launch",
         };
 
-        // --worktree is incompatible with --no-launch, so omit --no-launch when worktree is set
-        if (!worktree)
-        {
-            args.Add("--no-launch");
-            BypassNoLaunchNudge(task);
-        }
+        BypassNoLaunchNudge(task);
 
         if (files != null) { args.Add("--files"); args.Add(files); }
         if (to != null) { args.Add("--to"); args.Add(to); }
@@ -1327,9 +1105,6 @@ public class DispatchCommandTests : IntegrationTestBase
         if (tab) { args.Add("--tab"); }
         if (newWindow) { args.Add("--new-window"); }
         if (autoClose) { args.Add("--auto-close"); }
-        if (worktree) { args.Add("--worktree"); }
-        if (wait) { args.Add("--wait"); }
-        else if (noWait) { args.Add("--no-wait"); }
 
         return await RunAsync(command, args.ToArray());
     }
@@ -1346,8 +1121,7 @@ public class DispatchCommandTests : IntegrationTestBase
             "--role", role,
             "--task", task,
             "--brief", brief,
-            "--no-launch",
-            "--no-wait"
+            "--no-launch"
         };
 
         BypassNoLaunchNudge(task);
@@ -1367,8 +1141,7 @@ public class DispatchCommandTests : IntegrationTestBase
             "--role", role,
             "--task", task,
             "--brief-file", briefFile,
-            "--no-launch",
-            "--no-wait"
+            "--no-launch"
         };
 
         BypassNoLaunchNudge(task);

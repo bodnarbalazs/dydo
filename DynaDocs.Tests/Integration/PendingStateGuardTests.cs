@@ -349,7 +349,7 @@ public class PendingStateGuardTests : IntegrationTestBase
                 "session_id": "{{TestSessionId}}",
                 "tool_name": "Bash",
                 "tool_input": {
-                    "command": "dydo dispatch --wait --role reviewer --task new-task --brief test --no-launch"
+                    "command": "dydo dispatch --role reviewer --task new-task --brief test --no-launch"
                 }
             }
             """;

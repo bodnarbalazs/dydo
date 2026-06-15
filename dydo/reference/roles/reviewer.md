@@ -69,12 +69,12 @@ dydo inbox clear --all
 dydo agent release
 ```
 
-As the last agent in the chain, the reviewer fulfills the reply obligation that was passed down (baton-passing — see [decision 010](../../project/decisions/010-baton-passing-and-review-enforcement.md)).
+As the last agent in the chain, the reviewer reports its verdict back to the origin via `dydo msg`.
 
-**On fail:** Dispatches to a *new* code-writer with specific fix instructions. The review feedback must be actionable — exact line numbers, specific issues, clear descriptions of what's wrong. The baton passes to the new code-writer.
+**On fail:** Dispatches to a *new* code-writer with specific fix instructions. The review feedback must be actionable — exact line numbers, specific issues, clear descriptions of what's wrong.
 
 ```bash
-dydo dispatch --no-wait --auto-close --role code-writer --task <task> --brief "Review failed. Issues: [specific list]"
+dydo dispatch --auto-close --role code-writer --task <task> --brief "Review failed. Issues: [specific list]"
 ```
 
 After 2 failed reviews, the task may be escalated to a fresh agent or to the human.

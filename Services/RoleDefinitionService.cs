@@ -34,7 +34,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                         Type = "requires-dispatch",
                         RequiredRoles = ["reviewer"],
                         OnlyWhenDispatched = true,
-                        Message = "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --no-wait --auto-close --role reviewer --task {task} --brief \"Review changes for {task}\""
+                        Message = "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --auto-close --role reviewer --task {task} --brief \"Review changes for {task}\""
                     }
                 ],
                 ConditionalMustReads =

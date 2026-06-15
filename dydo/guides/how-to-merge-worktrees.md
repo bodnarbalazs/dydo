@@ -68,7 +68,7 @@ The previous contradictory pair (`Merge finalized` printed alongside `cannot del
 
 ## Marker reference
 
-The markers `dydo worktree merge` reads and writes during the flow (see also [architecture.md → Worktree Dispatch](../understand/architecture.md#worktree-dispatch)):
+The markers `dydo worktree merge` reads and writes during the flow:
 
 | Marker | Written by | Read by | Cleared when |
 |--------|------------|---------|--------------|

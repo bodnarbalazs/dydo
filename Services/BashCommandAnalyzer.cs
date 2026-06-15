@@ -183,7 +183,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (PasswdModifyRegex(), "Password file modification attempt"),
 
         // Worktree lifecycle — must go through dydo
-        (GitWorktreeAddRegex(), "Use dydo dispatch --worktree to create worktrees"),
+        (GitWorktreeAddRegex(), "Worktree creation must go through dydo, not raw git"),
         (GitWorktreeRemoveRegex(), "Use dydo worktree cleanup to remove worktrees"),
 
         // Inline interpreter execution — bypasses all file operation analysis

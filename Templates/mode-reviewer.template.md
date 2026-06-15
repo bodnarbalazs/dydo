@@ -103,8 +103,6 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --summar
 
 ## Complete
 
-> Note: if your dispatcher used `--wait`, you cannot release until you have messaged them on this task. The release error names the expected subject.
-
 ### If Review Passes
 {{include:extra-complete-gate}}
 
@@ -112,19 +110,9 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --summar
 dydo review complete <task-name> --status pass --notes "LGTM. Code is clean, tests pass."
 ```
 
-#### Worktree merge dispatch
+#### Report and release
 
-If you are in a worktree (check for a `.worktree` marker in your workspace), `dydo review complete` will create a `.needs-merge` marker and print a dispatch hint. **You must dispatch a code-writer to merge before releasing.** Follow the hint:
-
-```bash
-dydo dispatch --no-wait --auto-close --queue merge --role code-writer --task <task-name>-merge --brief "Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace."
-```
-
-This dispatch clears your `.needs-merge` marker, unblocking release. If you try to release without dispatching the merge, it will be blocked.
-
-#### Baton-passing and release
-
-If you were dispatched as part of a chain (check inbox `From`/`Origin`), the baton is with you — you are the last agent. Message back to the origin:
+If you were dispatched as part of a chain (check inbox `From`/`Origin`), message back to the origin so they know the task is done:
 
 ```bash
 dydo msg --to <origin> --subject <task-name> --body "Review passed. Task complete. [key details]"
@@ -143,7 +131,7 @@ Only dispatch a code-writer to fix issues if you were dispatched by a code-write
 But if the review is a FAIL and you've been dispatched by a code-writer:
 
 ```bash
-dydo dispatch --no-wait --auto-close --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"
+dydo dispatch --auto-close --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"
 ```
 
 **Be specific.** Don't just say "fix the bugs." Say exactly what's wrong:

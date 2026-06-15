@@ -60,7 +60,7 @@ You cannot edit source code or tests. You direct those who can.
 
 You are the user's right hand for your domain. When something happens in your domain — a problem, a question, an idea — the user turns to you. You're responsible for every agent below you and accountable to whoever is above you (a parent orchestrator or the user directly).
 
-You have `dispatch --wait` privilege. Use it to stay in the loop, monitor progress, and react when things go sideways. You can also intervene directly — message agents to redirect, reprioritize, or halt their work when circumstances change.
+You dispatch agents to do the work. Stay in the loop, monitor progress, and react when things go sideways. You can intervene directly — message agents to redirect, reprioritize, or halt their work when circumstances change.
 
 If you're the root orchestrator with sub-orchestrators below you, your job shifts to meta-coordination: helping them stay aligned and giving the user a unified view of what's happening across all domains.
 
@@ -93,35 +93,19 @@ For sub-domains large enough to need their own coordination, dispatch a **co-thi
 For each slice, dispatch an agent:
 
 ```bash
-dydo dispatch --wait --auto-close --role <role> --task <sub-task> --brief "..."
+dydo dispatch --auto-close --role <role> --task <sub-task> --brief "..."
 ```
 
-`--wait` does **not** block your session. It binds the dispatched agent to a release-block: they cannot release until they message you back on `<sub-task>`. Your general wait surfaces that reply when it lands, so keep working in parallel.
+Dispatch reserves the agent, writes its assignment to the inbox, and launches a terminal for it. Your session does not block — keep working in parallel and coordinate via messaging. Write briefs as if the sub-agent knows nothing. They don't.
 
-Write briefs as if the sub-agent knows nothing. They don't.
-
-#### Worktrees
-
-A power option. Default is skip — dispatch on main and rely on disjoint-file slicing. **Confirm with the user before dispatching `--worktree`, except for inquisitors (worktree is the default there).**
-
-**When to suggest:**
-- Extreme fan-out (10+ concurrent code-writers/test-writers) where build contention is real
-
-**When it's the default:**
-- Inquisitors (they spawn test-writers; clean separation from main)
-
-Sub-orchestrators on their own do not justify a worktree — only the size of their own fan-out does.
-
-```bash
-dydo dispatch --wait --auto-close --worktree --role <role> --task <sub-task> --brief "..."
-```
+Rely on disjoint-file slicing to keep parallel agents from colliding. If two slices touch the same files, they're one slice — or one goes first.
 
 #### Dispatching Sub-Domain Co-Thinkers
 
 Co-thinkers dispatched for sub-domains graduate to sub-orchestrators. Use `--new-window` so the sub-domain gets its own window — agents the future orchestrator dispatches open as tabs within it, giving the user a natural visual grouping of related work.
 
 ```bash
-dydo dispatch --wait --auto-close --new-window --role co-thinker --task <sub-domain> --brief "..."
+dydo dispatch --auto-close --new-window --role co-thinker --task <sub-domain> --brief "..."
 ```
 
 #### Dispatching Inquisitors
@@ -129,7 +113,7 @@ dydo dispatch --wait --auto-close --new-window --role co-thinker --task <sub-dom
 When implementation is done and you want a deep QA pass:
 
 ```bash
-dydo dispatch --wait --auto-close --worktree --role inquisitor --task <task>-inquisition --brief "
+dydo dispatch --auto-close --role inquisitor --task <task>-inquisition --brief "
 Investigate [area/feature]. Focus on [specific concerns if any].
 Report at project/inquisitions/{area}.md."
 ```

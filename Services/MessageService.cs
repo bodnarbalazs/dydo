@@ -20,24 +20,7 @@ public static class MessageService
         }
 
         var targetState = registry.GetAgentState(to);
-        var messageId = DeliverInboxMessage(registry, sender!.Name, to, body, subject);
-
-        if (!string.IsNullOrEmpty(subject))
-        {
-            if (registry.RemoveReplyPendingMarker(sender.Name, subject))
-                Console.WriteLine($"  Reply obligation fulfilled for '{subject}'.");
-        }
-        else
-        {
-            var markers = registry.GetReplyPendingMarkers(sender.Name);
-            foreach (var marker in markers.Where(m => m.To.Equals(to, StringComparison.OrdinalIgnoreCase)))
-            {
-                registry.RemoveReplyPendingMarker(sender.Name, marker.Task);
-                Console.WriteLine($"  Reply obligation fulfilled for '{marker.Task}'.");
-            }
-        }
-
-        StampDispatchWaitIfMatched(registry, sender, to, subject);
+        DeliverInboxMessage(registry, sender!.Name, to, body, subject);
 
         WarnOnSubjectMismatch(registry, to, subject, targetState);
 
@@ -90,27 +73,6 @@ public static class MessageService
         return messageId;
     }
 
-    /// <summary>
-    /// Decision 021: a `dispatch --wait` writes a DispatchWaitMarker into the callee's
-    /// workspace. The marker discharges (RepliedAt stamped) when the callee sends a
-    /// message back to the dispatcher on the dispatched task's subject. The subject
-    /// must match the marker's task — sending on an unrelated subject leaves the
-    /// release-block in place.
-    /// </summary>
-    private static void StampDispatchWaitIfMatched(AgentRegistry registry, Models.AgentState sender,
-        string to, string? subject)
-    {
-        var markerSubject = !string.IsNullOrEmpty(subject) ? subject : sender.Task;
-        if (string.IsNullOrEmpty(markerSubject)) return;
-
-        var marker = registry.GetUnrepliedDispatchWait(sender.Name, markerSubject);
-        if (marker == null) return;
-        if (!marker.DispatcherAgent.Equals(to, StringComparison.OrdinalIgnoreCase)) return;
-
-        if (registry.MarkDispatchWaitReplied(sender.Name, markerSubject))
-            Console.WriteLine($"  Dispatch-wait obligation fulfilled for '{markerSubject}'.");
-    }
-
     private static string? ValidateSendRequest(AgentRegistry registry, Models.AgentState? sender,
         string to, string? subject, string? currentHuman, bool force)
     {
@@ -127,7 +89,7 @@ public static class MessageService
         if (ownershipError != null)
             return ownershipError;
 
-        return CheckTargetActive(registry, sender.Name, to, subject, force);
+        return CheckTargetActive(registry, to, subject, force);
     }
 
     private static string? CheckOwnership(AgentRegistry registry, string to, string? currentHuman)
@@ -138,7 +100,7 @@ public static class MessageService
         return null;
     }
 
-    private static string? CheckTargetActive(AgentRegistry registry, string senderName, string to, string? subject, bool force)
+    private static string? CheckTargetActive(AgentRegistry registry, string to, string? subject, bool force)
     {
         var targetState = registry.GetAgentState(to);
         if (targetState == null || targetState.Status == Models.AgentStatus.Working)
@@ -150,29 +112,15 @@ public static class MessageService
         var activeAgents = registry.GetActiveAgents();
         var oversightAgents = registry.GetActiveOversightAgents();
 
-        var replyMarkers = registry.GetReplyPendingMarkers(senderName);
-        var pendingReplyTask = replyMarkers
-            .FirstOrDefault(m => m.To.Equals(to, StringComparison.OrdinalIgnoreCase)
-                && (string.IsNullOrEmpty(subject) || m.Task.Equals(subject, StringComparison.OrdinalIgnoreCase)))
-            ?.Task;
-
-        return BuildInactiveTargetMessage(registry, to, subject, targetState, activeAgents, oversightAgents, pendingReplyTask);
+        return BuildInactiveTargetMessage(registry, to, subject, targetState, activeAgents, oversightAgents);
     }
 
     private static string BuildInactiveTargetMessage(AgentRegistry registry, string to, string? subject,
-        Models.AgentState? targetState, List<Models.AgentState> activeAgents, List<Models.AgentState> oversightAgents,
-        string? pendingReplyTask = null)
+        Models.AgentState? targetState, List<Models.AgentState> activeAgents, List<Models.AgentState> oversightAgents)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"Agent {to} has been released and will not receive this message.");
 
-        if (!string.IsNullOrEmpty(pendingReplyTask))
-        {
-            sb.AppendLine();
-            sb.AppendLine($"  You owe a reply on '{pendingReplyTask}'. Use --force to discharge by writing to the released inbox,");
-            sb.AppendLine($"  or message the active orchestrator above instead (your reply marker discharges either way");
-            sb.AppendLine($"  if --subject matches).");
-        }
         if (targetState?.DispatchedBy != null)
         {
             var dispatcher = registry.GetAgentState(targetState.DispatchedBy);

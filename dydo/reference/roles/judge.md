@@ -20,7 +20,7 @@ Specialist role. Dispatchable.
 
 ## Privileges
 
-- `dispatch --wait` — can request evidence from test-writers or call another judge for a split decision
+- Dispatch — can request evidence from test-writers or call another judge for a split decision
 
 ## Split Decision Protocol
 

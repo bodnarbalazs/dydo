@@ -365,7 +365,7 @@ public class BashCommandAnalyzerTests
     {
         var (isDangerous, reason) = _analyzer.CheckDangerousPatterns(command);
         Assert.True(isDangerous, $"Expected dangerous: {command}");
-        Assert.Contains("dydo dispatch --worktree", reason);
+        Assert.Contains("Worktree creation must go through dydo", reason);
     }
 
     [Theory]

@@ -104,19 +104,17 @@ See [writing-docs.md](../../../reference/writing-docs.md) for conventions and va
 
 ## Complete
 
-> Note: if your dispatcher used `--wait`, you cannot release until you have messaged them on this task. The release error names the expected subject.
-
 Do not proceed until `dydo check` exits zero — clean check is required before dispatching the reviewer (who will run it again as part of their verdict).
 
 ### If Docs Need Review
 
 ```bash
-dydo dispatch --no-wait --auto-close --role reviewer --task <task-name> --brief "Documentation ready for review."
+dydo dispatch --auto-close --role reviewer --task <task-name> --brief "Documentation ready for review."
 ```
 
 This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
 
-**Baton-passing:** By dispatching the reviewer on the same task, your reply obligation to whoever dispatched you is fulfilled. The reviewer inherits that obligation and reports back on your behalf.
+After dispatching the reviewer, your work is handed off. The reviewer reports its verdict back to the origin on your behalf.
 
 ### If Done (No Review Needed)
 

@@ -117,7 +117,6 @@ public static class InboxService
         var files = Directory.GetFiles(inboxPath, "*.md");
         foreach (var file in files)
         {
-            TrackReplyPending(registry, agentName, file);
             var destPath = Path.Combine(archivePath, Path.GetFileName(file));
             File.Move(file, destPath, overwrite: true);
         }
@@ -137,25 +136,12 @@ public static class InboxService
 
         foreach (var file in files)
         {
-            TrackReplyPending(registry, agentName, file);
             var destPath = Path.Combine(archivePath, Path.GetFileName(file));
             File.Move(file, destPath, overwrite: true);
         }
         registry.MarkMessageRead(sessionId, id);
         Console.WriteLine($"Archived item {id} to archive/inbox/");
         return ExitCodes.Success;
-    }
-
-    private static void TrackReplyPending(AgentRegistry registry, string agentName, string file)
-    {
-        var item = InboxItemParser.ParseInboxItem(file);
-        if (item != null && item.ReplyRequired && !string.IsNullOrEmpty(item.Task))
-        {
-            // Marker is created at dispatch time. If it still exists, the reply hasn't been sent yet.
-            var markers = registry.GetReplyPendingMarkers(agentName);
-            if (markers.Any(m => m.Task.Equals(item.Task, StringComparison.OrdinalIgnoreCase)))
-                Console.WriteLine($"  Reply required: message {item.From} about '{item.Task}' before releasing.");
-        }
     }
 
     internal static void PrintInboxItem(InboxItem item)
@@ -181,9 +167,6 @@ public static class InboxService
             if (item.Escalated && item.EscalatedAt.HasValue)
                 Console.WriteLine($"  Escalated: {item.EscalatedAt:yyyy-MM-dd HH:mm} UTC");
             Console.WriteLine($"  Brief: {item.Brief}");
-
-            if (item.ReplyRequired)
-                Console.WriteLine($"  Reply required: yes (message {item.From} about '{item.Task}' before releasing)");
 
             if (item.Files.Count > 0)
                 Console.WriteLine($"  Files: {string.Join(", ", item.Files)}");

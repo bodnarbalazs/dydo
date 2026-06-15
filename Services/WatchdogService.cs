@@ -352,7 +352,6 @@ public static class WatchdogService
                     try
                     {
                         PollAndCleanup(dydoRoot);
-                        PollQueues(dydoRoot);
                         PollOrphanedWaits(dydoRoot);
                         PollAndResumeCrashedAgents(dydoRoot);
                     }
@@ -820,50 +819,6 @@ public static class WatchdogService
                 File.WriteAllText(statePath, updated);
         }
         catch { }
-    }
-
-    /// <summary>
-    /// Detects stale active queue entries (dead PIDs) and promotes the next pending item.
-    /// Also cleans up empty transient queues.
-    /// </summary>
-    public static void PollQueues(string dydoRoot)
-    {
-        var configService = new ConfigService();
-        var config = configService.LoadConfig();
-        var queueService = new QueueService(dydoRoot, config);
-
-        // Stale active detection
-        var staleEntries = queueService.FindStaleActiveEntries();
-
-        // On Windows, wt.exe exits immediately after spawning a tab — the PID in
-        // _active.json dies even though the terminal is still running. Check agent
-        // state before clearing: a working/reviewing/dispatched agent is not stale.
-        AgentRegistry? registry = null;
-        foreach (var (queueName, entry) in staleEntries)
-        {
-            registry ??= new AgentRegistry(configService.GetProjectRoot());
-            var agentState = registry.GetAgentState(entry.Agent);
-            if (agentState?.Status is AgentStatus.Working or AgentStatus.Reviewing or AgentStatus.Dispatched or AgentStatus.Queued)
-                continue;
-
-            queueService.ClearActive(queueName);
-            var next = queueService.DequeueNext(queueName);
-            if (next != null)
-            {
-                queueService.ClearQueuedMarker(next.Agent);
-                var projectRoot = next.WorkingDirOverride ?? next.MainProjectRoot ?? Utils.PathUtils.FindProjectRoot();
-                var pid = TerminalLauncher.LaunchNewTerminal(next.Agent, projectRoot, next.LaunchInTab,
-                    next.AutoClose, next.WorktreeId, next.WindowName, next.CleanupWorktreeId, next.MainProjectRoot);
-                queueService.SetActive(queueName, next.Agent, next.Task, pid);
-            }
-            else
-            {
-                queueService.CleanupIfEmptyTransient(queueName);
-            }
-        }
-
-        // Transient queue cleanup
-        queueService.CleanupAllEmptyTransient();
     }
 
     /// <summary>

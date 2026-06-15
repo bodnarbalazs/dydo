@@ -1193,6 +1193,70 @@ public class AgentLifecycleTests : IntegrationTestBase
         Assert.True(charlieLine > brianLine, "Charlie should appear after Brian");
     }
 
+    [Fact]
+    public async Task Tree_AgentsInWorktree_RenderedInBox()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "code-writer", "feature", dispatchedBy: null);
+        WriteAgentState("Brian", "working", "reviewer", "feature-review", dispatchedBy: null);
+        SetWorktreeMarker("Adele", "feature", live: true);
+        SetWorktreeMarker("Brian", "feature", live: true);
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        // The worktree box top border carries the worktree id
+        result.AssertStdoutContains("┌ feature");
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("Brian");
+    }
+
+    [Fact]
+    public async Task Tree_StaleWorktree_ShowsLegendAndMarker()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "code-writer", "gone");
+        SetWorktreeMarker("Adele", "gone", live: false);
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        // Stale worktrees are flagged with a trailing '?' and a legend line
+        result.AssertStdoutContains("gone?");
+        result.AssertStdoutContains("? = stale worktree");
+    }
+
+    [Fact]
+    public async Task Tree_WorktreeChildOutsideParent_RenderedAsNestedBox()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        WriteAgentState("Adele", "working", "orchestrator", "release");
+        WriteAgentState("Brian", "working", "code-writer", "impl", dispatchedBy: "Adele");
+        // Child lives in a worktree; parent does not — exercises the outside-children
+        // worktree-box rendering path.
+        SetWorktreeMarker("Brian", "impl-wt", live: true);
+
+        var result = await TreeAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Adele");
+        result.AssertStdoutContains("┌ impl-wt");
+        result.AssertStdoutContains("Brian");
+    }
+
+    private void SetWorktreeMarker(string agentName, string worktreeId, bool live)
+    {
+        var workspace = Path.Combine(TestDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
+
+        if (live)
+        {
+            var wtDir = Path.Combine(TestDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+            Directory.CreateDirectory(wtDir);
+        }
+    }
+
     private async Task<CommandResult> TreeAsync()
     {
         var command = AgentCommand.Create();

@@ -22,7 +22,7 @@ Source code is read-only. The inquisitor investigates — it doesn't fix.
 
 ## Privileges
 
-- `dispatch --wait` — dispatches test-writers to prove hypotheses, judges to validate findings
+- Dispatch — dispatches test-writers to prove hypotheses, judges to validate findings
 
 ## Workflow
 

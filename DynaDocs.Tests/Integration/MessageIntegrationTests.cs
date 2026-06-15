@@ -636,66 +636,6 @@ public class MessageIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Message_ToInactiveAgent_WithReplyPending_NowFails()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        // Create a reply-pending marker for Adele -> Brian
-        var registry = new AgentRegistry(TestDir);
-        registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
-
-        // Brian is not claimed = inactive. Reply-pending no longer bypasses — hard reject.
-        var result = await SendMessageAsync("Brian", "Reply to Brian", subject: "test-task");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("has been released");
-
-        // Marker is preserved so the reply obligation remains visible
-        var markers = registry.GetReplyPendingMarkers("Adele");
-        Assert.Single(markers);
-    }
-
-    [Fact]
-    public async Task Message_ToInactiveAgent_WithReplyPending_NoSubject_NowFails()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        var registry = new AgentRegistry(TestDir);
-        registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
-
-        // No subject — still hard reject; reply-pending bypass dropped.
-        var result = await SendMessageAsync("Brian", "Reply to Brian");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("has been released");
-
-        // Marker preserved
-        var markers = registry.GetReplyPendingMarkers("Adele");
-        Assert.Single(markers);
-    }
-
-    [Fact]
-    public async Task Message_ToInactiveAgent_WithReplyPending_HintsForceOrRedirect()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        var registry = new AgentRegistry(TestDir);
-        registry.CreateReplyPendingMarker("Adele", "test-task", "Brian");
-
-        var result = await SendMessageAsync("Brian", "Reply to Brian", subject: "test-task");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("--force");
-        result.AssertStderrContains("test-task");
-    }
-
-    [Fact]
     public async Task Message_ToInactiveAgent_WithoutReplyPending_NoForce()
     {
         await InitProjectAsync("none", "testuser", 3);

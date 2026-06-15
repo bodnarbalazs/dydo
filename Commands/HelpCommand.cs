@@ -89,12 +89,6 @@ public static class HelpCommand
         Console.WriteLine("  issue list               List issues");
         Console.WriteLine("  issue resolve <id>       Resolve an issue");
         Console.WriteLine();
-        Console.WriteLine("Queue Commands:");
-        Console.WriteLine("  queue create <name>    Create a transient queue");
-        Console.WriteLine("  queue show [<name>]    Show queue state (all or specific)");
-        Console.WriteLine("  queue cancel <q> <id>  Remove a pending queue entry");
-        Console.WriteLine("  queue clear <name>     Clear all entries from a queue");
-        Console.WriteLine();
         Console.WriteLine("Worktree Commands:");
         Console.WriteLine("  worktree cleanup <id>  Clean up worktree (ref-counted)");
         Console.WriteLine();

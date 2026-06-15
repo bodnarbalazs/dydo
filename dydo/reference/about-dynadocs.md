@@ -167,8 +167,7 @@ For complex work, an orchestrator agent coordinates multiple agents working in p
 Key capabilities:
 
 - **Dispatch chains** — orchestrator dispatches code-writer, code-writer dispatches reviewer, reviewer reports back
-- **Worktree isolation** — `dispatch --worktree` gives each agent an isolated git branch
-- **Dispatch queues** — `--queue` serializes terminal launches to avoid resource contention
+- **Disjoint-file slicing** — parallel agents work on non-overlapping file sets to avoid collisions
 - **Inquisition** — adversarial QA agents audit code quality and documentation coverage
 - **Dispute resolution** — judge agents review inquisitions and help evaluate evidence
 
@@ -303,9 +302,7 @@ Commands meant to be called only by agents are *italic*.
 ### Workflow
 | Command | Description |
 |---------|-------------|
-| *`dydo dispatch --wait/--no-wait --role <role> --task <name>`* | *Hand off work to another agent* |
-| *`dydo dispatch --worktree ...`* | *Dispatch into an isolated git worktree* |
-| *`dydo dispatch --queue <name> ...`* | *Serialize launches via named queue* |
+| *`dydo dispatch --role <role> --task <name> --brief "..."`* | *Hand off work to another agent* |
 | *`dydo inbox list`* | *List agents with inbox items* |
 | *`dydo inbox show`* | *Show current agent's inbox* |
 | *`dydo inbox clear --all`* | *Archive processed items* |

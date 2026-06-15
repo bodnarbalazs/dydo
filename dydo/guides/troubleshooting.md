@@ -109,8 +109,6 @@ BLOCKED: You have not read the required files for the docs-writer mode: - about.
 
 ```
 Cannot release: 2 unprocessed inbox item(s).
-Cannot release: waiting for response on: auth-login.
-Cannot release: pending reply on: 'my-task' to Adele.
 ```
 
 **Causes and fixes:**
@@ -119,8 +117,6 @@ Cannot release: pending reply on: 'my-task' to Adele.
 |---------|-----|
 | Unprocessed inbox | Read the items, then `dydo inbox clear --all` |
 | Active wait markers | `dydo wait --task <name> --cancel` or `dydo wait --cancel` |
-| Pending reply | `dydo msg --to <agent> --subject <task> --body "Done."` |
-| Review not dispatched | `dydo dispatch --no-wait --auto-close --role reviewer --task <task> --brief "..."` |
 
 ### Dispatch fails
 

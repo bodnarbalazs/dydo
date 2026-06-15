@@ -17,8 +17,7 @@ public class CommandDocConsistencyTests
     [
         "guard lift", "guard restore", "completions", "help",
         "worktree cleanup", "worktree merge", "worktree init-settings", "worktree prune", "worktree status",
-        "watchdog", "watchdog start", "watchdog stop", "watchdog run",
-        "queue create", "queue show", "queue cancel", "queue clear"
+        "watchdog", "watchdog start", "watchdog stop", "watchdog run"
     ];
     private static readonly HashSet<string> BuiltInOptionNames = ["--help", "-h", "-?", "--version"];
 

@@ -48,14 +48,14 @@ What does "done" look like? Tests pass? A specific behavior works? A document ha
 **Inline briefs** (`--brief`) work for short, focused tasks:
 
 ```bash
-dydo dispatch --wait --auto-close --role reviewer --task auth-login \
+dydo dispatch --auto-close --role reviewer --task auth-login \
   --brief "Review the OAuth implementation in Services/AuthService.cs. Check token expiry handling and error responses."
 ```
 
 **File-based briefs** (`--brief-file`) are better for complex tasks with multiple steps, file lists, or detailed context:
 
 ```bash
-dydo dispatch --no-wait --role code-writer --task data-pipeline \
+dydo dispatch --role code-writer --task data-pipeline \
   --brief-file ./dydo/agents/Adele/workspace/pipeline-brief.md
 ```
 
@@ -106,7 +106,7 @@ How much? Which errors? What does "improved" mean? Include concrete checks: "All
 ### Dispatching to code-writer
 
 ```bash
-dydo dispatch --no-wait --auto-close --role code-writer --task rate-limiting \
+dydo dispatch --auto-close --role code-writer --task rate-limiting \
   --brief "Implement rate limiting on the /api/upload endpoint.
 
 ## Source files
@@ -127,7 +127,7 @@ dydo dispatch --no-wait --auto-close --role code-writer --task rate-limiting \
 ### Dispatching to reviewer
 
 ```bash
-dydo dispatch --wait --auto-close --role reviewer --task rate-limiting \
+dydo dispatch --auto-close --role reviewer --task rate-limiting \
   --brief "Review the rate limiting implementation.
 
 ## Files changed
@@ -144,7 +144,7 @@ dydo dispatch --wait --auto-close --role reviewer --task rate-limiting \
 ### Dispatching to test-writer
 
 ```bash
-dydo dispatch --no-wait --auto-close --role test-writer --task auth-login \
+dydo dispatch --auto-close --role test-writer --task auth-login \
   --brief "Write integration tests for the login flow.
 
 ## Source files
@@ -162,7 +162,7 @@ dydo dispatch --no-wait --auto-close --role test-writer --task auth-login \
 ### Dispatching to docs-writer
 
 ```bash
-dydo dispatch --no-wait --auto-close --role docs-writer --task api-docs \
+dydo dispatch --auto-close --role docs-writer --task api-docs \
   --brief "Document the new rate limiting behavior.
 
 ## Source material

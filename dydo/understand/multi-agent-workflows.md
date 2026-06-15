@@ -5,7 +5,7 @@ type: concept
 
 # Multi-Agent Workflows
 
-How multiple agents work in parallel: orchestration patterns, worktrees, and coordination. Dydo supports running several agents simultaneously, each in its own terminal, coordinated by dispatch and messaging commands.
+How multiple agents work in parallel: orchestration patterns, work slicing, and coordination. Dydo supports running several agents simultaneously, each in its own terminal, coordinated by dispatch and messaging commands.
 
 ---
 
@@ -19,49 +19,14 @@ The orchestrator stays on the main branch. Each dispatched agent works on its as
 
 ## Parallel-Safe Work Slicing
 
-For parallel agents to work safely, their file sets should be disjoint. An orchestrator slices work so agents don't touch the same files:
+Parallel agents share one working tree, so the orchestrator keeps them from colliding by slicing work into **disjoint file sets**. Each agent owns a non-overlapping region of the codebase:
 
 - Agent A: `Services/Auth/**`
 - Agent B: `Services/Payment/**`
 
-When file overlap is unavoidable, use sequential dispatch instead of parallel.
+A shared working tree means overlapping edits cause cross-contamination — one agent's partial save can break another agent's build or tests. Disjoint slicing avoids this. When file overlap is unavoidable, use **sequential** dispatch (one agent at a time) instead of parallel.
 
----
-
-## Worktrees: The Default for Parallel Code Work
-
-When dispatching multiple code-writers in parallel, each gets its own git worktree — an isolated copy of the repository with its own working directory, build output, and git index. See [Decision 011](../project/decisions/011-worktrees-as-default-for-parallel-work.md) for the rationale.
-
-```bash
-dydo dispatch --worktree --wait --auto-close --role code-writer --task auth-login --brief "Implement OAuth"
-```
-
-### Why Worktrees
-
-A shared working tree causes cascading problems in parallel scenarios:
-
-- **Build locking** — compiled languages lock output files during build/test, blocking other agents
-- **Cross-contamination** — one agent's partial save causes another agent's tests to fail
-- **Git state conflicts** — `git stash` is a global stack; parallel stash/pop corrupts state
-
-Worktrees eliminate all three. Each agent gets full isolation.
-
-### When Worktrees Apply
-
-| Scenario | Use Worktree? |
-|----------|---------------|
-| Parallel code-writers | Yes |
-| Test-writers alongside code-writers | Yes |
-| Sequential dispatches (one at a time) | No |
-| Non-code roles (docs-writers, planners) | No |
-
-### The Merge Flow
-
-Each worktree task ends with a merge back to the main branch:
-
-1. Merges happen sequentially, coordinated by the orchestrator
-2. Each merge checks for conflicts before committing
-3. Conflicted merges escalate to the human — agents don't auto-resolve
+If two slices touch the same files, they're one slice — or one goes first.
 
 ---
 
@@ -102,26 +67,18 @@ dydo init claude --join
 
 ## Coordination Patterns
 
-### Dispatch-and-Wait
+### Dispatch and Coordinate
 
-The orchestrator dispatches work and waits for a response. The wait blocks release until a message arrives or is cancelled.
-
-```bash
-dydo dispatch --wait --auto-close --role code-writer --task auth --brief "Implement auth"
-# Agent blocks here until the dispatched agent messages back
-```
-
-### Fire-and-Forget
-
-Dispatch without waiting. Useful when the orchestrator doesn't need results.
+The orchestrator dispatches work and keeps its general wait running to receive the dispatched agent's messages. The dispatch call itself does not block — the orchestrator continues coordinating other agents in parallel.
 
 ```bash
-dydo dispatch --no-wait --role docs-writer --task update-docs --brief "Update API docs"
+dydo dispatch --auto-close --role code-writer --task auth --brief "Implement auth"
+# Returns immediately; the dispatched agent messages back when done
 ```
 
 ### Chain Dispatch
 
-Agent A dispatches Agent B, who dispatches Agent C. This happens naturally in the review flow: a code-writer dispatches a reviewer on the same task. The reviewer inherits the obligation to report back to whoever originally dispatched the code-writer (baton-passing).
+Agent A dispatches Agent B, who dispatches Agent C. This happens naturally in the review flow: a code-writer dispatches a reviewer on the same task. The reviewer reports its verdict back to the origin via `dydo msg`.
 
 ---
 
@@ -130,13 +87,9 @@ Agent A dispatches Agent B, who dispatches Agent C. This happens naturally in th
 | Pitfall | Guard Rule | Fix |
 |---------|-----------|-----|
 | Two agents dispatched to same task | H23 (double-dispatch) | Release the first agent before re-dispatching |
-| Code-writer tries to release without review | H25 (review enforcement) | Dispatch a reviewer on the same task first |
 | Agent releases with unprocessed inbox | H13 | Run `dydo inbox clear --all` |
-| Orchestrator releases with active waits | H14 | Cancel waits with `dydo wait --cancel` or wait for responses |
-| Agent forgets to message upstream | H15 (reply pending) | Send `dydo msg --to <origin> --subject <task>` |
-| `git stash` in multi-agent setup | H26 | Commit instead, or work inside a worktree |
+| Agent releases with active waits | H14 | Cancel waits with `dydo wait --cancel` or wait for responses |
 | Overlapping file edits | Not enforced | Orchestrator must slice work with disjoint file sets |
-| `--worktree` with `--no-launch` | Rejected | Worktree lifecycle depends on terminal; use `--tab` or `--new-window` |
 
 ---
 
@@ -144,4 +97,3 @@ Agent A dispatches Agent B, who dispatches Agent C. This happens naturally in th
 
 - [Dispatch and Messaging](./dispatch-and-messaging.md)
 - [Agent Lifecycle](./agent-lifecycle.md)
-- [Decision 011 — Worktrees](../project/decisions/011-worktrees-as-default-for-parallel-work.md)

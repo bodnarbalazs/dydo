@@ -179,24 +179,6 @@ public interface IAgentRegistry
 
     RoleDefinition? GetRoleDefinition(string roleName);
 
-    void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo);
-
-    bool HasDispatchMarker(string agentName, string task, string targetRole);
-
-    void ClearAllDispatchMarkers(string agentName);
-
-    void CreateDispatchWaitMarker(string calleeName, string task, string dispatcherAgent, string? dispatcherRole);
-
-    List<Models.DispatchWaitMarker> GetDispatchWaitMarkers(string agentName);
-
-    bool MarkDispatchWaitReplied(string agentName, string task);
-
-    Models.DispatchWaitMarker? GetUnrepliedDispatchWait(string agentName, string task);
-
-    bool HasUnrepliedDispatchWait(string agentName, string task);
-
-    void ClearAllDispatchWaitMarkers(string agentName);
-
     /// <summary>
     /// Gets the current session ID from context file.
     /// Used by commands that run as subprocesses to identify the session.

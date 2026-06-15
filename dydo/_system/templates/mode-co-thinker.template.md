@@ -130,7 +130,7 @@ When the thinking session is done, choose based on what emerged:
 ### Task Emerged → Dispatch to Planner
 
 ```bash
-dydo dispatch --no-wait --auto-close --role planner --task <task-name> --brief "Task emerged from thinking session. See decision at project/decisions/NNN-<name>.md"
+dydo dispatch --auto-close --role planner --task <task-name> --brief "Task emerged from thinking session. See decision at project/decisions/NNN-<name>.md"
 ```
 
 ### Ready to Implement → Switch Mode

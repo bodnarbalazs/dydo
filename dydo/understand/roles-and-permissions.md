@@ -75,7 +75,7 @@ Role definitions live at `dydo/_system/roles/<name>.role.json`:
 The full schema is `Models/RoleDefinition.cs`. For a complete real example, see `dydo/_system/roles/orchestrator.role.json` — note `canOrchestrate: true` (line 15) and `conditionalMustReads: []` (line 31).
 
 **Field notes:**
-- `canOrchestrate` (boolean) — whether this role may use the `--wait` flag on dispatch. Reserved for oversight roles (`orchestrator`, `inquisitor`, `judge`); all other base roles set it to `false`.
+- `canOrchestrate` (boolean) — marks oversight roles (`orchestrator`, `inquisitor`, `judge`); all other base roles set it to `false`. It no longer gates any dispatch flag — dispatch is uniform across roles.
 - `conditionalMustReads` — reserved for future use (currently `[]` for all base roles). Per [decision 013](../project/decisions/013-conditional-must-reads.md), the two existing conditional must-reads (merge code-writer, merge reviewer) are hard-coded in `MustReadTracker`; this field is the soft-coding path if a third case emerges.
 
 **Path tokens** are expanded at role assignment time:
@@ -122,22 +122,6 @@ The orchestrator role has a `requires-prior` constraint: the agent must have bee
 
 The judge role has a `panel-limit` constraint: maximum 3 judges can be active on the same task simultaneously. Beyond that, escalate to the human.
 
-### Review Enforcement (H25)
-
-The code-writer role has a `requires-dispatch` constraint: dispatched code-writers must dispatch a reviewer before releasing. This ensures every orchestrated code change goes through review. Code-writers started directly by a human are exempt (`onlyWhenDispatched: true`).
-
-### Inquisitor Escalation
-
-The inquisitor role has a `requires-dispatch` constraint: dispatched inquisitors must dispatch either a judge or another inquisitor before releasing. This ensures inquisition findings are reviewed.
-
-### Reviewer Dispatch Restriction
-
-The reviewer role has a `dispatch-restriction` constraint: reviewers can only dispatch a code-writer when they were dispatched by a code-writer or inquisitor. This prevents reviewers from self-initiating code work.
-
-### Dispatch --wait Restriction
-
-The `--wait` flag on dispatch is reserved for oversight roles only (orchestrator, inquisitor, judge). All other roles must use `--no-wait`.
-
 ### Constraint Types
 
 | Type | Checks | Evaluated In | Example |
@@ -145,12 +129,10 @@ The `--wait` flag on dispatch is reserved for oversight roles only (orchestrator
 | `role-transition` | Agent held `fromRole` on same task | `CanTakeRole` | code-writer → reviewer blocked |
 | `requires-prior` | Agent held one of `requiredRoles` on same task | `CanTakeRole` | orchestrator requires co-thinker or planner |
 | `panel-limit` | Fewer than `maxCount` agents in role on task | `CanTakeRole` | max 3 judges |
-| `requires-dispatch` | Agent must dispatch to one of `requiredRoles` before releasing | `CanRelease` | dispatched code-writer must dispatch reviewer |
-| `dispatch-restriction` | Sender must have been dispatched by one of `requiredRoles` to dispatch `targetRole` | `CanDispatch` | reviewer can only dispatch code-writer when dispatched by code-writer or inquisitor |
-
-Both `requires-dispatch` and `dispatch-restriction` support `onlyWhenDispatched: true` to apply only when the agent was dispatched (not started directly by a human). `requires-dispatch` also supports `requireAll: true` to require dispatching to all listed roles.
 
 Constraints are data-driven — adding new constraints to a `.role.json` does not require code changes.
+
+> **Note:** The dispatch-runtime constraint types `requires-dispatch` (release gate) and `dispatch-restriction` (dispatch gate) are no longer enforced. They may still appear in role JSON for documentation, but the runtime no longer blocks release or dispatch on them — dispatch is uniform across roles.
 
 ---
 

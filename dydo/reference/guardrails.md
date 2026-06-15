@@ -23,7 +23,6 @@ Passive guidance injected into command output when relevant. The agent is not bl
 | N2 | Bash command warnings | Bash command contains suspicious-but-not-dangerous patterns: command substitution, base64/hex decode, variable expansion, embedded newlines. | `WARNING: Command contains base64 decode - potential obfuscation` (etc.) |
 | N3 | Daily validation | First guard call per 24-hour period runs a background validation of config/roles. Issues are reported but never block. | `Daily validation found issues: [...] Run 'dydo validate' for full report.` |
 | N4 | Task name sanitization | Task name contains characters unsafe for filenames. Dispatch proceeds with sanitized name. | `Warning: Task name sanitized for filesystem safety. Original: "..." Filename: "..."` |
-| N5 | Worktree inheritance | `--worktree` flag specified but parent already runs in a worktree. Flag is silently ignored, warning emitted. | `Warning: --worktree ignored — inheriting parent's worktree instead.` |
 | N6 | Dispatch summary | After every successful dispatch. Informational — confirms what was dispatched and to whom. | `Work dispatched to agent {name}. Role: ... Task: ... Inbox: ...` |
 | N7 | Path-specific denial hint | When a write is denied AND the target path is a known "wrong destination" (currently: `.claude/plans/`). Appended to the denial message to redirect the agent. | `Dydo agents don't use Claude Code's built-in plans. Switch to planner mode...` |
 | N8 | Role denial hint | When a write is denied, the role's `denialHint` from `.role.json` is appended. Generic guidance about what the role can edit. | `Code-writer role can only edit configured source/test paths and own workspace.` |
@@ -44,7 +43,7 @@ A one-time blocking message that forces the agent to acknowledge before proceedi
 |---|------|---------|-------------|---------|
 | S1 | Role mismatch | Agent sets a different role than what the inbox dispatch specified. Skipped if agent already fulfilled the dispatched role and is intentionally switching. | `.role-nudge-{task}` | `You were dispatched as '{role}' for this task. If '{newRole}' fits better, run the command again.` |
 | S2 | No-launch dispatch | Agent uses `--no-launch` flag (which means the target agent won't be activated automatically). | `.no-launch-nudge-{task}` | `You dispatched with the --no-launch flag... Unless the user was explicit about using no-launch... you shouldn't use this flag. If you insist you may run it again and it will pass.` |
-| S4 | Pending wait registration | Any operation when agent has wait markers that aren't actively listening (e.g., dispatched `--wait` but hasn't run `dydo wait`). Self-heals dead listener PIDs. | `.waiting/{task}.json` | `BLOCKED: Register waits before continuing. Pending: [{tasks}]. Run: dydo wait --task <name> (in background)` |
+| S4 | Pending wait registration | Any operation when agent has wait markers that aren't actively listening (e.g., a wait marker exists but `dydo wait` hasn't been started). Self-heals dead listener PIDs. | `.waiting/{task}.json` | `BLOCKED: Register waits before continuing. Pending: [{tasks}]. Run: dydo wait --task <name> (in background)` |
 | S5 | Inactive agent messaging | `dydo msg --to <agent>` where target agent is not currently active. Almost always a mistake — the message will sit unread until the agent is manually claimed. Override with `--force` for cases where the message needs to be persisted regardless. | *(none — uses --force flag)* | `Agent {name} is not currently active. The message will sit unread... Send anyway with: dydo msg --to {name} --body "..." --force` |
 | S6 | Agent tool notice | Agent uses Claude Code's built-in `Agent` tool at Stage 2. The call always succeeds — a stderr NOTICE reminds the agent that the subagent inherits the calling agent's identity, role, and permissions, so the tool isn't a substitute for `dydo dispatch` (which spawns a fresh, role-scoped dydo agent in its own session for separable work). Stage 0/1 lockout (H6) still applies. | *(none — warn-and-allow, every call passes)* | `NOTICE: You invoked Claude Code's built-in Agent tool. This is fine for read discovery and autonomous code-writing within your current task — the subagent inherits your identity, role, and permissions. Do not use it as a substitute for dydo dispatch... Two different tools, two different jobs.` |
 
@@ -100,9 +99,7 @@ These are defined in the `constraints` array of each role definition file, makin
 |---|------|---------|---------|
 | H13 | Unprocessed inbox | `dydo agent release` with unread inbox items. | `Cannot release: {n} unprocessed inbox item(s). Process all inbox items, then run 'dydo inbox clear'...` |
 | H14 | Active wait markers | `dydo agent release` while waiting for a response. | `Cannot release: waiting for response on: {tasks}. Cancel with: dydo wait --task <name> --cancel` |
-| H15 | Pending reply obligation | `dydo agent release` when agent's inbox item has `reply_required: true` and it hasn't sent a message back to the upstream agent. `reply_required` is inherited through the dispatch chain (decoupled from `--wait` flag). **Baton-passing:** automatically cleared when the agent dispatches on the same task — the dispatched agent inherits the obligation. | `Cannot release: pending reply on: '{task}' to {agent}. Send a message first: dydo msg --to <agent> --subject <task> --body "..."` |
-| H16 | Pending worktree merge | `dydo agent release` when a review passed in a worktree but the merge hasn't been dispatched yet. | `Cannot release: review passed in worktree but merge not dispatched.` |
-| H25 | Dispatched code-writer review enforcement | `dydo agent release` by a code-writer that has a dispatch origin (part of an orchestrated workflow) and has not dispatched a reviewer for the same task. Does not apply when the code-writer was started directly by the human. | `Cannot release: dispatched code-writers must dispatch a reviewer before releasing. Use: dydo dispatch --no-wait --auto-close --role reviewer --task <task> --brief "..."` |
+| H16 | Pending worktree merge | `dydo agent release` when a `.needs-merge` marker is present (a review passed in a worktree but the merge hasn't been dispatched yet). | `Cannot release: review passed in worktree but merge not dispatched.` |
 
 ### Bash Command Safety
 
@@ -148,7 +145,7 @@ The guardrail system is designed for extension through role definition files (`.
 - Staged access control (H3, H6) and tool blocking (H27)
 - Off-limits enforcement (H2)
 - Bash safety analysis (H17, H18, H20, H26, H28, H29) — direct pattern checks in `Commands/GuardCommand.cs`
-- Release blocking checks (H13–H16, H25)
+- Release blocking checks (H13, H14, H16)
 - Messaging restrictions (H21–H22)
 - Soft-block marker file logic (S1, S2, S4, S5)
 

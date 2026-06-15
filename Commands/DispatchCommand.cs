@@ -67,26 +67,6 @@ public static class DispatchCommand
             Description = "Auto-close the dispatched agent's terminal after release"
         };
 
-        var waitOption = new Option<bool>("--wait")
-        {
-            Description = "Wait for a response from the dispatched agent"
-        };
-
-        var noWaitOption = new Option<bool>("--no-wait")
-        {
-            Description = "Dispatch and return immediately (fire and forget)"
-        };
-
-        var worktreeOption = new Option<bool>("--worktree")
-        {
-            Description = "Run dispatched agent in a git worktree for isolated work"
-        };
-
-        var queueOption = new Option<string?>("--queue")
-        {
-            Description = "Named queue to serialize terminal launch (e.g., --queue merge)"
-        };
-
         var command = new Command("dispatch", "Dispatch work to another agent");
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
@@ -99,10 +79,6 @@ public static class DispatchCommand
         command.Options.Add(autoCloseOption);
         command.Options.Add(tabOption);
         command.Options.Add(newWindowOption);
-        command.Options.Add(waitOption);
-        command.Options.Add(noWaitOption);
-        command.Options.Add(worktreeOption);
-        command.Options.Add(queueOption);
 
         command.SetAction(parseResult =>
         {
@@ -117,48 +93,6 @@ public static class DispatchCommand
             var useTab = parseResult.GetValue(tabOption);
             var useNewWindow = parseResult.GetValue(newWindowOption);
             var autoClose = parseResult.GetValue(autoCloseOption);
-            var wait = parseResult.GetValue(waitOption);
-            var noWait = parseResult.GetValue(noWaitOption);
-            var worktree = parseResult.GetValue(worktreeOption);
-            var queue = parseResult.GetValue(queueOption);
-
-            // Validate --queue
-            if (!string.IsNullOrEmpty(queue))
-            {
-                var queueService = new QueueService();
-                if (!queueService.QueueExists(queue))
-                {
-                    var available = string.Join(", ", queueService.ListQueues());
-                    ConsoleOutput.WriteError($"No queue '{queue}'. Available: {available}");
-                    return ExitCodes.ToolError;
-                }
-
-                if (noLaunch)
-                {
-                    ConsoleOutput.WriteError("Cannot specify both --queue and --no-launch.");
-                    return ExitCodes.ToolError;
-                }
-            }
-
-            // Validate --worktree / --no-launch
-            if (worktree && noLaunch)
-            {
-                ConsoleOutput.WriteError("Cannot specify both --worktree and --no-launch. Worktree lifecycle depends on terminal commands.");
-                return ExitCodes.ToolError;
-            }
-
-            // Validate --wait / --no-wait
-            if (wait && noWait)
-            {
-                ConsoleOutput.WriteError("Cannot specify both --wait and --no-wait.");
-                return ExitCodes.ToolError;
-            }
-
-            if (!wait && !noWait)
-            {
-                ConsoleOutput.WriteError("Specify --wait or --no-wait to indicate whether you expect a response.");
-                return ExitCodes.ToolError;
-            }
 
             var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))
@@ -188,7 +122,7 @@ public static class DispatchCommand
                 }
             }
 
-            return DispatchService.Execute(new DispatchOptions(role, task, brief, files, to, queue, noLaunch, escalate, useTab, useNewWindow, autoClose, wait, worktree));
+            return DispatchService.Execute(new DispatchOptions(role, task, brief, files, to, noLaunch, escalate, useTab, useNewWindow, autoClose));
         });
 
         return command;

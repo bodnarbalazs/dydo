@@ -100,12 +100,10 @@ If approved: `dydo issue create --title "..." --area <a> --severity <s> --summar
 ## Complete
 {{include:extra-complete-gate}}
 
-> Note: if your dispatcher used `--wait`, you cannot release until you have messaged them on this task. The release error names the expected subject.
-
 When implementation is done and tests pass:
 
 ```bash
-dydo dispatch --no-wait --auto-close --role reviewer --task <task-name> --brief "..."
+dydo dispatch --auto-close --role reviewer --task <task-name> --brief "..."
 ```
 
 This automatically marks the task as ready for review — no need to call `dydo task ready-for-review` separately.
@@ -115,7 +113,7 @@ The brief should include:
 - Plan deviations and why (if any)
 - Key decisions made
 
-**Baton-passing:** By dispatching the reviewer on the same task, your reply obligation to whoever dispatched you is fulfilled. The reviewer inherits that obligation and reports back on your behalf. Do not message your origin separately.
+After dispatching the reviewer, your work is handed off. The reviewer reports its verdict back to the origin, so you do not need to message your origin separately.
 
 Then release:
 

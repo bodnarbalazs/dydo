@@ -249,41 +249,32 @@ dydo agent reassign Adele bob
 
 ### dydo dispatch
 
-Dispatch work to another agent. Requires `--wait` or `--no-wait` to indicate intent.
+Dispatch work to another agent. Reserves the target agent, writes a single assignment inbox item carrying the role/brief, and launches a terminal for that agent.
 
 ```bash
-# Expecting feedback (creates wait marker, enters poll loop):
-dydo dispatch --wait --auto-close --role reviewer --task auth-login --brief "Review PR"
-
-# Fire and forget:
-dydo dispatch --no-wait --role code-writer --task auth-login --brief "Implement OAuth"
-dydo dispatch --no-wait --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
+dydo dispatch --role reviewer --task auth-login --brief "Review PR"
+dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth"
+dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
 ```
 
 **Options:**
 - `--role <role>` - Role for the target agent (required)
 - `--task <name>` - Task name (required)
-- `--wait` - Wait for a response from the dispatched agent (required, mutually exclusive with --no-wait)
-- `--no-wait` - Dispatch and return immediately (required, mutually exclusive with --wait)
 - `--brief <text>` - Brief description (required unless --brief-file used)
 - `--brief-file <path>` - Read brief from a file instead of inline
 - `--files <pattern>` - File pattern to include
-- `--to <agent-name>` - Send to specific agent (skips auto-selection)
+- `--to <agent-name>` - Send to specific agent (skips auto-selection); alias `--agent`
 - `--escalate` - Mark as escalated (after repeated failures)
 - `--auto-close` - Auto-close the dispatched agent's terminal after release
 - `--no-launch` - Don't launch terminal, just write to inbox
 - `--tab` - Launch in a new tab instead of a new window (overrides config)
 - `--new-window` - Launch in a new window (overrides config)
-- `--worktree` - Run dispatched agent in a git worktree for isolated work
-- `--queue <name>` - Named queue to serialize terminal launch (e.g., `--queue merge`). Defers terminal launch if another item is active in the queue. Agent selection and inbox happen immediately.
 
 **Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
 
 **Double-dispatch protection:** If another agent is already working on the same task, dispatch is blocked.
 
-**`--wait` behavior:** Creates a wait marker, then polls for a response. The marker blocks release until cancelled.
-
-**`--no-wait` behavior:** Returns immediately. Shows a release hint when appropriate.
+**Launch bridge:** Dispatch reserves the agent (status becomes `Dispatched`). The launched agent claims, reads its assignment from the inbox, and sets its role. If the launch fails, the stale-dispatch reclaim returns the agent to a re-dispatchable state.
 
 ### dydo inbox list
 
@@ -546,7 +537,7 @@ Complete a code review.
 
 ```bash
 # Normal workflow (dispatch auto-transitions the task):
-dydo dispatch --wait --auto-close --role reviewer --task auth-login --brief "Implemented OAuth flow"
+dydo dispatch --auto-close --role reviewer --task auth-login --brief "Implemented OAuth flow"
 dydo review complete auth-login --status pass
 dydo review complete auth-login --status fail --notes "Found security issue"
 ```

@@ -7,7 +7,7 @@ type: guide
 
 Every claimed agent runs a single always-active **general wait** in the background. It is how messages reach agents in real time and how the guard knows the agent is reachable.
 
-This page covers when it is required, the lifecycle, what `--wait` means at dispatch, and how to recover when something goes wrong.
+This page covers when it is required, the lifecycle, and how to recover when something goes wrong.
 
 ---
 
@@ -41,16 +41,11 @@ dydo wait    # run in background
 
 ---
 
-## What `--wait` Means at Dispatch
+## Dispatch and the General Wait
 
-`dispatch --wait` is an oversight-role privilege (gated by `CanOrchestrate`). It now means:
+`dydo dispatch` reserves the target agent, writes a single assignment inbox item, and launches a terminal for that agent. The launched agent claims, reads its assignment, sets its role, and starts its own general wait.
 
-- The **dispatched** agent cannot release until they have messaged the dispatcher back on the dispatched task's subject.
-- The **dispatcher** does not block. Their general wait surfaces the reply when it lands.
-
-This is a release-block on the callee, not a blocking call on the caller. The dispatcher continues working in parallel. The callee owes a reply — `dydo agent release` will be denied until that reply has been sent, and the release error names the expected subject.
-
-If you are dispatched with `--wait` and try to release without messaging back, the guard tells you exactly which subject is expected and to whom.
+The dispatcher does not block on dispatch. If you want a reply from a dispatched agent, coordinate via messaging — your general wait surfaces incoming messages when they land.
 
 ---
 
@@ -64,12 +59,13 @@ The guard could not find an active general wait for your agent. Causes and fixes
 - **The background process died.** The marker self-heals on a dead PID; rerun `dydo wait` to register a new one.
 - **The wait was started but the marker has not landed yet.** Rare. If it persists, cancel and restart: `dydo wait --cancel` then `dydo wait` again in the background.
 
-### Release blocked by an unreplied dispatch-wait obligation
+### Release blocked by an unread inbox
 
-You were dispatched with `--wait` and have not messaged the dispatcher back on this task. Send the message:
+You have unread inbox items. Process them first:
 
 ```bash
-dydo msg --to <dispatcher> --subject <task-name> --body "..."
+dydo inbox show
+dydo inbox clear --all
 ```
 
 Then `dydo agent release`.

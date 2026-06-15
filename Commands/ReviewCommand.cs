@@ -128,14 +128,12 @@ public static class ReviewCommand
                 // If reviewer is in a worktree, require merge dispatch before release
                 var workspace = registry.GetAgentWorkspace(agent.Name);
                 var worktreeMarker = Path.Combine(workspace, ".worktree");
-                Console.WriteLine($"  [review-debug] workspace={workspace}, worktreeMarker exists={File.Exists(worktreeMarker)}");
                 if (File.Exists(worktreeMarker))
                 {
                     File.WriteAllText(Path.Combine(workspace, ".needs-merge"), taskName);
-                    Console.WriteLine($"  [review-debug] Created .needs-merge with value: {taskName}");
                     Console.WriteLine();
                     Console.WriteLine("Worktree branch needs merging. Dispatch a code-writer to merge before releasing:");
-                    Console.WriteLine($"  dydo dispatch --no-wait --auto-close --queue merge --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
+                    Console.WriteLine($"  dydo dispatch --auto-close --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
                 }
             }
         }
@@ -189,9 +187,6 @@ public static class ReviewCommand
         {
             Console.WriteLine($"  Dispatcher {dispatcher} is not active; verdict is on the task file.");
         }
-
-        if (registry.RemoveReplyPendingMarker(reviewer.Name, taskName))
-            Console.WriteLine($"  Reply obligation fulfilled for '{taskName}'.");
 
         var ancestor = FindNearestWorkingCanOrchestrateAncestor(registry, dispatcher);
         if (string.IsNullOrEmpty(ancestor)) return;

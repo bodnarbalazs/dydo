@@ -159,7 +159,7 @@ public partial class AgentRegistry : IAgentRegistry
 
     private bool IsEffectivelyFree(AgentState state) =>
         state.Status == AgentStatus.Free ||
-        (state.Status is AgentStatus.Dispatched or AgentStatus.Queued
+        (state.Status is AgentStatus.Dispatched
             && IsStaleDispatch(state)
             && !IsLauncherAlive(state.Name)) ||
         IsStaleWorking(state);
@@ -173,7 +173,7 @@ public partial class AgentRegistry : IAgentRegistry
         !(IsStaleWorking(state) && IsSessionPidAlive(state.Name));
 
     private static bool IsStaleDispatch(AgentState state) =>
-        state.Status is AgentStatus.Dispatched or AgentStatus.Queued &&
+        state.Status is AgentStatus.Dispatched &&
         state.Since.HasValue &&
         (DateTime.UtcNow - state.Since.Value.ToUniversalTime()).TotalMinutes > StaleDispatchMinutes;
 
@@ -401,7 +401,7 @@ public partial class AgentRegistry : IAgentRegistry
             // Capture the prior session/state BEFORE SetupAgentWorkspace overwrites .session and
             // resets state.md — the recovery_kind classification needs the pre-reset values.
             // Closes the PR3 instrumentation half of the agent-crash-fixes batch.
-            SetupAgentWorkspace(agentName, sessionId, human, IsDispatchedOrQueued(state),
+            SetupAgentWorkspace(agentName, sessionId, human, IsDispatched(state),
                 priorSession: existingSession, priorState: state);
             return true;
         }
@@ -415,10 +415,10 @@ public partial class AgentRegistry : IAgentRegistry
         existingSession?.SessionId == sessionId && !IsUnclaimedStatus(state?.Status);
 
     private static bool IsUnclaimedStatus(AgentStatus? status) =>
-        status is null or AgentStatus.Free or AgentStatus.Dispatched or AgentStatus.Queued;
+        status is null or AgentStatus.Free or AgentStatus.Dispatched;
 
-    private static bool IsDispatchedOrQueued(AgentState? state) =>
-        state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued;
+    private static bool IsDispatched(AgentState? state) =>
+        state?.Status == AgentStatus.Dispatched;
 
     private string? ResolveSessionId(string agentName)
     {
@@ -454,7 +454,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         error = string.Empty;
 
-        if (state?.Status == AgentStatus.Free || state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued || existingSession == null)
+        if (state?.Status == AgentStatus.Free || state?.Status == AgentStatus.Dispatched || existingSession == null)
             return true;
 
         if (existingSession.SessionId == sessionId)
@@ -581,7 +581,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var humanAgents = GetAgentsForHuman(human);
             var hasDispatchedWithInbox = GetAllAgentStates()
-                .Any(a => (a.Status == AgentStatus.Dispatched || a.Status == AgentStatus.Queued)
+                .Any(a => a.Status == AgentStatus.Dispatched
                     && humanAgents.Contains(a.Name, StringComparer.OrdinalIgnoreCase)
                     && HasPendingInbox(a.Name));
 
@@ -717,37 +717,13 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        var replyMarkers = GetReplyPendingMarkers(agentName);
-        if (replyMarkers.Count > 0)
-        {
-            var pending = string.Join(", ", replyMarkers.Select(m => $"'{m.Task}' to {m.To}"));
-            error = $"Cannot release: pending reply on: {pending}.\n" +
-                    "Send a message first: dydo msg --to <agent> --subject <task> --body \"...\"";
-            return false;
-        }
-
-        // Data-driven release constraints (requires-dispatch)
-        var state = GetAgentState(agentName);
-        if (state != null && !string.IsNullOrEmpty(state.Role) && !string.IsNullOrEmpty(state.Task))
-        {
-            var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
-            if (!evaluator.CanRelease(agentName, state.Role, state.Task,
-                !string.IsNullOrEmpty(state.DispatchedBy),
-                state.DispatchedByRole,
-                (t, r) => HasDispatchMarker(agentName, t, r), out error,
-                t => GetUnrepliedDispatchWait(agentName, t)))
-            {
-                return false;
-            }
-        }
-
         var needsMergePath = Path.Combine(workspace, ".needs-merge");
         if (File.Exists(needsMergePath))
         {
             var mergeTask = File.ReadAllText(needsMergePath).Trim();
             error = $"Cannot release: review passed in worktree but merge not dispatched.\n" +
                     $"Dispatch a code-writer to merge the worktree branch:\n" +
-                    $"  dydo dispatch --no-wait --auto-close --queue merge --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"";
+                    $"  dydo dispatch --auto-close --role code-writer --task {mergeTask}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"";
             return false;
         }
 
@@ -761,9 +737,6 @@ public partial class AgentRegistry : IAgentRegistry
             Directory.Delete(modesPath, true);
 
         ClearAllWaitMarkers(agentName);
-        ClearAllReplyPendingMarkers(agentName);
-        ClearAllDispatchMarkers(agentName);
-        ClearAllDispatchWaitMarkers(agentName);
 
         try { new GuardLiftService().ClearLift(agentName); } catch { }
 
@@ -960,14 +933,7 @@ public partial class AgentRegistry : IAgentRegistry
             };
         }
 
-        var state = ParseStateFile(agentName, statePath);
-        if (state?.Status == AgentStatus.Dispatched &&
-            File.Exists(Path.Combine(GetAgentWorkspace(agentName), ".queued")))
-        {
-            state.Status = AgentStatus.Queued;
-        }
-
-        return state;
+        return ParseStateFile(agentName, statePath);
     }
 
     public List<AgentState> GetAllAgentStates()
@@ -1372,254 +1338,6 @@ public partial class AgentRegistry : IAgentRegistry
 
     #endregion
 
-    #region Reply-Pending Markers
-
-    private string GetReplyPendingDir(string agentName) =>
-        Path.Combine(GetAgentWorkspace(agentName), ".reply-pending");
-
-    public void CreateReplyPendingMarker(string agentName, string task, string replyTo)
-    {
-        var dir = GetReplyPendingDir(agentName);
-        Directory.CreateDirectory(dir);
-
-        var marker = new ReplyPendingMarker
-        {
-            To = replyTo,
-            Task = task,
-            Since = DateTime.UtcNow
-        };
-
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.ReplyPendingMarker);
-        File.WriteAllText(path, json);
-    }
-
-    public List<ReplyPendingMarker> GetReplyPendingMarkers(string agentName)
-    {
-        var dir = GetReplyPendingDir(agentName);
-        if (!Directory.Exists(dir))
-            return [];
-
-        var markers = new List<ReplyPendingMarker>();
-        foreach (var file in Directory.GetFiles(dir, "*.json"))
-        {
-            try
-            {
-                var json = File.ReadAllText(file);
-                var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.ReplyPendingMarker);
-                if (marker != null)
-                    markers.Add(marker);
-            }
-            catch { }
-        }
-
-        return markers;
-    }
-
-    public bool RemoveReplyPendingMarker(string agentName, string task)
-    {
-        var dir = GetReplyPendingDir(agentName);
-        if (!Directory.Exists(dir))
-            return false;
-
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        if (!File.Exists(path))
-            return false;
-
-        File.Delete(path);
-        return true;
-    }
-
-    public void ClearAllReplyPendingMarkers(string agentName)
-    {
-        var dir = GetReplyPendingDir(agentName);
-        if (Directory.Exists(dir))
-            Directory.Delete(dir, true);
-    }
-
-    #endregion
-
-    #region Dispatch Markers
-
-    private string GetDispatchMarkersDir(string agentName) =>
-        Path.Combine(GetAgentWorkspace(agentName), ".dispatch-markers");
-
-    public void CreateDispatchMarker(string agentName, string task, string targetRole, string dispatchedTo)
-    {
-        var dir = GetDispatchMarkersDir(agentName);
-        Directory.CreateDirectory(dir);
-
-        var marker = new DispatchMarker
-        {
-            Task = task,
-            TargetRole = targetRole,
-            DispatchedTo = dispatchedTo,
-            Since = DateTime.UtcNow
-        };
-
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}-{targetRole}.json");
-        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchMarker);
-        File.WriteAllText(path, json);
-    }
-
-    public bool HasDispatchMarker(string agentName, string task, string targetRole)
-    {
-        var dir = GetDispatchMarkersDir(agentName);
-        if (!Directory.Exists(dir))
-            return false;
-
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        return File.Exists(Path.Combine(dir, $"{sanitized}-{targetRole}.json"));
-    }
-
-    public void ClearAllDispatchMarkers(string agentName)
-    {
-        var dir = GetDispatchMarkersDir(agentName);
-        if (Directory.Exists(dir))
-            Directory.Delete(dir, true);
-    }
-
-    #endregion
-
-    #region Dispatch-Wait Markers
-
-    private string GetDispatchWaitsDir(string agentName) =>
-        Path.Combine(GetAgentWorkspace(agentName), "dispatch-waits");
-
-    /// <summary>
-    /// Writes a DispatchWaitMarker into the *callee's* workspace, recording the
-    /// release-block obligation created by `dispatch --wait`. Decision 021: the
-    /// dispatched agent cannot release until they have messaged the dispatcher
-    /// back on the dispatched task's subject.
-    ///
-    /// Atomic temp-then-rename to avoid races with concurrent reads.
-    /// </summary>
-    public void CreateDispatchWaitMarker(string calleeName, string task, string dispatcherAgent, string? dispatcherRole)
-    {
-        var dir = GetDispatchWaitsDir(calleeName);
-        Directory.CreateDirectory(dir);
-
-        var marker = new DispatchWaitMarker
-        {
-            Task = task,
-            DispatcherAgent = dispatcherAgent,
-            DispatcherRole = dispatcherRole,
-            CreatedAt = DateTime.UtcNow,
-        };
-
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchWaitMarker);
-
-        var tempPath = $"{path}.tmp.{Environment.ProcessId}.{Guid.NewGuid():N}";
-        File.WriteAllText(tempPath, json);
-        try
-        {
-            File.Move(tempPath, path, overwrite: true);
-        }
-        catch
-        {
-            try { File.Delete(tempPath); } catch { }
-            throw;
-        }
-    }
-
-    public List<DispatchWaitMarker> GetDispatchWaitMarkers(string agentName)
-    {
-        var dir = GetDispatchWaitsDir(agentName);
-        if (!Directory.Exists(dir))
-            return [];
-
-        var markers = new List<DispatchWaitMarker>();
-        foreach (var file in Directory.GetFiles(dir, "*.json"))
-        {
-            try
-            {
-                var json = File.ReadAllText(file);
-                var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.DispatchWaitMarker);
-                if (marker != null)
-                    markers.Add(marker);
-            }
-            catch { }
-        }
-
-        return markers;
-    }
-
-    /// <summary>
-    /// Stamps RepliedAt on the dispatch-wait marker for the given task if it exists
-    /// and is not already stamped. Returns true if a stamp was written.
-    /// </summary>
-    public bool MarkDispatchWaitReplied(string agentName, string task)
-    {
-        var dir = GetDispatchWaitsDir(agentName);
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        if (!File.Exists(path)) return false;
-
-        try
-        {
-            var json = File.ReadAllText(path);
-            var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.DispatchWaitMarker);
-            if (marker == null || marker.RepliedAt != null) return false;
-
-            marker.RepliedAt = DateTime.UtcNow;
-            var updated = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.DispatchWaitMarker);
-
-            var tempPath = $"{path}.tmp.{Environment.ProcessId}.{Guid.NewGuid():N}";
-            File.WriteAllText(tempPath, updated);
-            try
-            {
-                File.Move(tempPath, path, overwrite: true);
-                return true;
-            }
-            catch
-            {
-                try { File.Delete(tempPath); } catch { }
-                return false;
-            }
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public DispatchWaitMarker? GetUnrepliedDispatchWait(string agentName, string task)
-    {
-        var dir = GetDispatchWaitsDir(agentName);
-        var sanitized = PathUtils.SanitizeForFilename(task);
-        var path = Path.Combine(dir, $"{sanitized}.json");
-        if (!File.Exists(path)) return null;
-
-        try
-        {
-            var json = File.ReadAllText(path);
-            var marker = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.DispatchWaitMarker);
-            if (marker == null || marker.RepliedAt != null) return null;
-            return marker;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public bool HasUnrepliedDispatchWait(string agentName, string task) =>
-        GetUnrepliedDispatchWait(agentName, task) != null;
-
-    public void ClearAllDispatchWaitMarkers(string agentName)
-    {
-        var dir = GetDispatchWaitsDir(agentName);
-        if (Directory.Exists(dir))
-            Directory.Delete(dir, true);
-    }
-
-    #endregion
-
     public AgentSession? GetSession(string agentName)
     {
         var sessionPath = Path.Combine(GetAgentWorkspace(agentName), ".session");
@@ -1868,7 +1586,6 @@ public partial class AgentRegistry : IAgentRegistry
     private static AgentStatus ParseStatus(string value) => value switch
     {
         "dispatched" => AgentStatus.Dispatched,
-        "queued" => AgentStatus.Queued,
         "working" => AgentStatus.Working,
         "reviewing" => AgentStatus.Reviewing,
         _ => AgentStatus.Free
@@ -2080,7 +1797,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         var state = GetAgentState(agentName);
         var session = GetSession(agentName);
-        return (state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched || state?.Status == AgentStatus.Queued;
+        return (state?.Status != AgentStatus.Free && session != null) || state?.Status == AgentStatus.Dispatched;
     }
 
     /// <summary>
@@ -2492,10 +2209,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         "workflow.md", "state.md", ".session", ".pending-session", ".claim.lock", "modes", "archive", "inbox",
         ".worktree", ".worktree-path", ".worktree-base", ".worktree-root", ".worktree-hold",
-        ".merge-source", ".needs-merge",
-        ".reply-pending",
-        "dispatch-waits",
-        ".queued"
+        ".merge-source", ".needs-merge"
     };
 
     /// <summary>

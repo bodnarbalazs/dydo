@@ -24,7 +24,6 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
-    private readonly Func<string, string, string, int>? _originalCreateGitWorktreeOverride;
     private readonly Func<string, int, int?>? _originalFindAncestorOverride;
 
     protected IntegrationTestBase()
@@ -41,12 +40,10 @@ public abstract class IntegrationTestBase : IDisposable
         _originalErr = Console.Error;
         _originalIn = Console.In;
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
-        _originalCreateGitWorktreeOverride = DispatchService.CreateGitWorktreeOverride;
         _originalFindAncestorOverride = ProcessUtils.FindAncestorProcessOverride;
 
-        // Prevent tests from launching real terminals, browsers, or git worktree operations
+        // Prevent tests from launching real terminals or browsers
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
-        DispatchService.CreateGitWorktreeOverride = (_, _, _) => 0;
 
         // Pin the claude-ancestor lookup to this test process so .session.ClaimedPid stamped
         // during claim, and AgentRegistry.IsOwnedByCaller's check downstream, both resolve
@@ -72,7 +69,6 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
-        DispatchService.CreateGitWorktreeOverride = _originalCreateGitWorktreeOverride;
         ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
 
         // Clean up test directory

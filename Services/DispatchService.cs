@@ -1,6 +1,5 @@
 namespace DynaDocs.Services;
 
-using System.Diagnostics;
 using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Utils;
@@ -31,36 +30,7 @@ public static class DispatchService
 
         var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
-
-        var waitError = CheckWaitPrivilege(opts.Wait, sender, registry);
-        if (waitError != null)
-        {
-            ConsoleOutput.WriteError(waitError);
-            return ExitCodes.ToolError;
-        }
-
-        var noWaitNudgeError = CheckNoWaitNudge(!opts.Wait, registry, sessionId, opts.Task);
-        if (noWaitNudgeError != null)
-        {
-            ConsoleOutput.WriteError(noWaitNudgeError);
-            return ExitCodes.ToolError;
-        }
-
-        if (sender != null && !string.IsNullOrEmpty(sender.Role))
-        {
-            var dispatchError = CheckDispatchRestriction(registry, sender, opts.Role, opts.Task);
-            if (dispatchError != null)
-            {
-                ConsoleOutput.WriteError(dispatchError);
-                return ExitCodes.ToolError;
-            }
-        }
-
         var origin = GetOriginForTask(registry, sender, opts.Task) ?? senderName;
-
-        // Baton-passing: if sender has a reply-pending marker for this task, inherit it
-        var inheritReply = sender != null && registry.GetReplyPendingMarkers(senderName)
-            .Any(m => string.Equals(m.Task, opts.Task, StringComparison.OrdinalIgnoreCase));
 
         var (targetAgentName, targetError) = SelectTargetAgent(registry, opts, currentHuman, senderName, origin);
         if (targetError != null)
@@ -69,9 +39,10 @@ public static class DispatchService
             return ExitCodes.ToolError;
         }
 
-        WriteAndLaunch(registry, targetAgentName!, senderName, origin, opts, inheritReply);
+        WriteAndLaunch(registry, targetAgentName!, senderName, origin, opts);
 
-        return CompleteDispatch(registry, sender, senderName, targetAgentName!, opts.Role, opts.Task, inheritReply, opts.Wait);
+        PrintReleaseHint(registry, sender, senderName);
+        return ExitCodes.Success;
     }
 
     private static (string? agentName, string? error) SelectTargetAgent(
@@ -91,130 +62,29 @@ public static class DispatchService
         return (selection.AgentName, null);
     }
 
-    private static int CompleteDispatch(AgentRegistry registry, AgentState? sender, string senderName,
-        string targetAgentName, string role, string task, bool inheritReply, bool wait)
-    {
-        // Clear sender's reply-pending marker after successful baton pass
-        if (inheritReply)
-            registry.RemoveReplyPendingMarker(senderName, task);
-
-        // Data-driven dispatch markers: create marker when sender's role has a requires-dispatch
-        // constraint listing the target role
-        var taskMatchesSender = sender?.Task != null &&
-            (string.Equals(sender.Task, task, StringComparison.OrdinalIgnoreCase)
-             || task.StartsWith(sender.Task + "-", StringComparison.OrdinalIgnoreCase));
-        if (sender != null && !string.IsNullOrEmpty(sender.Role) && taskMatchesSender)
-        {
-            var senderRoleDef = registry.GetRoleDefinition(sender.Role);
-            if (senderRoleDef != null)
-            {
-                foreach (var constraint in senderRoleDef.Constraints)
-                {
-                    if (constraint.Type != "requires-dispatch" || constraint.RequiredRoles == null) continue;
-                    if (constraint.RequiredRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
-                        registry.CreateDispatchMarker(senderName, sender.Task!, role, targetAgentName);
-                }
-            }
-        }
-
-        if (wait)
-        {
-            Console.WriteLine($"Dispatched with --wait: {targetAgentName} cannot release until they have");
-            Console.WriteLine($"  messaged you back on subject '{task}'. Their reply will surface via your");
-            Console.WriteLine($"  general wait — no need to register a per-task wait.");
-            return ExitCodes.Success;
-        }
-
-        PrintReleaseHint(registry, sender, senderName);
-        return ExitCodes.Success;
-    }
-
     private static void WriteAndLaunch(AgentRegistry registry, string targetAgentName, string senderName,
-        string origin, DispatchOptions opts, bool inheritReply)
+        string origin, DispatchOptions opts)
     {
         var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin,
-            opts.Role, opts.Task, opts.Brief, opts.Files, opts.Escalate, opts.Wait, inheritReply);
-
-        WriteDispatchWaitMarkerIfNeeded(registry, targetAgentName, senderName, opts.Task, opts.Wait);
+            opts.Role, opts.Task, opts.Brief, opts.Files, opts.Escalate);
 
         InjectBriefIntoTaskFile(opts.Task, opts.Brief);
         HandleReviewerTransition(opts.Role, opts.Task, opts.Brief);
         PrintDispatchSummary(targetAgentName, opts.Role, opts.Task, itemPath, opts.Escalate);
 
         var effectiveAutoClose = opts.AutoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
-
-        string? worktreeId;
-        string? workingDirOverride = null;
-        var senderWorktreeId = GetSenderWorktreeId(registry, senderName);
-        var needsMerge = HasNeedsMergeMarker(registry, senderName);
-
-        string? cleanupWorktreeId = null;
-        string? mainProjectRoot = null;
-
-        if (senderWorktreeId != null && !needsMerge && opts.Worktree)
-        {
-            // Create child worktree (nested dispatch with --worktree from within a worktree)
-            (worktreeId, mainProjectRoot) = SetupChildWorktree(registry, targetAgentName, senderName, senderWorktreeId, opts.Task);
-        }
-        else if (senderWorktreeId != null && !needsMerge)
-        {
-            // Inherit parent worktree
-            InheritWorktree(registry, targetAgentName, senderName, senderWorktreeId);
-            workingDirOverride = GetWorktreePath(registry, senderName);
-            worktreeId = null;
-            cleanupWorktreeId = senderWorktreeId;
-            mainProjectRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot();
-        }
-        else if (senderWorktreeId != null && needsMerge)
-        {
-            // Merge dispatch — child launches in main repo to do the merge
-            CopyWorktreeMetadataForMerger(registry, targetAgentName, senderName, senderWorktreeId);
-            ClearNeedsMerge(registry, senderName);
-            worktreeId = null;
-            cleanupWorktreeId = senderWorktreeId;
-            mainProjectRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot();
-        }
-        else
-        {
-            (worktreeId, mainProjectRoot) = SetupWorktree(registry, targetAgentName, opts.Worktree, opts.Task);
-        }
-
         var (windowName, launchInTab) = ConfigureWindowSettings(registry, opts.UseTab, opts.UseNewWindow);
 
         registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
 
-        if (!string.IsNullOrEmpty(opts.Queue))
-        {
-            var queueService = new QueueService(null, registry.Config);
-            var queueResult = queueService.TryAcquireOrEnqueue(opts.Queue, targetAgentName, opts.Task,
-                launchInTab, effectiveAutoClose, worktreeId, windowName, workingDirOverride,
-                cleanupWorktreeId, mainProjectRoot);
-
-            if (queueResult == QueueResult.Queued)
-            {
-                var pending = queueService.GetPending(opts.Queue);
-                queueService.WriteQueuedMarker(targetAgentName, opts.Queue, pending.Count);
-                Console.WriteLine($"  Queued in '{opts.Queue}' (position {pending.Count}). Terminal launch deferred.");
-            }
-            else
-            {
-                var pid = LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose,
-                    worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
-                queueService.UpdateActivePid(opts.Queue, pid);
-            }
-        }
-        else
-        {
-            LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose,
-                worktreeId, windowName, workingDirOverride, cleanupWorktreeId, mainProjectRoot);
-        }
+        LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose, windowName);
 
         if (effectiveAutoClose)
             WatchdogService.EnsureRunning();
     }
 
     private static string WriteInboxItemToAgent(AgentRegistry registry, string targetAgentName, string senderName,
-        string origin, string role, string task, string brief, string? files, bool escalate, bool wait, bool inheritReply = false)
+        string origin, string role, string task, string brief, string? files, bool escalate)
     {
         var senderState = registry.GetAgentState(senderName);
         var inboxItem = new InboxItem
@@ -229,8 +99,7 @@ public static class DispatchService
             Brief = brief,
             Files = string.IsNullOrEmpty(files) ? [] : [files],
             Escalated = escalate,
-            EscalatedAt = escalate ? DateTime.UtcNow : null,
-            ReplyRequired = wait || inheritReply
+            EscalatedAt = escalate ? DateTime.UtcNow : null
         };
 
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(targetAgentName), "inbox");
@@ -246,10 +115,6 @@ public static class DispatchService
 
         var itemPath = Path.Combine(inboxPath, $"{inboxItem.Id}-{sanitizedTask}.md");
         WriteInboxItem(itemPath, inboxItem);
-
-        // Create reply-pending marker at dispatch time so msg can clear it regardless of inbox clear ordering
-        if (inboxItem.ReplyRequired && !string.IsNullOrEmpty(task))
-            registry.CreateReplyPendingMarker(targetAgentName, task, senderName);
 
         return itemPath;
     }
@@ -298,147 +163,6 @@ public static class DispatchService
             Console.WriteLine($"  Escalated: yes");
     }
 
-    private static (string? worktreeId, string? mainProjectRoot) SetupWorktree(
-        AgentRegistry registry, string targetAgentName, bool worktree, string task)
-    {
-        if (!worktree)
-            return (null, null);
-
-        var worktreeId = TerminalLauncher.GenerateWorktreeId(task);
-        var workspace = registry.GetAgentWorkspace(targetAgentName);
-        Directory.CreateDirectory(workspace);
-        File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
-
-        var projectRoot = PathUtils.FindProjectRoot()!;
-        var worktreePath = Path.GetFullPath(Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees", worktreeId));
-        File.WriteAllText(Path.Combine(workspace, ".worktree-path"), worktreePath);
-
-        var baseBranch = GetCurrentGitBranch() ?? "master";
-        File.WriteAllText(Path.Combine(workspace, ".worktree-base"), baseBranch);
-
-        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), projectRoot);
-
-        var branchName = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
-        CreateGitWorktree(projectRoot, worktreePath, branchName);
-        RunInitSettings(projectRoot, worktreePath);
-
-        return (worktreeId, projectRoot);
-    }
-
-    private static (string worktreeId, string mainProjectRoot) SetupChildWorktree(
-        AgentRegistry registry, string targetAgentName, string senderName, string senderWorktreeId, string task)
-    {
-        var parentWorktreeRoot = GetWorktreeRoot(registry, senderName) ?? PathUtils.FindProjectRoot()!;
-
-        var worktreeId = TerminalLauncher.GenerateWorktreeId(task, senderWorktreeId);
-        var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
-        Directory.CreateDirectory(targetWorkspace);
-
-        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree"), worktreeId);
-
-        var worktreePath = Path.GetFullPath(Path.Combine(parentWorktreeRoot, "dydo", "_system", ".local", "worktrees", worktreeId));
-        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-path"), worktreePath);
-
-        var parentBranchSuffix = TerminalLauncher.WorktreeIdToBranchSuffix(senderWorktreeId);
-        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-base"), $"worktree/{parentBranchSuffix}");
-
-        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-root"), parentWorktreeRoot);
-
-        var branchName = $"worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}";
-        CreateGitWorktree(parentWorktreeRoot, worktreePath, branchName);
-        RunInitSettings(parentWorktreeRoot, worktreePath);
-
-        return (worktreeId, parentWorktreeRoot);
-    }
-
-    internal static string? GetCurrentGitBranch()
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = "rev-parse --abbrev-ref HEAD",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-            var process = Process.Start(psi);
-            if (process == null) return null;
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
-            return process.ExitCode == 0 && !string.IsNullOrEmpty(output) ? output : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static string? GetSenderWorktreeId(AgentRegistry registry, string senderName)
-    {
-        var marker = Path.Combine(registry.GetAgentWorkspace(senderName), ".worktree");
-        if (!File.Exists(marker)) return null;
-        return File.ReadAllText(marker).Trim();
-    }
-
-    private static string? GetWorktreePath(AgentRegistry registry, string agentName)
-    {
-        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".worktree-path");
-        if (!File.Exists(marker)) return null;
-        return File.ReadAllText(marker).Trim();
-    }
-
-    private static void InheritWorktree(AgentRegistry registry, string targetAgentName, string senderName, string worktreeId)
-    {
-        var senderWorkspace = registry.GetAgentWorkspace(senderName);
-        var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
-        Directory.CreateDirectory(targetWorkspace);
-        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree"), worktreeId);
-
-        foreach (var marker in new[] { ".worktree-path", ".worktree-base", ".worktree-root" })
-        {
-            var src = Path.Combine(senderWorkspace, marker);
-            if (File.Exists(src))
-                File.Copy(src, Path.Combine(targetWorkspace, marker), overwrite: true);
-        }
-    }
-
-    private static string? GetWorktreeRoot(AgentRegistry registry, string agentName)
-    {
-        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".worktree-root");
-        if (!File.Exists(marker)) return null;
-        return File.ReadAllText(marker).Trim();
-    }
-
-    private static bool HasNeedsMergeMarker(AgentRegistry registry, string agentName)
-    {
-        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".needs-merge");
-        return File.Exists(marker);
-    }
-
-    private static void CopyWorktreeMetadataForMerger(AgentRegistry registry, string targetAgentName, string senderName, string senderWorktreeId)
-    {
-        var senderWorkspace = registry.GetAgentWorkspace(senderName);
-        var targetWorkspace = registry.GetAgentWorkspace(targetAgentName);
-        Directory.CreateDirectory(targetWorkspace);
-
-        var baseSrc = Path.Combine(senderWorkspace, ".worktree-base");
-        if (File.Exists(baseSrc))
-            File.Copy(baseSrc, Path.Combine(targetWorkspace, ".worktree-base"), overwrite: true);
-
-        var branchSuffix = TerminalLauncher.WorktreeIdToBranchSuffix(senderWorktreeId);
-        File.WriteAllText(Path.Combine(targetWorkspace, ".merge-source"), $"worktree/{branchSuffix}");
-        File.WriteAllText(Path.Combine(targetWorkspace, ".worktree-hold"), senderWorktreeId);
-    }
-
-    private static void ClearNeedsMerge(AgentRegistry registry, string agentName)
-    {
-        var marker = Path.Combine(registry.GetAgentWorkspace(agentName), ".needs-merge");
-        if (File.Exists(marker))
-            File.Delete(marker);
-    }
-
     private static (string? windowName, bool launchInTab) ConfigureWindowSettings(AgentRegistry registry, bool useTab, bool useNewWindow)
     {
         // Two-tier window targeting:
@@ -455,14 +179,13 @@ public static class DispatchService
     }
 
     private static int LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
-        bool effectiveAutoClose, string? worktreeId, string? windowName, string? workingDirOverride = null,
-        string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+        bool effectiveAutoClose, string? windowName)
     {
         if (noLaunch)
             return 0;
 
-        var projectRoot = workingDirOverride ?? mainProjectRoot ?? PathUtils.FindProjectRoot();
-        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        var projectRoot = PathUtils.FindProjectRoot();
+        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, null, windowName);
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
         return pid;
     }
@@ -486,69 +209,6 @@ public static class DispatchService
         }
         File.Delete(markerPath);
         return null;
-    }
-
-    private static string? CheckWaitPrivilege(bool wait, AgentState? sender, AgentRegistry registry)
-    {
-        if (!wait || sender == null) return null;
-
-        if (registry.GetRoleDefinition(sender.Role ?? "")?.CanOrchestrate != true)
-            return $"The --wait flag is reserved for oversight roles. Your role '{sender.Role}' should use --no-wait.";
-
-        return null;
-    }
-
-    private static string? CheckNoWaitNudge(bool noWait, AgentRegistry registry, string? sessionId, string task)
-    {
-        if (!noWait) return null;
-
-        var sender = registry.GetCurrentAgent(sessionId);
-        if (sender == null) return null;
-
-        if (registry.GetRoleDefinition(sender.Role ?? "")?.CanOrchestrate != true) return null;
-
-        var senderWorkspace = registry.GetAgentWorkspace(sender.Name);
-        var nudgeKey = PathUtils.SanitizeForFilename(task);
-        var markerPath = Path.Combine(senderWorkspace, $".no-wait-nudge-{nudgeKey}");
-
-        if (!File.Exists(markerPath))
-        {
-            Directory.CreateDirectory(senderWorkspace);
-            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
-            return "Oversight roles should use --wait so dispatched agents' replies route back to you. " +
-                   "If you really mean --no-wait (fire-and-forget), run again and it will pass.";
-        }
-        File.Delete(markerPath);
-        return null;
-    }
-
-    private static string? CheckDispatchRestriction(AgentRegistry registry, AgentState sender, string targetRole, string task)
-    {
-        var senderRoleDef = registry.GetRoleDefinition(sender.Role!);
-        if (senderRoleDef == null) return null;
-
-        var evaluator = new RoleConstraintEvaluator(
-            new Dictionary<string, RoleDefinition> { [sender.Role!] = senderRoleDef },
-            [],
-            name => registry.GetAgentState(name));
-
-        if (!evaluator.CanDispatch(sender.Name, sender.Role!, targetRole, task, out var reason))
-            return reason;
-
-        return null;
-    }
-
-    /// <summary>
-    /// Decision 021: `dispatch --wait` writes a release-block marker into the callee's
-    /// workspace before the terminal launches, so the callee cannot race the marker
-    /// write and release prematurely.
-    /// </summary>
-    private static void WriteDispatchWaitMarkerIfNeeded(AgentRegistry registry, string targetAgentName,
-        string senderName, string task, bool wait)
-    {
-        if (!wait) return;
-        var senderRole = registry.GetAgentState(senderName)?.Role;
-        registry.CreateDispatchWaitMarker(targetAgentName, task, senderName, senderRole);
     }
 
     private static void PrintReleaseHint(AgentRegistry registry, AgentState? sender, string senderName)
@@ -579,7 +239,7 @@ public static class DispatchService
                     return agent.Name;
             }
 
-            if (agent.Status == AgentStatus.Dispatched || agent.Status == AgentStatus.Queued)
+            if (agent.Status == AgentStatus.Dispatched)
             {
                 var agentInbox = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
                 if (Directory.Exists(agentInbox))
@@ -613,8 +273,6 @@ public static class DispatchService
             ? $"\nescalated: true\nescalated_at: {item.EscalatedAt:o}"
             : "";
 
-        var replyRequiredYaml = item.ReplyRequired ? "\nreply_required: true" : "";
-
         var escalationHeader = item.Escalated ? "ESCALATED " : "";
 
         var content = $"""
@@ -623,7 +281,7 @@ public static class DispatchService
             from: {item.From}{fromRoleYaml}
             role: {item.Role}
             task: {item.Task}
-            received: {item.Received:o}{originYaml}{escalationYaml}{replyRequiredYaml}
+            received: {item.Received:o}{originYaml}{escalationYaml}
             ---
 
             # {escalationHeader}{item.Role.ToUpperInvariant()} Request: {item.Task}
@@ -640,69 +298,6 @@ public static class DispatchService
 
         File.WriteAllText(path, content);
     }
-
-    internal static void RunInitSettings(string mainRoot, string worktreePath)
-    {
-        try
-        {
-            Commands.WorktreeCommand.ExecuteInitSettings(mainRoot, worktreePath);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"WARNING: init-settings failed for worktree: {ex.Message}");
-        }
-    }
-
-    // Serializes worktree creation across processes using a file lock
-    internal static Func<string, string, string, int>? CreateGitWorktreeOverride;
-
-    internal static void CreateGitWorktree(string projectRoot, string worktreePath, string branchName)
-    {
-        var worktreesDir = Path.GetFullPath(Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees"));
-        Directory.CreateDirectory(worktreesDir);
-        var lockPath = Path.Combine(worktreesDir, ".lock");
-
-        WithWorktreeLock(lockPath, () =>
-        {
-            // Remove stale directory if it exists from a previous failed run.
-            // Uses junction-safe deletion that detects reparse points at any depth,
-            // preventing Directory.Delete(recursive) from following junctions into
-            // the main repo and destroying its files.
-            WorktreeCommand.DeleteDirectoryJunctionSafe(worktreePath);
-
-            RunGitForWorktree(projectRoot, "worktree prune");
-            var exitCode = RunGitForWorktree(projectRoot, $"worktree add -b {branchName} -- \"{worktreePath}\"");
-            if (exitCode != 0)
-                throw new InvalidOperationException($"git worktree add failed (exit code {exitCode}) for {worktreePath}");
-        });
-    }
-
-    private static int RunGitForWorktree(string workingDir, string arguments)
-    {
-        if (CreateGitWorktreeOverride != null)
-            return CreateGitWorktreeOverride(workingDir, "git", arguments);
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = "git",
-            Arguments = $"-C \"{workingDir}\" {arguments}",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true
-        };
-        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
-        var proc = Process.Start(psi);
-        proc?.StandardInput.Close();
-        if (proc != null && !proc.WaitForExit(Commands.WorktreeCommand.ProcessTimeoutMs))
-        {
-            try { proc.Kill(); } catch { }
-            return 1;
-        }
-        return proc?.ExitCode ?? 1;
-    }
-
-    private static void WithWorktreeLock(string lockPath, Action action) =>
-        FileLock.WithExclusiveLock(lockPath, action);
 
     internal static string? GetOriginForTask(AgentRegistry registry, AgentState? sender, string task)
     {

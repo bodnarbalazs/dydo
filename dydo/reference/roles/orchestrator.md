@@ -22,7 +22,7 @@ No source code writes. The orchestrator directs — it doesn't implement.
 
 ## Privileges
 
-- `dispatch --wait` — can dispatch agents and wait for their responses
+- Dispatch — slices work and dispatches agents to do it; coordinates their results via messaging
 - Long-lived session — stays active until the user dismisses it
 
 ## How to Become Orchestrator
@@ -45,7 +45,6 @@ This prevents freshly dispatched agents from claiming orchestrator. The role req
 
 - Graduation-only entry prevents freshly dispatched agents from claiming orchestrator without project context (H11, `requires-prior` constraint in `.role.json`).
 - Reports to the human directly — the orchestrator is the user's command center, not an autonomous worker.
-- See decision 005 for why `--wait` is restricted to oversight roles.
 - See decision 007 for the graduation rationale.
 
 ## Related

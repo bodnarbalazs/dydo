@@ -69,8 +69,7 @@ public static class InboxItemParser
                 Escalated = fields.Escalated,
                 EscalatedAt = fields.EscalatedAt,
                 Type = fields.Type,
-                Subject = fields.Subject,
-                ReplyRequired = fields.ReplyRequired
+                Subject = fields.Subject
             };
         }
         catch
@@ -92,7 +91,6 @@ public static class InboxItemParser
         public DateTime Received { get; init; } = DateTime.UtcNow;
         public bool Escalated { get; init; }
         public DateTime? EscalatedAt { get; init; }
-        public bool ReplyRequired { get; init; }
     }
 
     private static YamlFields ParseYamlFields(Dictionary<string, string> rawFields)
@@ -106,8 +104,7 @@ public static class InboxItemParser
         {
             Id = state.Id, From = state.From, FromRole = state.FromRole, Origin = state.Origin,
             Role = state.Role, Task = state.Task, Type = state.Type, Subject = state.Subject,
-            Received = state.Received, Escalated = state.Escalated, EscalatedAt = state.EscalatedAt,
-            ReplyRequired = state.ReplyRequired
+            Received = state.Received, Escalated = state.Escalated, EscalatedAt = state.EscalatedAt
         };
     }
 
@@ -159,9 +156,6 @@ public static class InboxItemParser
             case "escalated":
                 state.Escalated = value.Equals("true", StringComparison.OrdinalIgnoreCase);
                 break;
-            case "reply_required":
-                state.ReplyRequired = value.Equals("true", StringComparison.OrdinalIgnoreCase);
-                break;
         }
     }
 
@@ -178,7 +172,6 @@ public static class InboxItemParser
         public DateTime Received { get; set; } = DateTime.UtcNow;
         public bool Escalated { get; set; }
         public DateTime? EscalatedAt { get; set; }
-        public bool ReplyRequired { get; set; }
     }
 
     private static List<string> ExtractFiles(string content)

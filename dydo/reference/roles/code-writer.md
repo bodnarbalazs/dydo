@@ -41,10 +41,10 @@ Full write access to source code, tests, and templates. Read access to everythin
 Uses the fresh agent model ([decision 005](../../project/decisions/005-fresh-agent-over-wait-for-feedback.md)). After dispatching to a reviewer, the code-writer releases — it does not wait for review feedback. If the review fails, the reviewer dispatches to a *new* code-writer session with specific fix instructions.
 
 ```
-code-writer → dispatch --no-wait --auto-close → reviewer → (if fail) → dispatch → new code-writer
+code-writer → dispatch --auto-close → reviewer → (if fail) → dispatch → new code-writer
 ```
 
-The `--no-wait --auto-close` flags mean the code-writer releases immediately after dispatching (no wait registration). The reviewer inherits any `reply_required` obligation through the dispatch chain (baton-passing — see [decision 010](../../project/decisions/010-baton-passing-and-review-enforcement.md)). When the code-writer is dispatched (has an origin), H25 enforces that it must dispatch a reviewer before releasing.
+The code-writer dispatches the reviewer and releases — dispatch reserves the reviewer, writes its assignment to the inbox, and launches a terminal. The reviewer reports its verdict back to the origin via `dydo msg`.
 
 ## Out-of-Scope Issues
 

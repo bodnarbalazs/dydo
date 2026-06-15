@@ -10,7 +10,7 @@ public static class CompletionProvider
         "dispatch", "inbox", "message", "msg", "wait", "task", "issue",
         "review", "workspace", "whoami", "sync",
         "completions", "complete", "template", "roles", "validate",
-        "watchdog", "worktree", "queue", "version", "help"
+        "watchdog", "worktree", "version", "help"
     ];
 
     // Claimable Tier-1 roles (Decision 024). planner is skill-only (not claimable);
@@ -37,7 +37,6 @@ public static class CompletionProvider
         ["roles"] = ["list", "create", "reset"],
         ["template"] = ["update"],
         ["worktree"] = ["cleanup", "merge", "init-settings", "prune"],
-        ["queue"] = ["create", "show", "cancel", "clear"],
         ["watchdog"] = ["start", "stop", "run"],
     };
 

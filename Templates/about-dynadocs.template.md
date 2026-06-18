@@ -370,6 +370,11 @@ Commands meant to be called only by agents are *italic*.
 | **`dydo template update`** | **Update framework templates and docs** |
 | `dydo template update --diff` | Preview changes without writing |
 
+### Notion Sync
+| Command | Description |
+|---------|-------------|
+| `dydo notion sync` | Reconcile dydo docs with a Notion workspace (requires `DYDO_NOTION_TOKEN`) |
+
 ### Utility
 | Command | Description |
 |---------|-------------|

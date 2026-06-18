@@ -3,6 +3,7 @@ namespace DynaDocs.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DynaDocs.Models;
+using DynaDocs.Sync;
 
 /// <summary>
 /// JSON serializer context for dydo.json configuration files.
@@ -53,3 +54,13 @@ internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
     AllowTrailingCommas = true)]
 [JsonSerializable(typeof(string[]))]
 internal partial class TypesJsonContext : JsonSerializerContext { }
+
+/// <summary>
+/// JSON context for the Notion-sync base-snapshot shadow store (Decision 025). Source-generated
+/// for Native AOT — no reflection-based serialization.
+/// </summary>
+[JsonSourceGenerationOptions(
+    WriteIndented = true,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(SyncSnapshotFile))]
+internal partial class SyncSnapshotJsonContext : JsonSerializerContext { }

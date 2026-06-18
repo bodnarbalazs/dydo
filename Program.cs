@@ -28,6 +28,7 @@ rootCommand.Subcommands.Add(RolesCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
 rootCommand.Subcommands.Add(WatchdogCommand.Create());
 rootCommand.Subcommands.Add(WorktreeCommand.Create());
+rootCommand.Subcommands.Add(NotionCommand.Create());
 
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>

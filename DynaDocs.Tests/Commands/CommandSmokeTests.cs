@@ -40,7 +40,8 @@ public class CommandSmokeTests
             WhoamiCommand.Create,
             SyncCommand.Create,
             WorkspaceCommand.Create,
-            WorktreeCommand.Create
+            WorktreeCommand.Create,
+            NotionCommand.Create
         };
 
         foreach (var createCommand in commands)
@@ -82,14 +83,15 @@ public class CommandSmokeTests
                 WhoamiCommand.Create(),
                 SyncCommand.Create(),
                 WorkspaceCommand.Create(),
-                WorktreeCommand.Create()
+                WorktreeCommand.Create(),
+                NotionCommand.Create()
             };
 
             // version is the only command created inline in Program.cs
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
-            // Must match Program.cs: 25 Create() commands + 1 inline (version) = 26
-            Assert.Equal(26, rootCommand.Subcommands.Count);
+            // Must match Program.cs: 26 Create() commands + 1 inline (version) = 27
+            Assert.Equal(27, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

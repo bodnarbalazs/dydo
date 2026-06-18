@@ -92,6 +92,9 @@ public static class HelpCommand
         Console.WriteLine("Worktree Commands:");
         Console.WriteLine("  worktree cleanup <id>  Clean up worktree (ref-counted)");
         Console.WriteLine();
+        Console.WriteLine("Notion Sync Commands:");
+        Console.WriteLine("  notion sync            Reconcile dydo docs with a Notion workspace");
+        Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");
         Console.WriteLine("  version                Display version information");

@@ -8,7 +8,7 @@ public static class CompletionProvider
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
         "dispatch", "inbox", "message", "msg", "wait", "task", "issue",
-        "review", "workspace", "whoami", "sync",
+        "review", "workspace", "whoami", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
         "watchdog", "worktree", "version", "help"
     ];
@@ -38,6 +38,7 @@ public static class CompletionProvider
         ["template"] = ["update"],
         ["worktree"] = ["cleanup", "merge", "init-settings", "prune"],
         ["watchdog"] = ["start", "stop", "run"],
+        ["notion"] = ["sync"],
     };
 
     // Position 3: (command, subcommand) → dynamic completion source

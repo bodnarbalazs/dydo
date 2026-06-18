@@ -80,47 +80,74 @@ public static class ThreeWayTextMerge
         var oChange = oursDiff.GetValueOrDefault(start);
         var tChange = theirsDiff.GetValueOrDefault(start);
 
-        // Grow [start, end) until it is closed: no change entry on either side keyed inside the
-        // span extends past `end`, and any change keyed inside the span has been folded in. We
-        // track whether *both* sides contributed a change anywhere in the final span.
         int end = start + Math.Max(oChange?.BaseLinesConsumed ?? 0, tChange?.BaseLinesConsumed ?? 0);
-        bool oursTouched = oChange != null;
-        bool theirsTouched = tChange != null;
+        var span = GrowRegion(oursDiff, theirsDiff, start, end);
+
+        // Common fast path: a single change entry at `start` on exactly one side, nothing folded.
+        if (!(span.OursTouched && span.TheirsTouched))
+        {
+            merged.AddRange((oChange ?? tChange)!.Replacement);
+            return span.End - start;
+        }
+
+        CollectAndEmit(merged, oursDiff, theirsDiff, start, span.End, ref conflicted);
+        return span.End - start;
+    }
+
+    private readonly record struct Region(int End, bool OursTouched, bool TheirsTouched);
+
+    /// <summary>
+    /// Grow <c>[start, end)</c> until it is closed: no change entry on either side keyed inside the
+    /// span extends past <c>end</c>, and any change keyed inside the span has been folded in. A
+    /// change entry (either side) keyed strictly inside the span overlaps the region a multi-line
+    /// change opened, so it belongs to this region — never skip it. Reports whether *both* sides
+    /// contributed a change anywhere in the final span.
+    /// </summary>
+    private static Region GrowRegion(
+        Dictionary<int, Change> oursDiff, Dictionary<int, Change> theirsDiff, int start, int end)
+    {
+        bool oursTouched = oursDiff.ContainsKey(start);
+        bool theirsTouched = theirsDiff.ContainsKey(start);
 
         bool grew = true;
         while (grew)
         {
             grew = false;
-            // Fold any change entry (either side) keyed strictly inside (start, end): it overlaps
-            // the region a multi-line change opened, so it belongs to this region — never skip it.
             for (var k = start + 1; k < end; k++)
             {
-                if (oursDiff.TryGetValue(k, out var oc))
-                {
-                    oursTouched = true;
-                    var oend = k + oc.BaseLinesConsumed;
-                    if (oend > end) { end = oend; grew = true; }
-                }
-                if (theirsDiff.TryGetValue(k, out var tc))
-                {
-                    theirsTouched = true;
-                    var tend = k + tc.BaseLinesConsumed;
-                    if (tend > end) { end = tend; grew = true; }
-                }
+                grew |= Fold(oursDiff, k, ref end, ref oursTouched);
+                grew |= Fold(theirsDiff, k, ref end, ref theirsTouched);
             }
         }
 
-        // Common fast path: a single change entry at `start` on exactly one side, nothing folded.
-        if (!(oursTouched && theirsTouched))
-        {
-            merged.AddRange((oChange ?? tChange)!.Replacement);
-            return end - start;
-        }
+        return new Region(end, oursTouched, theirsTouched);
+    }
 
-        // Both sides changed lines within the span — an overlap. Surface each side's content for
-        // the span by concatenating its change-entry replacements in base order. If the two sides
-        // happen to agree verbatim we emit it once (no spurious conflict); otherwise we wrap both
-        // in markers so neither side is silently lost (the brief's hard requirement).
+    /// <summary>Fold a single side's change entry keyed at <paramref name="k"/> into the region,
+    /// extending <paramref name="end"/> if it reaches past the current span. Returns whether the
+    /// span grew.</summary>
+    private static bool Fold(Dictionary<int, Change> diff, int k, ref int end, ref bool touched)
+    {
+        if (!diff.TryGetValue(k, out var c))
+            return false;
+        touched = true;
+        var kend = k + c.BaseLinesConsumed;
+        if (kend <= end)
+            return false;
+        end = kend;
+        return true;
+    }
+
+    /// <summary>
+    /// Both sides changed lines within the span — an overlap. Surface each side's content for the
+    /// span by concatenating its change-entry replacements in base order. If the two sides happen
+    /// to agree verbatim we emit it once (no spurious conflict); otherwise we wrap both in markers
+    /// so neither side is silently lost (the brief's hard requirement).
+    /// </summary>
+    private static void CollectAndEmit(
+        List<string> merged, Dictionary<int, Change> oursDiff, Dictionary<int, Change> theirsDiff,
+        int start, int end, ref bool conflicted)
+    {
         var ours = CollectReplacements(oursDiff, start, end);
         var theirs = CollectReplacements(theirsDiff, start, end);
 
@@ -128,8 +155,6 @@ public static class ThreeWayTextMerge
             merged.AddRange(ours);
         else
             conflicted |= EmitConflict(merged, ours, theirs);
-
-        return end - start;
     }
 
     /// <summary>

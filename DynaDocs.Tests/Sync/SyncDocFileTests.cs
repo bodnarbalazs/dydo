@@ -1,3 +1,4 @@
+// @test-tier: 2
 namespace DynaDocs.Tests.Sync;
 
 using DynaDocs.Models;
@@ -81,6 +82,16 @@ public class SyncDocFileTests
         {
             if (Directory.Exists(dir)) Directory.Delete(dir, true);
         }
+    }
+
+    [Fact]
+    public void Parse_OpenDelimiterButNoClose_AllBody()
+    {
+        // A leading '---' with no closing delimiter is not valid frontmatter: keep the whole
+        // content as body rather than swallowing it.
+        var doc = SyncDocFile.Parse("---\nstatus: open\nstill body, no close", "t", "tasks/t.md");
+        Assert.Empty(doc.Fields);
+        Assert.Equal("---\nstatus: open\nstill body, no close", doc.Body);
     }
 
     [Fact]

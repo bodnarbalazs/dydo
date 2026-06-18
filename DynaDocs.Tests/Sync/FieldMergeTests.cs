@@ -1,3 +1,4 @@
+// @test-tier: 2
 namespace DynaDocs.Tests.Sync;
 
 using DynaDocs.Models;
@@ -67,6 +68,16 @@ public class FieldMergeTests
 
         Assert.Equal(["a", "notion-extra"], r.Fields.Select(f => f.Key));
         Assert.Equal("x", r.Fields.Last().Value);
+    }
+
+    [Fact]
+    public void RepoOnlyKey_ExternalLacksIt_TakesRepoValue()
+    {
+        // External never had this key (hasExt == false): the short-circuit must keep the repo value.
+        var r = FieldMerge.Merge(F(("a", "1")), F(("a", "1"), ("repo-only", "x")), F(("a", "1")));
+        Assert.False(r.Conflicted);
+        Assert.Equal(["a", "repo-only"], r.Fields.Select(f => f.Key));
+        Assert.Equal("x", r.Fields.First(f => f.Key == "repo-only").Value);
     }
 
     [Fact]

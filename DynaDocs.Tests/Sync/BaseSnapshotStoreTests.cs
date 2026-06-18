@@ -1,3 +1,4 @@
+// @test-tier: 2
 namespace DynaDocs.Tests.Sync;
 
 using DynaDocs.Models;

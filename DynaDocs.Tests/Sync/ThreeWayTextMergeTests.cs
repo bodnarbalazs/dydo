@@ -1,3 +1,4 @@
+// @test-tier: 2
 namespace DynaDocs.Tests.Sync;
 
 using DynaDocs.Sync;
@@ -170,6 +171,24 @@ public class ThreeWayTextMergeTests
         Assert.Contains("E", r.Text);
         Assert.Contains("<<<<<<< repo", r.Text);
         Assert.Contains(">>>>>>> external", r.Text);
+    }
+
+    [Fact]
+    public void OverlappingBlockRewrites_ExternalSpanExtendsRepoSpan_Conflicts_NoSilentLoss()
+    {
+        // Repo rewrites the L1/L2 block (region keyed at base index 1, consumes 2). External
+        // rewrites the L2/L3 block (keyed at index 2, consumes 2) — its span reaches *past* repo's
+        // region end, so the region must grow to swallow it. Both sides touched the combined span,
+        // so neither side's content may be silently dropped.
+        var r = ThreeWayTextMerge.Merge("L0\nL1\nL2\nL3\nL4", "L0\nR\nL3\nL4", "L0\nL1\nE\nL4");
+
+        Assert.True(r.Conflicted);
+        Assert.Contains("<<<<<<< repo", r.Text);
+        Assert.Contains("R", r.Text);
+        Assert.Contains("E", r.Text);
+        Assert.Contains(">>>>>>> external", r.Text);
+        Assert.StartsWith("L0", r.Text);
+        Assert.EndsWith("L4", r.Text);
     }
 
     [Fact]

@@ -724,11 +724,25 @@ dydo help
 
 ---
 
+## Notion Commands
+
+### dydo notion sync
+
+Reconcile dydo Task docs against a Notion database bidirectionally. Requires a `DYDO_NOTION_TOKEN` integration token; the target database is read from `notion.databaseId` in dydo.json or discovered automatically when a single data source is shared with the integration. Use `--dry-run` to print the reconcile plan without applying it.
+
+```bash
+dydo notion sync
+dydo notion sync --dry-run
+```
+
+---
+
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `DYDO_HUMAN` | Human identifier for agent assignment |
+| `DYDO_NOTION_TOKEN` | Notion integration token enabling `dydo notion sync` |
 
 Set before running commands:
 

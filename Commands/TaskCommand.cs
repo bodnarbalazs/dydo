@@ -6,6 +6,17 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
+/// <summary>
+/// dydo's <b>runtime agent task-tracker</b>: <c>dydo task create/ready-for-review/approve/reject/list</c> over
+/// the task files in <c>dydo/project/tasks/</c> (schema: <c>name</c> / <c>assigned</c> / <c>status</c>
+/// pending→human-reviewed). This is the in-session work-tracking lifecycle agents and humans use day to day.
+/// <para>
+/// It is NOT the Notion-synced PM board. The board's leaf object is the separate <b>SprintTask</b> type
+/// (Campaign → Sprint → SprintTask) declared in the sync model (<c>Templates/sync-model.template.json</c>,
+/// canonical dir <c>dydo/project/sprint-tasks/</c>) and reconciled by <c>dydo notion sync</c>. The two are
+/// distinct systems with different schemas and directories — do not conflate them.
+/// </para>
+/// </summary>
 public static class TaskCommand
 {
     public static Command Create()

@@ -1,0 +1,35 @@
+namespace DynaDocs.Sync.Notion;
+
+using DynaDocs.Sync.Notion.Dtos;
+
+/// <summary>
+/// The thin Notion REST surface the sync adapter needs (Decision 025 §6): resolve a database to its
+/// data sources, query/create/update pages, read/append block children, and discover data sources.
+/// Pagination is handled inside the implementation — callers get the full result. All Notion-specific
+/// knowledge lives behind this; nothing else in the codebase talks to Notion.
+/// </summary>
+public interface INotionClient
+{
+    NotionDatabase RetrieveDatabase(string databaseId);
+
+    /// <summary>Create a database under a parent page; the response carries its data source(s).</summary>
+    NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request);
+
+    /// <summary>Query a data source, following pagination, returning every page.</summary>
+    IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId);
+
+    NotionPage CreatePage(NotionPageCreateRequest request);
+
+    NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request);
+
+    /// <summary>Read a page's block children, following pagination, returning every block.</summary>
+    IReadOnlyList<NotionBlock> GetBlockChildren(string blockId);
+
+    void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request);
+
+    /// <summary>Archive (soft-delete) a single block — used to clear a page body before re-appending.</summary>
+    void DeleteBlock(string blockId);
+
+    /// <summary>Discover accessible data-source ids via POST /v1/search.</summary>
+    IReadOnlyList<string> SearchDataSources();
+}

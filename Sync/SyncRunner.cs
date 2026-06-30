@@ -26,6 +26,30 @@ public sealed class SyncRunner
         _repoPathForLocalId = repoPathForLocalId;
     }
 
+    /// <summary>
+    /// Compute the reconcile decisions for this tick without writing anything — no repo files, no
+    /// external change set, no base advance. Used by <c>notion sync --dry-run</c> to preview the plan.
+    /// </summary>
+    public IReadOnlyList<ReconcileResult> Plan(IReadOnlyList<SyncDoc> repoDocs)
+    {
+        var externalByLocalId = MapExternalToLocalId(_adapter.ReadExternalState());
+        var repoByLocalId = repoDocs.ToDictionary(d => d.LocalId);
+
+        var localIds = new HashSet<string>(_base.LocalIds);
+        localIds.UnionWith(repoByLocalId.Keys);
+        localIds.UnionWith(externalByLocalId.Keys);
+
+        var results = new List<ReconcileResult>();
+        foreach (var localId in localIds.OrderBy(x => x))
+        {
+            var baseDoc = _base.Get(localId);
+            repoByLocalId.TryGetValue(localId, out var repo);
+            externalByLocalId.TryGetValue(localId, out var external);
+            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external));
+        }
+        return results;
+    }
+
     public SyncRunResult Run(IReadOnlyList<SyncDoc> repoDocs)
     {
         var externalByLocalId = MapExternalToLocalId(_adapter.ReadExternalState());

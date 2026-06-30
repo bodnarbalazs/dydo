@@ -1,17 +1,20 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
-using DynaDocs.Utils;
+using System.Net.Http;
+using DynaDocs.Services;
+using DynaDocs.Sync;
+using DynaDocs.Sync.Notion;
 
 /// <summary>
-/// The <c>dydo notion</c> command shell (Decision 025 §5). The sync engine is Notion-agnostic
-/// and lives behind <c>ISyncAdapter</c>; the real Notion REST adapter and live calls are a later
-/// slice. Until a token is configured, <c>notion sync</c> reports the not-configured state and
-/// exits cleanly rather than attempting a network call.
+/// The <c>dydo notion sync</c> command (Decision 025 §5). Resolves the integration token and parent
+/// page, then provisions and reconciles every object type in the project's sync model through the real
+/// <see cref="NotionSyncAdapter"/>. When the token or parent page is missing it reports cleanly and
+/// exits without any network call. <c>--dry-run</c> previews the reconcile plan.
 /// </summary>
 public static class NotionCommand
 {
-    public const string TokenEnvVar = "DYDO_NOTION_TOKEN";
+    public const string TokenEnvVar = NotionTokenResolver.TokenEnvVar;
 
     public static Command Create()
     {
@@ -23,25 +26,25 @@ public static class NotionCommand
     private static Command CreateSyncCommand()
     {
         var command = new Command("sync", "Reconcile dydo docs against the configured Notion workspace");
-        command.SetAction(_ => RunSync());
+        var dryRun = new Option<bool>("--dry-run")
+        {
+            Description = "Compute and print the reconcile plan without applying any change.",
+        };
+        command.Options.Add(dryRun);
+        command.SetAction(parse => RunSync(parse.GetValue(dryRun)));
         return command;
     }
 
-    private static int RunSync()
-    {
-        var token = Environment.GetEnvironmentVariable(TokenEnvVar);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            Console.Error.WriteLine(
-                $"notion sync: not configured. Set {TokenEnvVar} to a Notion integration token to enable sync.");
-            return ExitCodes.Success;
-        }
+    private static int RunSync(bool dryRun) =>
+        NotionSyncService.Execute(
+            NotionTokenResolver.Resolve(),
+            new ConfigService(),
+            CreateClient,
+            dryRun,
+            Console.Out,
+            Console.Error);
 
-        // A token is present but the live Notion adapter ships in a later slice; there is no
-        // adapter to run yet, so report that rather than pretend to sync.
-        Console.Error.WriteLine(
-            "notion sync: the Notion adapter is not available in this build. Sync engine is ready; "
-            + "live Notion connectivity ships in a later slice.");
-        return ExitCodes.Success;
-    }
+    /// <summary>The real transport: a fresh <see cref="HttpClient"/> wrapped by <see cref="NotionClient"/>.
+    /// The handler is owned by the client for the process lifetime of one sync invocation.</summary>
+    private static INotionClient CreateClient(string token) => new NotionClient(new HttpClient(), token);
 }

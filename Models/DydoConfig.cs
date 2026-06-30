@@ -28,6 +28,9 @@ public class DydoConfig
     [JsonPropertyName("worktree")]
     public WorktreeConfig Worktree { get; set; } = new();
 
+    [JsonPropertyName("notion")]
+    public NotionConfig? Notion { get; set; }
+
     [JsonPropertyName("queues")]
     public List<string> Queues { get; set; } = new();
 

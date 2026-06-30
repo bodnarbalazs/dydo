@@ -18,6 +18,7 @@ using DynaDocs.Sync;
 [JsonSerializable(typeof(AgentsConfig))]
 [JsonSerializable(typeof(DispatchConfig))]
 [JsonSerializable(typeof(WorktreeConfig))]
+[JsonSerializable(typeof(NotionConfig))]
 [JsonSerializable(typeof(MergeSafetyConfig))]
 [JsonSerializable(typeof(RoleDefinition))]
 [JsonSerializable(typeof(RoleConstraint))]

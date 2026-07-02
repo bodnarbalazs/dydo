@@ -1,5 +1,7 @@
 namespace DynaDocs.Sync;
 
+using DynaDocs.Models;
+
 /// <summary>
 /// The generic, Notion-agnostic seam the sync engine talks to (Decision 025 §1). Any external
 /// view — Notion today, a custom UI tomorrow — implements this; all view-specific knowledge
@@ -30,4 +32,15 @@ public interface ISyncAdapter
     /// Views that store bodies verbatim use the identity default.
     /// </summary>
     string NormalizeBody(string body) => body;
+
+    /// <summary>
+    /// The fields this view echoes back after the given doc is written and re-read. Views that round-trip
+    /// some fields lossily (e.g. Notion drops a relation whose target it cannot resolve to a page id, or a
+    /// field whose property it cannot write, so both read back empty/absent) override this so the engine
+    /// compares fields modulo the loss and does not mistake adapter-lossiness for a real external edit —
+    /// which would silently blank the repo value (slice brief §1). A genuine value change still differs
+    /// under the map, so real edits are still detected. Views that round-trip fields verbatim use the
+    /// identity default.
+    /// </summary>
+    SyncDoc NormalizeFields(SyncDoc doc) => doc;
 }

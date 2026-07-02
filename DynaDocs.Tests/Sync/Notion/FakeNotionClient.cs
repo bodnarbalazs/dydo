@@ -28,7 +28,15 @@ public sealed class FakeNotionClient : INotionClient
     /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
     public bool FailAppend { get; set; }
 
+    /// <summary>When true, <see cref="UpdatePage"/> throws — drives the Apply-failure guards: a non-create
+    /// push (property update) and a delete (archive) both go through UpdatePage, so this pins that the base
+    /// neither advances a failed push nor drops a failed delete's entry.</summary>
+    public bool FailUpdate { get; set; }
+
     private int _createCount;
+
+    /// <summary>Replace a page's block children outright — simulates an external body edit in Notion.</summary>
+    public void SetBlockChildren(string pageId, List<NotionBlock> blocks) => _blocks[pageId] = blocks;
 
     public NotionPage SeedPage(string id, Dictionary<string, NotionPropertyValue> props,
         List<NotionBlock>? blocks = null, string dataSourceId = "ds1")
@@ -74,6 +82,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request)
     {
+        if (FailUpdate)
+            throw new NotionApiException(500, "simulated update failure");
         var page = _pages[pageId];
         if (request.Properties != null)
             foreach (var (k, v) in request.Properties)

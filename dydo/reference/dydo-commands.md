@@ -728,7 +728,7 @@ dydo help
 
 ### dydo notion sync
 
-Reconcile dydo Task docs against a Notion database bidirectionally. Requires a `DYDO_NOTION_TOKEN` integration token; the target database is read from `notion.databaseId` in dydo.json or discovered automatically when a single data source is shared with the integration. Use `--dry-run` to print the reconcile plan without applying it.
+Reconcile the sync model's object types (default `Campaign` → `Sprint` → `SprintTask`) against Notion bidirectionally, provisioning one Notion database per object type under a parent page. Requires a `DYDO_NOTION_TOKEN` integration token and a parent page from `notion.parentPageId` in dydo.json or the `DYDO_NOTION_PARENT_PAGE` environment variable. Use `--dry-run` to print the reconcile plan without applying it.
 
 ```bash
 dydo notion sync
@@ -743,6 +743,7 @@ dydo notion sync --dry-run
 |----------|-------------|
 | `DYDO_HUMAN` | Human identifier for agent assignment |
 | `DYDO_NOTION_TOKEN` | Notion integration token enabling `dydo notion sync` |
+| `DYDO_NOTION_PARENT_PAGE` | Notion parent page the `dydo notion sync` spine databases live under (overridden by `notion.parentPageId` in dydo.json) |
 
 Set before running commands:
 

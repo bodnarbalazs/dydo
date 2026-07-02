@@ -61,6 +61,192 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void UnresolvedRelation_IsIdempotentAcrossTicks_NoRepoRewrite()
+    {
+        // A SprintTask whose `sprint:` points at a sprint that does not resolve to a Notion page id
+        // round-trips lossily: the relation is omitted on write and reads back empty. Without the field
+        // normalizer the engine reads that as an external edit and BLANKS the repo value. Assert the repo
+        // file is byte-unchanged across a re-sync — the dangling reference is preserved, never erased.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["sprint"] = "relation" };
+        // Empty relation map -> `sprint: ghost` never resolves to a page id.
+        var adapter = new NotionSyncAdapter(client, "ds1", schema, relationLocalToPageId: new Dictionary<string, string>());
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-rel-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, id => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t",
+                Fields = [new SyncField { Key = "title", Value = "Task" }, new SyncField { Key = "sprint", Value = "ghost" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);              // creates the page (unresolvable relation omitted)
+            SyncDocFile.Write(repoPath, doc); // materialize the raw repo file
+            var before = File.ReadAllText(repoPath);
+
+            var result = Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+            Assert.Equal(before, File.ReadAllText(repoPath)); // sprint: ghost preserved, no WriteToRepo
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void GenuineExternalFieldEdit_StillWritesToRepo()
+    {
+        // The field normalizer must not over-mask: a real external value change is still detected and
+        // written back to the repo.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["Status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-edit-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, id => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "Status", Value = "open" }],
+                Body = "body", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            // Colleague changes Status in Notion.
+            var page = client.QueryDataSource("ds1").Single();
+            page.Properties["Status"] = new NotionPropertyValue { Type = "select", Select = new NotionSelectOption { Name = "done" } };
+
+            Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Equal("done", SyncDocFile.Read(repoPath, "t", repoPath).GetField("Status"));
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void GenuineExternalBodyEdit_IsDetected_WritesToRepo()
+    {
+        // A real body text change in Notion (not a lossy-normalization-only difference) must be detected
+        // and written back — the body normalizer does not under-trigger.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["Status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-body-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
+            var repoPath = Path.Combine(dir, "t.md");
+            SyncRunner Runner() => new(adapter, store, id => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "Status", Value = "open" }],
+                Body = "line one", SourcePath = repoPath,
+            };
+            Runner().Run([doc]);
+            SyncDocFile.Write(repoPath, doc);
+
+            var page = client.QueryDataSource("ds1").Single();
+            client.SetBlockChildren(page.Id, NotionBlockConverter.ToBlocks("line one CHANGED"));
+
+            Runner().Run([SyncDocFile.Read(repoPath, "t", repoPath)]);
+
+            Assert.Contains("line one CHANGED", SyncDocFile.Read(repoPath, "t", repoPath).Body);
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void ApplyFailure_NonCreatePush_BaseHoldsPreEditValue_ForRetry()
+    {
+        // A non-create push (property update of an existing external object) throws. The base must NOT
+        // advance to the edited value, or the edit would be silently considered synced and never re-pushed.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-pushfail-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var snapPath = Path.Combine(dir, "snap.json");
+            SyncDoc Doc(string status) => new()
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "status", Value = status }],
+                Body = "b", SourcePath = Path.Combine(dir, "t.md"),
+            };
+            SyncRunner Runner() => new(adapter, new BaseSnapshotStore(snapPath), id => Path.Combine(dir, id + ".md"));
+
+            Runner().Run([Doc("open")]); // create; base t -> {status: open}
+
+            client.FailUpdate = true;
+            Assert.Throws<NotionApiException>(() => Runner().Run([Doc("done")])); // push of the edit throws
+
+            Assert.Equal("open", new BaseSnapshotStore(snapPath).Get("t")!.GetField("status")); // base unchanged
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void ApplyFailure_WithDeleteInBatch_BaseEntryRetained_NoResurrection()
+    {
+        // A delete's archive call throws. The base entry for the deleted object must be RETAINED, so the
+        // delete is retried next tick rather than the object reappearing (base dropped => seen as external-new).
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-delfail-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var snapPath = Path.Combine(dir, "snap.json");
+            SyncRunner Runner() => new(adapter, new BaseSnapshotStore(snapPath), id => Path.Combine(dir, id + ".md"));
+
+            var doc = new SyncDoc
+            {
+                LocalId = "t", Fields = [new SyncField { Key = "status", Value = "open" }],
+                Body = "b", SourcePath = Path.Combine(dir, "t.md"),
+            };
+            Runner().Run([doc]); // create; base has t
+
+            client.FailUpdate = true;
+            Assert.Throws<NotionApiException>(() => Runner().Run([])); // repo dropped t -> delete -> archive throws
+
+            Assert.NotNull(new BaseSnapshotStore(snapPath).Get("t")); // base entry retained
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void MultiLineBodyWithBlankLines_IsIdempotentAcrossTicks_NoRepoRewrite()
     {
         // A body with blank lines round-trips lossily through Notion blocks. An untouched doc must not be

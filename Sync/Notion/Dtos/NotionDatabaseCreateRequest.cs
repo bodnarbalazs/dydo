@@ -24,10 +24,3 @@ public sealed class NotionDatabaseCreateRequest
     [JsonPropertyName("initial_data_source")]
     public NotionInitialDataSource InitialDataSource { get; set; } = new();
 }
-
-/// <summary>The initial data source created alongside a database — carries the property schema map.</summary>
-public sealed class NotionInitialDataSource
-{
-    [JsonPropertyName("properties")]
-    public Dictionary<string, NotionPropertySchema> Properties { get; set; } = new();
-}

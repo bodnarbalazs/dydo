@@ -1,5 +1,6 @@
 namespace DynaDocs.Sync.Notion;
 
+using DynaDocs.Models;
 using DynaDocs.Sync.Notion.Dtos;
 
 /// <summary>
@@ -115,6 +116,39 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
     public string NormalizeBody(string body) =>
         NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body));
+
+    /// <summary>Map a doc's fields to the form Notion echoes back, so the engine does not read this
+    /// adapter's write-time losses as an external edit (slice brief §1). A field whose key is not a
+    /// property this data source can write is dropped (it is never persisted, so never read back), and a
+    /// relation whose local id does not resolve to a known parent page id is dropped too — it is omitted on
+    /// write and so reads back empty. A resolvable relation and every other supported field keep their
+    /// value verbatim, so a genuine external value change is still detected. When the schema is not yet
+    /// known this is identity, to avoid masking every field.</summary>
+    public SyncDoc NormalizeFields(SyncDoc doc)
+    {
+        var schema = EnsureSchema();
+        if (schema.Count == 0)
+            return doc;
+
+        var normalized = new List<SyncField>();
+        foreach (var field in doc.Fields)
+        {
+            if (!schema.TryGetValue(field.Key, out var type))
+                continue;
+            if (type == "relation" && !(_relationLocalToPageId?.ContainsKey(field.Value) ?? false))
+                continue;
+            normalized.Add(field);
+        }
+
+        return new SyncDoc
+        {
+            LocalId = doc.LocalId,
+            ExternalId = doc.ExternalId,
+            Fields = normalized,
+            Body = doc.Body,
+            SourcePath = doc.SourcePath,
+        };
+    }
 
     /// <summary>Replace a page's body by appending the new blocks FIRST, then deleting the previously
     /// existing ones (their ids snapshotted before the append). Notion has no atomic body replace, so

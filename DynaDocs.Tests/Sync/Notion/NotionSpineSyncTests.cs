@@ -29,6 +29,15 @@ public class NotionSpineSyncTests : IDisposable
         File.WriteAllText(full, content);
     }
 
+    /// <summary>Write a project-specific sync model, overriding the auto-seeded default so a test can
+    /// exercise its own object types.</summary>
+    private void WriteModel(string json)
+    {
+        var path = Path.Combine(_dydoRoot, "_system", "sync-model.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, json);
+    }
+
     [Fact]
     public void Run_ProvisionsThreeDatabases_InDependencyOrder_WithRelationsInBody()
     {
@@ -89,6 +98,81 @@ public class NotionSpineSyncTests : IDisposable
         var sprintFile = File.ReadAllText(Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md"));
         Assert.Contains("campaign: dydo-2-0", sprintFile);
         Assert.Contains("Renamed In Notion", sprintFile);
+    }
+
+    [Fact]
+    public void Run_UnderscorePrefixedMetaFile_NotSyncedAsRow()
+    {
+        // A `_`-prefixed file (e.g. _index.md) beside real docs is folder metadata, not a domain object,
+        // and must never sync as a Notion row.
+        Seed("project/sprint-tasks/_index", "---\ntitle: Sprint Tasks\n---\n\nFolder index, not a task.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var task = Assert.Single(client.QueryDataSource("ds-3")); // only the real spine-task, not _index
+        Assert.Equal("Spine task", NotionRichText.Flatten(task.Properties["title"].Title));
+    }
+
+    [Fact]
+    public void Run_ChildRelatingToTwoParentTypes_ResolvesBothOnWriteAndRead()
+    {
+        // A model where one type relates to TWO distinct parent types must resolve both relation values to
+        // their parent page ids on write, and back to their local ids on read.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Area",  "dir": "project/areas",  "notionTitle": "Areas",  "properties": { "title": { "type": "title" } } },
+                { "type": "Owner", "dir": "project/owners", "notionTitle": "Owners", "properties": { "title": { "type": "title" } } },
+                { "type": "Item",  "dir": "project/items",  "notionTitle": "Items",
+                  "properties": { "title": { "type": "title" }, "area": { "type": "relation", "to": "Area" }, "owner": { "type": "relation", "to": "Owner" } } }
+              ]
+            }
+            """);
+        Seed("project/areas/design", "---\ntitle: Design\n---\n\nArea.");
+        Seed("project/owners/alice", "---\ntitle: Alice\n---\n\nOwner.");
+        Seed("project/items/item-1", "---\ntitle: Widget\narea: design\nowner: alice\n---\n\nAn item.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var area = Assert.Single(client.QueryDataSource("ds-1"));
+        var owner = Assert.Single(client.QueryDataSource("ds-2"));
+        var item = Assert.Single(client.QueryDataSource("ds-3"));
+
+        // Write direction: both relations resolve to the real parent page ids.
+        Assert.Equal(area.Id, item.Properties["area"].Relation!.Single().Id);
+        Assert.Equal(owner.Id, item.Properties["owner"].Relation!.Single().Id);
+
+        // Read direction: a second pass keeps the item file's local-id references, not raw page ids.
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        var itemFile = File.ReadAllText(Path.Combine(_dydoRoot, "project", "items", "item-1.md"));
+        Assert.Contains("area: design", itemFile);
+        Assert.Contains("owner: alice", itemFile);
+    }
+
+    [Fact]
+    public void Run_DivergingRepoAndNotionBodyEdits_ReportConflict_RepoFileGetsMarkers()
+    {
+        // A colleague edits the sprint's body in Notion while the repo edits the same line differently.
+        // The overlapping edit must surface as a conflict (reported + visible markers), never a silent clobber.
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var sprintPath = Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md");
+        File.WriteAllText(sprintPath, File.ReadAllText(sprintPath).Replace("Sync work.", "Sync work REPO."));
+
+        var sprintPage = client.QueryDataSource("ds-2").Single();
+        client.SetBlockChildren(sprintPage.Id, NotionBlockConverter.ToBlocks("Sync work EXTERNAL."));
+
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+
+        Assert.Contains("conflict", output.ToString());
+        var merged = File.ReadAllText(sprintPath);
+        Assert.Contains("<<<<<<< repo", merged);
+        Assert.Contains("Sync work REPO.", merged);
+        Assert.Contains("Sync work EXTERNAL.", merged);
     }
 
     [Fact]

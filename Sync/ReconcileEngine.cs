@@ -16,43 +16,49 @@ public static class ReconcileEngine
     /// Notion's block round-trip drops blank lines). Bodies are compared modulo this map so a
     /// normalization-only difference is not mistaken for an edit — keeping an untouched doc idempotent
     /// across ticks (slice brief §4). Defaults to identity for views that store bodies verbatim.</param>
+    /// <param name="fieldNormalizer">Maps a doc to the fields the external view echoes back for it (e.g.
+    /// Notion drops an unresolvable relation, which reads back empty). Fields are compared modulo this map
+    /// so adapter-lossiness is not mistaken for a real external edit — which would silently blank the repo
+    /// value (slice brief §1). Defaults to identity for views that round-trip fields verbatim.</param>
     public static ReconcileResult Reconcile(
-        SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string>? bodyNormalizer = null)
+        SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
+        Func<string, string>? bodyNormalizer = null, Func<SyncDoc, SyncDoc>? fieldNormalizer = null)
     {
         var norm = bodyNormalizer ?? (static s => s);
+        var fieldNorm = fieldNormalizer ?? (static d => d);
 
         if (repo == null && external == null)
             return Simple(LocalIdOf(baseDoc, repo, external), ReconcileAction.None);
 
         if (baseDoc == null)
-            return ReconcileNew(repo, external);
+            return ReconcileNew(repo, external, fieldNorm);
 
         if (repo == null || external == null)
-            return DeleteOne(baseDoc, repo, external, norm);
+            return DeleteOne(baseDoc, repo, external, norm, fieldNorm);
 
-        return ReconcileExisting(baseDoc, repo, external, norm);
+        return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm);
     }
 
     /// <summary>Nothing in base, present on at least one side: create on the missing side, or — new
     /// on both at once — treat any divergence as a conflict against an empty synthetic base.</summary>
-    private static ReconcileResult ReconcileNew(SyncDoc? repo, SyncDoc? external) =>
+    private static ReconcileResult ReconcileNew(SyncDoc? repo, SyncDoc? external, Func<SyncDoc, SyncDoc> fieldNorm) =>
         external == null ? CreateToExternal(repo!)
         : repo == null ? CreateToRepo(external)
-        : MergeBoth(SyntheticBase(repo, external), repo, external);
+        : MergeBoth(SyntheticBase(repo, external), repo, external, fieldNorm);
 
     /// <summary>Present in base, gone on exactly one side now (slice brief §1). If the surviving side
     /// is unchanged since base, the deletion is intentional and propagates to the other side. If the
     /// surviving side was edited since base, this is a delete/modify CONFLICT: the edit wins (never a
     /// silent clobber, Decision 025 §3) — resurrect the deleted side with the surviving edits, advance
     /// base to the survivor, and report a conflict rather than deleting.</summary>
-    private static ReconcileResult DeleteOne(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string> norm)
+    private static ReconcileResult DeleteOne(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
     {
         var externalId = baseDoc.ExternalId ?? repo?.ExternalId ?? external?.ExternalId;
 
         if (repo == null)
         {
             // Repo side deleted. External unchanged -> propagate the delete; external edited -> conflict.
-            if (Equal(baseDoc, external!, norm))
+            if (Equal(baseDoc, external!, norm, fieldNorm))
                 return new ReconcileResult
                 {
                     LocalId = baseDoc.LocalId,
@@ -72,7 +78,7 @@ public static class ReconcileEngine
         }
 
         // External side deleted. Repo unchanged -> propagate the delete; repo edited -> conflict.
-        if (Equal(baseDoc, repo, norm))
+        if (Equal(baseDoc, repo, norm, fieldNorm))
             return new ReconcileResult
             {
                 LocalId = baseDoc.LocalId,
@@ -93,10 +99,10 @@ public static class ReconcileEngine
     }
 
     /// <summary>Both sides present: propagate a one-sided change, else 3-way merge.</summary>
-    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm)
+    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
     {
-        var repoChanged = !Equal(baseDoc, repo, norm);
-        var extChanged = !Equal(baseDoc, external, norm);
+        var repoChanged = !Equal(baseDoc, repo, norm, fieldNorm);
+        var extChanged = !Equal(baseDoc, external, norm, fieldNorm);
         var externalId = baseDoc.ExternalId ?? external.ExternalId;
 
         if (!repoChanged && !extChanged)
@@ -113,7 +119,7 @@ public static class ReconcileEngine
 
         if (!repoChanged && extChanged)
         {
-            var toRepo = WithSourcePath(external, repo.SourcePath);
+            var toRepo = OverlayAdapterInvisibleFields(WithSourcePath(external, repo.SourcePath), repo, fieldNorm);
             return new ReconcileResult
             {
                 LocalId = repo.LocalId,
@@ -123,24 +129,24 @@ public static class ReconcileEngine
             };
         }
 
-        return MergeBoth(baseDoc, repo, external);
+        return MergeBoth(baseDoc, repo, external, fieldNorm);
     }
 
-    private static ReconcileResult MergeBoth(SyncDoc baseDoc, SyncDoc repo, SyncDoc external)
+    private static ReconcileResult MergeBoth(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm)
     {
         var fields = FieldMerge.Merge(baseDoc.Fields, repo.Fields, external.Fields);
         var body = ThreeWayTextMerge.Merge(baseDoc.Body, repo.Body, external.Body);
         var conflicted = fields.Conflicted || body.Conflicted;
         var externalId = baseDoc.ExternalId ?? external.ExternalId ?? repo.ExternalId;
 
-        var merged = new SyncDoc
+        var merged = OverlayAdapterInvisibleFields(new SyncDoc
         {
             LocalId = repo.LocalId,
             ExternalId = externalId,
             Fields = fields.Fields,
             Body = body.Text,
             SourcePath = repo.SourcePath,
-        };
+        }, repo, fieldNorm);
 
         return new ReconcileResult
         {
@@ -149,6 +155,48 @@ public static class ReconcileEngine
             RepoWrite = merged,
             ExternalWrite = merged,
             NewBase = merged,
+        };
+    }
+
+    /// <summary>
+    /// Overlay the REPO's own values for adapter-invisible fields onto a doc built from the external side.
+    /// An adapter-invisible field is one the field normalizer DROPS for the repo doc — a value the external
+    /// view cannot round-trip (a relation whose local id it cannot resolve, or an out-of-schema/local-only
+    /// frontmatter key), so it reads back blank or absent. A RepoWrite taken from the external (or merged)
+    /// doc would therefore silently blank it (slice brief §1). Restoring the repo's value for exactly these
+    /// keys keeps them intact, while every representable field still takes the external/merged value — so a
+    /// genuine external edit is honored and only the fields the adapter cannot represent are protected. A
+    /// field the repo genuinely deleted is absent from the repo doc, so it is not in this set and is never
+    /// resurrected. With the default identity normalizer this set is empty and the input passes through.
+    /// </summary>
+    private static SyncDoc OverlayAdapterInvisibleFields(SyncDoc written, SyncDoc repo, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var visible = new HashSet<string>(fieldNorm(repo).Fields.Select(f => f.Key), StringComparer.OrdinalIgnoreCase);
+        var invisible = repo.Fields.Where(f => !visible.Contains(f.Key)).ToList();
+        if (invisible.Count == 0)
+            return written;
+
+        var overlaid = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var fields = new List<SyncField>();
+        foreach (var f in written.Fields)
+        {
+            var repoField = invisible.FirstOrDefault(r => string.Equals(r.Key, f.Key, StringComparison.OrdinalIgnoreCase));
+            fields.Add(repoField ?? f);
+            if (repoField != null)
+                overlaid.Add(f.Key);
+        }
+        // Adapter-invisible fields the external side dropped entirely (not merely blanked) are re-appended.
+        foreach (var f in invisible)
+            if (!overlaid.Contains(f.Key))
+                fields.Add(f);
+
+        return new SyncDoc
+        {
+            LocalId = written.LocalId,
+            ExternalId = written.ExternalId,
+            Fields = fields,
+            Body = written.Body,
+            SourcePath = written.SourcePath,
         };
     }
 
@@ -199,10 +247,15 @@ public static class ReconcileEngine
         SourcePath = sourcePath,
     };
 
-    private static bool Equal(SyncDoc a, SyncDoc b, Func<string, string> norm) =>
-        norm(a.Body.Replace("\r\n", "\n")) == norm(b.Body.Replace("\r\n", "\n"))
-        && a.Fields.Count == b.Fields.Count
-        && a.Fields.Zip(b.Fields).All(p => p.First.Key == p.Second.Key && p.First.Value == p.Second.Value);
+    private static bool Equal(SyncDoc a, SyncDoc b, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        if (norm(a.Body.Replace("\r\n", "\n")) != norm(b.Body.Replace("\r\n", "\n")))
+            return false;
+        var fa = fieldNorm(a).Fields;
+        var fb = fieldNorm(b).Fields;
+        return fa.Count == fb.Count
+            && fa.Zip(fb).All(p => p.First.Key == p.Second.Key && p.First.Value == p.Second.Value);
+    }
 
     private static string LocalIdOf(SyncDoc? a, SyncDoc? b, SyncDoc? c) =>
         a?.LocalId ?? b?.LocalId ?? c?.LocalId ?? "";

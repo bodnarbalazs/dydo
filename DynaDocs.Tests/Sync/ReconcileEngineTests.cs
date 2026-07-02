@@ -318,6 +318,106 @@ public class ReconcileEngineTests
         Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
     }
 
+    // A stand-in for a view that round-trips a relation lossily: a `sprint` value the adapter cannot
+    // resolve (here "ghost") — or an empty one — is dropped, mirroring what read-back yields.
+    private static SyncDoc DropUnresolvableSprint(SyncDoc d) => new()
+    {
+        LocalId = d.LocalId, ExternalId = d.ExternalId, Body = d.Body, SourcePath = d.SourcePath,
+        Fields = d.Fields.Where(f => !(f.Key == "sprint" && f.Value is "" or "ghost")).ToList(),
+    };
+
+    [Fact]
+    public void FieldNormalizer_MasksAdapterLossyField_NoSpuriousWriteToRepo()
+    {
+        // base and repo carry `sprint: ghost`, which the view drops and reads back empty. Without the field
+        // normalizer the engine sees an external edit and blanks the repo value; with it, this is a no-op.
+        var b = Doc("t", "body", ("title", "T"), ("sprint", "ghost"));
+        var repo = Doc("t", "body", ("title", "T"), ("sprint", "ghost"));
+        var ext = Doc("t", "body", ("title", "T"), ("sprint", "")); // echoed back empty
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.None, result.Action);
+    }
+
+    // A stand-in for a view whose schema lacks a "notes" property: the adapter cannot persist it, so it
+    // reads back absent. The normalizer drops it, mirroring an out-of-schema / local-only frontmatter key.
+    private static SyncDoc DropOutOfSchemaNotes(SyncDoc d) => new()
+    {
+        LocalId = d.LocalId, ExternalId = d.ExternalId, Body = d.Body, SourcePath = d.SourcePath,
+        Fields = d.Fields.Where(f => f.Key != "notes").ToList(),
+    };
+
+    [Fact]
+    public void FieldNormalizer_DoesNotMaskGenuineEdit_WritesToRepo_PreservingLossyField()
+    {
+        // A real external value change to a DIFFERENT field must still be detected, AND the adapter-invisible
+        // relation — which the view echoes back EMPTY (the realistic read, not the old "ghost" fixture) —
+        // must be preserved from the repo, never blanked by the external doc's empty value.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("sprint", "")); // relation echoed back empty
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status")); // the genuine edit takes the external value
+        Assert.Equal("ghost", result.RepoWrite.GetField("sprint")); // adapter-invisible field kept, not blanked
+    }
+
+    [Fact]
+    public void FieldNormalizer_TwoSidedMerge_AdapterInvisibleFieldSurvives()
+    {
+        // Both sides changed different representable fields (repo edits status, external adds owner), so this
+        // 3-way merges. The relation the adapter cannot resolve reads back EMPTY; the raw merge would let that
+        // empty value win and blank it. The overlay must keep the repo's value on the two-sided path too.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "done"), ("sprint", "ghost"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", ""), ("owner", "kim"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.Merged, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status")); // repo's representable edit
+        Assert.Equal("kim", result.RepoWrite.GetField("owner"));    // external's representable add
+        Assert.Equal("ghost", result.RepoWrite.GetField("sprint")); // adapter-invisible field survives the merge
+    }
+
+    [Fact]
+    public void FieldNormalizer_LocalOnlyKey_PreservedOnGenuineEditWriteBack()
+    {
+        // A local-only, out-of-schema frontmatter key ("notes") the view cannot persist reads back ABSENT.
+        // A genuine external edit to status must still write to repo, but the local-only key must be preserved
+        // from the repo — exercising the overlay's re-append path for a field the external side dropped entirely.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("notes", "mine"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("notes", "mine"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done")); // notes dropped by the adapter
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropOutOfSchemaNotes);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));
+        Assert.Equal("mine", result.RepoWrite.GetField("notes")); // local-only key preserved, not lost
+    }
+
+    [Fact]
+    public void FieldNormalizer_RepoDeletedField_StillDeleted_NotResurrectedByOverlay()
+    {
+        // Repo genuinely deleted "status" while external added "note" and the relation reads back empty.
+        // The overlay must not resurrect the deleted field — it only restores adapter-invisible keys the repo
+        // still holds (sprint), never a field the repo intentionally removed.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var repo = Doc("t", "body", ("title", "T"), ("sprint", "ghost")); // deleted status
+        var ext = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", ""), ("note", "hi"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.Merged, result.Action);
+        Assert.Null(result.RepoWrite!.GetField("status"));          // stays deleted, not resurrected
+        Assert.Equal("hi", result.RepoWrite.GetField("note"));      // external add kept
+        Assert.Equal("ghost", result.RepoWrite.GetField("sprint")); // adapter-invisible field preserved
+    }
+
     [Fact]
     public void MergeBoth_ExternalIdFallsBackToRepo_WhenBaseAndExternalLackIt()
     {

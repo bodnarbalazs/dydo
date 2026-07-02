@@ -22,6 +22,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     private readonly IReadOnlyDictionary<string, string>? _explicitSchema;
     private readonly IReadOnlyDictionary<string, string>? _relationLocalToPageId;
     private readonly IReadOnlyDictionary<string, string>? _relationPageIdToLocalId;
+    private readonly string? _icon;
     private IReadOnlyDictionary<string, string> _schema = new Dictionary<string, string>();
 
     public NotionSyncAdapter(
@@ -29,13 +30,15 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         string dataSourceId,
         IReadOnlyDictionary<string, string>? schema = null,
         IReadOnlyDictionary<string, string>? relationLocalToPageId = null,
-        IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null)
+        IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null,
+        string? icon = null)
     {
         _client = client;
         _dataSourceId = dataSourceId;
         _explicitSchema = schema;
         _relationLocalToPageId = relationLocalToPageId;
         _relationPageIdToLocalId = relationPageIdToLocalId;
+        _icon = icon;
     }
 
     public IReadOnlyList<SyncRecord> ReadExternalState()
@@ -77,6 +80,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 {
                     Parent = new NotionParent { Type = "data_source_id", DataSourceId = _dataSourceId },
                     Properties = properties,
+                    Icon = NotionIcon.Of(_icon),
                     Children = blocks.Count > 0 ? blocks : null,
                 });
                 assigned[upsert.LocalId] = page.Id;

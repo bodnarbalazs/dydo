@@ -44,6 +44,7 @@ public sealed class NotionProvisioner
         {
             Parent = new NotionDatabaseParent { PageId = parentPageId },
             Title = NotionRichText.Of(type.NotionTitle),
+            Icon = NotionIcon.Of(type.Icon),
             InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(type, resolvedDataSourceIds) },
         });
 

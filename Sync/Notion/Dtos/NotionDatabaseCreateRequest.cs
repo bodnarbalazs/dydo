@@ -17,6 +17,10 @@ public sealed class NotionDatabaseCreateRequest
     [JsonPropertyName("title")]
     public List<NotionRichText> Title { get; set; } = [];
 
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionIcon? Icon { get; set; }
+
     [JsonPropertyName("initial_data_source")]
     public NotionInitialDataSource InitialDataSource { get; set; } = new();
 }

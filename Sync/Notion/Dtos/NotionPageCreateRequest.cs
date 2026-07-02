@@ -11,6 +11,10 @@ public sealed class NotionPageCreateRequest
     [JsonPropertyName("properties")]
     public Dictionary<string, NotionPropertyValue> Properties { get; set; } = new();
 
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionIcon? Icon { get; set; }
+
     [JsonPropertyName("children")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<NotionBlock>? Children { get; set; }

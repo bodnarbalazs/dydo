@@ -78,7 +78,7 @@ public static class NotionSpineSync
 
             var (relationLocalToPage, relationPageToLocal) = RelationMaps(type, localToPageByType);
 
-            var adapter = new NotionSyncAdapter(client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal);
+            var adapter = new NotionSyncAdapter(client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon);
             var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
             var runner = new SyncRunner(adapter, store, localId => Path.Combine(docsDir, localId + ".md"));
 

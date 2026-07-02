@@ -43,6 +43,7 @@ public class NotionProvisionerTests : IDisposable
         Assert.Equal("page_id", request.Parent.Type);
         Assert.Equal("parent-page", request.Parent.PageId);
         Assert.Equal("dydo Campaigns", NotionRichText.Flatten(request.Title));
+        Assert.Equal("🚀", request.Icon!.Emoji);
         // Exactly one title property; the select carries its options from the model.
         Assert.NotNull(request.InitialDataSource.Properties["title"].Title);
         Assert.Equal(["proposed", "active", "done", "abandoned"], request.InitialDataSource.Properties["status"].Select!.Options.Select(o => o.Name));

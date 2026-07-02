@@ -19,6 +19,11 @@ public sealed class SyncObjectType
     [JsonPropertyName("notionTitle")]
     public string NotionTitle { get; set; } = "";
 
+    /// <summary>Optional emoji icon for this type's database and its rows (e.g. "🚀"). Purely
+    /// presentational; when unset, Notion shows its default page icon.</summary>
+    [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
+
     [JsonPropertyName("properties")]
     public Dictionary<string, SyncPropertyDef> Properties { get; set; } = new();
 

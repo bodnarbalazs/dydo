@@ -46,6 +46,7 @@ public class SyncModelLoaderTests : IDisposable
         var campaign = model.Object("Campaign");
         Assert.Equal("project/campaigns", campaign.Dir);
         Assert.Equal("dydo Campaigns", campaign.NotionTitle);
+        Assert.Equal("🚀", campaign.Icon);
         Assert.Equal("title", campaign.Properties["title"].Type);
         Assert.Equal(["proposed", "active", "done", "abandoned"], campaign.Properties["status"].Options!);
 

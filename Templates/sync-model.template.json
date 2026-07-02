@@ -4,6 +4,7 @@
       "type": "Campaign",
       "dir": "project/campaigns",
       "notionTitle": "dydo Campaigns",
+      "icon": "🚀",
       "properties": {
         "title": { "type": "title" },
         "goal": { "type": "rich_text" },
@@ -15,6 +16,7 @@
       "type": "Sprint",
       "dir": "project/sprints",
       "notionTitle": "dydo Sprints",
+      "icon": "🏃",
       "properties": {
         "title": { "type": "title" },
         "seq": { "type": "number" },
@@ -26,6 +28,7 @@
       "type": "SprintTask",
       "dir": "project/sprint-tasks",
       "notionTitle": "dydo Sprint Tasks",
+      "icon": "📋",
       "properties": {
         "title": { "type": "title" },
         "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"] },

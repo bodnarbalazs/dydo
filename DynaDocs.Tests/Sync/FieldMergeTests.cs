@@ -87,4 +87,57 @@ public class FieldMergeTests
         Assert.False(r.Conflicted);
         Assert.Equal("done", r.Fields[0].Value);
     }
+
+    [Fact]
+    public void RepoDeletedField_NotResurrected()
+    {
+        // "b" was in base; repo dropped it; external is unchanged. The repo-side deletion must win —
+        // an unchanged external must not resurrect the field.
+        var r = FieldMerge.Merge(
+            F(("a", "1"), ("b", "2")),
+            F(("a", "1")),
+            F(("a", "1"), ("b", "2")));
+
+        Assert.False(r.Conflicted);
+        Assert.Equal(["a"], r.Fields.Select(f => f.Key));
+    }
+
+    [Fact]
+    public void ExternalDeletedField_Propagated()
+    {
+        // "b" was in base; external dropped it; repo is unchanged. The external-side deletion propagates.
+        var r = FieldMerge.Merge(
+            F(("a", "1"), ("b", "2")),
+            F(("a", "1"), ("b", "2")),
+            F(("a", "1")));
+
+        Assert.False(r.Conflicted);
+        Assert.Equal(["a"], r.Fields.Select(f => f.Key));
+    }
+
+    [Fact]
+    public void RepoChangedField_ExternalDeleted_ConflictKeepsRepoEdit()
+    {
+        // Delete/modify overlap: external deleted "b" while repo edited it — keep the edit, flag conflict.
+        var r = FieldMerge.Merge(
+            F(("a", "1"), ("b", "2")),
+            F(("a", "1"), ("b", "9")),
+            F(("a", "1")));
+
+        Assert.True(r.Conflicted);
+        Assert.Equal("9", r.Fields.First(f => f.Key == "b").Value);
+    }
+
+    [Fact]
+    public void ExternalChangedField_RepoDeleted_ConflictKeepsExternalEdit()
+    {
+        // Symmetric delete/modify overlap: repo deleted "b" while external edited it — keep the edit.
+        var r = FieldMerge.Merge(
+            F(("a", "1"), ("b", "2")),
+            F(("a", "1")),
+            F(("a", "1"), ("b", "9")));
+
+        Assert.True(r.Conflicted);
+        Assert.Equal("9", r.Fields.First(f => f.Key == "b").Value);
+    }
 }

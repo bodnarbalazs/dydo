@@ -188,6 +188,34 @@ public class SyncRunnerTests : IDisposable
         Assert.Null(_base.Get("t"));
     }
 
+    [Theory]
+    [InlineData("../../evil", "evil")]
+    [InlineData("/etc/passwd", "passwd")]
+    [InlineData(@"C:\x", "x")]
+    public void ExternalLocalId_PathTraversal_StaysWithinCanonicalDir(string evilId, string safeName)
+    {
+        // A colleague — or an attacker — controls the external record's local-id, which becomes a repo
+        // file path. It must be sanitized to a bare name inside the canonical dir, never escape it.
+        _adapter.Seed("ext-x", F((SyncRunner.LocalIdField, evilId), ("status", "open")), "body");
+
+        NewRunner().Run([]);
+
+        var landed = Path.Combine(_tasksDir, safeName + ".md");
+        Assert.True(File.Exists(landed));
+        Assert.StartsWith(_tasksDir, Path.GetFullPath(landed));
+        // Nothing escaped above the tasks dir.
+        var parent = Directory.GetParent(_tasksDir)!.FullName;
+        Assert.False(File.Exists(Path.Combine(parent, safeName + ".md")));
+    }
+
+    [Fact]
+    public void ExternalLocalId_ReducingToNothingUsable_IsRejected()
+    {
+        _adapter.Seed("ext-x", F((SyncRunner.LocalIdField, ".."), ("status", "open")), "body");
+
+        Assert.Throws<SyncSecurityException>(() => NewRunner().Run([]));
+    }
+
     [Fact]
     public void SteadyState_NoChanges_NoOps()
     {

@@ -16,8 +16,18 @@ public interface ISyncAdapter
     IReadOnlyList<SyncRecord> ReadExternalState();
 
     /// <summary>
-    /// Apply a change set to the external view. Returns the external ids assigned to created
-    /// upserts, keyed by <c>LocalId</c>, so the engine can record the local↔external mapping.
+    /// Apply a change set to the external view. Each created upsert's assigned external id is recorded
+    /// into <paramref name="assigned"/> (keyed by <c>LocalId</c>) as soon as that page is created — so
+    /// if a later create in the same batch throws, the caller still holds the ids of everything already
+    /// created and can persist them, preventing duplicate re-creation on the next tick (slice brief §3).
     /// </summary>
-    IReadOnlyDictionary<string, string> Apply(SyncChangeSet changes);
+    void Apply(SyncChangeSet changes, IDictionary<string, string> assigned);
+
+    /// <summary>
+    /// The body this view echoes back when the given body is written and re-read. Views that convert
+    /// bodies lossily (e.g. Notion block conversion drops blank lines) override this so the engine
+    /// treats a normalization-only difference as "no change" and stays idempotent (slice brief §4).
+    /// Views that store bodies verbatim use the identity default.
+    /// </summary>
+    string NormalizeBody(string body) => body;
 }

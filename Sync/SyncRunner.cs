@@ -45,7 +45,7 @@ public sealed class SyncRunner
             var baseDoc = _base.Get(localId);
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
-            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external));
+            results.Add(ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody));
         }
         return results;
     }
@@ -68,24 +68,66 @@ public sealed class SyncRunner
             repoByLocalId.TryGetValue(localId, out var repo);
             externalByLocalId.TryGetValue(localId, out var external);
 
-            var result = ReconcileEngine.Reconcile(baseDoc, repo, external);
+            var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody);
             results.Add(result);
             ApplyResult(localId, result, changes);
         }
 
-        var assignedIds = _adapter.Apply(changes);
-        foreach (var (localId, externalId) in assignedIds)
+        // Apply is non-atomic; the base advance is deferred until Apply reports back so a mid-batch
+        // throw never leaves the base claiming un-pushed work is synced (slice brief §3). The finally
+        // still records the ids of pages already created and persists the base, so a crashed tick that
+        // created some pages does not re-create them (duplicate them) on retry.
+        var assigned = new Dictionary<string, string>();
+        var applied = false;
+        try
         {
-            var snap = _base.Get(localId);
-            if (snap != null)
-            {
-                snap.ExternalId = externalId;
-                _base.Set(snap);
-            }
+            _adapter.Apply(changes, assigned);
+            applied = true;
+        }
+        finally
+        {
+            CommitBase(results, assigned, applied);
+            _base.Save();
         }
 
-        _base.Save();
         return new SyncRunResult { Results = results };
+    }
+
+    /// <summary>Advance the base snapshot after Apply. A create records its base only once its external
+    /// id is confirmed in <paramref name="assigned"/> — a create that failed leaves no base entry, so it
+    /// is retried (not seen as an external delete) and never duplicated. Non-create advances commit only
+    /// when the whole batch applied, so a failed tick self-heals on retry.</summary>
+    private void CommitBase(List<ReconcileResult> results, IReadOnlyDictionary<string, string> assigned, bool applied)
+    {
+        foreach (var result in results)
+        {
+            switch (result.Action)
+            {
+                case ReconcileAction.None:
+                    break;
+
+                case ReconcileAction.Delete:
+                    if (applied)
+                        _base.Remove(result.LocalId);
+                    break;
+
+                default:
+                    // An upsert with no external id is a create: record its base only with the assigned id.
+                    if (result.ExternalWrite is { ExternalId: null })
+                    {
+                        if (assigned.TryGetValue(result.LocalId, out var externalId))
+                        {
+                            result.NewBase!.ExternalId = externalId;
+                            _base.Set(result.NewBase);
+                        }
+                    }
+                    else if (applied)
+                    {
+                        _base.Set(result.NewBase!);
+                    }
+                    break;
+            }
+        }
     }
 
     private void ApplyResult(string localId, ReconcileResult result, SyncChangeSet changes)
@@ -98,24 +140,15 @@ public sealed class SyncRunner
             case ReconcileAction.PushToExternal:
             case ReconcileAction.Merged:
             case ReconcileAction.Conflict:
-                if (result.RepoWrite != null)
-                    SyncDocFile.Write(_repoPathForLocalId(localId), result.RepoWrite);
-                if (result.ExternalWrite != null)
-                    changes.Upserts.Add(ToUpsert(result.ExternalWrite));
-                _base.Set(result.NewBase!);
-                break;
-
-            case ReconcileAction.WriteToRepo:
-                SyncDocFile.Write(_repoPathForLocalId(localId), result.RepoWrite!);
-                _base.Set(result.NewBase!);
-                break;
-
             case ReconcileAction.Create:
                 if (result.RepoWrite != null)
                     SyncDocFile.Write(_repoPathForLocalId(localId), result.RepoWrite);
                 if (result.ExternalWrite != null)
                     changes.Upserts.Add(ToUpsert(result.ExternalWrite));
-                _base.Set(result.NewBase!);
+                break;
+
+            case ReconcileAction.WriteToRepo:
+                SyncDocFile.Write(_repoPathForLocalId(localId), result.RepoWrite!);
                 break;
 
             case ReconcileAction.Delete:
@@ -123,7 +156,6 @@ public sealed class SyncRunner
                     changes.Deletes.Add(result.ExternalDelete);
                 if (result.RepoDelete != null && File.Exists(result.RepoDelete))
                     File.Delete(result.RepoDelete);
-                _base.Remove(localId);
                 break;
         }
     }
@@ -154,9 +186,11 @@ public sealed class SyncRunner
         var result = new Dictionary<string, SyncDoc>();
         foreach (var record in records)
         {
+            // The base mapping is our own trusted id; a record's carried local-id (or its external id
+            // fallback) is external input and becomes a repo file path, so sanitize it first (§6).
             var localId = externalIdToLocalId.TryGetValue(record.ExternalId, out var known)
                 ? known
-                : record.Fields.FirstOrDefault(f => f.Key == LocalIdField)?.Value ?? record.ExternalId;
+                : SanitizeLocalId(record.Fields.FirstOrDefault(f => f.Key == LocalIdField)?.Value ?? record.ExternalId);
 
             result[localId] = new SyncDoc
             {
@@ -169,5 +203,28 @@ public sealed class SyncRunner
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Reduce an externally-supplied local id to a bare, safe filename before it is combined into a repo
+    /// path (coding-standards §6 — validate at boundaries). An external view is a trust boundary: a value
+    /// like <c>../../evil</c>, <c>/etc/passwd</c> or <c>C:\x</c> must never escape the object type's
+    /// canonical directory. Directory components and drive prefixes are stripped to the final segment; a
+    /// value that reduces to nothing usable (empty, <c>.</c> or <c>..</c>) is rejected.
+    /// </summary>
+    internal static string SanitizeLocalId(string localId)
+    {
+        var name = localId.Replace('\\', '/');
+        var slash = name.LastIndexOf('/');
+        if (slash >= 0)
+            name = name[(slash + 1)..];
+        var colon = name.LastIndexOf(':'); // drop a drive prefix that survives when there is no separator
+        if (colon >= 0)
+            name = name[(colon + 1)..];
+        name = name.Trim();
+
+        if (name.Length == 0 || name == "." || name == "..")
+            throw new SyncSecurityException($"external local id '{localId}' does not reduce to a safe file name");
+        return name;
     }
 }

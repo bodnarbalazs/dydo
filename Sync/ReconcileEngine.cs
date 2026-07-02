@@ -12,8 +12,15 @@ using DynaDocs.Models;
 /// </summary>
 public static class ReconcileEngine
 {
-    public static ReconcileResult Reconcile(SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external)
+    /// <param name="bodyNormalizer">Maps a body to the form the external view echoes back for it (e.g.
+    /// Notion's block round-trip drops blank lines). Bodies are compared modulo this map so a
+    /// normalization-only difference is not mistaken for an edit — keeping an untouched doc idempotent
+    /// across ticks (slice brief §4). Defaults to identity for views that store bodies verbatim.</param>
+    public static ReconcileResult Reconcile(
+        SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string>? bodyNormalizer = null)
     {
+        var norm = bodyNormalizer ?? (static s => s);
+
         if (repo == null && external == null)
             return Simple(LocalIdOf(baseDoc, repo, external), ReconcileAction.None);
 
@@ -21,9 +28,9 @@ public static class ReconcileEngine
             return ReconcileNew(repo, external);
 
         if (repo == null || external == null)
-            return DeleteOne(baseDoc, repo, external);
+            return DeleteOne(baseDoc, repo, external, norm);
 
-        return ReconcileExisting(baseDoc, repo, external);
+        return ReconcileExisting(baseDoc, repo, external, norm);
     }
 
     /// <summary>Nothing in base, present on at least one side: create on the missing side, or — new
@@ -33,27 +40,63 @@ public static class ReconcileEngine
         : repo == null ? CreateToRepo(external)
         : MergeBoth(SyntheticBase(repo, external), repo, external);
 
-    /// <summary>Present in base, gone on exactly one side now: delete it from the other side.</summary>
-    private static ReconcileResult DeleteOne(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external) =>
-        repo == null
-            ? new ReconcileResult
+    /// <summary>Present in base, gone on exactly one side now (slice brief §1). If the surviving side
+    /// is unchanged since base, the deletion is intentional and propagates to the other side. If the
+    /// surviving side was edited since base, this is a delete/modify CONFLICT: the edit wins (never a
+    /// silent clobber, Decision 025 §3) — resurrect the deleted side with the surviving edits, advance
+    /// base to the survivor, and report a conflict rather than deleting.</summary>
+    private static ReconcileResult DeleteOne(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string> norm)
+    {
+        var externalId = baseDoc.ExternalId ?? repo?.ExternalId ?? external?.ExternalId;
+
+        if (repo == null)
+        {
+            // Repo side deleted. External unchanged -> propagate the delete; external edited -> conflict.
+            if (Equal(baseDoc, external!, norm))
+                return new ReconcileResult
+                {
+                    LocalId = baseDoc.LocalId,
+                    Action = ReconcileAction.Delete,
+                    ExternalDelete = externalId,
+                };
+
+            // Resurrect the repo file from the surviving external edits.
+            var survivor = WithExternalId(external!, externalId);
+            return new ReconcileResult
             {
                 LocalId = baseDoc.LocalId,
-                Action = ReconcileAction.Delete,
-                ExternalDelete = baseDoc.ExternalId ?? external!.ExternalId,
-            }
-            : new ReconcileResult
+                Action = ReconcileAction.Conflict,
+                RepoWrite = survivor,
+                NewBase = survivor,
+            };
+        }
+
+        // External side deleted. Repo unchanged -> propagate the delete; repo edited -> conflict.
+        if (Equal(baseDoc, repo, norm))
+            return new ReconcileResult
             {
                 LocalId = baseDoc.LocalId,
                 Action = ReconcileAction.Delete,
                 RepoDelete = repo.SourcePath,
             };
 
+        // Re-create the external page from the surviving repo edits: no external id so a fresh page is
+        // created (the old one was deleted); base advances once the new id is assigned.
+        var resurrected = WithExternalId(repo, null);
+        return new ReconcileResult
+        {
+            LocalId = baseDoc.LocalId,
+            Action = ReconcileAction.Conflict,
+            ExternalWrite = resurrected,
+            NewBase = resurrected,
+        };
+    }
+
     /// <summary>Both sides present: propagate a one-sided change, else 3-way merge.</summary>
-    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external)
+    private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm)
     {
-        var repoChanged = !Equal(baseDoc, repo);
-        var extChanged = !Equal(baseDoc, external);
+        var repoChanged = !Equal(baseDoc, repo, norm);
+        var extChanged = !Equal(baseDoc, external, norm);
         var externalId = baseDoc.ExternalId ?? external.ExternalId;
 
         if (!repoChanged && !extChanged)
@@ -156,8 +199,8 @@ public static class ReconcileEngine
         SourcePath = sourcePath,
     };
 
-    private static bool Equal(SyncDoc a, SyncDoc b) =>
-        a.Body.Replace("\r\n", "\n") == b.Body.Replace("\r\n", "\n")
+    private static bool Equal(SyncDoc a, SyncDoc b, Func<string, string> norm) =>
+        norm(a.Body.Replace("\r\n", "\n")) == norm(b.Body.Replace("\r\n", "\n"))
         && a.Fields.Count == b.Fields.Count
         && a.Fields.Zip(b.Fields).All(p => p.First.Key == p.Second.Key && p.First.Value == p.Second.Value);
 

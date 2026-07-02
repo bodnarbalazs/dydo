@@ -21,6 +21,15 @@ public sealed class FakeNotionClient : INotionClient
     public List<string> AppendedTo { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
+    /// <summary>When set, <see cref="CreatePage"/> throws once this many creates have succeeded — drives
+    /// the partial-Apply-failure test (a create fails mid-batch).</summary>
+    public int? FailCreateAfter { get; set; }
+
+    /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
+    public bool FailAppend { get; set; }
+
+    private int _createCount;
+
     public NotionPage SeedPage(string id, Dictionary<string, NotionPropertyValue> props,
         List<NotionBlock>? blocks = null, string dataSourceId = "ds1")
     {
@@ -52,6 +61,9 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionPage CreatePage(NotionPageCreateRequest request)
     {
+        if (FailCreateAfter is { } limit && _createCount >= limit)
+            throw new NotionApiException(500, "simulated create failure");
+        _createCount++;
         var id = $"page-{_nextPage++}";
         var page = new NotionPage { Id = id, Properties = request.Properties };
         _pages[id] = page;
@@ -76,6 +88,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
     {
+        if (FailAppend)
+            throw new NotionApiException(500, "simulated append failure");
         AppendedTo.Add(blockId);
         _blocks.TryAdd(blockId, []);
         foreach (var child in request.Children)

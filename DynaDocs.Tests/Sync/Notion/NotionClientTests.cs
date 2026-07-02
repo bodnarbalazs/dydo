@@ -112,6 +112,50 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void WriteRequest_OmitsNullReadOnlyFields_LikeRichTextPlainText()
+    {
+        // NotionRichText.Of sets only text.content; plain_text is read-only and null on write. Notion's
+        // write API rejects a null plain_text, so it must be absent from the serialized body entirely.
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"id":"p1","properties":{}}""");
+
+        var req = new NotionPageCreateRequest
+        {
+            Parent = new NotionParent { DataSourceId = "ds1" },
+            Properties = new() { ["Name"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("Hi") } },
+        };
+        Client(handler).CreatePage(req);
+
+        var body = handler.Requests.Single().Body;
+        Assert.DoesNotContain("plain_text", body);
+        Assert.Contains("\"content\":\"Hi\"", body);
+    }
+
+    [Fact]
+    public void CreateDatabase_RelationProperty_SerializesSinglePropertyTypeOnTheWire()
+    {
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"id":"db-new","data_sources":[{"id":"ds-new","name":"Sprints"}]}""");
+
+        var req = new NotionDatabaseCreateRequest
+        {
+            Parent = new NotionDatabaseParent { PageId = "parent-page" },
+            Title = NotionRichText.Of("Sprints"),
+            InitialDataSource = new NotionInitialDataSource
+            {
+                Properties = new()
+                {
+                    ["campaign"] = new NotionPropertySchema { Relation = new NotionRelationSchema { DataSourceId = "ds-parent" } },
+                },
+            },
+        };
+        Client(handler).CreateDatabase(req);
+
+        // Assert the wire value, not just the object graph: a relation schema must carry the
+        // single_property discriminator or Notion rejects/ignores the relation config.
+        Assert.Contains("\"type\":\"single_property\"", handler.Requests.Single().Body);
+    }
+
+    [Fact]
     public void UpdatePage_PatchesPagePath()
     {
         var handler = new FakeHttpMessageHandler().Enqueue("""{"id":"p1","properties":{}}""");

@@ -5,8 +5,11 @@ using DynaDocs.Models;
 /// <summary>
 /// 3-way merge of ordered frontmatter field maps, key by key (Decision 025 §3). A key changed
 /// on only one side takes that side's value; a key both sides changed to different values is a
-/// conflict — the repo side wins deterministically and the overlap is reported. Key order
-/// follows the repo side, with external-only new keys appended.
+/// conflict — the repo side wins deterministically and the overlap is reported. Deletions are
+/// honored against base: a key present in base but dropped on one side is a real deletion and is
+/// not resurrected from the unchanged other side (a delete overlapping the other side's edit is a
+/// delete/modify conflict, and the edit is kept). Key order follows the repo side, with genuinely
+/// new external-only keys appended.
 /// </summary>
 public static class FieldMerge
 {
@@ -30,36 +33,43 @@ public static class FieldMerge
         foreach (var field in repo)
         {
             taken.Add(field.Key);
-            merged.Add(Resolve(field.Key, baseMap, repoMap, extMap, ref conflicted));
+            var resolved = ResolveRepoKey(field.Key, baseMap, repoMap, extMap, ref conflicted);
+            if (resolved != null)
+                merged.Add(resolved);
         }
 
-        // Append keys that exist only on the external side (external-only additions).
+        // Then any key present only on the external side.
         foreach (var field in external)
         {
             if (taken.Contains(field.Key)) continue;
             taken.Add(field.Key);
-            // External added a key the repo never had; if base also lacked it, it's a clean add.
-            merged.Add(new SyncField { Key = field.Key, Value = field.Value });
+            var resolved = ResolveExternalOnlyKey(field.Key, baseMap, extMap, ref conflicted);
+            if (resolved != null)
+                merged.Add(resolved);
         }
 
         return new Result { Fields = merged, Conflicted = conflicted };
     }
 
-    private static SyncField Resolve(
+    /// <summary>Resolve a key the repo holds. If external also holds it, it's a value-level 3-way merge.
+    /// If external lacks it, it's either an external-side DELETION (present in base, repo unchanged →
+    /// drop) or a genuine repo-side add (absent in base → keep). A key the repo changed while external
+    /// deleted it is a delete/modify conflict — keep the repo edit.</summary>
+    private static SyncField? ResolveRepoKey(
         string key,
         Dictionary<string, string> baseMap,
         Dictionary<string, string> repoMap,
         Dictionary<string, string> extMap,
         ref bool conflicted)
     {
-        baseMap.TryGetValue(key, out var b);
+        var hasBase = baseMap.TryGetValue(key, out var b);
         repoMap.TryGetValue(key, out var r);
         var hasExt = extMap.TryGetValue(key, out var e);
 
-        // Repo holds this key. If external also has it and both diverge from base differently,
-        // that's a true overlap.
-        if (hasExt && r != e)
+        if (hasExt)
         {
+            if (r == e)
+                return new SyncField { Key = key, Value = r! };
             var repoChanged = r != b;
             var extChanged = e != b;
             if (repoChanged && extChanged)
@@ -67,11 +77,42 @@ public static class FieldMerge
                 conflicted = true;
                 return new SyncField { Key = key, Value = r! }; // repo wins deterministically
             }
-            // Only one side changed — take the changed side.
             return new SyncField { Key = key, Value = repoChanged ? r! : e! };
         }
 
-        return new SyncField { Key = key, Value = r! };
+        // External does not hold the key.
+        if (hasBase)
+        {
+            if (r == b)
+                return null; // external deleted an unchanged key — honor the deletion
+            conflicted = true;   // repo changed it, external deleted it — keep the edit
+            return new SyncField { Key = key, Value = r! };
+        }
+
+        return new SyncField { Key = key, Value = r! }; // genuinely new on the repo side
+    }
+
+    /// <summary>Resolve a key only the external side holds. In base and unchanged there → repo deleted
+    /// it, so drop it. Changed there while repo deleted it → delete/modify conflict, keep the external
+    /// edit. Absent from base → a genuine external-side add.</summary>
+    private static SyncField? ResolveExternalOnlyKey(
+        string key,
+        Dictionary<string, string> baseMap,
+        Dictionary<string, string> extMap,
+        ref bool conflicted)
+    {
+        var hasBase = baseMap.TryGetValue(key, out var b);
+        extMap.TryGetValue(key, out var e);
+
+        if (hasBase)
+        {
+            if (e == b)
+                return null; // repo deleted an unchanged key — honor the deletion
+            conflicted = true;   // repo deleted it, external changed it — keep the edit
+            return new SyncField { Key = key, Value = e! };
+        }
+
+        return new SyncField { Key = key, Value = e! }; // genuinely new on the external side
     }
 
     private static Dictionary<string, string> ToMap(List<SyncField> fields)

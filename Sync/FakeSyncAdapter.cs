@@ -26,10 +26,8 @@ public sealed class FakeSyncAdapter : ISyncAdapter
 
     public IReadOnlyList<SyncRecord> ReadExternalState() => _records.Values.ToList();
 
-    public IReadOnlyDictionary<string, string> Apply(SyncChangeSet changes)
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned)
     {
-        var assigned = new Dictionary<string, string>();
-
         foreach (var upsert in changes.Upserts)
         {
             var id = upsert.ExternalId ?? $"ext-{_nextId++}";
@@ -40,7 +38,5 @@ public sealed class FakeSyncAdapter : ISyncAdapter
 
         foreach (var id in changes.Deletes)
             _records.Remove(id);
-
-        return assigned;
     }
 }

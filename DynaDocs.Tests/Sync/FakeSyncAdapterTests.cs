@@ -27,7 +27,8 @@ public class FakeSyncAdapterTests
         var changes = new SyncChangeSet();
         changes.Upserts.Add(new SyncUpsert { LocalId = "t", ExternalId = null, Fields = F(("status", "open")), Body = "b" });
 
-        var assigned = a.Apply(changes);
+        var assigned = new Dictionary<string, string>();
+        a.Apply(changes, assigned);
 
         Assert.True(assigned.ContainsKey("t"));
         Assert.Single(a.ReadExternalState());
@@ -41,7 +42,8 @@ public class FakeSyncAdapterTests
 
         var changes = new SyncChangeSet();
         changes.Upserts.Add(new SyncUpsert { LocalId = "t", ExternalId = "ext-1", Fields = F(("status", "done")), Body = "b" });
-        var assigned = a.Apply(changes);
+        var assigned = new Dictionary<string, string>();
+        a.Apply(changes, assigned);
 
         Assert.Empty(assigned);
         Assert.Equal("done", a.ReadExternalState()[0].Fields.First(f => f.Key == "status").Value);
@@ -55,7 +57,7 @@ public class FakeSyncAdapterTests
 
         var changes = new SyncChangeSet();
         changes.Deletes.Add("ext-1");
-        a.Apply(changes);
+        a.Apply(changes, new Dictionary<string, string>());
 
         Assert.Empty(a.ReadExternalState());
     }

@@ -193,6 +193,47 @@ public class ReconcileEngineTests
     }
 
     [Fact]
+    public void DeleteVsModify_ExternalDeletedRepoEdited()
+    {
+        // External deleted the page, but repo edited it since base. The edit must win: re-create the
+        // external page with the repo edits, report a conflict, advance base to the surviving repo doc.
+        var b = Doc("t", "body", ("status", "open"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("status", "done")); // edited since base
+
+        var result = ReconcileEngine.Reconcile(b, repo, null);
+
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.True(result.Conflicted);
+        Assert.Null(result.RepoWrite);                       // repo already holds the edit
+        Assert.Equal("done", result.ExternalWrite!.GetField("status"));
+        Assert.Null(result.ExternalWrite.ExternalId);        // re-created as a fresh page
+        Assert.Null(result.ExternalDelete);                  // never deleted
+        Assert.Equal("done", result.NewBase!.GetField("status"));
+    }
+
+    [Fact]
+    public void DeleteVsModify_RepoDeletedExternalEdited()
+    {
+        // Repo deleted the file, but a colleague edited the page in Notion since base. The edit wins:
+        // resurrect the repo file with the external edits, report a conflict, advance base to the survivor.
+        var b = Doc("t", "body", ("status", "open"));
+        b.ExternalId = "ext-1";
+        var ext = Doc("t", "body", ("status", "blocked")); // edited since base
+        ext.ExternalId = "ext-1";
+
+        var result = ReconcileEngine.Reconcile(b, null, ext);
+
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.True(result.Conflicted);
+        Assert.Equal("blocked", result.RepoWrite!.GetField("status"));
+        Assert.Equal("ext-1", result.RepoWrite.ExternalId);
+        Assert.Null(result.ExternalWrite);                   // external already holds the edit
+        Assert.Null(result.RepoDelete);                      // never deleted
+        Assert.Equal("blocked", result.NewBase!.GetField("status"));
+    }
+
+    [Fact]
     public void GoneFromBothSides_ReturnsNone()
     {
         var b = Doc("t", "body", ("status", "open"));

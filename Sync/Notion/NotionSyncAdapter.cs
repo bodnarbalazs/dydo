@@ -23,7 +23,13 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     private readonly IReadOnlyDictionary<string, string>? _relationLocalToPageId;
     private readonly IReadOnlyDictionary<string, string>? _relationPageIdToLocalId;
     private readonly string? _icon;
+    private readonly TextWriter? _warnings;
     private IReadOnlyDictionary<string, string> _schema = new Dictionary<string, string>();
+
+    /// <summary>Page id → relation property names that currently hold more than one target. We read only
+    /// the first target (single-value model) and must NOT write these back, or the extra targets would be
+    /// deleted; the last read records them here so <see cref="Apply"/> omits them from the update.</summary>
+    private readonly Dictionary<string, List<string>> _multiTargetRelations = new();
 
     public NotionSyncAdapter(
         INotionClient client,
@@ -31,7 +37,8 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         IReadOnlyDictionary<string, string>? schema = null,
         IReadOnlyDictionary<string, string>? relationLocalToPageId = null,
         IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null,
-        string? icon = null)
+        string? icon = null,
+        TextWriter? warnings = null)
     {
         _client = client;
         _dataSourceId = dataSourceId;
@@ -39,6 +46,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         _relationLocalToPageId = relationLocalToPageId;
         _relationPageIdToLocalId = relationPageIdToLocalId;
         _icon = icon;
+        _warnings = warnings;
     }
 
     public IReadOnlyList<SyncRecord> ReadExternalState()
@@ -47,12 +55,14 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         // A provisioned data source knows its own schema; otherwise infer it from the live pages so
         // we never push a property of the wrong type or one the DB doesn't have.
         _schema = _explicitSchema ?? NotionPropertyMapper.InferSchema(pages);
+        _multiTargetRelations.Clear();
 
         var records = new List<SyncRecord>();
         foreach (var page in pages)
         {
             if (page.Archived)
                 continue;
+            NoteMultiTargetRelations(page);
             var blocks = _client.GetBlockChildren(page.Id);
             records.Add(new SyncRecord
             {
@@ -64,10 +74,9 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         return records;
     }
 
-    public IReadOnlyDictionary<string, string> Apply(SyncChangeSet changes)
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned)
     {
         var schema = EnsureSchema();
-        var assigned = new Dictionary<string, string>();
 
         foreach (var upsert in changes.Upserts)
         {
@@ -83,10 +92,18 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                     Icon = NotionIcon.Of(_icon),
                     Children = blocks.Count > 0 ? blocks : null,
                 });
+                // Record the id the instant the page exists, so a later create in this batch throwing
+                // does not lose it (the caller persists the base in a finally) — no duplicate on retry.
                 assigned[upsert.LocalId] = page.Id;
             }
             else
             {
+                // Leave any multi-target relation untouched: writing our single first-ref back would
+                // delete the extra targets, so omit those properties from the update entirely.
+                if (_multiTargetRelations.TryGetValue(upsert.ExternalId, out var omit))
+                    foreach (var name in omit)
+                        properties.Remove(name);
+
                 _client.UpdatePage(upsert.ExternalId, new NotionPageUpdateRequest { Properties = properties });
                 ReplaceBody(upsert.ExternalId, blocks);
             }
@@ -94,24 +111,59 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
         foreach (var externalId in changes.Deletes)
             _client.UpdatePage(externalId, new NotionPageUpdateRequest { Archived = true });
-
-        return assigned;
     }
 
-    /// <summary>Replace a page's body: archive existing children, then append the new blocks. Notion
-    /// has no atomic body replace, so this two-step is the honest equivalent for the MVP.</summary>
+    public string NormalizeBody(string body) =>
+        NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body));
+
+    /// <summary>Replace a page's body by appending the new blocks FIRST, then deleting the previously
+    /// existing ones (their ids snapshotted before the append). Notion has no atomic body replace, so
+    /// ordering the append before the delete means a failed append leaves the original body intact — at
+    /// worst temporarily duplicated, never empty (slice brief §5).</summary>
     private void ReplaceBody(string pageId, List<NotionBlock> blocks)
     {
-        // Snapshot the ids before deleting: a delete may invalidate the children collection.
         var existingIds = _client.GetBlockChildren(pageId)
             .Select(b => b.Id)
             .Where(id => id != null)
             .ToList();
-        foreach (var id in existingIds)
-            _client.DeleteBlock(id!);
 
         if (blocks.Count > 0)
             _client.AppendBlockChildren(pageId, new NotionAppendChildrenRequest { Children = blocks });
+
+        foreach (var id in existingIds)
+            _client.DeleteBlock(id!);
+    }
+
+    /// <summary>Record — and warn about — relation properties on a page that hold more than one target.
+    /// We read only the first (single-value model); flagging them here lets <see cref="Apply"/> omit
+    /// them on write-back so the extra targets are never silently truncated (slice brief §7).</summary>
+    private void NoteMultiTargetRelations(NotionPage page)
+    {
+        List<string>? multi = null;
+        foreach (var (name, value) in page.Properties)
+        {
+            if (value.Type == "relation" && value.Relation is { Count: > 1 })
+            {
+                (multi ??= []).Add(name);
+                _warnings?.WriteLine(
+                    $"notion sync: relation '{name}' on '{PageDisplayName(page)}' has {value.Relation.Count} targets; "
+                    + "reading only the first and leaving Notion's value untouched (multi-target relations are not yet synced).");
+            }
+        }
+        if (multi != null)
+            _multiTargetRelations[page.Id] = multi;
+    }
+
+    private static string PageDisplayName(NotionPage page)
+    {
+        foreach (var value in page.Properties.Values)
+            if (value.Type == "title")
+            {
+                var title = NotionRichText.Flatten(value.Title);
+                if (title.Length > 0)
+                    return title;
+            }
+        return page.Id;
     }
 
     /// <summary>Apply may run before a read in principle; resolve the schema once if so.</summary>

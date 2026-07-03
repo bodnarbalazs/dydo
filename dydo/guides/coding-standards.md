@@ -137,27 +137,19 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **You are not done when the code works.**
 
-The full workflow:
+Code-writing happens inside a workflow (`run-sprint` and kin). You are a Tier-2 worker on one slice; the workflow — not you — orchestrates the review loop and the merge (Decision 024, Decision 026). Your discipline:
 
-1. **Claim identity** — `dydo agent claim <name>` before starting
-2. **Set role** — `dydo agent role code-writer --task <name>`
-3. **Do the work** — The guard enforces your role's permissions
-4. **Request review** — `dydo dispatch --role reviewer --task <name> --brief "..."`
-5. **Address feedback** — Same agent fixes issues (context continuity)
-6. **Human approval** — Task needs human review before closing
-7. **Release** — `dydo agent release` when done
+1. **Work your slice only** — implement against the brief in the worktree/scratch space the workflow assigned you. Do not reach into other slices.
+2. **Prove it green** — run the worktree-isolated test runner (`python DynaDocs.Tests/coverage/run_tests.py`) and satisfy the coverage gate before returning.
+3. **Return structured output** — hand the workflow a structured result (what changed, test outcome, files touched). The workflow spawns the reviewer; you do **not** self-dispatch one.
+4. **Address review feedback** — when the loop sends the slice back, the same worker context fixes the flagged issues and re-returns.
+5. **Raise your hand, don't guess** — if the spec is ambiguous, contradicts the codebase, or you are thrashing on one root cause, set the raise-hand signal to escalate early instead of burning review rounds.
 
 **Do not:**
-- Skip the review step (different agent reviews your code)
-- Write docs for code you wrote (dispatch to docs-writer if human says so)
-- Mark tasks complete without human approval
-- Edit files outside your role's permissions
-
-**Verify before finishing:**
-```bash
-dydo whoami          # Confirm you're still claimed
-dydo agent status    # Confirm role and permissions
-```
+- Merge your own slice or review your own code — the workflow's reviewer and merge step own that.
+- Edit files outside your slice's scope. If you notice a problem elsewhere, flag it in your result; don't fix it.
+- Mark work complete without the tests and coverage gate passing.
+- Reintroduce worker-tier `dydo dispatch`/`claim`/`release` — that 1.0 machinery is gone (Decision 024).
 
 ---
 
@@ -264,9 +256,14 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ---
 
-### Use of sub agents
+### Delegation of code-writing
 
-Only use any sub-agent tool you have for discoveries, never let them write code. If you want to delegate code-writing always use `dydo dispatch`, never sub-agents.
+Sub-agents and workflows are **where code gets written** (Decision 026). Worker-tier `dydo dispatch` no longer exists — it was 1.0-era machinery removed by [Decision 024](../project/decisions/024-dydo-2-native-pivot.md).
+
+- **Tier-1 named agents are managers, not implementers.** They run workflows (`run-sprint` and kin) and coordinate; they do **not** write code beyond the trivial-edit exception (typo fixes, single-line config toggles, doc-link repairs). Rule of thumb: *if it needs a reviewer, it needs a workflow.*
+- **Tier-2 workers write the code.** Code-writers, reviewers, and test-writers are native sub-agents spawned by workflows, each with a scoped permission profile. The workflow — not the worker — orchestrates the code → review loop and the merge.
+
+See [Work Model](../understand/work-model.md) for the full hierarchy and [Decision 026](../project/decisions/026-tier1-managers-doctrine.md) for the manager doctrine.
 
 ## Related
 

@@ -11,5 +11,5 @@ Index of sprint-tasks documentation.
 
 ## Contents
 
-- [Notion Pm Spine Provisioning](./notion-pm-spine-provisioning.md)
-- [Runtime Slim Worker Tier](./runtime-slim-worker-tier.md)
+- [Notion PM Spine Provisioning](./notion-pm-spine-provisioning.md) - Provision and own the Campaign → Sprint → Task spine in Notion (three databases with relations under a parent page), then sync canonical repo files...
+- [Slim the Worker-Tier Runtime](./runtime-slim-worker-tier.md) - Remove queue/baton/dispatch-wait/worktree orchestration from the worker runtime, leaving a lean native-AOT binary (Decision 024).

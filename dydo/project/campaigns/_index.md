@@ -11,4 +11,4 @@ Index of campaigns documentation.
 
 ## Contents
 
-- [Dydo 2 0](./dydo-2-0.md)
+- [dydo 2.0 Native Pivot](./dydo-2-0.md) - The dydo 2.

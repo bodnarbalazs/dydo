@@ -21,3 +21,4 @@ Index of understand documentation.
 - [Roles and Permissions](./roles-and-permissions.md) - The role system: what roles are, how they define agent capabilities, and how permissions are enforced.
 - [Task Lifecycle](./task-lifecycle.md) - How tasks flow from creation through implementation, review, and approval.
 - [Templates and Customization](./templates-and-customization.md) - How dydo's template system works: overridable templates, include tags, and the update mechanism.
+- [Work Model](./work-model.md) - dydo tracks work at four nested levels — **Task → Sprint → Campaign → Release**.

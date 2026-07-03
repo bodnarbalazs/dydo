@@ -64,6 +64,17 @@ be picked up during the refine phase. Grouped by theme.
 - **Fix the Workflow-tool permission bug.** A control character in the saved `.claude/workflows/*.js`
   now trips the approval-dialog validator (post-restart permission-mode change), blocking
   `/run-sprint` and `/inquisition` entirely. Clean the offending char(s) from the scripts.
+  Same pipeline, second symptom (2026-07-03, runs wf_6cd452d1-276 + wf_8eba6003-d9d): Workflow `args`
+  passed as a REAL JSON array arrive re-stringified, silently collapsing a multi-slice sprint into one
+  in-tree slice. Mitigated by a defensive JSON.parse in run-sprint.js normalizeSlices (landing via the
+  run-sprint-hardening slice); the upstream harness behavior is worth reporting to Anthropic.
+- **Tier-2 subagents bypass the guard (issue #211).** Native subagents (Agent-tool code-writers /
+  reviewers) run without a claimed dydo identity, so they skip guard policy, produce no audit
+  attribution, and are unreachable via inbox — a misbehaving one can't be seen or stopped through dydo.
+  Surfaced live 2026-07-03: a Slice-B code-writer's Argon2id units bug (MemorySize is KiB not bytes, so
+  64*1024*1024 = 64 GiB/derivation) ballooned a testhost to 56 GB before it was caught by the human, not
+  the framework. Decide a policy: a lightweight Tier-2 registration/guard hook, or resource + attribution
+  guardrails for dispatched work.
 
 ## QA-deferred cleanup (from the Notion inquisitions)
 
@@ -73,3 +84,8 @@ be picked up during the refine phase. Grouped by theme.
 - No 429 / `Retry-After` handling on the Notion client (only a fixed pre-emptive throttle).
 - Row icons apply on create but not on update.
 - Minor: two-sided merge can show cosmetic normalization-noise conflict markers; single-backslash hand-authored quoted frontmatter value is decoded as an escape (documented convention nuance).
+- **Elevate the Notion vault crypto to coverage tier T2** (secret-confidentiality, flagged by the Slice-B
+  security review — merge core is already T2). Blocked today only by the defensive `catch (ArgumentException)`
+  in `NotionVault.DeriveKeyBytes` being unreachable after the explicit envelope validation, so literal 100%
+  line needs a contrived test, an `[ExcludeFromCodeCoverage]` on that line, or dropping the now-redundant
+  catch. Landed at T1 with comprehensive malformed-envelope tests in the meantime.

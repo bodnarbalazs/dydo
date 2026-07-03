@@ -11,4 +11,4 @@ Index of campaigns documentation.
 
 ## Contents
 
-- [dydo 2.0 Native Pivot](./dydo-2-0.md) - The dydo 2.
+- [dydo 2.0 Native Pivot](./dydo-2-0.md) - This campaign drives the native pivot defined by Decision 024 and Decision 025.

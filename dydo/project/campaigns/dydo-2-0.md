@@ -9,4 +9,4 @@ priority: P0
 
 # dydo 2.0 Native Pivot
 
-The dydo 2.0 campaign (Decision 024, Decision 025). The human's role shifts from operator to PM of agents: campaigns, sprints, and tasks are managed as canonical repo files and projected into a Notion PM board that dydo provisions and owns. Notion is a swappable view — delete the adapter and the repo is still whole.
+This campaign drives the native pivot defined by Decision 024 and Decision 025. The human's role shifts from operator to PM of agents: campaigns, sprints, and tasks are managed as canonical repo files and projected into a Notion PM board that dydo provisions and owns. Notion is a swappable view — delete the adapter and the repo is still whole.

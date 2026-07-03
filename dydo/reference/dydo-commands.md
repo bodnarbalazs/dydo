@@ -728,11 +728,12 @@ dydo help
 
 ### dydo notion connect
 
-Store a Notion integration token for this project. The token is read from stdin (never a command-line argument, so it stays out of shell history) and saved to a gitignored local secret store — DPAPI-protected on Windows, `0600`-permissioned elsewhere — and never committed. Pass `--parent-page <id>` to also record the parent page in `notion.parentPageId`.
+Store a Notion integration token for this project. The token is read from stdin (never a command-line argument, so it stays out of shell history) and saved to a gitignored local secret store — DPAPI-protected on Windows, `0600`-permissioned elsewhere — and never committed. Pass `--parent-page <id>` to also record the parent page in `notion.parentPageId`. Pass `--vault` to instead seal the token into a committed, passphrase-encrypted vault (prompts for a passphrase, entered twice) rather than the local-only store; if a vault already exists, `--vault` re-encrypts (rotates) it.
 
 ```bash
 dydo notion connect
 dydo notion connect --parent-page <page-id>
+dydo notion connect --vault
 ```
 
 ### dydo notion reveal-token

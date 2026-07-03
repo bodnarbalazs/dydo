@@ -35,7 +35,7 @@ const CODE_RESULT = {
     summary: { type: 'string', description: 'What you implemented or changed this round, and the test/coverage outcome.' },
     raiseHand: { type: 'boolean', description: 'true if the spec is ambiguous, contradicts the codebase, or you are thrashing — human judgment needed.' },
     reason: { type: 'string', description: 'If raiseHand is true, why human eyes are needed.' },
-    branch: { type: 'string', description: 'The branch your work lives on: `git branch --show-current` in your working directory.' },
+    branch: { type: ['string', 'null'], description: 'The branch your work lives on — required, so state your mode explicitly. Isolated (dedicated worktree): your worktree branch from `git branch --show-current`. In-tree (main working tree): null (you were told not to create/reuse a branch).' },
     worktreePath: { type: 'string', description: 'The root of the working tree you edited: `git rev-parse --show-toplevel`.' },
   },
 }
@@ -57,7 +57,19 @@ const MERGE_RESULT = {
   required: ['merged', 'conflicted', 'baseCommit', 'raiseHand'],
   additionalProperties: false,
   properties: {
-    merged: { type: 'array', items: { type: 'string' }, description: 'Slice names that landed on the invoking branch, in merge order.' },
+    merged: {
+      type: 'array',
+      description: 'Every slice whose `git merge` completed WITHOUT abort, in merge order — each with the result of verifying the landing via `git merge-base --is-ancestor <slice-branch> HEAD`. Conflict-aborted slices go in `conflicted`, NOT here.',
+      items: {
+        type: 'object',
+        required: ['name', 'verified'],
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string' },
+          verified: { type: 'boolean', description: 'true ONLY if `git merge-base --is-ancestor <slice-branch> HEAD` exited 0 — the slice branch is provably an ancestor of the invoking branch HEAD. Report what the command actually returned; never assume.' },
+        },
+      },
+    },
     conflicted: {
       type: 'array',
       description: 'Slices whose merge needed judgment and was aborted — left intact on their worktree branches.',
@@ -118,21 +130,45 @@ if (ISOLATE && toMerge.length > 0) {
   })
   baseCommit = merge?.baseCommit ?? null
   for (const r of toMerge) {
-    if (merge?.merged?.includes(r.name)) {
+    // Conflict first: an aborted merge was "attempted", so a schema-literal agent may
+    // list it under merged with verified:false — but its specific reason is the truth.
+    const conflict = merge?.conflicted?.find(c => c.name === r.name)
+    if (conflict) {
+      r.status = 'escalated'
+      r.stage = 'merge'
+      r.reason = conflict.reason
+      continue
+    }
+    // merged:true is set ONLY from the agent's git merge-base --is-ancestor verification,
+    // never from a bare claim. A claimed-but-unverified landing (or an omitted slice)
+    // escalates with the slice's worktree branch/worktreePath preserved in the ledger.
+    const claim = merge?.merged?.find(m => m.name === r.name)
+    if (claim?.verified) {
       r.merged = true
       continue
     }
-    // Not landed: a judgment-requiring conflict or a merge-agent failure. The slice
-    // stays STRANDED on its worktree branch — never lost, but needing human hands.
-    const conflict = merge?.conflicted?.find(c => c.name === r.name)
     r.status = 'escalated'
     r.stage = 'merge'
-    r.reason = conflict?.reason ?? merge?.reason ?? 'merge agent did not account for this slice'
+    r.reason = claim
+      ? 'merge claimed but not verified'
+      : (merge?.reason ?? 'merge agent did not account for this slice')
   }
   log(`Merge: ${toMerge.filter(r => r.merged).length}/${toMerge.length} passed slice(s) landed on the invoking branch.`)
 } else {
-  // In-tree work already sits on the invoking branch — nothing stranded.
-  for (const r of toMerge) r.merged = true
+  // In-tree work already sits on the invoking branch — nothing stranded. But a
+  // compliant single-slice writer was told to commit nothing and return branch:null;
+  // a non-null branch means it committed somewhere unexpected (e.g. a stale reused
+  // worktree). Never assume that work is on the invoking branch or audit a diff that
+  // isn't there — escalate with the branch named and its worktreePath in the ledger.
+  for (const r of toMerge) {
+    if (r.branch) {
+      r.status = 'escalated'
+      r.stage = 'merge'
+      r.reason = `work landed on unexpected branch ${r.branch}`
+      continue
+    }
+    r.merged = true
+  }
 }
 
 phase('Audit')
@@ -220,7 +256,18 @@ function escalate(slice, stage, round, reason, extra = {}) {
 }
 
 function normalizeSlices(a) {
-  if (typeof a === 'string') return [{ name: 'slice-1', brief: a }]
+  // Harness/permission-pipeline workaround (observed live 2026-07-03, runs
+  // wf_6cd452d1-276 and wf_8eba6003-d9d): args passed as a real JSON array can
+  // arrive stringified, silently collapsing a multi-slice sprint into ONE
+  // in-tree slice. If the string parses as JSON, honor the parsed value.
+  if (typeof a === 'string') {
+    const t = a.trim()
+    if (t.startsWith('[') || t.startsWith('{')) {
+      try { a = JSON.parse(t) } catch { /* genuine prose brief — fall through */ }
+    }
+    if (typeof a === 'string') return [{ name: 'slice-1', brief: a }]
+  }
+  if (a && !Array.isArray(a) && typeof a === 'object') a = [a]
   if (!Array.isArray(a) || a.length === 0)
     throw new Error('run-sprint expects args = a non-empty array of slice briefs (strings) or {name, brief} objects.')
   return a.map((s, i) => typeof s === 'string'
@@ -229,7 +276,13 @@ function normalizeSlices(a) {
 }
 
 function codePrompt(slice, feedback, round) {
-  const base = `You are implementing sprint slice "${slice.name}".\n\nBrief:\n${slice.brief}\n\nImplement it fully, add or adjust tests, and run the worktree-isolated test runner + coverage gate before finishing. Return a structured result, including the branch and working-tree root your work lives on (\`git branch --show-current\` and \`git rev-parse --show-toplevel\`) — the sprint's merge phase needs them to land your work.`
+  // The writer must know its mode: an isolated slice commits on its own worktree
+  // branch (the merge phase lands it), while an in-tree slice must NOT branch or
+  // commit — otherwise its work can silently land on an unexpected/stale branch.
+  const modeNote = ISOLATE
+    ? '\n\nYou are in a dedicated worktree the harness created for this slice. Commit your work on your worktree branch and return that branch (`git branch --show-current`) and its root (`git rev-parse --show-toplevel`) as branch + worktreePath — the sprint merge phase needs them to land your work.'
+    : '\n\nYou work directly in the main working tree. Do NOT create or reuse any worktree or branch, and do NOT commit — leave your changes uncommitted for the in-tree audit. Return branch: null and worktreePath = `git rev-parse --show-toplevel`.'
+  const base = `You are implementing sprint slice "${slice.name}".\n\nBrief:\n${slice.brief}\n\nImplement it fully, add or adjust tests, and run the test runner + coverage gate before finishing.${modeNote}`
   const roundNote = round === 1 ? '' :
     `\n\nThis is round ${round}. A prior review FAILED — address these findings specifically:\n${feedback}`
   return base + roundNote + RAISE_HAND_NOTE
@@ -246,7 +299,7 @@ function reviewPrompt(slice, codeSummary, work) {
 
 function mergePrompt(toMerge) {
   const list = toMerge.map((r, i) => `${i + 1}. ${r.name} — branch \`${r.branch}\`, worktree \`${r.worktreePath}\``).join('\n')
-  return `You are the sprint merge agent. ${toMerge.length} passed slice(s) live on workflow worktree branches; land them on the invoking branch SEQUENTIALLY — fully finish one slice before touching the next, never concurrently — in this exact order:\n\n${list}\n\nYou work in the MAIN working tree (confirm with \`git rev-parse --show-toplevel\`). Before the first merge, record \`git rev-parse HEAD\` and return it as baseCommit.\n\nPer slice, in order:\n1. If its worktree has uncommitted work, commit it on ITS branch: \`git -C <worktreePath> add -A && git -C <worktreePath> commit -m "<slice name>: sprint work"\`.\n2. Merge into the invoking branch: \`git merge --no-ff <branch> -m "merge sprint slice <slice name>"\`.\n3. Clean merge → continue to the next slice.\n4. Conflict → you may resolve ONLY trivial conflicts: disjoint hunks, or pure whitespace/line-ending differences. Anything requiring judgment about intent: run \`git merge --abort\`, record the slice under conflicted with a specific reason, and continue with the remaining slices. Never rebase, never force, never discard slice work — an aborted slice stays intact on its branch for the human.\n\nReturn merged (slice names that landed, in merge order), conflicted ({name, reason}), and baseCommit.` + RAISE_HAND_NOTE
+  return `You are the sprint merge agent. ${toMerge.length} passed slice(s) live on workflow worktree branches; land them on the invoking branch SEQUENTIALLY — fully finish one slice before touching the next, never concurrently — in this exact order:\n\n${list}\n\nYou work in the MAIN working tree (confirm with \`git rev-parse --show-toplevel\`). Before the first merge, record \`git rev-parse HEAD\` and return it as baseCommit.\n\nPer slice, in order:\n1. If its worktree has uncommitted work, commit it on ITS branch: \`git -C <worktreePath> add -A && git -C <worktreePath> commit -m "<slice name>: sprint work"\`.\n2. Merge into the invoking branch: \`git merge --no-ff <branch> -m "merge sprint slice <slice name>"\`.\n3. Merge completed without abort → VERIFY the landing: run \`git merge-base --is-ancestor <branch> HEAD\` and record the slice under merged as {name, verified} where verified is true ONLY if that command exited 0. Report the actual result — never claim verified without running the check. Continue to the next slice.\n4. Conflict → you may resolve ONLY trivial conflicts: disjoint hunks, or pure whitespace/line-ending differences. Anything requiring judgment about intent: run \`git merge --abort\`, record the slice under conflicted (NOT merged) with a specific reason, and continue with the remaining slices. Never rebase, never force, never discard slice work — an aborted slice stays intact on its branch for the human.\n\nReturn merged ({name, verified} for every slice whose merge completed without abort, in merge order), conflicted ({name, reason} for every slice you aborted), and baseCommit.` + RAISE_HAND_NOTE
 }
 
 function auditPrompt(baseCommit) {

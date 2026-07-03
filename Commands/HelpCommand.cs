@@ -92,7 +92,9 @@ public static class HelpCommand
         Console.WriteLine("Worktree Commands:");
         Console.WriteLine("  worktree cleanup <id>  Clean up worktree (ref-counted)");
         Console.WriteLine();
-        Console.WriteLine("Notion Sync Commands:");
+        Console.WriteLine("Notion Commands:");
+        Console.WriteLine("  notion connect         Store a Notion integration token locally");
+        Console.WriteLine("  notion reveal-token    Print the stored Notion token (guarded)");
         Console.WriteLine("  notion sync            Reconcile dydo docs with a Notion workspace");
         Console.WriteLine();
         Console.WriteLine("Utility:");

@@ -1,16 +1,20 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
+using System.Text;
 using DynaDocs.Services;
 using DynaDocs.Sync;
 using DynaDocs.Sync.Notion;
+using DynaDocs.Utils;
 
 /// <summary>
-/// The <c>dydo notion sync</c> command (Decision 025 §5). Resolves the integration token and parent
-/// page, then provisions and reconciles every object type in the project's sync model through the real
-/// <see cref="NotionSyncAdapter"/>. When the token or parent page is missing it reports cleanly and
-/// exits without any network call. <c>--dry-run</c> previews the reconcile plan.
+/// The <c>dydo notion</c> command group (Decision 025 / 027). <c>connect</c> stores the show-once
+/// integration token in the local secret store and records the storage policy in dydo.json;
+/// <c>reveal-token</c> is a guarded break-glass that prints it back; <c>sync</c> resolves the token
+/// (local store → namespaced env → generic env) and reconciles the project's sync model against Notion.
+/// The token is never passed as a CLI argument, never echoed, and never logged.
 /// </summary>
 public static class NotionCommand
 {
@@ -19,7 +23,44 @@ public static class NotionCommand
     public static Command Create()
     {
         var command = new Command("notion", "Sync dydo docs with a Notion workspace");
+        command.Subcommands.Add(CreateConnectCommand());
+        command.Subcommands.Add(CreateRevealCommand());
         command.Subcommands.Add(CreateSyncCommand());
+        return command;
+    }
+
+    private static Command CreateConnectCommand()
+    {
+        var command = new Command("connect", "Store a Notion integration token locally (read from stdin, never echoed)");
+        var parentPage = new Option<string?>("--parent-page")
+        {
+            Description = "Notion page id the spine databases are provisioned under; written to dydo.json.",
+        };
+        command.Options.Add(parentPage);
+        command.SetAction(parse => NotionConnectService.Execute(
+            new ConfigService(),
+            ReadTokenFromStdin,
+            () => ConfirmYesNo("A token is already stored. Overwrite it? [y/N] "),
+            parse.GetValue(parentPage),
+            Console.Out,
+            Console.Error));
+        return command;
+    }
+
+    private static Command CreateRevealCommand()
+    {
+        var command = new Command("reveal-token", "Print the stored Notion token (guarded — exposes a secret)");
+        var yes = new Option<bool>("--yes")
+        {
+            Description = "Skip the interactive confirmation.",
+        };
+        command.Options.Add(yes);
+        command.SetAction(parse => NotionRevealService.Execute(
+            new ConfigService(),
+            parse.GetValue(yes),
+            () => ConfirmYesNo("Print the token to this terminal? [y/N] "),
+            Console.Out,
+            Console.Error));
         return command;
     }
 
@@ -35,14 +76,58 @@ public static class NotionCommand
         return command;
     }
 
-    private static int RunSync(bool dryRun) =>
-        NotionSyncService.Execute(
-            NotionTokenResolver.Resolve(),
-            new ConfigService(),
-            CreateClient,
-            dryRun,
-            Console.Out,
-            Console.Error);
+    private static int RunSync(bool dryRun)
+    {
+        var config = new ConfigService();
+        var loaded = config.LoadConfig();
+
+        if ((loaded?.Notion?.TokenStorage ?? NotionTokenStore.LocalMode) == NotionTokenStore.VaultMode)
+        {
+            Console.Error.WriteLine(NotionTokenStore.VaultNotImplementedMessage);
+            return ExitCodes.ToolError;
+        }
+
+        var token = NotionTokenResolver.Resolve(loaded, config.GetProjectRoot(), config.GetDydoRoot());
+        return NotionSyncService.Execute(token, config, CreateClient, dryRun, Console.Out, Console.Error);
+    }
+
+    /// <summary>Reads the token from stdin: masked when a TTY (so it never lands in shell history or the
+    /// terminal), a plain line read when input is redirected (piped/tested).</summary>
+    // Excluded from coverage: the masked branch drives Console.ReadKey, which throws under a test host
+    // (no interactive console); it cannot be exercised without a real TTY. The redirected branch is a
+    // trivial ReadLine covered indirectly by the connect command tests.
+    [ExcludeFromCodeCoverage(Justification = "Interactive TTY input (Console.ReadKey) is not runnable under a test host.")]
+    private static string? ReadTokenFromStdin()
+    {
+        if (Console.IsInputRedirected)
+            return Console.In.ReadLine();
+
+        Console.Error.Write("Paste the Notion token (input hidden): ");
+        var token = new StringBuilder();
+        ConsoleKeyInfo key;
+        while ((key = Console.ReadKey(intercept: true)).Key != ConsoleKey.Enter)
+        {
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (token.Length > 0)
+                    token.Length--;
+            }
+            else if (!char.IsControl(key.KeyChar))
+            {
+                token.Append(key.KeyChar);
+            }
+        }
+
+        Console.Error.WriteLine();
+        return token.ToString();
+    }
+
+    private static bool ConfirmYesNo(string prompt)
+    {
+        Console.Error.Write(prompt);
+        var line = Console.In.ReadLine();
+        return line != null && line.Trim().Equals("y", StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>The real transport: a fresh <see cref="HttpClient"/> wrapped by <see cref="NotionClient"/>.
     /// The handler is owned by the client for the process lifetime of one sync invocation.</summary>

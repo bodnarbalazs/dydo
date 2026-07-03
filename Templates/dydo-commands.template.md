@@ -726,6 +726,23 @@ dydo help
 
 ## Notion Commands
 
+### dydo notion connect
+
+Store a Notion integration token for this project. The token is read from stdin (never a command-line argument, so it stays out of shell history) and saved to a gitignored local secret store — DPAPI-protected on Windows, `0600`-permissioned elsewhere — and never committed. Pass `--parent-page <id>` to also record the parent page in `notion.parentPageId`.
+
+```bash
+dydo notion connect
+dydo notion connect --parent-page <page-id>
+```
+
+### dydo notion reveal-token
+
+Print the stored Notion integration token to stdout. A guarded break-glass for the show-once token: it requires `--yes` (or an interactive confirmation) and prints a warning, since it exposes a secret to the terminal.
+
+```bash
+dydo notion reveal-token --yes
+```
+
 ### dydo notion sync
 
 Reconcile the sync model's object types (default `Campaign` → `Sprint` → `SprintTask`) against Notion bidirectionally, provisioning one Notion database per object type under a parent page. Requires a `DYDO_NOTION_TOKEN` integration token and a parent page from `notion.parentPageId` in dydo.json or the `DYDO_NOTION_PARENT_PAGE` environment variable. Use `--dry-run` to print the reconcile plan without applying it.

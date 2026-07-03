@@ -373,6 +373,8 @@ Commands meant to be called only by agents are *italic*.
 ### Notion Sync
 | Command | Description |
 |---------|-------------|
+| `dydo notion connect` | Store a Notion integration token locally (never committed) |
+| `dydo notion reveal-token` | Print the stored Notion token (guarded break-glass) |
 | `dydo notion sync` | Reconcile dydo docs with a Notion workspace (requires `DYDO_NOTION_TOKEN`) |
 
 ### Utility

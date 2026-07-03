@@ -11,5 +11,5 @@ Index of sprints documentation.
 
 ## Contents
 
-- [Notion Sync](./notion-sync.md)
-- [Runtime Slim](./runtime-slim.md)
+- [Notion Sync](./notion-sync.md) - Build the Notion-agnostic sync engine (3-way reconcile + base snapshot), the real Notion adapter, and the PM spine provisioning that creates and ow...
+- [Runtime Slim](./runtime-slim.md) - Strip the queue, baton, dispatch-wait, and worktree-orchestration machinery from the worker-tier runtime (Sprint 6, Decision 024).

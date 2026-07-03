@@ -27,7 +27,9 @@ be picked up during the refine phase. Grouped by theme.
 
 ## Notion — open-source onboarding
 
-- **`dydo notion connect` (or `setup`) command + PROJECT-SCOPED config.** dydo is open-source and
+- **`dydo notion connect` (or `setup`) command + PROJECT-SCOPED config.** Design settled in
+  [Decision 027](../decisions/027-notion-token-storage.md) (local-only default + opt-in encrypted vault;
+  now in build). dydo is open-source and
   a user runs MANY dydo projects concurrently, each with a **separate** Notion workspace/integration.
   A single global `DYDO_NOTION_TOKEN` / `DYDO_NOTION_PARENT_PAGE` therefore COLLIDES across projects —
   confirmed live: pointing the token at this project's new workspace clobbered the main project's,

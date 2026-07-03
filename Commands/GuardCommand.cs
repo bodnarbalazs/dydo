@@ -268,7 +268,7 @@ public static partial class GuardCommand
         }
 
         // For write/edit operations
-        return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry);
+        return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry, ctx.AgentType);
     }
 
     /// <summary>
@@ -317,7 +317,7 @@ public static partial class GuardCommand
 
     private static int HandleWriteOperation(
         string? filePath, string? action, string? toolName, AgentState? agent,
-        string? sessionId, AgentRegistry registry)
+        string? sessionId, AgentRegistry registry, string? agentType = null)
     {
         if (string.IsNullOrEmpty(filePath))
             return ExitCodes.Success;
@@ -347,6 +347,16 @@ public static partial class GuardCommand
         // The one identity-scoped exception that survives: no cross-agent workspace writes.
         var crossAgent = BlockIfCrossAgentWorkspace(filePath, agent, toolName, null, sessionId, registry);
         if (crossAgent != null) return crossAgent.Value;
+
+        // Tool-scoped nudges (Decision 026 §4) apply to Tier-1 only: absence of
+        // agent_type is the Tier-1 signal (Decision 024 verification). Tier-2 worker
+        // calls carry agent_id and never reach this lane; the agent_type check covers
+        // any anomalous payload that carries a type without an id.
+        if (string.IsNullOrEmpty(agentType))
+        {
+            var nudged = CheckFileNudges(toolName, filePath, registry);
+            if (nudged != null) return nudged.Value;
+        }
 
         EmitWorktreeAllowIfNeeded();
 
@@ -600,6 +610,10 @@ public static partial class GuardCommand
 
         foreach (var nudge in nudges)
         {
+            // Tool-scoped nudges match file paths of direct tool calls (CheckFileNudges),
+            // not bash command text — their patterns are globs, not regexes.
+            if (nudge.Tools is { Count: > 0 }) continue;
+
             Regex regex;
             try { regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase); }
             catch { continue; }
@@ -610,6 +624,13 @@ public static partial class GuardCommand
             var message = nudge.Message;
             for (int i = 1; i < match.Groups.Count; i++)
                 message = message.Replace($"${i}", match.Groups[i].Value.Trim());
+
+            if (string.Equals(nudge.Severity, "notice", StringComparison.OrdinalIgnoreCase))
+            {
+                // Soft nudge: warn on stderr, never block (exit 0).
+                Console.Error.WriteLine($"NOTICE: {message}");
+                continue;
+            }
 
             if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
             {
@@ -644,6 +665,89 @@ public static partial class GuardCommand
     {
         var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(pattern));
         return Convert.ToHexString(bytes)[..8].ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Evaluates tool-scoped nudges (NudgeConfig.Tools) against a direct file-op path.
+    /// Ships the Decision 026 §4 Tier-1 source-write reminder: severity "notice" is an
+    /// exit-0 stderr warning, never a block — the trivial-edit exception stays frictionless.
+    /// Patterns are '|'-separated globs; {source}/{tests} expand to the dydo.json path sets.
+    /// Returns an exit code only for block-severity matches, null otherwise.
+    /// </summary>
+    internal static int? CheckFileNudges(string? toolName, string filePath, AgentRegistry registry)
+    {
+        if (string.IsNullOrEmpty(toolName))
+            return null;
+
+        var nudges = registry.Config?.Nudges;
+        if (nudges == null || nudges.Count == 0)
+            return null;
+
+        // Resolved lazily — most calls have no tool-scoped nudge for this tool.
+        Dictionary<string, List<string>>? pathSets = null;
+        string? relPath = null;
+
+        foreach (var nudge in nudges)
+        {
+            if (nudge.Tools is not { Count: > 0 }) continue;
+            if (!nudge.Tools.Any(t => t.Equals(toolName, StringComparison.OrdinalIgnoreCase))) continue;
+
+            pathSets ??= new RoleDefinitionService().ResolvePathSets(registry.Config);
+            relPath ??= RelativizeToProjectRoot(filePath);
+
+            if (!MatchesFileNudgePattern(nudge.Pattern, relPath, pathSets)) continue;
+
+            if (string.Equals(nudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Error.WriteLine($"BLOCKED: {nudge.Message}");
+                return ExitCodes.ToolError;
+            }
+
+            // "notice" (and any non-block severity): soft — warn on stderr, allow.
+            Console.Error.WriteLine($"NOTICE: {nudge.Message}");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// A tool-scoped nudge pattern is a '|'-separated list of glob patterns;
+    /// a {name} token expands to the corresponding dydo.json path set.
+    /// </summary>
+    private static bool MatchesFileNudgePattern(
+        string pattern, string relPath, Dictionary<string, List<string>> pathSets)
+    {
+        foreach (var token in pattern.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            List<string> globs =
+                token.StartsWith('{') && token.EndsWith('}') && pathSets.TryGetValue(token[1..^1], out var set)
+                    ? set
+                    : [token];
+
+            if (globs.Any(glob => GlobMatcher.IsMatch(relPath, glob)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Maps an absolute tool path to a project-root-relative one so it can match the
+    /// repo-relative path-set globs. Paths outside the project stay absolute and
+    /// simply won't match. Mirrors OffLimitsService's relativization.
+    /// </summary>
+    private static string RelativizeToProjectRoot(string path)
+    {
+        if (!Path.IsPathRooted(path))
+            return path;
+
+        var root = PathUtils.FindMainProjectRoot();
+        if (root == null)
+            return path;
+
+        var relative = Path.GetRelativePath(root, path);
+        var firstSegment = relative.Replace('\\', '/').Split('/', 2)[0];
+        return Path.IsPathRooted(relative) || firstSegment == ".." ? path : relative;
     }
 
     /// <summary>

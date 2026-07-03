@@ -412,5 +412,23 @@ public class ValidationServiceTests : IDisposable
         Assert.DoesNotContain(issues, i => i.Message.Contains("Nudge"));
     }
 
+    [Fact]
+    public void ValidateSystem_ToolScopedNoticeNudge_NoNudgeErrors()
+    {
+        // Decision 026 §4 shipped nudge: glob pattern (not a valid-regex concern),
+        // tools list, "notice" severity — all must validate clean.
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            paths = new { source = new[] { "src/**" }, tests = new[] { "tests/**" } },
+            agents = new { pool = Array.Empty<string>(), assignments = new Dictionary<string, string[]>() },
+            nudges = new[] { new { pattern = "{source}|{tests}", message = "Delegate to a workflow.", severity = "notice", tools = new[] { "Edit", "Write", "NotebookEdit" } } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.DoesNotContain(issues, i => i.Message.Contains("Nudge"));
+    }
+
     #endregion
 }

@@ -26,6 +26,10 @@ public class ToolInputData
     [JsonPropertyName("path")]
     public string? Path { get; set; }
 
+    /// <summary>File path of a NotebookEdit tool call (its analogue of file_path).</summary>
+    [JsonPropertyName("notebook_path")]
+    public string? NotebookPath { get; set; }
+
     [JsonPropertyName("run_in_background")]
     public bool? RunInBackground { get; set; }
 }

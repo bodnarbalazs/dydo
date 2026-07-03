@@ -178,6 +178,12 @@
       "pattern": "\\buntil\\s\u002B\\[",
       "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060, or \u0060dydo wait\u0060 for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
       "severity": "warn"
+    },
+    {
+      "pattern": "{source}|{tests}",
+      "message": "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
+      "severity": "notice",
+      "tools": ["Edit", "Write", "NotebookEdit"]
     }
   ],
   "frameworkHashes": {

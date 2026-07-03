@@ -73,6 +73,16 @@ public static class ConfigFactory
             Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
+        // Decision 026 §4: Tier-1 agents are managers — soft reminder on direct source
+        // writes. Notice severity = exit-0 stderr warning, never a block, so the
+        // trivial-edit exception stays frictionless.
+        new()
+        {
+            Tools = ["Edit", "Write", "NotebookEdit"],
+            Pattern = "{source}|{tests}",
+            Message = "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
+            Severity = "notice"
+        },
     ];
 
     /// <summary>
@@ -129,7 +139,8 @@ public static class ConfigFactory
             {
                 Pattern = n.Pattern,
                 Message = n.Message,
-                Severity = n.Severity
+                Severity = n.Severity,
+                Tools = n.Tools?.ToList()
             }).ToList(),
             Queues = DefaultQueues.ToList(),
             ScanExclude = DydoInternalScanExclude.ToList(),
@@ -155,7 +166,8 @@ public static class ConfigFactory
             {
                 Pattern = nudge.Pattern,
                 Message = nudge.Message,
-                Severity = nudge.Severity
+                Severity = nudge.Severity,
+                Tools = nudge.Tools?.ToList()
             });
             added++;
         }

@@ -9,6 +9,7 @@ public static class HookInputExtensions
     {
         ["write"] = "write",
         ["edit"] = "edit",
+        ["notebookedit"] = "edit",
         ["bash"] = "execute",
         ["powershell"] = "execute",
         ["read"] = "read",
@@ -16,9 +17,9 @@ public static class HookInputExtensions
         ["grep"] = "read",
     };
 
-    private static readonly HashSet<string> WriteTools = new(StringComparer.OrdinalIgnoreCase) { "write", "edit" };
+    private static readonly HashSet<string> WriteTools = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "notebookedit" };
     private static readonly HashSet<string> ReadTools = new(StringComparer.OrdinalIgnoreCase) { "read", "glob", "grep" };
-    private static readonly HashSet<string> FileTools = new(StringComparer.OrdinalIgnoreCase) { "edit", "write", "read", "bash", "glob", "grep" };
+    private static readonly HashSet<string> FileTools = new(StringComparer.OrdinalIgnoreCase) { "edit", "write", "notebookedit", "read", "bash", "glob", "grep" };
 
     public static string GetAction(this HookInput input)
     {
@@ -29,7 +30,7 @@ public static class HookInputExtensions
 
     public static string? GetFilePath(this HookInput input)
     {
-        return input.ToolInput?.FilePath;
+        return input.ToolInput?.FilePath ?? input.ToolInput?.NotebookPath;
     }
 
     public static string? GetSearchPath(this HookInput input)

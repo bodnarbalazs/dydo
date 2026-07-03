@@ -87,14 +87,18 @@ public class ValidationService : IValidationService
                 continue;
             }
 
-            try { _ = new Regex(nudge.Pattern); }
-            catch (ArgumentException ex)
+            // Tool-scoped nudges (Decision 026 §4) carry glob patterns, not regexes.
+            if (nudge.Tools is not { Count: > 0 })
             {
-                issues.Add(new ValidationIssue
+                try { _ = new Regex(nudge.Pattern); }
+                catch (ArgumentException ex)
                 {
-                    Severity = "error", File = "dydo.json",
-                    Message = $"Nudge [{i}] has invalid regex pattern: {ex.Message}"
-                });
+                    issues.Add(new ValidationIssue
+                    {
+                        Severity = "error", File = "dydo.json",
+                        Message = $"Nudge [{i}] has invalid regex pattern: {ex.Message}"
+                    });
+                }
             }
 
             if (string.IsNullOrWhiteSpace(nudge.Message))
@@ -107,12 +111,13 @@ public class ValidationService : IValidationService
             }
 
             if (!string.Equals(nudge.Severity, "block", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(nudge.Severity, "notice", StringComparison.OrdinalIgnoreCase))
             {
                 issues.Add(new ValidationIssue
                 {
                     Severity = "error", File = "dydo.json",
-                    Message = $"Nudge [{i}] has invalid severity '{nudge.Severity}'. Must be 'block' or 'warn'."
+                    Message = $"Nudge [{i}] has invalid severity '{nudge.Severity}'. Must be 'block', 'warn', or 'notice'."
                 });
             }
         }

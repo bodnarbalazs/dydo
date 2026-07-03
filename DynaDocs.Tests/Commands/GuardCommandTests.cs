@@ -491,7 +491,132 @@ public class GuardCommandTests : IDisposable
     public void DefaultNudges_AllHaveValidSeverity()
     {
         Assert.All(ConfigFactory.DefaultNudges, n =>
-            Assert.Contains(n.Severity, new[] { "block", "warn" }));
+            Assert.Contains(n.Severity, new[] { "block", "warn", "notice" }));
+    }
+
+    [Fact]
+    public void DefaultNudges_Tier1SourceWriteReminder_IsSoftAndToolScoped()
+    {
+        // Decision 026 §4: shipped as a notice (exit-0 warning), scoped to the
+        // direct file-op tools, targeting the {source}/{tests} path sets.
+        var nudge = ConfigFactory.DefaultNudges.Single(n => n.Tools is { Count: > 0 });
+
+        Assert.Equal("notice", nudge.Severity);
+        Assert.Equal("{source}|{tests}", nudge.Pattern);
+        Assert.Equal(new[] { "Edit", "Write", "NotebookEdit" }, nudge.Tools);
+        Assert.Contains("if it needs a reviewer, it needs a workflow", nudge.Message);
+    }
+
+    #endregion
+
+    #region Tool-Scoped File Nudges (Decision 026 §4)
+
+    private static (int? Result, string Stderr) RunFileNudge(string toolName, string filePath, AgentRegistry registry)
+    {
+        var original = Console.Error;
+        var capture = new StringWriter();
+        Console.SetError(capture);
+        try
+        {
+            return (GuardCommand.CheckFileNudges(toolName, filePath, registry), capture.ToString());
+        }
+        finally
+        {
+            Console.SetError(original);
+        }
+    }
+
+    [Fact]
+    public void CheckFileNudges_SourcePath_EmitsNoticeAndAllows()
+    {
+        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
+        var registry = new AgentRegistry(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", registry);
+
+        Assert.Null(result);
+        Assert.Contains("NOTICE: delegate to a workflow", stderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_AbsoluteSourcePath_Matches()
+    {
+        // Claude Code delivers absolute paths — they must relativize to the project root
+        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
+        var registry = new AgentRegistry(_testDir);
+        var absolute = Path.Combine(_testDir, "tests", "FooTests.cs");
+
+        var (result, stderr) = RunFileNudge("write", absolute, registry);
+
+        Assert.Null(result);
+        Assert.Contains("NOTICE: delegate to a workflow", stderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_NonSourcePath_Silent()
+    {
+        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
+        var registry = new AgentRegistry(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "dydo/project/decisions/099-x.md", registry);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_ToolNotInList_Silent()
+    {
+        WriteConfigWithFileNudge("{source}|{tests}", "delegate to a workflow", "notice");
+        var registry = new AgentRegistry(_testDir);
+
+        var (result, stderr) = RunFileNudge("read", "src/Foo.cs", registry);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void CheckFileNudges_BlockSeverity_Blocks()
+    {
+        WriteConfigWithFileNudge("{source}|{tests}", "hands off", "block");
+        var registry = new AgentRegistry(_testDir);
+
+        var (result, stderr) = RunFileNudge("edit", "src/Foo.cs", registry);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: hands off", stderr);
+    }
+
+    [Fact]
+    public void CheckNudges_SkipsToolScopedNudges()
+    {
+        // A tool-scoped nudge's pattern is a glob, not a regex — bash evaluation must skip
+        // it even when the pattern text would match the command.
+        CreateRegistryWithAgent("Adele", "sess-1");
+        WriteConfigWithFileNudge("dangerous-command", "file nudge", "block");
+        var registry = new AgentRegistry(_testDir);
+
+        var result = GuardCommand.CheckNudges("dangerous-command", "sess-1", registry);
+
+        Assert.Null(result);
+    }
+
+    private void WriteConfigWithFileNudge(string pattern, string message, string severity)
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
+            {
+                "version": 1,
+                "structure": { "root": "dydo" },
+                "agents": {
+                    "pool": ["Adele"],
+                    "assignments": { "testuser": ["Adele"] }
+                },
+                "nudges": [
+                  {"pattern": "{{pattern}}", "message": "{{message}}", "severity": "{{severity}}", "tools": ["Edit", "Write", "NotebookEdit"]}
+                ]
+            }
+            """);
     }
 
     #endregion

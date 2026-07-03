@@ -5,7 +5,7 @@ type: context
 
 # dydo 2.0 — Campaign Roadmap
 
-The sprint-by-sprint plan for the dydo 2.0 native pivot. Strategy and rationale live in [Decision 024](../decisions/024-dydo-2-native-pivot.md); the gating spike that de-risked it is recorded there (Verification, gate passed). Working notes + verification details: [brief-dydo-2-upgrade](../../agents/Adele/brief-dydo-2-upgrade.md).
+The sprint-by-sprint plan for the dydo 2.0 native pivot. Strategy and rationale live in [Decision 024](../decisions/024-dydo-2-native-pivot.md); the gating spike that de-risked it is recorded there (Verification, gate passed). Working notes + verification details: [brief-dydo-2-upgrade](../../agents/Adele/archive/20260629-113153/brief-dydo-2-upgrade.md) (archived).
 
 dydo 2.0 is itself **one Campaign** of seven sprints, capped by an inquisition.
 

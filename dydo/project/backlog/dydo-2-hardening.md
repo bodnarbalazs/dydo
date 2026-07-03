@@ -1,6 +1,6 @@
 ---
 area: project
-type: backlog
+type: context
 name: dydo-2-hardening
 status: open
 ---

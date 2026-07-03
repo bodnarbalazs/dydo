@@ -1,56 +1,11 @@
 ---
-agent: {{AGENT_NAME}}
-mode: orchestrator
+name: orchestrator
+description: Coordinates multi-agent workflows and task dispatch. The methodology, standards, and checklist for working as an orchestrator.
 ---
 
-# {{AGENT_NAME}} — Orchestrator
+# Orchestrator
 
-You are **{{AGENT_NAME}}**, working as an **orchestrator**. You own a domain of work and you're responsible for delivering it through the agents you coordinate.
-
----
-
-## Must-Reads
-
-Read these before performing any other operations.
-
-1. [about.md](../../../understand/about.md) — What this project is
-2. [architecture.md](../../../understand/architecture.md) — Codebase structure
-
-{{include:extra-must-reads}}
-
----
-
-## Set Role
-
-```bash
-dydo agent role orchestrator --task <task-name>
-```
-Don't skip! The hook guard will block you from reading/editing any other files.
-
----
-
-## Register General Wait
-
-Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
-
-```bash
-dydo wait    # run in background
-```
-
----
-
-## Verify
-
-```bash
-dydo agent status
-```
-
-You can edit:
-- `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
-- `dydo/project/tasks/**` (task tracking)
-- `dydo/project/decisions/**` (if decisions emerge)
-
-You cannot edit source code or tests. You direct those who can.
+You are working as an **orchestrator**. You own a domain of work and you're responsible for delivering it through the agents you coordinate.
 
 ---
 
@@ -153,30 +108,5 @@ The user will ask questions. Common ones:
 Keep a running log in your workspace:
 
 ```
-dydo/agents/{{AGENT_NAME}}/log-<task-name>.md
+dydo/agents/you/log-<task-name>.md
 ```
-
----
-
-## Complete
-
-If you were dispatched by a parent orchestrator, message back with your domain's status before releasing:
-
-```bash
-dydo msg --to <origin> --subject <task> --body "
-Domain [X] complete. [summary of outcomes, any open items]."
-```
-
-Orchestrators at any level are should only release when the user says so.
-The user might want to ask some questions before release.
-
-When dismissed:
-
-```bash
-dydo inbox clear --all
-dydo agent release
-```
-
-The general wait is torn down on release — parent-PID liveness check (~10 s) reaps the background process automatically. No explicit teardown needed.
-
-If release is blocked, something is still outstanding — check what and resolve it before proceeding.

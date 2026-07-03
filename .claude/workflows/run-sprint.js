@@ -149,7 +149,12 @@ if (results.some(r => r.merged)) {
     schema: AUDIT_RESULT,
   })
   auditVerdict = audit?.pass && !audit.raiseHand ? 'pass' : 'fail'
-  auditFindings = audit ? (audit.findings ?? audit.reason ?? '') : 'sprint-auditor did not return a result'
+  // Keep BOTH findings and reason: an auditor that raises its hand AND returns
+  // findings has said two distinct things — dropping either loses signal.
+  auditFindings = audit
+    ? [audit.findings, audit.raiseHand && audit.reason ? `Raised hand: ${audit.reason}` : audit.reason]
+        .filter(Boolean).join('\n\n')
+    : 'sprint-auditor did not return a result'
 } else {
   auditVerdict = 'skipped'
   auditFindings = 'No slice work landed on the invoking branch — nothing to audit.'
@@ -193,7 +198,7 @@ async function runSlice(slice) {
     if (!code || code.raiseHand)
       return escalate(slice, 'code-writer', round, code?.reason ?? 'code-writer did not return a result', { summary: code?.summary, ...work })
 
-    const review = await agent(reviewPrompt(slice, code.summary), {
+    const review = await agent(reviewPrompt(slice, code.summary, work), {
       agentType: 'reviewer',
       label: `review:${slice.name}#${round}`,
       phase: 'Implement & review',
@@ -230,8 +235,13 @@ function codePrompt(slice, feedback, round) {
   return base + roundNote + RAISE_HAND_NOTE
 }
 
-function reviewPrompt(slice, codeSummary) {
-  return `Review the implementation of sprint slice "${slice.name}".\n\nBrief:\n${slice.brief}\n\nThe code-writer reports:\n${codeSummary}\n\nReview strictly per your reviewer methodology — PASS only if correct, tested, and standards-clean (no "pass with notes"; PASS means perfect). Run the tests + coverage gate. Return a structured verdict; if not pass, make findings specific and actionable. If something needs human judgment rather than another code round, set raiseHand=true.`
+function reviewPrompt(slice, codeSummary, work) {
+  // Isolated slices live in a workflow worktree, not the main tree — without the
+  // location the reviewer would diff the wrong tree and see none of the work.
+  const whereNote = ISOLATE && work?.branch
+    ? `\n\nThe work lives on branch \`${work.branch}\` in the worktree \`${work.worktreePath}\` — review it THERE (run tests and diffs against that working tree, not the main one).`
+    : ''
+  return `Review the implementation of sprint slice "${slice.name}".\n\nBrief:\n${slice.brief}\n\nThe code-writer reports:\n${codeSummary}${whereNote}\n\nReview strictly per your reviewer methodology — PASS only if correct, tested, and standards-clean (no "pass with notes"; PASS means perfect). Run the tests + coverage gate. Return a structured verdict; if not pass, make findings specific and actionable. If something needs human judgment rather than another code round, set raiseHand=true.`
 }
 
 function mergePrompt(toMerge) {

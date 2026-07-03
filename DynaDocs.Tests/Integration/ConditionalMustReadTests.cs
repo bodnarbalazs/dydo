@@ -411,7 +411,8 @@ public class ConditionalMustReadTests : IntegrationTestBase
         var modeFile = ReadFile("dydo/agents/Adele/modes/orchestrator.md");
 
         Assert.Contains("not a passive observer", modeFile);
-        Assert.Contains("Verify merge results", modeFile);
+        // 2.0 monitoring guidance: verify workflow merge-backs actually landed
+        Assert.Contains("Verify merged work landed", modeFile);
     }
 
     #endregion

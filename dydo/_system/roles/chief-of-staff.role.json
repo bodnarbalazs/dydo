@@ -1,0 +1,20 @@
+{
+  "name": "chief-of-staff",
+  "description": "The human\u0027s right hand \u2014 triages the backlog and idea funnel, routes work to domain orchestrators, reports status, and mediates between agents.",
+  "base": true,
+  "writablePaths": [
+    "dydo/agents/{self}/**",
+    "dydo/project/tasks/**",
+    "dydo/project/decisions/**",
+    "dydo/project/issues/**",
+    "dydo/project/backlog/**"
+  ],
+  "readOnlyPaths": [
+    "**"
+  ],
+  "templateFile": "mode-chief-of-staff.template.md",
+  "denialHint": "Chief-of-staff writes PM objects and docs, never code.",
+  "canOrchestrate": false,
+  "constraints": [],
+  "conditionalMustReads": []
+}

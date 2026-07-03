@@ -88,10 +88,11 @@ public class TemplateGeneratorTests
     {
         var modes = TemplateGenerator.GetModeNames();
 
-        Assert.Equal(6, modes.Count);
+        Assert.Equal(7, modes.Count);
         Assert.Contains("code-writer", modes);
         Assert.Contains("reviewer", modes);
         Assert.Contains("co-thinker", modes);
+        Assert.Contains("chief-of-staff", modes);
         Assert.Contains("docs-writer", modes);
         Assert.Contains("test-writer", modes);
         Assert.Contains("orchestrator", modes);

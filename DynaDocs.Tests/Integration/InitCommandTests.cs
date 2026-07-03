@@ -411,9 +411,10 @@ public class InitCommandTests : IntegrationTestBase
 
         var rolesDir = Path.Combine(TestDir, "dydo/_system/roles");
         var files = Directory.GetFiles(rolesDir, "*.role.json");
-        Assert.Equal(6, files.Length);
+        Assert.Equal(7, files.Length);
         Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "orchestrator.role.json");
+        Assert.Contains(files, f => Path.GetFileName(f) == "chief-of-staff.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "planner.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "judge.role.json");
     }
@@ -427,7 +428,7 @@ public class InitCommandTests : IntegrationTestBase
 
         var rolesDir = Path.Combine(TestDir, "dydo/_system/roles");
         var files = Directory.GetFiles(rolesDir, "*.role.json");
-        Assert.Equal(6, files.Length);
+        Assert.Equal(7, files.Length);
     }
 
     [Fact]

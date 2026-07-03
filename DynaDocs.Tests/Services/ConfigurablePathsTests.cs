@@ -143,12 +143,13 @@ public class ConfigurablePathsTests : IDisposable
     }
 
     [Fact]
-    public void PermissionMap_Returns8Entries()
+    public void PermissionMap_Returns9Entries()
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        Assert.Equal(8, perms.Count);
+        Assert.Equal(9, perms.Count);
         Assert.True(perms.ContainsKey("orchestrator"));
+        Assert.True(perms.ContainsKey("chief-of-staff"));
         Assert.True(perms.ContainsKey("sprint-auditor"));
         Assert.False(perms.ContainsKey("inquisitor"));
         Assert.False(perms.ContainsKey("judge"));

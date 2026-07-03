@@ -145,7 +145,10 @@ public static class TemplateGenerator
             return File.Exists(filePath) ? File.ReadAllText(filePath).TrimEnd() : "";
         });
 
-        return Regex.Replace(content, @"\n{3,}", "\n\n");
+        // Collapse the blank-line pile-up an empty include leaves behind. Must match
+        // CRLF runs too: template sources are CRLF on Windows checkouts, and an
+        // uncollapsed \r\n\r\n\r\n survives the .claude/ LF-normalization as \n\n\n.
+        return Regex.Replace(content, @"(\r?\n){3,}", "\n\n");
     }
 
     /// <summary>

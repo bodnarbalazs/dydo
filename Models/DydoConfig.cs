@@ -39,6 +39,13 @@ public class DydoConfig
     [JsonPropertyName("notion")]
     public NotionConfig? Notion { get; set; }
 
+    /// <summary>
+    /// Model-tier bindings (Decision 028). Null when the section is absent —
+    /// every generated agent then inherits the session model.
+    /// </summary>
+    [JsonPropertyName("models")]
+    public ModelsConfig? Models { get; set; }
+
     [JsonPropertyName("queues")]
     public List<string> Queues { get; set; } = new();
 

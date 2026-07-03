@@ -129,6 +129,17 @@ public class RoleDefinitionService : IRoleDefinitionService
             },
             new RoleDefinition
             {
+                Name = "chief-of-staff",
+                Description = "The human's right hand — triages the backlog and idea funnel, routes work to domain orchestrators, reports status, and mediates between agents.",
+                Base = true,
+                WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
+                ReadOnlyPaths = ["**"],
+                TemplateFile = "mode-chief-of-staff.template.md",
+                DenialHint = "Chief-of-staff writes PM objects and docs, never code.",
+                Constraints = []
+            },
+            new RoleDefinition
+            {
                 Name = "docs-writer",
                 Description = "Creates and maintains documentation.",
                 Base = true,

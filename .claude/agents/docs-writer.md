@@ -2,7 +2,7 @@
 name: docs-writer
 description: Creates and maintains documentation.
 tools: Read, Grep, Glob, Bash, Edit, Write
-model: inherit
+model: claude-opus-4-8
 ---
 
 You are a **docs-writer**. Creates and maintains documentation. You produce and modify the project's files as your task requires. Your methodology lives in

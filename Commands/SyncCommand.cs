@@ -22,6 +22,8 @@ using DynaDocs.Utils;
 ///   BOTH an agent definition and a skill — they are spawned as typed sub-agents.
 /// - Skill-only roles (planner) emit a skill but NO agent: planner is a methodology the
 ///   orchestrator/co-thinker applies in their own thread, not a claimable identity.
+/// - Tier-1 manager modes (orchestrator, co-thinker, chief-of-staff — Decision 026) also
+///   emit skill-only: they are named terminal identities, never spawnable sub-agents.
 /// </summary>
 public static partial class SyncCommand
 {
@@ -46,6 +48,16 @@ public static partial class SyncCommand
     // claimable-surface filters can never drift apart.
     private static readonly HashSet<string> SkillOnlyRoles = RoleDefinitionService.SkillOnlyRoles;
 
+    // Tier-1 manager modes (Decision 026 §3): orchestrator / co-thinker / chief-of-staff
+    // are named terminal identities, never sub-agents — so like skill-only roles they emit
+    // a skill (the mode methodology, doctrine included) but NO agent definition.
+    private static readonly string[] Tier1ManagerRoles = ["orchestrator", "co-thinker", "chief-of-staff"];
+
+    // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
+    // Codex target reads a different vendor key from the same tiers map; the role → tier
+    // section never changes per vendor.
+    private const string ModelVendor = "anthropic";
+
     public static Command Create()
     {
         var command = new Command("sync", "Compile dydo roles into native .claude/ agents and skills");
@@ -57,12 +69,15 @@ public static partial class SyncCommand
     {
         var projectRoot = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
+        var models = new ConfigService().LoadConfig(projectRoot)?.Models;
 
         var workerRoles = baseRoles.Where(r => WorkerRoles.Contains(r.Name)).ToList();
         foreach (var role in workerRoles)
-            SyncRole(role, projectRoot);
+            SyncRole(role, projectRoot, models);
 
-        var skillOnlyRoles = baseRoles.Where(r => SkillOnlyRoles.Contains(r.Name)).ToList();
+        var skillOnlyRoles = baseRoles
+            .Where(r => SkillOnlyRoles.Contains(r.Name) || Tier1ManagerRoles.Contains(r.Name))
+            .ToList();
         foreach (var role in skillOnlyRoles)
             SyncSkillOnlyRole(role, projectRoot);
 
@@ -71,11 +86,11 @@ public static partial class SyncCommand
         return ExitCodes.Success;
     }
 
-    internal static void SyncRole(RoleDefinition role, string projectRoot)
+    internal static void SyncRole(RoleDefinition role, string projectRoot, ModelsConfig? models = null)
     {
         var agentDir = Path.Combine(projectRoot, ".claude", "agents");
         Directory.CreateDirectory(agentDir);
-        WriteLf(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role, ExtractMustReads(role, projectRoot)));
+        WriteLf(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role, ExtractMustReads(role, projectRoot), models));
 
         WriteSkill(role, projectRoot);
     }
@@ -111,7 +126,7 @@ public static partial class SyncCommand
     /// deliberately never includes the Agent tool: worker roles cannot dispatch subagents
     /// (Decision 026 requires this natively for sprint-auditor).
     /// </summary>
-    private static string BuildAgent(RoleDefinition role, List<string> mustReads)
+    private static string BuildAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models = null)
     {
         var readOnly = IsReadOnlyRole(role);
         var tools = readOnly
@@ -126,12 +141,19 @@ public static partial class SyncCommand
             "\n\nRead these for project context before working:\n"
             + string.Join('\n', mustReads.Select(p => $"- {p}")) + "\n";
 
+        // Decision 028: role → tier → concrete model, bound here by the compiler so
+        // workflows stay tier-blind. An unresolved role emits `model: inherit` — the
+        // explicit no-silent-downgrade spelling (an OMITTED model would fall back to
+        // Claude Code's default subagent model, not the session model).
+        var (model, effort) = ResolveModel(models, role.Name);
+        var effortLine = model != null && effort != null ? $"\neffort: {effort}" : "";
+
         return $"""
             ---
             name: {role.Name}
             description: {role.Description}{descriptionSuffix}
             tools: {tools}
-            model: inherit
+            model: {model ?? "inherit"}{effortLine}
             ---
 
             You are a **{role.Name}**. {role.Description} {stance} Your methodology lives in
@@ -140,14 +162,33 @@ public static partial class SyncCommand
             """;
     }
 
+    /// <summary>
+    /// Resolves role → tier → concrete model for the compile vendor (Decision 028).
+    /// Null model means "no binding" — unmapped role, absent models section, or a tier
+    /// missing from the vendor map — and the caller emits <c>model: inherit</c> so the
+    /// agent runs on the session model instead of silently downgrading.
+    /// </summary>
+    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string roleName)
+    {
+        if (models == null || !models.Roles.TryGetValue(roleName, out var tier))
+            return (null, null);
+        if (!models.Tiers.TryGetValue(ModelVendor, out var vendorTiers)
+            || !vendorTiers.TryGetValue(tier, out var model))
+            return (null, null);
+        return (model, models.Efforts.GetValueOrDefault(roleName));
+    }
+
     private static string BuildSkill(RoleDefinition role, string methodology) => $"""
         ---
         name: {role.Name}
-        description: {role.Description} The methodology, standards, and checklist for working as a {role.Name}.
+        description: {role.Description} The methodology, standards, and checklist for working as {Article(role.Name)} {role.Name}.
         ---
 
         {methodology}
         """;
+
+    private static string Article(string noun) =>
+        "aeiou".Contains(char.ToLowerInvariant(noun[0])) ? "an" : "a";
 
     /// <summary>
     /// Reads the role's mode template, resolves include tags, strips the frontmatter and the
@@ -259,8 +300,9 @@ public static partial class SyncCommand
     private static string Depersonalize(string content, string roleName)
     {
         content = content.Replace($"{{{{AGENT_NAME}}}} — ", "");
-        content = content.Replace($"You are **{{{{AGENT_NAME}}}}**, working as a **{roleName}**.",
-            $"You are working as a **{roleName}**.");
+        foreach (var article in new[] { "a", "an" })
+            content = content.Replace($"You are **{{{{AGENT_NAME}}}}**, working as {article} **{roleName}**.",
+                $"You are working as {article} **{roleName}**.");
         content = content.Replace("{{AGENT_NAME}}", "you");
         return content;
     }

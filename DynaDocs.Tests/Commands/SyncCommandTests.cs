@@ -260,4 +260,237 @@ public class SyncCommandTests : IDisposable
             Directory.SetCurrentDirectory(originalDir);
         }
     }
+
+    // --- Model-tier resolution (Decision 028) ---
+
+    private static ModelsConfig TestModels() => new()
+    {
+        Tiers = new Dictionary<string, Dictionary<string, string>>
+        {
+            ["anthropic"] = new() { ["strong"] = "model-strong", ["standard"] = "model-standard" }
+        },
+        Roles = new Dictionary<string, string>
+        {
+            ["reviewer"] = "strong",
+            ["code-writer"] = "standard",
+            ["docs-writer"] = "light" // tier NOT bound in the vendor map
+        },
+        Efforts = new Dictionary<string, string> { ["code-writer"] = "low" }
+    };
+
+    [Fact]
+    public void ResolveModel_MappedRole_ReturnsConcreteModel()
+    {
+        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "reviewer");
+        Assert.Equal("model-strong", model);
+        Assert.Null(effort);
+    }
+
+    [Fact]
+    public void ResolveModel_RoleWithEffort_ReturnsBoth()
+    {
+        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "code-writer");
+        Assert.Equal("model-standard", model);
+        Assert.Equal("low", effort);
+    }
+
+    [Fact]
+    public void ResolveModel_UnmappedRole_ReturnsNull()
+    {
+        // No role → tier entry: inherit the session model (Decision 028 — no silent downgrade).
+        var (model, effort) = SyncCommand.ResolveModel(TestModels(), "sprint-auditor");
+        Assert.Null(model);
+        Assert.Null(effort);
+    }
+
+    [Fact]
+    public void ResolveModel_TierMissingFromVendorMap_ReturnsNull()
+    {
+        // docs-writer maps to "light", which the vendor map does not bind → inherit.
+        var (model, _) = SyncCommand.ResolveModel(TestModels(), "docs-writer");
+        Assert.Null(model);
+    }
+
+    [Fact]
+    public void ResolveModel_AbsentModelsSection_ReturnsNull()
+    {
+        var (model, effort) = SyncCommand.ResolveModel(null, "reviewer");
+        Assert.Null(model);
+        Assert.Null(effort);
+    }
+
+    [Fact]
+    public void SyncRole_WithModels_EmitsResolvedModelFrontmatter()
+    {
+        SyncCommand.SyncRole(_reviewer, _testDir, TestModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
+        Assert.Contains("\nmodel: model-strong\n", agent);
+        Assert.DoesNotContain("model: inherit", agent);
+        Assert.DoesNotContain("effort:", agent); // no effort configured for reviewer
+    }
+
+    [Fact]
+    public void SyncRole_WithEffort_EmitsEffortLine()
+    {
+        var codeWriter = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "code-writer");
+        SyncCommand.SyncRole(codeWriter, _testDir, TestModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
+        Assert.Contains("\nmodel: model-standard\neffort: low\n", agent);
+    }
+
+    [Fact]
+    public void SyncRole_UnmappedRole_FallsBackToInherit()
+    {
+        var auditor = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "sprint-auditor");
+        SyncCommand.SyncRole(auditor, _testDir, TestModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "sprint-auditor.md"));
+        Assert.Contains("model: inherit", agent);
+    }
+
+    [Fact]
+    public void SyncRole_NoModelsSection_FallsBackToInherit()
+    {
+        SyncCommand.SyncRole(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
+        Assert.Contains("model: inherit", agent);
+    }
+
+    [Fact]
+    public void SyncCommand_Run_ResolvesModelsFromDydoJson()
+    {
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+                {
+                  "version": 1,
+                  "models": {
+                    "tiers": { "anthropic": { "strong": "vendor-strong-model" } },
+                    "roles": { "reviewer": "strong" }
+                  }
+                }
+                """);
+            Directory.SetCurrentDirectory(_testDir);
+
+            SyncCommand.Create().Parse([]).Invoke();
+
+            var reviewer = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
+            Assert.Contains("model: vendor-strong-model", reviewer);
+            // Unmapped worker roles inherit the session model
+            var codeWriter = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "code-writer.md"));
+            Assert.Contains("model: inherit", codeWriter);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Fact]
+    public void DefaultModels_ResolveForAllTieredWorkerRoles()
+    {
+        // The shipped defaults (Decision 028) must actually bind: every role in the
+        // default role → tier map resolves to a concrete model.
+        var models = ConfigFactory.CreateDefaultModels();
+        foreach (var role in models.Roles.Keys)
+        {
+            var (model, _) = SyncCommand.ResolveModel(models, role);
+            Assert.False(string.IsNullOrEmpty(model), $"default tier for '{role}' did not resolve");
+        }
+    }
+
+    // --- Tier-1 manager modes (Decision 026) ---
+
+    [Fact]
+    public void SyncCommand_Run_GeneratesTier1ManagerSkills_ButNoAgents()
+    {
+        // Decision 026: orchestrator / co-thinker / chief-of-staff mode skills join the
+        // sync output, but Tier-1 identities are terminal sessions, never sub-agents.
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(_testDir, "dydo.json"), "{\"version\":1}");
+            Directory.SetCurrentDirectory(_testDir);
+
+            SyncCommand.Create().Parse([]).Invoke();
+
+            foreach (var role in new[] { "orchestrator", "co-thinker", "chief-of-staff" })
+            {
+                Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")),
+                    $"missing Tier-1 skill: {role}");
+                Assert.False(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")),
+                    $"Tier-1 mode '{role}' must NOT get a native agent definition");
+            }
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Theory]
+    [InlineData("orchestrator")]
+    [InlineData("co-thinker")]
+    [InlineData("chief-of-staff")]
+    public void Tier1ManagerSkills_StateTheManagersDoctrine(string roleName)
+    {
+        // Decision 026 §1–2: every Tier-1 mode skill states the doctrine — managers
+        // write no code, implementation goes through workflows, trivial-edit exception.
+        var role = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == roleName);
+        SyncCommand.SyncSkillOnlyRole(role, _testDir);
+
+        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", roleName, "SKILL.md"));
+        Assert.Contains("Managers Doctrine", skill);
+        Assert.Contains("run-sprint", skill);
+        Assert.Contains("if it needs a reviewer, it needs a workflow", skill);
+    }
+
+    [Fact]
+    public void ChiefOfStaff_Skill_CarriesCharacterAndInvariants()
+    {
+        var chief = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "chief-of-staff");
+        SyncCommand.SyncSkillOnlyRole(chief, _testDir);
+
+        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "chief-of-staff", "SKILL.md"));
+        // The human's right hand: triage + routing, status reports, mediation
+        Assert.Contains("right hand", skill);
+        Assert.Contains("Triage the Funnel", skill);
+        Assert.Contains("Status Reports", skill);
+        Assert.Contains("Escalations awaiting decisions", skill);
+        Assert.Contains("Gates awaiting the human", skill);
+        Assert.Contains("Mediate Between Agents", skill);
+        // Invariants: never in an approval path; PM objects/docs, never code
+        Assert.Contains("never in an approval path", skill);
+        Assert.Contains("never code", skill);
+    }
+
+    [Fact]
+    public void OrchestratorTemplate_HasNoDead10Machinery()
+    {
+        // Decision 026 sweep: worker-tier dispatch, .needs-merge markers, and
+        // `dydo worktree merge` flows are 1.0 machinery that no longer exists.
+        var methodology = SyncCommand.ExtractMethodology(
+            RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "orchestrator"), _testDir);
+
+        Assert.DoesNotContain(".needs-merge", methodology);
+        Assert.DoesNotContain("dydo worktree merge", methodology);
+        Assert.DoesNotContain("--role inquisitor", methodology);
+        Assert.DoesNotContain("--role code-writer", methodology);
+        // The 2.0 reality is stated instead
+        Assert.Contains("run-sprint", methodology);
+    }
+
+    [Fact]
+    public void CoThinkerTemplate_DoesNotSwitchIntoCodeWriting()
+    {
+        var raw = TemplateGenerator.ReadBuiltInTemplate("mode-co-thinker.template.md");
+
+        Assert.DoesNotContain("dydo agent role code-writer", raw);
+        Assert.DoesNotContain("--role planner", raw);
+        Assert.Contains("run-sprint", raw);
+    }
 }

@@ -97,6 +97,25 @@
       "ignoreDefaults": true
     }
   },
+  "models": {
+    "tiers": {
+      "anthropic": {
+        "strong": "claude-fable-5",
+        "standard": "claude-opus-4-8",
+        "light": "claude-haiku-4-5"
+      }
+    },
+    "roles": {
+      "code-writer": "standard",
+      "test-writer": "standard",
+      "docs-writer": "standard",
+      "reviewer": "strong",
+      "sprint-auditor": "strong",
+      "inquisitor": "strong",
+      "judge": "strong",
+      "planner": "strong"
+    }
+  },
   "queues": [
     "merge"
   ],
@@ -165,7 +184,8 @@
     "_system/templates/agent-workflow.template.md": "fa7a9fc2d3499ccb80b67d156462a947fdad1dbea10610e82728bdb4081c2ee7",
     "_system/templates/mode-code-writer.template.md": "91b0d65f74d9eab4bfd06e6fa13631dda50e4be0113724a2ce3bb5d0ea1c3ec7",
     "_system/templates/mode-reviewer.template.md": "13f8c34b49200cceb0e6de1436881a5d9facea9f88d407aba6f482d7cd121b21",
-    "_system/templates/mode-co-thinker.template.md": "05f41e66d62d4c8812d6b92678572c206bfc9fece3891948d3b4dd611db35ead",
+    "_system/templates/mode-co-thinker.template.md": "7f486d165802adbf1c23fd310483c51df48484443828485a48d98fec91d59cad",
+    "_system/templates/mode-chief-of-staff.template.md": "a28deb44a9216e7ffa432d220d09c2bc6519a12375a45aee94f88a6e52d8aaa6",
     "_system/templates/mode-planner.template.md": "b5acd3039a54f9e9365fd1f59b04cc412864abf9798b0696afbe05b34e1e3d41",
     "_system/templates/mode-docs-writer.template.md": "bf7350c5a9cbff027a4e916e6153ed99455edfb7bad288e3bc73fd6ee0214d93",
     "reference/about-dynadocs.md": "e3582a4f628ce8f6ee9315dbf549dceb1d7b630f5550aca06b4149e92ca8a434",
@@ -174,7 +194,7 @@
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",
     "_system/templates/mode-test-writer.template.md": "e44e4f607ad8d5065f7dd08ebdf836fab9173fb4bab7df8ee1928ddb0a6d4b37",
-    "_system/templates/mode-orchestrator.template.md": "9b9fe336ca87361c13c19f697ebd00f99038844fa9e11380dbce22d4cd51597d",
+    "_system/templates/mode-orchestrator.template.md": "913f7eb001c1443b82df887c8ac4f4861913156dcb5af298073e7f3f0a467527",
     "_system/templates/mode-inquisitor.template.md": "3961b188013dc301ae4a0211caf4eeddd6d8d8af82fede699cfbd482a9ab8520",
     "_system/templates/mode-judge.template.md": "7958f6c1c5d9d84dcdb8855760426a749b3e85cf5976995d1b08f9a8da348db3",
     "guides/how-to-merge-worktrees.md": "a01edead0a9e0751b4768fedf7941e460eabdc1317d76c33041f60a24da38e5c",

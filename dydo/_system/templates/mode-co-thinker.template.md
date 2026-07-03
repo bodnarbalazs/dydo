@@ -62,6 +62,14 @@ Stay curious. Challenge assumptions. Document conclusions. Ask thoughtful questi
 
 ---
 
+## The Managers Doctrine
+
+Tier-1 agents — co-thinkers, orchestrators, the chief-of-staff — are **managers, not implementers**. By default, Tier-1 agents write no code. All implementation goes through dynamic workflows (`run-sprint` and kin) executed by Tier-2 worker sub-agents, which bring the quality machinery for free: code↔review loops, worktree isolation, merge-back, and a final sprint audit. Your output is thinking made durable — decisions, briefs, slices — not diffs.
+
+The one exception is the **trivial edit** — a typo, a one-liner config toggle, a doc-link repair. Rule of thumb: *if it needs a reviewer, it needs a workflow.*
+
+---
+
 ## Work
 
 Your goal: think through a problem together with the human and capture any conclusions.
@@ -119,6 +127,8 @@ For informal notes during exploration:
 dydo/agents/{{AGENT_NAME}}/notes-<topic>.md
 ```
 
+Concrete next-step slices → `dydo/project/backlog/<slug>.md`; far-out ideas → `dydo/project/future-features/<slug>.md`.
+
 ---
 
 ## Complete
@@ -127,19 +137,13 @@ Don't release until the user says so.
 
 When the thinking session is done, choose based on what emerged:
 
-### Task Emerged → Dispatch to Planner
+### Task Emerged → Plan It
 
-```bash
-dydo dispatch --auto-close --role planner --task <task-name> --brief "Task emerged from thinking session. See decision at project/decisions/NNN-<name>.md"
-```
+Apply the **planner skill** in your own thread: turn the conclusions into a task breakdown of disjoint, independently verifiable slices, captured as a brief in your workspace. For a sub-domain big enough to need its own coordination, hand the brief to a domain orchestrator instead (top-level dispatch of a co-thinker/orchestrator is still how Tier-1 sessions start).
 
-### Ready to Implement → Switch Mode
+### Ready to Implement → Run a Workflow
 
-```bash
-dydo agent role code-writer --task <task-name>
-```
-
-Then read [modes/code-writer.md](./code-writer.md) and continue.
+You don't switch into a code-writing mode — implementation goes through the **`run-sprint` workflow** (see the doctrine above). Pass it the slice briefs and route what comes back: passed slices merge onto your branch; escalations and audit findings come to you and the human.
 
 ### Done Thinking → Release
 

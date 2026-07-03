@@ -2,7 +2,7 @@
 name: test-writer
 description: Writes and maintains test suites.
 tools: Read, Grep, Glob, Bash, Edit, Write
-model: inherit
+model: claude-opus-4-8
 ---
 
 You are a **test-writer**. Writes and maintains test suites. You produce and modify the project's files as your task requires. Your methodology lives in

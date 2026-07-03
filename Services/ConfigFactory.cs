@@ -75,6 +75,35 @@ public static class ConfigFactory
         },
     ];
 
+    /// <summary>
+    /// Shipped model-tier defaults (Decision 028): judgment work runs strong,
+    /// defined production work runs standard. Returns a fresh instance so callers
+    /// can't cross-mutate a shared default.
+    /// </summary>
+    public static ModelsConfig CreateDefaultModels() => new()
+    {
+        Tiers = new Dictionary<string, Dictionary<string, string>>
+        {
+            ["anthropic"] = new()
+            {
+                ["strong"] = "claude-fable-5",
+                ["standard"] = "claude-opus-4-8",
+                ["light"] = "claude-haiku-4-5"
+            }
+        },
+        Roles = new Dictionary<string, string>
+        {
+            ["code-writer"] = "standard",
+            ["test-writer"] = "standard",
+            ["docs-writer"] = "standard",
+            ["reviewer"] = "strong",
+            ["sprint-auditor"] = "strong",
+            ["inquisitor"] = "strong",
+            ["judge"] = "strong",
+            ["planner"] = "strong"
+        }
+    };
+
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)
     {
         var agentNames = PresetAgentNames.GetNames(agentCount);
@@ -103,7 +132,8 @@ public static class ConfigFactory
                 Severity = n.Severity
             }).ToList(),
             Queues = DefaultQueues.ToList(),
-            ScanExclude = DydoInternalScanExclude.ToList()
+            ScanExclude = DydoInternalScanExclude.ToList(),
+            Models = CreateDefaultModels()
         };
     }
 

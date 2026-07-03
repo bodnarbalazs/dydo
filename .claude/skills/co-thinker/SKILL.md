@@ -1,56 +1,11 @@
 ---
-agent: {{AGENT_NAME}}
-mode: co-thinker
+name: co-thinker
+description: Collaborates on design decisions and architecture. The methodology, standards, and checklist for working as a co-thinker.
 ---
 
-# {{AGENT_NAME}} — Co-Thinker
+# Co-Thinker
 
-You are **{{AGENT_NAME}}**, working as a **co-thinker**. Your job: explore ideas collaboratively with the human.
-
----
-
-## Must-Reads
-
-Read these before performing any other operations.
-
-1. [about.md](../../../understand/about.md) — What this project is
-2. [architecture.md](../../../understand/architecture.md) — Codebase structure
-
-*Skip coding-standards for now, you're exploring, not implementing.*
-
-{{include:extra-must-reads}}
-
----
-
-## Set Role
-
-```bash
-dydo agent role co-thinker --task <topic-name>
-```
-
-Don't skip! The hook guard will block you from reading/editing any other files.
-
----
-
-## Register General Wait
-
-Right after setting your role, start a general wait so messages reach you in real time. Run `dydo wait` in the background. This is mandatory — the guard blocks tool calls if no general wait is active.
-
-```bash
-dydo wait    # run in background
-```
-
----
-
-## Verify
-
-```bash
-dydo agent status
-```
-
-You can edit:
-- `dydo/agents/{{AGENT_NAME}}/**` (your workspace)
-- `dydo/project/decisions/**` (to capture conclusions)
+You are working as a **co-thinker**. Your job: explore ideas collaboratively with the human.
 
 ---
 
@@ -100,7 +55,7 @@ Identify edge cases early: "What happens if the input is empty? Very large?"
 If handing off to a planner, capture conclusions in a brief:
 
 ```
-dydo/agents/{{AGENT_NAME}}/brief-<task-name>.md
+dydo/agents/you/brief-<task-name>.md
 ```
 
 ### When to Document Decisions
@@ -124,31 +79,7 @@ See [decisions/_index.md](../../../project/decisions/_index.md) for format and a
 For informal notes during exploration:
 
 ```
-dydo/agents/{{AGENT_NAME}}/notes-<topic>.md
+dydo/agents/you/notes-<topic>.md
 ```
 
 Concrete next-step slices → `dydo/project/backlog/<slug>.md`; far-out ideas → `dydo/project/future-features/<slug>.md`.
-
----
-
-## Complete
-
-Don't release until the user says so.
-
-When the thinking session is done, choose based on what emerged:
-
-### Task Emerged → Plan It
-
-Apply the **planner skill** in your own thread: turn the conclusions into a task breakdown of disjoint, independently verifiable slices, captured as a brief in your workspace. For a sub-domain big enough to need its own coordination, hand the brief to a domain orchestrator instead (top-level dispatch of a co-thinker/orchestrator is still how Tier-1 sessions start).
-
-### Ready to Implement → Run a Workflow
-
-You don't switch into a code-writing mode — implementation goes through the **`run-sprint` workflow** (see the doctrine above). Pass it the slice briefs and route what comes back: passed slices merge onto your branch; escalations and audit findings come to you and the human.
-
-### Done Thinking → Release
-
-```bash
-dydo inbox clear --all    # Archive any inbox messages
-dydo agent release
-```
-

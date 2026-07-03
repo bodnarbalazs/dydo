@@ -14,9 +14,11 @@ public static class CompletionProvider
     ];
 
     // Claimable Tier-1 roles (Decision 024). planner is skill-only (not claimable);
-    // inquisitor/judge are retired in favor of the /inquisition workflow + reviewer agent.
+    // inquisitor/judge are retired in favor of the /inquisition workflow + reviewer agent;
+    // sprint-auditor is workflow-only (Decision 026). chief-of-staff joins the Tier-1
+    // manager mode set per Decision 026 §3.
     private static readonly string[] Roles =
-        ["code-writer", "reviewer", "co-thinker", "docs-writer", "test-writer", "orchestrator"];
+        ["code-writer", "reviewer", "co-thinker", "chief-of-staff", "docs-writer", "test-writer", "orchestrator"];
 
     private static readonly string[] ReviewStatuses = ["pass", "fail"];
 

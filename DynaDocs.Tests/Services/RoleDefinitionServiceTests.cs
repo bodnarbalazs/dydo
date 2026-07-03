@@ -100,8 +100,9 @@ public class RoleDefinitionServiceTests : IDisposable
         var roles = RoleDefinitionService.GetBaseRoleDefinitions();
         var result = _service.BuildPermissionMap(roles, pathSets);
 
-        Assert.Equal(8, result.Count);
+        Assert.Equal(9, result.Count);
         Assert.Contains("code-writer", result.Keys);
+        Assert.Contains("chief-of-staff", result.Keys);
         Assert.Contains("reviewer", result.Keys);
         Assert.Contains("orchestrator", result.Keys);
         Assert.Contains("planner", result.Keys);
@@ -277,12 +278,14 @@ public class RoleDefinitionServiceTests : IDisposable
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
         var files = Directory.GetFiles(rolesDir, "*.role.json");
 
-        // Six claimable Tier-1 roles. planner is skill-only and sprint-auditor is
-        // workflow-only (no role files); inquisitor/judge are retired (Decision 024).
-        Assert.Equal(6, files.Length);
+        // Seven claimable Tier-1 roles (chief-of-staff joined per Decision 026 §3).
+        // planner is skill-only and sprint-auditor is workflow-only (no role files);
+        // inquisitor/judge are retired (Decision 024).
+        Assert.Equal(7, files.Length);
         Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "reviewer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "co-thinker.role.json");
+        Assert.Contains(files, f => Path.GetFileName(f) == "chief-of-staff.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "docs-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "test-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "orchestrator.role.json");
@@ -704,6 +707,22 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("sprint-auditor", RoleDefinitionService.NonClaimableRoles);
         // NonClaimableRoles is the union both roster and registry filter on.
         Assert.Contains("planner", RoleDefinitionService.NonClaimableRoles);
+    }
+
+    [Fact]
+    public void GetBaseRoleDefinitions_ChiefOfStaff_IsClaimableManager()
+    {
+        // Decision 026 §3: chief-of-staff is a claimable Tier-1 manager mode like
+        // orchestrator/co-thinker — PM-object writable surface, never source or tests.
+        var chief = RoleDefinitionService.GetBaseRoleDefinitions().Single(r => r.Name == "chief-of-staff");
+
+        Assert.DoesNotContain("chief-of-staff", RoleDefinitionService.NonClaimableRoles);
+        Assert.Equal("mode-chief-of-staff.template.md", chief.TemplateFile);
+        Assert.DoesNotContain("{source}", chief.WritablePaths);
+        Assert.DoesNotContain("{tests}", chief.WritablePaths);
+        Assert.Contains("dydo/project/backlog/**", chief.WritablePaths);
+        // Never in an approval path — it must not be a CanOrchestrate verdict-CC target.
+        Assert.False(chief.CanOrchestrate);
     }
 
     #endregion

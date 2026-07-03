@@ -27,11 +27,23 @@ be picked up during the refine phase. Grouped by theme.
 
 ## Notion — open-source onboarding
 
-- **`dydo notion connect` (or `setup`) command + onboarding docs.** dydo is open-source; other
-  users must set up their own Notion internal integration + token. Provide a guided command
-  (paste your integration secret, pick/confirm the parent page, store it) and a tutorial doc
-  covering: create an internal integration, share the parent page with it, set `DYDO_NOTION_TOKEN`
-  / `notion.parentPageId` (or `DYDO_NOTION_PARENT_PAGE`). Reduce the manual friction we hit here.
+- **`dydo notion connect` (or `setup`) command + PROJECT-SCOPED config.** dydo is open-source and
+  a user runs MANY dydo projects concurrently, each with a **separate** Notion workspace/integration.
+  A single global `DYDO_NOTION_TOKEN` / `DYDO_NOTION_PARENT_PAGE` therefore COLLIDES across projects —
+  confirmed live: pointing the token at this project's new workspace clobbered the main project's,
+  and stale process-env values had to be `unset` to force the right ones. Config must be per-project:
+  - `dydo notion connect` stores the token in a **project-local, gitignored** secret (e.g.
+    `dydo/_system/.local/notion.secret`) — one per project, never in git, cross-platform (the command
+    handles the plumbing so docs don't branch per-OS). It also writes `notion.parentPageId` into
+    `dydo.json` (not a secret; already takes precedence over the env var — so the parent page is
+    project-scoped the moment it's in dydo.json).
+  - Token resolution order: project-local secret -> project-namespaced env `DYDO_<projectslug>_NOTION_TOKEN`
+    (for CI) -> generic `DYDO_NOTION_TOKEN` (last-resort fallback). Slug from dydo.json.
+  - Onboarding doc: create an internal integration, share the parent page, run `dydo notion connect`.
+- **Git-derived "Files Changed" at `dydo task approve`.** The old audit-derived auto-fill of a task's
+  Files Changed section was removed with the audit teardown (dcf42c7) and 024's fate map (which said
+  keep-audit) was never updated. No 2.0 replacement is wired. Clean fix: at approve time, run
+  `git diff --name-only` against the task's base ref and fill Files Changed. (Found by Brian, co-thinker.)
 
 ## Framework hardening
 

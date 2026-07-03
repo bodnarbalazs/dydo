@@ -152,7 +152,7 @@ public class NotionCommandTests
     }
 
     [Fact]
-    public void Sync_VaultMode_ReportsNotImplemented()
+    public void Sync_VaultMode_NoVaultFile_ReportsNotConfigured()
     {
         InTempProject(root =>
         {
@@ -160,12 +160,89 @@ public class NotionCommandTests
                 Path.Combine(root, "dydo.json"),
                 "{\"version\":1,\"notion\":{\"tokenStorage\":\"vault\"}}");
 
+            // No notion.vault present, so the resolver returns null without ever prompting -> clean no-op.
             var (code, _, stderr) = ConsoleCapture.All(() => NotionCommand.Create().Parse("sync").Invoke());
 
-            Assert.Equal(2, code);
-            Assert.Contains("vault", stderr);
+            Assert.Equal(0, code);
+            Assert.Contains("not configured", stderr);
         });
     }
+
+    [Fact]
+    public void Connect_Vault_SealsEncryptedVault_SetsVaultMode_NoPlaintextOnDisk()
+    {
+        InTempProject(root =>
+        {
+            const string token = "ntn_vault_secret_123";
+            const string passphrase = "Sup3r-Vault-Key";
+
+            var (code, stdout, _) = WithStdin($"{token}\n{passphrase}\n{passphrase}\n", () =>
+                ConsoleCapture.All(() => NotionCommand.Create().Parse("connect --vault").Invoke()));
+
+            Assert.Equal(0, code);
+            Assert.DoesNotContain(token, stdout);
+
+            var config = new ConfigService();
+            Assert.Equal("vault", config.LoadConfig()!.Notion!.TokenStorage);
+
+            var vaultPath = NotionTokenStore.VaultPathFor(config.GetDydoRoot());
+            Assert.True(File.Exists(vaultPath));
+            var onDisk = File.ReadAllText(vaultPath);
+            Assert.DoesNotContain(token, onDisk);
+            // The plaintext local secret must not exist in vault mode.
+            Assert.False(NotionTokenStore.Exists(NotionTokenStore.PathFor(config.GetDydoRoot())));
+        });
+    }
+
+    [Fact]
+    public void Connect_Vault_WeakPassphrase_Rejected_NoVaultWritten()
+    {
+        InTempProject(root =>
+        {
+            var (code, _, stderr) = WithStdin("ntn_tok\nshort\nshort\n", () =>
+                ConsoleCapture.All(() => NotionCommand.Create().Parse("connect --vault").Invoke()));
+
+            Assert.Equal(2, code);
+            Assert.Contains("too weak", stderr);
+
+            var config = new ConfigService();
+            Assert.False(File.Exists(NotionTokenStore.VaultPathFor(config.GetDydoRoot())));
+        });
+    }
+
+    [Fact]
+    public void Sync_VaultMode_VaultPresent_CannotUnlock_FailsClosed()
+    {
+        InTempProject(root =>
+        {
+            File.WriteAllText(
+                Path.Combine(root, "dydo.json"),
+                "{\"version\":1,\"notion\":{\"tokenStorage\":\"vault\"}}");
+            var config = new ConfigService();
+            NotionVault.WriteVault(
+                NotionTokenStore.VaultPathFor(config.GetDydoRoot()),
+                NotionVault.Encrypt("tok", "Sup3r-Vault-Key", 8192, 1));
+
+            // A committed vault exists but no passphrase is supplied (empty stdin) -> resolver returns null.
+            // Vault mode must fail CLOSED (exit 2), not silently no-op like the missing-vault case.
+            var (code, _, stderr) = WithStdin("\n", () =>
+                ConsoleCapture.All(() => NotionCommand.Create().Parse("sync").Invoke()));
+
+            Assert.Equal(2, code);
+            Assert.Contains("could not unlock the vault", stderr);
+        });
+    }
+
+    [Theory]
+    [InlineData("y", true)]
+    [InlineData("Y", true)]
+    [InlineData(" y ", true)]
+    [InlineData("n", false)]
+    [InlineData("yes", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsAffirmative_OnlyExactYAffirms_NullDeclines(string? line, bool expected) =>
+        Assert.Equal(expected, NotionCommand.IsAffirmative(line));
 
     private static void InTempProject(Action<string> body)
     {

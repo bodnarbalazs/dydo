@@ -1,6 +1,7 @@
 namespace DynaDocs.Serialization;
 
 using System.Text.Json.Serialization;
+using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 using DynaDocs.Sync.Notion.Provisioning;
 
@@ -32,3 +33,11 @@ internal partial class NotionJsonContext : JsonSerializerContext { }
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(NotionProvisionState))]
 internal partial class NotionProvisionJsonContext : JsonSerializerContext { }
+
+/// <summary>
+/// Source-generated JSON for the committed encrypted-vault envelope (Decision 027 §5). Written indented
+/// so the tracked <c>notion.vault</c> file produces readable git diffs. AOT-safe: no reflection.
+/// </summary>
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(NotionVaultEnvelope))]
+internal partial class NotionVaultJsonContext : JsonSerializerContext { }

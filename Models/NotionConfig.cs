@@ -15,8 +15,8 @@ public sealed class NotionConfig
     /// <summary>
     /// Project-level token-storage policy (Decision 027 §3). <c>"local"</c> (default) keeps the token in a
     /// gitignored per-machine secret store — DPAPI on Windows, <c>0600</c> plaintext elsewhere — and never
-    /// commits it. <c>"vault"</c> commits it as authenticated ciphertext for repo-portability; that mode is
-    /// not implemented yet (Slice B) and every vault code path fails loudly rather than degrading silently.
+    /// commits it. <c>"vault"</c> commits it as authenticated ciphertext (Argon2id + XChaCha20-Poly1305)
+    /// for repo-portability, unlocked by a passphrase that is never committed.
     /// </summary>
     [JsonPropertyName("tokenStorage")]
     public string TokenStorage { get; set; } = "local";

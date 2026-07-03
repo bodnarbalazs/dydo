@@ -8,14 +8,19 @@ using DynaDocs.Models;
 /// (b) the project-namespaced env var <c>DYDO_&lt;SLUG&gt;_NOTION_TOKEN</c> (for CI), then (c) the generic
 /// <c>DYDO_NOTION_TOKEN</c> — with the historical Windows User-registry fallback preserved on the generic
 /// tier so a persistently set token works without restarting the shell. The slug comes from
-/// <see cref="DydoConfig.Name"/> when set, else the sanitized project-root directory name.
+/// <see cref="DydoConfig.Name"/> when set, else the sanitized project-root directory name. When the project
+/// policy is <c>vault</c>, resolution is delegated to <see cref="NotionVaultResolver"/>.
 /// </summary>
 public static class NotionTokenResolver
 {
     public const string TokenEnvVar = "DYDO_NOTION_TOKEN";
 
-    public static string? Resolve(DydoConfig? config, string? projectRoot, string dydoRoot)
+    public static string? Resolve(
+        DydoConfig? config, string? projectRoot, string dydoRoot, Func<string?>? promptPassphrase = null)
     {
+        if ((config?.Notion?.TokenStorage ?? NotionTokenStore.LocalMode) == NotionTokenStore.VaultMode)
+            return NotionVaultResolver.Resolve(config, projectRoot, dydoRoot, promptPassphrase);
+
         var local = NotionTokenStore.Read(NotionTokenStore.PathFor(dydoRoot));
         if (!string.IsNullOrWhiteSpace(local))
             return local;

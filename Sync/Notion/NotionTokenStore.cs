@@ -11,7 +11,8 @@ using System.Text;
 /// the current-user key and stored as <c>dpapi:&lt;base64&gt;</c>; on other platforms it is stored as
 /// <c>plain:&lt;token&gt;</c> with <c>0600</c> permissions — the honest cross-platform floor. No key ever
 /// lives next to the ciphertext (DPAPI's key is OS-managed), so this store adds no self-rolled crypto and
-/// no dependency. The token is never logged. Vault mode (committed ciphertext) is Slice B.
+/// no dependency. The token is never logged. Vault mode (committed ciphertext) lives in
+/// <see cref="NotionVault"/>; this store owns its file paths and the local key cache.
 /// </summary>
 public static class NotionTokenStore
 {
@@ -19,8 +20,14 @@ public static class NotionTokenStore
     public const string VaultMode = "vault";
     public const string SecretFileName = "notion.secret";
 
-    public const string VaultNotImplementedMessage =
-        "notion: 'vault' token storage is not implemented yet (Slice B). Set notion.tokenStorage to \"local\".";
+    /// <summary>The committed vault file name. Unlike the local secret it lives <em>outside</em> <c>.local</c>,
+    /// so it travels in git as authenticated ciphertext — the point of vault mode (Decision 027 §3).</summary>
+    public const string VaultFileName = "notion.vault";
+
+    /// <summary>The gitignored, locally-protected cache of the vault's <em>derived key</em> (Decision 027 §3):
+    /// it lets non-interactive runs skip the passphrase prompt, while a repo-only attacker — who has the
+    /// committed ciphertext but not this local file — still needs the passphrase.</summary>
+    public const string VaultKeyCacheFileName = "notion.vaultkey";
 
     private const string DpapiPrefix = "dpapi:";
     private const string PlainPrefix = "plain:";
@@ -28,6 +35,15 @@ public static class NotionTokenStore
     /// <summary>The secret file path for a given dydo root (e.g. <c>&lt;dydoRoot&gt;/_system/.local/notion.secret</c>).</summary>
     public static string PathFor(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", SecretFileName);
+
+    /// <summary>The committed vault path (e.g. <c>&lt;dydoRoot&gt;/_system/notion.vault</c>).</summary>
+    public static string VaultPathFor(string dydoRoot) =>
+        Path.Combine(dydoRoot, "_system", VaultFileName);
+
+    /// <summary>The gitignored derived-key cache path (e.g. <c>&lt;dydoRoot&gt;/_system/.local/notion.vaultkey</c>).
+    /// Reuses the same DPAPI / <c>0600</c> at-rest protection as the local secret via <see cref="Write"/>.</summary>
+    public static string KeyCachePathFor(string dydoRoot) =>
+        Path.Combine(dydoRoot, "_system", ".local", VaultKeyCacheFileName);
 
     public static bool Exists(string secretFilePath) => File.Exists(secretFilePath);
 

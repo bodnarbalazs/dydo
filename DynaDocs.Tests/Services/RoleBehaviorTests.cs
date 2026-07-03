@@ -128,7 +128,7 @@ public class RoleBehaviorTests : IDisposable
     {
         var perms = BuildPerms(["src/**"], ["tests/**"]);
 
-        Assert.Equal(7, perms.Count);
+        Assert.Equal(8, perms.Count);
         Assert.Contains("code-writer", perms.Keys);
         Assert.Contains("reviewer", perms.Keys);
         Assert.Contains("co-thinker", perms.Keys);
@@ -136,6 +136,7 @@ public class RoleBehaviorTests : IDisposable
         Assert.Contains("planner", perms.Keys);
         Assert.Contains("test-writer", perms.Keys);
         Assert.Contains("orchestrator", perms.Keys);
+        Assert.Contains("sprint-auditor", perms.Keys);
         Assert.DoesNotContain("inquisitor", perms.Keys);
         Assert.DoesNotContain("judge", perms.Keys);
     }

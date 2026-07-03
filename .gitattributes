@@ -1,0 +1,6 @@
+# .claude/ artifacts must stay LF on every platform: Claude Code's Workflow
+# permission handler rejects CRLF scripts ("control characters that would be
+# hidden in the approval dialog"), and `dydo sync` emits LF (SyncCommand.WriteLf).
+.claude/workflows/*.js text eol=lf
+.claude/agents/*.md text eol=lf
+.claude/skills/**/*.md text eol=lf

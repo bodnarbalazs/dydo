@@ -14,6 +14,21 @@ public class RoleDefinitionService : IRoleDefinitionService
     /// </summary>
     public static readonly HashSet<string> SkillOnlyRoles = new(StringComparer.OrdinalIgnoreCase) { "planner" };
 
+    /// <summary>
+    /// Roles that exist only as workflow-spawned agent-types (Decision 026): <c>dydo sync</c>
+    /// compiles them into a native agent + skill like the worker roles, but they are never
+    /// claimable Tier-1 identities, so — like <see cref="SkillOnlyRoles"/> — they are excluded
+    /// from the on-disk role roster and the claimable/mode surfaces.
+    /// </summary>
+    public static readonly HashSet<string> WorkflowOnlyRoles = new(StringComparer.OrdinalIgnoreCase) { "sprint-auditor" };
+
+    /// <summary>
+    /// The union every claimable-surface filter uses (roster, registry fallback, role table,
+    /// mode names) — a single set so those filters can never drift apart.
+    /// </summary>
+    public static readonly HashSet<string> NonClaimableRoles =
+        new(SkillOnlyRoles.Concat(WorkflowOnlyRoles), StringComparer.OrdinalIgnoreCase);
+
     public static List<RoleDefinition> GetBaseRoleDefinitions()
     {
         return
@@ -89,6 +104,17 @@ public class RoleDefinitionService : IRoleDefinitionService
                         Path = "dydo/reference/writing-docs.md"
                     }
                 ]
+            },
+            new RoleDefinition
+            {
+                Name = "sprint-auditor",
+                Description = "Audits an entire merged sprint as one unit, hunting real cross-slice issues and returning a strict verdict with findings.",
+                Base = true,
+                WritablePaths = ["dydo/agents/{self}/**"],
+                ReadOnlyPaths = ["**"],
+                TemplateFile = "mode-sprint-auditor.template.md",
+                DenialHint = "Sprint-auditor role can only edit own workspace.",
+                Constraints = []
             },
             new RoleDefinition
             {
@@ -289,7 +315,7 @@ public class RoleDefinitionService : IRoleDefinitionService
         var rolesDir = Path.Combine(basePath, "dydo", "_system", "roles");
         Directory.CreateDirectory(rolesDir);
 
-        foreach (var role in GetBaseRoleDefinitions().Where(r => !SkillOnlyRoles.Contains(r.Name)))
+        foreach (var role in GetBaseRoleDefinitions().Where(r => !NonClaimableRoles.Contains(r.Name)))
         {
             var filePath = Path.Combine(rolesDir, $"{role.Name}.role.json");
             var json = JsonSerializer.Serialize(role, DydoConfigJsonContext.Default.RoleDefinition);

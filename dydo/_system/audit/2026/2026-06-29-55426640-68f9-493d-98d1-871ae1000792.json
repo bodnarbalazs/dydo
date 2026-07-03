@@ -1,0 +1,15 @@
+{
+  "session": "55426640-68f9-493d-98d1-871ae1000792",
+  "human": "balazs",
+  "started": "2026-06-29T11:30:57.6585078Z",
+  "git_head": "1cb0f69",
+  "events": [
+    {
+      "ts": "2026-06-29T11:30:57.6573801Z",
+      "event": "Blocked",
+      "path": "C:\\Users\\User\\.claude\\jobs\\55426640\\tmp\\notion_check.ps1",
+      "tool": "write",
+      "reason": "No agent identity"
+    }
+  ]
+}

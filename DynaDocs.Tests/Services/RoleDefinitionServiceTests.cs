@@ -100,11 +100,12 @@ public class RoleDefinitionServiceTests : IDisposable
         var roles = RoleDefinitionService.GetBaseRoleDefinitions();
         var result = _service.BuildPermissionMap(roles, pathSets);
 
-        Assert.Equal(7, result.Count);
+        Assert.Equal(8, result.Count);
         Assert.Contains("code-writer", result.Keys);
         Assert.Contains("reviewer", result.Keys);
         Assert.Contains("orchestrator", result.Keys);
         Assert.Contains("planner", result.Keys);
+        Assert.Contains("sprint-auditor", result.Keys);
         Assert.DoesNotContain("inquisitor", result.Keys);
         Assert.DoesNotContain("judge", result.Keys);
     }
@@ -276,8 +277,8 @@ public class RoleDefinitionServiceTests : IDisposable
         var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
         var files = Directory.GetFiles(rolesDir, "*.role.json");
 
-        // Six claimable Tier-1 roles. planner is skill-only (no role file);
-        // inquisitor/judge are retired (Decision 024).
+        // Six claimable Tier-1 roles. planner is skill-only and sprint-auditor is
+        // workflow-only (no role files); inquisitor/judge are retired (Decision 024).
         Assert.Equal(6, files.Length);
         Assert.Contains(files, f => Path.GetFileName(f) == "code-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "reviewer.role.json");
@@ -286,6 +287,7 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains(files, f => Path.GetFileName(f) == "test-writer.role.json");
         Assert.Contains(files, f => Path.GetFileName(f) == "orchestrator.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "planner.role.json");
+        Assert.DoesNotContain(files, f => Path.GetFileName(f) == "sprint-auditor.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "inquisitor.role.json");
         Assert.DoesNotContain(files, f => Path.GetFileName(f) == "judge.role.json");
     }
@@ -296,10 +298,10 @@ public class RoleDefinitionServiceTests : IDisposable
         _service.WriteBaseRoleDefinitions(_testDir);
 
         var loaded = _service.LoadRoleDefinitions(_testDir);
-        // Skill-only roles (planner) are not written to disk, so compare against the
-        // claimable subset only.
+        // Non-claimable roles (planner, sprint-auditor) are not written to disk, so
+        // compare against the claimable subset only.
         var original = RoleDefinitionService.GetBaseRoleDefinitions()
-            .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
+            .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
             .ToList();
 
         Assert.Equal(original.Count, loaded.Count);
@@ -690,6 +692,20 @@ public class RoleDefinitionServiceTests : IDisposable
         Assert.Contains("planner", RoleDefinitionService.SkillOnlyRoles);
     }
 
+    [Fact]
+    public void GetBaseRoleDefinitions_SprintAuditor_IsWorkflowOnly()
+    {
+        // Decision 026: sprint-auditor is a workflow-spawned agent-type. It stays in the
+        // base definitions to drive agent+skill generation, but is never a claimable
+        // Tier-1 identity.
+        var roles = RoleDefinitionService.GetBaseRoleDefinitions();
+        Assert.Contains(roles, r => r.Name == "sprint-auditor");
+        Assert.Contains("sprint-auditor", RoleDefinitionService.WorkflowOnlyRoles);
+        Assert.Contains("sprint-auditor", RoleDefinitionService.NonClaimableRoles);
+        // NonClaimableRoles is the union both roster and registry filter on.
+        Assert.Contains("planner", RoleDefinitionService.NonClaimableRoles);
+    }
+
     #endregion
 
     #region ConditionalMustReads
@@ -848,9 +864,9 @@ public class RoleDefinitionServiceTests : IDisposable
         _service.WriteBaseRoleDefinitions(_testDir);
 
         var loaded = _service.LoadRoleDefinitions(_testDir);
-        // Skill-only roles (planner) are not written to disk; compare the claimable subset.
+        // Non-claimable roles are not written to disk; compare the claimable subset.
         var original = RoleDefinitionService.GetBaseRoleDefinitions()
-            .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name));
+            .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name));
 
         foreach (var orig in original)
         {

@@ -143,11 +143,13 @@ public class TemplateOverrideTests : IntegrationTestBase
         Assert.Contains("mode-code-writer.template.md", templateNames);
         Assert.Contains("mode-reviewer.template.md", templateNames);
         Assert.Contains("mode-planner.template.md", templateNames);
+        Assert.Contains("mode-sprint-auditor.template.md", templateNames);
         Assert.DoesNotContain("mode-inquisitor.template.md", templateNames);
         Assert.DoesNotContain("mode-judge.template.md", templateNames);
 
-        // 8 total: 1 workflow + 7 modes (planner kept as skill source; inquisitor/judge dropped)
-        Assert.Equal(8, templateNames.Count);
+        // 9 total: 1 workflow + 8 modes (planner and sprint-auditor kept as skill/agent
+        // sources; inquisitor/judge dropped)
+        Assert.Equal(9, templateNames.Count);
     }
 
     [Fact]

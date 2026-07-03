@@ -18,8 +18,8 @@ using DynaDocs.Utils;
 /// replaces.
 ///
 /// Two emission shapes (Decision 024 native pivot):
-/// - Worker roles (code-writer, reviewer, test-writer, docs-writer) emit BOTH an agent
-///   definition and a skill — they are spawned as typed sub-agents.
+/// - Worker roles (code-writer, reviewer, test-writer, docs-writer, sprint-auditor) emit
+///   BOTH an agent definition and a skill — they are spawned as typed sub-agents.
 /// - Skill-only roles (planner) emit a skill but NO agent: planner is a methodology the
 ///   orchestrator/co-thinker applies in their own thread, not a claimable identity.
 /// </summary>
@@ -35,7 +35,9 @@ public static partial class SyncCommand
     // Tier-2 worker roles (Decision 024): spawned by orchestrators/workflows to do scoped
     // task work — they emit BOTH a native sub-agent and a skill. Tier-1 roles (orchestrator,
     // co-thinker) are named terminal agents, not sub-agents, so they are not synced here.
-    private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer"];
+    // sprint-auditor (Decision 026) is workflow-only: same agent+skill emission, but never
+    // a claimable identity (see RoleDefinitionService.WorkflowOnlyRoles).
+    private static readonly string[] WorkerRoles = ["code-writer", "reviewer", "test-writer", "docs-writer", "sprint-auditor"];
 
     // Skill-only roles (Decision 024): a methodology the Tier-1 agent applies in its own
     // thread (planner = the orchestrator's planning discipline). They emit a skill but NO
@@ -73,7 +75,7 @@ public static partial class SyncCommand
     {
         var agentDir = Path.Combine(projectRoot, ".claude", "agents");
         Directory.CreateDirectory(agentDir);
-        File.WriteAllText(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role, ExtractMustReads(role, projectRoot)));
+        WriteLf(Path.Combine(agentDir, $"{role.Name}.md"), BuildAgent(role, ExtractMustReads(role, projectRoot)));
 
         WriteSkill(role, projectRoot);
     }
@@ -89,14 +91,25 @@ public static partial class SyncCommand
     {
         var skillDir = Path.Combine(projectRoot, ".claude", "skills", role.Name);
         Directory.CreateDirectory(skillDir);
-        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
+        WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
     }
+
+    /// <summary>
+    /// .claude/ artifacts must be LF regardless of platform: Claude Code's Workflow/agent
+    /// permission handling rejects files whose CR bytes "would be hidden in the approval
+    /// dialog". Template sources and C# raw string literals carry CRLF on Windows, so
+    /// normalize at the single write boundary instead of chasing every content source.
+    /// </summary>
+    private static void WriteLf(string path, string content) =>
+        File.WriteAllText(path, content.Replace("\r\n", "\n").Replace("\r", "\n"));
 
     /// <summary>
     /// The native sub-agent definition: identity + the tool profile derived from the
     /// role's permission shape. A role that can only write its own workspace is read-only
     /// for the codebase, so it gets no Edit/Write — that is how "reviewers don't write
-    /// code" becomes natively enforced rather than guard-RBAC enforced.
+    /// code" becomes natively enforced rather than guard-RBAC enforced. The allowlist also
+    /// deliberately never includes the Agent tool: worker roles cannot dispatch subagents
+    /// (Decision 026 requires this natively for sprint-auditor).
     /// </summary>
     private static string BuildAgent(RoleDefinition role, List<string> mustReads)
     {

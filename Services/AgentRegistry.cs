@@ -55,11 +55,12 @@ public partial class AgentRegistry : IAgentRegistry
         else
         {
             // No role files on disk — use built-in base definitions with a warning.
-            // Skill-only roles (planner) are not claimable identities, so they are excluded
-            // here exactly as WriteBaseRoleDefinitions excludes them from the on-disk roster.
+            // Skill-only (planner) and workflow-only (sprint-auditor) roles are not claimable
+            // identities, so they are excluded here exactly as WriteBaseRoleDefinitions
+            // excludes them from the on-disk roster.
             Console.Error.WriteLine("[dydo] WARNING: No role files found at dydo/_system/roles/. Run 'dydo roles reset' to generate them. Using built-in defaults.");
             var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions()
-                .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
+                .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
                 .ToList();
             var pathSets = roleDefService.ResolvePathSets(_config);
             _rolePermissions = roleDefService.BuildPermissionMap(baseRoles, pathSets);

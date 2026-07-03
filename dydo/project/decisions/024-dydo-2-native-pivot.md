@@ -86,7 +86,7 @@ Canonical data stays as repo files (tasks, issues, decisions, progress). Obsidia
 | off-limits | **KEPT** — universal |
 | inquisition | → **workflow** + `/inquisition` command |
 | review flow | → **workflow** (find→verify) and/or skill |
-| audit trail | **KEPT, re-keyed on `agent_id`**; fed via PostToolUse / SubagentStop hooks |
+| audit trail | ~~KEPT, re-keyed on `agent_id`~~ **SUPERSEDED mid-campaign: full teardown** (`dcf42c7` — native transcripts provide the record). Collateral: the audit-derived Files-Changed auto-fill at `dydo task approve` was lost; re-planned as **git-derived** (`git diff --name-only` vs task base ref — important for bug hunts, see dydo-2-hardening backlog) |
 | docs model (understand/reference/guides, hubs, check/fix/index/graph) | **KEPT + grown** (project-context skill, optional MCP) |
 | tasks / issues / backlog / decisions / changelog | **KEPT** as files; + Notion two-way sync |
 | native memory | **UN-SUPPRESSED** |

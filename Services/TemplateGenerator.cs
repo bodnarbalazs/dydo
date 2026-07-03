@@ -325,7 +325,7 @@ public static class TemplateGenerator
         var roles = LoadRolesForTemplate(basePath);
         if (roles.Count == 0)
             roles = RoleDefinitionService.GetBaseRoleDefinitions()
-                .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
+                .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
                 .ToList();
 
         roles.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
@@ -996,7 +996,7 @@ public static class TemplateGenerator
     public static IReadOnlyList<string> GetModeNames()
     {
         return RoleDefinitionService.GetBaseRoleDefinitions()
-            .Where(r => !RoleDefinitionService.SkillOnlyRoles.Contains(r.Name))
+            .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
             .Select(r => r.Name)
             .ToList();
     }

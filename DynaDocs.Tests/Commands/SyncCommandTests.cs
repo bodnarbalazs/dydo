@@ -139,7 +139,7 @@ public class SyncCommandTests : IDisposable
 
             SyncCommand.Create().Parse([]).Invoke();
 
-            foreach (var role in new[] { "code-writer", "reviewer", "test-writer", "docs-writer" })
+            foreach (var role in new[] { "code-writer", "reviewer", "test-writer", "docs-writer", "sprint-auditor" })
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")), $"missing agent: {role}");
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")), $"missing skill: {role}");
@@ -194,6 +194,50 @@ public class SyncCommandTests : IDisposable
         var input = "1. first\n2. second\n\n2. dup\n3. next";
         var result = SyncCommand.RenumberOrderedLists(input);
         Assert.Equal("1. first\n2. second\n\n3. dup\n4. next", result);
+    }
+
+    [Fact]
+    public void SyncRole_SprintAuditor_ToolAllowlistOmitsAgentEditWrite()
+    {
+        // Decision 026: the sprint-auditor must not be able to dispatch subagents or write
+        // files — enforced natively by the tools allowlist in the generated definition.
+        var auditor = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "sprint-auditor");
+        SyncCommand.SyncRole(auditor, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "sprint-auditor.md"));
+        var toolsLine = agent.Split('\n').Single(l => l.StartsWith("tools:"));
+        Assert.Equal("tools: Read, Grep, Glob, Bash", toolsLine.TrimEnd());
+    }
+
+    [Fact]
+    public void SyncRole_SprintAuditor_Skill_CarriesInquisitorJudgeCharacter()
+    {
+        var auditor = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == "sprint-auditor");
+        SyncCommand.SyncRole(auditor, _testDir);
+
+        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "sprint-auditor", "SKILL.md"));
+        // Inquisitor lens: hunts real cross-slice issues (seams are the signature concern)
+        Assert.Contains("Inquisitor", skill);
+        Assert.Contains("Seams", skill);
+        // Judge strictness: verdict with findings, no "pass with notes"
+        Assert.Contains("Judge", skill);
+        Assert.Contains("pass with notes", skill);
+        // Works alone — no subagent dispatch
+        Assert.Contains("cannot dispatch subagents", skill);
+    }
+
+    [Fact]
+    public void SyncRole_EmitsLfLineEndings()
+    {
+        // CRLF in .claude/ artifacts makes Claude Code's permission handler reject them
+        // ("control characters that would be hidden in the approval dialog"), so sync
+        // must emit LF regardless of platform/template line endings.
+        SyncCommand.SyncRole(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".claude", "agents", "reviewer.md"));
+        var skill = File.ReadAllText(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md"));
+        Assert.DoesNotContain('\r', agent);
+        Assert.DoesNotContain('\r', skill);
     }
 
     [Fact]

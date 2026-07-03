@@ -35,6 +35,7 @@ public class TemplateGeneratorTests
     [InlineData("mode-docs-writer.template.md")]
     [InlineData("mode-test-writer.template.md")]
     [InlineData("mode-orchestrator.template.md")]
+    [InlineData("mode-sprint-auditor.template.md")]
     public void ReadBuiltInTemplate_AllListedTemplates_AreAccessible(string templateName)
     {
         var content = TemplateGenerator.ReadBuiltInTemplate(templateName);
@@ -94,8 +95,9 @@ public class TemplateGeneratorTests
         Assert.Contains("docs-writer", modes);
         Assert.Contains("test-writer", modes);
         Assert.Contains("orchestrator", modes);
-        // planner is skill-only: it gets no per-agent mode file.
+        // planner is skill-only and sprint-auditor is workflow-only: no per-agent mode files.
         Assert.DoesNotContain("planner", modes);
+        Assert.DoesNotContain("sprint-auditor", modes);
         Assert.DoesNotContain("inquisitor", modes);
         Assert.DoesNotContain("judge", modes);
     }

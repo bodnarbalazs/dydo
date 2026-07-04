@@ -660,11 +660,20 @@ public partial class AgentRegistry : IAgentRegistry
             try { var hintPath = GetAgentHintPath(); if (File.Exists(hintPath)) File.Delete(hintPath); } catch { }
 
             var human = GetCurrentHuman();
+            string? releasedTask = null;
             UpdateAgentState(agent.Name, s =>
             {
+                // Capture the task before nulling it: releasing is a "cause disappeared" transition
+                // for the needs-human flag (Decision 030 §1), so we clear the flag AND its task-file
+                // mirror here while the task name is still known. Without this, an orphan-crash flag
+                // that mirrored `needs-human: true` into the task file would be stranded — Release
+                // nulls s.Task, and the later watchdog sweep's SetNeedsHuman then sees s.Task == null
+                // and cannot reach the task file to reconcile it.
+                releasedTask = s.Task;
                 s.Status = AgentStatus.Free;
                 s.Role = null;
                 s.Task = null;
+                s.NeedsHuman = false;
                 s.Since = null;
                 s.WritablePaths = [];
                 s.ReadOnlyPaths = [];
@@ -679,6 +688,7 @@ public partial class AgentRegistry : IAgentRegistry
                 // redispatch race that earlier motivated clearing this here is closed by
                 // the per-agent .claim.lock in PollAndCleanupForAgent (06512de).
             });
+            MirrorNeedsHumanToTask(releasedTask, false);
 
             CleanupAfterRelease(agent.Name, workspace, sessionId);
             return true;
@@ -1449,6 +1459,62 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
+    /// <summary>
+    /// Sets or clears the derived needs-human attention flag (Decision 030 §1) on an agent's state and
+    /// mirrors it to the agent's current task file frontmatter, so the signal is durable and syncable.
+    /// The state write is skipped when the flag is already at <paramref name="value"/>, but the task
+    /// mirror always runs so a stale or missing frontmatter key is reconciled. Returns false only on
+    /// lock contention.
+    /// </summary>
+    public bool SetNeedsHuman(string agentName, bool value) => SetNeedsHuman(agentName, value, null);
+
+    /// <summary>
+    /// As <see cref="SetNeedsHuman(string, bool)"/>, but with a <paramref name="taskHint"/> for the
+    /// task-file mirror. A caller that captured the agent's task from state BEFORE acquiring the lock
+    /// (e.g. the watchdog sweep) passes it here so the mirror is still reconciled if a concurrent
+    /// Release nulled <c>state.Task</c> in the meantime — otherwise a stale <c>needs-human: true</c>
+    /// in the task file would be stranded.
+    /// </summary>
+    public bool SetNeedsHuman(string agentName, bool value, string? taskHint)
+    {
+        if (!TryAcquireLock(agentName, out _))
+            return false;
+        try
+        {
+            var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
+            if (state.NeedsHuman != value)
+            {
+                state.NeedsHuman = value;
+                WriteStateFile(agentName, state);
+            }
+            MirrorNeedsHumanToTask(string.IsNullOrEmpty(state.Task) ? taskHint : state.Task, value);
+            return true;
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
+    }
+
+    private void MirrorNeedsHumanToTask(string? task, bool value)
+    {
+        if (string.IsNullOrEmpty(task)) return;
+        try
+        {
+            var taskFile = Path.Combine(_configService.GetTasksPath(_basePath), $"{task}.md");
+            if (!File.Exists(taskFile)) return;
+            var content = File.ReadAllText(taskFile);
+            var updated = FrontmatterParser.UpsertField(content, "needs-human", value ? "true" : "false");
+            if (updated != content)
+                File.WriteAllText(taskFile, updated);
+        }
+        catch
+        {
+            // Best-effort mirror: the canonical flag is agent state; a task-file IO failure must not
+            // fail the state write that already succeeded.
+        }
+    }
+
     private void UpdateAgentState(string agentName, Action<AgentState> update)
     {
         var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
@@ -1474,6 +1540,7 @@ public partial class AgentRegistry : IAgentRegistry
             assigned: {state.AssignedHuman ?? GetHumanForAgent(agentName) ?? "unassigned"}
             dispatched-by: {state.DispatchedBy ?? "null"}
             dispatched-by-role: {state.DispatchedByRole ?? "null"}
+            needs-human: {state.NeedsHuman.ToString().ToLowerInvariant()}
             window-id: {state.WindowId ?? "null"}
             auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
             resume-attempts: {state.ResumeAttempts}
@@ -1557,6 +1624,7 @@ public partial class AgentRegistry : IAgentRegistry
         ["dispatched-by-role"] = (s, v) => s.DispatchedByRole = NullableString(v),
         ["window-id"] = (s, v) => s.WindowId = NullableString(v),
         ["auto-close"] = (s, v) => s.AutoClose = v == "true",
+        ["needs-human"] = (s, v) => s.NeedsHuman = v == "true",
         ["resume-attempts"] = (s, v) => s.ResumeAttempts = int.TryParse(v, out var n) ? n : 0,
         ["last-resume-launched-at"] = (s, v) =>
         {

@@ -354,6 +354,7 @@ public static class WatchdogService
                         PollAndCleanup(dydoRoot);
                         PollOrphanedWaits(dydoRoot);
                         PollAndResumeCrashedAgents(dydoRoot);
+                        PollNeedsHuman(dydoRoot);
                     }
                     catch (Exception ex)
                     {
@@ -867,6 +868,68 @@ public static class WatchdogService
             }
             catch { }
         }
+    }
+
+    /// <summary>
+    /// Per-tick reconcile of the derived needs-human attention flag (Decision 030 §1). SETs it on a
+    /// crash-mid-task orphan (status=working with an in-flight task, but the claimed session PID is
+    /// dead — a dead session mid-task also needs the human). CLEARs it once the cause disappears (the
+    /// agent released, or its task closed). A live working agent with a task is left untouched: a
+    /// legitimately-waiting flag self-clears on the agent's next guarded tool call, not here.
+    /// </summary>
+    public static void PollNeedsHuman(string dydoRoot)
+    {
+        var agentsDir = Path.Combine(dydoRoot, "agents");
+        if (!Directory.Exists(agentsDir)) return;
+
+        var projectRoot = Path.GetDirectoryName(dydoRoot) ?? Directory.GetCurrentDirectory();
+        AgentRegistry? registry = null;
+
+        foreach (var agentDir in Directory.GetDirectories(agentsDir))
+        {
+            var (target, task) = ReconcileNeedsHumanForAgent(agentDir);
+            if (target == null) continue;
+            registry ??= new AgentRegistry(projectRoot);
+            // Pass the task captured from state here (before nulling by any concurrent Release) so the
+            // task-file mirror can still be reconciled even if SetNeedsHuman finds state.Task == null.
+            registry.SetNeedsHuman(Path.GetFileName(agentDir), target.Value, task);
+        }
+    }
+
+    // Returns (the needs-human value the watchdog should write for this agent, or null to leave it
+    // as-is; the agent's task name captured from state for the task-file mirror, or null if none).
+    private static (bool? target, string? task) ReconcileNeedsHumanForAgent(string agentDir)
+    {
+        var statePath = Path.Combine(agentDir, "state.md");
+        if (!File.Exists(statePath)) return (null, null);
+        try
+        {
+            var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
+            if (fields == null) return (null, null);
+
+            var working = fields.GetValueOrDefault("status") == "working";
+            var task = fields.GetValueOrDefault("task");
+            var hasTask = !string.IsNullOrEmpty(task) && task != "null";
+            var needsHuman = fields.GetValueOrDefault("needs-human") == "true";
+            var taskName = hasTask ? task : null;
+
+            // Crash mid-task: a working agent holding a task whose claimed session PID is gone.
+            if (working && hasTask && !IsClaimedSessionAlive(agentDir))
+                return (needsHuman ? null : true, taskName);
+
+            // Cause disappeared: released (no longer working) or the task closed.
+            if (needsHuman && (!working || !hasTask))
+                return (false, taskName);
+
+            return (null, taskName);
+        }
+        catch { return (null, null); }
+    }
+
+    private static bool IsClaimedSessionAlive(string agentDir)
+    {
+        var session = TryReadSession(Path.Combine(agentDir, ".session"));
+        return session?.ClaimedPid is { } pid && ProcessUtils.IsProcessRunning(pid);
     }
 
     internal static bool ParseListeningFromJson(string json)

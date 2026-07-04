@@ -46,13 +46,22 @@ public static partial class GuardCommand
             Description = "Bash command to analyze"
         };
 
+        var stopOption = new Option<bool>("--stop")
+        {
+            Description = "Stop-hook mode: derive the needs-human flag from turn-end (used by the Stop hook)"
+        };
+
         var command = new Command("guard", "Check if current agent can perform action (used by hooks)");
         command.Options.Add(actionOption);
         command.Options.Add(pathOption);
         command.Options.Add(commandOption);
+        command.Options.Add(stopOption);
 
         command.SetAction(parseResult =>
         {
+            if (parseResult.GetValue(stopOption))
+                return ExecuteStop();
+
             var cliAction = parseResult.GetValue(actionOption);
             var cliPath = parseResult.GetValue(pathOption);
             var cliCommand = parseResult.GetValue(commandOption);
@@ -241,6 +250,13 @@ public static partial class GuardCommand
             return HandleWorkerCall(ctx, filePath, searchPath, runInBackground, offLimitsService, bashAnalyzer, registry);
         }
 
+        // needs-human derived-flag reconcile (Decision 030 §1): an AskUserQuestion call marks the
+        // calling agent as waiting on a human; any other guarded tool call means the human answered
+        // and work resumed, so the flag self-clears. Runs for identified (Tier-1) hook calls only,
+        // before the routing below so it fires whether or not the triggering call is allowed.
+        if (toolName != null && !string.IsNullOrEmpty(sessionId))
+            ReconcileNeedsHuman(toolName, sessionId, registry);
+
         // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
         // it lives outside the repo and outside dydo's jurisdiction (Decision 024 §5).
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
@@ -269,6 +285,57 @@ public static partial class GuardCommand
 
         // For write/edit operations
         return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry, ctx.AgentType);
+    }
+
+    /// <summary>
+    /// needs-human derived-flag reconcile on a Tier-1 PreToolUse call (Decision 030 §1). AskUserQuestion
+    /// is the human-in-the-loop tool — its call sets the flag. Every other guarded tool call from an
+    /// agent that was waiting means the human answered and work resumed, so the flag self-clears. Both
+    /// paths are no-ops when the flag is already in the target state, so the common case writes nothing.
+    /// </summary>
+    internal static void ReconcileNeedsHuman(string toolName, string sessionId, AgentRegistry registry)
+    {
+        var agent = registry.GetCurrentAgent(sessionId);
+        if (agent == null) return;
+
+        var isAsk = string.Equals(toolName, "askuserquestion", StringComparison.OrdinalIgnoreCase);
+        if (isAsk && !agent.NeedsHuman)
+            registry.SetNeedsHuman(agent.Name, true);
+        else if (!isAsk && agent.NeedsHuman)
+            registry.SetNeedsHuman(agent.Name, false);
+    }
+
+    /// <summary>
+    /// Stop-hook entry point (Decision 030 §1). A terminal question always ends the turn, so a turn that
+    /// ends while the agent is still working on an in-flight task means the session is idle, waiting on a
+    /// human — pure session state, no text analysis. Always exit 0: a Stop hook must never block turn end.
+    /// </summary>
+    private static int ExecuteStop()
+    {
+        try
+        {
+            if (!TryReadStdinJson(out var json) || json == null)
+                return ExitCodes.Success;
+
+            var hookInput = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.HookInput);
+            ApplyStopSignal(hookInput?.SessionId, new AgentRegistry());
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"WARNING: dydo guard --stop internal error: {ex.Message}");
+        }
+        return ExitCodes.Success;
+    }
+
+    /// <summary>Turn-end needs-human rule: set the flag when the session is idle mid-work — status
+    /// working with an in-flight task. No-op otherwise (already flagged, released, or no task).</summary>
+    internal static void ApplyStopSignal(string? sessionId, AgentRegistry registry)
+    {
+        if (string.IsNullOrEmpty(sessionId))
+            return;
+        var agent = registry.GetCurrentAgent(sessionId);
+        if (agent is { Status: AgentStatus.Working } && !string.IsNullOrEmpty(agent.Task) && !agent.NeedsHuman)
+            registry.SetNeedsHuman(agent.Name, true);
     }
 
     /// <summary>

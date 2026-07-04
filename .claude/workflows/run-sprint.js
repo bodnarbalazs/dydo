@@ -252,6 +252,10 @@ async function runSlice(slice) {
 }
 
 function escalate(slice, stage, round, reason, extra = {}) {
+  // Attention signal (Decision 030 §1): escalated slices are surfaced to the Tier-1 orchestrator in
+  // this workflow's result. When the orchestrator stops to consult the human about them, dydo's
+  // Stop-hook detection sets the orchestrator's OWN needs-human flag — the raise happens there, not
+  // here. The workflow harness exposes no shell, so there is no in-script CLI call to make.
   return { name: slice.name, status: 'escalated', stage, round, reason, ...extra }
 }
 

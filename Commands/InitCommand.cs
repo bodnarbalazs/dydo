@@ -330,11 +330,17 @@ public static class InitCommand
         var settings = LoadJsonSettings(settingsPath);
 
         ConfigureGuardHook(settings);
+        ConfigureStopHook(settings);
         ConfigureAllowList(settings);
 
         var json = settings.ToJsonString(WriteOptions);
         File.WriteAllText(settingsPath, json);
     }
+
+    // AskUserQuestion is included so the guard sees the human-in-the-loop tool call and can set the
+    // derived needs-human flag (Decision 030 §1).
+    private const string GuardMatcher =
+        "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion";
 
     private static void ConfigureGuardHook(JsonNode settings)
     {
@@ -344,7 +350,7 @@ public static class InitCommand
         var preToolUse = hooks["PreToolUse"]?.AsArray() ?? new JsonArray();
         hooks["PreToolUse"] = preToolUse;
 
-        RemoveExistingGuardEntries(preToolUse);
+        RemoveDydoGuardEntries(preToolUse, "dydo guard");
 
         var hookCommand = new JsonObject
         {
@@ -356,10 +362,38 @@ public static class InitCommand
 
         var guardEntry = new JsonObject
         {
-            ["matcher"] = "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit",
+            ["matcher"] = GuardMatcher,
             ["hooks"] = hooksArray
         };
         preToolUse.Add((JsonNode)guardEntry);
+    }
+
+    // Stop-hook wiring for turn-end needs-human detection (Decision 030 §1). EXTENDS the shared hooks
+    // block: the Stop array is created if absent, unknown Stop entries are preserved, and the dydo
+    // stop entry is de-duplicated so re-running init stays idempotent.
+    private static void ConfigureStopHook(JsonNode settings)
+    {
+        var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
+        settings["hooks"] = hooks;
+
+        var stop = hooks["Stop"]?.AsArray() ?? new JsonArray();
+        hooks["Stop"] = stop;
+
+        RemoveDydoGuardEntries(stop, "dydo guard --stop");
+
+        var hookCommand = new JsonObject
+        {
+            ["type"] = "command",
+            ["command"] = "dydo guard --stop"
+        };
+        var hooksArray = new JsonArray();
+        hooksArray.Add((JsonNode)hookCommand);
+
+        var stopEntry = new JsonObject
+        {
+            ["hooks"] = hooksArray
+        };
+        stop.Add((JsonNode)stopEntry);
     }
 
     private static void ConfigureAllowList(JsonNode settings)
@@ -394,13 +428,16 @@ public static class InitCommand
         return new JsonObject();
     }
 
-    private static void RemoveExistingGuardEntries(JsonArray preToolUse)
+    // Removes only the dydo-managed hook entries (those whose command contains <paramref name="needle"/>),
+    // leaving every other entry — including a project's own custom hooks — untouched. This keeps the
+    // shared hooks block extended, never clobbered, and makes re-running init idempotent.
+    private static void RemoveDydoGuardEntries(JsonArray entries, string needle)
     {
-        for (int i = preToolUse.Count - 1; i >= 0; i--)
+        for (int i = entries.Count - 1; i >= 0; i--)
         {
-            var entryHooks = preToolUse[i]?["hooks"];
-            if (entryHooks != null && entryHooks.ToJsonString().Contains("dydo guard"))
-                preToolUse.RemoveAt(i);
+            var entryHooks = entries[i]?["hooks"];
+            if (entryHooks != null && entryHooks.ToJsonString().Contains(needle))
+                entries.RemoveAt(i);
         }
     }
 

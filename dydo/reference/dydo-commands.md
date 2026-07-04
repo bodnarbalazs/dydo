@@ -369,6 +369,7 @@ dydo guard --command "cat secrets.json"
 - `--action <action>` - Action: edit, write, delete, read
 - `--path <path>` - Path being accessed
 - `--command <cmd>` - Bash command to analyze
+- `--stop` - Stop-hook mode: derive the needs-human flag from turn-end (used by the Stop hook)
 
 **Exit codes:** 0 = allowed, 2 = blocked.
 
@@ -470,6 +471,36 @@ dydo task list --all            # Include closed tasks
 **Options:**
 - `--needs-review` - Show only tasks needing review
 - `--all` - Show all tasks including closed
+
+---
+
+## Attention Commands
+
+### dydo hand raise
+
+Raise the needs-human attention flag (Decision 030) — the explicit half of the machine-written attention signal. Targets the current agent, or a named one via `--agent`.
+
+```bash
+dydo hand raise                 # Flag the current agent's session
+dydo hand raise --agent Adele   # Flag a specific agent
+```
+
+**Options:**
+- `--agent <name>` - Target agent (defaults to the current agent for this session)
+
+---
+
+### dydo hand lower
+
+Clear the needs-human flag once the human's input is no longer needed.
+
+```bash
+dydo hand lower                 # Clear the current agent's flag
+dydo hand lower --agent Adele   # Clear a specific agent's flag
+```
+
+**Options:**
+- `--agent <name>` - Target agent (defaults to the current agent for this session)
 
 ---
 

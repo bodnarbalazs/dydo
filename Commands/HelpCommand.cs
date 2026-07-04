@@ -82,6 +82,9 @@ public static class HelpCommand
         Console.WriteLine("  task reject <name>     Reject task (human only)");
         Console.WriteLine("  task list              List tasks");
         Console.WriteLine();
+        Console.WriteLine("  hand raise             Flag that a human is needed");
+        Console.WriteLine("  hand lower             Clear the needs-human flag");
+        Console.WriteLine();
         Console.WriteLine("  review complete <task> Complete a code review");
         Console.WriteLine();
         Console.WriteLine("Issue Commands:");

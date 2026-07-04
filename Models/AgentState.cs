@@ -26,6 +26,15 @@ public class AgentState
     public List<string> UnreadMessages { get; set; } = [];
 
     /// <summary>
+    /// Machine-written "a human is needed" attention flag (Decision 030 §1). Never set by agent
+    /// discipline — it is derived from observable events (an AskUserQuestion tool call, a turn that
+    /// ends while working on an in-flight task, an escalation, or a crashed session) and self-heals
+    /// (the agent's next guarded tool call clears it, as does an explicit lower or the watchdog's
+    /// reconcile sweep once the cause disappears). Mirrored to the current task file's frontmatter.
+    /// </summary>
+    public bool NeedsHuman { get; set; }
+
+    /// <summary>
     /// Name of the agent that dispatched this agent. Null for human-initiated agents (tree roots).
     /// </summary>
     public string? DispatchedBy { get; set; }

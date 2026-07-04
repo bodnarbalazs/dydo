@@ -325,6 +325,8 @@ Commands meant to be called only by agents are *italic*.
 | `dydo task list` | List tasks |
 | `dydo task compact` | Compact audit snapshots |
 | *`dydo review complete <task>`* | *Complete a code review* |
+| `dydo hand raise` | Flag that a human is needed |
+| `dydo hand lower` | Clear the needs-human flag |
 
 ### Issues
 | Command | Description |

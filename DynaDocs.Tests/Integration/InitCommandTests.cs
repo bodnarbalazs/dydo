@@ -263,9 +263,59 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
 
-        // Count occurrences of "dydo guard" - should only appear once
-        var count = content.Split("dydo guard").Length - 1;
-        Assert.Equal(1, count);
+        // The PreToolUse guard command is exactly `"dydo guard"` (trailing quote), distinct from the
+        // Stop hook's `"dydo guard --stop"`. Counting the quoted form isolates the PreToolUse hook so a
+        // re-run must leave exactly one of it — the Stop hook does not inflate the count.
+        var guardCount = content.Split("\"dydo guard\"").Length - 1;
+        Assert.Equal(1, guardCount);
+
+        // The Stop hook is likewise de-duplicated across the re-run.
+        var stopCount = content.Split("dydo guard --stop").Length - 1;
+        Assert.Equal(1, stopCount);
+    }
+
+    [Fact]
+    public async Task Init_Claude_MatcherIncludesAskUserQuestion()
+    {
+        // needs-human detection (Decision 030 §1): the guard must see the AskUserQuestion tool call.
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        Assert.Contains("AskUserQuestion", ReadFile(".claude/settings.local.json"));
+    }
+
+    [Fact]
+    public async Task Init_Claude_InstallsStopHook_ForNeedsHumanTurnEnd()
+    {
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        Assert.Contains("\"Stop\"", content);
+        Assert.Contains("dydo guard --stop", content);
+    }
+
+    [Fact]
+    public async Task Init_Claude_ExtendsHooksBlock_PreservingUnknownStopEntries()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.local.json", """
+            {
+              "hooks": {
+                "Stop": [
+                  { "hooks": [ { "type": "command", "command": "echo my-stop" } ] }
+                ]
+              }
+            }
+            """);
+
+        var result = await InitProjectAsync("claude", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".claude/settings.local.json");
+        // The project's own Stop hook survives, and the dydo one is added alongside it.
+        Assert.Contains("echo my-stop", content);
+        Assert.Contains("dydo guard --stop", content);
     }
 
     [Fact]

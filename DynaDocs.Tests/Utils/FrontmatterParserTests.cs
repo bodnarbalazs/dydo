@@ -217,4 +217,38 @@ public class FrontmatterParserTests
         Assert.NotNull(fields);
         Assert.Equal("{ \"task1\": [\"code-writer\"] }", fields!["task-role-history"]);
     }
+
+    [Fact]
+    public void UpsertField_ExistingKey_RewritesInPlace_PreservingOtherLinesAndBody()
+    {
+        const string content = "---\nname: t\nneeds-human: false\nstatus: pending\n---\n\n# Task: t\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "needs-human", "true");
+
+        var fields = FrontmatterParser.ParseFields(updated);
+        Assert.Equal("true", fields!["needs-human"]);
+        Assert.Equal("t", fields["name"]);
+        Assert.Equal("pending", fields["status"]);
+        Assert.Contains("# Task: t", updated);
+    }
+
+    [Fact]
+    public void UpsertField_MissingKey_AppendsInsideFrontmatterBlock()
+    {
+        const string content = "---\nname: t\nstatus: pending\n---\n\n# Body\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "needs-human", "true");
+
+        var fields = FrontmatterParser.ParseFields(updated);
+        Assert.Equal("true", fields!["needs-human"]);
+        Assert.Equal("pending", fields["status"]);
+        Assert.Contains("# Body", updated);
+    }
+
+    [Fact]
+    public void UpsertField_NoFrontmatter_ReturnsContentUnchanged()
+    {
+        const string content = "# Just a heading\n";
+        Assert.Equal(content, FrontmatterParser.UpsertField(content, "needs-human", "true"));
+    }
 }

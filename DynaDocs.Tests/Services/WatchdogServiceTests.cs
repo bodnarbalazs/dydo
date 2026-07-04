@@ -2220,6 +2220,79 @@ public class WatchdogServiceTests : IDisposable
     /// dydoRoot — keeping the existing _testDir/agents/&lt;name&gt; layout untouched
     /// for non-resume tests.
     /// </summary>
+    #region needs-human reconcile (Decision 030 §1)
+
+    [Fact]
+    public void PollNeedsHuman_OrphanCrashMidTask_SetsFlag()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "working", task: "my-task", needsHuman: false);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false; // claimed session PID is dead
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: true", ReadState(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollNeedsHuman_ReleasedAgentWithStaleFlag_ClearsFlag()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "free", task: "my-task", needsHuman: true);
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: false", ReadState(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollNeedsHuman_TaskClosedWithStaleFlag_ClearsFlag()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "working", task: "null", needsHuman: true);
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: false", ReadState(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollNeedsHuman_WorkingAgentWaitingWithLiveSession_LeavesFlagSet()
+    {
+        // Legit waiting-on-human: working, has a task, live session, flag set. The sweep must NOT
+        // clear it — that self-heals on the agent's next tool call, not here.
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "working", task: "my-task", needsHuman: true);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 4242);
+        ProcessUtils.IsProcessRunningOverride = _ => true;
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: true", ReadState(dydoRoot, "Adele"));
+    }
+
+    private void WriteNeedsHumanState(string dydoRoot, string agentName, string status, string task, bool needsHuman)
+    {
+        var agentDir = Path.Combine(dydoRoot, "agents", agentName);
+        Directory.CreateDirectory(agentDir);
+        File.WriteAllText(Path.Combine(agentDir, "state.md"), $"""
+            ---
+            agent: {agentName}
+            role: code-writer
+            task: {task}
+            status: {status}
+            assigned: testuser
+            needs-human: {needsHuman.ToString().ToLowerInvariant()}
+            ---
+            """);
+    }
+
+    private static string ReadState(string dydoRoot, string agentName) =>
+        File.ReadAllText(Path.Combine(dydoRoot, "agents", agentName, "state.md"));
+
+    #endregion
+
     private string ResumeDydoRoot()
     {
         var dydoRoot = Path.Combine(_testDir, "dydo");

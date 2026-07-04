@@ -111,25 +111,36 @@ public static class NotionPropertyMapper
             : RenderUnknown(value);
     }
 
-    /// <summary>Render the first related page id to the parent's local id when known, else to the raw
-    /// page id (an honest fallback when the parent type has not been synced yet).</summary>
+    /// <summary>Render every related page id to its parent local id when known, else the raw page id
+    /// per entry (an honest fallback when the parent type has not been synced yet). Multiple related
+    /// pages join as comma-separated local ids, consistent with the multi_select convention, so a
+    /// multi-value relation round-trips without dropping any target.</summary>
     private static string RenderRelation(NotionPropertyValue value, IReadOnlyDictionary<string, string>? pageIdToLocalId)
     {
-        var first = value.Relation?.FirstOrDefault()?.Id;
-        if (string.IsNullOrEmpty(first))
+        var refs = value.Relation;
+        if (refs == null || refs.Count == 0)
             return "";
-        return pageIdToLocalId != null && pageIdToLocalId.TryGetValue(first, out var localId) ? localId : first;
+        return string.Join(", ", refs.Select(r =>
+            pageIdToLocalId != null && pageIdToLocalId.TryGetValue(r.Id, out var localId) ? localId : r.Id));
     }
 
-    /// <summary>Build a relation property value from a local id. An empty value clears the relation;
-    /// an id with no known page mapping yields null so the caller skips it.</summary>
-    private static NotionPropertyValue? BuildRelation(string localId, IReadOnlyDictionary<string, string>? localToPageId)
+    /// <summary>Build a relation property value from comma-separated local ids (the multi_select
+    /// convention). Empty input clears the relation. Each id resolves to a page id via
+    /// <paramref name="localToPageId"/>; unresolved ids are skipped so the resolved targets still
+    /// write. Null is returned only when nothing resolves from non-empty input, so the caller skips
+    /// the field rather than clobbering the current relation with an empty list.</summary>
+    private static NotionPropertyValue? BuildRelation(string localIds, IReadOnlyDictionary<string, string>? localToPageId)
     {
-        if (string.IsNullOrEmpty(localId))
+        var ids = localIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (ids.Length == 0)
             return new NotionPropertyValue { Type = "relation", Relation = [] };
-        if (localToPageId != null && localToPageId.TryGetValue(localId, out var pageId))
-            return new NotionPropertyValue { Type = "relation", Relation = [new NotionRelationRef { Id = pageId }] };
-        return null;
+
+        var refs = new List<NotionRelationRef>();
+        foreach (var id in ids)
+            if (localToPageId != null && localToPageId.TryGetValue(id, out var pageId))
+                refs.Add(new NotionRelationRef { Id = pageId });
+
+        return refs.Count > 0 ? new NotionPropertyValue { Type = "relation", Relation = refs } : null;
     }
 
     /// <summary>Best-effort plain text for an unsupported property type — prefer a title- or

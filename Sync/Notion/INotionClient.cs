@@ -15,6 +15,10 @@ public interface INotionClient
     /// <summary>Create a database under a parent page; the response carries its data source(s).</summary>
     NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request);
 
+    /// <summary>Add or update properties on an existing data source's schema (PATCH /v1/data_sources/{id}).
+    /// Used for the self-relation second pass, where the target data source id is only known post-create.</summary>
+    void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request);
+
     /// <summary>Query a data source, following pagination, returning every page.</summary>
     IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId);
 

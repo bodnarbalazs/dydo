@@ -15,6 +15,7 @@ using DynaDocs.Sync.Notion.Provisioning;
 [JsonSourceGenerationOptions(WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(NotionDatabase))]
 [JsonSerializable(typeof(NotionDatabaseCreateRequest))]
+[JsonSerializable(typeof(NotionDataSourceUpdateRequest))]
 [JsonSerializable(typeof(NotionPage))]
 [JsonSerializable(typeof(NotionPageList))]
 [JsonSerializable(typeof(NotionBlockList))]

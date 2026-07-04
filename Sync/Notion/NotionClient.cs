@@ -46,6 +46,10 @@ public sealed class NotionClient : INotionClient
         Post("databases", request, NotionJsonContext.Default.NotionDatabaseCreateRequest,
             NotionJsonContext.Default.NotionDatabase);
 
+    public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) =>
+        Send(HttpMethod.Patch, $"data_sources/{dataSourceId}", request,
+            NotionJsonContext.Default.NotionDataSourceUpdateRequest, NotionJsonContext.Default.NotionDatabase);
+
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
     {
         var pages = new List<NotionPage>();

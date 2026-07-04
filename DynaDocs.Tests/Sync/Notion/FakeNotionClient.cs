@@ -18,6 +18,7 @@ public sealed class FakeNotionClient : INotionClient
     public List<string> DiscoverableDataSources { get; } = [];
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
     public List<NotionDatabaseCreateRequest> CreatedDatabases { get; } = [];
+    public List<(string DataSourceId, NotionDataSourceUpdateRequest Request)> DataSourceUpdates { get; } = [];
     public List<string> AppendedTo { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
@@ -63,6 +64,9 @@ public sealed class FakeNotionClient : INotionClient
         CreatedDatabases.Add(request);
         return db;
     }
+
+    public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) =>
+        DataSourceUpdates.Add((dataSourceId, request));
 
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) =>
         _pages.Values.Where(p => _pageDataSource[p.Id] == dataSourceId).ToList();

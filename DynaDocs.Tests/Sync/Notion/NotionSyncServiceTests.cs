@@ -144,6 +144,7 @@ public class NotionSyncServiceTests : IDisposable
     {
         public NotionDatabase RetrieveDatabase(string databaseId) => throw new NotionApiException(500, "boom");
         public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) => throw new NotionApiException(429, "rate limited");
+        public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) { }
         public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) => [];
         public NotionPage CreatePage(NotionPageCreateRequest request) => new();
         public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request) => new();

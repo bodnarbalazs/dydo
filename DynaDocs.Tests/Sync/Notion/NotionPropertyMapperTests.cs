@@ -225,6 +225,72 @@ public class NotionPropertyMapperTests
     }
 
     [Fact]
+    public void ToProperties_MultiRelation_ResolvesEveryLocalIdToPageId()
+    {
+        var schema = new Dictionary<string, string> { ["blocked-by"] = "relation" };
+        var localToPage = new Dictionary<string, string> { ["t1"] = "page-1", ["t2"] = "page-2" };
+
+        var props = NotionPropertyMapper.ToProperties(F(("blocked-by", "t1, t2")), schema, localToPage);
+
+        Assert.Equal(["page-1", "page-2"], props["blocked-by"].Relation!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public void ToProperties_MultiRelation_PartialResolution_WritesResolvedSkipsUnresolved()
+    {
+        // Only the resolvable ids are written; an unresolved id is dropped rather than blocking the rest.
+        var schema = new Dictionary<string, string> { ["blocked-by"] = "relation" };
+        var localToPage = new Dictionary<string, string> { ["t1"] = "page-1" };
+
+        var props = NotionPropertyMapper.ToProperties(F(("blocked-by", "t1, unknown")), schema, localToPage);
+
+        Assert.Equal(["page-1"], props["blocked-by"].Relation!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public void ToProperties_MultiRelation_NoneResolve_IsSkipped()
+    {
+        // Non-empty input where nothing resolves must NOT clear the relation — skip the field entirely.
+        var schema = new Dictionary<string, string> { ["blocked-by"] = "relation" };
+        var props = NotionPropertyMapper.ToProperties(
+            F(("blocked-by", "x, y")), schema, new Dictionary<string, string>());
+
+        Assert.False(props.ContainsKey("blocked-by"));
+    }
+
+    [Fact]
+    public void ToFields_MultiRelation_RendersEveryRefAsCommaSeparatedLocalIds()
+    {
+        var props = new Dictionary<string, NotionPropertyValue>
+        {
+            ["blocked-by"] = new()
+            {
+                Type = "relation",
+                Relation = [new NotionRelationRef { Id = "page-1" }, new NotionRelationRef { Id = "page-2" }],
+            },
+        };
+        var pageToLocal = new Dictionary<string, string> { ["page-1"] = "t1", ["page-2"] = "t2" };
+
+        Assert.Equal("t1, t2", NotionPropertyMapper.ToFields(props, pageToLocal).Single().Value);
+    }
+
+    [Fact]
+    public void ToFields_MultiRelation_UnknownPageId_FallsBackToRawIdPerEntry()
+    {
+        var props = new Dictionary<string, NotionPropertyValue>
+        {
+            ["blocked-by"] = new()
+            {
+                Type = "relation",
+                Relation = [new NotionRelationRef { Id = "page-1" }, new NotionRelationRef { Id = "page-2" }],
+            },
+        };
+        var pageToLocal = new Dictionary<string, string> { ["page-1"] = "t1" };
+
+        Assert.Equal("t1, page-2", NotionPropertyMapper.ToFields(props, pageToLocal).Single().Value);
+    }
+
+    [Fact]
     public void InferSchema_TakesTypePerNameAcrossPages()
     {
         var pages = new List<NotionPage>

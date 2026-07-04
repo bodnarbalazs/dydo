@@ -27,8 +27,10 @@ public sealed class SyncModel
     /// <summary>
     /// The object types in dependency order: a type's relation targets always precede it, so a child's
     /// relation can reference an already-provisioned parent data source and resolve a parent page id
-    /// from the parent's just-advanced base. Throws on an unknown relation target or a relation cycle —
-    /// the model must be a DAG.
+    /// from the parent's just-advanced base. Throws on an unknown relation target or a genuine
+    /// multi-type relation cycle — the cross-type graph must be a DAG. A self-relation (a type that
+    /// relates to itself, e.g. a blocked-by edge between rows of the same type) is legal and does not
+    /// count as a cycle: it is a within-type edge the provisioner adds in a second pass.
     /// </summary>
     public IReadOnlyList<SyncObjectType> InDependencyOrder()
     {
@@ -49,6 +51,11 @@ public sealed class SyncModel
             {
                 if (!byType.TryGetValue(target, out var parent))
                     throw new SyncModelException($"object '{obj.Type}' relates to unknown type '{target}'");
+                // A self-relation is a within-type edge, not a cross-type dependency: a type does not
+                // depend on itself being ordered first, so skip it. Recursing would re-enter a node
+                // that is still "visiting" and falsely report a cycle.
+                if (parent == obj)
+                    continue;
                 Visit(parent);
             }
             state[obj.Type] = true;

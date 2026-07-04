@@ -68,6 +68,51 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
+    public void Create_SelfRelation_CreatesWithoutIt_ThenPatchesItOntoTheDataSource()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var type = new SyncObjectType
+        {
+            Type = "SprintTask",
+            NotionTitle = "Sprint Tasks",
+            Properties = new()
+            {
+                ["title"] = new SyncPropertyDef { Type = "title" },
+                ["sprint"] = new SyncPropertyDef { Type = "relation", To = "Sprint" },
+                ["blocked-by"] = new SyncPropertyDef { Type = "relation", To = "SprintTask" },
+            },
+        };
+
+        var record = provisioner.Create(type, "parent-page", new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
+
+        // First pass: the create carries the title and the cross-type relation, but NOT the self-relation.
+        var request = Assert.Single(client.CreatedDatabases);
+        Assert.True(request.InitialDataSource.Properties.ContainsKey("sprint"));
+        Assert.False(request.InitialDataSource.Properties.ContainsKey("blocked-by"));
+        Assert.Equal("ds-sprint", request.InitialDataSource.Properties["sprint"].Relation!.DataSourceId);
+
+        // Second pass: the self-relation is PATCHed onto the just-created data source, pointing at itself.
+        var (dataSourceId, update) = Assert.Single(client.DataSourceUpdates);
+        Assert.Equal(record.DataSourceId, dataSourceId);
+        var selfRelation = update.Properties["blocked-by"].Relation;
+        Assert.NotNull(selfRelation);
+        Assert.Equal(record.DataSourceId, selfRelation!.DataSourceId);
+    }
+
+    [Fact]
+    public void Create_NonSelfRelationsOnly_StaySinglePass_NoDataSourceUpdate()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        provisioner.Create(_model.Object("Sprint"), "parent-page", new Dictionary<string, string> { ["Campaign"] = "ds-campaign" });
+
+        Assert.Single(client.CreatedDatabases);
+        Assert.Empty(client.DataSourceUpdates);
+    }
+
+    [Fact]
     public void Create_DateAndRichTextProperties_BuildEmptyConfigs()
     {
         var client = new FakeNotionClient();

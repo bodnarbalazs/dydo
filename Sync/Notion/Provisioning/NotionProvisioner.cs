@@ -37,34 +37,54 @@ public sealed class NotionProvisioner
         _state.TryGetValue(objectType, out var rec) && StillValid(rec) ? rec : null;
 
     /// <summary>Create the database for a model object type and record its ids. Relation properties
-    /// resolve their target via <paramref name="resolvedDataSourceIds"/> (parent type → data source id).</summary>
+    /// resolve their target via <paramref name="resolvedDataSourceIds"/> (parent type → data source id).
+    /// A self-relation (target == this type) cannot be declared at create time — the type's own data
+    /// source id does not exist yet — so it is deferred to a second pass: the database is created without
+    /// its self-referencing relations, then those properties are PATCHed onto the data source once its
+    /// id is known. Non-self relations keep the single-pass path.</summary>
     public NotionProvisionedType Create(SyncObjectType type, string parentPageId, IReadOnlyDictionary<string, string> resolvedDataSourceIds)
     {
+        var selfRelations = type.Properties
+            .Where(p => p.Value.Type == "relation" && p.Value.To == type.Type)
+            .ToList();
+        var firstPass = type.Properties.Where(p => !selfRelations.Contains(p));
+
         var db = _client.CreateDatabase(new NotionDatabaseCreateRequest
         {
             Parent = new NotionDatabaseParent { PageId = parentPageId },
             Title = NotionRichText.Of(type.NotionTitle),
             Icon = NotionIcon.Of(type.Icon),
-            InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(type, resolvedDataSourceIds) },
+            InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(firstPass, resolvedDataSourceIds) },
         });
+
+        var dataSourceId = db.DataSources.Count > 0 ? db.DataSources[0].Id : "";
+
+        if (selfRelations.Count > 0)
+        {
+            var withSelf = new Dictionary<string, string>(resolvedDataSourceIds) { [type.Type] = dataSourceId };
+            _client.UpdateDataSource(dataSourceId, new NotionDataSourceUpdateRequest
+            {
+                Properties = BuildSchema(selfRelations, withSelf),
+            });
+        }
 
         var record = new NotionProvisionedType
         {
             ObjectType = type.Type,
             DatabaseId = db.Id,
-            DataSourceId = db.DataSources.Count > 0 ? db.DataSources[0].Id : "",
+            DataSourceId = dataSourceId,
         };
         _state[type.Type] = record;
         return record;
     }
 
-    /// <summary>The create-database <c>properties</c> map for a model object type — the one place a
-    /// model property's type is translated to its Notion schema body. Relation properties resolve their
-    /// target's data source id from <paramref name="resolvedDataSourceIds"/> (the parent is provisioned
-    /// first, so its id is present).</summary>
+    /// <summary>The <c>properties</c> schema map for a set of model properties — the one place a model
+    /// property's type is translated to its Notion schema body. Relation properties resolve their
+    /// target's data source id from <paramref name="resolvedDataSourceIds"/>.</summary>
     private static Dictionary<string, NotionPropertySchema> BuildSchema(
-        SyncObjectType type, IReadOnlyDictionary<string, string> resolvedDataSourceIds) =>
-        type.Properties.ToDictionary(p => p.Key, p => ToSchema(p.Value, resolvedDataSourceIds));
+        IEnumerable<KeyValuePair<string, SyncPropertyDef>> properties,
+        IReadOnlyDictionary<string, string> resolvedDataSourceIds) =>
+        properties.ToDictionary(p => p.Key, p => ToSchema(p.Value, resolvedDataSourceIds));
 
     private static NotionPropertySchema ToSchema(SyncPropertyDef prop, IReadOnlyDictionary<string, string> resolvedDataSourceIds) => prop.Type switch
     {

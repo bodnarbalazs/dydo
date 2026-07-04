@@ -162,6 +162,26 @@ public class SyncModelLoaderTests : IDisposable
     }
 
     [Fact]
+    public void InDependencyOrder_SelfRelation_IsLegal_DoesNotThrow()
+    {
+        // A self-relation (a property whose target is its own type, e.g. blocked-by) is a within-type
+        // edge, not a cross-type cycle. It must order fine and place parents before children as usual.
+        WriteModel("""
+            { "objects": [
+              { "type": "Sprint", "dir": "s", "notionTitle": "S",
+                "properties": { "title": { "type": "title" } } },
+              { "type": "SprintTask", "dir": "t", "notionTitle": "T",
+                "properties": { "title": { "type": "title" },
+                  "sprint": { "type": "relation", "to": "Sprint" },
+                  "blocked-by": { "type": "relation", "to": "SprintTask" } } }
+            ] }
+            """);
+
+        var ordered = SyncModelLoader.Load(_dydoRoot).InDependencyOrder();
+        Assert.Equal(["Sprint", "SprintTask"], ordered.Select(o => o.Type));
+    }
+
+    [Fact]
     public void InDependencyOrder_UnknownRelationTarget_Throws()
     {
         WriteModel("""

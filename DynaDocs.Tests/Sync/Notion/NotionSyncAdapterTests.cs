@@ -38,7 +38,7 @@ public class NotionSyncAdapterTests
             var docs = new List<SyncDoc> { Doc("t1"), Doc("t2"), Doc("t3") };
 
             client.FailCreateAfter = 1; // 1st create succeeds, 2nd throws
-            var runner1 = new SyncRunner(adapter, new BaseSnapshotStore(snapPath), (id, _) => Path.Combine(dir, id + ".md"));
+            var runner1 = new SyncRunner(adapter, new BaseSnapshotStore(snapPath), (id, _, _) => Path.Combine(dir, id + ".md"));
             Assert.Throws<NotionApiException>(() => runner1.Run(docs));
 
             // Exactly one create's id survived into the persisted base.
@@ -49,7 +49,7 @@ public class NotionSyncAdapterTests
 
             // Retry with a healthy client: the survivor is not duplicated.
             client.FailCreateAfter = null;
-            var runner2 = new SyncRunner(adapter, new BaseSnapshotStore(snapPath), (id, _) => Path.Combine(dir, id + ".md"));
+            var runner2 = new SyncRunner(adapter, new BaseSnapshotStore(snapPath), (id, _, _) => Path.Combine(dir, id + ".md"));
             runner2.Run(docs);
 
             Assert.Equal(3, client.QueryDataSource("ds1").Count); // exactly three, no duplicate
@@ -78,7 +78,7 @@ public class NotionSyncAdapterTests
         {
             var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
             var repoPath = Path.Combine(dir, "t.md");
-            SyncRunner Runner() => new(adapter, store, (id, _) => Path.Combine(dir, id + ".md"));
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
 
             var doc = new SyncDoc
             {
@@ -116,7 +116,7 @@ public class NotionSyncAdapterTests
         {
             var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
             var repoPath = Path.Combine(dir, "t.md");
-            SyncRunner Runner() => new(adapter, store, (id, _) => Path.Combine(dir, id + ".md"));
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
 
             var doc = new SyncDoc
             {
@@ -155,7 +155,7 @@ public class NotionSyncAdapterTests
         {
             var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
             var repoPath = Path.Combine(dir, "t.md");
-            SyncRunner Runner() => new(adapter, store, (id, _) => Path.Combine(dir, id + ".md"));
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
 
             var doc = new SyncDoc
             {
@@ -197,7 +197,7 @@ public class NotionSyncAdapterTests
                 LocalId = "t", Fields = [new SyncField { Key = "status", Value = status }],
                 Body = "b", SourcePath = Path.Combine(dir, "t.md"),
             };
-            SyncRunner Runner() => new(adapter, new BaseSnapshotStore(snapPath), (id, _) => Path.Combine(dir, id + ".md"));
+            SyncRunner Runner() => new(adapter, new BaseSnapshotStore(snapPath), (id, _, _) => Path.Combine(dir, id + ".md"));
 
             Runner().Run([Doc("open")]); // create; base t -> {status: open}
 
@@ -226,7 +226,7 @@ public class NotionSyncAdapterTests
         try
         {
             var snapPath = Path.Combine(dir, "snap.json");
-            SyncRunner Runner() => new(adapter, new BaseSnapshotStore(snapPath), (id, _) => Path.Combine(dir, id + ".md"));
+            SyncRunner Runner() => new(adapter, new BaseSnapshotStore(snapPath), (id, _, _) => Path.Combine(dir, id + ".md"));
 
             var doc = new SyncDoc
             {
@@ -261,7 +261,7 @@ public class NotionSyncAdapterTests
         {
             var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
             var repoPath = Path.Combine(dir, "t.md");
-            SyncRunner Runner() => new(adapter, store, (id, _) => Path.Combine(dir, id + ".md"));
+            SyncRunner Runner() => new(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
 
             var doc = new SyncDoc
             {
@@ -521,7 +521,7 @@ public class NotionSyncAdapterTests
         try
         {
             var store = new BaseSnapshotStore(Path.Combine(dir, "snap.json"));
-            var runner = new SyncRunner(adapter, store, (id, _) => Path.Combine(dir, id + ".md"));
+            var runner = new SyncRunner(adapter, store, (id, _, _) => Path.Combine(dir, id + ".md"));
 
             runner.Run([new SyncDoc
             {

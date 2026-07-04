@@ -56,7 +56,7 @@
       "icon": "🐞",
       "properties": {
         "title": { "type": "title" },
-        "status": { "type": "select", "options": ["open", "closed"], "folders": { "closed": "closed" } },
+        "status": { "type": "select", "options": ["open", "resolved"], "folders": { "resolved": "resolved" } },
         "severity": { "type": "select", "options": ["critical", "high", "medium", "low"] },
         "area": { "type": "select", "options": ["backend", "general", "project", "reference", "understand"] }
       }

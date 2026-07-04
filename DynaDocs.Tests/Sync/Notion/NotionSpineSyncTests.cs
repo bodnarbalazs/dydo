@@ -200,12 +200,12 @@ public class NotionSpineSyncTests : IDisposable
     [Fact]
     public void LoadDocs_PoolsRecursivelyFromSubfolders_SkippingUnderscoreMeta()
     {
-        // Folder placement is derived presentation (slice brief §3): a doc under closed/ is pooled the
+        // Folder placement is derived presentation (slice brief §3): a doc under resolved/ is pooled the
         // same as one at the dir root. Underscore-prefixed metadata — files and whole folders — is skipped.
         Seed("project/issues/open-bug", "---\ntitle: Open bug\nstatus: open\n---\n\nBody.");
-        Seed("project/issues/closed/done-bug", "---\ntitle: Done bug\nstatus: closed\n---\n\nBody.");
+        Seed("project/issues/resolved/done-bug", "---\ntitle: Done bug\nstatus: resolved\n---\n\nBody.");
         Seed("project/issues/_index", "---\ntitle: Issues\n---\n\nFolder index.");
-        Seed("project/issues/_archive/old", "---\ntitle: Archived\nstatus: closed\n---\n\nBody.");
+        Seed("project/issues/_archive/old", "---\ntitle: Archived\nstatus: resolved\n---\n\nBody.");
 
         var docs = NotionSpineSync.LoadDocs(Path.Combine(_dydoRoot, "project", "issues"));
 

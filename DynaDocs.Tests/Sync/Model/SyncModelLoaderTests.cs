@@ -79,19 +79,19 @@ public class SyncModelLoaderTests : IDisposable
 
         var issue = model.Object("Issue");
         Assert.Equal("project/issues", issue.Dir);
-        Assert.Equal(["open", "closed"], issue.Properties["status"].Options!);
+        Assert.Equal(["open", "resolved"], issue.Properties["status"].Options!);
         Assert.Equal("select", issue.Properties["severity"].Type);
     }
 
     [Fact]
-    public void Load_DefaultModel_IssueStatusRoutesClosedIntoClosedSubfolder()
+    public void Load_DefaultModel_IssueStatusRoutesResolvedIntoResolvedSubfolder()
     {
         var issue = SyncModelLoader.Load(_dydoRoot).Object("Issue");
 
         var routing = issue.FolderRouting();
         Assert.NotNull(routing);
         Assert.Equal("status", routing.Value.Field);
-        Assert.Equal("closed", routing.Value.Folders["closed"]);
+        Assert.Equal("resolved", routing.Value.Folders["resolved"]);
 
         // Types without a folders map do not route.
         Assert.Null(SyncModelLoader.Load(_dydoRoot).Object("SprintTask").FolderRouting());

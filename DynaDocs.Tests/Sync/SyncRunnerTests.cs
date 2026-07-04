@@ -28,7 +28,7 @@ public class SyncRunnerTests : IDisposable
     }
 
     private SyncRunner NewRunner() =>
-        new(_adapter, _base, (localId, _) => Path.Combine(_tasksDir, localId + ".md"));
+        new(_adapter, _base, (localId, _, _) => Path.Combine(_tasksDir, localId + ".md"));
 
     /// <summary>A runner whose layout routes status "closed" into a "closed/" subfolder and everything
     /// else to the dir root — the Issue folder convention (slice brief §3).</summary>
@@ -38,8 +38,17 @@ public class SyncRunnerTests : IDisposable
         return new(_adapter, _base, layout.PathFor);
     }
 
+    /// <summary>A runner modeling the live Issue corpus: 'resolved' routes into a "resolved/" subfolder,
+    /// 'open' has no mapping and lives at the dir root (orchestrator decision, slice brief §1).</summary>
+    private SyncRunner NewIssueRunner()
+    {
+        var layout = new RepoFolderLayout(_tasksDir, "status", new Dictionary<string, string> { ["resolved"] = "resolved" });
+        return new(_adapter, _base, layout.PathFor);
+    }
+
     private string OpenPath(string localId) => Path.Combine(_tasksDir, localId + ".md");
     private string ClosedPath(string localId) => Path.Combine(_tasksDir, "closed", localId + ".md");
+    private string ResolvedPath(string localId) => Path.Combine(_tasksDir, "resolved", localId + ".md");
 
     private SyncDoc RepoDoc(string localId, string body, params (string, string)[] fields) => new()
     {
@@ -289,8 +298,11 @@ public class SyncRunnerTests : IDisposable
     }
 
     [Fact]
-    public void ReopenedIssue_MovesFromClosedBackToRoot()
+    public void ReopenedIssue_UnmappedStatus_StaysInFolder_PushesStatusOnly()
     {
+        // Reopening flips status to an UNMAPPED value ('open' has no folder entry). Per the unmapped-status
+        // safety rule (finding 1) the sync engine never moves such a file — it keeps its current path; a CLI
+        // handler owns any physical relocation. The status change still propagates to the external view.
         var closed = DocAt(ClosedPath("bug"), "bug", "body", ("title", "bug"), ("status", "closed"));
         SyncDocFile.Write(ClosedPath("bug"), closed);
         NewFolderRunner().Run([closed]);
@@ -299,9 +311,73 @@ public class SyncRunnerTests : IDisposable
         SyncDocFile.Write(ClosedPath("bug"), DocAt(ClosedPath("bug"), "bug", "body", ("title", "bug"), ("status", "open")));
         NewFolderRunner().Run([SyncDocFile.Read(ClosedPath("bug"), "bug", ClosedPath("bug"))]);
 
-        Assert.True(File.Exists(OpenPath("bug")));
-        Assert.False(File.Exists(ClosedPath("bug")));
+        Assert.True(File.Exists(ClosedPath("bug")));
+        Assert.False(File.Exists(OpenPath("bug")));
+        Assert.Equal("open", External(extId).Fields.First(f => f.Key == "status").Value);
         Assert.Equal(extId, _base.Get("bug")!.ExternalId);
+    }
+
+    [Fact]
+    public void UnmappedStatusInArbitrarySubfolder_StaysPut_AcrossTick()
+    {
+        // A doc whose status has no folder mapping, sitting in an arbitrary subfolder, must not be yanked to
+        // the dir root on a sync tick (finding 1) — folder placement for unmapped statuses is left untouched.
+        var subPath = Path.Combine(_tasksDir, "archive", "bug.md");
+        var doc = DocAt(subPath, "bug", "body", ("title", "bug"), ("status", "open"));
+        SyncDocFile.Write(subPath, doc);
+        NewFolderRunner().Run([doc]);
+
+        var result = NewFolderRunner().Run([SyncDocFile.Read(subPath, "bug", subPath)]);
+
+        Assert.True(File.Exists(subPath));
+        Assert.False(File.Exists(OpenPath("bug")));
+        Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+    }
+
+    [Fact]
+    public void LiveIssueCorpus_RootPlusResolved_NoChangeTick_MovesZeroFiles()
+    {
+        // Model the real corpus: 'open' issues at the dir root, 'resolved' issues under resolved/. A tick that
+        // changes nothing must move ZERO files (orchestrator decision, slice brief §1).
+        var open = DocAt(OpenPath("open-bug"), "open-bug", "body", ("title", "o"), ("status", "open"));
+        var resolved = DocAt(ResolvedPath("done-bug"), "done-bug", "body", ("title", "d"), ("status", "resolved"));
+        SyncDocFile.Write(OpenPath("open-bug"), open);
+        SyncDocFile.Write(ResolvedPath("done-bug"), resolved);
+        NewIssueRunner().Run([open, resolved]);
+
+        var result = NewIssueRunner().Run(
+        [
+            SyncDocFile.Read(OpenPath("open-bug"), "open-bug", OpenPath("open-bug")),
+            SyncDocFile.Read(ResolvedPath("done-bug"), "done-bug", ResolvedPath("done-bug")),
+        ]);
+
+        Assert.True(File.Exists(OpenPath("open-bug")));
+        Assert.True(File.Exists(ResolvedPath("done-bug")));
+        Assert.False(File.Exists(ResolvedPath("open-bug")));
+        Assert.False(File.Exists(OpenPath("done-bug")));
+        Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+    }
+
+    [Fact]
+    public void DuplicateLocalId_AcrossSubfolders_Run_FailsNamingBothPaths()
+    {
+        var atRoot = DocAt(OpenPath("bug"), "bug", "body", ("title", "b"), ("status", "open"));
+        var inClosed = DocAt(ClosedPath("bug"), "bug", "body", ("title", "b"), ("status", "closed"));
+
+        var ex = Assert.Throws<InvalidOperationException>(() => NewFolderRunner().Run([atRoot, inClosed]));
+        Assert.Contains(OpenPath("bug"), ex.Message);
+        Assert.Contains(ClosedPath("bug"), ex.Message);
+    }
+
+    [Fact]
+    public void DuplicateLocalId_AcrossSubfolders_Plan_FailsNamingBothPaths()
+    {
+        var atRoot = DocAt(OpenPath("bug"), "bug", "body", ("title", "b"), ("status", "open"));
+        var inClosed = DocAt(ClosedPath("bug"), "bug", "body", ("title", "b"), ("status", "closed"));
+
+        var ex = Assert.Throws<InvalidOperationException>(() => NewFolderRunner().Plan([atRoot, inClosed]));
+        Assert.Contains(OpenPath("bug"), ex.Message);
+        Assert.Contains(ClosedPath("bug"), ex.Message);
     }
 
     [Fact]

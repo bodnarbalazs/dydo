@@ -24,6 +24,28 @@ public class RepoFolderLayoutTests
     }
 
     [Fact]
+    public void OptionValueMatch_IsCaseInsensitive()
+    {
+        // The status field name is matched case-insensitively; its option VALUE must be too, so a frontmatter
+        // 'status: Resolved' routes the same as 'resolved' (finding 3).
+        var layout = new RepoFolderLayout("root", "status", new Dictionary<string, string> { ["resolved"] = "resolved" });
+
+        Assert.Equal(Path.Combine("root", "resolved", "i.md"), layout.PathFor("i", F(("status", "Resolved"))));
+    }
+
+    [Fact]
+    public void UnmappedStatus_WithCurrentPath_KeepsExistingPath()
+    {
+        // An unmapped status never moves an existing doc: it keeps its current path. Only a doc with no
+        // current path lands at the root (finding 1).
+        var layout = new RepoFolderLayout("root", "status", new Dictionary<string, string> { ["resolved"] = "resolved" });
+
+        var existing = Path.Combine("root", "archive", "i.md");
+        Assert.Equal(existing, layout.PathFor("i", F(("status", "open")), existing));
+        Assert.Equal(Path.Combine("root", "i.md"), layout.PathFor("i", F(("status", "open")), null));
+    }
+
+    [Fact]
     public void NoRouting_KeepsEveryDocFlat()
     {
         var layout = new RepoFolderLayout("root", null, null);

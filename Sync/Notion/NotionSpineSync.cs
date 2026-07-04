@@ -118,7 +118,7 @@ public static class NotionSpineSync
 
     /// <summary>Pool every <c>*.md</c> under a type's canonical directory — recursively, across all subfolders
     /// — as a <see cref="SyncDoc"/> keyed by stem. Folder placement is derived presentation (slice brief §3):
-    /// an object filed under <c>closed/</c> is the same logical row as one at the dir root, so both are read.
+    /// an object filed under <c>resolved/</c> is the same logical row as one at the dir root, so both are read.
     /// Skips any file whose stem or a containing folder is <c>_</c>-prefixed (e.g. <c>_index.md</c>,
     /// <c>_templates/</c>): by dydo convention those are folder metadata, not domain objects, never synced as rows.</summary>
     public static List<SyncDoc> LoadDocs(string dir)

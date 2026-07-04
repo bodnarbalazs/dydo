@@ -17,12 +17,13 @@ public sealed class SyncRunner
 
     private readonly ISyncAdapter _adapter;
     private readonly BaseSnapshotStore _base;
-    private readonly Func<string, IReadOnlyList<SyncField>, string> _repoPathFor;
+    private readonly Func<string, IReadOnlyList<SyncField>, string?, string> _repoPathFor;
 
-    /// <param name="repoPathFor">The canonical repo path for a doc, given its local id and fields. Fields
-    /// are passed so folder placement can derive from status (slice brief §3); a flat layout simply
-    /// ignores them. See <see cref="RepoFolderLayout"/>.</param>
-    public SyncRunner(ISyncAdapter adapter, BaseSnapshotStore baseStore, Func<string, IReadOnlyList<SyncField>, string> repoPathFor)
+    /// <param name="repoPathFor">The canonical repo path for a doc, given its local id, fields, and current
+    /// on-disk path (null when the doc has none yet). Fields are passed so folder placement can derive from
+    /// status (slice brief §3); the current path lets an unmapped status keep an existing doc in place rather
+    /// than pulling it to the root (finding 1). A flat layout simply ignores both. See <see cref="RepoFolderLayout"/>.</param>
+    public SyncRunner(ISyncAdapter adapter, BaseSnapshotStore baseStore, Func<string, IReadOnlyList<SyncField>, string?, string> repoPathFor)
     {
         _adapter = adapter;
         _base = baseStore;
@@ -36,7 +37,7 @@ public sealed class SyncRunner
     public IReadOnlyList<ReconcileResult> Plan(IReadOnlyList<SyncDoc> repoDocs)
     {
         var externalByLocalId = MapExternalToLocalId(_adapter.ReadExternalState());
-        var repoByLocalId = repoDocs.ToDictionary(d => d.LocalId);
+        var repoByLocalId = IndexByLocalId(repoDocs);
 
         var localIds = new HashSet<string>(_base.LocalIds);
         localIds.UnionWith(repoByLocalId.Keys);
@@ -53,10 +54,27 @@ public sealed class SyncRunner
         return results;
     }
 
+    /// <summary>Index repo docs by their local id (filename stem). Two docs sharing a stem — a documented
+    /// historical artifact when the same id lives in two subfolders, and reachable if a non-atomic move is
+    /// interrupted — would otherwise crash <see cref="Enumerable.ToDictionary"/> with a message naming no
+    /// files. Fail with a clear error naming BOTH paths so the operator can resolve it (finding 2).</summary>
+    private static Dictionary<string, SyncDoc> IndexByLocalId(IReadOnlyList<SyncDoc> repoDocs)
+    {
+        var byLocalId = new Dictionary<string, SyncDoc>();
+        foreach (var doc in repoDocs)
+        {
+            if (byLocalId.TryGetValue(doc.LocalId, out var existing))
+                throw new InvalidOperationException(
+                    $"two repo files share local id '{doc.LocalId}': '{existing.SourcePath}' and '{doc.SourcePath}' — rename or remove one");
+            byLocalId[doc.LocalId] = doc;
+        }
+        return byLocalId;
+    }
+
     public SyncRunResult Run(IReadOnlyList<SyncDoc> repoDocs)
     {
         var externalByLocalId = MapExternalToLocalId(_adapter.ReadExternalState());
-        var repoByLocalId = repoDocs.ToDictionary(d => d.LocalId);
+        var repoByLocalId = IndexByLocalId(repoDocs);
 
         var localIds = new HashSet<string>(_base.LocalIds);
         localIds.UnionWith(repoByLocalId.Keys);
@@ -166,19 +184,20 @@ public sealed class SyncRunner
 
     /// <summary>
     /// File a doc at its canonical path, honoring status-driven folder routing (slice brief §3). The path
-    /// is derived from the doc's fields, so a status change re-files it into the matching subfolder; the
-    /// local id (filename stem) is unchanged, so the base still keys the same object and a move is never
-    /// seen as delete+create. When <paramref name="rewrite"/> the merged content is written to the new path
-    /// and the old file removed; otherwise the on-disk content is already current and the file is only moved
-    /// if its folder changed. A no-op when the doc is null or already at its canonical path.
+    /// is derived from the doc's fields and its current path, so a status that maps to a subfolder re-files
+    /// it there while a status with no folder mapping keeps the file where it is (finding 1); the local id
+    /// (filename stem) is unchanged, so the base still keys the same object and a move is never seen as
+    /// delete+create. When <paramref name="rewrite"/> the merged content is written to the new path and the
+    /// old file removed; otherwise the on-disk content is already current and the file is only moved if its
+    /// folder changed. A no-op when the doc is null or already at its canonical path.
     /// </summary>
     private void PlaceRepoFile(string localId, SyncDoc? doc, bool rewrite)
     {
         if (doc == null)
             return;
 
-        var newPath = _repoPathFor(localId, doc.Fields);
         var oldPath = doc.SourcePath;
+        var newPath = _repoPathFor(localId, doc.Fields, string.IsNullOrEmpty(oldPath) ? null : oldPath);
         var moved = !string.IsNullOrEmpty(oldPath) && !SamePath(oldPath, newPath) && File.Exists(oldPath);
 
         if (rewrite)
@@ -235,7 +254,7 @@ public sealed class SyncRunner
                 ExternalId = record.ExternalId,
                 Fields = record.Fields,
                 Body = record.Body,
-                SourcePath = _repoPathFor(localId, record.Fields),
+                SourcePath = _repoPathFor(localId, record.Fields, null),
             };
         }
 

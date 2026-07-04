@@ -44,6 +44,10 @@ public sealed class FakeNotionClient : INotionClient
     /// the partial-Apply-failure test (a create fails mid-batch).</summary>
     public int? FailCreateAfter { get; set; }
 
+    /// <summary>When set, <see cref="CreateDatabase"/> throws once this many database creates have succeeded —
+    /// drives the mid-provision-failure test (provision state must persist the databases already created).</summary>
+    public int? FailCreateDatabaseAfter { get; set; }
+
     /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
     public bool FailAppend { get; set; }
 
@@ -74,6 +78,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request)
     {
+        if (FailCreateDatabaseAfter is { } limit && CreatedDatabases.Count >= limit)
+            throw new NotionApiException(429, "simulated database create failure");
         var n = _nextDb++;
         var dataSourceId = $"ds-{n}";
         var db = new NotionDatabase

@@ -168,7 +168,7 @@ public class NotionPropertyMapperTests
         var schema = new Dictionary<string, string> { ["campaign"] = "relation" };
         var localToPage = new Dictionary<string, string> { ["dydo-2-0"] = "page-99" };
 
-        var props = NotionPropertyMapper.ToProperties(F(("campaign", "dydo-2-0")), schema, localToPage);
+        var props = NotionPropertyMapper.ToProperties(F(("campaign", "dydo-2-0")), schema, Rel("campaign", localToPage));
 
         Assert.Equal("page-99", props["campaign"].Relation!.Single().Id);
     }
@@ -178,7 +178,7 @@ public class NotionPropertyMapperTests
     {
         var schema = new Dictionary<string, string> { ["campaign"] = "relation" };
         var props = NotionPropertyMapper.ToProperties(
-            F(("campaign", "unknown")), schema, new Dictionary<string, string>());
+            F(("campaign", "unknown")), schema, Rel("campaign", new Dictionary<string, string>()));
 
         Assert.False(props.ContainsKey("campaign"));
     }
@@ -187,7 +187,7 @@ public class NotionPropertyMapperTests
     public void ToProperties_Relation_EmptyValue_ClearsTheRelation()
     {
         var schema = new Dictionary<string, string> { ["campaign"] = "relation" };
-        var props = NotionPropertyMapper.ToProperties(F(("campaign", "")), schema, new Dictionary<string, string>());
+        var props = NotionPropertyMapper.ToProperties(F(("campaign", "")), schema, Rel("campaign", new Dictionary<string, string>()));
 
         Assert.Empty(props["campaign"].Relation!);
     }
@@ -230,7 +230,7 @@ public class NotionPropertyMapperTests
         var schema = new Dictionary<string, string> { ["blocked-by"] = "relation" };
         var localToPage = new Dictionary<string, string> { ["t1"] = "page-1", ["t2"] = "page-2" };
 
-        var props = NotionPropertyMapper.ToProperties(F(("blocked-by", "t1, t2")), schema, localToPage);
+        var props = NotionPropertyMapper.ToProperties(F(("blocked-by", "t1, t2")), schema, Rel("blocked-by", localToPage));
 
         Assert.Equal(["page-1", "page-2"], props["blocked-by"].Relation!.Select(r => r.Id));
     }
@@ -242,7 +242,7 @@ public class NotionPropertyMapperTests
         var schema = new Dictionary<string, string> { ["blocked-by"] = "relation" };
         var localToPage = new Dictionary<string, string> { ["t1"] = "page-1" };
 
-        var props = NotionPropertyMapper.ToProperties(F(("blocked-by", "t1, unknown")), schema, localToPage);
+        var props = NotionPropertyMapper.ToProperties(F(("blocked-by", "t1, unknown")), schema, Rel("blocked-by", localToPage));
 
         Assert.Equal(["page-1"], props["blocked-by"].Relation!.Select(r => r.Id));
     }
@@ -253,7 +253,7 @@ public class NotionPropertyMapperTests
         // Non-empty input where nothing resolves must NOT clear the relation — skip the field entirely.
         var schema = new Dictionary<string, string> { ["blocked-by"] = "relation" };
         var props = NotionPropertyMapper.ToProperties(
-            F(("blocked-by", "x, y")), schema, new Dictionary<string, string>());
+            F(("blocked-by", "x, y")), schema, Rel("blocked-by", new Dictionary<string, string>()));
 
         Assert.False(props.ContainsKey("blocked-by"));
     }
@@ -341,4 +341,8 @@ public class NotionPropertyMapperTests
 
     private static List<SyncField> F(params (string, string)[] fields) =>
         fields.Select(f => new SyncField { Key = f.Item1, Value = f.Item2 }).ToList();
+
+    /// <summary>Wrap a single relation field's local→page map into the per-field form ToProperties takes.</summary>
+    private static Dictionary<string, IReadOnlyDictionary<string, string>> Rel(string field, IReadOnlyDictionary<string, string> map) =>
+        new() { [field] = map };
 }

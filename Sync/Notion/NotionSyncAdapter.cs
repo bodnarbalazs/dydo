@@ -21,7 +21,11 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     private readonly INotionClient _client;
     private readonly string _dataSourceId;
     private readonly IReadOnlyDictionary<string, string>? _explicitSchema;
-    private readonly IReadOnlyDictionary<string, string>? _relationLocalToPageId;
+    // Write direction is keyed by relation FIELD name so each field resolves against its own target type's
+    // local↔page map — a bare-stem merged map would send a colliding id to the wrong database (slice brief §3).
+    private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? _relationLocalToPageIdByField;
+    // Read direction stays a single merged page-id→local-id map: Notion page ids are globally unique, so no two
+    // target types can collide on a key, and no per-field split is needed.
     private readonly IReadOnlyDictionary<string, string>? _relationPageIdToLocalId;
     private readonly string? _icon;
     private readonly IReadOnlyDictionary<string, string>? _engineComputedSchema;
@@ -43,7 +47,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         INotionClient client,
         string dataSourceId,
         IReadOnlyDictionary<string, string>? schema = null,
-        IReadOnlyDictionary<string, string>? relationLocalToPageId = null,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? relationLocalToPageIdByField = null,
         IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null,
         string? icon = null,
         IReadOnlyDictionary<string, string>? engineComputedSchema = null,
@@ -52,7 +56,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         _client = client;
         _dataSourceId = dataSourceId;
         _explicitSchema = schema;
-        _relationLocalToPageId = relationLocalToPageId;
+        _relationLocalToPageIdByField = relationLocalToPageIdByField;
         _relationPageIdToLocalId = relationPageIdToLocalId;
         _icon = icon;
         _engineComputedSchema = engineComputedSchema is { Count: > 0 } ? engineComputedSchema : null;
@@ -106,7 +110,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
 
         foreach (var upsert in changes.Upserts)
         {
-            var properties = NotionPropertyMapper.ToProperties(upsert.Fields, schema, _relationLocalToPageId);
+            var properties = NotionPropertyMapper.ToProperties(upsert.Fields, schema, _relationLocalToPageIdByField);
             AddEngineComputed(upsert.LocalId, properties);
             var blocks = NotionBlockConverter.ToBlocks(upsert.Body);
 
@@ -202,9 +206,14 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         {
             if (!schema.TryGetValue(field.Key, out var type))
                 continue;
+            // A computed (formula/rollup) or engine-computed key is never round-trippable: ToProperties never
+            // writes it and ToFields drops it on read, so recording it in the base would silently delete a
+            // frontmatter key colliding with one a tick later (slice brief §4). Drop it from the normalized view.
+            if (NotionPropertyMapper.IsComputedType(type) || _engineComputedSchema?.ContainsKey(field.Key) == true)
+                continue;
             if (type == "relation")
             {
-                var resolved = ResolveRelationSubset(field.Value);
+                var resolved = ResolveRelationSubset(field.Key, field.Value);
                 if (resolved == null)
                     continue;
                 normalized.Add(new SyncField { Key = field.Key, Value = resolved });
@@ -228,12 +237,14 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     /// back (same split options as BuildRelation/BuildMultiSelect). Returns "" for an empty value (a valid
     /// clear) and null when a non-empty value resolves to nothing (the adapter writes it as nothing, so
     /// the field must drop out of the normalized view entirely).</summary>
-    private string? ResolveRelationSubset(string value)
+    private string? ResolveRelationSubset(string fieldKey, string value)
     {
         var ids = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (ids.Length == 0)
             return "";
-        var resolved = string.Join(", ", ids.Where(id => _relationLocalToPageId?.ContainsKey(id) ?? false));
+        IReadOnlyDictionary<string, string>? map = null;
+        _relationLocalToPageIdByField?.TryGetValue(fieldKey, out map);
+        var resolved = string.Join(", ", ids.Where(id => map?.ContainsKey(id) ?? false));
         return resolved.Length > 0 ? resolved : null;
     }
 

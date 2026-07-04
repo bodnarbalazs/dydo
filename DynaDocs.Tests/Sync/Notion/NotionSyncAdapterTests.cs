@@ -16,6 +16,10 @@ public class NotionSyncAdapterTests
     private static NotionPropertyValue Title(string s) =>
         new() { Type = "title", Title = NotionRichText.Of(s) };
 
+    /// <summary>Wrap a single relation field's local→page map into the per-field form the adapter takes.</summary>
+    private static Dictionary<string, IReadOnlyDictionary<string, string>> Rel(string field, IReadOnlyDictionary<string, string> map) =>
+        new() { [field] = map };
+
     [Fact]
     public void PartialApplyFailure_PersistsCreatedIds_NoDuplicateOnRetry()
     {
@@ -70,7 +74,7 @@ public class NotionSyncAdapterTests
         var client = new FakeNotionClient();
         var schema = new Dictionary<string, string> { ["title"] = "title", ["sprint"] = "relation" };
         // Empty relation map -> `sprint: ghost` never resolves to a page id.
-        var adapter = new NotionSyncAdapter(client, "ds1", schema, relationLocalToPageId: new Dictionary<string, string>());
+        var adapter = new NotionSyncAdapter(client, "ds1", schema, relationLocalToPageIdByField: new Dictionary<string, IReadOnlyDictionary<string, string>>());
 
         var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-rel-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(dir);
@@ -325,7 +329,7 @@ public class NotionSyncAdapterTests
         var schema = new Dictionary<string, string> { ["title"] = "title", ["blocked-by"] = "relation" };
         var localToPage = new Dictionary<string, string> { ["a"] = "pa", ["b"] = "pb" };
         var pageToLocal = new Dictionary<string, string> { ["pa"] = "a", ["pb"] = "b" };
-        var adapter = new NotionSyncAdapter(client, "ds1", schema, localToPage, pageToLocal);
+        var adapter = new NotionSyncAdapter(client, "ds1", schema, Rel("blocked-by", localToPage), pageToLocal);
 
         // Read sees both targets, rendered as comma-joined local ids.
         var record = adapter.ReadExternalState().Single();
@@ -496,7 +500,7 @@ public class NotionSyncAdapterTests
         var client = new FakeNotionClient();
         var schema = new Dictionary<string, string> { ["title"] = "title", ["campaign"] = "relation" };
         var localToPage = new Dictionary<string, string> { ["dydo-2-0"] = "campaign-page" };
-        var adapter = new NotionSyncAdapter(client, "ds2", schema, relationLocalToPageId: localToPage);
+        var adapter = new NotionSyncAdapter(client, "ds2", schema, relationLocalToPageIdByField: Rel("campaign", localToPage));
 
         var changes = new SyncChangeSet();
         changes.Upserts.Add(new SyncUpsert

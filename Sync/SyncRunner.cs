@@ -129,6 +129,12 @@ public sealed class SyncRunner
                 case ReconcileAction.None:
                     break;
 
+                case ReconcileAction.Retire:
+                    // Both sides are gone, so nothing was pushed for this object — dropping its stale base entry
+                    // is safe regardless of whether the batch applied (slice brief §2).
+                    _base.Remove(result.LocalId);
+                    break;
+
                 case ReconcileAction.Delete:
                     if (applied)
                         _base.Remove(result.LocalId);
@@ -206,6 +212,7 @@ public sealed class SyncRunner
         switch (result.Action)
         {
             case ReconcileAction.None:
+            case ReconcileAction.Retire:
                 break;
 
             case ReconcileAction.PushToExternal:

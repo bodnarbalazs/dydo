@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Sync.Notion;
 using DynaDocs.Sync;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
+using DynaDocs.Sync.Notion.Provisioning;
 
 public class NotionSpineSyncTests : IDisposable
 {
@@ -369,7 +370,7 @@ public class NotionSpineSyncTests : IDisposable
                   "properties": {
                     "title": { "type": "title" },
                     "priority": { "type": "select", "options": ["Urgent", "Low"], "colors": { "Urgent": "red", "Low": "gray" } },
-                    "progress": { "type": "rollup", "viewOnly": true, "rollupRelation": "sprints", "rollupProperty": "done", "rollupFunction": "percent_checked" } } },
+                    "progress": { "type": "rollup", "rollupRelation": "sprints", "rollupProperty": "done", "rollupFunction": "percent_checked" } } },
                 { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
                   "properties": {
                     "title": { "type": "title" },
@@ -442,10 +443,8 @@ public class NotionSpineSyncTests : IDisposable
                     "status": { "type": "select", "options": ["in-progress", "in-review", "done"] },
                     "needs-human": { "type": "checkbox" },
                     "last-activity": { "type": "date", "engineComputed": true },
-                    "stale": { "type": "formula", "viewOnly": true,
-                      "expression": "and(prop(\"status\") == \"in-progress\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
-                    "attention": { "type": "formula", "viewOnly": true,
-                      "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
+                    "stale": { "type": "formula",                      "expression": "and(prop(\"status\") == \"in-progress\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
+                    "attention": { "type": "formula",                      "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
               ]
             }
             """);
@@ -532,25 +531,25 @@ public class NotionSpineSyncTests : IDisposable
                 { "type": "Campaign", "dir": "project/campaigns", "notionTitle": "Campaigns",
                   "properties": {
                     "title": { "type": "title" },
-                    "needs-human": { "type": "rollup", "viewOnly": true, "rollupRelation": "sprints", "rollupProperty": "needs-human-count", "rollupFunction": "sum" },
-                    "attention-count": { "type": "rollup", "viewOnly": true, "rollupRelation": "sprints", "rollupProperty": "attention", "rollupFunction": "checked" },
-                    "attention": { "type": "formula", "viewOnly": true, "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
+                    "needs-human": { "type": "rollup", "rollupRelation": "sprints", "rollupProperty": "needs-human-count", "rollupFunction": "sum" },
+                    "attention-count": { "type": "rollup", "rollupRelation": "sprints", "rollupProperty": "attention", "rollupFunction": "checked" },
+                    "attention": { "type": "formula", "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
                 { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
                   "properties": {
                     "title": { "type": "title" },
                     "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
-                    "needs-human": { "type": "rollup", "viewOnly": true, "rollupRelation": "tasks", "rollupProperty": "needs-human", "rollupFunction": "checked" },
-                    "needs-human-count": { "type": "formula", "viewOnly": true, "expression": "prop(\"needs-human\")" },
-                    "attention-count": { "type": "rollup", "viewOnly": true, "rollupRelation": "tasks", "rollupProperty": "attention", "rollupFunction": "checked" },
-                    "attention": { "type": "formula", "viewOnly": true, "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
+                    "needs-human": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "needs-human", "rollupFunction": "checked" },
+                    "needs-human-count": { "type": "formula", "expression": "prop(\"needs-human\")" },
+                    "attention-count": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "attention", "rollupFunction": "checked" },
+                    "attention": { "type": "formula", "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
                 { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
                   "properties": {
                     "title": { "type": "title" },
                     "status": { "type": "select", "options": ["in-progress", "done"] },
                     "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
                     "needs-human": { "type": "checkbox" },
-                    "stale": { "type": "formula", "viewOnly": true, "expression": "prop(\"status\") == \"in-progress\"" },
-                    "attention": { "type": "formula", "viewOnly": true, "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
+                    "stale": { "type": "formula", "expression": "prop(\"status\") == \"in-progress\"" },
+                    "attention": { "type": "formula", "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
               ]
             }
             """);
@@ -711,5 +710,304 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Contains("would create database", text);
         Assert.Empty(client.CreatedDatabases);
         Assert.False(File.Exists(Path.Combine(_dydoRoot, "_system", ".local", "notion", "provision.json")));
+    }
+
+    /// <summary>A single-type SprintTask model whose only relation is the blocked-by self-relation.</summary>
+    private void SeedSelfRelationSpine()
+    {
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+    }
+
+    [Fact]
+    public void Run_PushThenTargetBecomesResolvable_DetectsRepoAddition_PushesNeverBlanks()
+    {
+        // Finding 1 (PushToExternal path). task-a is ALREADY in the base (synced alone on tick 1). Then in one
+        // edit its body changes AND it gains `blocked-by: task-b`, where task-b is created the SAME tick — so
+        // the relation is unresolvable and the adapter omits it, while the body edit still drives a
+        // PushToExternal. The base must record only what was externalized (the body, NOT the dropped relation).
+        // An un-normalized base would keep the raw `blocked-by`; once task-b resolves the next tick, the engine
+        // would compare the now-resolvable base entry against the external's empty relation, misread it as an
+        // external deletion, and WriteToRepo would blank the repo value (the overlay cannot protect a field
+        // that is now resolvable). Normalized, it is instead detected as a repo-side addition and pushed.
+        // The body edit is essential: adding only the unresolvable relation is masked by the field normalizer
+        // (it reads as no change), so no push would fire on tick 2 and the raw entry never enters the base.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: task-a alone
+
+        // task-b appears AND task-a is edited (body) and gains the blocker, in the same inter-tick window.
+        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
+        Seed("project/sprint-tasks/task-a", "---\ntitle: A\nblocked-by: task-b\n---\n\nA EDITED.");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: push body; relation unresolvable
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: task-b resolves
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+
+        // The addition was pushed on the resolving tick: task-a's page points at task-b's page.
+        Assert.Equal(PageByTitle("B").Id, PageByTitle("A").Properties["blocked-by"].Relation!.Single().Id);
+        // The repo edit was never blanked.
+        Assert.Contains("blocked-by: task-b", File.ReadAllText(TaskPath("task-a")));
+    }
+
+    [Fact]
+    public void Run_PartialMultiRelation_NewTargetResolvesLater_PushedNotBlanked()
+    {
+        // Finding 1 (partial multi-value, PushToExternal path). task-x is established in the base with a single
+        // resolvable blocker (task-a). Then in one edit its body changes AND it gains a second blocker task-b
+        // created the SAME tick — so only task-a is resolvable and the adapter pushes just that subset, while
+        // the body edit drives the PushToExternal. The base must record only the resolvable subset (task-a);
+        // an un-normalized base keeping the raw pair would, once task-b resolves next tick, read the external's
+        // single-value relation as a deletion and WriteToRepo would blank task-b out of the pair. Normalized,
+        // the second target is detected as a repo-side addition and pushed.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: task-a alone
+
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-x, task-a resolves
+
+        // task-b appears AND task-x is edited (body) and gains the second blocker, in the same window.
+        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX EDITED.");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: push body; task-b unresolvable
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-b resolves
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+
+        Assert.Equal(
+            [PageByTitle("A").Id, PageByTitle("B").Id],
+            PageByTitle("X").Properties["blocked-by"].Relation!.Select(r => r.Id));
+        Assert.Contains("blocked-by: task-a, task-b", File.ReadAllText(TaskPath("task-x")));
+    }
+
+    [Fact]
+    public void Run_BothDeletedThenGitRestoreIdentical_RetiresBase_RestoredFileRoundTripsAsNewCreate()
+    {
+        // Finding 2: when a task is deleted in the repo AND its page archived in Notion, the stale base entry
+        // must be retired. Otherwise a later git-restore of a file equal to the old base hits DeleteOne's
+        // unchanged branch and is silently deleted; the retired id must also vanish from the persisted snapshot.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["open", "done"] } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md"));
+        var content = "---\ntitle: T1\nstatus: open\n---\n\nBody.";
+        Seed("project/sprint-tasks/task-1", content);
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        var archivedId = client.QueryDataSource("ds-1").Single().Id;
+
+        // Both sides vanish in the same window: repo file deleted, Notion page archived.
+        File.Delete(TaskPath("task-1"));
+        client.QueryDataSource("ds-1").Single().Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        // The base entry (and the archived page id) is retired from the persisted snapshot.
+        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask");
+        Assert.Null(new BaseSnapshotStore(snapPath).Get("task-1"));
+        Assert.DoesNotContain(archivedId, File.ReadAllText(snapPath));
+
+        // git restores the file with content identical to the old base. It must be treated as a NEW create,
+        // round-tripping to Notion — never silently deleted.
+        File.WriteAllText(TaskPath("task-1"), content);
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        Assert.True(File.Exists(TaskPath("task-1")));
+        var live = client.QueryDataSource("ds-1").Where(p => !p.Archived).ToList();
+        var recreated = Assert.Single(live);
+        Assert.NotEqual(archivedId, recreated.Id);                        // a fresh page, not the archived one
+        Assert.Equal(recreated.Id, new BaseSnapshotStore(snapPath).Get("task-1")!.ExternalId);
+    }
+
+    [Fact]
+    public void Run_TwoRelationFieldsSharingStemAcrossTargetTypes_ResolvePerFieldTarget()
+    {
+        // Finding 3: SprintTask has two relations to different types (sprint -> Sprint, blocked-by -> SprintTask).
+        // A Sprint doc and a SprintTask doc share the stem "alpha"; a merged map keyed by bare stem would send
+        // one field to the wrong database's page. Per-field resolution keeps each pointed at its target type.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+                  "properties": { "title": { "type": "title" } } },
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "sprint": { "type": "relation", "to": "Sprint" },
+                    "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md"));
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md"));
+        Seed("project/sprints/alpha", "---\ntitle: Sprint Alpha\n---\n\nS.");
+        Seed("project/sprint-tasks/alpha", "---\ntitle: Task Alpha\n---\n\nT.");
+        Seed("project/sprint-tasks/worker", "---\ntitle: Worker\nsprint: alpha\nblocked-by: alpha\n---\n\nW.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        NotionPage PageIn(string ds, string title) =>
+            client.QueryDataSource(ds).Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == title);
+        var sprintAlpha = PageIn("ds-1", "Sprint Alpha");
+        var taskAlpha = PageIn("ds-2", "Task Alpha");
+        var worker = PageIn("ds-2", "Worker");
+
+        Assert.NotEqual(sprintAlpha.Id, taskAlpha.Id);
+        Assert.Equal(sprintAlpha.Id, worker.Properties["sprint"].Relation!.Single().Id);    // -> Sprint database
+        Assert.Equal(taskAlpha.Id, worker.Properties["blocked-by"].Relation!.Single().Id);  // -> SprintTask database
+    }
+
+    [Fact]
+    public void Run_UserFrontmatterKeyCollidingWithComputedProperty_SurvivesTicksUnchanged()
+    {
+        // Finding 4: a user's `done: true` frontmatter key collides with a computed formula property named
+        // `done`. ToProperties never writes it and ToFields drops it on read, so the field normalizer must
+        // drop it too — else the base records it once and it is silently deleted from the repo a tick later.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["in-progress", "done"] },
+                    "done": { "type": "formula", "expression": "prop(\"status\") == \"done\"" } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md"));
+        Seed("project/sprint-tasks/task-1", "---\ntitle: T1\nstatus: in-progress\ndone: true\n---\n\nBody.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var file = File.ReadAllText(TaskPath("task-1"));
+        Assert.Contains("done: true", file);          // never deleted
+        Assert.Contains("status: in-progress", file);  // and untouched
+        // The computed key was never pushed to Notion as a stored property.
+        Assert.False(client.QueryDataSource("ds-1").Single().Properties.ContainsKey("done"));
+    }
+
+    [Fact]
+    public void Run_MidProvisionFailure_PersistsCreatedDatabases_RetryReusesThem_NoDuplicates()
+    {
+        // Finding 5 + review R2-1: a create throwing mid-provision (rate limit, network) must not lose the
+        // databases already created — state is saved after EACH create, so the retry reuses the first N-1 and
+        // creates only the rest. Crucially the reused parents' rollup/formula post-pass NEVER ran on the failed
+        // run (the throw preceded it), so the retry must re-run the post-pass for those recorded-but-unpassed
+        // types — else their attention-layer rollups/formulas would be silently, permanently missing.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Campaign", "dir": "project/campaigns", "notionTitle": "Campaigns",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "progress": { "type": "rollup", "rollupRelation": "sprints", "rollupProperty": "done", "rollupFunction": "percent_checked" },
+                    "health": { "type": "formula", "expression": "prop(\"progress\") > 0.5" } } },
+                { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
+                    "done": { "type": "checkbox" },
+                    "task-progress": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "done", "rollupFunction": "percent_checked" },
+                    "sprint-health": { "type": "formula", "expression": "prop(\"task-progress\") > 0.5" } } },
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
+                    "done": { "type": "checkbox" } } }
+              ]
+            }
+            """);
+        var client = new FakeNotionClient { FailCreateDatabaseAfter = 2 }; // Campaign, Sprint succeed; SprintTask throws
+
+        Assert.Throws<NotionApiException>(
+            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+
+        var provisionPath = NotionProvisioner.PathFor(_dydoRoot);
+        Assert.True(File.Exists(provisionPath));
+        var recorded = new NotionProvisioner(client, provisionPath);
+        Assert.NotNull(recorded.Lookup("Campaign"));
+        Assert.NotNull(recorded.Lookup("Sprint"));
+        Assert.Null(recorded.Lookup("SprintTask")); // the throwing create left no record
+        Assert.Equal(2, client.CreatedDatabases.Count);
+        // The recorded parents own a post-pass that never ran — the throw preceded the post-pass entirely.
+        Assert.True(recorded.PostPassPending("Campaign"));
+        Assert.True(recorded.PostPassPending("Sprint"));
+        Assert.Empty(client.DataSourceUpdates);
+
+        // Retry with a healthy client reuses Campaign + Sprint and creates only SprintTask — no duplicates.
+        client.FailCreateDatabaseAfter = null;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        Assert.Equal(3, client.CreatedDatabases.Count);
+
+        // The retry ran the deferred post-pass for the REUSED parents: their rollups and deferred formulas were
+        // PATCHed onto their existing data sources (ds-1 Campaign, ds-2 Sprint), now that SprintTask exists.
+        Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-1" && u.Request.Properties.ContainsKey("progress"));
+        Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-1" && u.Request.Properties.ContainsKey("health"));
+        Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-2" && u.Request.Properties.ContainsKey("task-progress"));
+        Assert.Contains(client.DataSourceUpdates, u => u.DataSourceId == "ds-2" && u.Request.Properties.ContainsKey("sprint-health"));
+
+        // Completion is now persisted, so a further idempotent tick re-runs no post-pass.
+        var updatesAfterRetry = client.DataSourceUpdates.Count;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        Assert.Equal(updatesAfterRetry, client.DataSourceUpdates.Count);
+        Assert.False(new NotionProvisioner(client, provisionPath).PostPassPending("Campaign"));
+    }
+
+    [Fact]
+    public void Run_DryRun_ReusedDatabases_DoesNotClaimRollupOrFormulaPostPass()
+    {
+        // Finding 8: the rollup/formula post-pass runs only for CREATED databases, never reused ones. A dry-run
+        // where every database already exists must not claim post-pass work a real run would never perform.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Campaign", "dir": "project/campaigns", "notionTitle": "Campaigns",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "progress": { "type": "rollup", "rollupRelation": "sprints", "rollupProperty": "done", "rollupFunction": "percent_checked" } } },
+                { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" } } }
+              ]
+            }
+            """);
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // provision for real
+
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: true, output);
+
+        var text = output.ToString();
+        Assert.Contains("reuse data source", text);
+        Assert.DoesNotContain("would add rollup", text);
+        Assert.DoesNotContain("would add formula", text);
     }
 }

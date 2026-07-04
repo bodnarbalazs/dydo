@@ -84,7 +84,29 @@ public sealed class NotionProvisioner
             DataSourceId = dataSourceId,
         };
         _state[type.Type] = record;
+        // Persist the instant this database exists (slice brief §5): a later create in the run throwing (rate
+        // limit, network) must not lose the ids already created, or the retry would duplicate the whole board.
+        Save();
         return record;
+    }
+
+    /// <summary>Whether a recorded type still owes its rollup/formula post-pass — created (so present in the
+    /// state) but not yet post-passed. A mid-provision throw records the first N-1 databases without running
+    /// their post-pass; a retry reuses them, so the post-pass must re-run for every recorded-but-unpassed
+    /// type or their attention-layer rollups/formulas would be silently missing forever (review R2-1). An
+    /// unrecorded type returns false — it will be created and post-passed in the same run.</summary>
+    public bool PostPassPending(string objectType) =>
+        _state.TryGetValue(objectType, out var rec) && !rec.PostPassDone;
+
+    /// <summary>Record that a type's post-pass has completed, persisting immediately so a later throw in the
+    /// same run does not lose the fact (mirrors the per-create Save).</summary>
+    public void MarkPostPassDone(string objectType)
+    {
+        if (_state.TryGetValue(objectType, out var rec) && !rec.PostPassDone)
+        {
+            rec.PostPassDone = true;
+            Save();
+        }
     }
 
     /// <summary>Whether this type carries rollup properties the post-create pass must PATCH on once every

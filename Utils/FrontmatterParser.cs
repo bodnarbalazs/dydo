@@ -68,31 +68,47 @@ public static class FrontmatterParser
         var yaml = ExtractYamlBlock(content);
         if (yaml == null) return content;
 
-        var closeDelimiter = content.IndexOf("---", 3);
-        var block = content[3..closeDelimiter];
-        var lines = block.Split('\n').ToList();
+        // Anchor the closing delimiter to a line start: a "---" INSIDE a frontmatter value must not be mistaken
+        // for the end of the block, or the write would truncate the file mid-value and corrupt it.
+        var closeDelimiter = ClosingDelimiterIndex(content);
+        if (closeDelimiter < 0) return content;
+        var lines = content[3..closeDelimiter].Split('\n').ToList();
+        SetKeyLine(lines, key, value);
+        return content[..3] + string.Join('\n', lines) + content[closeDelimiter..];
+    }
 
-        var replaced = false;
+    /// <summary>Rewrite the frontmatter line for <paramref name="key"/> in place, or append it inside the block
+    /// (before the trailing blank line that precedes the closing delimiter) when the key is absent.</summary>
+    private static void SetKeyLine(List<string> lines, string key, string value)
+    {
         for (var i = 0; i < lines.Count; i++)
         {
             var colon = lines[i].IndexOf(':');
-            if (colon < 0) continue;
-            if (!lines[i][..colon].Trim().Equals(key, StringComparison.Ordinal)) continue;
+            if (colon < 0 || !lines[i][..colon].Trim().Equals(key, StringComparison.Ordinal))
+                continue;
             lines[i] = $"{key}: {value}";
-            replaced = true;
-            break;
+            return;
         }
 
-        if (!replaced)
+        var insertAt = lines.Count;
+        while (insertAt > 0 && lines[insertAt - 1].Trim().Length == 0)
+            insertAt--;
+        lines.Insert(insertAt, $"{key}: {value}");
+    }
+
+    /// <summary>The index at which the closing <c>---</c> line begins — the first <c>---</c> that starts a line
+    /// after the opening and is immediately followed by end-of-line or end-of-content. Returns -1 when no such
+    /// line exists, so a <c>---</c> inside a value or body is never mistaken for the block's end.</summary>
+    private static int ClosingDelimiterIndex(string content)
+    {
+        var at = content.IndexOf("\n---", 3, StringComparison.Ordinal);
+        while (at >= 0)
         {
-            // Insert before the trailing blank line that precedes the closing delimiter, so the new
-            // key stays inside the key block rather than after a gap.
-            var insertAt = lines.Count;
-            while (insertAt > 0 && lines[insertAt - 1].Trim().Length == 0)
-                insertAt--;
-            lines.Insert(insertAt, $"{key}: {value}");
+            var after = at + 4;
+            if (after >= content.Length || content[after] is '\n' or '\r')
+                return at + 1;
+            at = content.IndexOf("\n---", after, StringComparison.Ordinal);
         }
-
-        return content[..3] + string.Join('\n', lines) + content[closeDelimiter..];
+        return -1;
     }
 }

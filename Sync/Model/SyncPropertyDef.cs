@@ -9,11 +9,11 @@ using System.Text.Json.Serialization;
 /// the property is realised in Notion (or any other view) lives in that view's adapter, never here.
 /// <para>
 /// DR 029/030 additions: <see cref="Colors"/> tags each select option with a Notion palette color;
-/// <see cref="ViewOnly"/> marks a computed property (formula/rollup) that is projected into Notion but
-/// never stored in frontmatter or synced back; <see cref="Expression"/> is a formula body; and
-/// <see cref="RollupRelation"/> / <see cref="RollupProperty"/> / <see cref="RollupFunction"/> configure a
-/// rollup over a reverse relation. <see cref="Reverse"/> names the synced back-reference a dual-property
-/// relation creates on its target, so a rollup can reference it by name.
+/// <see cref="Expression"/> is a formula body; and <see cref="RollupRelation"/> / <see cref="RollupProperty"/>
+/// / <see cref="RollupFunction"/> configure a rollup over a reverse relation. <see cref="Reverse"/> names the
+/// synced back-reference a dual-property relation creates on its target, so a rollup can reference it by name.
+/// A computed property (formula/rollup) is recognised by its <see cref="Type"/> alone — the mapper skips those
+/// types on read and write — so no flag is needed to mark it.
 /// </para>
 /// </summary>
 public sealed class SyncPropertyDef
@@ -39,15 +39,9 @@ public sealed class SyncPropertyDef
     [JsonPropertyName("reverse")]
     public string? Reverse { get; set; }
 
-    /// <summary>A computed property (formula/rollup) projected into Notion but never stored in frontmatter
-    /// or synced back (DR 029/030): the mapper skips it on read and write, so it never enters a base
-    /// snapshot. Defaults false, so canonical properties are unaffected.</summary>
-    [JsonPropertyName("viewOnly")]
-    public bool ViewOnly { get; set; }
-
     /// <summary>An engine-owned property the sync engine writes ONE-WAY to Notion from state it derives
     /// itself, never from frontmatter and never read back (DR 030 §3 — <c>last-activity</c>). Unlike a
-    /// <see cref="ViewOnly"/> formula/rollup (which Notion computes), an engine-computed property has a
+    /// formula/rollup (which Notion computes), an engine-computed property has a
     /// real Notion type (e.g. <c>date</c>) that the engine populates: the spine writes the value on every
     /// push, and the adapter drops it on read so it can never enter a base snapshot or frontmatter — which
     /// would otherwise turn every sync into an edit loop. Defaults false, backward-compatible with plain

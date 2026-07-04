@@ -28,7 +28,7 @@ public static class ReconcileEngine
         var fieldNorm = fieldNormalizer ?? (static d => d);
 
         if (repo == null && external == null)
-            return Simple(LocalIdOf(baseDoc, repo, external), ReconcileAction.None);
+            return BothGone(baseDoc);
 
         if (baseDoc == null)
             return ReconcileNew(repo, external, fieldNorm);
@@ -38,6 +38,13 @@ public static class ReconcileEngine
 
         return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm);
     }
+
+    /// <summary>Gone from both sides. A lingering base entry is retired (slice brief §2): left as None the
+    /// stale entry (archived-page ExternalId + last-activity) would live forever — a git-restored file equal to
+    /// it hits DeleteOne's unchanged branch and is silently deleted, its id leaks into children's relation maps,
+    /// and the snapshot grows unbounded. With no base entry there is nothing to retire, so it stays None.</summary>
+    private static ReconcileResult BothGone(SyncDoc? baseDoc) =>
+        Simple(baseDoc?.LocalId ?? "", baseDoc == null ? ReconcileAction.None : ReconcileAction.Retire);
 
     /// <summary>Nothing in base, present on at least one side: create on the missing side, or — new
     /// on both at once — treat any divergence as a conflict against an empty synthetic base.</summary>
@@ -95,7 +102,7 @@ public static class ReconcileEngine
             LocalId = baseDoc.LocalId,
             Action = ReconcileAction.Conflict,
             ExternalWrite = resurrected,
-            NewBase = resurrected,
+            NewBase = fieldNorm(resurrected),
             RepoChanged = true,
         };
     }
@@ -116,7 +123,10 @@ public static class ReconcileEngine
                 LocalId = repo.LocalId,
                 Action = ReconcileAction.PushToExternal,
                 ExternalWrite = WithExternalId(repo, externalId),
-                NewBase = WithExternalId(repo, externalId),
+                // Record only what the external view can round-trip: the push carries the full repo doc, but a
+                // field the external drops (an as-yet-unresolvable relation) reads back absent, so an un-normalized
+                // base would misread that absence next tick as a deletion and blank the repo value (slice brief §1).
+                NewBase = fieldNorm(WithExternalId(repo, externalId)),
                 RepoChanged = true,
             };
 
@@ -128,7 +138,10 @@ public static class ReconcileEngine
                 LocalId = repo.LocalId,
                 Action = ReconcileAction.WriteToRepo,
                 RepoWrite = toRepo,
-                NewBase = WithExternalId(toRepo, externalId),
+                // The overlay restores the repo's adapter-invisible fields onto the file, but the external side
+                // holds none of them; normalizing keeps the base aligned with external state so those fields are
+                // not read back as an external deletion next tick (slice brief §1).
+                NewBase = fieldNorm(WithExternalId(toRepo, externalId)),
             };
         }
 
@@ -157,7 +170,9 @@ public static class ReconcileEngine
             Action = conflicted ? ReconcileAction.Conflict : ReconcileAction.Merged,
             RepoWrite = merged,
             ExternalWrite = merged,
-            NewBase = merged,
+            // The merged doc is pushed whole, but the base records only its round-trippable subset so an
+            // adapter-invisible field is not misread as an external deletion next tick (slice brief §1).
+            NewBase = fieldNorm(merged),
             RepoChanged = true,
         };
     }
@@ -268,7 +283,4 @@ public static class ReconcileEngine
         return fa.Count == fb.Count
             && fa.Zip(fb).All(p => p.First.Key == p.Second.Key && p.First.Value == p.Second.Value);
     }
-
-    private static string LocalIdOf(SyncDoc? a, SyncDoc? b, SyncDoc? c) =>
-        a?.LocalId ?? b?.LocalId ?? c?.LocalId ?? "";
 }

@@ -65,6 +65,11 @@ public static class NotionSpineSync
             else if (dryRun)
             {
                 output.WriteLine($"  provision  {type.Type,-9} would create database \"{type.NotionTitle}\"");
+                // Record it as would-be-created so the dry-run post-pass preview below matches a real run.
+                // A real run runs the post-pass for types created this run PLUS any recorded-but-unpassed type
+                // (a mid-provision throw can record a database without post-passing it) — never a fully
+                // provisioned, already-post-passed reuse (finding 8 / review R2-1).
+                created.Add(type);
             }
             else
             {
@@ -84,10 +89,15 @@ public static class NotionSpineSync
         // AddRollups(type) then AddFormulas(type) per type, children before parents, guarantees it: e.g.
         // SprintTask.attention is patched before Sprint's attention-count rollup targets it, and Sprint's
         // needs-human-count formula before Campaign's needs-human rollup sums it.
+        // A type owes its post-pass if it is created THIS run, or was recorded on a prior run whose post-pass
+        // never completed (a mid-provision throw records databases before their rollups/formulas are PATCHed;
+        // the retry reuses them, so their attention-layer schema must still be added — review R2-1). By the
+        // time this runs every type's database exists (created this run or reused), so the children whose
+        // reverse relations a parent's rollups read are all present: running the post-pass child-first is safe.
         var postPass = types.Reverse().ToList();
         if (dryRun)
         {
-            foreach (var type in postPass)
+            foreach (var type in postPass.Where(t => created.Contains(t) || provisioner.PostPassPending(t.Type)))
             {
                 if (NotionProvisioner.HasRollups(type))
                     output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
@@ -97,7 +107,7 @@ public static class NotionSpineSync
         }
         else
         {
-            foreach (var type in postPass.Where(created.Contains))
+            foreach (var type in postPass.Where(t => provisioner.PostPassPending(t.Type)))
             {
                 if (NotionProvisioner.HasRollups(type))
                 {
@@ -109,6 +119,9 @@ public static class NotionSpineSync
                     provisioner.AddFormulas(type);
                     output.WriteLine($"  provision  {type.Type,-9} added formula properties");
                 }
+                // Persist completion immediately (mirrors the per-create Save) so a later throw in this same
+                // post-pass does not force an already-done type to re-run — and marks the flag for reuse ticks.
+                provisioner.MarkPostPassDone(type.Type);
             }
         }
         return dataSourceIds;
@@ -140,7 +153,7 @@ public static class NotionSpineSync
             // It is refreshed after reconcile to publish this tick's newly-created pages to any children.
             localToPageByType[type.Type] = LocalToPageIds(store);
 
-            var (relationLocalToPage, relationPageToLocal) = RelationMaps(type, localToPageByType);
+            var (relationLocalToPageByField, relationPageToLocal) = RelationMaps(type, localToPageByType);
 
             // Engine-computed properties (last-activity, DR 030 §3) are written one-way from the base store's
             // per-object activity date and dropped on read, so they never enter frontmatter.
@@ -148,7 +161,7 @@ public static class NotionSpineSync
                 .Where(p => p.Value.EngineComputed)
                 .ToDictionary(p => p.Key, p => p.Value.Type);
             var adapter = new NotionSyncAdapter(
-                client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon,
+                client, dataSourceId, type.FieldSchema(), relationLocalToPageByField, relationPageToLocal, type.Icon,
                 engineSchema, store.GetLastActivity);
             var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
 
@@ -169,21 +182,25 @@ public static class NotionSpineSync
         }
     }
 
-    /// <summary>Merge the local↔page id maps of every parent type this type relates to, so its relation
-    /// values resolve to real Notion page ids on write and back to parent local ids on read.</summary>
-    private static (Dictionary<string, string> LocalToPage, Dictionary<string, string> PageToLocal) RelationMaps(
+    /// <summary>Build this type's relation id maps. On write each relation FIELD maps to its own declared
+    /// target type's local→page map (keyed by field name), so two fields pointing at different databases never
+    /// collide on a shared local-id stem (slice brief §3). On read a single merged page→local map suffices —
+    /// Notion page ids are globally unique, so no two target types can collide on a key.</summary>
+    private static (Dictionary<string, IReadOnlyDictionary<string, string>> LocalToPageByField, Dictionary<string, string> PageToLocal) RelationMaps(
         SyncObjectType type, IReadOnlyDictionary<string, Dictionary<string, string>> localToPageByType)
     {
-        var localToPage = new Dictionary<string, string>();
-        foreach (var target in type.RelationTargets())
-            if (localToPageByType.TryGetValue(target, out var parentMap))
-                foreach (var (local, page) in parentMap)
-                    localToPage[local] = page;
-
+        var localToPageByField = new Dictionary<string, IReadOnlyDictionary<string, string>>();
         var pageToLocal = new Dictionary<string, string>();
-        foreach (var (local, page) in localToPage)
-            pageToLocal[page] = local;
-        return (localToPage, pageToLocal);
+        foreach (var (name, def) in type.Properties)
+        {
+            if (def.Type != "relation" || def.To == null)
+                continue;
+            var targetMap = localToPageByType.TryGetValue(def.To, out var m) ? m : new Dictionary<string, string>();
+            localToPageByField[name] = targetMap;
+            foreach (var (local, page) in targetMap)
+                pageToLocal[page] = local;
+        }
+        return (localToPageByField, pageToLocal);
     }
 
     /// <summary>Pool every <c>*.md</c> under a type's canonical directory — recursively, across all subfolders

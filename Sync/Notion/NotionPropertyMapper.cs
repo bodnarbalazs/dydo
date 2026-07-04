@@ -16,7 +16,9 @@ using DynaDocs.Sync.Notion.Dtos;
 ///
 /// Relations are the one cross-object type: a frontmatter relation value holds the parent object's
 /// stable local id, while Notion holds the parent's page id. The optional id maps translate between
-/// them — <paramref name="relationLocalToPageId" /> on write, the inverse on read.
+/// them — on write a per-field map (relation field name → its declared target type's local→page id
+/// map) so two fields pointing at different databases never collide on a shared stem, and the inverse
+/// merged page→local map on read.
 /// </summary>
 public static class NotionPropertyMapper
 {
@@ -48,6 +50,10 @@ public static class NotionPropertyMapper
     /// They are skipped both on read — so a formula/rollup value never enters frontmatter or a base
     /// snapshot — and on write (they are absent from <see cref="Writers"/>).</summary>
     private static readonly HashSet<string> ComputedTypes = ["formula", "rollup"];
+
+    /// <summary>Whether a schema property type is computed (formula/rollup) — projected into Notion but not
+    /// round-trippable, so the field normalizer must drop a frontmatter key colliding with one (slice brief §4).</summary>
+    public static bool IsComputedType(string? type) => type != null && ComputedTypes.Contains(type);
 
     /// <summary>Render a page's properties to an ordered field list: the title property first,
     /// then the rest by name, so the field order is stable across sync ticks. A relation value is
@@ -83,12 +89,15 @@ public static class NotionPropertyMapper
 
     /// <summary>Build the Notion property payload for the fields that match the schema. Fields with
     /// no matching property, or matching an unsupported property type, are skipped. A relation field
-    /// resolves the related object's local id to its page id via <paramref name="relationLocalToPageId"/>;
-    /// an unresolved relation is skipped rather than written as a broken reference.</summary>
+    /// resolves the related object's local id to its page id via ITS OWN target-type map, looked up by
+    /// field name in <paramref name="relationLocalToPageIdByField"/> — two relation fields on one type point
+    /// at different databases, so a single merged map keyed by bare stem would resolve a colliding id to the
+    /// wrong database's page (slice brief §3). An unresolved relation is skipped rather than written as a
+    /// broken reference.</summary>
     public static Dictionary<string, NotionPropertyValue> ToProperties(
         IReadOnlyList<SyncField> fields,
         IReadOnlyDictionary<string, string> schema,
-        IReadOnlyDictionary<string, string>? relationLocalToPageId = null)
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? relationLocalToPageIdByField = null)
     {
         var props = new Dictionary<string, NotionPropertyValue>();
         foreach (var field in fields)
@@ -98,7 +107,9 @@ public static class NotionPropertyMapper
 
             if (type == "relation")
             {
-                var relation = BuildRelation(field.Value, relationLocalToPageId);
+                IReadOnlyDictionary<string, string>? map = null;
+                relationLocalToPageIdByField?.TryGetValue(field.Key, out map);
+                var relation = BuildRelation(field.Value, map);
                 if (relation != null)
                     props[field.Key] = relation;
             }

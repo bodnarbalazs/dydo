@@ -84,7 +84,7 @@ public class SyncModelLoaderTests : IDisposable
     }
 
     [Fact]
-    public void Load_DefaultModel_CarriesColorsViewOnlyFormulaAndRollup()
+    public void Load_DefaultModel_CarriesColorsFormulaAndRollup()
     {
         var model = SyncModelLoader.Load(_dydoRoot);
 
@@ -102,15 +102,13 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("blocks", model.Object("SprintTask").Properties["blocked-by"].Reverse);
         Assert.Null(model.Object("Issue").Properties["fix-release"].Reverse);
 
-        // View-only computed properties: a done formula and a progress rollup.
+        // Computed properties: a done formula and a progress rollup.
         var done = model.Object("Sprint").Properties["done"];
         Assert.Equal("formula", done.Type);
-        Assert.True(done.ViewOnly);
         Assert.Contains("status", done.Expression);
 
         var progress = model.Object("Sprint").Properties["progress"];
         Assert.Equal("rollup", progress.Type);
-        Assert.True(progress.ViewOnly);
         Assert.Equal("tasks", progress.RollupRelation);
         Assert.Equal("done", progress.RollupProperty);
         Assert.Equal("percent_checked", progress.RollupFunction);
@@ -132,13 +130,11 @@ public class SyncModelLoaderTests : IDisposable
         var lastActivity = model.Object("SprintTask").Properties["last-activity"];
         Assert.Equal("date", lastActivity.Type);
         Assert.True(lastActivity.EngineComputed);
-        Assert.False(lastActivity.ViewOnly);
         Assert.True(model.Object("Issue").Properties["last-activity"].EngineComputed);
 
         // Staleness formula reads last-activity and status (DR 030 §3).
         var stale = model.Object("SprintTask").Properties["stale"];
         Assert.Equal("formula", stale.Type);
-        Assert.True(stale.ViewOnly);
         Assert.Contains("last-activity", stale.Expression);
         Assert.Contains("dateBetween", stale.Expression);
 
@@ -155,7 +151,6 @@ public class SyncModelLoaderTests : IDisposable
         var gate = model.Object("Sprint").Properties["gate-result"];
         Assert.Equal(["pass", "fail"], gate.Options!);
         Assert.Equal("green", gate.Colors!["pass"]);
-        Assert.False(gate.ViewOnly);
         Assert.False(gate.EngineComputed);
 
         // needs-human COUNT rollups on Sprint and Campaign (DR 030 §1).
@@ -171,7 +166,6 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("needs-human-count", campaignNeedsHuman.RollupProperty);
         var needsHumanCount = model.Object("Sprint").Properties["needs-human-count"];
         Assert.Equal("formula", needsHumanCount.Type);
-        Assert.True(needsHumanCount.ViewOnly);
         Assert.Contains("needs-human", needsHumanCount.Expression);
 
         // Campaign date rollups (earliest start / latest end across Sprints, DR 029/030).
@@ -201,9 +195,9 @@ public class SyncModelLoaderTests : IDisposable
     }
 
     [Fact]
-    public void Load_PlainOptionsModel_LoadsBackwardCompatibly_WithoutColorsOrViewOnly()
+    public void Load_PlainOptionsModel_LoadsBackwardCompatibly_WithoutColors()
     {
-        // A pre-DR-029 model with plain string options and no colors/viewOnly/formula/rollup still loads:
+        // A pre-DR-029 model with plain string options and no colors/formula/rollup still loads:
         // the new fields default to null/false, never breaking an older project's model file.
         WriteModel("""
             { "objects": [ { "type": "Note", "dir": "project/notes", "notionTitle": "Notes",
@@ -215,7 +209,6 @@ public class SyncModelLoaderTests : IDisposable
         var note = SyncModelLoader.Load(_dydoRoot).Object("Note");
         Assert.Equal(["open", "closed"], note.Properties["status"].Options!);
         Assert.Null(note.Properties["status"].Colors);
-        Assert.False(note.Properties["status"].ViewOnly);
         Assert.Null(note.Properties["title"].Expression);
     }
 

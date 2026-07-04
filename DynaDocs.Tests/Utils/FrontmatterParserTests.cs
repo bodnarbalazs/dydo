@@ -251,4 +251,59 @@ public class FrontmatterParserTests
         const string content = "# Just a heading\n";
         Assert.Equal(content, FrontmatterParser.UpsertField(content, "needs-human", "true"));
     }
+
+    [Fact]
+    public void UpsertField_ValueContainingTripleDash_DoesNotCorruptFile()
+    {
+        // A "---" sequence INSIDE a frontmatter value must not be mistaken for the closing delimiter, or the
+        // write would truncate mid-value and corrupt the file.
+        const string content = "---\ntitle: a --- b\nstatus: open\n---\n\n# Body\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "status", "closed");
+
+        Assert.Contains("title: a --- b", updated); // the value is preserved verbatim
+        Assert.Contains("status: closed", updated);
+        Assert.DoesNotContain("status: open", updated);
+        Assert.Contains("# Body", updated);
+    }
+
+    [Fact]
+    public void UpsertField_BodyContainingTripleDash_PreservesBodyAndUpdatesField()
+    {
+        // A "---" horizontal rule in the body sits after the closing delimiter and must be left untouched.
+        const string content = "---\nname: t\nstatus: open\n---\n\nSome text\n\n---\n\nmore text\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "status", "closed");
+
+        var fields = FrontmatterParser.ParseFields(updated);
+        Assert.Equal("closed", fields!["status"]);
+        Assert.Equal("t", fields["name"]);
+        Assert.Contains("Some text", updated);
+        Assert.Contains("\n---\n", updated);    // the body rule survives
+        Assert.Contains("more text", updated);
+    }
+
+    [Fact]
+    public void UpsertField_NoLineAnchoredClose_ReturnsContentUnchanged()
+    {
+        // An opening delimiter whose only "---" lives inside a value (no closing line) cannot be safely
+        // upserted — return the content unchanged rather than corrupt it.
+        const string content = "---\nkey: a---b";
+        Assert.Equal(content, FrontmatterParser.UpsertField(content, "status", "closed"));
+    }
+
+    [Fact]
+    public void UpsertField_LineStartingWithTripleDashButNotDelimiter_SkippedNotTreatedAsClose()
+    {
+        // A line that starts with "---" but continues with more text is NOT the closing delimiter; the scan
+        // must skip past it to the real close rather than truncate the block there.
+        const string content = "---\nname: t\n--- not a delimiter\nstatus: open\n---\n\n# Body\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "status", "closed");
+
+        Assert.Contains("--- not a delimiter", updated);
+        Assert.Contains("status: closed", updated);
+        Assert.DoesNotContain("status: open", updated);
+        Assert.Contains("# Body", updated);
+    }
 }

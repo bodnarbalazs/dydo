@@ -23,4 +23,7 @@ public enum ReconcileAction
 
     /// <summary>Present in base, gone on one side; delete on the other.</summary>
     Delete,
+
+    /// <summary>Present in base but gone on BOTH sides; retire the stale base entry (slice brief §2).</summary>
+    Retire,
 }

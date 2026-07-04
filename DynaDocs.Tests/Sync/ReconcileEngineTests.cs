@@ -234,11 +234,14 @@ public class ReconcileEngineTests
     }
 
     [Fact]
-    public void GoneFromBothSides_ReturnsNone()
+    public void GoneFromBothSides_RetiresStaleBaseEntry()
     {
+        // Both sides gone but a base entry lingers -> retire it, so the stale id cannot resurface as a silent
+        // delete of a later git-restored file, leak into children's relation maps, or grow the snapshot (§2).
         var b = Doc("t", "body", ("status", "open"));
         var result = ReconcileEngine.Reconcile(b, null, null);
-        Assert.Equal(ReconcileAction.None, result.Action);
+        Assert.Equal(ReconcileAction.Retire, result.Action);
+        Assert.Equal("t", result.LocalId);
     }
 
     [Fact]
@@ -430,5 +433,80 @@ public class ReconcileEngineTests
 
         Assert.Equal(ReconcileAction.Conflict, result.Action);
         Assert.Equal("ext-repo", result.RepoWrite!.ExternalId);
+    }
+
+    // Finding 1 (direct NewBase coverage). Each of the four base-advancing paths that carry an adapter-invisible
+    // field must record the NORMALIZED base — the subset the external view can round-trip — never the raw doc.
+    // An un-normalized base would keep the dropped field (an as-yet-unresolvable relation), so once it resolves
+    // the next tick the engine would misread the external's absence as a deletion and blank the repo value.
+    // These pin each fixed line directly: reverting any of the four fieldNorm(NewBase) changes fails its test.
+
+    [Fact]
+    public void PushToExternal_NewBase_ExcludesAdapterDroppedField()
+    {
+        // Repo changed a representable field (status) AND carries a relation the view drops (sprint: ghost).
+        // The push externalizes status but not the dropped relation, so the base must record status only.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "done"), ("sprint", "ghost"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "open"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.PushToExternal, result.Action);
+        Assert.Equal("done", result.ExternalWrite!.GetField("status"));
+        Assert.Equal("done", result.NewBase!.GetField("status"));
+        Assert.Null(result.NewBase.GetField("sprint")); // adapter-invisible field never recorded in the base
+    }
+
+    [Fact]
+    public void WriteToRepo_NewBase_ExcludesAdapterDroppedField()
+    {
+        // External changed a representable field (status); the relation the view cannot round-trip (sprint) is
+        // preserved onto the repo by the overlay, but the base must still record only the externalizable subset.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("sprint", "")); // relation echoed back empty
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("ghost", result.RepoWrite!.GetField("sprint")); // overlay keeps it on the file
+        Assert.Equal("done", result.NewBase!.GetField("status"));
+        Assert.Null(result.NewBase.GetField("sprint")); // but the base records only what the view round-trips
+    }
+
+    [Fact]
+    public void MergeBoth_NewBase_ExcludesAdapterDroppedField()
+    {
+        // Both sides changed different representable fields (repo status, external owner) so this 3-way merges;
+        // the relation the view drops (sprint) survives onto the merged doc but must not enter the base raw.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", "ghost"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "done"), ("sprint", "ghost"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "open"), ("sprint", ""), ("owner", "kim"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.Merged, result.Action);
+        Assert.Equal("ghost", result.RepoWrite!.GetField("sprint")); // survives on the merged doc
+        Assert.Equal("done", result.NewBase!.GetField("status"));
+        Assert.Equal("kim", result.NewBase.GetField("owner"));
+        Assert.Null(result.NewBase.GetField("sprint")); // base records only the round-trippable subset
+    }
+
+    [Fact]
+    public void DeleteOneResurrect_NewBase_ExcludesAdapterDroppedField()
+    {
+        // External deleted the page while repo edited it AND carries a relation the view drops. The resurrect
+        // re-creates the page from the repo edits, but the base advances to the externalizable subset only.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("title", "T"), ("status", "done"), ("sprint", "ghost")); // edited since base
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, fieldNormalizer: DropUnresolvableSprint);
+
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.Equal("ghost", result.ExternalWrite!.GetField("sprint")); // the resurrected page still carries it
+        Assert.Equal("done", result.NewBase!.GetField("status"));
+        Assert.Null(result.NewBase.GetField("sprint")); // base records only what the view round-trips
     }
 }

@@ -14,4 +14,12 @@ public sealed class NotionProvisionedType
 
     [JsonPropertyName("dataSourceId")]
     public required string DataSourceId { get; set; }
+
+    /// <summary>Whether this type's rollup/formula post-pass has run. A database create is recorded the
+    /// instant it succeeds (mid-provision-failure safety), but its rollups and deferred formulas are PATCHed
+    /// only in the later post-pass — which a mid-run throw can skip entirely. Persisting completion per type
+    /// lets a retry re-run the post-pass for recorded-but-unpassed types, so a reused parent's attention-layer
+    /// rollups/formulas are never silently missing (review R2-1).</summary>
+    [JsonPropertyName("postPassDone")]
+    public bool PostPassDone { get; set; }
 }

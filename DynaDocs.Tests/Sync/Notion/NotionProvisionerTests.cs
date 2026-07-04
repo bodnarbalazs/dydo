@@ -37,7 +37,7 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
 
-        var record = provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string>());
+        var record = provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
 
         var request = Assert.Single(client.CreatedDatabases);
         Assert.Equal("page_id", request.Parent.Type);
@@ -110,7 +110,7 @@ public class NotionProvisionerTests : IDisposable
     {
         var client = new FakeNotionClient();
         var first = new NotionProvisioner(client, _statePath);
-        var created = first.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string>());
+        var created = first.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
         first.Save();
 
         // A fresh provisioner over the same state + client: the database is retrievable and still
@@ -127,7 +127,7 @@ public class NotionProvisionerTests : IDisposable
     {
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
-        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string>());
+        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
         provisioner.Save();
 
         // A client that no longer knows the database (RetrieveDatabase returns an empty DB with no

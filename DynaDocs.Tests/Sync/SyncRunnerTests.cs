@@ -28,7 +28,18 @@ public class SyncRunnerTests : IDisposable
     }
 
     private SyncRunner NewRunner() =>
-        new(_adapter, _base, localId => Path.Combine(_tasksDir, localId + ".md"));
+        new(_adapter, _base, (localId, _) => Path.Combine(_tasksDir, localId + ".md"));
+
+    /// <summary>A runner whose layout routes status "closed" into a "closed/" subfolder and everything
+    /// else to the dir root — the Issue folder convention (slice brief §3).</summary>
+    private SyncRunner NewFolderRunner()
+    {
+        var layout = new RepoFolderLayout(_tasksDir, "status", new Dictionary<string, string> { ["closed"] = "closed" });
+        return new(_adapter, _base, layout.PathFor);
+    }
+
+    private string OpenPath(string localId) => Path.Combine(_tasksDir, localId + ".md");
+    private string ClosedPath(string localId) => Path.Combine(_tasksDir, "closed", localId + ".md");
 
     private SyncDoc RepoDoc(string localId, string body, params (string, string)[] fields) => new()
     {
@@ -40,6 +51,14 @@ public class SyncRunnerTests : IDisposable
 
     private static List<SyncField> F(params (string, string)[] fields) =>
         fields.Select(f => new SyncField { Key = f.Item1, Value = f.Item2 }).ToList();
+
+    private static SyncDoc DocAt(string sourcePath, string localId, string body, params (string, string)[] fields) => new()
+    {
+        LocalId = localId,
+        Fields = F(fields),
+        Body = body,
+        SourcePath = sourcePath,
+    };
 
     private string RepoBody(string localId) =>
         SyncDocFile.Read(Path.Combine(_tasksDir, localId + ".md"), localId, "").Body;
@@ -223,5 +242,93 @@ public class SyncRunnerTests : IDisposable
         var result = NewRunner().Run([RepoDoc("t", "body", ("status", "open"))]);
 
         Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+    }
+
+    // --- Frontmatter-canonical status + folder auto-move (slice brief §3) ---
+
+    [Fact]
+    public void ExternalStatusChangeToClosed_MovesFileToClosedFolder_NotDeleteCreate()
+    {
+        // First sync: an open issue at the dir root creates the external row.
+        var open = DocAt(OpenPath("bug"), "bug", "# Bug\n\nbody", ("title", "bug"), ("status", "open"));
+        SyncDocFile.Write(OpenPath("bug"), open);
+        NewFolderRunner().Run([open]);
+        var extId = _base.Get("bug")!.ExternalId!;
+
+        // A colleague flips status to closed in the external view. Feed the still-at-root repo doc.
+        _adapter.Edit(extId, F(("title", "bug"), ("status", "closed")), "# Bug\n\nbody");
+        var result = NewFolderRunner().Run([SyncDocFile.Read(OpenPath("bug"), "bug", OpenPath("bug"))]);
+
+        // The file re-files into closed/ (folder derived from status); no orphan remains at the root.
+        Assert.True(File.Exists(ClosedPath("bug")));
+        Assert.False(File.Exists(OpenPath("bug")));
+        Assert.Equal("closed", SyncDocFile.Read(ClosedPath("bug"), "bug", "").GetField("status"));
+
+        // The move is NOT delete+create: same local id keeps the same external id and the one row.
+        Assert.DoesNotContain(result.Results, r => r.Action is ReconcileAction.Delete or ReconcileAction.Create);
+        Assert.Equal(extId, _base.Get("bug")!.ExternalId);
+        Assert.Single(_adapter.ReadExternalState());
+    }
+
+    [Fact]
+    public void RepoStatusChangeToClosed_MovesFileAndPushesToExternal()
+    {
+        var open = DocAt(OpenPath("bug"), "bug", "body", ("title", "bug"), ("status", "open"));
+        SyncDocFile.Write(OpenPath("bug"), open);
+        NewFolderRunner().Run([open]);
+        var extId = _base.Get("bug")!.ExternalId!;
+
+        // The user edits the file's frontmatter to closed; the file is still physically at the root.
+        SyncDocFile.Write(OpenPath("bug"), DocAt(OpenPath("bug"), "bug", "body", ("title", "bug"), ("status", "closed")));
+        NewFolderRunner().Run([SyncDocFile.Read(OpenPath("bug"), "bug", OpenPath("bug"))]);
+
+        Assert.True(File.Exists(ClosedPath("bug")));
+        Assert.False(File.Exists(OpenPath("bug")));
+        Assert.Equal("closed", External(extId).Fields.First(f => f.Key == "status").Value);
+        Assert.Equal(extId, _base.Get("bug")!.ExternalId);
+    }
+
+    [Fact]
+    public void ReopenedIssue_MovesFromClosedBackToRoot()
+    {
+        var closed = DocAt(ClosedPath("bug"), "bug", "body", ("title", "bug"), ("status", "closed"));
+        SyncDocFile.Write(ClosedPath("bug"), closed);
+        NewFolderRunner().Run([closed]);
+        var extId = _base.Get("bug")!.ExternalId!;
+
+        SyncDocFile.Write(ClosedPath("bug"), DocAt(ClosedPath("bug"), "bug", "body", ("title", "bug"), ("status", "open")));
+        NewFolderRunner().Run([SyncDocFile.Read(ClosedPath("bug"), "bug", ClosedPath("bug"))]);
+
+        Assert.True(File.Exists(OpenPath("bug")));
+        Assert.False(File.Exists(ClosedPath("bug")));
+        Assert.Equal(extId, _base.Get("bug")!.ExternalId);
+    }
+
+    [Fact]
+    public void ClosedIssueAlreadyInClosedFolder_SteadyState_StaysPut()
+    {
+        var closed = DocAt(ClosedPath("bug"), "bug", "body", ("title", "bug"), ("status", "closed"));
+        SyncDocFile.Write(ClosedPath("bug"), closed);
+        NewFolderRunner().Run([closed]);
+
+        var result = NewFolderRunner().Run([SyncDocFile.Read(ClosedPath("bug"), "bug", ClosedPath("bug"))]);
+
+        Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+        Assert.True(File.Exists(ClosedPath("bug")));
+        Assert.False(File.Exists(OpenPath("bug")));
+    }
+
+    [Fact]
+    public void RepoClosedIssueAtRoot_FirstSync_FiledIntoClosedFolder()
+    {
+        // A closed issue sitting at the dir root is filed into closed/ on its first sync — folder is
+        // derived presentation, so placement is corrected to match the canonical status.
+        var closedAtRoot = DocAt(OpenPath("bug"), "bug", "body", ("title", "bug"), ("status", "closed"));
+        SyncDocFile.Write(OpenPath("bug"), closedAtRoot);
+
+        NewFolderRunner().Run([SyncDocFile.Read(OpenPath("bug"), "bug", OpenPath("bug"))]);
+
+        Assert.True(File.Exists(ClosedPath("bug")));
+        Assert.False(File.Exists(OpenPath("bug")));
     }
 }

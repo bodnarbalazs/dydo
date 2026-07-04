@@ -35,7 +35,7 @@ public class SyncModelLoaderTests : IDisposable
         var model = SyncModelLoader.Load(_dydoRoot);
 
         Assert.True(File.Exists(path));
-        Assert.Equal(["Campaign", "Sprint", "SprintTask"], model.Objects.Select(o => o.Type));
+        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue"], model.Objects.Select(o => o.Type));
     }
 
     [Fact]
@@ -59,6 +59,42 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal("project/sprint-tasks", sprintTask.Dir);
         Assert.Equal("dydo Sprint Tasks", sprintTask.NotionTitle);
         Assert.Equal("Sprint", sprintTask.Properties["sprint"].To);
+    }
+
+    [Fact]
+    public void Load_DefaultModel_CarriesReleaseAndIssueTypes()
+    {
+        var model = SyncModelLoader.Load(_dydoRoot);
+
+        var release = model.Object("Release");
+        Assert.Equal("project/releases", release.Dir);
+        Assert.Equal("dydo Releases", release.NotionTitle);
+        Assert.Equal("rich_text", release.Properties["specRef"].Type);
+        Assert.Equal(["planned", "active", "shipped", "abandoned"], release.Properties["status"].Options!);
+
+        // Campaign gains a relation to Release.
+        var campaign = model.Object("Campaign");
+        Assert.Equal("relation", campaign.Properties["release"].Type);
+        Assert.Equal("Release", campaign.Properties["release"].To);
+
+        var issue = model.Object("Issue");
+        Assert.Equal("project/issues", issue.Dir);
+        Assert.Equal(["open", "closed"], issue.Properties["status"].Options!);
+        Assert.Equal("select", issue.Properties["severity"].Type);
+    }
+
+    [Fact]
+    public void Load_DefaultModel_IssueStatusRoutesClosedIntoClosedSubfolder()
+    {
+        var issue = SyncModelLoader.Load(_dydoRoot).Object("Issue");
+
+        var routing = issue.FolderRouting();
+        Assert.NotNull(routing);
+        Assert.Equal("status", routing.Value.Field);
+        Assert.Equal("closed", routing.Value.Folders["closed"]);
+
+        // Types without a folders map do not route.
+        Assert.Null(SyncModelLoader.Load(_dydoRoot).Object("SprintTask").FolderRouting());
     }
 
     [Fact]
@@ -87,7 +123,7 @@ public class SyncModelLoaderTests : IDisposable
     public void InDependencyOrder_DefaultModel_PutsParentsBeforeChildren()
     {
         var ordered = SyncModelLoader.Load(_dydoRoot).InDependencyOrder();
-        Assert.Equal(["Campaign", "Sprint", "SprintTask"], ordered.Select(o => o.Type));
+        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue"], ordered.Select(o => o.Type));
     }
 
     [Fact]
@@ -163,6 +199,9 @@ public class SyncModelLoaderTests : IDisposable
         Assert.Equal(["Sprint"], task.RelationTargets());
 
         var campaign = SyncModelLoader.Load(_dydoRoot).Object("Campaign");
-        Assert.Empty(campaign.RelationTargets());
+        Assert.Equal(["Release"], campaign.RelationTargets());
+
+        var release = SyncModelLoader.Load(_dydoRoot).Object("Release");
+        Assert.Empty(release.RelationTargets());
     }
 }

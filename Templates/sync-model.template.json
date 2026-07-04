@@ -1,6 +1,18 @@
 {
   "objects": [
     {
+      "type": "Release",
+      "dir": "project/releases",
+      "notionTitle": "dydo Releases",
+      "icon": "🏷️",
+      "properties": {
+        "title": { "type": "title" },
+        "specRef": { "type": "rich_text" },
+        "status": { "type": "select", "options": ["planned", "active", "shipped", "abandoned"] },
+        "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] }
+      }
+    },
+    {
       "type": "Campaign",
       "dir": "project/campaigns",
       "notionTitle": "dydo Campaigns",
@@ -9,7 +21,8 @@
         "title": { "type": "title" },
         "goal": { "type": "rich_text" },
         "status": { "type": "select", "options": ["proposed", "active", "done", "abandoned"] },
-        "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] }
+        "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] },
+        "release": { "type": "relation", "to": "Release" }
       }
     },
     {
@@ -34,6 +47,18 @@
         "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"] },
         "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] },
         "sprint": { "type": "relation", "to": "Sprint" }
+      }
+    },
+    {
+      "type": "Issue",
+      "dir": "project/issues",
+      "notionTitle": "dydo Issues",
+      "icon": "🐞",
+      "properties": {
+        "title": { "type": "title" },
+        "status": { "type": "select", "options": ["open", "closed"], "folders": { "closed": "closed" } },
+        "severity": { "type": "select", "options": ["critical", "high", "medium", "low"] },
+        "area": { "type": "select", "options": ["backend", "general", "project", "reference", "understand"] }
       }
     }
   ]

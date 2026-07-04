@@ -80,7 +80,7 @@ public static class NotionSpineSync
 
             var adapter = new NotionSyncAdapter(client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon, output);
             var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
-            var runner = new SyncRunner(adapter, store, localId => Path.Combine(docsDir, localId + ".md"));
+            var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
 
             if (dryRun)
             {
@@ -116,20 +116,23 @@ public static class NotionSpineSync
         return (localToPage, pageToLocal);
     }
 
-    /// <summary>Read every <c>*.md</c> in a type's canonical directory as a <see cref="SyncDoc"/> keyed by stem.
-    /// Skips <c>_</c>-prefixed files (e.g. <c>_index.md</c>, <c>_tasks.md</c>): by dydo convention those are
-    /// folder metadata, not domain objects, so they must never sync as rows.</summary>
+    /// <summary>Pool every <c>*.md</c> under a type's canonical directory — recursively, across all subfolders
+    /// — as a <see cref="SyncDoc"/> keyed by stem. Folder placement is derived presentation (slice brief §3):
+    /// an object filed under <c>closed/</c> is the same logical row as one at the dir root, so both are read.
+    /// Skips any file whose stem or a containing folder is <c>_</c>-prefixed (e.g. <c>_index.md</c>,
+    /// <c>_templates/</c>): by dydo convention those are folder metadata, not domain objects, never synced as rows.</summary>
     public static List<SyncDoc> LoadDocs(string dir)
     {
         if (!Directory.Exists(dir))
             return [];
 
         var docs = new List<SyncDoc>();
-        foreach (var path in Directory.EnumerateFiles(dir, "*.md", SearchOption.TopDirectoryOnly).OrderBy(p => p))
+        foreach (var path in Directory.EnumerateFiles(dir, "*.md", SearchOption.AllDirectories).OrderBy(p => p))
         {
-            var localId = Path.GetFileNameWithoutExtension(path);
-            if (localId.StartsWith('_'))
+            var relative = Path.GetRelativePath(dir, path);
+            if (relative.Split('/', '\\').Any(segment => segment.StartsWith('_')))
                 continue;
+            var localId = Path.GetFileNameWithoutExtension(path);
             docs.Add(SyncDocFile.Read(path, localId, path));
         }
         return docs;

@@ -36,4 +36,14 @@ public sealed class SyncObjectType
     /// a freshly provisioned (empty) database has no rows to infer a schema from.</summary>
     public Dictionary<string, string> FieldSchema() =>
         Properties.ToDictionary(p => p.Key, p => p.Value.Type);
+
+    /// <summary>The select property that routes docs into subfolders and its option → subfolder map, or
+    /// null when this type files every doc flat in its dir (slice brief §3). At most one property routes.</summary>
+    public (string Field, Dictionary<string, string> Folders)? FolderRouting()
+    {
+        foreach (var (name, def) in Properties)
+            if (def.Folders is { Count: > 0 })
+                return (name, def.Folders);
+        return null;
+    }
 }

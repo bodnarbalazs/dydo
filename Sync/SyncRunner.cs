@@ -17,13 +17,16 @@ public sealed class SyncRunner
 
     private readonly ISyncAdapter _adapter;
     private readonly BaseSnapshotStore _base;
-    private readonly Func<string, string> _repoPathForLocalId;
+    private readonly Func<string, IReadOnlyList<SyncField>, string> _repoPathFor;
 
-    public SyncRunner(ISyncAdapter adapter, BaseSnapshotStore baseStore, Func<string, string> repoPathForLocalId)
+    /// <param name="repoPathFor">The canonical repo path for a doc, given its local id and fields. Fields
+    /// are passed so folder placement can derive from status (slice brief §3); a flat layout simply
+    /// ignores them. See <see cref="RepoFolderLayout"/>.</param>
+    public SyncRunner(ISyncAdapter adapter, BaseSnapshotStore baseStore, Func<string, IReadOnlyList<SyncField>, string> repoPathFor)
     {
         _adapter = adapter;
         _base = baseStore;
-        _repoPathForLocalId = repoPathForLocalId;
+        _repoPathFor = repoPathFor;
     }
 
     /// <summary>
@@ -70,7 +73,7 @@ public sealed class SyncRunner
 
             var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields);
             results.Add(result);
-            ApplyResult(localId, result, changes);
+            ApplyResult(localId, result, repo, changes);
         }
 
         // Apply is non-atomic; the base advance is deferred until Apply reports back so a mid-batch
@@ -130,7 +133,7 @@ public sealed class SyncRunner
         }
     }
 
-    private void ApplyResult(string localId, ReconcileResult result, SyncChangeSet changes)
+    private void ApplyResult(string localId, ReconcileResult result, SyncDoc? repo, SyncChangeSet changes)
     {
         switch (result.Action)
         {
@@ -141,14 +144,15 @@ public sealed class SyncRunner
             case ReconcileAction.Merged:
             case ReconcileAction.Conflict:
             case ReconcileAction.Create:
-                if (result.RepoWrite != null)
-                    SyncDocFile.Write(_repoPathForLocalId(localId), result.RepoWrite);
                 if (result.ExternalWrite != null)
                     changes.Upserts.Add(ToUpsert(result.ExternalWrite));
+                // RepoWrite rewrites the file; else (a pure push, or a create-to-external) the repo doc is
+                // unchanged and only its folder may need to move to match a status change.
+                PlaceRepoFile(localId, result.RepoWrite ?? repo, rewrite: result.RepoWrite != null);
                 break;
 
             case ReconcileAction.WriteToRepo:
-                SyncDocFile.Write(_repoPathForLocalId(localId), result.RepoWrite!);
+                PlaceRepoFile(localId, result.RepoWrite!, rewrite: true);
                 break;
 
             case ReconcileAction.Delete:
@@ -159,6 +163,39 @@ public sealed class SyncRunner
                 break;
         }
     }
+
+    /// <summary>
+    /// File a doc at its canonical path, honoring status-driven folder routing (slice brief §3). The path
+    /// is derived from the doc's fields, so a status change re-files it into the matching subfolder; the
+    /// local id (filename stem) is unchanged, so the base still keys the same object and a move is never
+    /// seen as delete+create. When <paramref name="rewrite"/> the merged content is written to the new path
+    /// and the old file removed; otherwise the on-disk content is already current and the file is only moved
+    /// if its folder changed. A no-op when the doc is null or already at its canonical path.
+    /// </summary>
+    private void PlaceRepoFile(string localId, SyncDoc? doc, bool rewrite)
+    {
+        if (doc == null)
+            return;
+
+        var newPath = _repoPathFor(localId, doc.Fields);
+        var oldPath = doc.SourcePath;
+        var moved = !string.IsNullOrEmpty(oldPath) && !SamePath(oldPath, newPath) && File.Exists(oldPath);
+
+        if (rewrite)
+        {
+            SyncDocFile.Write(newPath, doc);
+            if (moved)
+                File.Delete(oldPath);
+        }
+        else if (moved)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
+            File.Move(oldPath, newPath);
+        }
+    }
+
+    private static bool SamePath(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 
     private static SyncUpsert ToUpsert(SyncDoc doc) => new()
     {
@@ -198,7 +235,7 @@ public sealed class SyncRunner
                 ExternalId = record.ExternalId,
                 Fields = record.Fields,
                 Body = record.Body,
-                SourcePath = _repoPathForLocalId(localId),
+                SourcePath = _repoPathFor(localId, record.Fields),
             };
         }
 

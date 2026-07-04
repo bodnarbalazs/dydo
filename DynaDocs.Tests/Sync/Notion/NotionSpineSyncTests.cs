@@ -15,6 +15,28 @@ public class NotionSpineSyncTests : IDisposable
         Seed("project/campaigns/dydo-2-0", "---\ntitle: dydo 2.0\nstatus: active\npriority: P0\n---\n\nThe pivot.");
         Seed("project/sprints/notion-sync", "---\ntitle: Notion Sync\nseq: 7\nstatus: active\ncampaign: dydo-2-0\n---\n\nSync work.");
         Seed("project/sprint-tasks/spine-task", "---\ntitle: Spine task\nstatus: in-progress\npriority: P0\nsprint: notion-sync\n---\n\nProvision the spine.");
+
+        // Pin the classic Campaign → Sprint → SprintTask spine so these mechanics tests stay independent
+        // of the evolving default model (which now also ships Release and Issue types).
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Campaign", "dir": "project/campaigns", "notionTitle": "dydo Campaigns",
+                  "properties": { "title": { "type": "title" }, "goal": { "type": "rich_text" },
+                    "status": { "type": "select", "options": ["proposed", "active", "done", "abandoned"] },
+                    "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] } } },
+                { "type": "Sprint", "dir": "project/sprints", "notionTitle": "dydo Sprints",
+                  "properties": { "title": { "type": "title" }, "seq": { "type": "number" },
+                    "status": { "type": "select", "options": ["planned", "active", "in-review", "done", "escalated"] },
+                    "campaign": { "type": "relation", "to": "Campaign" } } },
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "dydo Sprint Tasks",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"] },
+                    "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] },
+                    "sprint": { "type": "relation", "to": "Sprint" } } }
+              ]
+            }
+            """);
     }
 
     public void Dispose()
@@ -173,6 +195,21 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Contains("<<<<<<< repo", merged);
         Assert.Contains("Sync work REPO.", merged);
         Assert.Contains("Sync work EXTERNAL.", merged);
+    }
+
+    [Fact]
+    public void LoadDocs_PoolsRecursivelyFromSubfolders_SkippingUnderscoreMeta()
+    {
+        // Folder placement is derived presentation (slice brief §3): a doc under closed/ is pooled the
+        // same as one at the dir root. Underscore-prefixed metadata — files and whole folders — is skipped.
+        Seed("project/issues/open-bug", "---\ntitle: Open bug\nstatus: open\n---\n\nBody.");
+        Seed("project/issues/closed/done-bug", "---\ntitle: Done bug\nstatus: closed\n---\n\nBody.");
+        Seed("project/issues/_index", "---\ntitle: Issues\n---\n\nFolder index.");
+        Seed("project/issues/_archive/old", "---\ntitle: Archived\nstatus: closed\n---\n\nBody.");
+
+        var docs = NotionSpineSync.LoadDocs(Path.Combine(_dydoRoot, "project", "issues"));
+
+        Assert.Equal(["done-bug", "open-bug"], docs.Select(d => d.LocalId).OrderBy(x => x));
     }
 
     [Fact]

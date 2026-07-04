@@ -42,7 +42,7 @@ public static class ReconcileEngine
     /// <summary>Nothing in base, present on at least one side: create on the missing side, or — new
     /// on both at once — treat any divergence as a conflict against an empty synthetic base.</summary>
     private static ReconcileResult ReconcileNew(SyncDoc? repo, SyncDoc? external, Func<SyncDoc, SyncDoc> fieldNorm) =>
-        external == null ? CreateToExternal(repo!)
+        external == null ? CreateToExternal(repo!, fieldNorm)
         : repo == null ? CreateToRepo(external)
         : MergeBoth(SyntheticBase(repo, external), repo, external, fieldNorm);
 
@@ -200,12 +200,19 @@ public static class ReconcileEngine
         };
     }
 
-    private static ReconcileResult CreateToExternal(SyncDoc repo) => new()
+    /// <summary>Create the object on the external side. The push carries the full repo doc, but the base
+    /// records only what the external view can actually round-trip (<paramref name="fieldNorm"/>): a field
+    /// the external drops at create time — an as-yet-unresolvable relation such as a self-referential
+    /// <c>blocked-by</c> whose target has not been synced — was never externalized, so recording it in the
+    /// base would make the next tick misread its absence in the external as a deletion and blank the repo
+    /// value. Normalizing here keeps the base consistent with external state, so once the target is synced
+    /// the relation is correctly detected as a repo-side addition and pushed (DR 029 §5).</summary>
+    private static ReconcileResult CreateToExternal(SyncDoc repo, Func<SyncDoc, SyncDoc> fieldNorm) => new()
     {
         LocalId = repo.LocalId,
         Action = ReconcileAction.Create,
         ExternalWrite = repo,
-        NewBase = repo,
+        NewBase = fieldNorm(repo),
     };
 
     private static ReconcileResult CreateToRepo(SyncDoc external) => new()

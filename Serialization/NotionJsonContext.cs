@@ -14,6 +14,7 @@ using DynaDocs.Sync.Notion.Provisioning;
 // run's plain_text), expecting them absent — so never serialize null fields on the write side.
 [JsonSourceGenerationOptions(WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(NotionDatabase))]
+[JsonSerializable(typeof(NotionDataSource))]
 [JsonSerializable(typeof(NotionDatabaseCreateRequest))]
 [JsonSerializable(typeof(NotionDataSourceUpdateRequest))]
 [JsonSerializable(typeof(NotionPage))]

@@ -44,14 +44,22 @@ public static class NotionPropertyMapper
         ["url"] = BuildUrl,
     };
 
+    /// <summary>Computed property types (DR 029/030): projected into Notion but never stored in the repo.
+    /// They are skipped both on read — so a formula/rollup value never enters frontmatter or a base
+    /// snapshot — and on write (they are absent from <see cref="Writers"/>).</summary>
+    private static readonly HashSet<string> ComputedTypes = ["formula", "rollup"];
+
     /// <summary>Render a page's properties to an ordered field list: the title property first,
     /// then the rest by name, so the field order is stable across sync ticks. A relation value is
-    /// rendered to the related object's local id via <paramref name="relationPageIdToLocalId"/>.</summary>
+    /// rendered to the related object's local id via <paramref name="relationPageIdToLocalId"/>.
+    /// Computed properties (formula/rollup) are dropped — they are view-only and must not pollute the
+    /// canonical field list.</summary>
     public static List<SyncField> ToFields(
         IReadOnlyDictionary<string, NotionPropertyValue> properties,
         IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null)
     {
         var ordered = properties
+            .Where(p => p.Value.Type == null || !ComputedTypes.Contains(p.Value.Type))
             .OrderBy(p => p.Value.Type == "title" ? 0 : 1)
             .ThenBy(p => p.Key, StringComparer.Ordinal);
 

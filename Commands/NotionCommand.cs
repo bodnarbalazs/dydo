@@ -81,12 +81,17 @@ public static class NotionCommand
         {
             Description = "Compute and print the reconcile plan without applying any change.",
         };
+        var prune = new Option<bool>("--prune")
+        {
+            Description = "Delete schema drift: properties or select options present in Notion but absent from the project's sync model. Without it, drift is warned about and left untouched.",
+        };
         command.Options.Add(dryRun);
-        command.SetAction(parse => RunSync(parse.GetValue(dryRun)));
+        command.Options.Add(prune);
+        command.SetAction(parse => RunSync(parse.GetValue(dryRun), parse.GetValue(prune)));
         return command;
     }
 
-    private static int RunSync(bool dryRun)
+    private static int RunSync(bool dryRun, bool prune)
     {
         var config = new ConfigService();
         var loaded = config.LoadConfig();
@@ -107,7 +112,7 @@ public static class NotionCommand
             return ExitCodes.ToolError;
         }
 
-        return NotionSyncService.Execute(token, config, CreateClient, dryRun, Console.Out, Console.Error);
+        return NotionSyncService.Execute(token, config, CreateClient, dryRun, Console.Out, Console.Error, prune);
     }
 
     /// <summary>Reads a secret (token or passphrase) from stdin: masked when a TTY (so it never lands in

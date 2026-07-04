@@ -42,6 +42,9 @@ public sealed class NotionClient : INotionClient
     public NotionDatabase RetrieveDatabase(string databaseId) =>
         Get($"databases/{databaseId}", NotionJsonContext.Default.NotionDatabase);
 
+    public NotionDataSource RetrieveDataSource(string dataSourceId) =>
+        Get($"data_sources/{dataSourceId}", NotionJsonContext.Default.NotionDataSource);
+
     public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) =>
         Post("databases", request, NotionJsonContext.Default.NotionDatabaseCreateRequest,
             NotionJsonContext.Default.NotionDatabase);

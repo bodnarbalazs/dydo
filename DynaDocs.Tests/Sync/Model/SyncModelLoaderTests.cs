@@ -79,8 +79,67 @@ public class SyncModelLoaderTests : IDisposable
 
         var issue = model.Object("Issue");
         Assert.Equal("project/issues", issue.Dir);
-        Assert.Equal(["open", "resolved"], issue.Properties["status"].Options!);
+        Assert.Equal(["triage", "open", "resolved"], issue.Properties["status"].Options!);
         Assert.Equal("select", issue.Properties["severity"].Type);
+    }
+
+    [Fact]
+    public void Load_DefaultModel_CarriesColorsViewOnlyFormulaAndRollup()
+    {
+        var model = SyncModelLoader.Load(_dydoRoot);
+
+        // DR 029 color language on a select option.
+        var status = model.Object("SprintTask").Properties["status"];
+        Assert.Equal("purple", status.Colors!["ready"]);
+        Assert.Equal("red", status.Colors!["blocked"]);
+
+        // DR 029 §2 word priorities with colors.
+        Assert.Equal(["Urgent", "High", "Normal", "Low"], model.Object("Campaign").Properties["priority"].Options!);
+        Assert.Equal("red", model.Object("Campaign").Properties["priority"].Colors!["Urgent"]);
+
+        // Canonical dual-property relation carries its reverse name; a leaf relation does not.
+        Assert.Equal("sprints", model.Object("Sprint").Properties["campaign"].Reverse);
+        Assert.Equal("blocks", model.Object("SprintTask").Properties["blocked-by"].Reverse);
+        Assert.Null(model.Object("Issue").Properties["fix-release"].Reverse);
+
+        // View-only computed properties: a done formula and a progress rollup.
+        var done = model.Object("Sprint").Properties["done"];
+        Assert.Equal("formula", done.Type);
+        Assert.True(done.ViewOnly);
+        Assert.Contains("status", done.Expression);
+
+        var progress = model.Object("Sprint").Properties["progress"];
+        Assert.Equal("rollup", progress.Type);
+        Assert.True(progress.ViewOnly);
+        Assert.Equal("tasks", progress.RollupRelation);
+        Assert.Equal("done", progress.RollupProperty);
+        Assert.Equal("percent_checked", progress.RollupFunction);
+
+        // Canonical PM properties adopted in DR 030.
+        Assert.Equal("checkbox", model.Object("SprintTask").Properties["needs-human"].Type);
+        Assert.Equal(["feature", "bug", "chore", "spike", "docs"], model.Object("SprintTask").Properties["work-type"].Options!);
+        Assert.Equal("date", model.Object("Sprint").Properties["start"].Type);
+        Assert.Equal("date", model.Object("Sprint").Properties["end"].Type);
+        Assert.Equal(["done", "wont-do", "duplicate", "cannot-reproduce", "superseded"], model.Object("Issue").Properties["resolution"].Options!);
+    }
+
+    [Fact]
+    public void Load_PlainOptionsModel_LoadsBackwardCompatibly_WithoutColorsOrViewOnly()
+    {
+        // A pre-DR-029 model with plain string options and no colors/viewOnly/formula/rollup still loads:
+        // the new fields default to null/false, never breaking an older project's model file.
+        WriteModel("""
+            { "objects": [ { "type": "Note", "dir": "project/notes", "notionTitle": "Notes",
+              "properties": {
+                "title": { "type": "title" },
+                "status": { "type": "select", "options": ["open", "closed"] } } } ] }
+            """);
+
+        var note = SyncModelLoader.Load(_dydoRoot).Object("Note");
+        Assert.Equal(["open", "closed"], note.Properties["status"].Options!);
+        Assert.Null(note.Properties["status"].Colors);
+        Assert.False(note.Properties["status"].ViewOnly);
+        Assert.Null(note.Properties["title"].Expression);
     }
 
     [Fact]
@@ -216,7 +275,8 @@ public class SyncModelLoaderTests : IDisposable
     public void ObjectType_RelationTargets_ReturnsDistinctReferencedTypes()
     {
         var task = SyncModelLoader.Load(_dydoRoot).Object("SprintTask");
-        Assert.Equal(["Sprint"], task.RelationTargets());
+        // sprint → Sprint, and the blocked-by self-relation → SprintTask.
+        Assert.Equal(["Sprint", "SprintTask"], task.RelationTargets());
 
         var campaign = SyncModelLoader.Load(_dydoRoot).Object("Campaign");
         Assert.Equal(["Release"], campaign.RelationTargets());

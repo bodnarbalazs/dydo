@@ -157,7 +157,7 @@ public class NotionPropertyMapperTests
         // The unknown-type fallback prefers a title-shaped value when present.
         var props = new Dictionary<string, NotionPropertyValue>
         {
-            ["Weird"] = new() { Type = "rollup", Title = [new NotionRichText { PlainText = "fallback" }] },
+            ["Weird"] = new() { Type = "people", Title = [new NotionRichText { PlainText = "fallback" }] },
         };
         Assert.Equal("fallback", NotionPropertyMapper.ToFields(props).First(f => f.Key == "Weird").Value);
     }
@@ -288,6 +288,38 @@ public class NotionPropertyMapperTests
         var pageToLocal = new Dictionary<string, string> { ["page-1"] = "t1" };
 
         Assert.Equal("t1, page-2", NotionPropertyMapper.ToFields(props, pageToLocal).Single().Value);
+    }
+
+    [Fact]
+    public void ToFields_SkipsComputedProperties_TheyNeverEnterFrontmatter()
+    {
+        // Formula/rollup are view-only (DR 029/030): computed in Notion, never stored. They must be
+        // dropped on read so a base snapshot and frontmatter carry only canonical fields.
+        var props = new Dictionary<string, NotionPropertyValue>
+        {
+            ["Name"] = Title("A Sprint"),
+            ["done"] = new() { Type = "formula", Checkbox = true },
+            ["progress"] = new() { Type = "rollup", Number = 0.5 },
+        };
+
+        var fields = NotionPropertyMapper.ToFields(props);
+
+        Assert.Equal(["Name"], fields.Select(f => f.Key));
+        Assert.DoesNotContain(fields, f => f.Key == "done");
+        Assert.DoesNotContain(fields, f => f.Key == "progress");
+    }
+
+    [Fact]
+    public void ToProperties_SkipsComputedProperties_TheyAreNeverWritten()
+    {
+        // Even if a computed property name reached the field list, it is never pushed: formula/rollup have
+        // no writer, so ToProperties omits them.
+        var schema = new Dictionary<string, string> { ["done"] = "formula", ["progress"] = "rollup", ["status"] = "select" };
+        var props = NotionPropertyMapper.ToProperties(F(("done", "true"), ("progress", "0.5"), ("status", "done")), schema);
+
+        Assert.False(props.ContainsKey("done"));
+        Assert.False(props.ContainsKey("progress"));
+        Assert.True(props.ContainsKey("status"));
     }
 
     [Fact]

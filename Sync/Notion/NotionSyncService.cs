@@ -19,7 +19,8 @@ public static class NotionSyncService
         Func<string, INotionClient> clientFactory,
         bool dryRun,
         TextWriter output,
-        TextWriter error)
+        TextWriter error,
+        bool prune = false)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -44,7 +45,7 @@ public static class NotionSyncService
 
         try
         {
-            NotionSpineSync.Run(clientFactory(token), config.GetDydoRoot(), parentPageId, dryRun, output);
+            NotionSpineSync.Run(clientFactory(token), config.GetDydoRoot(), parentPageId, dryRun, output, prune);
             return ExitCodes.Success;
         }
         catch (NotionApiException ex)

@@ -143,6 +143,7 @@ public class NotionSyncServiceTests : IDisposable
     private sealed class ThrowingNotionClient : INotionClient
     {
         public NotionDatabase RetrieveDatabase(string databaseId) => throw new NotionApiException(500, "boom");
+        public NotionDataSource RetrieveDataSource(string dataSourceId) => throw new NotionApiException(500, "boom");
         public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) => throw new NotionApiException(429, "rate limited");
         public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) { }
         public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) => [];

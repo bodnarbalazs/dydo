@@ -777,11 +777,14 @@ dydo notion reveal-token --yes
 
 ### dydo notion sync
 
-Reconcile the sync model's object types (default `Campaign` → `Sprint` → `SprintTask`) against Notion bidirectionally, provisioning one Notion database per object type under a parent page. Requires a `DYDO_NOTION_TOKEN` integration token and a parent page from `notion.parentPageId` in dydo.json or the `DYDO_NOTION_PARENT_PAGE` environment variable. Use `--dry-run` to print the reconcile plan without applying it.
+Reconcile the sync model's object types (default `Release` → `Campaign` → `Sprint` → `SprintTask` → `Issue`) against Notion bidirectionally, provisioning one Notion database per object type under a parent page. Requires a `DYDO_NOTION_TOKEN` integration token and a parent page from `notion.parentPageId` in dydo.json or the `DYDO_NOTION_PARENT_PAGE` environment variable. Use `--dry-run` to print the reconcile plan without applying it.
+
+The sync model owns the schema shape one-way (project → Notion): data values sync both ways, but which properties and select options exist flows only from the model. Schema drift — a property or select option added in Notion but absent from the model — is reported as a warning and left untouched by default. Pass `--prune` to delete it instead (rogue properties are removed; a drifted select's options are reset to the model's set). A rogue option's stored value still round-trips as data; only the schema option is pruned.
 
 ```bash
 dydo notion sync
 dydo notion sync --dry-run
+dydo notion sync --prune
 ```
 
 ---

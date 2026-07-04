@@ -19,6 +19,19 @@ public sealed class FakeNotionClient : INotionClient
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
     public List<NotionDatabaseCreateRequest> CreatedDatabases { get; } = [];
     public List<(string DataSourceId, NotionDataSourceUpdateRequest Request)> DataSourceUpdates { get; } = [];
+
+    /// <summary>Live property schema per data source id — seeded from CreateDatabase, merged by
+    /// UpdateDataSource (a null property body deletes it), and read back by RetrieveDataSource. Lets
+    /// schema-drift tests seed rogue properties/options and assert prune deletions.</summary>
+    private readonly Dictionary<string, NotionDataSource> _dataSources = new();
+
+    /// <summary>The live schema for a data source, created empty on first access so a test can seed it.</summary>
+    public NotionDataSource DataSourceSchema(string dataSourceId)
+    {
+        if (!_dataSources.TryGetValue(dataSourceId, out var ds))
+            _dataSources[dataSourceId] = ds = new NotionDataSource { Id = dataSourceId };
+        return ds;
+    }
     public List<string> AppendedTo { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
@@ -52,21 +65,39 @@ public sealed class FakeNotionClient : INotionClient
     public NotionDatabase RetrieveDatabase(string databaseId) =>
         Databases.TryGetValue(databaseId, out var db) ? db : new NotionDatabase { Id = databaseId };
 
+    public NotionDataSource RetrieveDataSource(string dataSourceId) => DataSourceSchema(dataSourceId);
+
     public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request)
     {
         var n = _nextDb++;
+        var dataSourceId = $"ds-{n}";
         var db = new NotionDatabase
         {
             Id = $"db-{n}",
-            DataSources = [new NotionDataSourceRef { Id = $"ds-{n}", Name = NotionRichText.Flatten(request.Title) }],
+            DataSources = [new NotionDataSourceRef { Id = dataSourceId, Name = NotionRichText.Flatten(request.Title) }],
         };
         Databases[db.Id] = db;
         CreatedDatabases.Add(request);
+        _dataSources[dataSourceId] = new NotionDataSource
+        {
+            Id = dataSourceId,
+            Properties = new Dictionary<string, NotionPropertySchema>(request.InitialDataSource.Properties),
+        };
         return db;
     }
 
-    public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) =>
+    public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request)
+    {
         DataSourceUpdates.Add((dataSourceId, request));
+        var schema = DataSourceSchema(dataSourceId).Properties;
+        foreach (var (name, body) in request.Properties)
+        {
+            if (body == null)
+                schema.Remove(name); // a null body prunes the property
+            else
+                schema[name] = body;
+        }
+    }
 
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) =>
         _pages.Values.Where(p => _pageDataSource[p.Id] == dataSourceId).ToList();

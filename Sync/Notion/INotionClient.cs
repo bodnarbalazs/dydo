@@ -12,6 +12,10 @@ public interface INotionClient
 {
     NotionDatabase RetrieveDatabase(string databaseId);
 
+    /// <summary>Retrieve a data source's live property schema (GET /v1/data_sources/{id}) — the input to
+    /// the schema-drift check (DR 029 §6), which compares it against the project's canonical model.</summary>
+    NotionDataSource RetrieveDataSource(string dataSourceId);
+
     /// <summary>Create a database under a parent page; the response carries its data source(s).</summary>
     NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request);
 

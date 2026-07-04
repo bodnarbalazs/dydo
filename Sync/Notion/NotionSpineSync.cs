@@ -14,9 +14,10 @@ using DynaDocs.Sync.Notion.Provisioning;
 /// </summary>
 public static class NotionSpineSync
 {
-    public static void Run(INotionClient client, string dydoRoot, string parentPageId, bool dryRun, TextWriter output)
+    public static void Run(INotionClient client, string dydoRoot, string parentPageId, bool dryRun, TextWriter output, bool prune = false)
     {
-        var types = SyncModelLoader.Load(dydoRoot).InDependencyOrder();
+        var model = SyncModelLoader.Load(dydoRoot);
+        var types = model.InDependencyOrder();
         var provisioner = new NotionProvisioner(client, NotionProvisioner.PathFor(dydoRoot));
 
         output.WriteLine(dryRun
@@ -25,9 +26,24 @@ public static class NotionSpineSync
 
         var dataSourceIds = Provision(provisioner, types, parentPageId, dryRun, output);
         if (!dryRun)
+        {
             provisioner.Save();
+            CheckDrift(client, model, types, dataSourceIds, prune, output);
+        }
 
         Reconcile(client, dydoRoot, types, dataSourceIds, dryRun, output);
+    }
+
+    /// <summary>Schema-shape ownership (DR 029 §6): after every type's data source is resolved, compare its
+    /// live schema against the model and report rogue additions — warned and left, or deleted under
+    /// <paramref name="prune"/>. Read-only in the default path; never runs in dry-run.</summary>
+    private static void CheckDrift(
+        INotionClient client, SyncModel model, IReadOnlyList<SyncObjectType> types,
+        IReadOnlyDictionary<string, string> dataSourceIds, bool prune, TextWriter output)
+    {
+        foreach (var type in types)
+            if (dataSourceIds.TryGetValue(type.Type, out var dataSourceId))
+                NotionSchemaDrift.Check(model, type, dataSourceId, client, prune, output);
     }
 
     /// <summary>Resolve each type's data source id, creating the database when not already provisioned.
@@ -37,6 +53,7 @@ public static class NotionSpineSync
         string parentPageId, bool dryRun, TextWriter output)
     {
         var dataSourceIds = new Dictionary<string, string>();
+        var created = new List<SyncObjectType>();
         foreach (var type in types)
         {
             var existing = provisioner.Lookup(type.Type);
@@ -51,9 +68,26 @@ public static class NotionSpineSync
             }
             else
             {
-                var created = provisioner.Create(type, parentPageId, dataSourceIds);
-                output.WriteLine($"  provision  {type.Type,-9} created database {created.DatabaseId} (data source {created.DataSourceId})");
-                dataSourceIds[type.Type] = created.DataSourceId;
+                var record = provisioner.Create(type, parentPageId, dataSourceIds);
+                output.WriteLine($"  provision  {type.Type,-9} created database {record.DatabaseId} (data source {record.DataSourceId})");
+                dataSourceIds[type.Type] = record.DataSourceId;
+                created.Add(type);
+            }
+        }
+
+        // Rollup post-pass (DR 029 §5): a rollup references the reverse relation a CHILD's dual-property
+        // relation synthesises, so it can only be added once every database exists — after the create loop.
+        if (dryRun)
+        {
+            foreach (var type in types.Where(NotionProvisioner.HasRollups))
+                output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
+        }
+        else
+        {
+            foreach (var type in created.Where(NotionProvisioner.HasRollups))
+            {
+                provisioner.AddRollups(type);
+                output.WriteLine($"  provision  {type.Type,-9} added rollup properties");
             }
         }
         return dataSourceIds;
@@ -76,10 +110,18 @@ public static class NotionSpineSync
                 continue;
             }
 
+            var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
+
+            // Publish this type's own local↔page map from its base snapshot BEFORE building relation maps,
+            // so a self-relation (SprintTask.blocked-by → SprintTask) resolves against pages synced on a
+            // prior tick — without this seed the type's map is only exposed after its own reconcile, so a
+            // self-relation would never resolve on write nor render back to local ids on read (DR 029 §5).
+            // It is refreshed after reconcile to publish this tick's newly-created pages to any children.
+            localToPageByType[type.Type] = LocalToPageIds(store);
+
             var (relationLocalToPage, relationPageToLocal) = RelationMaps(type, localToPageByType);
 
-            var adapter = new NotionSyncAdapter(client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon, output);
-            var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
+            var adapter = new NotionSyncAdapter(client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon);
             var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
 
             if (dryRun)

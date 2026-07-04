@@ -3,7 +3,7 @@ title: Slim the Worker-Tier Runtime
 area: project
 type: context
 status: done
-priority: P1
+priority: High
 sprint: runtime-slim
 ---
 

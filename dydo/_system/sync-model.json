@@ -8,8 +8,11 @@
       "properties": {
         "title": { "type": "title" },
         "specRef": { "type": "rich_text" },
-        "status": { "type": "select", "options": ["planned", "active", "shipped", "abandoned"] },
-        "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] }
+        "status": { "type": "select", "options": ["planned", "active", "shipped", "abandoned"],
+          "colors": { "planned": "gray", "active": "blue", "shipped": "green", "abandoned": "brown" } },
+        "priority": { "type": "select", "options": ["Urgent", "High", "Normal", "Low"],
+          "colors": { "Urgent": "red", "High": "orange", "Normal": "yellow", "Low": "gray" } },
+        "progress": { "type": "rollup", "viewOnly": true, "rollupRelation": "campaigns", "rollupProperty": "done", "rollupFunction": "percent_checked" }
       }
     },
     {
@@ -20,9 +23,13 @@
       "properties": {
         "title": { "type": "title" },
         "goal": { "type": "rich_text" },
-        "status": { "type": "select", "options": ["proposed", "active", "done", "abandoned"] },
-        "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] },
-        "release": { "type": "relation", "to": "Release" }
+        "status": { "type": "select", "options": ["proposed", "active", "done", "abandoned"],
+          "colors": { "proposed": "gray", "active": "blue", "done": "green", "abandoned": "brown" } },
+        "priority": { "type": "select", "options": ["Urgent", "High", "Normal", "Low"],
+          "colors": { "Urgent": "red", "High": "orange", "Normal": "yellow", "Low": "gray" } },
+        "release": { "type": "relation", "to": "Release", "reverse": "campaigns" },
+        "done": { "type": "formula", "viewOnly": true, "expression": "prop(\"status\") == \"done\"" },
+        "progress": { "type": "rollup", "viewOnly": true, "rollupRelation": "sprints", "rollupProperty": "done", "rollupFunction": "percent_checked" }
       }
     },
     {
@@ -33,8 +40,13 @@
       "properties": {
         "title": { "type": "title" },
         "seq": { "type": "number" },
-        "status": { "type": "select", "options": ["planned", "active", "in-review", "done", "escalated"] },
-        "campaign": { "type": "relation", "to": "Campaign" }
+        "status": { "type": "select", "options": ["planned", "active", "in-review", "done", "escalated"],
+          "colors": { "planned": "gray", "active": "blue", "in-review": "yellow", "done": "green", "escalated": "red" } },
+        "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
+        "start": { "type": "date" },
+        "end": { "type": "date" },
+        "done": { "type": "formula", "viewOnly": true, "expression": "prop(\"status\") == \"done\"" },
+        "progress": { "type": "rollup", "viewOnly": true, "rollupRelation": "tasks", "rollupProperty": "done", "rollupFunction": "percent_checked" }
       }
     },
     {
@@ -44,9 +56,17 @@
       "icon": "📋",
       "properties": {
         "title": { "type": "title" },
-        "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"] },
-        "priority": { "type": "select", "options": ["P0", "P1", "P2", "P3"] },
-        "sprint": { "type": "relation", "to": "Sprint" }
+        "status": { "type": "select", "options": ["backlog", "ready", "in-progress", "in-review", "blocked", "done"],
+          "colors": { "backlog": "gray", "ready": "purple", "in-progress": "blue", "in-review": "yellow", "blocked": "red", "done": "green" } },
+        "priority": { "type": "select", "options": ["Urgent", "High", "Normal", "Low"],
+          "colors": { "Urgent": "red", "High": "orange", "Normal": "yellow", "Low": "gray" } },
+        "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
+        "blocked-by": { "type": "relation", "to": "SprintTask", "reverse": "blocks" },
+        "due": { "type": "date" },
+        "work-type": { "type": "select", "options": ["feature", "bug", "chore", "spike", "docs"],
+          "colors": { "feature": "blue", "bug": "red", "chore": "gray", "spike": "purple", "docs": "brown" } },
+        "needs-human": { "type": "checkbox" },
+        "done": { "type": "formula", "viewOnly": true, "expression": "prop(\"status\") == \"done\"" }
       }
     },
     {
@@ -56,9 +76,17 @@
       "icon": "🐞",
       "properties": {
         "title": { "type": "title" },
-        "status": { "type": "select", "options": ["open", "resolved"], "folders": { "resolved": "resolved" } },
-        "severity": { "type": "select", "options": ["critical", "high", "medium", "low"] },
-        "area": { "type": "select", "options": ["backend", "general", "project", "reference", "understand"] }
+        "status": { "type": "select", "options": ["triage", "open", "resolved"], "folders": { "resolved": "resolved" },
+          "colors": { "triage": "gray", "open": "blue", "resolved": "green" } },
+        "severity": { "type": "select", "options": ["critical", "high", "medium", "low"],
+          "colors": { "critical": "red", "high": "orange", "medium": "yellow", "low": "gray" } },
+        "area": { "type": "select", "options": ["backend", "general", "project", "reference", "understand"] },
+        "work-type": { "type": "select", "options": ["feature", "bug", "chore", "spike", "docs"],
+          "colors": { "feature": "blue", "bug": "red", "chore": "gray", "spike": "purple", "docs": "brown" } },
+        "resolution": { "type": "select", "options": ["done", "wont-do", "duplicate", "cannot-reproduce", "superseded"],
+          "colors": { "done": "green", "wont-do": "gray", "duplicate": "brown", "cannot-reproduce": "yellow", "superseded": "purple" } },
+        "needs-human": { "type": "checkbox" },
+        "fix-release": { "type": "relation", "to": "Release" }
       }
     }
   ]

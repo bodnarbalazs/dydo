@@ -3,7 +3,7 @@ title: Notion PM Spine Provisioning
 area: project
 type: context
 status: in-progress
-priority: P0
+priority: Urgent
 sprint: notion-sync
 ---
 

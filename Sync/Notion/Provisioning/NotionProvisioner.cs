@@ -47,7 +47,11 @@ public sealed class NotionProvisioner
         var selfRelations = type.Properties
             .Where(p => p.Value.Type == "relation" && p.Value.To == type.Type)
             .ToList();
-        var firstPass = type.Properties.Where(p => !selfRelations.Contains(p));
+        // Rollups reference a reverse relation that only exists once the CHILD's dual-property relation is
+        // created — later in the run — so they are deferred entirely to the post-create pass (AddRollups),
+        // never emitted here.
+        var rollups = type.Properties.Where(p => p.Value.Type == "rollup").ToList();
+        var firstPass = type.Properties.Where(p => !selfRelations.Contains(p) && !rollups.Contains(p));
 
         var db = _client.CreateDatabase(new NotionDatabaseCreateRequest
         {
@@ -78,6 +82,27 @@ public sealed class NotionProvisioner
         return record;
     }
 
+    /// <summary>Whether this type carries rollup properties the post-create pass must PATCH on once every
+    /// database (and its dual-property reverse relations) exists.</summary>
+    public static bool HasRollups(SyncObjectType type) =>
+        type.Properties.Values.Any(p => p.Type == "rollup");
+
+    /// <summary>Post-create pass (DR 029 §5): PATCH this type's rollup properties onto its data source, now
+    /// that the children whose dual-property relations create the reverse relations exist. Extends the
+    /// self-relation two-pass machinery one level up — from within-type to cross-type deferral.</summary>
+    public void AddRollups(SyncObjectType type)
+    {
+        var rollups = type.Properties.Where(p => p.Value.Type == "rollup").ToList();
+        if (rollups.Count == 0)
+            return;
+        _client.UpdateDataSource(_state[type.Type].DataSourceId, new NotionDataSourceUpdateRequest
+        {
+            Properties = BuildSchema(rollups, EmptyResolved),
+        });
+    }
+
+    private static readonly Dictionary<string, string> EmptyResolved = new();
+
     /// <summary>The <c>properties</c> schema map for a set of model properties — the one place a model
     /// property's type is translated to its Notion schema body. Relation properties resolve their
     /// target's data source id from <paramref name="resolvedDataSourceIds"/>.</summary>
@@ -86,15 +111,55 @@ public sealed class NotionProvisioner
         IReadOnlyDictionary<string, string> resolvedDataSourceIds) =>
         properties.ToDictionary(p => p.Key, p => ToSchema(p.Value, resolvedDataSourceIds));
 
-    private static NotionPropertySchema ToSchema(SyncPropertyDef prop, IReadOnlyDictionary<string, string> resolvedDataSourceIds) => prop.Type switch
+    /// <summary>Type key → schema builder. Table-driven (like <c>NotionPropertyMapper</c>'s reader/writer
+    /// tables) so each property type is a small, independently-testable body and a string switch's inflated
+    /// branch complexity is avoided. A relation resolves its target's data source id from the passed map.</summary>
+    private static readonly Dictionary<string, Func<SyncPropertyDef, IReadOnlyDictionary<string, string>, NotionPropertySchema>> Builders = new()
     {
-        "title" => new() { Title = new NotionEmptyConfig() },
-        "rich_text" => new() { RichText = new NotionEmptyConfig() },
-        "number" => new() { Number = new NotionEmptyConfig() },
-        "date" => new() { Date = new NotionEmptyConfig() },
-        "select" => new() { Select = new NotionSelectSchema { Options = (prop.Options ?? []).Select(o => new NotionSelectOption { Name = o }).ToList() } },
-        "relation" => new() { Relation = new NotionRelationSchema { DataSourceId = resolvedDataSourceIds[prop.To!] } },
-        _ => throw new SyncModelException($"unsupported property type '{prop.Type}'"),
+        ["title"] = (_, _) => new() { Title = new NotionEmptyConfig() },
+        ["rich_text"] = (_, _) => new() { RichText = new NotionEmptyConfig() },
+        ["number"] = (_, _) => new() { Number = new NotionEmptyConfig() },
+        ["date"] = (_, _) => new() { Date = new NotionEmptyConfig() },
+        ["checkbox"] = (_, _) => new() { Checkbox = new NotionEmptyConfig() },
+        ["select"] = (p, _) => new() { Select = new NotionSelectSchema { Options = SelectOptions(p) } },
+        ["relation"] = (p, resolved) => new() { Relation = RelationSchema(p, resolved) },
+        ["formula"] = (p, _) => new() { Formula = new NotionFormulaSchema { Expression = p.Expression! } },
+        ["rollup"] = (p, _) => new() { Rollup = RollupSchema(p) },
+    };
+
+    private static NotionPropertySchema ToSchema(SyncPropertyDef prop, IReadOnlyDictionary<string, string> resolvedDataSourceIds) =>
+        Builders.TryGetValue(prop.Type, out var build)
+            ? build(prop, resolvedDataSourceIds)
+            : throw new SyncModelException($"unsupported property type '{prop.Type}'");
+
+    /// <summary>A select's options, each tagged with its palette color from the model's colors map (DR 029's
+    /// color language). An option absent from the map provisions with Notion's default color.</summary>
+    private static List<NotionSelectOption> SelectOptions(SyncPropertyDef prop) =>
+        (prop.Options ?? []).Select(o => new NotionSelectOption
+        {
+            Name = o,
+            Color = prop.Colors != null && prop.Colors.TryGetValue(o, out var color) ? color : null,
+        }).ToList();
+
+    /// <summary>A relation schema, dual-property when the model names a <see cref="SyncPropertyDef.Reverse"/>
+    /// back-reference (so a rollup or derived column can read the reverse), single-property otherwise.</summary>
+    private static NotionRelationSchema RelationSchema(SyncPropertyDef prop, IReadOnlyDictionary<string, string> resolvedDataSourceIds)
+    {
+        var schema = new NotionRelationSchema { DataSourceId = resolvedDataSourceIds[prop.To!] };
+        if (prop.Reverse != null)
+        {
+            schema.Type = "dual_property";
+            schema.SingleProperty = null;
+            schema.DualProperty = new NotionDualPropertyConfig { SyncedPropertyName = prop.Reverse };
+        }
+        return schema;
+    }
+
+    private static NotionRollupSchema RollupSchema(SyncPropertyDef prop) => new()
+    {
+        RelationPropertyName = prop.RollupRelation!,
+        RollupPropertyName = prop.RollupProperty!,
+        Function = prop.RollupFunction!,
     };
 
     public void Save()

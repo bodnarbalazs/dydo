@@ -64,7 +64,103 @@ public class NotionProvisionerTests : IDisposable
         var relation = request.InitialDataSource.Properties["campaign"].Relation;
         Assert.NotNull(relation);
         Assert.Equal("ds-campaign", relation!.DataSourceId);
+        // Sprint.campaign is a dual-property relation (model names its "sprints" reverse), so Campaign
+        // gains the reverse column a rollup reads — single_property is dropped.
+        Assert.Equal("dual_property", relation.Type);
+        Assert.Null(relation.SingleProperty);
+        Assert.Equal("sprints", relation.DualProperty!.SyncedPropertyName);
+    }
+
+    [Fact]
+    public void Create_SinglePropertyRelation_WhenNoReverseNamed()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var type = new SyncObjectType
+        {
+            Type = "Item",
+            NotionTitle = "Items",
+            Properties = new()
+            {
+                ["title"] = new SyncPropertyDef { Type = "title" },
+                ["owner"] = new SyncPropertyDef { Type = "relation", To = "Owner" },
+            },
+        };
+
+        provisioner.Create(type, "parent-page", new Dictionary<string, string> { ["Owner"] = "ds-owner" });
+
+        var relation = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties["owner"].Relation;
+        Assert.Equal("single_property", relation!.Type);
         Assert.NotNull(relation.SingleProperty);
+        Assert.Null(relation.DualProperty);
+    }
+
+    [Fact]
+    public void Create_SelectProperty_EmitsOptionColorsFromModel()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        provisioner.Create(_model.Object("SprintTask"), "parent-page",
+            new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
+
+        var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
+        var options = props["status"].Select!.Options;
+        Assert.Equal("gray", options.Single(o => o.Name == "backlog").Color);
+        Assert.Equal("purple", options.Single(o => o.Name == "ready").Color);
+        Assert.Equal("red", options.Single(o => o.Name == "blocked").Color);
+        // The canonical needs-human checkbox provisions a checkbox schema.
+        Assert.NotNull(props["needs-human"].Checkbox);
+    }
+
+    [Fact]
+    public void Create_FormulaAndDate_BuildSchemas_RollupIsDeferred()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        provisioner.Create(_model.Object("Sprint"), "parent-page",
+            new Dictionary<string, string> { ["Campaign"] = "ds-campaign" });
+
+        var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
+        // Formula (done) and dates are in the create schema; the rollup (progress) is deferred to AddRollups.
+        Assert.Contains("prop", props["done"].Formula!.Expression);
+        Assert.NotNull(props["start"].Date);
+        Assert.False(props.ContainsKey("progress"));
+        Assert.Empty(client.DataSourceUpdates);
+    }
+
+    [Fact]
+    public void AddRollups_PatchesRollupPropertiesOntoTheDataSource()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(_model.Object("Sprint"), "parent-page",
+            new Dictionary<string, string> { ["Campaign"] = "ds-campaign" });
+
+        Assert.True(NotionProvisioner.HasRollups(_model.Object("Sprint")));
+        provisioner.AddRollups(_model.Object("Sprint"));
+
+        var (dataSourceId, update) = Assert.Single(client.DataSourceUpdates);
+        Assert.Equal(record.DataSourceId, dataSourceId);
+        var rollup = update.Properties["progress"].Rollup;
+        Assert.Equal("tasks", rollup!.RelationPropertyName);
+        Assert.Equal("done", rollup.RollupPropertyName);
+        Assert.Equal("percent_checked", rollup.Function);
+    }
+
+    [Fact]
+    public void AddRollups_NoRollupProperties_IsNoOp()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("SprintTask"), "parent-page",
+            new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
+        client.DataSourceUpdates.Clear();
+
+        Assert.False(NotionProvisioner.HasRollups(_model.Object("SprintTask")));
+        provisioner.AddRollups(_model.Object("SprintTask"));
+        Assert.Empty(client.DataSourceUpdates);
     }
 
     [Fact]
@@ -144,7 +240,7 @@ public class NotionProvisionerTests : IDisposable
         {
             Type = "Bad",
             NotionTitle = "Bad",
-            Properties = new() { ["x"] = new SyncPropertyDef { Type = "checkbox" } },
+            Properties = new() { ["x"] = new SyncPropertyDef { Type = "people" } },
         };
 
         Assert.Throws<SyncModelException>(() => provisioner.Create(type, "parent-page", new Dictionary<string, string>()));

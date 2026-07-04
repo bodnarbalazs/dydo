@@ -309,42 +309,66 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
-    public void Relation_MultiTarget_OmittedFromWriteBack_AndWarns()
+    public void Relation_MultiValueEdit_RemovingOneTarget_PropagatesToNotion()
     {
-        // A relation holding two targets is read as its first ref only. Writing that single ref back would
-        // delete the second target, so the relation is omitted from the update and a warning is produced.
+        // Since fea7915 the mapper round-trips ALL relation targets. A blocked-by holding two targets in
+        // Notion must be fully editable from the repo: dropping one blocker locally writes the remaining
+        // single target back (the property is NOT omitted), so a task can be un-blocked from the repo side.
         var client = new FakeNotionClient();
         client.SeedPage(
-            "s1",
+            "t1",
             new()
             {
-                ["title"] = Title("Sprint 7"),
-                ["campaign"] = new NotionPropertyValue { Type = "relation", Relation = [new() { Id = "c1" }, new() { Id = "c2" }] },
-            },
-            dataSourceId: "ds2");
-        var schema = new Dictionary<string, string> { ["title"] = "title", ["campaign"] = "relation" };
-        var localToPage = new Dictionary<string, string> { ["c1"] = "c1" };
-        var pageToLocal = new Dictionary<string, string> { ["c1"] = "c1", ["c2"] = "c2" };
-        var warnings = new StringWriter();
-        var adapter = new NotionSyncAdapter(client, "ds2", schema, localToPage, pageToLocal, warnings: warnings);
+                ["title"] = Title("Task"),
+                ["blocked-by"] = new NotionPropertyValue { Type = "relation", Relation = [new() { Id = "pa" }, new() { Id = "pb" }] },
+            });
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["blocked-by"] = "relation" };
+        var localToPage = new Dictionary<string, string> { ["a"] = "pa", ["b"] = "pb" };
+        var pageToLocal = new Dictionary<string, string> { ["pa"] = "a", ["pb"] = "b" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema, localToPage, pageToLocal);
 
-        adapter.ReadExternalState();
+        // Read sees both targets, rendered as comma-joined local ids.
+        var record = adapter.ReadExternalState().Single();
+        Assert.Equal("a, b", record.Fields.First(f => f.Key == "blocked-by").Value);
 
-        Assert.Contains("campaign", warnings.ToString());
-        Assert.Contains("Sprint 7", warnings.ToString());
-
+        // The repo keeps only one blocker; the update must propagate that removal, not leave both.
         var changes = new SyncChangeSet();
         changes.Upserts.Add(new SyncUpsert
         {
-            LocalId = "s1", ExternalId = "s1",
-            Fields = [new SyncField { Key = "title", Value = "Renamed" }, new SyncField { Key = "campaign", Value = "c1" }],
+            LocalId = "t1", ExternalId = "t1",
+            Fields = [new SyncField { Key = "title", Value = "Task" }, new SyncField { Key = "blocked-by", Value = "a" }],
             Body = "",
         });
         adapter.Apply(changes, new Dictionary<string, string>());
 
-        var page = client.QueryDataSource("ds2").Single();
-        Assert.Equal(2, page.Properties["campaign"].Relation!.Count); // both targets untouched
-        Assert.Equal("Renamed", NotionRichText.Flatten(page.Properties["title"].Title));
+        var page = client.QueryDataSource("ds1").Single();
+        Assert.Equal(["pa"], page.Properties["blocked-by"].Relation!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public void ReadExternalState_WithExplicitSchema_DropsPropertiesAbsentFromSchema()
+    {
+        // A provisioned data source carries dual-relation reverse columns (the view-only "blocks" of a
+        // blocked-by pair) and may carry rogue columns a colleague added. Neither is canonical; only
+        // properties the model schema knows may reach frontmatter (DR 029 §6), or a raw page-id UUID or a
+        // stray column would pollute the repo source of truth.
+        var client = new FakeNotionClient();
+        client.SeedPage(
+            "t1",
+            new()
+            {
+                ["title"] = Title("Task"),
+                ["blocks"] = new NotionPropertyValue { Type = "relation", Relation = [new() { Id = "other" }] },
+                ["Rogue"] = new NotionPropertyValue { Type = "rich_text", RichText = NotionRichText.Of("colleague note") },
+            });
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["blocked-by"] = "relation" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+
+        var record = adapter.ReadExternalState().Single();
+
+        Assert.Contains(record.Fields, f => f.Key == "title");
+        Assert.DoesNotContain(record.Fields, f => f.Key == "blocks"); // dual-property reverse, not in schema
+        Assert.DoesNotContain(record.Fields, f => f.Key == "Rogue");  // rogue column, not in schema
     }
 
     [Fact]

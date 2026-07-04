@@ -4,7 +4,7 @@ area: project
 type: context
 goal: Replace the heavyweight dispatch/queue/worktree orchestration with a slim native-AOT worker tier and a bidirectional Notion PM surface, keeping repo files the single source of truth.
 status: active
-priority: P0
+priority: Urgent
 ---
 
 # dydo 2.0 Native Pivot

@@ -29,7 +29,19 @@ public sealed class NotionPropertySchema
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionEmptyConfig? Date { get; set; }
 
+    [JsonPropertyName("checkbox")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionEmptyConfig? Checkbox { get; set; }
+
     [JsonPropertyName("relation")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionRelationSchema? Relation { get; set; }
+
+    [JsonPropertyName("formula")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionFormulaSchema? Formula { get; set; }
+
+    [JsonPropertyName("rollup")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionRollupSchema? Rollup { get; set; }
 }

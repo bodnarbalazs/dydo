@@ -124,6 +124,83 @@ public class SyncModelLoaderTests : IDisposable
     }
 
     [Fact]
+    public void Load_DefaultModel_CarriesDR030AttentionLayer()
+    {
+        var model = SyncModelLoader.Load(_dydoRoot);
+
+        // Engine-computed last-activity date on the leaf work items (DR 030 §3).
+        var lastActivity = model.Object("SprintTask").Properties["last-activity"];
+        Assert.Equal("date", lastActivity.Type);
+        Assert.True(lastActivity.EngineComputed);
+        Assert.False(lastActivity.ViewOnly);
+        Assert.True(model.Object("Issue").Properties["last-activity"].EngineComputed);
+
+        // Staleness formula reads last-activity and status (DR 030 §3).
+        var stale = model.Object("SprintTask").Properties["stale"];
+        Assert.Equal("formula", stale.Type);
+        Assert.True(stale.ViewOnly);
+        Assert.Contains("last-activity", stale.Expression);
+        Assert.Contains("dateBetween", stale.Expression);
+
+        // Health formula on the parents (DR 030 §2).
+        foreach (var parent in new[] { "Sprint", "Campaign", "Release" })
+        {
+            var health = model.Object(parent).Properties["health"];
+            Assert.Equal("formula", health.Type);
+            Assert.Contains("On Track", health.Expression);
+        }
+        Assert.Contains("gate-result", model.Object("Sprint").Properties["health"].Expression);
+
+        // Canonical gate-result select on Sprint (pass=green, fail=red, no default).
+        var gate = model.Object("Sprint").Properties["gate-result"];
+        Assert.Equal(["pass", "fail"], gate.Options!);
+        Assert.Equal("green", gate.Colors!["pass"]);
+        Assert.False(gate.ViewOnly);
+        Assert.False(gate.EngineComputed);
+
+        // needs-human COUNT rollups on Sprint and Campaign (DR 030 §1).
+        var sprintNeedsHuman = model.Object("Sprint").Properties["needs-human"];
+        Assert.Equal("rollup", sprintNeedsHuman.Type);
+        Assert.Equal("tasks", sprintNeedsHuman.RollupRelation);
+        Assert.Equal("checked", sprintNeedsHuman.RollupFunction);
+        // Campaign's needs-human sums a Sprint FORMULA projection (needs-human-count), not the Sprint
+        // needs-human ROLLUP directly — Notion rejects a rollup-of-rollup, so the projection is required.
+        var campaignNeedsHuman = model.Object("Campaign").Properties["needs-human"];
+        Assert.Equal("rollup", campaignNeedsHuman.Type);
+        Assert.Equal("sum", campaignNeedsHuman.RollupFunction);
+        Assert.Equal("needs-human-count", campaignNeedsHuman.RollupProperty);
+        var needsHumanCount = model.Object("Sprint").Properties["needs-human-count"];
+        Assert.Equal("formula", needsHumanCount.Type);
+        Assert.True(needsHumanCount.ViewOnly);
+        Assert.Contains("needs-human", needsHumanCount.Expression);
+
+        // Campaign date rollups (earliest start / latest end across Sprints, DR 029/030).
+        Assert.Equal("earliest_date", model.Object("Campaign").Properties["start"].RollupFunction);
+        Assert.Equal("latest_date", model.Object("Campaign").Properties["end"].RollupFunction);
+
+        // Attention composite on every type (DR 030 §4).
+        foreach (var type in new[] { "SprintTask", "Issue", "Sprint", "Campaign", "Release" })
+            Assert.Equal("formula", model.Object(type).Properties["attention"].Type);
+    }
+
+    [Fact]
+    public void Load_PlainDateModel_WithoutEngineComputed_DefaultsFalse()
+    {
+        // A model with a plain date property and no engineComputed flag still loads; the new flag defaults
+        // false, never breaking an older project's model file.
+        WriteModel("""
+            { "objects": [ { "type": "Note", "dir": "project/notes", "notionTitle": "Notes",
+              "properties": {
+                "title": { "type": "title" },
+                "due": { "type": "date" } } } ] }
+            """);
+
+        var note = SyncModelLoader.Load(_dydoRoot).Object("Note");
+        Assert.Equal("date", note.Properties["due"].Type);
+        Assert.False(note.Properties["due"].EngineComputed);
+    }
+
+    [Fact]
     public void Load_PlainOptionsModel_LoadsBackwardCompatibly_WithoutColorsOrViewOnly()
     {
         // A pre-DR-029 model with plain string options and no colors/viewOnly/formula/rollup still loads:

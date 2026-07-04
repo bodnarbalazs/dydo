@@ -24,15 +24,30 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     private readonly IReadOnlyDictionary<string, string>? _relationLocalToPageId;
     private readonly IReadOnlyDictionary<string, string>? _relationPageIdToLocalId;
     private readonly string? _icon;
+    private readonly IReadOnlyDictionary<string, string>? _engineComputedSchema;
+    private readonly Func<string, string?>? _engineComputedValue;
     private IReadOnlyDictionary<string, string> _schema = new Dictionary<string, string>();
 
+    /// <summary>The engine-computed property values (non-empty only) each page currently carries, captured
+    /// on the last read and keyed by page id. An engine-computed refresh consults this to skip a write when
+    /// the page already holds the target value, keeping a no-op tick a no-op (finding 1).</summary>
+    private readonly Dictionary<string, IReadOnlyDictionary<string, string>> _externalEngineComputed = new();
+
+    /// <param name="engineComputedSchema">Engine-owned property name → Notion type (e.g. <c>last-activity</c> →
+    /// <c>date</c>, DR 030 §3). These flow ONE-WAY: written on every upsert from <paramref name="engineComputedValue"/>,
+    /// and dropped on read so they never enter a base snapshot or frontmatter (no edit loop). Null when the
+    /// type declares none.</param>
+    /// <param name="engineComputedValue">Given a local id, the current value for the engine-computed properties
+    /// (the engine's derived last-activity date), or null to write nothing for that object this tick.</param>
     public NotionSyncAdapter(
         INotionClient client,
         string dataSourceId,
         IReadOnlyDictionary<string, string>? schema = null,
         IReadOnlyDictionary<string, string>? relationLocalToPageId = null,
         IReadOnlyDictionary<string, string>? relationPageIdToLocalId = null,
-        string? icon = null)
+        string? icon = null,
+        IReadOnlyDictionary<string, string>? engineComputedSchema = null,
+        Func<string, string?>? engineComputedValue = null)
     {
         _client = client;
         _dataSourceId = dataSourceId;
@@ -40,7 +55,11 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         _relationLocalToPageId = relationLocalToPageId;
         _relationPageIdToLocalId = relationPageIdToLocalId;
         _icon = icon;
+        _engineComputedSchema = engineComputedSchema is { Count: > 0 } ? engineComputedSchema : null;
+        _engineComputedValue = engineComputedValue;
     }
+
+    public bool WritesEngineComputed => _engineComputedSchema != null;
 
     public IReadOnlyList<SyncRecord> ReadExternalState()
     {
@@ -48,12 +67,21 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         // A provisioned data source knows its own schema; otherwise infer it from the live pages so
         // we never push a property of the wrong type or one the DB doesn't have.
         _schema = _explicitSchema ?? NotionPropertyMapper.InferSchema(pages);
+        _externalEngineComputed.Clear();
 
         var records = new List<SyncRecord>();
         foreach (var page in pages)
         {
             if (page.Archived)
                 continue;
+            var allFields = NotionPropertyMapper.ToFields(page.Properties, _relationPageIdToLocalId);
+            // Capture the page's current engine-computed values so a refresh can tell whether the one-way
+            // last-activity already matches the engine and skip a needless write (finding 1). Empty values
+            // are omitted, so a page missing the property reads as "not yet in sync".
+            if (_engineComputedSchema != null)
+                _externalEngineComputed[page.Id] = allFields
+                    .Where(f => _engineComputedSchema.ContainsKey(f.Key) && !string.IsNullOrEmpty(f.Value))
+                    .ToDictionary(f => f.Key, f => f.Value);
             var blocks = _client.GetBlockChildren(page.Id);
             records.Add(new SyncRecord
             {
@@ -61,9 +89,11 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                 // Render only properties the schema knows: a provisioned data source carries reverse
                 // relations (the dual-property "Blocks"/"Sprints" columns) and may carry rogue columns,
                 // none of which are canonical — filtering to the schema keeps them out of frontmatter
-                // (DR 029 §6). With an inferred schema every page property is a key, so this is a no-op.
-                Fields = NotionPropertyMapper.ToFields(page.Properties, _relationPageIdToLocalId)
-                    .Where(f => _schema.ContainsKey(f.Key)).ToList(),
+                // (DR 029 §6). An engine-computed property (last-activity) is dropped too: the engine writes
+                // it one-way, so reading it back into frontmatter would provoke an edit loop (DR 030 §3).
+                // With an inferred schema every page property is a key, so this is a no-op.
+                Fields = allFields
+                    .Where(f => _schema.ContainsKey(f.Key) && _engineComputedSchema?.ContainsKey(f.Key) != true).ToList(),
                 Body = NotionBlockConverter.FromBlocks(blocks),
             });
         }
@@ -77,6 +107,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         foreach (var upsert in changes.Upserts)
         {
             var properties = NotionPropertyMapper.ToProperties(upsert.Fields, schema, _relationLocalToPageId);
+            AddEngineComputed(upsert.LocalId, properties);
             var blocks = NotionBlockConverter.ToBlocks(upsert.Body);
 
             if (upsert.ExternalId == null)
@@ -99,8 +130,52 @@ public sealed class NotionSyncAdapter : ISyncAdapter
             }
         }
 
+        // Engine-computed-only refreshes: write last-activity onto an existing page no upsert already
+        // carried it to (a no-op, an external-to-repo write, or a page created from Notion). Only the
+        // engine-computed properties are sent — the body and every canonical property are untouched — and
+        // a page already holding the value is skipped, so subsequent no-op ticks issue no write (finding 1).
+        foreach (var refresh in changes.EngineComputedRefreshes)
+        {
+            if (EngineComputedInSync(refresh.LocalId, refresh.ExternalId))
+                continue;
+            var properties = new Dictionary<string, NotionPropertyValue>();
+            AddEngineComputed(refresh.LocalId, properties);
+            if (properties.Count > 0)
+                _client.UpdatePage(refresh.ExternalId, new NotionPageUpdateRequest { Properties = properties });
+        }
+
         foreach (var externalId in changes.Deletes)
             _client.UpdatePage(externalId, new NotionPageUpdateRequest { Archived = true });
+    }
+
+    /// <summary>Whether a page already carries the engine's current engine-computed value for every
+    /// engine-computed property, so a refresh can be skipped (finding 1). A null/empty engine value means
+    /// nothing to write (in sync); a page whose captured value is missing or differs is out of sync.</summary>
+    private bool EngineComputedInSync(string localId, string externalId)
+    {
+        var value = _engineComputedValue?.Invoke(localId);
+        if (string.IsNullOrEmpty(value))
+            return true;
+        if (!_externalEngineComputed.TryGetValue(externalId, out var current))
+            return false;
+        return _engineComputedSchema!.Keys.All(name => current.TryGetValue(name, out var v) && v == value);
+    }
+
+    /// <summary>Overlay the engine-owned properties (last-activity, DR 030 §3) onto an upsert's Notion
+    /// payload, sourced from the engine — never from the doc's fields — so they are written one-way and can
+    /// never round-trip into frontmatter. A null/empty value writes nothing for that object this tick.</summary>
+    private void AddEngineComputed(string localId, Dictionary<string, NotionPropertyValue> properties)
+    {
+        if (_engineComputedSchema == null)
+            return;
+        var value = _engineComputedValue?.Invoke(localId);
+        if (string.IsNullOrEmpty(value))
+            return;
+        foreach (var (name, type) in _engineComputedSchema)
+            foreach (var prop in NotionPropertyMapper.ToProperties(
+                         [new SyncField { Key = name, Value = value }],
+                         new Dictionary<string, string> { [name] = type }))
+                properties[prop.Key] = prop.Value;
     }
 
     public string NormalizeBody(string body) =>

@@ -45,6 +45,16 @@ public sealed class SyncPropertyDef
     [JsonPropertyName("viewOnly")]
     public bool ViewOnly { get; set; }
 
+    /// <summary>An engine-owned property the sync engine writes ONE-WAY to Notion from state it derives
+    /// itself, never from frontmatter and never read back (DR 030 §3 — <c>last-activity</c>). Unlike a
+    /// <see cref="ViewOnly"/> formula/rollup (which Notion computes), an engine-computed property has a
+    /// real Notion type (e.g. <c>date</c>) that the engine populates: the spine writes the value on every
+    /// push, and the adapter drops it on read so it can never enter a base snapshot or frontmatter — which
+    /// would otherwise turn every sync into an edit loop. Defaults false, backward-compatible with plain
+    /// models.</summary>
+    [JsonPropertyName("engineComputed")]
+    public bool EngineComputed { get; set; }
+
     /// <summary>A formula property's Notion expression (view-only).</summary>
     [JsonPropertyName("expression")]
     public string? Expression { get; set; }

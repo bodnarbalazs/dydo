@@ -75,19 +75,40 @@ public static class NotionSpineSync
             }
         }
 
-        // Rollup post-pass (DR 029 §5): a rollup references the reverse relation a CHILD's dual-property
-        // relation synthesises, so it can only be added once every database exists — after the create loop.
+        // Rollup + formula post-pass (DR 029 §5 / DR 030 §2/§4) in CHILD-FIRST order — the reverse of the
+        // parent-first create order. A parent's rollup targets a child property (a checkbox, a date, or a
+        // child FORMULA such as `attention`), and a parent's health/attention formulas read those rollups.
+        // Real Notion validates a rollup's target property at creation exactly as it validates a formula's
+        // referents, so every child column a parent references — including a child's DEFERRED formula, only
+        // PATCHed in that child's own formula pass — must already exist when the parent's pass runs. Doing
+        // AddRollups(type) then AddFormulas(type) per type, children before parents, guarantees it: e.g.
+        // SprintTask.attention is patched before Sprint's attention-count rollup targets it, and Sprint's
+        // needs-human-count formula before Campaign's needs-human rollup sums it.
+        var postPass = types.Reverse().ToList();
         if (dryRun)
         {
-            foreach (var type in types.Where(NotionProvisioner.HasRollups))
-                output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
+            foreach (var type in postPass)
+            {
+                if (NotionProvisioner.HasRollups(type))
+                    output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
+                if (NotionProvisioner.HasDeferredFormulas(type))
+                    output.WriteLine($"  provision  {type.Type,-9} would add formula properties");
+            }
         }
         else
         {
-            foreach (var type in created.Where(NotionProvisioner.HasRollups))
+            foreach (var type in postPass.Where(created.Contains))
             {
-                provisioner.AddRollups(type);
-                output.WriteLine($"  provision  {type.Type,-9} added rollup properties");
+                if (NotionProvisioner.HasRollups(type))
+                {
+                    provisioner.AddRollups(type);
+                    output.WriteLine($"  provision  {type.Type,-9} added rollup properties");
+                }
+                if (NotionProvisioner.HasDeferredFormulas(type))
+                {
+                    provisioner.AddFormulas(type);
+                    output.WriteLine($"  provision  {type.Type,-9} added formula properties");
+                }
             }
         }
         return dataSourceIds;
@@ -121,7 +142,14 @@ public static class NotionSpineSync
 
             var (relationLocalToPage, relationPageToLocal) = RelationMaps(type, localToPageByType);
 
-            var adapter = new NotionSyncAdapter(client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon);
+            // Engine-computed properties (last-activity, DR 030 §3) are written one-way from the base store's
+            // per-object activity date and dropped on read, so they never enter frontmatter.
+            var engineSchema = type.Properties
+                .Where(p => p.Value.EngineComputed)
+                .ToDictionary(p => p.Key, p => p.Value.Type);
+            var adapter = new NotionSyncAdapter(
+                client, dataSourceId, type.FieldSchema(), relationLocalToPage, relationPageToLocal, type.Icon,
+                engineSchema, store.GetLastActivity);
             var runner = new SyncRunner(adapter, store, RepoFolderLayout.For(type, docsDir).PathFor);
 
             if (dryRun)

@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Sync.Notion;
 
+using DynaDocs.Sync;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 
@@ -426,6 +427,275 @@ public class NotionSpineSyncTests : IDisposable
 
         Assert.Contains("WARN rogue property \"Rogue\"", output.ToString());
         Assert.True(client.DataSourceSchema("ds-1").Properties.ContainsKey("Rogue")); // untouched
+    }
+
+    /// <summary>A single-type model whose SprintTask declares the DR 030 attention layer: an engine-computed
+    /// last-activity date plus the stale/attention formulas that read it.</summary>
+    private void SeedLastActivitySpine()
+    {
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["in-progress", "in-review", "done"] },
+                    "needs-human": { "type": "checkbox" },
+                    "last-activity": { "type": "date", "engineComputed": true },
+                    "stale": { "type": "formula", "viewOnly": true,
+                      "expression": "and(prop(\"status\") == \"in-progress\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
+                    "attention": { "type": "formula", "viewOnly": true,
+                      "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+    }
+
+    private string TaskPath(string localId) =>
+        Path.Combine(_dydoRoot, "project", "sprint-tasks", localId + ".md");
+
+    private string? LastActivityInBase(string localId) =>
+        new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")).GetLastActivity(localId);
+
+    [Fact]
+    public void Run_LastActivity_BumpsOnGenuineRepoChange_NotOnExternalWriteOrNoOp_NeverInFrontmatter()
+    {
+        SeedLastActivitySpine();
+        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one.");
+        File.SetLastWriteTimeUtc(TaskPath("task-1"), new DateTime(2026, 6, 20, 0, 0, 0, DateTimeKind.Utc));
+
+        var client = new FakeNotionClient();
+        // Tick 1: create. last-activity initialises from the file's mtime and is written one-way to Notion.
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var page = client.QueryDataSource("ds-1").Single();
+        Assert.Equal("2026-06-20", page.Properties["last-activity"].Date!.Start);
+        Assert.Equal("2026-06-20", LastActivityInBase("task-1"));
+        // Engine-owned: it must never round-trip into the repo frontmatter (that would loop every sync).
+        Assert.DoesNotContain("last-activity", File.ReadAllText(TaskPath("task-1")));
+
+        // Tick 2: nothing changed — no bump, Notion value untouched.
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        Assert.Equal("2026-06-20", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
+        Assert.Equal("2026-06-20", LastActivityInBase("task-1"));
+
+        // Tick 3: a genuine repo-side edit bumps last-activity to the file's new mtime.
+        File.WriteAllText(TaskPath("task-1"), "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one EDITED.");
+        File.SetLastWriteTimeUtc(TaskPath("task-1"), new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc));
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        Assert.Equal("2026-07-01", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
+        Assert.Equal("2026-07-01", LastActivityInBase("task-1"));
+
+        // Tick 4: an external-to-repo write (Notion edit flowing back to the repo) is NOT repo activity —
+        // last-activity must hold, even though the engine rewrites the repo file (bumping its mtime).
+        var external = client.QueryDataSource("ds-1").Single();
+        external.Properties["status"] = new NotionPropertyValue { Type = "select", Select = new NotionSelectOption { Name = "in-review" } };
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        Assert.Equal("2026-07-01", LastActivityInBase("task-1"));
+        Assert.Equal("2026-07-01", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
+        Assert.DoesNotContain("last-activity", File.ReadAllText(TaskPath("task-1"))); // still absent from frontmatter
+    }
+
+    [Fact]
+    public void Run_ProvisionsEngineDate_AndDeferredFormulas_ForAttentionLayer()
+    {
+        SeedLastActivitySpine();
+        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        // The engine date and the leaf stale formula are provisioned in the create; attention (which reads
+        // stale) is PATCHed on afterwards.
+        var createSchema = client.CreatedDatabases.Single().InitialDataSource.Properties;
+        Assert.NotNull(createSchema["last-activity"].Date);
+        Assert.NotNull(createSchema["stale"].Formula);
+        Assert.False(createSchema.ContainsKey("attention"));
+
+        var attentionPatch = Assert.Single(client.DataSourceUpdates, u => u.Request.Properties.ContainsKey("attention"));
+        Assert.Contains("stale", attentionPatch.Request.Properties["attention"].Formula!.Expression);
+    }
+
+    [Fact]
+    public void Run_PostPass_EmitsChildFormulasAndRollups_BeforeParentReferents()
+    {
+        // Finding R2-1/R2-2: a parent's rollup targets a CHILD column that may itself be a deferred formula
+        // (Sprint's attention-count → tasks/"attention") or a sibling formula projection (Campaign's
+        // needs-human → sprints/"needs-human-count"). Real Notion validates a rollup's target property at
+        // creation, so the post-pass must run CHILD-FIRST — AddRollups(type) then AddFormulas(type) per type,
+        // children before parents — so every referent exists before the parent that reads it is emitted.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Campaign", "dir": "project/campaigns", "notionTitle": "Campaigns",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "needs-human": { "type": "rollup", "viewOnly": true, "rollupRelation": "sprints", "rollupProperty": "needs-human-count", "rollupFunction": "sum" },
+                    "attention-count": { "type": "rollup", "viewOnly": true, "rollupRelation": "sprints", "rollupProperty": "attention", "rollupFunction": "checked" },
+                    "attention": { "type": "formula", "viewOnly": true, "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
+                { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
+                    "needs-human": { "type": "rollup", "viewOnly": true, "rollupRelation": "tasks", "rollupProperty": "needs-human", "rollupFunction": "checked" },
+                    "needs-human-count": { "type": "formula", "viewOnly": true, "expression": "prop(\"needs-human\")" },
+                    "attention-count": { "type": "rollup", "viewOnly": true, "rollupRelation": "tasks", "rollupProperty": "attention", "rollupFunction": "checked" },
+                    "attention": { "type": "formula", "viewOnly": true, "expression": "or(prop(\"needs-human\") > 0, prop(\"attention-count\") > 0)" } } },
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": {
+                    "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["in-progress", "done"] },
+                    "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
+                    "needs-human": { "type": "checkbox" },
+                    "stale": { "type": "formula", "viewOnly": true, "expression": "prop(\"status\") == \"in-progress\"" },
+                    "attention": { "type": "formula", "viewOnly": true, "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
+              ]
+            }
+            """);
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var updates = client.DataSourceUpdates;
+        int IndexOf(string ds, string key) =>
+            updates.FindIndex(u => u.DataSourceId == ds && u.Request.Properties.ContainsKey(key));
+
+        // Data sources are assigned parent-first at create time: Campaign=ds-1, Sprint=ds-2, SprintTask=ds-3.
+        var taskAttention = IndexOf("ds-3", "attention");            // SprintTask's deferred attention formula
+        var sprintAttentionCount = IndexOf("ds-2", "attention-count"); // Sprint rollup that TARGETS it
+        var sprintNeedsHumanCount = IndexOf("ds-2", "needs-human-count"); // Sprint formula projection
+        var campaignNeedsHuman = IndexOf("ds-1", "needs-human");        // Campaign rollup that SUMS it
+
+        Assert.True(taskAttention >= 0 && sprintAttentionCount >= 0 && sprintNeedsHumanCount >= 0 && campaignNeedsHuman >= 0);
+        Assert.True(taskAttention < sprintAttentionCount,
+            "SprintTask.attention must be patched before Sprint's attention-count rollup references it");
+        Assert.True(sprintNeedsHumanCount < campaignNeedsHuman,
+            "Sprint.needs-human-count must be patched before Campaign's needs-human rollup sums it");
+
+        // Finding R2-2: Campaign's needs-human is a supported rollup over the Sprint FORMULA projection —
+        // never a rollup-of-rollup, which Notion rejects.
+        var campaignRollup = updates.First(u => u.DataSourceId == "ds-1" && u.Request.Properties.ContainsKey("needs-human"))
+            .Request.Properties["needs-human"].Rollup;
+        Assert.Equal("needs-human-count", campaignRollup!.RollupPropertyName);
+    }
+
+    [Fact]
+    public void Run_LastActivity_SeedsPreExistingBaseObject_OnNoOpTick_AndLandsOnNotionPage()
+    {
+        // Finding R2-3 / finding 1: an object already in the base snapshot from a pre-slice sync carries no
+        // last-activity. On a no-op tick the engine must SEED it from the file mtime AND push that seeded
+        // value ONTO the Notion page — no reconcile path carries an upsert for a stalled item, so without an
+        // engine-computed refresh the page would keep an empty last-activity forever and stale could never
+        // fire. Seeding writes only engine-internal store state / the one-way engine column, never frontmatter,
+        // and a subsequent no-op tick must issue no repeated write.
+        SeedLastActivitySpine();
+        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        // Simulate a base written by the pre-slice engine: the object is present but the last-activity map is
+        // empty (the old file format had no such map), and the page carries no last-activity either.
+        var snapPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask");
+        var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(snapPath))!;
+        node["lastActivity"] = new System.Text.Json.Nodes.JsonObject();
+        File.WriteAllText(snapPath, node.ToJsonString());
+        Assert.Null(LastActivityInBase("task-1"));
+        var page = client.QueryDataSource("ds-1").Single();
+        page.Properties.Remove("last-activity");
+        client.LastActivityWrites.Clear();
+
+        // The stalled task's file is untouched for days; a no-op tick seeds last-activity from its mtime.
+        File.SetLastWriteTimeUtc(TaskPath("task-1"), new DateTime(2026, 6, 25, 0, 0, 0, DateTimeKind.Utc));
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        Assert.Equal("2026-06-25", LastActivityInBase("task-1"));
+        Assert.DoesNotContain("last-activity", File.ReadAllText(TaskPath("task-1")));
+        // The seeded value lands on the Notion PAGE, not just the internal store.
+        Assert.Equal("2026-06-25", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
+        Assert.Single(client.LastActivityWrites);
+
+        // Idempotent: a further no-op tick sees the page already in sync and issues no repeated write.
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        Assert.Single(client.LastActivityWrites);
+        Assert.Equal("2026-06-25", client.QueryDataSource("ds-1").Single().Properties["last-activity"].Date!.Start);
+    }
+
+    [Fact]
+    public void Run_LastActivity_StampsAndPushes_NotionCreatedObject()
+    {
+        // Finding 1: an object created on the Notion side (CreateToRepo) never reaches RecordActivity's repo
+        // arm — its repo file does not exist yet — so it kept an EMPTY last-activity forever and could never
+        // go stale. The engine must stamp it (from now, since there is no file mtime) AND push that value onto
+        // the existing page, idempotently.
+        SeedLastActivitySpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // provision ds-1, no docs
+
+        // A human creates a task directly on the board; it maps to a repo file on the next tick.
+        client.SeedPage("ext-task", new Dictionary<string, DynaDocs.Sync.Notion.Dtos.NotionPropertyValue>
+        {
+            ["title"] = new() { Type = "title", Title = NotionRichText.Of("Board-made task") },
+            ["status"] = new() { Type = "select", Select = new NotionSelectOption { Name = "in-progress" } },
+        }, dataSourceId: "ds-1");
+        client.LastActivityWrites.Clear();
+
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        // The Notion-created object was filed to the repo AND stamped both in the store and on the page.
+        Assert.True(File.Exists(TaskPath("ext-task")));
+        var seeded = LastActivityInBase("ext-task");
+        Assert.NotNull(seeded);
+        Assert.Equal(seeded, client.QueryDataSource("ds-1").Single(p => p.Id == "ext-task").Properties["last-activity"].Date!.Start);
+        Assert.DoesNotContain("last-activity", File.ReadAllText(TaskPath("ext-task")));
+        Assert.Equal(["ext-task"], client.LastActivityWrites);
+
+        // Idempotent: the now-repo-backed, unchanged object issues no further engine-computed write.
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        Assert.Equal(["ext-task"], client.LastActivityWrites);
+    }
+
+    [Fact]
+    public void Run_PageArchivedAndRepoFileDeletedBetweenTicks_DoesNotWedgeSync_SiblingKeepsSyncing()
+    {
+        // Finding F1: a page archived/trashed in Notion AND its repo file deleted in the same inter-tick
+        // window leaves base-present / repo-null / external-null — ReconcileEngine returns None, but the
+        // seeded last-activity survives. The engine-computed refresh must NOT fall back to the base id and
+        // enqueue a property write against the (now archived) page: real Notion 400s that write, throwing
+        // mid-Apply before the base advances, permanently wedging the type's sync with no self-heal.
+        SeedLastActivitySpine();
+        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nstatus: in-progress\n---\n\nBody one.");
+        Seed("project/sprint-tasks/task-2", "---\ntitle: Task 2\nstatus: in-progress\n---\n\nBody two.");
+
+        var client = new FakeNotionClient();
+        // Tick 1: both pages created, each with a seeded last-activity in the base snapshot.
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        var archivedPageId = PageByTitle("Task 1").Id;
+
+        // Inter-tick window: Task 1's page is archived in Notion AND its repo file is deleted; Task 2 gets a
+        // genuine repo edit, proving the batch still applies end-to-end for a sibling of the same type.
+        PageByTitle("Task 1").Archived = true;
+        File.Delete(TaskPath("task-1"));
+        File.WriteAllText(TaskPath("task-2"), "---\ntitle: Task 2\nstatus: done\n---\n\nBody two EDITED.");
+        client.LastActivityWrites.Clear();
+
+        // Two further ticks must not throw (the hardened fake 400s any property write on an archived page).
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        // No property write was ever attempted against the archived page — its state is untouched.
+        Assert.DoesNotContain(archivedPageId, client.LastActivityWrites);
+        Assert.Equal("in-progress", PageByTitle("Task 1").Properties["status"].Select!.Name);
+        Assert.True(PageByTitle("Task 1").Archived);
+
+        // The engine keeps functioning for the type: the sibling's edit propagated to Notion.
+        Assert.Equal("done", PageByTitle("Task 2").Properties["status"].Select!.Name);
     }
 
     [Fact]

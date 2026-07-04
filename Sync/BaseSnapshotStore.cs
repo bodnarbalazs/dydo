@@ -15,11 +15,14 @@ public sealed class BaseSnapshotStore
 {
     private readonly string _path;
     private readonly Dictionary<string, SyncSnapshot> _byLocalId;
+    private readonly Dictionary<string, string> _lastActivity;
 
     public BaseSnapshotStore(string filePath)
     {
         _path = filePath;
-        _byLocalId = Load(filePath).Objects.ToDictionary(o => o.LocalId);
+        var file = Load(filePath);
+        _byLocalId = file.Objects.ToDictionary(o => o.LocalId);
+        _lastActivity = file.LastActivity;
     }
 
     /// <summary>The shadow store path for an adapter under the gitignored .local/ tree.</summary>
@@ -39,12 +42,29 @@ public sealed class BaseSnapshotStore
         _byLocalId[doc.LocalId] = ToSnapshot(doc);
     }
 
-    public void Remove(string localId) => _byLocalId.Remove(localId);
+    public void Remove(string localId)
+    {
+        _byLocalId.Remove(localId);
+        _lastActivity.Remove(localId);
+    }
+
+    /// <summary>The engine-derived last-activity date for an object (DR 030 §3), or null before its first
+    /// genuine repo-side change is recorded.</summary>
+    public string? GetLastActivity(string localId) =>
+        _lastActivity.TryGetValue(localId, out var value) ? value : null;
+
+    /// <summary>Record an object's last genuine repo-side change (DR 030 §3). Kept out of the object's
+    /// field snapshot — and therefore out of frontmatter — so persisting it never provokes an edit loop.</summary>
+    public void SetLastActivity(string localId, string isoDate) => _lastActivity[localId] = isoDate;
 
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        var file = new SyncSnapshotFile { Objects = _byLocalId.Values.OrderBy(o => o.LocalId).ToList() };
+        var file = new SyncSnapshotFile
+        {
+            Objects = _byLocalId.Values.OrderBy(o => o.LocalId).ToList(),
+            LastActivity = _lastActivity.OrderBy(e => e.Key).ToDictionary(e => e.Key, e => e.Value),
+        };
         var json = JsonSerializer.Serialize(file, SyncSnapshotJsonContext.Default.SyncSnapshotFile);
         File.WriteAllText(_path, json);
     }

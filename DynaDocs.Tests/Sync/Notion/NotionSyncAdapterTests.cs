@@ -533,6 +533,37 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void EngineComputedProperty_WrittenOnUpsert_DroppedOnRead()
+    {
+        // last-activity flows one-way (DR 030 §3): the adapter writes it on an upsert from the engine's
+        // lookup — never from the doc's fields — and drops it on read so it can never enter frontmatter.
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["last-activity"] = "date" };
+        var engineSchema = new Dictionary<string, string> { ["last-activity"] = "date" };
+        var adapter = new NotionSyncAdapter(
+            client, "ds1", schema, engineComputedSchema: engineSchema,
+            engineComputedValue: id => id == "t" ? "2026-06-20" : null);
+
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "t", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Task" }],
+            Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["t"]);
+        Assert.Equal("2026-06-20", page.Properties["last-activity"].Date!.Start);
+
+        // On read the engine column is filtered out — it never reaches the neutral record's fields.
+        var record = adapter.ReadExternalState().Single();
+        Assert.Contains(record.Fields, f => f.Key == "title");
+        Assert.DoesNotContain(record.Fields, f => f.Key == "last-activity");
+    }
+
+    [Fact]
     public void RoundTrip_EngineThroughAdapter_PushesRepoDocToNotion()
     {
         // Wire the real SyncRunner through the Notion adapter + fake client end-to-end.

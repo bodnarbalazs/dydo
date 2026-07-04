@@ -43,4 +43,13 @@ public interface ISyncAdapter
     /// identity default.
     /// </summary>
     SyncDoc NormalizeFields(SyncDoc doc) => doc;
+
+    /// <summary>
+    /// Whether this view maintains engine-computed properties (last-activity, DR 030 §3) that the engine
+    /// writes one-way. When true, the runner enqueues an engine-computed refresh for objects a tick would
+    /// otherwise leave un-pushed (a no-op, an external-to-repo write, or an externally-created page), so a
+    /// seeded or drifted value still reaches the page (finding 1). Views without engine-computed properties
+    /// use the default, and the runner never enqueues a refresh they would ignore.
+    /// </summary>
+    bool WritesEngineComputed => false;
 }

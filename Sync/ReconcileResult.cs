@@ -26,5 +26,12 @@ public sealed class ReconcileResult
     /// <summary>Repo source path to delete (Delete action targeting the repo side).</summary>
     public string? RepoDelete { get; init; }
 
+    /// <summary>Whether the repo side genuinely changed since base this tick (DR 030 §3). True for a
+    /// repo-origin create and any reconcile where the repo content/fields moved (push, clean merge, or a
+    /// repo-edit-wins conflict); false for a purely external-driven write-to-repo, a delete, or a no-op —
+    /// the signal the engine bumps last-activity on, so an engine-performed external-to-repo write never
+    /// counts as activity.</summary>
+    public bool RepoChanged { get; init; }
+
     public bool Conflicted => Action == ReconcileAction.Conflict;
 }

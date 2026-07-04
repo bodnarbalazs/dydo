@@ -51,7 +51,12 @@ public sealed class NotionProvisioner
         // created — later in the run — so they are deferred entirely to the post-create pass (AddRollups),
         // never emitted here.
         var rollups = type.Properties.Where(p => p.Value.Type == "rollup").ToList();
-        var firstPass = type.Properties.Where(p => !selfRelations.Contains(p) && !rollups.Contains(p));
+        // A formula that reads a rollup or another formula (health/attention, DR 030 §2/§4) can only be
+        // created once those exist, so it is deferred to AddFormulas after the rollup pass. A leaf formula
+        // that reads only stored properties (e.g. done) stays in the single-pass create.
+        var deferredFormulas = DeferredFormulaNames(type);
+        var firstPass = type.Properties.Where(p =>
+            !selfRelations.Contains(p) && !rollups.Contains(p) && !deferredFormulas.Contains(p.Key));
 
         var db = _client.CreateDatabase(new NotionDatabaseCreateRequest
         {
@@ -100,6 +105,71 @@ public sealed class NotionProvisioner
             Properties = BuildSchema(rollups, EmptyResolved),
         });
     }
+
+    /// <summary>Whether this type carries formulas the post-create pass must PATCH on after the rollups they
+    /// (or the formulas they read) depend on exist.</summary>
+    public static bool HasDeferredFormulas(SyncObjectType type) => DeferredFormulaNames(type).Count > 0;
+
+    /// <summary>Post-rollup pass (DR 030 §2/§4): PATCH this type's deferred formulas — health, attention —
+    /// onto its data source now that the rollups and formulas they read exist. Emitted one at a time in
+    /// dependency order (a formula after the formulas it references), so each formula's referents are already
+    /// present when Notion validates its expression.</summary>
+    public void AddFormulas(SyncObjectType type)
+    {
+        foreach (var formula in OrderedDeferredFormulas(type))
+            _client.UpdateDataSource(_state[type.Type].DataSourceId, new NotionDataSourceUpdateRequest
+            {
+                Properties = BuildSchema([formula], EmptyResolved),
+            });
+    }
+
+    /// <summary>The names of formulas that must be deferred past the create: a formula that reads a rollup,
+    /// a self-relation, or any other formula. A formula reading only stored properties is created inline.</summary>
+    private static HashSet<string> DeferredFormulaNames(SyncObjectType type)
+    {
+        var late = type.Properties
+            .Where(p => p.Value.Type == "rollup" || (p.Value.Type == "relation" && p.Value.To == type.Type))
+            .Select(p => p.Key)
+            .Concat(type.Properties.Where(p => p.Value.Type == "formula").Select(p => p.Key))
+            .ToHashSet();
+
+        var deferred = new HashSet<string>();
+        foreach (var (name, def) in type.Properties)
+            if (def.Type == "formula" && def.Expression != null
+                && late.Any(other => other != name && Reads(def.Expression, other)))
+                deferred.Add(name);
+        return deferred;
+    }
+
+    /// <summary>The deferred formulas in dependency order — a formula after every deferred formula it reads —
+    /// so emitting them in sequence never forward-references a not-yet-created formula.</summary>
+    private static List<KeyValuePair<string, SyncPropertyDef>> OrderedDeferredFormulas(SyncObjectType type)
+    {
+        var deferred = DeferredFormulaNames(type);
+        var pending = type.Properties.Where(p => deferred.Contains(p.Key)).ToList();
+        var ordered = new List<KeyValuePair<string, SyncPropertyDef>>();
+        var placed = new HashSet<string>();
+        while (pending.Count > 0)
+        {
+            var ready = pending
+                .Where(p => !pending.Any(q => q.Key != p.Key && Reads(p.Value.Expression!, q.Key)))
+                .ToList();
+            // A residual cycle (should never occur in a valid model) would leave nothing ready — emit the
+            // remainder as-is rather than loop forever.
+            if (ready.Count == 0)
+                ready = pending;
+            foreach (var p in ready)
+            {
+                ordered.Add(p);
+                placed.Add(p.Key);
+            }
+            pending = pending.Where(p => !placed.Contains(p.Key)).ToList();
+        }
+        return ordered;
+    }
+
+    private static bool Reads(string expression, string propertyName) =>
+        expression.Contains($"prop(\"{propertyName}\")");
 
     private static readonly Dictionary<string, string> EmptyResolved = new();
 

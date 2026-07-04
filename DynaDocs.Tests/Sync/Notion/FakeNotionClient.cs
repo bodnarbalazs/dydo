@@ -35,6 +35,11 @@ public sealed class FakeNotionClient : INotionClient
     public List<string> AppendedTo { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
+    /// <summary>Page ids that received an engine-computed <c>last-activity</c> property write via
+    /// <see cref="UpdatePage"/> — one entry per write, so a test can assert the value lands AND that a
+    /// no-op tick issues no repeated write (DR 030 §3, finding 1).</summary>
+    public List<string> LastActivityWrites { get; } = [];
+
     /// <summary>When set, <see cref="CreatePage"/> throws once this many creates have succeeded — drives
     /// the partial-Apply-failure test (a create fails mid-batch).</summary>
     public int? FailCreateAfter { get; set; }
@@ -120,9 +125,17 @@ public sealed class FakeNotionClient : INotionClient
         if (FailUpdate)
             throw new NotionApiException(500, "simulated update failure");
         var page = _pages[pageId];
+        // Real Notion rejects a property write on an archived (in-trash) page with 400 — the page must be
+        // restored first. Archiving/unarchiving itself carries no Properties, so those still pass.
+        if (page.Archived && request.Properties != null)
+            throw new NotionApiException(400, $"Can't update properties of page '{pageId}': it is archived (in trash).");
         if (request.Properties != null)
+        {
+            if (request.Properties.ContainsKey("last-activity"))
+                LastActivityWrites.Add(pageId);
             foreach (var (k, v) in request.Properties)
                 page.Properties[k] = v;
+        }
         if (request.Archived == true)
             page.Archived = true;
         return page;

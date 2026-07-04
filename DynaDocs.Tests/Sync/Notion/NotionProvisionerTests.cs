@@ -150,6 +150,61 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
+    public void Create_DefersFormulasThatReadRollupsOrOtherFormulas_KeepsLeafFormulasInline()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        provisioner.Create(_model.Object("SprintTask"), "parent-page",
+            new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
+
+        var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
+        // done + stale read only stored props, so they are created inline; the engine-owned last-activity
+        // date column is created too.
+        Assert.NotNull(props["done"].Formula);
+        Assert.NotNull(props["stale"].Formula);
+        Assert.NotNull(props["last-activity"].Date);
+        // attention reads the stale formula, so it is deferred past the create.
+        Assert.False(props.ContainsKey("attention"));
+    }
+
+    [Fact]
+    public void AddFormulas_PatchesDeferredFormulas_InDependencyOrder()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Sprint"), "parent-page",
+            new Dictionary<string, string> { ["Campaign"] = "ds-campaign" });
+        provisioner.AddRollups(_model.Object("Sprint"));
+        client.DataSourceUpdates.Clear();
+
+        Assert.True(NotionProvisioner.HasDeferredFormulas(_model.Object("Sprint")));
+        provisioner.AddFormulas(_model.Object("Sprint"));
+
+        // health (reads rollups) is patched before attention (reads health).
+        var formulaPatches = client.DataSourceUpdates
+            .Where(u => u.Request.Properties.Keys.Any(k => k is "health" or "attention"))
+            .Select(u => u.Request.Properties.Keys.Single())
+            .ToList();
+        Assert.Equal(["health", "attention"], formulaPatches);
+        var health = client.DataSourceUpdates.Single(u => u.Request.Properties.ContainsKey("health"));
+        Assert.Contains("On Track", health.Request.Properties["health"].Formula!.Expression);
+    }
+
+    [Fact]
+    public void Create_EngineComputedDate_IsProvisionedAsAPlainDateColumn()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+
+        provisioner.Create(_model.Object("Issue"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
+        Assert.NotNull(props["last-activity"].Date);
+    }
+
+    [Fact]
     public void AddRollups_NoRollupProperties_IsNoOp()
     {
         var client = new FakeNotionClient();

@@ -8,5 +8,9 @@ public sealed class SyncChangeSet
     /// <summary>External ids to remove from the external view.</summary>
     public List<string> Deletes { get; } = [];
 
-    public bool IsEmpty => Upserts.Count == 0 && Deletes.Count == 0;
+    /// <summary>Engine-computed-only property writes onto existing pages that no upsert already covers
+    /// (finding 1, DR 030 §3) — carries no canonical fields and never rewrites the body.</summary>
+    public List<SyncEngineComputedRefresh> EngineComputedRefreshes { get; } = [];
+
+    public bool IsEmpty => Upserts.Count == 0 && Deletes.Count == 0 && EngineComputedRefreshes.Count == 0;
 }

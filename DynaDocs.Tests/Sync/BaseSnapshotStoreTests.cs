@@ -85,6 +85,36 @@ public class BaseSnapshotStoreTests : IDisposable
     }
 
     [Fact]
+    public void LastActivity_SetSaveLoad_RoundTrips_AndIsClearedOnRemove()
+    {
+        var path = Path.Combine(_dir, "snapshot.json");
+        var store = new BaseSnapshotStore(path);
+        store.Set(Doc("t1", "ext-1", "body"));
+        store.SetLastActivity("t1", "2026-06-20");
+        store.Save();
+
+        var reloaded = new BaseSnapshotStore(path);
+        Assert.Equal("2026-06-20", reloaded.GetLastActivity("t1"));
+        Assert.Null(reloaded.GetLastActivity("nope"));
+
+        reloaded.Remove("t1");
+        reloaded.Save();
+        Assert.Null(new BaseSnapshotStore(path).GetLastActivity("t1"));
+    }
+
+    [Fact]
+    public void LastActivity_MissingFromOlderFile_LoadsAsEmpty()
+    {
+        // A pre-DR-030 snapshot file has no LastActivity map; it must still load, with last-activity absent.
+        var path = Path.Combine(_dir, "snapshot.json");
+        File.WriteAllText(path, """{ "objects": [ { "localId": "t1", "fields": [], "body": "" } ] }""");
+
+        var store = new BaseSnapshotStore(path);
+        Assert.NotNull(store.Get("t1"));
+        Assert.Null(store.GetLastActivity("t1"));
+    }
+
+    [Fact]
     public void LocalIds_ListsAllObjects()
     {
         var store = new BaseSnapshotStore(Path.Combine(_dir, "snapshot.json"));

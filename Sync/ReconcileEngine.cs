@@ -66,7 +66,8 @@ public static class ReconcileEngine
                     ExternalDelete = externalId,
                 };
 
-            // Resurrect the repo file from the surviving external edits.
+            // Resurrect the repo file from the surviving external edits — an external-driven write, not
+            // repo activity.
             var survivor = WithExternalId(external!, externalId);
             return new ReconcileResult
             {
@@ -95,6 +96,7 @@ public static class ReconcileEngine
             Action = ReconcileAction.Conflict,
             ExternalWrite = resurrected,
             NewBase = resurrected,
+            RepoChanged = true,
         };
     }
 
@@ -115,6 +117,7 @@ public static class ReconcileEngine
                 Action = ReconcileAction.PushToExternal,
                 ExternalWrite = WithExternalId(repo, externalId),
                 NewBase = WithExternalId(repo, externalId),
+                RepoChanged = true,
             };
 
         if (!repoChanged && extChanged)
@@ -155,6 +158,7 @@ public static class ReconcileEngine
             RepoWrite = merged,
             ExternalWrite = merged,
             NewBase = merged,
+            RepoChanged = true,
         };
     }
 
@@ -213,6 +217,7 @@ public static class ReconcileEngine
         Action = ReconcileAction.Create,
         ExternalWrite = repo,
         NewBase = fieldNorm(repo),
+        RepoChanged = true,
     };
 
     private static ReconcileResult CreateToRepo(SyncDoc external) => new()

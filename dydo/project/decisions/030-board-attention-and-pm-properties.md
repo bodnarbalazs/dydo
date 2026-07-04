@@ -130,6 +130,29 @@ Release/Issue slice lands; same coordination contract). Additional surface beyon
 - Issue status set includes `triage`; Issue gains work-type, resolution, fix-release; SprintTask
   gains work-type, needs-human.
 
+### Implementation notes (wave 3)
+
+Two honest deviations from §2's health design, landed while wiring Release's part-3 inputs:
+
+- **(a) "blocked / needs-human children LINGER → Off Track" is downgraded to At Risk** on Sprint,
+  Campaign, and Release. §2 makes a child blocked or waiting on a human *for more than N days* an
+  Off-Track signal, but linger-**duration** is not computable in a Notion formula — a formula sees
+  only the current board state, never how long a flag has been set (no historical state, and
+  `last-activity` tracks repo edits, not flag age). The honest fallback: a live blocked/needs-human
+  child raises **At Risk** (via the `attention-count` and `needs-human` rollups), never Off Track.
+  Off Track stays reserved for the two signals a formula *can* prove: past-end-date-and-not-done, and
+  (Sprint only) a failed gate verdict.
+- **(b) Release earns real date inputs via formula projection.** Release could not roll up Campaign's
+  `start`/`end` directly — those are themselves rollups, and Notion rejects a rollup-of-rollup — so
+  Campaign now exposes view-only formula projections `start-date` / `end-date` (`prop("start")` /
+  `prop("end")`), and Release rolls those up with `earliest_date` / `latest_date`. This is the same
+  FORMULA-PROJECTION workaround already proven for the numeric `needs-human-count`, extended to dates:
+  a Notion formula 2.0 returns a date type, and a rollup aggregates a date-returning formula with the
+  earliest/latest-date functions. The projection gives Release an honest earliest-start / latest-end,
+  so its health can now return **Off Track** on past-end-date-and-not-done (previously impossible —
+  Release carried no dates, so its health could never leave On Track / At Risk). Release also gains a
+  `needs-human` rollup (summing Campaign's `needs-human-count` projection) feeding the At Risk branch.
+
 ## Status
 
 Accepted (Balazs, 2026-07-03). Design record; implementation sequenced with the DR 029 sprint.

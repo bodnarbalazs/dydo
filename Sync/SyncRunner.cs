@@ -91,7 +91,9 @@ public sealed class SyncRunner
 
             var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields);
             results.Add(result);
+            RecordActivity(result, repo);
             ApplyResult(localId, result, repo, changes);
+            EnqueueEngineComputedRefresh(localId, result, external, changes);
         }
 
         // Apply is non-atomic; the base advance is deferred until Apply reports back so a mid-batch
@@ -149,6 +151,54 @@ public sealed class SyncRunner
                     break;
             }
         }
+    }
+
+    /// <summary>Maintain the base snapshot's last-activity for a repo-backed object (DR 030 §3), timestamped
+    /// from the repo file's mtime — the moment the change landed on disk — captured BEFORE Apply so it
+    /// reflects the human/agent edit, not the engine's own subsequent rewrite of a merged file.
+    /// <para>Two cases stamp it: a genuine repo-side change (<see cref="ReconcileResult.RepoChanged"/>), which
+    /// bumps it every time; and the FIRST sight of a doc the store has never stamped — an object provisioned
+    /// before this slice, one new this tick, or one created FROM the external side (its repo file does not
+    /// exist yet, so the effective doc is <see cref="ReconcileResult.RepoWrite"/> and the stamp falls back to
+    /// now) — which is SEEDED even on a no-op tick so an already-stalled loop can still go stale rather than
+    /// reading null forever. An engine-performed external-to-repo write (RepoChanged false) on an object that
+    /// already has an activity date is deliberately left untouched, so a mass sync never falsifies activity.
+    /// Seeding writes only engine-internal store state — never the doc's fields — so a no-op tick stays a
+    /// no-op on both sides and can never provoke an edit loop.</para></summary>
+    private void RecordActivity(ReconcileResult result, SyncDoc? repo)
+    {
+        var doc = repo ?? result.RepoWrite;
+        if (doc == null)
+            return;
+        if (!result.RepoChanged && _base.GetLastActivity(result.LocalId) != null)
+            return;
+        var mtime = !string.IsNullOrEmpty(doc.SourcePath) && File.Exists(doc.SourcePath)
+            ? File.GetLastWriteTimeUtc(doc.SourcePath)
+            : DateTime.UtcNow;
+        _base.SetLastActivity(result.LocalId, mtime.ToString("yyyy-MM-dd"));
+    }
+
+    /// <summary>Push a seeded or drifted engine-computed value onto its page when this tick's action carried
+    /// no upsert to ride along with (finding 1, DR 030 §3). A create-to-external or any push/merge already
+    /// writes engine-computed properties via its upsert, so those are skipped here; a delete is skipped so a
+    /// page about to be archived is never stamped. For every other case with an external page and a recorded
+    /// last-activity, a refresh is enqueued — the adapter then writes only if the page is not already in sync,
+    /// so repeated no-op ticks issue no write. Gated on the adapter actually maintaining engine-computed
+    /// properties, so a plain view is never handed a refresh it would ignore.
+    /// <para>The external id is taken ONLY from this tick's external read, never from the base snapshot: a
+    /// refresh is legitimate only against a page present in the current read. Falling back to the base id
+    /// would enqueue a property write against a page that vanished from the read — one archived/trashed
+    /// between ticks (repo file also deleted, so ReconcileEngine returns None and the seeded last-activity
+    /// survives). Real Notion rejects a property write on an archived page with 400, throwing mid-Apply
+    /// before the base advances, permanently wedging the type's sync with no self-heal (finding F1).</para></summary>
+    private void EnqueueEngineComputedRefresh(string localId, ReconcileResult result, SyncDoc? external, SyncChangeSet changes)
+    {
+        if (!_adapter.WritesEngineComputed || result.ExternalWrite != null || result.Action == ReconcileAction.Delete)
+            return;
+        var externalId = external?.ExternalId;
+        if (externalId == null || _base.GetLastActivity(localId) == null)
+            return;
+        changes.EngineComputedRefreshes.Add(new SyncEngineComputedRefresh { LocalId = localId, ExternalId = externalId });
     }
 
     private void ApplyResult(string localId, ReconcileResult result, SyncDoc? repo, SyncChangeSet changes)

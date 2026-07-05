@@ -153,6 +153,23 @@ Two honest deviations from §2's health design, landed while wiring Release's pa
   Release carried no dates, so its health could never leave On Track / At Risk). Release also gains a
   `needs-human` rollup (summing Campaign's `needs-human-count` projection) feeding the At Risk branch.
 
+Two further deviations, recorded in the docs-truth wave — runtime wiring rather than health design:
+
+- **(c) The §1 escalation-path flag-write did not land in `run-sprint.js`.** §1's third row has the
+  escalation paths (raise-hand, 5-round review cap, gate dispute) writing `needs-human` directly, and
+  the wave-3 consequences list a workflow flag-write. That mechanism does not exist: the workflow
+  sandbox has no exec facility, so `run-sprint.js` cannot write the flag. What landed instead is the
+  Tier-1 orchestrator's own **Stop-hook detection** — when the orchestrator stops to consult the human
+  its turn-end sets its `needs-human` flag exactly as §1 row 2 describes — plus a sticky explicit
+  **`dydo hand raise --agent`** an orchestrator can issue (wave 4b). The full runtime-to-board wiring
+  (`needs-human` mirrored into sprint-tasks / issues docs, a machine writer for the Sprint
+  `gate-result` property, and the escalation-to-board writes) is **deferred to the upcoming
+  runtime-board-bridge sprint**.
+- **(d) `triage` exists as the Issue status set's first option, but agent-filed issues do not yet
+  default to it.** §5 makes `triage` "the default landing state for agent-filed issues"; the option is
+  provisioned (DR 029 Implementation notes (e) landed status set), but no writer sets it on creation,
+  so agent-filed issues do not land in `triage` yet. The defaulting writer is **bridge-sprint scope** alongside (c).
+
 ## Status
 
 Accepted (Balazs, 2026-07-03). Design record; implementation sequenced with the DR 029 sprint.

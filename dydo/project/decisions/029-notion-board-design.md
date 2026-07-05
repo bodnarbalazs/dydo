@@ -159,6 +159,25 @@ of the same files. Known gaps the implementation must cover:
   (+ `--prune`).
 - The priority rename (`P0–P3` → Urgent/High/Normal/Low) is a data migration for existing frontmatter.
 
+## Implementation notes
+
+Settled deviations from the design above, recorded as the board landed (the inquisition confirmed each):
+
+- **(a) `--prune` landed on `sync`, not a `provision` subcommand.** §6 spells the deliberate revert
+  as `dydo notion provision --prune`, but there is no `provision` subcommand — provisioning happens
+  inside `sync`. The flag landed as **`dydo notion sync --prune`**.
+- **(b) Type icons landed as Release 🏷️ and Issue 🐞**, not the §3 recommendation of 📦 / 🐛. These
+  came in on Brian's Release/Issue slice; kept as landed rather than reworked — a cosmetic choice not
+  worth a follow-up edit.
+- **(c) Sprint dates landed as two independent date properties (`start`, `end`)**, not the §4 "date
+  range" single property. Notion timeline views accept two separate date properties, and separate
+  properties avoided all range-mapping machinery in the mapper and provisioner.
+- **(d) Issue carries `severity`, not `priority`.** §2 says the Urgent/High/Normal/Low priority scheme
+  is "reused identically … on Issue". That clause was superseded by aligning Issue with its landed
+  model and the issue-CLI corpus: Issue gets a **`severity`** select (`critical` / `high` / `medium` /
+  `low`) and **no `priority` property**. Priority remains on Release, Campaign, and SprintTask.
+- **(e) Issue status set is `triage` / `open` / `resolved`** — there is no `backlog` option on Issue.
+
 ## Status
 
 Accepted (Balazs green-lit 2026-07-03). Design only — no sync-model/mapper/provisioner edits under

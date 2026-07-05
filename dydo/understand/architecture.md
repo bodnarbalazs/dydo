@@ -54,6 +54,8 @@ The guard is the enforcement backbone — a staged access model checked on every
 
 Additional layers: off-limits patterns (secrets, credentials) block all agents globally; dangerous bash patterns (fork bombs, `rm -rf /`) are always blocked; must-read enforcement blocks writes until critical docs are read.
 
+`dydo init` installs a `Stop` hook alongside the `PreToolUse` hook: turn-end while the agent is still working with an in-flight task sets the agent's `needs-human` flag (session idle, waiting on a human — [Decision 030](../project/decisions/030-board-attention-and-pm-properties.md) §1).
+
 ---
 
 ## Role System
@@ -115,6 +117,7 @@ A background monitoring process that handles lifecycle events for dispatched age
 - **Auto-close**: When `--auto-close` is set on dispatch, the watchdog polls the target agent's state every 10 seconds. When the agent releases, the watchdog closes its terminal.
 - **Stale-dispatch reclaim**: Returns agents stuck in `Dispatched` (launch never produced a live session) to a re-dispatchable state, bridging launch-failed back to dispatchable.
 - **Orphan detection**: Identifies agents that are stuck in Working state without an active process (parent PID liveness checks).
+- **`needs-human` sweep**: Each tick reconciles derived `needs-human` flags against ground truth (session stopped? task still held?) and clears any flag whose cause disappeared; explicit raises are sticky (wave 4b).
 - **Resume outcome**: For each crash-resume episode (see [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md)), the watchdog log records a `resume_outcome` event at the terminal state — `outcome` (`succeeded` | `failed` | `gave_up`), `attempts`, `elapsed_seconds`, and `reason` (`same_session_reclaim` | `launched_pid_dead` | `cap_reached`). `SaturateResumeAttempts` clears `LastResumeLaunchedAt` on termination so each episode emits exactly once. Paired with `recovery_kind` on the corresponding Claim audit event, the two enable a 4-bucket categorisation of recoveries (auto succeeded, auto failed, not attempted, manual). Enriched in v1.4.6 (commit `036b88c`).
 
 The watchdog runs as a background process spawned by the dispatch command. It's stateless — all state is derived from the filesystem (agent state files, workspace markers).

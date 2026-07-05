@@ -11,9 +11,11 @@ using DynaDocs.Sync.Notion.Dtos;
 /// → {databaseId, dataSourceId}) is persisted under the gitignored <c>dydo/_system/.local/notion/</c>
 /// tree, mirroring <c>BaseSnapshotStore</c>'s source-generated JSON pattern. A recorded type is reused
 /// only if its database still exists and still owns the recorded data source; otherwise it is created.
-/// Databases are created in dependency order, so a child's relation can reference its parent's already
-/// resolved data source id in a single create — no second PATCH pass. Generic over the model: no
-/// object-type names appear here.
+/// Databases are created in dependency order, so a child's relation to a <em>parent</em> resolves in the
+/// single create. Edges that cannot exist at create time run a post-create PATCH pass: self-relations
+/// (the type's own data source id is not known until it is created), rollups (they read a reverse relation
+/// that exists only after the child's dual-property relation), and formulas that read a rollup or another
+/// formula. Generic over the model: no object-type names appear here.
 /// </summary>
 public sealed class NotionProvisioner
 {

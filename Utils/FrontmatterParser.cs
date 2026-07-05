@@ -111,11 +111,20 @@ public static class FrontmatterParser
         var at = content.IndexOf("\n---", 3, StringComparison.Ordinal);
         while (at >= 0)
         {
-            var after = at + 4;
-            if (after >= content.Length || content[after] is '\n' or '\r')
+            if (IsDelimiterLineEnd(content, at + 4))
                 return at + 1;
-            at = content.IndexOf("\n---", after, StringComparison.Ordinal);
+            at = content.IndexOf("\n---", at + 4, StringComparison.Ordinal);
         }
         return -1;
+    }
+
+    /// <summary>Whether the closing <c>---</c> is the whole line: only trailing whitespace ("---  \n") may follow
+    /// before the line end or end-of-content, so a previously-parseable file is not silently degraded to
+    /// frontmatter-less (finding 7), while a "---" inside a value or a longer run is not a terminator.</summary>
+    private static bool IsDelimiterLineEnd(string content, int index)
+    {
+        while (index < content.Length && content[index] is ' ' or '\t')
+            index++;
+        return index >= content.Length || content[index] is '\n' or '\r';
     }
 }

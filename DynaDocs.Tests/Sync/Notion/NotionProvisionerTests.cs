@@ -385,4 +385,68 @@ public class NotionProvisionerTests : IDisposable
         var reloaded = new NotionProvisioner(freshClient, _statePath);
         Assert.Null(reloaded.Lookup("Campaign"));
     }
+
+    [Fact]
+    public void Lookup_TransientProbeFailure_Propagates_NoReprovisionNoReuse()
+    {
+        // Finding 1 (SEVERE). A recorded type's validity probe hitting a TRANSIENT Notion failure (429 rate
+        // limit, or a 5xx) must NOT be misread as a deleted database — that would re-create an empty data
+        // source and the same tick mass-delete every repo doc pointing at the now-absent pages. The exception
+        // must propagate so the whole tick aborts before any create or delete.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
+        provisioner.Save();
+
+        var reloaded = new NotionProvisioner(client, _statePath);
+        var createsBefore = client.CreatedDatabases.Count;
+        client.FailRetrieveDatabase = new NotionApiException(429, "rate_limited");
+        var thrown = Assert.Throws<NotionApiException>(() => reloaded.Lookup("Campaign"));
+        Assert.Equal(429, thrown.StatusCode);
+        Assert.Equal(createsBefore, client.CreatedDatabases.Count); // the aborted probe re-created nothing
+    }
+
+    [Fact]
+    public void Lookup_ServerErrorProbeFailure_Propagates()
+    {
+        // A 5xx during the probe is equally transient — it must abort the tick, never re-provision.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
+        provisioner.Save();
+
+        var reloaded = new NotionProvisioner(client, _statePath);
+        client.FailRetrieveDatabase = new NotionApiException(502, "bad_gateway");
+        Assert.Throws<NotionApiException>(() => reloaded.Lookup("Campaign"));
+    }
+
+    [Fact]
+    public void Lookup_DefinitiveNotFound_ReprovisionsAsToday()
+    {
+        // A DEFINITIVE not-found (HTTP 404 / object_not_found) is a genuinely deleted database: the record is
+        // not reused, so the type re-provisions — the behaviour preserved from before finding 1's fix.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
+        provisioner.Save();
+
+        var reloaded = new NotionProvisioner(client, _statePath);
+        client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
+        Assert.Null(reloaded.Lookup("Campaign"));
+    }
+
+    [Fact]
+    public void Lookup_ObjectNotFoundCodeWithNon404_TreatedAsGone()
+    {
+        // Notion surfaces object_not_found in the error body; the code — not only the raw 404 — marks a gone
+        // database, so it re-provisions rather than aborting.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
+        provisioner.Save();
+
+        var reloaded = new NotionProvisioner(client, _statePath);
+        client.FailRetrieveDatabase = new NotionApiException(400, "{\"object\":\"error\",\"code\":\"object_not_found\"}");
+        Assert.Null(reloaded.Lookup("Campaign"));
+    }
 }

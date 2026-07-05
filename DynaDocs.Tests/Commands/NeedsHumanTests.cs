@@ -448,4 +448,101 @@ public class NeedsHumanTests : IDisposable
 
         Assert.False(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
     }
+
+    [Fact]
+    public void SetRole_ExplicitRaiseSurvivesTaskSwitch_MirrorFollowsToNewTask()
+    {
+        // Finding 5: an explicit `dydo hand raise` must survive a concurrent SetRole task-switch (never clobbered
+        // back to false), and the mirror-move must be decided from the state re-read UNDER the lock — so the raise
+        // moves to the NEW task file rather than being stranded in the old one where no sweep reaches.
+        WriteState("Adele", status: "working", task: "old-task", needsHuman: false, sessionId: "sess-1");
+        var oldTaskPath = WriteTaskFile("old-task");
+        var newTaskPath = WriteTaskFile("new-task");
+
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit); // the raise, mirrored to old-task
+        Assert.True(_registry.SetRole("sess-1", "code-writer", "new-task", out var err), err);
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.True(state.NeedsHuman);                                        // the raise survived the switch
+        Assert.Equal(NeedsHumanSource.Explicit, state.NeedsHumanSource);      // and stayed explicit
+        Assert.Contains("needs-human: false", File.ReadAllText(oldTaskPath)); // old mirror cleared, not stranded
+        Assert.Contains("needs-human: true", File.ReadAllText(newTaskPath));  // mirror followed to the new task
+    }
+
+    [Fact]
+    public void SetRole_UnderLockContention_FailsCleanly_WritesNothing()
+    {
+        // Finding 5: SetRole's read-modify-write now runs under the per-agent lock. With the lock held its write
+        // must not proceed unlocked — it fails cleanly and creates no task file, so a concurrent raise cannot be
+        // clobbered by a stale-snapshot write.
+        WriteState("Adele", status: "working", task: "null", needsHuman: false, sessionId: "sess-1");
+
+        var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
+        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
+        using (new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        {
+            var ok = _registry.SetRole("sess-1", "code-writer", "contended-task", out var err);
+            Assert.False(ok);
+            Assert.NotEmpty(err);
+        }
+
+        Assert.False(File.Exists(Path.Combine(_dydoDir, "project", "tasks", "contended-task.md")));
+        Assert.Null(_registry.GetAgentState("Adele")!.Task); // task never advanced to the contended one
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_UnderLockContention_SkipsWrite()
+    {
+        // Finding 5: SetDispatchMetadata's read-modify-write is under the per-agent lock too. It bounded-retries
+        // (3x / 50 ms) to ride out brief contention, but with the lock held for the whole call the retries all
+        // fail and the write is skipped (never performed unlocked), so it cannot clobber a concurrent raise.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-1");
+
+        var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
+        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
+        using (new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            _registry.SetDispatchMetadata("Adele", "win-contended", true);
+
+        Assert.Null(_registry.GetAgentState("Adele")!.WindowId); // the contended write did not land
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_ContentionClearingWithinRetryWindow_LandsWrite()
+    {
+        // Finding 5: brief contention — a contender (e.g. a watchdog cleanup tick) releasing the per-agent
+        // lock within SetDispatchMetadata's bounded-retry window (3x / 50 ms) — is ridden out, so windowId +
+        // autoClose land. Under the old single fail-fast attempt this write was silently lost, orphaning an
+        // --auto-close terminal that never closed.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-1");
+
+        var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
+        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
+        var contender = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+
+        // Release the lock after one retry interval so a later attempt inside the window acquires it.
+        var releaser = new Thread(() => { Thread.Sleep(30); contender.Dispose(); });
+        releaser.Start();
+
+        _registry.SetDispatchMetadata("Adele", "win-late", true);
+        releaser.Join();
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.Equal("win-late", state.WindowId); // the write rode out the transient contention
+        Assert.True(state.AutoClose);
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_PreservesConcurrentExplicitRaise()
+    {
+        // Finding 5: SetDispatchMetadata must not clobber an explicit needs-human flag — its locked read-modify-
+        // write preserves the flag committed by a prior raise.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-1");
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
+
+        _registry.SetDispatchMetadata("Adele", "win-1", true);
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.True(state.NeedsHuman);
+        Assert.Equal("win-1", state.WindowId);
+    }
 }

@@ -25,11 +25,11 @@ public static class NotionSpineSync
             : $"notion sync: provisioning + reconciling {types.Count} object type(s) under parent page {parentPageId}");
 
         var dataSourceIds = Provision(provisioner, types, parentPageId, dryRun, output);
+        // No provisioner.Save() here: persistence now lives inside Create and MarkPostPassDone, each of which
+        // writes the instant its fact is established (wave 5). A standalone Save would only re-serialize identical
+        // state.
         if (!dryRun)
-        {
-            provisioner.Save();
             CheckDrift(client, model, types, dataSourceIds, prune, output);
-        }
 
         Reconcile(client, dydoRoot, types, dataSourceIds, dryRun, output);
     }

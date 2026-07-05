@@ -840,8 +840,9 @@ public class NotionSpineSyncTests : IDisposable
     {
         // Finding 1b (DeleteOne path, spine-level). task-x carries a resolvable blocker (task-a) plus a pending,
         // un-pushed entry (task-b, created the same tick). Its Notion page is then archived. The delete-unchanged
-        // check compares RAW fields, so the pending entry counts as a change: the file must NOT be silently
-        // deleted — instead the page is resurrected and the pending entry preserved.
+        // branch guards with HasUnpushedRelation — the repo's raw entries are compared against the base's recorded
+        // ones, so the pending entry counts as un-pushed work: the file must NOT be silently deleted — instead the
+        // page is resurrected and the pending entry preserved.
         SeedSelfRelationSpine();
         Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
         Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
@@ -1199,5 +1200,78 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Contains("reuse data source", text);
         Assert.DoesNotContain("would add rollup", text);
         Assert.DoesNotContain("would add formula", text);
+    }
+
+    [Fact]
+    public void Run_AllUnresolvableRelation_RealEmptyRelationEcho_ConvergesNoChurn_ThenPushesCleanlyOnResolve()
+    {
+        // Finding 6, spine-level with the REALISTIC Notion echo. task-x is blocked by task-later, which does not
+        // exist yet — so its relation is all-unresolvable and the adapter omits it on create. Real Notion returns
+        // every schema property, so task-x's page reads blocked-by back as an EMPTY relation (EchoEmptyRelations).
+        // The normalized base never recorded that key, so the empty echo must be treated as absent: no repeated
+        // WriteToRepo churn while task-later is missing, and a CLEAN push — never a phantom conflict — once it
+        // resolves.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
+
+        var client = new FakeNotionClient { EchoEmptyRelations = true };
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-x
+
+        var xPath = TaskPath("task-x");
+        var afterCreate = File.ReadAllText(xPath);
+
+        // Several no-op ticks while task-later is still missing: the empty-relation echo must not churn the file
+        // (no phantom `blocked-by:` clear written back) and must report no conflict.
+        for (var i = 0; i < 3; i++)
+        {
+            var output = new StringWriter();
+            NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+            Assert.DoesNotContain("conflict", output.ToString());
+            Assert.Equal(afterCreate, File.ReadAllText(xPath)); // byte-identical: no WriteToRepo churn
+        }
+
+        // task-later appears; the blocker now resolves. It must push cleanly, no phantom merge conflict.
+        Seed("project/sprint-tasks/task-later", "---\ntitle: Later\n---\n\nLater body.");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create task-later
+        var resolveOutput = new StringWriter();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, resolveOutput); // task-later resolves
+
+        Assert.DoesNotContain("conflict", resolveOutput.ToString());
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        Assert.Equal(PageByTitle("Later").Id, PageByTitle("X").Properties["blocked-by"].Relation!.Single().Id);
+        Assert.Contains("blocked-by: task-later", File.ReadAllText(xPath)); // repo value never blanked
+    }
+
+    [Fact]
+    public void Run_ExternalPageArchived_RepoHasAllUnresolvableRelation_ResurrectsNotDeleted_ProductionChain()
+    {
+        // Finding 10 (COVERAGE), against the PRODUCTION NotionSyncAdapter chain — the real NormalizeFields and its
+        // IsRelationKey empty-probe, not a test-double normalizer. task-x carries an all-unresolvable relation
+        // (blocked-by: task-ghost, never created) that the normalizer drops WHOLE. When its page is archived, the
+        // all-unresolvable delete guard must recognise the dropped relation as un-pushed work (the empty-value
+        // probe proves blocked-by is a relation, told apart from a local-only key) and resurrect the page rather
+        // than silently deleting the file and losing task-ghost forever.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-ghost\n---\n\nX body.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create task-x, blocker omitted
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        var oldXId = PageByTitle("X").Id;
+
+        // The board archives task-x's page; task-x's repo file is untouched but carries the all-unresolvable relation.
+        PageByTitle("X").Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var xPath = TaskPath("task-x");
+        Assert.True(File.Exists(xPath)); // not silently deleted
+        Assert.Contains("blocked-by: task-ghost", File.ReadAllText(xPath));
+        var live = client.QueryDataSource("ds-1").Where(p => !p.Archived && NotionRichText.Flatten(p.Properties["title"].Title) == "X").ToList();
+        var resurrected = Assert.Single(live);
+        Assert.NotEqual(oldXId, resurrected.Id); // resurrected as a fresh page, not the archived one
     }
 }

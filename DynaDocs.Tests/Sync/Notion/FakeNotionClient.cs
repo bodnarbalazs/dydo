@@ -53,8 +53,19 @@ public sealed class FakeNotionClient : INotionClient
     /// crash proving per-type MarkPostPassDone incremental persistence (finding 10).</summary>
     public int? FailUpdateDataSourceAfter { get; set; }
 
+    /// <summary>When set, <see cref="RetrieveDatabase"/> throws this exception — drives the provisioner
+    /// validity-probe tests: a transient 429/5xx must abort the tick (never re-provision), while a
+    /// definitive 404/object_not_found re-provisions as a genuinely deleted database (finding 1).</summary>
+    public NotionApiException? FailRetrieveDatabase { get; set; }
+
     /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
     public bool FailAppend { get; set; }
+
+    /// <summary>When true, <see cref="QueryDataSource"/> echoes every schema RELATION property a page lacks as
+    /// an EMPTY relation — exactly as real Notion does (it returns all schema properties, so an all-unresolvable
+    /// relation reads back as an empty value, not an absent key). Off by default so existing tests are unaffected;
+    /// the empty-relation convergence tests turn it on to reproduce the real echo (finding 6).</summary>
+    public bool EchoEmptyRelations { get; set; }
 
     /// <summary>When true, <see cref="UpdatePage"/> throws — drives the Apply-failure guards: a non-create
     /// push (property update) and a delete (archive) both go through UpdatePage, so this pins that the base
@@ -76,8 +87,12 @@ public sealed class FakeNotionClient : INotionClient
         return page;
     }
 
-    public NotionDatabase RetrieveDatabase(string databaseId) =>
-        Databases.TryGetValue(databaseId, out var db) ? db : new NotionDatabase { Id = databaseId };
+    public NotionDatabase RetrieveDatabase(string databaseId)
+    {
+        if (FailRetrieveDatabase is { } ex)
+            throw ex;
+        return Databases.TryGetValue(databaseId, out var db) ? db : new NotionDatabase { Id = databaseId };
+    }
 
     public NotionDataSource RetrieveDataSource(string dataSourceId) => DataSourceSchema(dataSourceId);
 
@@ -117,8 +132,16 @@ public sealed class FakeNotionClient : INotionClient
         }
     }
 
-    public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) =>
-        _pages.Values.Where(p => _pageDataSource[p.Id] == dataSourceId).ToList();
+    public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
+    {
+        var pages = _pages.Values.Where(p => _pageDataSource[p.Id] == dataSourceId).ToList();
+        if (EchoEmptyRelations && _dataSources.TryGetValue(dataSourceId, out var ds))
+            foreach (var page in pages)
+                foreach (var (name, schema) in ds.Properties)
+                    if (schema.Relation != null && !page.Properties.ContainsKey(name))
+                        page.Properties[name] = new NotionPropertyValue { Type = "relation", Relation = [] };
+        return pages;
+    }
 
     public NotionPage CreatePage(NotionPageCreateRequest request)
     {

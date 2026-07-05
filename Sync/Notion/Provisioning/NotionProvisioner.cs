@@ -278,18 +278,28 @@ public sealed class NotionProvisioner
     }
 
     /// <summary>A recorded type is valid only if its database still exists and still owns the recorded
-    /// data source — so a deleted or replaced database is detected and re-provisioned.</summary>
+    /// data source — so a deleted or replaced database is detected and re-provisioned. Only a DEFINITIVE
+    /// not-found (HTTP 404 / Notion <c>object_not_found</c>) counts as gone: a transient probe failure
+    /// (429 rate-limit, 5xx) must propagate and abort the tick, never be misread as a deleted database —
+    /// else the provisioner re-creates an empty data source and the same tick mass-deletes every repo doc
+    /// whose base points at the now-absent pages (finding 1).</summary>
     private bool StillValid(NotionProvisionedType record)
     {
         try
         {
             return _client.RetrieveDatabase(record.DatabaseId).DataSources.Any(d => d.Id == record.DataSourceId);
         }
-        catch (NotionApiException)
+        catch (NotionApiException e) when (IsDefinitiveNotFound(e))
         {
             return false;
         }
     }
+
+    /// <summary>Whether a Notion error definitively means the object is gone — HTTP 404, or the API's
+    /// <c>object_not_found</c> error code — as opposed to a transient failure (rate-limit, server error)
+    /// that must not be mistaken for a deleted database.</summary>
+    private static bool IsDefinitiveNotFound(NotionApiException e) =>
+        e.StatusCode == 404 || e.Message.Contains("object_not_found", StringComparison.Ordinal);
 
     private static NotionProvisionState Load(string path)
     {

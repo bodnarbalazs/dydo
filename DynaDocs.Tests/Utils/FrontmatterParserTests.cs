@@ -360,4 +360,43 @@ public class FrontmatterParserTests
         Assert.DoesNotContain("status: open", updated);
         Assert.Contains("# Body", updated);
     }
+
+    [Theory]
+    [InlineData("---\narea: backend\n---  \n\n# Title")]   // trailing spaces
+    [InlineData("---\narea: backend\n---\t\n\n# Title")]   // trailing tab
+    [InlineData("---\narea: backend\n---   ")]             // trailing spaces at end-of-content
+    public void ParseFields_ClosingDelimiterWithTrailingWhitespace_StillParsed(string content)
+    {
+        // Finding 7: a closing "---" line carrying trailing whitespace ("---  \n") must still close the block —
+        // several pre-anchoring readers accepted it, so the anchored close must too, or a previously-parseable
+        // file silently degrades to frontmatter-less.
+        var fields = FrontmatterParser.ParseFields(content);
+
+        Assert.NotNull(fields);
+        Assert.Equal("backend", fields!["area"]);
+    }
+
+    [Fact]
+    public void StripFrontmatter_ClosingDelimiterWithTrailingWhitespace_ReturnsBody()
+    {
+        // Read side stays consistent: trailing whitespace on the closing delimiter does not strand the body.
+        const string content = "---\narea: backend\n---  \n\n# Title\n\nBody.";
+
+        Assert.Equal("# Title\n\nBody.", FrontmatterParser.StripFrontmatter(content));
+    }
+
+    [Fact]
+    public void UpsertField_ClosingDelimiterWithTrailingWhitespace_WritesConsistently()
+    {
+        // Write side stays consistent with the read side (finding 7): a closing delimiter with trailing
+        // whitespace is recognised, so the field is upserted rather than the file being treated as un-fronted.
+        const string content = "---\nname: t\nstatus: open\n---  \n\n# Body\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "status", "closed");
+
+        var fields = FrontmatterParser.ParseFields(updated);
+        Assert.Equal("closed", fields!["status"]);
+        Assert.Equal("t", fields["name"]);
+        Assert.Contains("# Body", updated);
+    }
 }

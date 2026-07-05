@@ -822,39 +822,67 @@ public partial class AgentRegistry : IAgentRegistry
         var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
         var dispatchedFromRole = !string.IsNullOrEmpty(task) ? GetDispatchedFromRole(agent.Name, task) : null;
 
-        UpdateAgentState(agent.Name, s =>
+        // The read-modify-write runs under the per-agent lock (finding 5): UpdateAgentState preserves
+        // needs-human, but a concurrent explicit `dydo hand raise` committing between an unlocked read and write
+        // would be clobbered back to false. The lock serialises this against SetNeedsHuman, and the mirror-move
+        // is decided from state RE-READ under it (see CommitRoleUnderLock), never the pre-validation snapshot.
+        return CommitRoleUnderLock(agent.Name, role, task, writable, readOnly, mustReads, dispatchedFrom, dispatchedFromRole, out error);
+    }
+
+    /// <summary>The locked read-modify-write half of <see cref="SetRole"/> (finding 5): under the per-agent lock,
+    /// re-read state, write the new role/task, ensure the task file, and move the needs-human mirror to the new
+    /// task if the RE-READ state carries the flag — so a raise that landed after SetRole's validation snapshot
+    /// still follows the task rather than being stranded. Returns false (with the lock error) on contention,
+    /// never performing the write unlocked.</summary>
+    private bool CommitRoleUnderLock(
+        string agentName, string role, string? task,
+        List<string> writable, List<string> readOnly, List<string> mustReads,
+        string? dispatchedFrom, string? dispatchedFromRole, out string error)
+    {
+        if (!TryAcquireLock(agentName, out error))
+            return false;
+        try
         {
-            s.Role = role;
-            s.Task = task;
-            s.WritablePaths = writable;
-            s.ReadOnlyPaths = readOnly;
-            s.UnreadMustReads = mustReads;
-            s.DispatchedBy = dispatchedFrom;
-            s.DispatchedByRole = dispatchedFromRole;
+            var current = GetAgentState(agentName) ?? new AgentState { Name = agentName };
+            var priorTask = current.Task;
+            var priorNeedsHuman = current.NeedsHuman;
+
+            UpdateAgentState(agentName, s =>
+            {
+                s.Role = role;
+                s.Task = task;
+                s.WritablePaths = writable;
+                s.ReadOnlyPaths = readOnly;
+                s.UnreadMustReads = mustReads;
+                s.DispatchedBy = dispatchedFrom;
+                s.DispatchedByRole = dispatchedFromRole;
+                RecordTaskRole(s, task, role);
+            });
 
             if (!string.IsNullOrEmpty(task))
+                AutoCreateTaskFile(task, agentName);
+
+            if (priorNeedsHuman && !string.Equals(priorTask, task, StringComparison.Ordinal))
             {
-                if (!s.TaskRoleHistory.ContainsKey(task))
-                    s.TaskRoleHistory[task] = new List<string>();
-                if (!s.TaskRoleHistory[task].Contains(role))
-                    s.TaskRoleHistory[task].Add(role);
+                MirrorNeedsHumanToTask(priorTask, false);
+                MirrorNeedsHumanToTask(task, true);
             }
-        });
-
-        if (!string.IsNullOrEmpty(task))
-            AutoCreateTaskFile(task, agent.Name);
-
-        // needs-human mirror follows the task (finding 9): a flagged agent switching tasks would otherwise
-        // strand `needs-human: true` in the OLD task file, since state.Task now points elsewhere and no later
-        // sweep can reach the old mirror. Clear the old task's mirror and stamp the new one (now that
-        // AutoCreateTaskFile has ensured it exists).
-        if (agent.NeedsHuman && !string.Equals(agent.Task, task, StringComparison.Ordinal))
-        {
-            MirrorNeedsHumanToTask(agent.Task, false);
-            MirrorNeedsHumanToTask(task, true);
+            return true;
         }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
+    }
 
-        return true;
+    private static void RecordTaskRole(AgentState s, string? task, string role)
+    {
+        if (string.IsNullOrEmpty(task))
+            return;
+        if (!s.TaskRoleHistory.ContainsKey(task))
+            s.TaskRoleHistory[task] = new List<string>();
+        if (!s.TaskRoleHistory[task].Contains(role))
+            s.TaskRoleHistory[task].Add(role);
     }
 
     private bool HandleRoleNudge(string agentName, string task, string role, out string error)
@@ -1400,11 +1428,34 @@ public partial class AgentRegistry : IAgentRegistry
 
     public void SetDispatchMetadata(string agentName, string? windowId, bool autoClose)
     {
-        UpdateAgentState(agentName, s =>
+        // Under the per-agent lock (finding 5): the read-modify-write must serialise against a concurrent
+        // explicit `dydo hand raise`, or an unlocked write built on a pre-raise snapshot would clobber
+        // needs-human back to false. This is a once-per-dispatch hot path whose sole production caller
+        // (DispatchService.WriteAndLaunch) is void and cannot retry, so a single fail-fast attempt could
+        // silently lose windowId + autoClose to a transient contender (e.g. a watchdog cleanup tick holding
+        // the same per-agent lock) — leaving an --auto-close terminal that never closes. Use the in-file
+        // bounded-retry pattern (3× / 50 ms, mirroring RefreshResumedAgentSessionUnderLock) to ride out that
+        // brief contention; only if the lock is still unavailable after all attempts is the write skipped
+        // (never performed unlocked).
+        var acquired = false;
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            s.WindowId = windowId;
-            s.AutoClose = autoClose;
-        });
+            if (TryAcquireLock(agentName, out _)) { acquired = true; break; }
+            if (attempt < 2) Thread.Sleep(50);
+        }
+        if (!acquired) return;
+        try
+        {
+            UpdateAgentState(agentName, s =>
+            {
+                s.WindowId = windowId;
+                s.AutoClose = autoClose;
+            });
+        }
+        finally
+        {
+            ReleaseLock(agentName);
+        }
     }
 
     public int IncrementResumeAttempts(string agentName, int? preResumePid = null, int? launchedPid = null)

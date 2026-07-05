@@ -235,4 +235,62 @@ public class SyncDocFileTests
         Assert.Null(reparsed.GetField("status"));
         Assert.Equal("v", reparsed.GetField(maliciousKey)); // key round-trips whole, still one field
     }
+
+    [Theory]
+    [InlineData("area", "---")]           // a value that IS the delimiter
+    [InlineData("area", "a---b")]         // a delimiter substring inside a value
+    [InlineData("area", "--- trailing")]  // a value beginning with the delimiter
+    [InlineData("---x", "v")]             // a KEY beginning with the delimiter
+    [InlineData("---", "v")]              // a KEY that IS the delimiter
+    public void Render_RoundTrips_KeyOrValueContainingDelimiter(string key, string value)
+    {
+        // Finding 8: SplitFrontmatter's closing-delimiter search must be line-anchored like FrontmatterParser
+        // (wave 5), or Render's own output fails to round-trip — a later field key such as "---x" was mistaken
+        // for the block's end, truncating the frontmatter and hijacking the body. A SECOND field guarantees the
+        // mis-anchored "\n---" is not merely the real closing delimiter.
+        var doc = new SyncDoc
+        {
+            LocalId = "t",
+            Fields = [new SyncField { Key = "first", Value = "keep" }, new SyncField { Key = key, Value = value }],
+            Body = "real body",
+            SourcePath = "tasks/t.md",
+        };
+
+        var reparsed = SyncDocFile.Parse(SyncDocFile.Render(doc), "t", "tasks/t.md");
+
+        Assert.Equal(2, reparsed.Fields.Count);
+        Assert.Equal("keep", reparsed.GetField("first"));
+        Assert.Equal(value, reparsed.GetField(key));
+        Assert.Equal("real body", reparsed.Body);
+    }
+
+    [Fact]
+    public void Render_BodyContainingDelimiterLine_RoundTrips()
+    {
+        // A body with its own "---" line must not be truncated: the anchored search stops at the FIRST closing
+        // delimiter line, and everything after is the body verbatim.
+        var doc = new SyncDoc
+        {
+            LocalId = "t",
+            Fields = [new SyncField { Key = "status", Value = "open" }],
+            Body = "intro\n\n---\n\noutro",
+            SourcePath = "tasks/t.md",
+        };
+
+        var reparsed = SyncDocFile.Parse(SyncDocFile.Render(doc), "t", "tasks/t.md");
+
+        Assert.Equal("open", reparsed.GetField("status"));
+        Assert.Equal("intro\n\n---\n\noutro", reparsed.Body);
+    }
+
+    [Fact]
+    public void Parse_ClosingDelimiterWithTrailingWhitespace_StillParsed()
+    {
+        // A closing "---" line carrying trailing whitespace must still close the block (finding 7/8, read side),
+        // not silently degrade the file to frontmatter-less.
+        var doc = SyncDocFile.Parse("---\nstatus: open\n---  \n\nbody", "t", "tasks/t.md");
+
+        Assert.Equal("open", doc.GetField("status"));
+        Assert.Equal("body", doc.Body);
+    }
 }

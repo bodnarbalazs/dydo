@@ -29,10 +29,13 @@ public static class FieldMerge
         var merged = new List<SyncField>();
         var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Walk repo order first so the repo's field ordering is preserved.
+        // Walk repo order first so the repo's field ordering is preserved. A duplicate repo key is emitted
+        // once, first occurrence winning (finding 7) — matching ToMap's first-wins and the FirstWins dedup the
+        // wave standardized in PendingRelationEntries/overlay, so no consumer disagrees on which duplicate wins.
         foreach (var field in repo)
         {
-            taken.Add(field.Key);
+            if (!taken.Add(field.Key))
+                continue;
             var resolved = ResolveRepoKey(field.Key, baseMap, repoMap, extMap, ref conflicted);
             if (resolved != null)
                 merged.Add(resolved);
@@ -115,11 +118,15 @@ public static class FieldMerge
         return new SyncField { Key = key, Value = e! }; // genuinely new on the external side
     }
 
+    /// <summary>A first-wins key→value map (finding 7): a duplicate frontmatter key resolves to its FIRST
+    /// occurrence, matching <see cref="SyncDoc.GetField"/>, the reconcile engine's FirstWins overlay lookup,
+    /// and UpsertField (which rewrites the first duplicate line). A last-wins <c>map[k]=v</c> would disagree
+    /// with those readers, so an upserted value could read back invisible on a duplicate-key file.</summary>
     private static Dictionary<string, string> ToMap(List<SyncField> fields)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var f in fields)
-            map[f.Key] = f.Value;
+            map.TryAdd(f.Key, f.Value);
         return map;
     }
 }

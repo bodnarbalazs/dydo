@@ -294,13 +294,8 @@ public partial class AgentRegistry : IAgentRegistry
         // 6. bounded-retry lock acquisition (3× / 50 ms) — TryAcquireLock is fail-fast.
         //    A once-per-resume hot path can afford ~150 ms; if a process is genuinely
         //    stuck on the lock, the next guarded call retries idempotently.
-        var acquired = false;
-        for (var attempt = 0; attempt < 3; attempt++)
-        {
-            if (TryAcquireLock(agentName, out _)) { acquired = true; break; }
-            if (attempt < 2) Thread.Sleep(50);
-        }
-        if (!acquired) return;
+        if (!TryAcquireLockWithRetry(agentName, out _, attempts: 3, delayMs: 50))
+            return;
 
         try
         {
@@ -839,7 +834,9 @@ public partial class AgentRegistry : IAgentRegistry
         List<string> writable, List<string> readOnly, List<string> mustReads,
         string? dispatchedFrom, string? dispatchedFromRole, out string error)
     {
-        if (!TryAcquireLock(agentName, out error))
+        // Bounded-retry (3× / 50 ms), not a single fail-fast attempt (finding 5): a watchdog per-agent sweep
+        // briefly holding the same lock would otherwise spuriously fail `dydo role`.
+        if (!TryAcquireLockWithRetry(agentName, out error, attempts: 3, delayMs: 50))
             return false;
         try
         {
@@ -1426,24 +1423,20 @@ public partial class AgentRegistry : IAgentRegistry
     public string? GetAgentNameFromLetter(char letter) =>
         PresetAgentNames.GetNameFromLetter(letter);
 
-    public void SetDispatchMetadata(string agentName, string? windowId, bool autoClose)
+    /// <summary>Write the dispatch's window id + auto-close onto the target's state, returning whether the
+    /// write landed. Under the per-agent lock: the read-modify-write must serialise against a concurrent explicit
+    /// `dydo hand raise`, or an unlocked write built on a pre-raise snapshot would clobber needs-human back to
+    /// false. This write is AUTHORITATIVE — it overwrites any WindowId/AutoClose left stale by a prior lifecycle
+    /// (release deliberately leaves AutoClose set), so landing it is both necessary and sufficient to prevent an
+    /// --auto-close terminal that never closes (or closes the wrong window). It runs once per dispatch (a cold
+    /// path), so a generous bounded retry (10× / 50 ms ≈ 500 ms — longer than any legitimate single lock hold
+    /// such as a watchdog sweep) reliably lands it (finding 6). Only on pathological, persistent contention does
+    /// it return false WITHOUT writing (never unlocked); the caller then surfaces a non-fatal warning so the
+    /// operator re-dispatches rather than silently inheriting stale metadata.</summary>
+    public bool SetDispatchMetadata(string agentName, string? windowId, bool autoClose)
     {
-        // Under the per-agent lock (finding 5): the read-modify-write must serialise against a concurrent
-        // explicit `dydo hand raise`, or an unlocked write built on a pre-raise snapshot would clobber
-        // needs-human back to false. This is a once-per-dispatch hot path whose sole production caller
-        // (DispatchService.WriteAndLaunch) is void and cannot retry, so a single fail-fast attempt could
-        // silently lose windowId + autoClose to a transient contender (e.g. a watchdog cleanup tick holding
-        // the same per-agent lock) — leaving an --auto-close terminal that never closes. Use the in-file
-        // bounded-retry pattern (3× / 50 ms, mirroring RefreshResumedAgentSessionUnderLock) to ride out that
-        // brief contention; only if the lock is still unavailable after all attempts is the write skipped
-        // (never performed unlocked).
-        var acquired = false;
-        for (var attempt = 0; attempt < 3; attempt++)
-        {
-            if (TryAcquireLock(agentName, out _)) { acquired = true; break; }
-            if (attempt < 2) Thread.Sleep(50);
-        }
-        if (!acquired) return;
+        if (!TryAcquireLockWithRetry(agentName, out _, attempts: 10, delayMs: 50))
+            return false;
         try
         {
             UpdateAgentState(agentName, s =>
@@ -1451,6 +1444,7 @@ public partial class AgentRegistry : IAgentRegistry
                 s.WindowId = windowId;
                 s.AutoClose = autoClose;
             });
+            return true;
         }
         finally
         {
@@ -2395,6 +2389,25 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     private bool TryAcquireLock(string agentName, out string error, int retryCount = 0) =>
         TryAcquireLockAtPath(GetLockFilePath(agentName), agentName, out error, retryCount);
+
+    /// <summary>Bounded-retry lock acquisition for the once-per-operation cold paths — SetRole,
+    /// SetDispatchMetadata, and the resume-refresh (findings 5/6). <see cref="TryAcquireLock"/> is fail-fast, so
+    /// a single attempt can lose to a transient contender such as a watchdog per-agent sweep holding the same
+    /// lock for one read-modify-write. Retries up to <paramref name="attempts"/> times, sleeping
+    /// <paramref name="delayMs"/> ms between, and surfaces the final attempt's lock error. Never writes unlocked:
+    /// callers skip (or warn) when it returns false.</summary>
+    private bool TryAcquireLockWithRetry(string agentName, out string error, int attempts, int delayMs)
+    {
+        error = string.Empty;
+        for (var attempt = 0; attempt < attempts; attempt++)
+        {
+            if (TryAcquireLock(agentName, out error))
+                return true;
+            if (attempt < attempts - 1)
+                Thread.Sleep(delayMs);
+        }
+        return false;
+    }
 
     /// <summary>
     /// Releases the lock file for an agent.

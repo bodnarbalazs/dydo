@@ -2,6 +2,7 @@ namespace DynaDocs.Sync;
 
 using System.Text;
 using DynaDocs.Models;
+using DynaDocs.Utils;
 
 /// <summary>
 /// Maps a dydo doc file (YAML frontmatter + markdown body) to/from a <see cref="SyncDoc"/>,
@@ -138,21 +139,19 @@ public static class SyncDocFile
 
     /// <summary>
     /// Splits content into ordered frontmatter fields and the trailing body. A file without a
-    /// leading frontmatter block yields empty fields and the whole content as body.
+    /// leading frontmatter block yields empty fields and the whole content as body. Frontmatter
+    /// boundaries come from the shared <see cref="FrontmatterParser.Bounds"/> helper, so the opener
+    /// tolerance (trailing whitespace) and the empty-block case match every other reader (finding 8).
     /// </summary>
     private static (List<SyncField> Fields, string Body) SplitFrontmatter(string content)
     {
         var normalized = content.Replace("\r\n", "\n");
-        if (!normalized.StartsWith("---\n"))
+        var bounds = FrontmatterParser.Bounds(normalized);
+        if (bounds == null)
             return ([], normalized.TrimStart('\n'));
 
-        var end = ClosingDelimiter(normalized);
-        if (end < 0)
-            return ([], normalized.TrimStart('\n'));
-
-        var yaml = normalized[4..end];
-        // Skip any trailing whitespace on the closing delimiter line before the body begins.
-        var bodyStart = SkipSpacesAndTabs(normalized, end + "\n---".Length);
+        var (yamlStart, closerStart, bodyStart) = bounds.Value;
+        var yaml = normalized[yamlStart..closerStart];
         var body = normalized[bodyStart..].TrimStart('\n');
         return (ParseYamlFields(yaml), body);
     }
@@ -173,30 +172,4 @@ public static class SyncDocFile
         return fields;
     }
 
-    private static int SkipSpacesAndTabs(string s, int index)
-    {
-        while (index < s.Length && s[index] is ' ' or '\t')
-            index++;
-        return index;
-    }
-
-    /// <summary>Index of the newline that begins the closing delimiter line — the first <c>"\n---"</c> after the
-    /// opening whose <c>---</c> is the whole line (only trailing whitespace may follow). Line-anchored like
-    /// <see cref="Utils.FrontmatterParser"/> (wave 5), so a <c>---</c> inside a value, or a later field key such
-    /// as <c>---foo</c>, is never mistaken for the block's end and <see cref="Render"/> round-trips (finding 8).
-    /// Returns -1 when no such line exists. Operates on already-<c>\r\n</c>-normalized content.</summary>
-    private static int ClosingDelimiter(string normalized)
-    {
-        var at = normalized.IndexOf("\n---", 4, StringComparison.Ordinal);
-        while (at >= 0)
-        {
-            var scan = at + 4;
-            while (scan < normalized.Length && normalized[scan] is ' ' or '\t')
-                scan++;
-            if (scan >= normalized.Length || normalized[scan] == '\n')
-                return at;
-            at = normalized.IndexOf("\n---", at + 4, StringComparison.Ordinal);
-        }
-        return -1;
-    }
 }

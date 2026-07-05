@@ -1274,4 +1274,192 @@ public class NotionSpineSyncTests : IDisposable
         var resurrected = Assert.Single(live);
         Assert.NotEqual(oldXId, resurrected.Id); // resurrected as a fresh page, not the archived one
     }
+
+    /// <summary>A single-type SprintTask model with a couple of plain docs, for the re-provision base-reset tests.</summary>
+    private void SeedReprovisionSpine()
+    {
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["open", "done"] } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+        Seed("project/sprint-tasks/task-1", "---\ntitle: T1\nstatus: open\n---\n\nBody 1.");
+        Seed("project/sprint-tasks/task-2", "---\ntitle: T2\nstatus: open\n---\n\nBody 2.");
+    }
+
+    [Fact]
+    public void Run_ReprovisionDefinitiveNotFound_ResetsBaseSnapshot_RepushesAsCreates_ZeroRepoDeletions()
+    {
+        // Finding 1 (HIGH). The recorded database is definitively gone (404/object_not_found), so the type
+        // re-provisions into a fresh EMPTY database. The type's base snapshot still points at the OLD database's
+        // pages, so reconciling it would read every external as ExternalDeleted and mass-delete the repo. The base
+        // must be reset on re-provision so every repo doc re-pushes as a CREATE — ZERO repo file deletions.
+        SeedReprovisionSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        Assert.Equal(2, client.QueryDataSource("ds-1").Count);
+
+        // The recorded database is definitively gone; the next tick re-provisions into a fresh database.
+        client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: re-provision
+
+        Assert.True(File.Exists(TaskPath("task-1")));  // never deleted
+        Assert.True(File.Exists(TaskPath("task-2")));
+        Assert.Equal(2, client.CreatedDatabases.Count);        // a fresh database was minted
+        Assert.Equal(2, client.QueryDataSource("ds-2").Count); // both docs re-pushed as creates into it
+    }
+
+    [Fact]
+    public void Run_ReprovisionThenAbortBeforeReconcile_BaseResetIsDurable_RetryHasZeroRepoDeletions()
+    {
+        // Finding 1 (HIGH), DURABILITY (review R2-1). A re-provision mints a fresh EMPTY database, but the tick
+        // then ABORTS before Reconcile — CheckDrift makes a live API call per type between Provision and Reconcile,
+        // and a transient 429/5xx there (or a throw in the adapter's external read, or a process kill) leaves the
+        // fresh database recorded while an in-memory-only reset never persists. So the reset MUST be durable at
+        // mint time: the snapshot file is deleted the instant the database is minted. Otherwise the NEXT run
+        // reuses the now-valid empty database, mints nothing, never resets, and the stale snapshot makes it read
+        // every base+repo pair as an external delete — mass-deleting the repo. The retry must delete ZERO files.
+        SeedReprovisionSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        Assert.Equal(2, client.QueryDataSource("ds-1").Count);
+
+        // Tick 2: the recorded database is definitively gone, forcing a re-provision into a fresh database — but
+        // CheckDrift then throws (a transient drift-probe failure), aborting the tick before Reconcile ever runs.
+        client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
+        client.FailRetrieveDataSource = new NotionApiException(429, "simulated transient drift-probe failure");
+        Assert.Throws<NotionApiException>(
+            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+
+        // The fresh database was minted, and its base snapshot was durably cleared at mint time (file deleted),
+        // even though the aborted tick never reached the end-of-tick base Save.
+        Assert.Equal(2, client.CreatedDatabases.Count);
+        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")));
+
+        // Tick 3: a healthy retry. Lookup reuses the now-valid empty ds-2 (nothing minted this run). With a durable
+        // reset the base is empty, so both docs re-push as CREATES — never read as external deletes. Zero deletions.
+        client.FailRetrieveDatabase = null;
+        client.FailRetrieveDataSource = null;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        Assert.True(File.Exists(TaskPath("task-1")));
+        Assert.True(File.Exists(TaskPath("task-2")));
+        Assert.Equal(2, client.QueryDataSource("ds-2").Count); // both re-pushed as creates into the fresh database
+    }
+
+    [Fact]
+    public void Run_ReprovisionDataSourceMismatch_ResetsBaseSnapshot_ZeroRepoDeletions()
+    {
+        // Finding 1 variant. The database still EXISTS but no longer owns the recorded data source (it was
+        // replaced), so StillValid returns false with no exception. The re-provision path resets the base
+        // identically — no repo deletions, docs re-pushed as creates into the new data source.
+        SeedReprovisionSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1
+
+        // The database now reports a DIFFERENT data source than the one recorded.
+        client.Databases["db-1"].DataSources = [new NotionDataSourceRef { Id = "ds-orphan", Name = "Tasks" }];
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: re-provision
+
+        Assert.True(File.Exists(TaskPath("task-1")));
+        Assert.True(File.Exists(TaskPath("task-2")));
+        Assert.Equal(2, client.CreatedDatabases.Count);
+        Assert.Equal(2, client.QueryDataSource("ds-2").Count);
+    }
+
+    [Fact]
+    public void Run_RelationLifecycle_PendingResolvesRetiresBoardEdits_NoImmortalRawId_ArchivePropagates()
+    {
+        // GATES multi-tick lifecycle + finding 3, against the production NotionSyncAdapter chain. The blocked-by
+        // relation runs end to end: pending → resolves → its target RETIRES → the board edits while still
+        // referencing the archived page → the board archives the doc. The overlay must never inject the retired
+        // target's raw Notion page id into frontmatter (finding 3), and the archive must ultimately delete the
+        // repo file — not resurrect forever as a conflict blocked by an immortal raw-id entry.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-later\n---\n\nX body.");
+
+        var client = new FakeNotionClient { EchoEmptyRelations = true };
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-x (blocker omitted)
+        Seed("project/sprint-tasks/task-later", "---\ntitle: Later\n---\n\nLater body.");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-later
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: blocker resolves, pushed
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => !p.Archived && NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        var laterPageId = PageByTitle("Later").Id;
+        Assert.Equal(laterPageId, PageByTitle("X").Properties["blocked-by"].Relation!.Single().Id);
+
+        // Retire task-later: delete its repo file AND archive its page; its local↔page mapping is gone next tick.
+        File.Delete(TaskPath("task-later"));
+        PageByTitle("Later").Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-later retires
+
+        // The board renames task-x while its relation still points at task-later's archived page — which now
+        // renders as a raw Notion page id on read. The overlay must NOT plant that raw id in the repo file.
+        PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 5: WriteToRepo (rename)
+
+        var fileX = File.ReadAllText(TaskPath("task-x"));
+        Assert.Contains("X Renamed", fileX);
+        Assert.DoesNotContain(laterPageId, fileX); // finding 3: no immortal raw Notion page id in frontmatter
+
+        // The board archives task-x: with no un-pushed raw-id entry, the delete propagates rather than resurrecting.
+        PageByTitle("X Renamed").Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 6: archive propagates
+        Assert.False(File.Exists(TaskPath("task-x")));
+    }
+
+    [Fact]
+    public void Run_RelationLifecycle_PartialMultiValue_OneTargetRetires_BoardEdit_NoImmortalRawId_ArchivePropagates()
+    {
+        // Round-3 defect (finding 3, PENDING/pass-through branch) end to end against the production
+        // NotionSyncAdapter chain. Unlike the single-entry lifecycle above (whole-field-invisible shape), task-x
+        // has a TWO-target self-relation `blocked-by: task-a, task-later`: task-a stays live while task-later
+        // RETIRES (file deleted + page archived) with the board still referencing its archived page — which
+        // renders as a raw Notion page id on read. On a co-occurring board edit the overlay must strip the raw id
+        // (finding 3) and drop the retired recorded entry (finding 4), leaving only the live task-a; the board
+        // archive of task-x must then delete the repo file, not resurrect forever behind an immortal raw-id blocker.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA body.");
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a, task-later\n---\n\nX body.");
+
+        var client = new FakeNotionClient { EchoEmptyRelations = true };
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create task-a, task-x (blockers omitted)
+        Seed("project/sprint-tasks/task-later", "---\ntitle: Later\n---\n\nLater body.");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: create task-later; task-a resolves, pushed
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: task-later resolves, both pushed
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => !p.Archived && NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        var laterPageId = PageByTitle("Later").Id;
+        Assert.Equal([PageByTitle("A").Id, laterPageId], PageByTitle("X").Properties["blocked-by"].Relation!.Select(r => r.Id));
+
+        // Retire task-later: delete its repo file AND archive its page; its local↔page mapping is gone next tick.
+        File.Delete(TaskPath("task-later"));
+        PageByTitle("Later").Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-later retires
+
+        // The board renames task-x while its relation still references task-later's archived page (renders raw on read).
+        PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 5: WriteToRepo (rename)
+
+        var fileX = File.ReadAllText(TaskPath("task-x"));
+        Assert.Contains("X Renamed", fileX);
+        Assert.Contains("blocked-by: task-a", fileX);   // the live target survives as a local id
+        Assert.DoesNotContain(laterPageId, fileX);      // finding 3: no immortal raw Notion page id in frontmatter
+        Assert.DoesNotContain("task-later", fileX);     // finding 4: the retired recorded target was cleared
+
+        // The board archives task-x: with no un-pushed raw-id/retired entry, the delete propagates.
+        PageByTitle("X Renamed").Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 6: archive propagates
+        Assert.False(File.Exists(TaskPath("task-x")));
+    }
 }

@@ -24,14 +24,14 @@ public static class NotionSpineSync
             ? $"notion sync --dry-run: model has {types.Count} object type(s) [{string.Join(" -> ", types.Select(t => t.Type))}] under parent page {parentPageId}"
             : $"notion sync: provisioning + reconciling {types.Count} object type(s) under parent page {parentPageId}");
 
-        var dataSourceIds = Provision(provisioner, types, parentPageId, dryRun, output);
+        var (dataSourceIds, minted) = Provision(provisioner, types, dydoRoot, parentPageId, dryRun, output);
         // No provisioner.Save() here: persistence now lives inside Create and MarkPostPassDone, each of which
         // writes the instant its fact is established (wave 5). A standalone Save would only re-serialize identical
         // state.
         if (!dryRun)
             CheckDrift(client, model, types, dataSourceIds, prune, output);
 
-        Reconcile(client, dydoRoot, types, dataSourceIds, dryRun, output);
+        Reconcile(client, dydoRoot, types, dataSourceIds, minted, dryRun, output);
     }
 
     /// <summary>Schema-shape ownership (DR 029 §6): after every type's data source is resolved, compare its
@@ -47,12 +47,17 @@ public static class NotionSpineSync
     }
 
     /// <summary>Resolve each type's data source id, creating the database when not already provisioned.
-    /// In dry-run nothing is created; an unprovisioned type simply has no entry in the returned map.</summary>
-    private static Dictionary<string, string> Provision(
+    /// In dry-run nothing is created; an unprovisioned type simply has no entry in the returned map. Returns
+    /// the set of types whose database was freshly MINTED this run (Lookup returned null → Create), so
+    /// <see cref="Reconcile"/> can reset their base snapshot before reconciling: a re-provision (definitive
+    /// 404, or the database no longer owning its recorded data source) mints a fresh EMPTY database whose
+    /// pages the stale base does not point at (finding 1).</summary>
+    private static (Dictionary<string, string> DataSourceIds, HashSet<string> Minted) Provision(
         NotionProvisioner provisioner, IReadOnlyList<SyncObjectType> types,
-        string parentPageId, bool dryRun, TextWriter output)
+        string dydoRoot, string parentPageId, bool dryRun, TextWriter output)
     {
         var dataSourceIds = new Dictionary<string, string>();
+        var minted = new HashSet<string>();
         var created = new List<SyncObjectType>();
         foreach (var type in types)
         {
@@ -74,8 +79,18 @@ public static class NotionSpineSync
             else
             {
                 var record = provisioner.Create(type, parentPageId, dataSourceIds);
+                // Durably reset this type's base snapshot the instant the fresh EMPTY database is minted (review
+                // R2-1). NotionProvisioner.Create persists the new database's ids immediately, but the in-memory
+                // store.Reset() in Reconcile is not persisted until SyncRunner's end-of-tick Save — so an abort
+                // between the mint and that Save (a transient 429/5xx in CheckDrift, a throw in the adapter's
+                // external read, a process kill) would leave the fresh database recorded while the STALE
+                // snapshot.json survived on disk, and the NEXT run — reusing the now-valid empty database with
+                // nothing minted, hence no reset — would read every base+repo pair as an external delete and wipe
+                // the repo. Deleting the file here, in the same step as the mint, closes that crash window.
+                BaseSnapshotStore.DeleteSnapshot(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
                 output.WriteLine($"  provision  {type.Type,-9} created database {record.DatabaseId} (data source {record.DataSourceId})");
                 dataSourceIds[type.Type] = record.DataSourceId;
+                minted.Add(type.Type);
                 // No `created.Add` here: the real-run post-pass below drives entirely off PostPassPending
                 // (a create records the type with PostPassDone=false), so this type is already covered
                 // whether it was created this run or is a recorded-but-unpassed reuse (finding 10).
@@ -134,12 +149,12 @@ public static class NotionSpineSync
                 provisioner.MarkPostPassDone(type.Type);
             }
         }
-        return dataSourceIds;
+        return (dataSourceIds, minted);
     }
 
     private static void Reconcile(
         INotionClient client, string dydoRoot, IReadOnlyList<SyncObjectType> types,
-        IReadOnlyDictionary<string, string> dataSourceIds, bool dryRun, TextWriter output)
+        IReadOnlyDictionary<string, string> dataSourceIds, IReadOnlySet<string> minted, bool dryRun, TextWriter output)
     {
         var localToPageByType = new Dictionary<string, Dictionary<string, string>>();
 
@@ -155,6 +170,18 @@ public static class NotionSpineSync
             }
 
             var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
+
+            // A freshly minted database is EMPTY, but this type's base snapshot still points at the pages of the
+            // now-abandoned database. Reconciling against the stale base would read every external as deleted and
+            // mass-delete the repo (finding 1). The durable reset already happened at mint time (Provision deleted
+            // the snapshot file via BaseSnapshotStore.DeleteSnapshot), so the store constructed just above loaded
+            // EMPTY — this in-memory Reset is a same-process belt-and-suspenders guard, harmless if the file was
+            // already cleared. Either way every repo doc re-pushes as a CREATE into the new database. Deliberate
+            // tradeoff: a mere LOSS OF ACCESS (Notion 404s an unshared page just as it does a deleted one) now
+            // re-pushes the repo as creates — possibly duplicating into a fresh database — rather than deleting the
+            // repo. Data-preserving by design: a spurious duplicate is recoverable, a mass repo deletion is not.
+            if (minted.Contains(type.Type))
+                store.Reset();
 
             // Publish this type's own local↔page map from its base snapshot BEFORE building relation maps,
             // so a self-relation (SprintTask.blocked-by → SprintTask) resolves against pages synced on a

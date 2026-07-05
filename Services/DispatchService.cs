@@ -75,7 +75,12 @@ public static class DispatchService
         var effectiveAutoClose = opts.AutoClose || (registry.Config?.Dispatch?.AutoClose ?? false);
         var (windowName, launchInTab) = ConfigureWindowSettings(registry, opts.UseTab, opts.UseNewWindow);
 
-        registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose);
+        if (!registry.SetDispatchMetadata(targetAgentName, windowName, effectiveAutoClose))
+            // Non-fatal (finding 6): the dispatch proceeds, but the window/auto-close metadata could not be
+            // written under persistent lock contention. Warn so the operator knows any stale --auto-close from a
+            // prior lifecycle was not overwritten and can re-dispatch, rather than the terminal silently
+            // mis-closing.
+            Console.WriteLine($"  Warning: could not record dispatch window/auto-close metadata for {targetAgentName} (lock contended); re-dispatch if --auto-close behaves unexpectedly.");
 
         LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose, windowName);
 

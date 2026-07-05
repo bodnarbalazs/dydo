@@ -360,7 +360,6 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var first = new NotionProvisioner(client, _statePath);
         var created = first.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
-        first.Save();
 
         // A fresh provisioner over the same state + client: the database is retrievable and still
         // owns the recorded data source, so the type is reused rather than re-created.
@@ -377,8 +376,6 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
         provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
-        provisioner.Save();
-
         // A client that no longer knows the database (RetrieveDatabase returns an empty DB with no
         // matching data source) must not reuse the stale record.
         var freshClient = new FakeNotionClient();
@@ -396,8 +393,6 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
         provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
-        provisioner.Save();
-
         var reloaded = new NotionProvisioner(client, _statePath);
         var createsBefore = client.CreatedDatabases.Count;
         client.FailRetrieveDatabase = new NotionApiException(429, "rate_limited");
@@ -413,8 +408,6 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
         provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
-        provisioner.Save();
-
         var reloaded = new NotionProvisioner(client, _statePath);
         client.FailRetrieveDatabase = new NotionApiException(502, "bad_gateway");
         Assert.Throws<NotionApiException>(() => reloaded.Lookup("Campaign"));
@@ -428,8 +421,6 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
         provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
-        provisioner.Save();
-
         var reloaded = new NotionProvisioner(client, _statePath);
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
         Assert.Null(reloaded.Lookup("Campaign"));
@@ -443,8 +434,6 @@ public class NotionProvisionerTests : IDisposable
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
         provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
-        provisioner.Save();
-
         var reloaded = new NotionProvisioner(client, _statePath);
         client.FailRetrieveDatabase = new NotionApiException(400, "{\"object\":\"error\",\"code\":\"object_not_found\"}");
         Assert.Null(reloaded.Lookup("Campaign"));

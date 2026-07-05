@@ -496,7 +496,12 @@ public class ReconcileEngineTests
     // A per-ENTRY relation normalizer faithful to NotionSyncAdapter.ResolveRelationSubset: an empty relation is
     // a valid clear and KEPT as ""; a non-empty value keeps only its resolvable entries; and an all-unresolvable
     // value drops the key whole (its target is not yet synced, so it reads back absent).
-    private static readonly HashSet<string> ResolvableBlockers = new(StringComparer.Ordinal) { "b" };
+    // "b" and "e" are resolvable local ids; everything else (c, z, ...) is a not-yet-syncable target. In
+    // production the read and write relation maps derive from the SAME base snapshots, so any external entry that
+    // is a local id round-trips through both — an external LOCAL-id entry is always write-resolvable, and the only
+    // external entry the write map cannot resolve is RenderRelation's raw-page-id fallback for an unmapped page.
+    // "e" is therefore modelled as resolvable so an external swap b -> e is a realistic local-id edit, not a raw id.
+    private static readonly HashSet<string> ResolvableBlockers = new(StringComparer.Ordinal) { "b", "e" };
     private static SyncDoc ResolveBlockedBySubset(SyncDoc d) => new()
     {
         LocalId = d.LocalId, ExternalId = d.ExternalId, Body = d.Body, SourcePath = d.SourcePath,
@@ -676,10 +681,12 @@ public class ReconcileEngineTests
     public void WriteToRepo_BoardEditsWholeFieldInvisibleRelation_RepoPendingUnioned_NotDiscarded()
     {
         // Finding 2 (HIGH). The repo holds an all-unresolvable relation (blocked-by: c), so it is whole-field
-        // invisible. A colleague adds a resolvable blocker (b) on the board, and in the same tick edits a
-        // different field (status). The overlay must UNION the board's entry with the repo's pending one, not
-        // REPLACE the board edit with the raw repo value — else b is discarded here and clobbered on push.
-        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "c"));
+        // invisible. c is a PENDING entry the base never recorded (an unresolvable entry is never externalized,
+        // so a correct base — recorded normalized — never holds it). A colleague adds a resolvable blocker (b) on
+        // the board, and in the same tick edits a different field (status). The overlay must UNION the board's
+        // entry with the repo's pending one, not REPLACE the board edit with the raw repo value — else b is
+        // discarded here and clobbered on push.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
         var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "c"));
         var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "b")); // board added b
 
@@ -694,8 +701,9 @@ public class ReconcileEngineTests
     public void WriteToRepo_BoardClearsWholeFieldInvisibleRelation_RepoPendingSurvives()
     {
         // Finding 2, clear variant. The board holds no resolvable entry (echoes blocked-by empty) while the repo
-        // keeps its unresolvable c. A repo pending entry must ALWAYS survive: the merged value keeps c.
-        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "c"));
+        // keeps its unresolvable, un-pushed c (the base never recorded it). A repo PENDING entry must ALWAYS
+        // survive: the merged value keeps c.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
         var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "c"));
         var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "")); // board relation empty
 
@@ -703,6 +711,77 @@ public class ReconcileEngineTests
 
         Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
         Assert.Equal("c", result.RepoWrite!.GetField("blocked-by")); // repo pending entry never lost
+    }
+
+    [Fact]
+    public void MergeBoth_AllUnresolvableRelationEmptyEcho_NoPhantomConflict_PendingEntryPreserved()
+    {
+        // Finding 2 (MergeBoth path). The base never recorded blocked-by (its only target unresolvable at create),
+        // real Notion echoes the relation back EMPTY, and BOTH sides edit the body. FieldMerge must treat the
+        // external empty echo as absent (the base never recorded the key), so it does not collide with the repo's
+        // pending entry z into a phantom conflict every tick; the pending entry survives and the body merges.
+        var b = Doc("t", "l1\nl2\nl3", ("title", "T"));                          // base never recorded blocked-by
+        var repo = Doc("t", "L1\nl2\nl3", ("title", "T"), ("blocked-by", "z"));  // z pending, repo edits line 1
+        var ext = Doc("t", "l1\nl2\nL3", ("title", "T"), ("blocked-by", ""));    // empty echo, board edits line 3
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.Merged, result.Action);
+        Assert.False(result.Conflicted);                              // no phantom conflict from the empty echo
+        Assert.Equal("L1\nl2\nL3", result.RepoWrite!.Body);           // both body edits merged
+        Assert.Equal("z", result.RepoWrite.GetField("blocked-by"));   // pending entry preserved
+    }
+
+    [Fact]
+    public void WriteToRepo_ExternalDroppedWholeInvisibleRelationEntirely_UnpushedEntryReappended()
+    {
+        // Finding 2/3 re-append path. The repo holds an all-unresolvable relation (blocked-by: z) the base never
+        // recorded (pending), and the external DROPS the key entirely (not even an empty echo) while editing
+        // status. The overlay's re-append must restore the repo's un-pushed entry z, never losing pending work.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "z"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done")); // no blocked-by key at all
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));
+        Assert.Equal("z", result.RepoWrite.GetField("blocked-by")); // pending entry re-appended, not lost
+    }
+
+    [Fact]
+    public void WriteToRepo_ExternalDroppedWholeInvisibleRelationEntirely_RecordedRetiredEntryNotReappended()
+    {
+        // Finding 4 re-append path. Base RECORDED blocked-by: b (pushed while resolvable); b's target then retires,
+        // so the key is whole-field invisible. The external drops the key entirely while editing status. The
+        // re-append must NOT restore b — a recorded entry the board no longer shows was cleared/retired there.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done")); // no blocked-by key at all
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveNoneBlockedBy);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));
+        Assert.Null(result.RepoWrite.GetField("blocked-by")); // retired recorded entry not resurrected
+    }
+
+    [Fact]
+    public void WriteToRepo_BoardClearsRecordedRelation_TargetRetired_ClearApplies_NotResurrected()
+    {
+        // Finding 4. Base RECORDED blocked-by: b (pushed while b was resolvable). b's target then retires, so the
+        // current maps drop blocked-by from both normalized sides and Equal(base, repo) holds — repoChanged false.
+        // The board CLEARS the relation (empty echo). The clear must APPLY: a recorded entry the board no longer
+        // shows was cleared there, not a pending local edit, so the overlay must not resurrect b. The empty-echo
+        // logic keys off the base's RAW recorded state, so the clear is not swallowed as a phantom echo.
+        var b = Doc("t", "body", ("title", "T"), ("blocked-by", "b"));   // base recorded b (was resolvable)
+        var repo = Doc("t", "body", ("title", "T"), ("blocked-by", "b")); // repo untouched since push
+        var ext = Doc("t", "body", ("title", "T"), ("blocked-by", ""));   // board cleared it
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveNoneBlockedBy);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("", result.RepoWrite!.GetField("blocked-by")); // clear applied; b not resurrected
     }
 
     [Fact]
@@ -722,6 +801,93 @@ public class ReconcileEngineTests
         Assert.Equal(ReconcileAction.Conflict, result.Action);
         Assert.Null(result.RepoDelete);                                     // never a silent delete
         Assert.Equal("b, c", result.ExternalWrite!.GetField("blocked-by")); // resurrected from the repo
+    }
+
+    [Fact]
+    public void WriteToRepo_PartialRelation_RawExternalIdEntry_PendingBranch_StrippedNotUnioned()
+    {
+        // Round-3 defect (finding 3, PENDING branch). The repo carries a partially-resolvable relation
+        // `blocked-by: b, c` (b resolvable, c a not-yet-syncable pending entry the base never recorded). The board
+        // references an archived/unmapped page that RENDERS as a raw Notion page id ("page-raw"), and edits status
+        // the same tick. The overlay's pending branch must merge the pending entry onto the external's RESOLVABLE
+        // subset (b), never its RAW value — so the raw page id is stripped and never enters frontmatter, while the
+        // genuine pending entry c still survives.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b, c"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "b, page-raw"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));      // the board edit landed
+        Assert.Equal("b, c", result.RepoWrite.GetField("blocked-by"));   // resolvable subset + pending entry, no raw id
+        Assert.DoesNotContain("page-raw", result.RepoWrite.GetField("blocked-by")!); // finding 3: raw id stripped
+    }
+
+    [Fact]
+    public void WriteToRepo_PartialRelation_OneEntryRetired_BoardEdit_NoRawId_ThenArchivePropagates()
+    {
+        // Round-3 defect (finding 3, multi-value self-relation core case) composed with finding 4. Base recorded
+        // `blocked-by: b, ret` (both pushed while resolvable). `ret`'s target RETIRES (its local id no longer
+        // resolves) while the board still references its archived page, so the external RENDERS ret as a raw
+        // Notion page id and edits another field the same tick. The overlay's pass-through branch must strip the
+        // raw id and drop the retired recorded entry, leaving only the live b. With no raw-id (or retired) entry
+        // left, a subsequent board archive propagates as a genuine delete, not an immortal conflict.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b, ret"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b, ret"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "b, page-raw-ret")); // ret -> raw page id
+
+        var write = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, write.Action);
+        Assert.Equal("done", write.RepoWrite!.GetField("status"));               // the board edit landed
+        Assert.Equal("b", write.RepoWrite.GetField("blocked-by"));               // only the live entry; ret retired
+        Assert.DoesNotContain("page-raw-ret", write.RepoWrite.GetField("blocked-by")!); // finding 3: no raw page id
+
+        // Next tick: the file now holds `blocked-by: b`, the base advanced to the pushed subset, and the board
+        // archives the doc. With no un-pushed raw-id/retired entry to guard it, the delete propagates.
+        var settled = ReconcileEngine.Reconcile(write.NewBase, write.RepoWrite, null, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.Delete, settled.Action);
+        Assert.Equal("tasks/t.md", settled.RepoDelete);
+    }
+
+    [Fact]
+    public void WriteToRepo_PassThroughRelation_ExternalAllUnresolvable_CollapsesToEmpty_NoRawId()
+    {
+        // Round-3 defect (finding 3, pass-through branch, all-unresolvable external). The repo relation is fully
+        // resolvable (blocked-by: b), so it is neither invisible nor pending. The board repoints it SOLELY at an
+        // archived/unmapped page — which renders as a raw Notion page id — and edits another field. The pass-through
+        // must reduce the relation to its (empty) resolvable subset, never write the raw page id into frontmatter.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "page-raw-only"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));
+        Assert.Equal("", result.RepoWrite.GetField("blocked-by")); // resolvable subset empty; raw id dropped
+        Assert.DoesNotContain("page-raw-only", result.RepoWrite.GetField("blocked-by")!);
+    }
+
+    [Fact]
+    public void WriteToRepo_PassThroughExternalOutOfSchemaKey_PassedThroughUntouched()
+    {
+        // Pass-through fallback. An external field the normalizer drops that is NOT a relation (an out-of-schema
+        // key the repo does not itself carry, so it is not whole-field invisible) is neither sanitized to a
+        // resolvable subset nor collapsed to empty — it is passed through verbatim, the safe default distinct from
+        // the relation-only raw-id stripping.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("notes", "theirs")); // out-of-schema, dropped by adapter
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: DropOutOfSchemaNotes);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));
+        Assert.Equal("theirs", result.RepoWrite.GetField("notes")); // non-relation dropped key passes through untouched
     }
 
     [Fact]
@@ -803,6 +969,62 @@ public class ReconcileEngineTests
 
         Assert.Equal(ReconcileAction.Delete, result.Action);
         Assert.Equal("tasks/t.md", result.RepoDelete);
+    }
+
+    [Fact]
+    public void DeletedInExternal_RepoDuplicateRelationKey_LaterOccurrencePhantomEntry_FirstWins_StillDeletes()
+    {
+        // Review R2-2 (guard path). A duplicate relation key whose FIRST occurrence is fully pushed (recorded in
+        // base) and a LATER occurrence carries an un-pushed entry (c). Every reader — visible/FirstWins,
+        // FieldMerge, ToProperties, ParseFields, UpsertField, GetField — resolves the FIRST occurrence, so the later
+        // one is a phantom no consumer will ever push or preserve. PendingRelationEntries / HasUnpushedRelation must
+        // be first-wins and ignore it; a last-wins reading would count c as un-pushed work and block the delete
+        // forever, resurrecting the archived page every tick on entries invisible to every other reader.
+        var b = Doc("t", "body", ("title", "T"), ("blocked-by", "b"));
+        b.ExternalId = "ext-1";
+        var repo = new SyncDoc
+        {
+            LocalId = "t", Body = "body", SourcePath = "tasks/t.md",
+            Fields =
+            [
+                new SyncField { Key = "title", Value = "T" },
+                new SyncField { Key = "blocked-by", Value = "b" }, // first: fully pushed, recorded in base
+                new SyncField { Key = "blocked-by", Value = "c" }, // later dup: c unresolvable/un-pushed (phantom)
+            ],
+        };
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.Delete, result.Action);
+        Assert.Equal("tasks/t.md", result.RepoDelete);
+    }
+
+    [Fact]
+    public void WriteToRepo_RepoDuplicateRelationKey_LaterOccurrencePhantom_NotInjectedIntoFrontmatter_FirstWins()
+    {
+        // Review R2-2 (overlay/pending path). On a WriteToRepo rewrite a duplicate relation key's LATER occurrence
+        // must not seed a phantom pending entry. The first occurrence (b) is fully pushed and resolvable; the later
+        // (c) is invisible to every reader. First-wins in PendingRelationEntries must ignore it, so the rewrite
+        // never merges c back into the repo file (a last-wins reading would inject "b, c").
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = new SyncDoc
+        {
+            LocalId = "t", Body = "body", SourcePath = "tasks/t.md",
+            Fields =
+            [
+                new SyncField { Key = "title", Value = "T" },
+                new SyncField { Key = "status", Value = "open" },
+                new SyncField { Key = "blocked-by", Value = "b" },
+                new SyncField { Key = "blocked-by", Value = "c" },
+            ],
+        };
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "b")); // external edits a DIFFERENT field
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status")); // the genuine external edit is honored
+        Assert.Equal("b", result.RepoWrite.GetField("blocked-by"));  // phantom c never injected (first-wins)
     }
 
     [Fact]

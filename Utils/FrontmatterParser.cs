@@ -29,7 +29,10 @@ public static class FrontmatterParser
             if (key.Length == 0) continue;
 
             var value = line[(colonIndex + 1)..].Trim();
-            fields[key] = value;
+            // First-wins on a duplicate key (finding 7): UpsertField rewrites the FIRST duplicate line, so the
+            // reader must resolve the first occurrence too — else an upserted value reads back invisible on a
+            // duplicate-key file. Matches SyncDoc.GetField / FieldMerge.ToMap / the reconcile FirstWins overlay.
+            fields.TryAdd(key, value);
         }
 
         return fields;
@@ -41,11 +44,8 @@ public static class FrontmatterParser
     /// </summary>
     public static string StripFrontmatter(string content)
     {
-        if (!content.StartsWith("---")) return content;
-        // Anchor the closing delimiter to a line start (same discipline as UpsertField): a "---" SUBSTRING
-        // inside a value must not be mistaken for the block's end, or the body would start mid-value.
-        var close = ClosingDelimiterIndex(content);
-        return close < 0 ? content : content[(close + 3)..].TrimStart();
+        var bounds = Bounds(content);
+        return bounds == null ? content : content[bounds.Value.BodyStart..].TrimStart();
     }
 
     /// <summary>
@@ -54,11 +54,8 @@ public static class FrontmatterParser
     /// </summary>
     internal static string? ExtractYamlBlock(string content)
     {
-        if (!content.StartsWith("---")) return null;
-        // Line-anchored close: a "---" inside a value is not the terminator, so the returned block is never
-        // truncated mid-value (a file UpsertField wrote correctly is read back correctly).
-        var close = ClosingDelimiterIndex(content);
-        return close < 0 ? null : content[3..close];
+        var bounds = Bounds(content);
+        return bounds == null ? null : content[bounds.Value.YamlStart..bounds.Value.CloserStart];
     }
 
     /// <summary>
@@ -69,16 +66,17 @@ public static class FrontmatterParser
     /// </summary>
     public static string UpsertField(string content, string key, string value)
     {
-        var yaml = ExtractYamlBlock(content);
-        if (yaml == null) return content;
+        var bounds = Bounds(content);
+        if (bounds == null) return content;
 
-        // Anchor the closing delimiter to a line start: a "---" INSIDE a frontmatter value must not be mistaken
-        // for the end of the block, or the write would truncate the file mid-value and corrupt it.
-        var closeDelimiter = ClosingDelimiterIndex(content);
-        if (closeDelimiter < 0) return content;
-        var lines = content[3..closeDelimiter].Split('\n').ToList();
+        // The opener line (content[..openerLen]) and the closing delimiter both come from the shared Bounds
+        // helper, so opener tolerance and the empty-block case never diverge from the other frontmatter readers
+        // (finding 8). The yaml region begins at the opener's newline, so lines[0] is that line's remainder.
+        var openerLen = bounds.Value.YamlStart - 1;
+        var closerStart = bounds.Value.CloserStart;
+        var lines = content[openerLen..closerStart].Split('\n').ToList();
         SetKeyLine(lines, key, value);
-        return content[..3] + string.Join('\n', lines) + content[closeDelimiter..];
+        return content[..openerLen] + string.Join('\n', lines) + content[closerStart..];
     }
 
     /// <summary>Rewrite the frontmatter line for <paramref name="key"/> in place, or append it inside the block
@@ -103,28 +101,45 @@ public static class FrontmatterParser
         lines.Insert(insertAt, $"{key}: {value}");
     }
 
-    /// <summary>The index at which the closing <c>---</c> line begins — the first <c>---</c> that starts a line
-    /// after the opening and is immediately followed by end-of-line or end-of-content. Returns -1 when no such
-    /// line exists, so a <c>---</c> inside a value or body is never mistaken for the block's end.</summary>
-    private static int ClosingDelimiterIndex(string content)
+    /// <summary>The single shared boundary of a leading frontmatter block, resolved identically for every
+    /// frontmatter reader — this parser, <c>SyncDocFile</c>, and <c>SyncCommand</c> — so their opener,
+    /// empty-block, and closer semantics can never diverge (finding 8). The opener is <c>---</c> on the first
+    /// line (trailing whitespace tolerated); the closer is the first LATER line that is <c>---</c> with only
+    /// trailing whitespace, so a <c>---</c> inside a value is never the terminator and an EMPTY block
+    /// (<c>---</c> immediately followed by a <c>---</c> line) is valid. Returns null when the content has no
+    /// such block. <c>YamlStart</c> is the index after the opener line's newline; <c>CloserStart</c> is the
+    /// index of the closing <c>---</c> (== <c>YamlStart</c> for an empty block); <c>BodyStart</c> is the index
+    /// after the closing line's newline. Operates on either <c>\n</c> or <c>\r\n</c> line endings.</summary>
+    internal static (int YamlStart, int CloserStart, int BodyStart)? Bounds(string content)
     {
-        var at = content.IndexOf("\n---", 3, StringComparison.Ordinal);
-        while (at >= 0)
+        var openerNewline = content.IndexOf('\n');
+        if (openerNewline < 0) return null;
+        // Validate the OPENER with the same strictness as the closer, matching the XML contract above (review
+        // R2-3): exactly `---` on the first line, trailing whitespace tolerated. A bare StartsWith("---") also
+        // opened on `----` (a 4-dash horizontal rule) or `--- title`, so a body that happens to begin with such a
+        // line — plus any later `---` — was mis-parsed as bogus frontmatter, mangling body content into fields on
+        // the sync path. IsDelimiterLine keeps the trailing-whitespace tolerance the doc promises.
+        if (!IsDelimiterLine(content, 0, openerNewline)) return null;
+
+        var lineStart = openerNewline + 1;
+        while (true)
         {
-            if (IsDelimiterLineEnd(content, at + 4))
-                return at + 1;
-            at = content.IndexOf("\n---", at + 4, StringComparison.Ordinal);
+            var newline = content.IndexOf('\n', lineStart);
+            var lineEnd = newline < 0 ? content.Length : newline;
+            if (IsDelimiterLine(content, lineStart, lineEnd))
+                return (openerNewline + 1, lineStart, newline < 0 ? content.Length : newline + 1);
+            if (newline < 0) return null;
+            lineStart = newline + 1;
         }
-        return -1;
     }
 
-    /// <summary>Whether the closing <c>---</c> is the whole line: only trailing whitespace ("---  \n") may follow
-    /// before the line end or end-of-content, so a previously-parseable file is not silently degraded to
-    /// frontmatter-less (finding 7), while a "---" inside a value or a longer run is not a terminator.</summary>
-    private static bool IsDelimiterLineEnd(string content, int index)
+    /// <summary>Whether <c>content[start..end)</c> is a delimiter line: exactly <c>---</c> followed only by
+    /// trailing whitespace (spaces, tabs, or a <c>\r</c>). A longer run of dashes or any other trailing content
+    /// is not a delimiter, so a <c>---</c> inside a value or a horizontal rule is never mistaken for one.</summary>
+    private static bool IsDelimiterLine(string content, int start, int end)
     {
-        while (index < content.Length && content[index] is ' ' or '\t')
-            index++;
-        return index >= content.Length || content[index] is '\n' or '\r';
+        while (end > start && char.IsWhiteSpace(content[end - 1]))
+            end--;
+        return content.AsSpan(start, end - start).SequenceEqual("---");
     }
 }

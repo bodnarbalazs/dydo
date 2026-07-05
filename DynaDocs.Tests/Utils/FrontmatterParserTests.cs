@@ -116,14 +116,17 @@ public class FrontmatterParserTests
     }
 
     [Fact]
-    public void ParseFields_DuplicateKeys_LastWins()
+    public void ParseFields_DuplicateKeys_FirstWins()
     {
+        // Finding 7: duplicate-key handling is FIRST-wins across the whole stack — UpsertField rewrites the first
+        // duplicate line, so the reader must resolve the first occurrence too, or an upserted value reads back
+        // invisible. Matches SyncDoc.GetField / FieldMerge.ToMap / the reconcile FirstWins overlay.
         const string content = "---\nkey: first\nkey: second\n---\n";
 
         var fields = FrontmatterParser.ParseFields(content);
 
         Assert.NotNull(fields);
-        Assert.Equal("second", fields!["key"]);
+        Assert.Equal("first", fields!["key"]);
     }
 
     [Fact]
@@ -398,5 +401,63 @@ public class FrontmatterParserTests
         Assert.Equal("closed", fields!["status"]);
         Assert.Equal("t", fields["name"]);
         Assert.Contains("# Body", updated);
+    }
+
+    [Fact]
+    public void UpsertThenParse_DuplicateKeyFile_ReadsBackUpsertedValue()
+    {
+        // Finding 7 — the invariant that MUST hold: UpsertField(k, v) rewrites the FIRST duplicate line, and
+        // ParseFields resolves the FIRST occurrence, so the upserted value reads back. With the old last-wins
+        // ParseFields the second stale line shadowed the write and the value was invisible.
+        const string content = "---\nstatus: open\nstatus: open\n---\n\nbody";
+
+        var updated = FrontmatterParser.UpsertField(content, "status", "closed");
+        var fields = FrontmatterParser.ParseFields(updated);
+
+        Assert.Equal("closed", fields!["status"]);
+    }
+
+    [Fact]
+    public void ParseFields_OpenerWithNoNewline_ReturnsNull()
+    {
+        // Finding 8: a bare "---" with no newline is not a frontmatter block — there is no opener line to close.
+        Assert.Null(FrontmatterParser.ParseFields("---"));
+    }
+
+    [Theory]
+    [InlineData("--- \nstatus: open\n---\n\nbody")]  // trailing space on the opener line
+    [InlineData("---\t\nstatus: open\n---\n\nbody")] // trailing tab on the opener line
+    public void ParseFields_OpeningDelimiterWithTrailingWhitespace_StillParsed(string content)
+    {
+        // Finding 8: opener tolerance is harmonized across all readers — a "---" opener carrying trailing
+        // whitespace still opens the block.
+        var fields = FrontmatterParser.ParseFields(content);
+
+        Assert.NotNull(fields);
+        Assert.Equal("open", fields!["status"]);
+    }
+
+    [Theory]
+    [InlineData("----\nkey: v\n---\nbody")]      // a 4-dash horizontal rule, not a "---" opener
+    [InlineData("--------\nkey: v\n---\nbody")]  // a longer dash run
+    [InlineData("--- title\nkey: v\n---\nbody")] // "---" followed by heading text
+    public void ParseFields_OpenerNotExactlyTripleDash_NotParsedAsFrontmatter(string content)
+    {
+        // Review R2-3: the OPENER is validated with the same strictness as the closer — exactly "---" (trailing
+        // whitespace tolerated). A bare StartsWith("---") also opened on a 4+-dash horizontal rule or "--- title",
+        // so a body that happens to begin with such a line — plus any later "---" — was mis-parsed as bogus
+        // frontmatter, mangling body content into fields on the sync path. Such content must NOT parse as
+        // frontmatter; every dydo-generated file uses a strict "---\n" opener, so this loses nothing legitimate.
+        Assert.Null(FrontmatterParser.ParseFields(content));
+    }
+
+    [Fact]
+    public void StripFrontmatter_OpenerNotExactlyTripleDash_ReturnsOriginal()
+    {
+        // The read side stays consistent: a 4-dash rule opener is not a frontmatter block, so the body is
+        // returned unchanged rather than truncated at a spurious later "---".
+        const string content = "----\nkey: v\n---\nbody";
+
+        Assert.Equal(content, FrontmatterParser.StripFrontmatter(content));
     }
 }

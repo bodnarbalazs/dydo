@@ -491,26 +491,50 @@ public class NeedsHumanTests : IDisposable
     }
 
     [Fact]
+    public void SetRole_ContentionClearingWithinRetryWindow_Succeeds()
+    {
+        // Finding 5: SetRole now bounded-retries the per-agent lock (3x / 50 ms) rather than a single fail-fast
+        // attempt, so a watchdog per-agent sweep briefly holding the lock (~30 ms) is ridden out and the role set
+        // succeeds — the old single fail-fast attempt spuriously failed `dydo role` on such a collision.
+        WriteState("Adele", status: "working", task: "null", needsHuman: false, sessionId: "sess-1");
+
+        var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
+        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
+        var contender = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        var releaser = new Thread(() => { Thread.Sleep(30); contender.Dispose(); });
+        releaser.Start();
+
+        var ok = _registry.SetRole("sess-1", "code-writer", "contended-task", out var err);
+        releaser.Join();
+
+        Assert.True(ok, err);
+        Assert.Equal("contended-task", _registry.GetAgentState("Adele")!.Task); // the role set rode out contention
+    }
+
+    [Fact]
     public void SetDispatchMetadata_UnderLockContention_SkipsWrite()
     {
-        // Finding 5: SetDispatchMetadata's read-modify-write is under the per-agent lock too. It bounded-retries
-        // (3x / 50 ms) to ride out brief contention, but with the lock held for the whole call the retries all
-        // fail and the write is skipped (never performed unlocked), so it cannot clobber a concurrent raise.
+        // Finding 6: SetDispatchMetadata's read-modify-write is under the per-agent lock too. It bounded-retries
+        // (10x / 50 ms) to ride out brief contention, but with the lock held for the whole call the retries all
+        // fail: it returns false and the write is skipped (never performed unlocked), so it cannot clobber a
+        // concurrent raise. The false return lets the dispatcher surface a non-fatal warning.
         WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-1");
 
         var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
         Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
+        bool landed;
         using (new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            _registry.SetDispatchMetadata("Adele", "win-contended", true);
+            landed = _registry.SetDispatchMetadata("Adele", "win-contended", true);
 
+        Assert.False(landed);                                    // returns false so the dispatcher can warn
         Assert.Null(_registry.GetAgentState("Adele")!.WindowId); // the contended write did not land
     }
 
     [Fact]
     public void SetDispatchMetadata_ContentionClearingWithinRetryWindow_LandsWrite()
     {
-        // Finding 5: brief contention — a contender (e.g. a watchdog cleanup tick) releasing the per-agent
-        // lock within SetDispatchMetadata's bounded-retry window (3x / 50 ms) — is ridden out, so windowId +
+        // Finding 6: brief contention — a contender (e.g. a watchdog cleanup tick) releasing the per-agent
+        // lock within SetDispatchMetadata's bounded-retry window (10x / 50 ms) — is ridden out, so windowId +
         // autoClose land. Under the old single fail-fast attempt this write was silently lost, orphaning an
         // --auto-close terminal that never closed.
         WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-1");
@@ -544,5 +568,22 @@ public class NeedsHumanTests : IDisposable
         var state = _registry.GetAgentState("Adele")!;
         Assert.True(state.NeedsHuman);
         Assert.Equal("win-1", state.WindowId);
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_OverwritesStaleAutoCloseFromPriorLifecycle()
+    {
+        // Finding 6: the write is AUTHORITATIVE — a dispatch with auto-close FALSE must overwrite an AutoClose
+        // left TRUE by a prior lifecycle (release deliberately leaves it set), or the new terminal inherits the
+        // old dispatch's --auto-close and mis-closes. Landing the write is necessary and sufficient to clear the
+        // staleness; it returns true so the dispatcher knows no warning is needed.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-1");
+        Assert.True(_registry.SetDispatchMetadata("Adele", "old-win", true));   // a prior dispatch left auto-close on
+        Assert.True(_registry.GetAgentState("Adele")!.AutoClose);
+
+        Assert.True(_registry.SetDispatchMetadata("Adele", "new-win", false));  // new dispatch: no auto-close
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.False(state.AutoClose);          // stale true overwritten, not inherited
+        Assert.Equal("new-win", state.WindowId);
     }
 }

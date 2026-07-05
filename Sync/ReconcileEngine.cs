@@ -145,7 +145,7 @@ public static class ReconcileEngine
 
         if (!repoChanged && extChanged)
         {
-            var toRepo = OverlayAdapterInvisibleFields(WithSourcePath(external, repo.SourcePath), repo, fieldNorm);
+            var toRepo = OverlayAdapterInvisibleFields(WithSourcePath(external, repo.SourcePath), repo, baseDoc, fieldNorm);
             return new ReconcileResult
             {
                 LocalId = repo.LocalId,
@@ -163,7 +163,12 @@ public static class ReconcileEngine
 
     private static ReconcileResult MergeBoth(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm)
     {
-        var fields = FieldMerge.Merge(baseDoc.Fields, repo.Fields, external.Fields);
+        // Filter the external's empty-relation echoes the base never recorded before the 3-way merge (finding 2):
+        // an all-unresolvable relation reads back empty from real Notion, and FieldMerge would otherwise see it
+        // as an external "" against a repo pending value and manufacture a phantom conflict every tick. A genuine
+        // clear (base RECORDED the key, external now empty) is kept, so it still merges and applies.
+        var externalFields = WithoutEmptyEchoesAbsentFrom(external.Fields, RecordedKeys(baseDoc));
+        var fields = FieldMerge.Merge(baseDoc.Fields, repo.Fields, externalFields);
         var body = ThreeWayTextMerge.Merge(baseDoc.Body, repo.Body, external.Body);
         var conflicted = fields.Conflicted || body.Conflicted;
         var externalId = baseDoc.ExternalId ?? external.ExternalId ?? repo.ExternalId;
@@ -175,7 +180,7 @@ public static class ReconcileEngine
             Fields = fields.Fields,
             Body = body.Text,
             SourcePath = repo.SourcePath,
-        }, repo, fieldNorm);
+        }, repo, baseDoc, fieldNorm);
 
         return new ReconcileResult
         {
@@ -201,14 +206,23 @@ public static class ReconcileEngine
     /// field the repo genuinely deleted is absent from the repo doc, so it is not in this set and is never
     /// resurrected. With the default identity normalizer this set is empty and the input passes through.
     /// </summary>
-    private static SyncDoc OverlayAdapterInvisibleFields(SyncDoc written, SyncDoc repo, Func<SyncDoc, SyncDoc> fieldNorm)
+    private static SyncDoc OverlayAdapterInvisibleFields(SyncDoc written, SyncDoc repo, SyncDoc baseDoc, Func<SyncDoc, SyncDoc> fieldNorm)
     {
         var visible = FirstWins(fieldNorm(repo).Fields);
+        // What the base RECORDED per key (raw). A whole-field-invisible relation preserves only the repo entries
+        // the base never recorded (un-pushed pending work); a recorded entry the board no longer shows was
+        // cleared/retired there, so it is NOT resurrected — a genuine board clear of a since-retired target
+        // applies rather than being swallowed (finding 4).
+        var recordedEntries = FirstWins(baseDoc.Fields);
 
         // Whole-field invisible: a key the normalizer drops ENTIRELY — an out-of-schema/local-only frontmatter
         // key, or a relation that resolves to nothing — reads back absent, so the external doc would blank it.
         var invisible = FirstWins(repo.Fields.Where(f => !visible.ContainsKey(f.Key)));
-        var pending = PendingRelationEntries(repo, visible);
+        // The repo's un-pushed pending entries: a relation target the normalizer DROPS (not yet syncable) AND the
+        // base never recorded. An entry the base DID record but the board no longer shows was cleared/retired
+        // there, not un-pushed work, so it is excluded — it must not be re-appended to the file nor block the
+        // doc's delete (finding 4), mirroring the whole-field-invisible branch's UnpushedEntries.
+        var pending = PendingRelationEntries(repo, visible, recordedEntries);
         // A whole-field-invisible RELATION merges entry-granular rather than replacing: its raw entries are all
         // unresolvable, so a board edit lives only in the external value — replacing it wholesale would discard a
         // genuine board edit and later clobber it on push (finding 2). A non-relation local-only key still takes
@@ -217,12 +231,27 @@ public static class ReconcileEngine
             .Where(k => IsRelationKey(k, repo, fieldNorm))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        if (invisible.Count == 0 && pending.Count == 0)
-            return written;
+        // The external field values reduced to entries that RESOLVE to a local id — the normalizer keeps only ids
+        // in the write map (finding 3). EVERY relation value the overlay ingests is taken from THIS subset, never
+        // the raw external value: RenderRelation's honest fallback for an unmapped/archived page is the raw Notion
+        // page id, which the write map (keyed by local ids) can never resolve, so writing it would plant an
+        // immortal raw-id entry that re-appears every tick and blocks the doc's delete forever. Presentation, not
+        // a pending local edit. A non-relation field's normalized value equals its raw value, so this is a no-op
+        // there; the divergent early-return that let a raw id pass through untouched in the pending and
+        // pass-through branches (round-3 defect) is gone — the loop below sanitizes every ingestion path.
+        var resolvableExternal = FirstWins(fieldNorm(written).Fields);
+
+        // External relations the normalizer drops WHOLE — every entry unresolvable, i.e. a pure raw-page-id
+        // fallback — that the repo does not also carry as an invisible key. Told apart from an out-of-schema
+        // dropped key via IsRelationKey (reliable for dropped keys), so pass-through collapses such a field to
+        // empty rather than planting the raw id (finding 3, pass-through case).
+        var externalRelationKeys = written.Fields.Select(f => f.Key)
+            .Where(k => !resolvableExternal.ContainsKey(k) && IsRelationKey(k, written, fieldNorm))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var overlaid = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var fields = written.Fields.Select(f => OverlayOne(f, invisible, invisibleRelations, pending, overlaid)).ToList();
-        AppendUnseen(fields, invisible, pending, overlaid);
+        var fields = written.Fields.Select(f => OverlayOne(f, invisible, invisibleRelations, pending, resolvableExternal, recordedEntries, externalRelationKeys, overlaid)).ToList();
+        AppendUnseen(fields, invisible, invisibleRelations, pending, recordedEntries, overlaid);
 
         return new SyncDoc
         {
@@ -235,46 +264,93 @@ public static class ReconcileEngine
     }
 
     /// <summary>Overlay one external field: a whole-field-invisible key takes the repo's value; a
-    /// partially-invisible relation takes the external's resolvable value with the repo's pending entries
-    /// merged back; every other field passes through unchanged. Records overlaid keys so the caller can
-    /// re-append the ones the external dropped entirely.</summary>
+    /// whole-field-invisible relation unions the external's RESOLVABLE entries with the repo's unresolvable ones;
+    /// a partially-invisible relation takes the external's resolvable value with the repo's pending entries
+    /// merged back; every other RELATION passes through as its resolvable subset (never a raw page id); every
+    /// other field passes through unchanged. Records overlaid keys so the caller can re-append the ones the
+    /// external dropped entirely.</summary>
     private static SyncField OverlayOne(
         SyncField written,
         IReadOnlyDictionary<string, string> invisible,
         HashSet<string> invisibleRelations,
         IReadOnlyDictionary<string, List<string>> pending,
+        IReadOnlyDictionary<string, string> resolvableExternal,
+        IReadOnlyDictionary<string, string> recordedEntries,
+        HashSet<string> externalRelationKeys,
         HashSet<string> overlaid)
     {
         if (invisible.TryGetValue(written.Key, out var repoValue))
         {
             overlaid.Add(written.Key);
-            // A whole-field-invisible relation UNIONs the board's resolvable entries (written) with the repo's
-            // unresolvable ones, so a board edit survives and a repo pending entry is never lost (finding 2). A
+            // A whole-field-invisible relation UNIONs the board's RESOLVABLE (local-id) entries with the repo's
+            // UN-PUSHED ones, so a board edit survives and a repo pending entry is never lost (finding 2), while
+            // two things are excluded: a raw external page-id fallback (it lives only in written.Value, not the
+            // normalized subset, finding 3) and a repo entry the base already recorded but the board no longer
+            // shows — that entry was cleared/retired on the board, so a genuine clear applies (finding 4). A
             // non-relation local-only key takes the repo value wholesale.
-            return invisibleRelations.Contains(written.Key)
-                ? new SyncField { Key = written.Key, Value = MergeEntries(written.Value, SplitEntries(repoValue)) }
-                : new SyncField { Key = written.Key, Value = repoValue };
+            if (!invisibleRelations.Contains(written.Key))
+                return new SyncField { Key = written.Key, Value = repoValue };
+            resolvableExternal.TryGetValue(written.Key, out var resolvable);
+            return new SyncField { Key = written.Key, Value = MergeEntries(resolvable ?? "", UnpushedEntries(repoValue, written.Key, recordedEntries)) };
         }
         if (pending.TryGetValue(written.Key, out var entries))
         {
             overlaid.Add(written.Key);
-            return new SyncField { Key = written.Key, Value = MergeEntries(written.Value, entries) };
+            // Merge the repo's pending entries onto the external's RESOLVABLE subset, NOT its raw value: a raw
+            // external page-id fallback lives only in written.Value, and unioning it here (the round-3 defect,
+            // production-reachable when one target of a multi-value relation retires while the board still
+            // references its archived page) would plant an immortal raw-id entry that re-unions every tick and
+            // blocks the doc's delete forever (finding 3). `pending` already excludes base-recorded entries, so a
+            // retired-but-recorded target is not re-appended either (finding 4).
+            resolvableExternal.TryGetValue(written.Key, out var resolvable);
+            return new SyncField { Key = written.Key, Value = MergeEntries(resolvable ?? "", entries) };
         }
+        // Pass-through. A field the normalizer keeps takes its NORMALIZED value: identical to the raw value for a
+        // non-relation field, but the RESOLVABLE (local-id) subset for a relation, so a board reference to an
+        // unmapped/archived page — rendered as a raw Notion page id — is stripped before it reaches frontmatter
+        // (finding 3, pass-through case: repo relation fully resolvable, the board edits another field while
+        // referencing an archived page). A relation the normalizer drops WHOLE (all entries raw) collapses to
+        // empty for the same reason; any other dropped key (out-of-schema) is passed through untouched.
+        if (resolvableExternal.TryGetValue(written.Key, out var normalized))
+            return new SyncField { Key = written.Key, Value = normalized };
+        if (externalRelationKeys.Contains(written.Key))
+            return new SyncField { Key = written.Key, Value = "" };
         return written;
     }
 
+    /// <summary>The repo's entries for a whole-field-invisible relation that the base never recorded — its
+    /// un-pushed, still-pending local edits. Entries the base DID record are omitted: a recorded entry the board
+    /// no longer shows was cleared or retired there, so it must not be resurrected (finding 4).</summary>
+    private static List<string> UnpushedEntries(string repoValue, string key, IReadOnlyDictionary<string, string> recordedEntries)
+    {
+        var recorded = recordedEntries.TryGetValue(key, out var value) ? SplitEntries(value) : [];
+        return SplitEntries(repoValue).Where(e => !recorded.Contains(e)).ToList();
+    }
+
     /// <summary>Re-append invisible/pending keys the external side dropped entirely (not merely blanked): a
-    /// whole-field-invisible key with its repo value, a partially-invisible relation with just its pending
-    /// entries.</summary>
+    /// whole-field-invisible local-only key with its repo value; a whole-field-invisible RELATION with only its
+    /// un-pushed entries (a recorded entry the board dropped was cleared there, finding 4); a partially-invisible
+    /// relation with just its pending entries.</summary>
     private static void AppendUnseen(
         List<SyncField> fields,
         IReadOnlyDictionary<string, string> invisible,
+        HashSet<string> invisibleRelations,
         IReadOnlyDictionary<string, List<string>> pending,
+        IReadOnlyDictionary<string, string> recordedEntries,
         HashSet<string> overlaid)
     {
         foreach (var (key, value) in invisible)
             if (!overlaid.Contains(key))
-                fields.Add(new SyncField { Key = key, Value = value });
+            {
+                if (!invisibleRelations.Contains(key))
+                    fields.Add(new SyncField { Key = key, Value = value });
+                else
+                {
+                    var unpushed = UnpushedEntries(value, key, recordedEntries);
+                    if (unpushed.Count > 0)
+                        fields.Add(new SyncField { Key = key, Value = string.Join(", ", unpushed) });
+                }
+            }
         foreach (var (key, entries) in pending)
             if (!overlaid.Contains(key))
                 fields.Add(new SyncField { Key = key, Value = string.Join(", ", entries) });
@@ -290,7 +366,13 @@ public static class ReconcileEngine
     private static bool HasUnpushedRelation(SyncDoc baseDoc, SyncDoc repo, Func<SyncDoc, SyncDoc> fieldNorm)
     {
         var visible = FirstWins(fieldNorm(repo).Fields);
-        if (PendingRelationEntries(repo, visible).Count > 0)
+        var baseEntriesByKey = FirstWins(baseDoc.Fields);
+        // A partially-resolvable relation with a pending entry the base never recorded is un-pushed work and must
+        // block the delete (finding 1b). An entry the base DID record but the normalizer now drops is a retired
+        // target, not pending work, so PendingRelationEntries excludes it — it no longer blocks the delete
+        // (finding 4), coherent with the overlay re-append so a partial-shape board archive of a doc whose one
+        // retired blocker was already recorded propagates as a genuine delete instead of resurrecting forever.
+        if (PendingRelationEntries(repo, visible, baseEntriesByKey).Count > 0)
             return true;
 
         // Entry-granular against the BASE, not merely key-granular (finding 3): compare the repo's RAW entries
@@ -300,8 +382,13 @@ public static class ReconcileEngine
         // a's target retired so the whole key drops from both normalized sides — letting the delete lose b. An
         // empty repo value and a permanently-local, out-of-schema key (told apart via IsRelationKey) are not
         // un-pushed work and never block the delete.
-        var baseEntriesByKey = FirstWins(baseDoc.Fields);
-        return repo.Fields.Any(f =>
+        // First-wins on a duplicate repo key (review R2-2): consider only the FIRST occurrence of each key, exactly
+        // as every other consumer (visible/FirstWins, FieldMerge, ToProperties, ParseFields, UpsertField, GetField)
+        // does. A NON-first duplicate occurrence's entries are invisible to all of them — no reader will ever push
+        // or preserve them — so counting them as un-pushed work would let a duplicate-key doc block a delete on
+        // entries no one else can see.
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        return repo.Fields.Where(f => seen.Add(f.Key)).Any(f =>
             !string.IsNullOrEmpty(f.Value)
             && !visible.ContainsKey(f.Key)
             && IsRelationKey(f.Key, repo, fieldNorm)
@@ -332,19 +419,32 @@ public static class ReconcileEngine
         return fieldNorm(probe).Fields.Any(f => string.Equals(f.Key, key, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>The repo's per-key entries a partially-lossy field normalizer DROPPED — comma-joined entries
-    /// present in the repo's raw value but absent from its normalized value (a relation target not yet
-    /// syncable). A key the normalizer drops entirely is not here (it is whole-field invisible), and a field
-    /// with no dropped entry is omitted (finding 1a).</summary>
-    private static Dictionary<string, List<string>> PendingRelationEntries(SyncDoc repo, Dictionary<string, string> visible)
+    /// <summary>The repo's per-key entries a partially-lossy field normalizer DROPPED that are genuinely
+    /// un-pushed — comma-joined entries present in the repo's raw value, absent from its normalized value (a
+    /// relation target not yet syncable), AND never recorded by the base. An entry the base DID record is a
+    /// retired/cleared target, not pending work, so it is excluded (finding 4): the overlay must not re-append it
+    /// and it must not block the doc's delete, mirroring the whole-field-invisible branch's <see cref="UnpushedEntries"/>.
+    /// A key the normalizer drops entirely is not here (it is whole-field invisible), and a field with no
+    /// remaining dropped entry is omitted (finding 1a).</summary>
+    private static Dictionary<string, List<string>> PendingRelationEntries(SyncDoc repo, Dictionary<string, string> visible, IReadOnlyDictionary<string, string> recordedEntries)
     {
         var pending = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var f in repo.Fields)
         {
+            // First-wins on a duplicate repo key (review R2-2): every other consumer — visible/FirstWins,
+            // FieldMerge.ToMap, NotionPropertyMapper.ToProperties, FrontmatterParser.ParseFields, UpsertField,
+            // SyncDoc.GetField — resolves the FIRST occurrence, and `visible` is itself first-wins. Pairing a
+            // LATER occurrence's raw value with the first occurrence's kept value would union phantom pending
+            // entries no reader will ever push or preserve, so only the first occurrence of each key is considered.
+            if (!seen.Add(f.Key))
+                continue;
             if (!visible.TryGetValue(f.Key, out var keptValue))
                 continue;
             var kept = SplitEntries(keptValue);
-            var dropped = SplitEntries(f.Value).Where(e => !kept.Contains(e)).ToList();
+            var dropped = SplitEntries(f.Value)
+                .Where(e => !kept.Contains(e) && !EntryRecordedInBase(recordedEntries, f.Key, e))
+                .ToList();
             if (dropped.Count > 0)
                 pending[f.Key] = dropped;
         }
@@ -444,21 +544,25 @@ public static class ReconcileEngine
     {
         if (norm(a.Body.Replace("\r\n", "\n")) != norm(b.Body.Replace("\r\n", "\n")))
             return false;
-        // `a` is always the base at every call site, so its normalized keys are the record of what was pushed.
         var fa = fieldNorm(a).Fields;
-        var fb = WithoutEmptyEchoesAbsentFrom(fieldNorm(b).Fields, fa);
+        var fb = WithoutEmptyEchoesAbsentFrom(fieldNorm(b).Fields, RecordedKeys(a));
         return fa.Count == fb.Count
             && fa.Zip(fb).All(p => p.First.Key == p.Second.Key && p.First.Value == p.Second.Value);
     }
 
+    /// <summary>The keys the base actually RECORDED — read from its RAW snapshot fields, not a re-normalization
+    /// against the CURRENT relation maps (finding 4). The base is stored already-normalized, so `a.Fields` is
+    /// the literal record of what was externalized; re-normalizing it would drop a recorded relation whose target
+    /// has since retired, and a genuine board CLEAR of that key would then be swallowed as a phantom empty echo.
+    /// `a` is always the base at every call site.</summary>
+    private static HashSet<string> RecordedKeys(SyncDoc a) =>
+        a.Fields.Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Drop from the compared side any EMPTY-valued field whose key the base never recorded. Real Notion
     /// returns every schema property, so an all-unresolvable relation — dropped from the normalized base — echoes
     /// back as an empty string, a phantom "clear" that would churn WriteToRepo every tick and provoke a spurious
-    /// merge conflict once the entry resolves (finding 6). A clear is meaningful only when the base HELD the key,
-    /// which keeps that key here and still registers as a genuine change.</summary>
-    private static List<SyncField> WithoutEmptyEchoesAbsentFrom(List<SyncField> fields, List<SyncField> baseFields)
-    {
-        var baseKeys = baseFields.Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return fields.Where(f => f.Value.Length != 0 || baseKeys.Contains(f.Key)).ToList();
-    }
+    /// merge conflict once the entry resolves (finding 6). A clear is meaningful only when the base RECORDED the
+    /// key, which keeps that key here and still registers as a genuine change (finding 4).</summary>
+    private static List<SyncField> WithoutEmptyEchoesAbsentFrom(List<SyncField> fields, HashSet<string> recordedKeys) =>
+        fields.Where(f => f.Value.Length != 0 || recordedKeys.Contains(f.Key)).ToList();
 }

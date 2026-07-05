@@ -140,4 +140,20 @@ public class FieldMergeTests
         Assert.True(r.Conflicted);
         Assert.Equal("9", r.Fields.First(f => f.Key == "b").Value);
     }
+
+    [Fact]
+    public void DuplicateRepoKey_FirstWins_EmittedOnce()
+    {
+        // Finding 7: a duplicate repo frontmatter key resolves to its FIRST occurrence and is emitted ONCE — the
+        // last-wins ToMap + once-per-occurrence emission disagreed with every other reader (UpsertField rewrites
+        // the first line, SyncDoc.GetField reads the first). No consumer may disagree on which duplicate wins.
+        var r = FieldMerge.Merge(
+            F(("a", "1")),
+            F(("dup", "first"), ("dup", "second"), ("a", "1")),
+            F(("a", "1")));
+
+        Assert.False(r.Conflicted);
+        Assert.Equal(["dup", "a"], r.Fields.Select(f => f.Key));       // emitted once, in repo order
+        Assert.Equal("first", r.Fields.First(f => f.Key == "dup").Value); // first occurrence wins
+    }
 }

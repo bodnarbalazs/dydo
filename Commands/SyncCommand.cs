@@ -274,11 +274,9 @@ public static partial class SyncCommand
         return path.StartsWith("dydo/", StringComparison.OrdinalIgnoreCase) ? path : "dydo/" + path;
     }
 
-    private static string StripFrontmatter(string content)
-    {
-        var match = FrontmatterRegex().Match(content);
-        return match.Success ? content[match.Length..] : content;
-    }
+    // Delegate to the shared frontmatter helper so the opener tolerance and empty-block handling match every
+    // other reader — no strict-regex divergence (finding 8).
+    private static string StripFrontmatter(string content) => FrontmatterParser.StripFrontmatter(content);
 
     private static string DropOrchestrationSections(string content)
     {
@@ -306,9 +304,6 @@ public static partial class SyncCommand
         content = content.Replace("{{AGENT_NAME}}", "you");
         return content;
     }
-
-    [GeneratedRegex(@"\A---\r?\n.*?\r?\n---\r?\n", RegexOptions.Singleline)]
-    private static partial Regex FrontmatterRegex();
 
     [GeneratedRegex(@"^## (.+)$", RegexOptions.Multiline)]
     private static partial Regex HeadingRegex();

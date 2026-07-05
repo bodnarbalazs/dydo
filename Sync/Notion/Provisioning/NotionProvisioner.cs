@@ -270,7 +270,11 @@ public sealed class NotionProvisioner
         Function = prop.RollupFunction!,
     };
 
-    public void Save()
+    /// <summary>Persist provision state. Private: every fact is written the instant it is established — a
+    /// database's ids in <see cref="Create"/>, a completed post-pass in <see cref="MarkPostPassDone"/> — so there
+    /// is no external caller (wave 6 removed the last one, finding 9). A standalone Save would only re-serialize
+    /// identical state.</summary>
+    private void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_statePath)!);
         var file = new NotionProvisionState { Types = _state.Values.OrderBy(t => t.ObjectType).ToList() };

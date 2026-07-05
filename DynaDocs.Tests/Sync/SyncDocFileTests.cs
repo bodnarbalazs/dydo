@@ -293,4 +293,36 @@ public class SyncDocFileTests
         Assert.Equal("open", doc.GetField("status"));
         Assert.Equal("body", doc.Body);
     }
+
+    [Fact]
+    public void Parse_OpeningDelimiterWithTrailingWhitespace_StillParsed()
+    {
+        // Finding 8: the OPENER tolerance is now harmonized with FrontmatterParser — a "---" opener carrying
+        // trailing whitespace still opens the block, where the old strict "---\n"-only opener silently degraded
+        // the whole file to frontmatter-less (dropping every field).
+        var doc = SyncDocFile.Parse("--- \nstatus: open\n---\n\nbody", "t", "tasks/t.md");
+
+        Assert.Equal("open", doc.GetField("status"));
+        Assert.Equal("body", doc.Body);
+    }
+
+    [Fact]
+    public void Parse_EmptyFrontmatterBlock_NoFields_BodyIntact()
+    {
+        // Finding 8: an EMPTY frontmatter block (opener immediately followed by a closer) is valid — the old
+        // SyncDocFile scan started past the opener and missed the closer, degrading it to frontmatter-less.
+        var doc = SyncDocFile.Parse("---\n---\n\nbody line", "t", "tasks/t.md");
+
+        Assert.Empty(doc.Fields);
+        Assert.Equal("body line", doc.Body);
+    }
+
+    [Fact]
+    public void RenderParse_DuplicateFrontmatterKey_FirstWins()
+    {
+        // Finding 7: a duplicate frontmatter key resolves first-wins on read, consistent with every other reader.
+        var doc = SyncDocFile.Parse("---\ndup: first\ndup: second\nother: x\n---\n\nbody", "t", "tasks/t.md");
+
+        Assert.Equal("first", doc.GetField("dup"));
+    }
 }

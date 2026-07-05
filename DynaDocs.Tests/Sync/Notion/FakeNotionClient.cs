@@ -58,6 +58,13 @@ public sealed class FakeNotionClient : INotionClient
     /// definitive 404/object_not_found re-provisions as a genuinely deleted database (finding 1).</summary>
     public NotionApiException? FailRetrieveDatabase { get; set; }
 
+    /// <summary>When set, <see cref="RetrieveDataSource"/> throws this exception — drives the durable-reset test
+    /// (review R2-1): a re-provision mints a fresh EMPTY database, then CheckDrift (which calls RetrieveDataSource
+    /// per type, between Provision and Reconcile) throws, aborting the tick after the mint but before the
+    /// end-of-tick base Save. Only the schema-drift path calls RetrieveDataSource, so the reconcile path is
+    /// unaffected on a healthy tick.</summary>
+    public NotionApiException? FailRetrieveDataSource { get; set; }
+
     /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
     public bool FailAppend { get; set; }
 
@@ -94,7 +101,12 @@ public sealed class FakeNotionClient : INotionClient
         return Databases.TryGetValue(databaseId, out var db) ? db : new NotionDatabase { Id = databaseId };
     }
 
-    public NotionDataSource RetrieveDataSource(string dataSourceId) => DataSourceSchema(dataSourceId);
+    public NotionDataSource RetrieveDataSource(string dataSourceId)
+    {
+        if (FailRetrieveDataSource is { } ex)
+            throw ex;
+        return DataSourceSchema(dataSourceId);
+    }
 
     public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request)
     {

@@ -100,8 +100,13 @@ public static class NotionPropertyMapper
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? relationLocalToPageIdByField = null)
     {
         var props = new Dictionary<string, NotionPropertyValue>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var field in fields)
         {
+            // First-wins on a duplicate frontmatter key (finding 7): the first occurrence is authoritative,
+            // matching FieldMerge.ToMap, the FirstWins overlay lookup, and UpsertField's first-line rewrite.
+            if (!seen.Add(field.Key))
+                continue;
             if (!schema.TryGetValue(field.Key, out var type))
                 continue;
 

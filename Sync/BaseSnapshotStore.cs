@@ -29,6 +29,20 @@ public sealed class BaseSnapshotStore
     public static string PathFor(string dydoRoot, string adapterName) =>
         Path.Combine(dydoRoot, "_system", ".local", "sync", adapterName, "snapshot.json");
 
+    /// <summary>Durably clear a type's base snapshot by deleting its file (review R2-1). Called at MINT time —
+    /// the instant a re-provision creates a fresh EMPTY database — so the reset survives a crash between the mint
+    /// and the end-of-tick <see cref="Save"/>. An in-memory <see cref="Reset"/> alone is not persisted until that
+    /// Save, so an abort in between (a transient probe failure in schema-drift, a throw in the adapter's external
+    /// read, a process kill) would leave the fresh database recorded while the STALE snapshot.json survived on
+    /// disk — and the next run, reusing the now-valid empty database with nothing minted, would read every base+repo
+    /// pair as an external delete and wipe the repo. Deleting the file here makes the reset crash-safe. A missing
+    /// file is already reset: a no-op.</summary>
+    public static void DeleteSnapshot(string filePath)
+    {
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+    }
+
     public SyncDoc? Get(string localId)
     {
         return _byLocalId.TryGetValue(localId, out var snap) ? ToDoc(snap) : null;
@@ -46,6 +60,17 @@ public sealed class BaseSnapshotStore
     {
         _byLocalId.Remove(localId);
         _lastActivity.Remove(localId);
+    }
+
+    /// <summary>Drop every recorded base, so the next reconcile sees baseDoc == null for all pairs and
+    /// re-pushes each repo doc as a CREATE (finding 1). Called when a type is (re)provisioned into a fresh,
+    /// EMPTY database: the old base still points at pages in the now-abandoned database, so leaving it would
+    /// make the same tick read every external as deleted and mass-delete the repo. Last-activity is cleared
+    /// too — the fresh pages carry none — so it re-seeds from each file's mtime on the re-create.</summary>
+    public void Reset()
+    {
+        _byLocalId.Clear();
+        _lastActivity.Clear();
     }
 
     /// <summary>The engine-derived last-activity date for an object (DR 030 §3), or null before its first

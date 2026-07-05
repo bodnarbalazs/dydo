@@ -1,6 +1,7 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -38,6 +39,7 @@ public static class HandCommand
     {
         var registry = new AgentRegistry();
 
+        var explicitTarget = agentName != null;
         agentName ??= registry.GetCurrentAgent(registry.GetSessionContext())?.Name;
         if (string.IsNullOrEmpty(agentName))
         {
@@ -46,7 +48,20 @@ public static class HandCommand
             return ExitCodes.Success;
         }
 
-        if (!registry.SetNeedsHuman(agentName, value))
+        // Validate a caller-supplied --agent BEFORE any filesystem touch. An unknown or traversal name
+        // ('..\\..\\x') must not fabricate a state file outside the agents tree, nor silently create a
+        // ghost agent and report success. Same registry check every other agent-targeting entry uses;
+        // SetNeedsHuman re-validates as defence in depth. (The self-resolved name is trusted — it came
+        // from the registry — so this only gates the explicit-target path.)
+        if (explicitTarget && !registry.IsValidAgentName(agentName))
+        {
+            Console.Error.WriteLine($"ERROR: dydo hand — '{agentName}' is not a known agent.");
+            return ExitCodes.ValidationErrors;
+        }
+
+        // A raise records an EXPLICIT flag (sticky — not swept, not cleared by the next tool call); a
+        // lower clears whatever is set, derived or explicit. The source arg is ignored when clearing.
+        if (!registry.SetNeedsHuman(agentName, value, NeedsHumanSource.Explicit))
         {
             Console.Error.WriteLine($"NOTICE: dydo hand — {agentName}'s state is locked; try again.");
             return ExitCodes.Success;

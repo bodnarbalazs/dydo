@@ -26,13 +26,23 @@ public class AgentState
     public List<string> UnreadMessages { get; set; } = [];
 
     /// <summary>
-    /// Machine-written "a human is needed" attention flag (Decision 030 §1). Never set by agent
-    /// discipline — it is derived from observable events (an AskUserQuestion tool call, a turn that
-    /// ends while working on an in-flight task, an escalation, or a crashed session) and self-heals
-    /// (the agent's next guarded tool call clears it, as does an explicit lower or the watchdog's
-    /// reconcile sweep once the cause disappears). Mirrored to the current task file's frontmatter.
+    /// "A human is needed" attention flag (Decision 030 §1). Usually machine-written and derived from
+    /// observable events (an AskUserQuestion tool call, a turn that ends while working on an in-flight
+    /// task, an escalation, or a crashed session), in which case it self-heals: the agent's next
+    /// guarded tool call clears it, as does the watchdog's reconcile sweep once the cause disappears.
+    /// An operator can instead raise it deliberately via <c>dydo hand raise</c> — see
+    /// <see cref="NeedsHumanSource"/> for the derived-vs-explicit distinction that governs clearing.
+    /// Mirrored to the current task file's frontmatter.
     /// </summary>
     public bool NeedsHuman { get; set; }
+
+    /// <summary>
+    /// Provenance of <see cref="NeedsHuman"/> when it is set (Decision 030 §1): a machine-detected
+    /// <see cref="Models.NeedsHumanSource.Derived"/> flag self-heals, an operator-raised
+    /// <see cref="Models.NeedsHumanSource.Explicit"/> flag is sticky. Null whenever
+    /// <see cref="NeedsHuman"/> is false — clearing the flag drops the source.
+    /// </summary>
+    public NeedsHumanSource? NeedsHumanSource { get; set; }
 
     /// <summary>
     /// Name of the agent that dispatched this agent. Null for human-initiated agents (tree roots).

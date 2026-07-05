@@ -289,9 +289,11 @@ public static partial class GuardCommand
 
     /// <summary>
     /// needs-human derived-flag reconcile on a Tier-1 PreToolUse call (Decision 030 §1). AskUserQuestion
-    /// is the human-in-the-loop tool — its call sets the flag. Every other guarded tool call from an
-    /// agent that was waiting means the human answered and work resumed, so the flag self-clears. Both
-    /// paths are no-ops when the flag is already in the target state, so the common case writes nothing.
+    /// is the human-in-the-loop tool — its call sets a DERIVED flag. Every other guarded tool call from
+    /// an agent that was waiting means the human answered and work resumed, so a derived flag self-clears.
+    /// An EXPLICIT flag (a deliberate <c>dydo hand raise</c>) is left untouched — it is not erased by the
+    /// raiser's next tool call, only by <c>dydo hand lower</c> or release. Both paths are no-ops when the
+    /// flag is already in the target state, so the common case writes nothing.
     /// </summary>
     internal static void ReconcileNeedsHuman(string toolName, string sessionId, AgentRegistry registry)
     {
@@ -300,8 +302,8 @@ public static partial class GuardCommand
 
         var isAsk = string.Equals(toolName, "askuserquestion", StringComparison.OrdinalIgnoreCase);
         if (isAsk && !agent.NeedsHuman)
-            registry.SetNeedsHuman(agent.Name, true);
-        else if (!isAsk && agent.NeedsHuman)
+            registry.SetNeedsHuman(agent.Name, true, NeedsHumanSource.Derived);
+        else if (!isAsk && agent.NeedsHuman && agent.NeedsHumanSource != NeedsHumanSource.Explicit)
             registry.SetNeedsHuman(agent.Name, false);
     }
 
@@ -335,7 +337,7 @@ public static partial class GuardCommand
             return;
         var agent = registry.GetCurrentAgent(sessionId);
         if (agent is { Status: AgentStatus.Working } && !string.IsNullOrEmpty(agent.Task) && !agent.NeedsHuman)
-            registry.SetNeedsHuman(agent.Name, true);
+            registry.SetNeedsHuman(agent.Name, true, NeedsHumanSource.Derived);
     }
 
     /// <summary>

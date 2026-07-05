@@ -443,8 +443,8 @@ public class NotionSpineSyncTests : IDisposable
                     "status": { "type": "select", "options": ["in-progress", "in-review", "done"] },
                     "needs-human": { "type": "checkbox" },
                     "last-activity": { "type": "date", "engineComputed": true },
-                    "stale": { "type": "formula",                      "expression": "and(prop(\"status\") == \"in-progress\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
-                    "attention": { "type": "formula",                      "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
+                    "stale": { "type": "formula", "expression": "and(prop(\"status\") == \"in-progress\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
+                    "attention": { "type": "formula", "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" } } }
               ]
             }
             """);

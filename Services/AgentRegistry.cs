@@ -674,6 +674,7 @@ public partial class AgentRegistry : IAgentRegistry
                 s.Role = null;
                 s.Task = null;
                 s.NeedsHuman = false;
+                s.NeedsHumanSource = null;
                 s.Since = null;
                 s.WritablePaths = [];
                 s.ReadOnlyPaths = [];
@@ -1460,31 +1461,57 @@ public partial class AgentRegistry : IAgentRegistry
     }
 
     /// <summary>
-    /// Sets or clears the derived needs-human attention flag (Decision 030 §1) on an agent's state and
-    /// mirrors it to the agent's current task file frontmatter, so the signal is durable and syncable.
-    /// The state write is skipped when the flag is already at <paramref name="value"/>, but the task
-    /// mirror always runs so a stale or missing frontmatter key is reconciled. Returns false only on
-    /// lock contention.
+    /// Sets or clears the needs-human attention flag (Decision 030 §1) on an agent's state and mirrors
+    /// it to the agent's current task file frontmatter, so the signal is durable and syncable. The
+    /// state write is skipped when both the flag and its source already match, but the task mirror
+    /// always runs so a stale or missing frontmatter key is reconciled. Machine detections default to
+    /// <see cref="NeedsHumanSource.Derived"/>; use the source-bearing overloads for an explicit raise.
+    /// Returns false on lock contention or an invalid <paramref name="agentName"/>.
     /// </summary>
-    public bool SetNeedsHuman(string agentName, bool value) => SetNeedsHuman(agentName, value, null);
+    public bool SetNeedsHuman(string agentName, bool value) =>
+        SetNeedsHuman(agentName, value, NeedsHumanSource.Derived, null);
 
     /// <summary>
     /// As <see cref="SetNeedsHuman(string, bool)"/>, but with a <paramref name="taskHint"/> for the
     /// task-file mirror. A caller that captured the agent's task from state BEFORE acquiring the lock
     /// (e.g. the watchdog sweep) passes it here so the mirror is still reconciled if a concurrent
     /// Release nulled <c>state.Task</c> in the meantime — otherwise a stale <c>needs-human: true</c>
-    /// in the task file would be stranded.
+    /// in the task file would be stranded. Uses <see cref="NeedsHumanSource.Derived"/>.
     /// </summary>
-    public bool SetNeedsHuman(string agentName, bool value, string? taskHint)
+    public bool SetNeedsHuman(string agentName, bool value, string? taskHint) =>
+        SetNeedsHuman(agentName, value, NeedsHumanSource.Derived, taskHint);
+
+    /// <summary>
+    /// As <see cref="SetNeedsHuman(string, bool)"/>, but recording the flag's
+    /// <paramref name="source"/> — <see cref="NeedsHumanSource.Explicit"/> for a deliberate
+    /// <c>dydo hand raise</c>, <see cref="NeedsHumanSource.Derived"/> for a machine detection.
+    /// </summary>
+    public bool SetNeedsHuman(string agentName, bool value, NeedsHumanSource source) =>
+        SetNeedsHuman(agentName, value, source, null);
+
+    /// <summary>
+    /// Full form: sets/clears the flag with an explicit <paramref name="source"/> and a
+    /// <paramref name="taskHint"/> for the mirror. Source is upgrade-only when setting — an explicit
+    /// raise upgrades a derived flag, but a derived detection never downgrades an already-explicit
+    /// one; clearing drops the source entirely. Validates <paramref name="agentName"/> against the
+    /// registry FIRST (defence in depth) so a traversal or ghost name can never fabricate a state
+    /// file outside the agents tree.
+    /// </summary>
+    public bool SetNeedsHuman(string agentName, bool value, NeedsHumanSource source, string? taskHint)
     {
+        if (!IsValidAgentName(agentName))
+            return false;
+
         if (!TryAcquireLock(agentName, out _))
             return false;
         try
         {
             var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
-            if (state.NeedsHuman != value)
+            var newSource = ResolveNeedsHumanSource(state, value, source);
+            if (state.NeedsHuman != value || state.NeedsHumanSource != newSource)
             {
                 state.NeedsHuman = value;
+                state.NeedsHumanSource = newSource;
                 WriteStateFile(agentName, state);
             }
             MirrorNeedsHumanToTask(string.IsNullOrEmpty(state.Task) ? taskHint : state.Task, value);
@@ -1494,6 +1521,20 @@ public partial class AgentRegistry : IAgentRegistry
         {
             ReleaseLock(agentName);
         }
+    }
+
+    // Upgrade-only source resolution (Decision 030 §1): clearing drops the source; an explicit raise
+    // is always explicit; a derived detection preserves an already-explicit flag rather than
+    // downgrading it — so a machine event can never quietly demote a human-directed raise.
+    private static NeedsHumanSource? ResolveNeedsHumanSource(AgentState state, bool value, NeedsHumanSource source)
+    {
+        if (!value)
+            return null;
+        if (source == NeedsHumanSource.Explicit)
+            return NeedsHumanSource.Explicit;
+        return state.NeedsHuman && state.NeedsHumanSource == NeedsHumanSource.Explicit
+            ? NeedsHumanSource.Explicit
+            : NeedsHumanSource.Derived;
     }
 
     private void MirrorNeedsHumanToTask(string? task, bool value)
@@ -1529,6 +1570,7 @@ public partial class AgentRegistry : IAgentRegistry
 
         // Format task role history for YAML
         var historyYaml = FormatTaskRoleHistory(state.TaskRoleHistory);
+        var needsHumanSource = FormatNeedsHumanSource(state.NeedsHumanSource);
 
         var statePath = Path.Combine(workspace, "state.md");
         var content = $"""
@@ -1541,6 +1583,7 @@ public partial class AgentRegistry : IAgentRegistry
             dispatched-by: {state.DispatchedBy ?? "null"}
             dispatched-by-role: {state.DispatchedByRole ?? "null"}
             needs-human: {state.NeedsHuman.ToString().ToLowerInvariant()}
+            needs-human-source: {needsHumanSource}
             window-id: {state.WindowId ?? "null"}
             auto-close: {state.AutoClose.ToString().ToLowerInvariant()}
             resume-attempts: {state.ResumeAttempts}
@@ -1603,6 +1646,9 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
+    private static string FormatNeedsHumanSource(NeedsHumanSource? source) =>
+        source?.ToString().ToLowerInvariant() ?? "null";
+
     private static string FormatTaskRoleHistory(Dictionary<string, List<string>> history)
     {
         if (history.Count == 0)
@@ -1625,6 +1671,12 @@ public partial class AgentRegistry : IAgentRegistry
         ["window-id"] = (s, v) => s.WindowId = NullableString(v),
         ["auto-close"] = (s, v) => s.AutoClose = v == "true",
         ["needs-human"] = (s, v) => s.NeedsHuman = v == "true",
+        ["needs-human-source"] = (s, v) => s.NeedsHumanSource = v switch
+        {
+            "derived" => Models.NeedsHumanSource.Derived,
+            "explicit" => Models.NeedsHumanSource.Explicit,
+            _ => null
+        },
         ["resume-attempts"] = (s, v) => s.ResumeAttempts = int.TryParse(v, out var n) ? n : 0,
         ["last-resume-launched-at"] = (s, v) =>
         {

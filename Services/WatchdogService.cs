@@ -911,14 +911,19 @@ public static class WatchdogService
             var task = fields.GetValueOrDefault("task");
             var hasTask = !string.IsNullOrEmpty(task) && task != "null";
             var needsHuman = fields.GetValueOrDefault("needs-human") == "true";
+            var isExplicit = fields.GetValueOrDefault("needs-human-source") == "explicit";
             var taskName = hasTask ? task : null;
 
             // Crash mid-task: a working agent holding a task whose claimed session PID is gone.
             if (working && hasTask && !IsClaimedSessionAlive(agentDir))
                 return (needsHuman ? null : true, taskName);
 
-            // Cause disappeared: released (no longer working) or the task closed.
-            if (needsHuman && (!working || !hasTask))
+            // Cause disappeared: released (no longer working) or the task closed. Only DERIVED flags
+            // self-heal here (Decision 030 §1). An EXPLICIT `dydo hand raise` — e.g. an orchestrator
+            // flagging an idle peer that is not a working-with-task agent — is deliberately sticky and
+            // is cleared only by `dydo hand lower` or by agent release (which clears flag + mirror
+            // directly). The machine sweep must never erase a human-directed raise.
+            if (needsHuman && !isExplicit && (!working || !hasTask))
                 return (false, taskName);
 
             return (null, taskName);

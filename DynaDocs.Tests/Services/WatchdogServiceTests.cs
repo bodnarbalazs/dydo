@@ -2272,7 +2272,53 @@ public class WatchdogServiceTests : IDisposable
         Assert.Contains("needs-human: true", ReadState(dydoRoot, "Adele"));
     }
 
-    private void WriteNeedsHumanState(string dydoRoot, string agentName, string status, string task, bool needsHuman)
+    [Fact]
+    public void PollNeedsHuman_OrphanCrashMidTask_SetsFlagAndTaskFileMirror()
+    {
+        // Orphan detection sets the flag AND mirrors it into the captured task file (the taskHint
+        // threaded through SetNeedsHuman) — the sweep-path-with-hint coverage the wave-1 review asked for.
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "working", task: "my-task", needsHuman: false);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999999);
+        ProcessUtils.IsProcessRunningOverride = _ => false; // claimed session PID is dead
+        var taskFile = WriteNeedsHumanTaskFile(dydoRoot, "my-task", needsHuman: false);
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: true", ReadState(dydoRoot, "Adele"));
+        Assert.Contains("needs-human: true", File.ReadAllText(taskFile));
+    }
+
+    [Fact]
+    public void PollNeedsHuman_ReleasedAgentWithStaleFlag_ClearsFlagAndTaskFileMirror()
+    {
+        // A released agent's stale flag AND its task-file mirror are both reconciled by the sweep via
+        // the captured task hint — no stranded `needs-human: true` left in the task file.
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "free", task: "my-task", needsHuman: true);
+        var taskFile = WriteNeedsHumanTaskFile(dydoRoot, "my-task", needsHuman: true);
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: false", ReadState(dydoRoot, "Adele"));
+        Assert.Contains("needs-human: false", File.ReadAllText(taskFile));
+        Assert.DoesNotContain("needs-human: true", File.ReadAllText(taskFile));
+    }
+
+    [Fact]
+    public void PollNeedsHuman_ExplicitFlagOnIdleAgent_IsNotSwept()
+    {
+        // The defect the source field closes: an explicit `dydo hand raise --agent X` on a peer that
+        // isn't working-with-task must survive the sweep. A derived flag in the same shape is cleared.
+        var dydoRoot = ResumeDydoRoot();
+        WriteNeedsHumanState(dydoRoot, "Adele", status: "free", task: "null", needsHuman: true, source: "explicit");
+
+        WatchdogService.PollNeedsHuman(dydoRoot);
+
+        Assert.Contains("needs-human: true", ReadState(dydoRoot, "Adele"));
+    }
+
+    private void WriteNeedsHumanState(string dydoRoot, string agentName, string status, string task, bool needsHuman, string? source = null)
     {
         var agentDir = Path.Combine(dydoRoot, "agents", agentName);
         Directory.CreateDirectory(agentDir);
@@ -2284,8 +2330,27 @@ public class WatchdogServiceTests : IDisposable
             status: {status}
             assigned: testuser
             needs-human: {needsHuman.ToString().ToLowerInvariant()}
+            needs-human-source: {source ?? "null"}
             ---
             """);
+    }
+
+    private string WriteNeedsHumanTaskFile(string dydoRoot, string task, bool needsHuman)
+    {
+        var tasksDir = Path.Combine(dydoRoot, "project", "tasks");
+        Directory.CreateDirectory(tasksDir);
+        var path = Path.Combine(tasksDir, $"{task}.md");
+        File.WriteAllText(path, $"""
+            ---
+            area: general
+            name: {task}
+            status: pending
+            needs-human: {needsHuman.ToString().ToLowerInvariant()}
+            ---
+
+            # Task: {task}
+            """);
+        return path;
     }
 
     private static string ReadState(string dydoRoot, string agentName) =>

@@ -478,12 +478,16 @@ dydo task list --all            # Include closed tasks
 
 ### dydo hand raise
 
-Raise the needs-human attention flag (Decision 030) — the explicit half of the machine-written attention signal. Targets the current agent, or a named one via `--agent`.
+Raise the needs-human attention flag (Decision 030) — the **explicit** half of the attention signal. Targets the current agent, or a named one via `--agent` so an orchestrator can flag the context it manages.
 
 ```bash
 dydo hand raise                 # Flag the current agent's session
 dydo hand raise --agent Adele   # Flag a specific agent
 ```
+
+**Explicit vs derived.** The flag has two provenances. Machine detections — an `AskUserQuestion` tool call, a turn that ends mid-task (the Stop hook), or a crashed session caught by the watchdog — set a **derived** flag that self-heals: the agent's next guarded tool call clears it, and the watchdog reconcile sweep clears it once its cause disappears. `dydo hand raise` sets an **explicit** flag that is deliberately sticky: it is **not** cleared by the raiser's next tool call and **not** swept away when the target is idle — only `dydo hand lower`, agent release, or — once the runtime-to-board bridge lands — a human unchecking it in Notion clears it. Raising over an existing derived flag upgrades it to explicit.
+
+`--agent` is validated against the agent pool before anything is written: an unknown or malformed name is a clear error with a non-zero exit and no state change.
 
 **Options:**
 - `--agent <name>` - Target agent (defaults to the current agent for this session)
@@ -492,7 +496,7 @@ dydo hand raise --agent Adele   # Flag a specific agent
 
 ### dydo hand lower
 
-Clear the needs-human flag once the human's input is no longer needed.
+Clear the needs-human flag once the human's input is no longer needed. Lowers **both** derived and explicit flags.
 
 ```bash
 dydo hand lower                 # Clear the current agent's flag

@@ -360,4 +360,92 @@ public class NeedsHumanTests : IDisposable
         Assert.NotEqual(0, code);
         Assert.False(Directory.Exists(Path.Combine(_testDir, "evil")));
     }
+
+    [Fact]
+    public void DerivedClear_UnderLock_LeavesExplicitFlagUntouched()
+    {
+        // Finding 2: a machine derived-clear must decide stickiness from the state re-read UNDER the lock,
+        // not a pre-lock snapshot. Seed an Explicit flag, then invoke the derived-clear path (the default
+        // Derived source the watchdog sweep / guard reconcile use); the explicit flag must survive.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
+        Assert.Equal(NeedsHumanSource.Explicit, _registry.GetAgentState("Adele")!.NeedsHumanSource);
+
+        Assert.True(_registry.SetNeedsHuman("Adele", false)); // derived-clear (Derived source)
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.True(state.NeedsHuman);
+        Assert.Equal(NeedsHumanSource.Explicit, state.NeedsHumanSource); // sticky explicit survives
+    }
+
+    [Fact]
+    public void Sweep_CrashMidTask_FlagAlreadySet_StillRepairsStaleTaskMirror()
+    {
+        // Finding 8: a crashed agent (working + task, session dead) whose needs-human flag is ALREADY set
+        // must still have its task-file mirror reconciled — a stale/missing mirror on a crash is repaired,
+        // not skipped just because the flag value is unchanged.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: true, sessionId: "sess-dead");
+        var taskPath = WriteTaskFile("my-task"); // task file has NO needs-human key: a missing mirror
+
+        var prev = ProcessUtils.IsProcessRunningOverride;
+        ProcessUtils.IsProcessRunningOverride = _ => false; // the claimed session PID is dead
+        try
+        {
+            WatchdogService.PollNeedsHuman(_dydoDir);
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = prev; }
+
+        Assert.Contains("needs-human: true", File.ReadAllText(taskPath)); // mirror repaired despite unchanged flag
+    }
+
+    [Fact]
+    public void SetRole_TaskChange_WithActiveFlag_MovesMirrorFromOldTaskToNew()
+    {
+        // Finding 9: a flagged agent switching tasks must not strand needs-human:true in the OLD task file.
+        // SetRole clears the old task's mirror and stamps the new one.
+        WriteState("Adele", status: "working", task: "old-task", needsHuman: true, sessionId: "sess-1");
+        var oldTaskPath = WriteTaskFileWithFlag("old-task", needsHuman: true);
+        var newTaskPath = WriteTaskFile("new-task");
+
+        Assert.True(_registry.SetRole("sess-1", "code-writer", "new-task", out var err), err);
+
+        Assert.Contains("needs-human: false", File.ReadAllText(oldTaskPath)); // old mirror cleared
+        Assert.DoesNotContain("needs-human: true", File.ReadAllText(oldTaskPath));
+        Assert.Contains("needs-human: true", File.ReadAllText(newTaskPath));  // new mirror stamped
+    }
+
+    [Fact]
+    public void SetRole_TraversalTaskName_Rejected_WritesNothingOutsideTasksTree()
+    {
+        // Finding 5: a task name reaches the tasks tree as a file path, so '--task ../..' must be rejected
+        // (defence in depth in the registry) before any filesystem touch — no file fabricated outside the tree.
+        WriteState("Adele", status: "working", task: "null", needsHuman: false, sessionId: "sess-1");
+
+        var ok = _registry.SetRole("sess-1", "code-writer", "../../evil", out var err);
+
+        Assert.False(ok);
+        Assert.Contains("Invalid task name", err);
+        Assert.False(File.Exists(Path.Combine(_dydoDir, "evil.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "evil.md")));
+    }
+
+    [Fact]
+    public void HandRaise_LockContention_RetriesThenFailsNonZero_NoPhantomSuccess()
+    {
+        // Finding 6: a deliberate escalation must not vanish silently when the write is dropped on lock
+        // contention. Holding the per-agent lock forces every SetNeedsHuman attempt to fail; hand must retry
+        // briefly, then exit NON-ZERO (never report a phantom success), and write no flag.
+        WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
+        Environment.CurrentDirectory = _testDir;
+
+        var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
+        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
+        using (new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        {
+            var code = HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke();
+            Assert.NotEqual(0, code);
+        }
+
+        Assert.False(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
+    }
 }

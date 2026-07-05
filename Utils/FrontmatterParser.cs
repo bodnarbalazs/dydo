@@ -42,8 +42,10 @@ public static class FrontmatterParser
     public static string StripFrontmatter(string content)
     {
         if (!content.StartsWith("---")) return content;
-        var endIndex = content.IndexOf("---", 3);
-        return endIndex < 0 ? content : content[(endIndex + 3)..].TrimStart();
+        // Anchor the closing delimiter to a line start (same discipline as UpsertField): a "---" SUBSTRING
+        // inside a value must not be mistaken for the block's end, or the body would start mid-value.
+        var close = ClosingDelimiterIndex(content);
+        return close < 0 ? content : content[(close + 3)..].TrimStart();
     }
 
     /// <summary>
@@ -53,8 +55,10 @@ public static class FrontmatterParser
     internal static string? ExtractYamlBlock(string content)
     {
         if (!content.StartsWith("---")) return null;
-        var endIndex = content.IndexOf("---", 3);
-        return endIndex < 0 ? null : content[3..endIndex];
+        // Line-anchored close: a "---" inside a value is not the terminator, so the returned block is never
+        // truncated mid-value (a file UpsertField wrote correctly is read back correctly).
+        var close = ClosingDelimiterIndex(content);
+        return close < 0 ? null : content[3..close];
     }
 
     /// <summary>
@@ -90,8 +94,11 @@ public static class FrontmatterParser
             return;
         }
 
+        // lines[0] is the remainder of the OPENING delimiter line (empty for a normal "---\n" open), never a
+        // key line, so the back-scan must stop at index 1 — inserting before it would glue the new key onto
+        // the opening "---" and corrupt a file whose frontmatter block is empty.
         var insertAt = lines.Count;
-        while (insertAt > 0 && lines[insertAt - 1].Trim().Length == 0)
+        while (insertAt > 1 && lines[insertAt - 1].Trim().Length == 0)
             insertAt--;
         lines.Insert(insertAt, $"{key}: {value}");
     }

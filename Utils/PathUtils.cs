@@ -11,6 +11,20 @@ public static partial class PathUtils
     /// </summary>
     private static readonly HashSet<string> ExemptFiles = ["CLAUDE.md", ".gitkeep"];
 
+    /// <summary>
+    /// Whether a task name is safe to combine into a filesystem path. A task name becomes a
+    /// <c>&lt;task&gt;.md</c> file under the tasks tree (auto-create) and the frontmatter key mirror, so a
+    /// value carrying a path separator, a <c>..</c> traversal segment, or a rooted/drive-relative prefix
+    /// ('--task ../../x') could escape that tree and write anywhere. Rejected before any filesystem use, at
+    /// the command surface and again defensively in the registry (coding-standards §6 — validate at boundaries).
+    /// </summary>
+    public static bool IsValidTaskName(string? name) =>
+        !string.IsNullOrWhiteSpace(name)
+        && !name.Contains('/')
+        && !name.Contains('\\')
+        && !name.Contains("..")
+        && !Path.IsPathRooted(name);
+
     public static bool IsKebabCase(string name)
     {
         if (ExemptFiles.Contains(name)) return true;

@@ -65,7 +65,7 @@ public static class ReconcileEngine
         if (repo == null)
         {
             // Repo side deleted. External unchanged -> propagate the delete; external edited -> conflict.
-            if (Equal(baseDoc, external!, norm, fieldNorm))
+            if (EqualRawFields(baseDoc, external!, norm))
                 return new ReconcileResult
                 {
                     LocalId = baseDoc.LocalId,
@@ -85,8 +85,21 @@ public static class ReconcileEngine
             };
         }
 
-        // External side deleted. Repo unchanged -> propagate the delete; repo edited -> conflict.
-        if (Equal(baseDoc, repo, norm, fieldNorm))
+        return ExternalDeleted(baseDoc, repo, norm, fieldNorm);
+    }
+
+    /// <summary>External side deleted. Repo unchanged -> propagate the delete; repo edited -> conflict. "Unchanged"
+    /// is the NORMALIZED compare (Equal), so a permanently-local, out-of-schema frontmatter key the adapter never
+    /// pushes — area/type on a sprint-task, id/found-by/date on an issue — does not, by its mere presence, block
+    /// an intentional board-archive from deleting the file (a raw compare would, since the base is recorded
+    /// normalized and so never holds those keys). It is guarded by <see cref="HasUnpushedRelation"/> so no un-pushed
+    /// RELATION entry is ever lost: a partially-resolvable relation with a pending entry, or an all-entries-
+    /// unresolvable relation the normalizer drops whole (absent from base), counts as CHANGED and resurrects the
+    /// page rather than silently deleting the file and losing the entry forever (finding 1b). A genuine unchanged
+    /// file — no un-pushed relation content — matches base normalized and still deletes.</summary>
+    private static ReconcileResult ExternalDeleted(SyncDoc baseDoc, SyncDoc repo, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        if (Equal(baseDoc, repo, norm, fieldNorm) && !HasUnpushedRelation(baseDoc, repo, fieldNorm))
             return new ReconcileResult
             {
                 LocalId = baseDoc.LocalId,
@@ -190,24 +203,22 @@ public static class ReconcileEngine
     /// </summary>
     private static SyncDoc OverlayAdapterInvisibleFields(SyncDoc written, SyncDoc repo, Func<SyncDoc, SyncDoc> fieldNorm)
     {
-        var visible = new HashSet<string>(fieldNorm(repo).Fields.Select(f => f.Key), StringComparer.OrdinalIgnoreCase);
-        var invisible = repo.Fields.Where(f => !visible.Contains(f.Key)).ToList();
-        if (invisible.Count == 0)
+        var visible = fieldNorm(repo).Fields
+            .ToDictionary(f => f.Key, f => f.Value, StringComparer.OrdinalIgnoreCase);
+
+        // Whole-field invisible: a key the normalizer drops ENTIRELY — an out-of-schema/local-only frontmatter
+        // key, or a relation that resolves to nothing — reads back absent, so the external doc would blank it.
+        var invisible = repo.Fields
+            .Where(f => !visible.ContainsKey(f.Key))
+            .ToDictionary(f => f.Key, f => f.Value, StringComparer.OrdinalIgnoreCase);
+        var pending = PendingRelationEntries(repo, visible);
+
+        if (invisible.Count == 0 && pending.Count == 0)
             return written;
 
         var overlaid = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var fields = new List<SyncField>();
-        foreach (var f in written.Fields)
-        {
-            var repoField = invisible.FirstOrDefault(r => string.Equals(r.Key, f.Key, StringComparison.OrdinalIgnoreCase));
-            fields.Add(repoField ?? f);
-            if (repoField != null)
-                overlaid.Add(f.Key);
-        }
-        // Adapter-invisible fields the external side dropped entirely (not merely blanked) are re-appended.
-        foreach (var f in invisible)
-            if (!overlaid.Contains(f.Key))
-                fields.Add(f);
+        var fields = written.Fields.Select(f => OverlayOne(f, invisible, pending, overlaid)).ToList();
+        AppendUnseen(fields, invisible, pending, overlaid);
 
         return new SyncDoc
         {
@@ -217,6 +228,122 @@ public static class ReconcileEngine
             Body = written.Body,
             SourcePath = written.SourcePath,
         };
+    }
+
+    /// <summary>Overlay one external field: a whole-field-invisible key takes the repo's value; a
+    /// partially-invisible relation takes the external's resolvable value with the repo's pending entries
+    /// merged back; every other field passes through unchanged. Records overlaid keys so the caller can
+    /// re-append the ones the external dropped entirely.</summary>
+    private static SyncField OverlayOne(
+        SyncField written,
+        IReadOnlyDictionary<string, string> invisible,
+        IReadOnlyDictionary<string, List<string>> pending,
+        HashSet<string> overlaid)
+    {
+        if (invisible.TryGetValue(written.Key, out var repoValue))
+        {
+            overlaid.Add(written.Key);
+            return new SyncField { Key = written.Key, Value = repoValue };
+        }
+        if (pending.TryGetValue(written.Key, out var entries))
+        {
+            overlaid.Add(written.Key);
+            return new SyncField { Key = written.Key, Value = MergeEntries(written.Value, entries) };
+        }
+        return written;
+    }
+
+    /// <summary>Re-append invisible/pending keys the external side dropped entirely (not merely blanked): a
+    /// whole-field-invisible key with its repo value, a partially-invisible relation with just its pending
+    /// entries.</summary>
+    private static void AppendUnseen(
+        List<SyncField> fields,
+        IReadOnlyDictionary<string, string> invisible,
+        IReadOnlyDictionary<string, List<string>> pending,
+        HashSet<string> overlaid)
+    {
+        foreach (var (key, value) in invisible)
+            if (!overlaid.Contains(key))
+                fields.Add(new SyncField { Key = key, Value = value });
+        foreach (var (key, entries) in pending)
+            if (!overlaid.Contains(key))
+                fields.Add(new SyncField { Key = key, Value = string.Join(", ", entries) });
+    }
+
+    /// <summary>Whether the repo doc carries relation content it has not yet been able to push — the guard on
+    /// delete-propagation for the external-deleted branch (finding 1b, entry-granular). Two shapes must count as
+    /// un-pushed work: a partially-resolvable relation with a pending entry (<see cref="PendingRelationEntries"/>),
+    /// and an all-entries-unresolvable relation the normalizer drops WHOLE — invisible to PendingRelationEntries,
+    /// which inspects only keys that survive normalization — with a non-empty raw value absent from base. A
+    /// permanently-local, out-of-schema key (area/type/id/...) is never pushable, so it is not un-pushed work and
+    /// must not block the delete; it is told apart from a dropped relation via <see cref="IsRelationKey"/>.</summary>
+    private static bool HasUnpushedRelation(SyncDoc baseDoc, SyncDoc repo, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var visible = fieldNorm(repo).Fields
+            .ToDictionary(f => f.Key, f => f.Value, StringComparer.OrdinalIgnoreCase);
+        if (PendingRelationEntries(repo, visible).Count > 0)
+            return true;
+
+        var baseKeys = baseDoc.Fields
+            .Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return repo.Fields.Any(f =>
+            !string.IsNullOrEmpty(f.Value)
+            && !visible.ContainsKey(f.Key)
+            && !baseKeys.Contains(f.Key)
+            && IsRelationKey(f.Key, repo, fieldNorm));
+    }
+
+    /// <summary>Whether a whole-field-invisible key is a schema RELATION (its entries are all currently
+    /// unresolvable) rather than a permanently-local, out-of-schema key — read straight from the same normalizer
+    /// seam the overlay trusts, inventing no parallel schema. A relation keeps its key under an EMPTY value (a
+    /// valid clear normalizes to "", as <c>NotionSyncAdapter.ResolveRelationSubset</c> does), whereas an
+    /// out-of-schema or computed key is dropped for every value; so probing the normalizer with an empty value
+    /// reveals the relation-typed fact without the engine ever learning the schema.</summary>
+    private static bool IsRelationKey(string key, SyncDoc doc, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var probe = new SyncDoc
+        {
+            LocalId = doc.LocalId,
+            ExternalId = doc.ExternalId,
+            Fields = [new SyncField { Key = key, Value = "" }],
+            Body = doc.Body,
+            SourcePath = doc.SourcePath,
+        };
+        return fieldNorm(probe).Fields.Any(f => string.Equals(f.Key, key, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>The repo's per-key entries a partially-lossy field normalizer DROPPED — comma-joined entries
+    /// present in the repo's raw value but absent from its normalized value (a relation target not yet
+    /// syncable). A key the normalizer drops entirely is not here (it is whole-field invisible), and a field
+    /// with no dropped entry is omitted (finding 1a).</summary>
+    private static Dictionary<string, List<string>> PendingRelationEntries(SyncDoc repo, Dictionary<string, string> visible)
+    {
+        var pending = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in repo.Fields)
+        {
+            if (!visible.TryGetValue(f.Key, out var keptValue))
+                continue;
+            var kept = SplitEntries(keptValue);
+            var dropped = SplitEntries(f.Value).Where(e => !kept.Contains(e)).ToList();
+            if (dropped.Count > 0)
+                pending[f.Key] = dropped;
+        }
+        return pending;
+    }
+
+    /// <summary>Split a comma-joined field value into its trimmed, non-empty entries — the same split
+    /// <c>NotionSyncAdapter</c> uses for a relation, so per-entry overlay matches the adapter's echo.</summary>
+    private static List<string> SplitEntries(string value) =>
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    /// <summary>Append the pending entries not already present to the external value, re-joined with ", ".</summary>
+    private static string MergeEntries(string externalValue, List<string> pending)
+    {
+        var entries = SplitEntries(externalValue);
+        foreach (var p in pending)
+            if (!entries.Contains(p))
+                entries.Add(p);
+        return string.Join(", ", entries);
     }
 
     /// <summary>Create the object on the external side. The push carries the full repo doc, but the base
@@ -273,6 +400,13 @@ public static class ReconcileEngine
         Body = doc.Body,
         SourcePath = sourcePath,
     };
+
+    /// <summary>Equality with fields compared RAW (identity normalizer), the body still modulo the adapter's
+    /// body round-trip. Used only by the repo-deleted branch, comparing base against the surviving EXTERNAL doc:
+    /// both are already free of local-only and un-pushed fields (base is recorded normalized; the external view is
+    /// schema-filtered board state), so a raw compare is exact there and needs no normalization.</summary>
+    private static bool EqualRawFields(SyncDoc a, SyncDoc b, Func<string, string> norm) =>
+        Equal(a, b, norm, static d => d);
 
     private static bool Equal(SyncDoc a, SyncDoc b, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
     {

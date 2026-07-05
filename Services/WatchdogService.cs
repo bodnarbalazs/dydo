@@ -914,9 +914,12 @@ public static class WatchdogService
             var isExplicit = fields.GetValueOrDefault("needs-human-source") == "explicit";
             var taskName = hasTask ? task : null;
 
-            // Crash mid-task: a working agent holding a task whose claimed session PID is gone.
+            // Crash mid-task: a working agent holding a task whose claimed session PID is gone. Always return
+            // the SET (not null even when the flag is already true) so SetNeedsHuman still reconciles the
+            // task-file mirror — a crashed agent's mirror may be stale or missing, and the state write is
+            // skipped anyway when the flag is unchanged, so the only added work is the mirror repair (finding 8).
             if (working && hasTask && !IsClaimedSessionAlive(agentDir))
-                return (needsHuman ? null : true, taskName);
+                return (true, taskName);
 
             // Cause disappeared: released (no longer working) or the task closed. Only DERIVED flags
             // self-heal here (Decision 030 §1). An EXPLICIT `dydo hand raise` — e.g. an orchestrator

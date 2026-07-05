@@ -493,6 +493,146 @@ public class ReconcileEngineTests
         Assert.Null(result.NewBase.GetField("sprint")); // base records only the round-trippable subset
     }
 
+    // A per-ENTRY relation normalizer faithful to NotionSyncAdapter.ResolveRelationSubset: an empty relation is
+    // a valid clear and KEPT as ""; a non-empty value keeps only its resolvable entries; and an all-unresolvable
+    // value drops the key whole (its target is not yet synced, so it reads back absent).
+    private static readonly HashSet<string> ResolvableBlockers = new(StringComparer.Ordinal) { "b" };
+    private static SyncDoc ResolveBlockedBySubset(SyncDoc d) => new()
+    {
+        LocalId = d.LocalId, ExternalId = d.ExternalId, Body = d.Body, SourcePath = d.SourcePath,
+        Fields = d.Fields.SelectMany(f =>
+        {
+            if (f.Key != "blocked-by")
+                return new[] { f };
+            var ids = f.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (ids.Length == 0)
+                return new[] { new SyncField { Key = "blocked-by", Value = "" } };
+            var kept = ids.Where(ResolvableBlockers.Contains).ToList();
+            return kept.Count == 0 ? [] : new[] { new SyncField { Key = "blocked-by", Value = string.Join(", ", kept) } };
+        }).ToList(),
+    };
+
+    [Fact]
+    public void WriteToRepo_PendingRelationEntry_SurvivesRewrite_MergedBackPerEntry()
+    {
+        // Finding 1a: repo has `blocked-by: b, c` where c is not yet resolvable, so it normalizes to `b` == base
+        // and repoChanged is false. A same-tick external edit to a DIFFERENT field takes the WriteToRepo branch.
+        // The overlay must merge the pending entry c back PER ENTRY, or the rewrite drops it permanently while
+        // keeping the (non-empty) resolvable subset — the exact loss the whole-field overlay could not prevent.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b, c"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "b")); // c never externalized
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));    // the genuine external edit is honored
+        Assert.Equal("b, c", result.RepoWrite.GetField("blocked-by")); // pending entry c survives the rewrite
+        Assert.Equal("b", result.NewBase!.GetField("blocked-by"));     // base still records only the resolvable subset
+    }
+
+    [Fact]
+    public void WriteToRepo_ExternalReplacedResolvableEntry_PendingEntryStillMergedBack()
+    {
+        // The external swapped its resolvable target (b -> e, both representable) while the repo still carries the
+        // pending c. The external's resolvable value wins for the representable entries; the pending c is appended.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b, c"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "e"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("e, c", result.RepoWrite!.GetField("blocked-by")); // external's edit + the pending entry
+    }
+
+    [Fact]
+    public void WriteToRepo_ExternalDroppedRelationKeyEntirely_PendingEntryReappended()
+    {
+        // The external cleared the resolvable part of the relation, so its key reads back absent. The pending
+        // unresolvable entry (c) must still be re-appended to the repo file, not lost — exercising the overlay's
+        // re-append path for a partially-invisible relation the external dropped entirely.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b, c"));
+        var ext = Doc("t", "body", ("title", "T"), ("status", "done")); // no blocked-by key at all
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));
+        Assert.Equal("c", result.RepoWrite.GetField("blocked-by")); // pending entry survived via re-append
+    }
+
+    [Fact]
+    public void DeletedInExternal_RepoHasPendingRelationEntry_NotSilentlyDeleted()
+    {
+        // Finding 1b: the external page is gone; the repo file carries an un-pushed, not-yet-resolvable relation
+        // entry (c) absent from base. The unchanged check must compare RAW fields, so the pending entry counts as
+        // a change — the file is resurrected/conflicted, never silently deleted with c lost forever.
+        var b = Doc("t", "body", ("title", "T"), ("blocked-by", "b"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("title", "T"), ("blocked-by", "b, c")); // c pending, never pushed
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.Null(result.RepoDelete);                                     // never a silent file delete
+        Assert.Equal("b, c", result.ExternalWrite!.GetField("blocked-by")); // resurrected page re-created from the repo
+    }
+
+    [Fact]
+    public void DeletedInExternal_RepoTrulyUnchanged_StillDeletes()
+    {
+        // The complement: with no pending entry the raw-field check still matches base, so a genuine unchanged
+        // repo file is deleted when its page is gone (the delete-propagation behavior is preserved).
+        var b = Doc("t", "body", ("title", "T"), ("blocked-by", "b"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("title", "T"), ("blocked-by", "b"));
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.Delete, result.Action);
+        Assert.Equal("tasks/t.md", result.RepoDelete);
+    }
+
+    [Fact]
+    public void DeletedInExternal_RepoHasLocalOnlyKey_StillDeletes()
+    {
+        // The wave-5 1b regression: the board page was archived and the repo file is untouched since push, but it
+        // carries a permanently-local, out-of-schema key ("notes") the adapter never persists — as EVERY real dydo
+        // doc does (area/type on a sprint-task, id/found-by/date on an issue). A RAW compare against the base — which
+        // is recorded NORMALIZED and so never holds that key — judged the file "changed" forever, so the archive
+        // re-created the page every tick instead of deleting the row. The normalized compare deletes it: a local-only
+        // key is not un-pushed work and must not block delete propagation.
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("notes", "mine")); // local-only, never pushed
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, fieldNormalizer: DropOutOfSchemaNotes);
+
+        Assert.Equal(ReconcileAction.Delete, result.Action);
+        Assert.Equal("tasks/t.md", result.RepoDelete);
+        Assert.Null(result.ExternalWrite); // the page is not resurrected
+    }
+
+    [Fact]
+    public void DeletedInExternal_RepoHasAllUnresolvableRelation_NotSilentlyDeleted()
+    {
+        // The all-entries-unresolvable shape: the repo's only blocked-by target (c) is not yet syncable, so the
+        // normalizer drops the WHOLE key — it never reaches PendingRelationEntries and normalizes equal to base.
+        // Under a bare normalized compare the file would be silently deleted and c lost forever; the whole-field-
+        // invisible-relation guard must instead resurrect the page (conflict), exactly like the partial-subset case.
+        var b = Doc("t", "body", ("title", "T"));
+        b.ExternalId = "ext-1";
+        var repo = Doc("t", "body", ("title", "T"), ("blocked-by", "c")); // c never resolvable, never pushed
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, fieldNormalizer: ResolveBlockedBySubset);
+
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.Null(result.RepoDelete);                                  // never a silent file delete
+        Assert.Equal("c", result.ExternalWrite!.GetField("blocked-by")); // resurrected page re-created from the repo
+    }
+
     [Fact]
     public void DeleteOneResurrect_NewBase_ExcludesAdapterDroppedField()
     {

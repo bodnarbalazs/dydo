@@ -797,6 +797,115 @@ public class NotionSpineSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_SameTickExternalEdit_PendingRelationEntry_SurvivesRewrite_PushesOnResolvingTick()
+    {
+        // Finding 1a (WriteToRepo path, spine-level). task-x is established in the base blocked by the single
+        // resolvable task-a. Then, in one inter-tick window: a new blocker task-b appears (unresolvable this tick)
+        // AND a colleague renames task-x on the board. The board rename drives WriteToRepo; the per-entry overlay
+        // must keep the pending task-b on the repo file (the whole-field overlay could not, since blocked-by keeps
+        // a non-empty resolvable subset), so it survives and pushes once task-b resolves the next tick.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: create both
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: task-a resolves, pushed
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        Assert.Equal(PageByTitle("A").Id, PageByTitle("X").Properties["blocked-by"].Relation!.Single().Id);
+
+        // Same inter-tick window: task-b appears (unresolvable this tick), task-x gains it, and the board renames task-x.
+        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
+        var xPath = Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md");
+        File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
+        PageByTitle("X").Properties["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("X Renamed") };
+
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: WriteToRepo (rename), task-b pending
+
+        var fileAfterWrite = File.ReadAllText(xPath);
+        Assert.Contains("X Renamed", fileAfterWrite);                    // the board rename landed
+        Assert.Contains("blocked-by: task-a, task-b", fileAfterWrite);   // the pending entry survived the rewrite
+
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 4: task-b resolves -> push
+
+        Assert.Equal(
+            [PageByTitle("A").Id, PageByTitle("B").Id],
+            PageByTitle("X Renamed").Properties["blocked-by"].Relation!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public void Run_ExternalPageDeleted_WhilePendingRelationEntryExists_NoSilentFileDeletion()
+    {
+        // Finding 1b (DeleteOne path, spine-level). task-x carries a resolvable blocker (task-a) plus a pending,
+        // un-pushed entry (task-b, created the same tick). Its Notion page is then archived. The delete-unchanged
+        // check compares RAW fields, so the pending entry counts as a change: the file must NOT be silently
+        // deleted — instead the page is resurrected and the pending entry preserved.
+        SeedSelfRelationSpine();
+        Seed("project/sprint-tasks/task-a", "---\ntitle: A\n---\n\nA.");
+        Seed("project/sprint-tasks/task-x", "---\ntitle: X\nblocked-by: task-a\n---\n\nX.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: task-a resolves, pushed
+
+        NotionPage PageByTitle(string t) =>
+            client.QueryDataSource("ds-1").Single(p => NotionRichText.Flatten(p.Properties["title"].Title) == t);
+        var oldXId = PageByTitle("X").Id;
+
+        // Same window: a pending blocker task-b appears, task-x gains it, and task-x's page is archived in Notion.
+        Seed("project/sprint-tasks/task-b", "---\ntitle: B\n---\n\nB.");
+        var xPath = Path.Combine(_dydoRoot, "project", "sprint-tasks", "task-x.md");
+        File.WriteAllText(xPath, "---\ntitle: X\nblocked-by: task-a, task-b\n---\n\nX.");
+        PageByTitle("X").Archived = true;
+
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 3: page gone, pending entry present
+
+        // The file was NOT silently deleted, and the pending entry is intact.
+        Assert.True(File.Exists(xPath));
+        Assert.Contains("blocked-by: task-a, task-b", File.ReadAllText(xPath));
+        // It was resurrected as a fresh, non-archived page rather than the deletion propagating.
+        var live = client.QueryDataSource("ds-1").Where(p => !p.Archived && NotionRichText.Flatten(p.Properties["title"].Title) == "X").ToList();
+        var resurrected = Assert.Single(live);
+        Assert.NotEqual(oldXId, resurrected.Id);
+    }
+
+    [Fact]
+    public void Run_ExternalPageArchived_RepoDocCarriesLocalOnlyKeys_FileDeleted()
+    {
+        // The wave-5 1b regression, spine-level: a real dydo doc carries permanently-local, out-of-schema
+        // frontmatter keys ("area", "type") the Notion schema has no column for, so the adapter never persists
+        // them and reads them back absent — as EVERY real sprint-task/issue does. Archiving the page on the board
+        // must DELETE the repo file: the local-only keys are not un-pushed work, so they must not force the
+        // archive to be misread as an edit and silently re-create the page on every tick.
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": { "title": { "type": "title" },
+                    "status": { "type": "select", "options": ["in-progress", "done"] } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+        Seed("project/sprint-tasks/task-1", "---\ntitle: T1\nstatus: in-progress\narea: project\ntype: context\n---\n\nBody.");
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // create the page
+
+        // The board archives the page; the repo file is untouched since push — only its local-only keys differ
+        // from the base, which is recorded normalized and so never held them.
+        client.QueryDataSource("ds-1").Single().Archived = true;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        // The archive propagated: the file is gone, no page was resurrected, and the base entry is retired.
+        Assert.False(File.Exists(TaskPath("task-1")));
+        Assert.DoesNotContain(client.QueryDataSource("ds-1"), p => !p.Archived);
+        Assert.Null(new BaseSnapshotStore(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")).Get("task-1"));
+    }
+
+    [Fact]
     public void Run_BothDeletedThenGitRestoreIdentical_RetiresBase_RestoredFileRoundTripsAsNewCreate()
     {
         // Finding 2: when a task is deleted in the repo AND its page archived in Notion, the stale base entry
@@ -978,6 +1087,87 @@ public class NotionSpineSyncTests : IDisposable
         NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
         Assert.Equal(updatesAfterRetry, client.DataSourceUpdates.Count);
         Assert.False(new NotionProvisioner(client, provisionPath).PostPassPending("Campaign"));
+    }
+
+    /// <summary>A three-type rollup/formula model (Campaign/Sprint/SprintTask) whose parents each own
+    /// post-pass rollups and deferred formulas, used to exercise mid-post-pass crash recovery.</summary>
+    private void WriteRollupModel() => WriteModel("""
+        {
+          "objects": [
+            { "type": "Campaign", "dir": "project/campaigns", "notionTitle": "Campaigns",
+              "properties": {
+                "title": { "type": "title" },
+                "progress": { "type": "rollup", "rollupRelation": "sprints", "rollupProperty": "done", "rollupFunction": "percent_checked" },
+                "health": { "type": "formula", "expression": "prop(\"progress\") > 0.5" } } },
+            { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+              "properties": {
+                "title": { "type": "title" },
+                "campaign": { "type": "relation", "to": "Campaign", "reverse": "sprints" },
+                "done": { "type": "checkbox" },
+                "task-progress": { "type": "rollup", "rollupRelation": "tasks", "rollupProperty": "done", "rollupFunction": "percent_checked" },
+                "sprint-health": { "type": "formula", "expression": "prop(\"task-progress\") > 0.5" } } },
+            { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+              "properties": {
+                "title": { "type": "title" },
+                "sprint": { "type": "relation", "to": "Sprint", "reverse": "tasks" },
+                "done": { "type": "checkbox" } } }
+          ]
+        }
+        """);
+
+    [Fact]
+    public void Run_CrashDuringPostPass_PersistsPerTypeCompletion_RetryResumesUnfinishedOnly()
+    {
+        // Finding 10: a throw DURING the rollup/formula post-pass must not force an already-completed type to
+        // re-run. The post-pass runs child-first (SprintTask -> Sprint -> Campaign) and MarkPostPassDone persists
+        // per type immediately, so a crash in Campaign's pass — after Sprint's two patches landed — leaves Sprint
+        // done and only Campaign pending. The retry resumes Campaign alone.
+        WriteRollupModel();
+        var client = new FakeNotionClient { FailUpdateDataSourceAfter = 2 }; // Sprint's two patches land; Campaign's first throws
+
+        Assert.Throws<NotionApiException>(
+            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+
+        var provisionPath = NotionProvisioner.PathFor(_dydoRoot);
+        var recorded = new NotionProvisioner(client, provisionPath);
+        Assert.False(recorded.PostPassPending("SprintTask")); // leaf: no post-pass work, marked done first
+        Assert.False(recorded.PostPassPending("Sprint"));     // completed and persisted before the crash
+        Assert.True(recorded.PostPassPending("Campaign"));    // crashed mid-post-pass, still pending
+        Assert.Equal(2, client.DataSourceUpdates.Count);      // exactly Sprint's two patches
+
+        // Retry: only Campaign's post-pass re-runs (both patches on ds-1), Sprint's does NOT.
+        client.FailUpdateDataSourceAfter = null;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        var newUpdates = client.DataSourceUpdates.Skip(2).ToList();
+        Assert.All(newUpdates, u => Assert.Equal("ds-1", u.DataSourceId)); // Campaign is ds-1
+        Assert.Contains(newUpdates, u => u.Request.Properties.ContainsKey("progress"));
+        Assert.Contains(newUpdates, u => u.Request.Properties.ContainsKey("health"));
+        Assert.False(new NotionProvisioner(client, provisionPath).PostPassPending("Campaign"));
+    }
+
+    [Fact]
+    public void Run_DryRun_RecordedButUnpassedBoard_PreviewsExactlyThePendingPostPass()
+    {
+        // Finding 10: after a crash left Campaign recorded-but-unpassed, a dry-run must preview EXACTLY the
+        // pending post-pass work — Campaign's rollup + formula — and nothing for the already-completed types.
+        WriteRollupModel();
+        var client = new FakeNotionClient { FailUpdateDataSourceAfter = 2 };
+        Assert.Throws<NotionApiException>(
+            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+
+        client.FailUpdateDataSourceAfter = null;
+        client.DataSourceUpdates.Clear();
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: true, output);
+
+        var lines = output.ToString().Split('\n');
+        // Every database already exists, so all are reused; only Campaign still owes its post-pass.
+        Assert.Contains(lines, l => l.Contains("Campaign") && l.Contains("would add rollup properties"));
+        Assert.Contains(lines, l => l.Contains("Campaign") && l.Contains("would add formula properties"));
+        Assert.DoesNotContain(lines, l => l.Contains("Sprint") && l.Contains("would add"));
+        Assert.DoesNotContain(lines, l => l.Contains("SprintTask") && l.Contains("would add"));
+        Assert.Empty(client.DataSourceUpdates); // dry-run wrote nothing
     }
 
     [Fact]

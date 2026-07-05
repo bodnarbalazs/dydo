@@ -28,7 +28,7 @@ public class AgentState
     /// <summary>
     /// "A human is needed" attention flag (Decision 030 §1). Usually machine-written and derived from
     /// observable events (an AskUserQuestion tool call, a turn that ends while working on an in-flight
-    /// task, an escalation, or a crashed session), in which case it self-heals: the agent's next
+    /// task, or a crashed session), in which case it self-heals: the agent's next
     /// guarded tool call clears it, as does the watchdog's reconcile sweep once the cause disappears.
     /// An operator can instead raise it deliberately via <c>dydo hand raise</c> — see
     /// <see cref="NeedsHumanSource"/> for the derived-vs-explicit distinction that governs clearing.

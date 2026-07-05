@@ -59,14 +59,14 @@ public class FrontmatterParserTests
     }
 
     [Fact]
-    public void ParseFields_EmptyFrontmatter_ReturnsEmptyDictionary()
+    public void ParseFields_SixDashRunOnOneLine_NotAValidBlock_ReturnsNull()
     {
+        // "------" is a single line: its closing "---" is not line-anchored (it sits on the opening line),
+        // so line-anchored reads correctly reject it rather than parsing a phantom empty block from the
+        // "---" SUBSTRING — the exact truncation the read-side anchoring fixes (finding 4).
         const string content = "------\n\n# Body";
 
-        var fields = FrontmatterParser.ParseFields(content);
-
-        Assert.NotNull(fields);
-        Assert.Empty(fields!);
+        Assert.Null(FrontmatterParser.ParseFields(content));
     }
 
     [Fact]
@@ -290,6 +290,60 @@ public class FrontmatterParserTests
         // upserted — return the content unchanged rather than corrupt it.
         const string content = "---\nkey: a---b";
         Assert.Equal(content, FrontmatterParser.UpsertField(content, "status", "closed"));
+    }
+
+    [Fact]
+    public void ParseFields_ValueContainingTripleDash_ReadBackFully_NotTruncated()
+    {
+        // Finding 4 (read side): a value containing a "---" substring must be read in full, and later keys
+        // must not be lost — the un-anchored read truncated the block at the first "---" inside the value.
+        const string content = "---\ntitle: a --- b\nstatus: open\n---\n\n# Body";
+
+        var fields = FrontmatterParser.ParseFields(content);
+
+        Assert.NotNull(fields);
+        Assert.Equal("a --- b", fields!["title"]);
+        Assert.Equal("open", fields["status"]); // not lost by mid-value truncation
+    }
+
+    [Fact]
+    public void ParseFields_ValueContainingTripleDash_CRLF_ReadBackFully()
+    {
+        // CRLF-safe: the same anchoring holds for Windows line endings.
+        const string content = "---\r\ntitle: a --- b\r\nstatus: open\r\n---\r\n\r\n# Body";
+
+        var fields = FrontmatterParser.ParseFields(content);
+
+        Assert.NotNull(fields);
+        Assert.Equal("a --- b", fields!["title"]);
+        Assert.Equal("open", fields["status"]);
+    }
+
+    [Fact]
+    public void StripFrontmatter_ValueContainingTripleDash_BodyStartsAfterRealDelimiter()
+    {
+        // Finding 4 (read side): StripFrontmatter must anchor the close to a line, or a "---" inside a value
+        // makes the body start mid-value.
+        const string content = "---\ntitle: a --- b\n---\n\n# Body\n";
+
+        Assert.Equal("# Body\n", FrontmatterParser.StripFrontmatter(content));
+    }
+
+    [Fact]
+    public void UpsertField_EmptyFrontmatterBlock_DoesNotGlueKeyOntoOpeningDelimiter()
+    {
+        // Finding 4 (UpsertField): a file whose frontmatter block is EMPTY ("---\n---\n"). The insert must land
+        // on its own line — the old back-scan reached index 0 and glued the key onto the opening delimiter
+        // ("---needs-human: true"), corrupting the file.
+        const string content = "---\n---\n\n# Body\n";
+
+        var updated = FrontmatterParser.UpsertField(content, "needs-human", "true");
+
+        Assert.DoesNotContain("---needs-human", updated);
+        var fields = FrontmatterParser.ParseFields(updated);
+        Assert.NotNull(fields);
+        Assert.Equal("true", fields!["needs-human"]);
+        Assert.Contains("# Body", updated);
     }
 
     [Fact]

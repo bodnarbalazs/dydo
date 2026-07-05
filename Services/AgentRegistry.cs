@@ -797,6 +797,14 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
+        // Defence in depth (the command surface validates too): a task name becomes a file path in
+        // AutoCreateTaskFile and the needs-human mirror, so a traversal or rooted name must never reach them.
+        if (!string.IsNullOrEmpty(task) && !PathUtils.IsValidTaskName(task))
+        {
+            error = $"Invalid task name: '{task}'. Task names cannot contain path separators, '..', or be rooted.";
+            return false;
+        }
+
         if (!string.IsNullOrEmpty(task) && !CanTakeRole(agent.Name, role, task, out var reason))
         {
             error = reason;
@@ -835,6 +843,16 @@ public partial class AgentRegistry : IAgentRegistry
 
         if (!string.IsNullOrEmpty(task))
             AutoCreateTaskFile(task, agent.Name);
+
+        // needs-human mirror follows the task (finding 9): a flagged agent switching tasks would otherwise
+        // strand `needs-human: true` in the OLD task file, since state.Task now points elsewhere and no later
+        // sweep can reach the old mirror. Clear the old task's mirror and stamp the new one (now that
+        // AutoCreateTaskFile has ensured it exists).
+        if (agent.NeedsHuman && !string.Equals(agent.Task, task, StringComparison.Ordinal))
+        {
+            MirrorNeedsHumanToTask(agent.Task, false);
+            MirrorNeedsHumanToTask(task, true);
+        }
 
         return true;
     }
@@ -877,6 +895,7 @@ public partial class AgentRegistry : IAgentRegistry
 
     private void AutoCreateTaskFile(string task, string agentName)
     {
+        if (!PathUtils.IsValidTaskName(task)) return;
         try
         {
             var tasksPath = _configService.GetTasksPath(_basePath);
@@ -1507,6 +1526,16 @@ public partial class AgentRegistry : IAgentRegistry
         try
         {
             var state = GetAgentState(agentName) ?? new AgentState { Name = agentName };
+
+            // Clear-only-if-derived (finding 2): a machine derived-clear (the watchdog sweep or the guard
+            // reconcile) must decide stickiness from the state re-read HERE, under the per-agent lock — not
+            // from the caller's pre-lock snapshot. An EXPLICIT raise that landed in that window is sticky, so
+            // a Derived clear leaves the flag and its mirror untouched. A force-clear (`dydo hand lower`,
+            // source=Explicit) still clears unconditionally.
+            if (!value && source == NeedsHumanSource.Derived
+                && state.NeedsHuman && state.NeedsHumanSource == NeedsHumanSource.Explicit)
+                return true;
+
             var newSource = ResolveNeedsHumanSource(state, value, source);
             if (state.NeedsHuman != value || state.NeedsHumanSource != newSource)
             {
@@ -1539,7 +1568,7 @@ public partial class AgentRegistry : IAgentRegistry
 
     private void MirrorNeedsHumanToTask(string? task, bool value)
     {
-        if (string.IsNullOrEmpty(task)) return;
+        if (string.IsNullOrEmpty(task) || !PathUtils.IsValidTaskName(task)) return;
         try
         {
             var taskFile = Path.Combine(_configService.GetTasksPath(_basePath), $"{task}.md");

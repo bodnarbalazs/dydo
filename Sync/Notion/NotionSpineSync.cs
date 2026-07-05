@@ -76,7 +76,9 @@ public static class NotionSpineSync
                 var record = provisioner.Create(type, parentPageId, dataSourceIds);
                 output.WriteLine($"  provision  {type.Type,-9} created database {record.DatabaseId} (data source {record.DataSourceId})");
                 dataSourceIds[type.Type] = record.DataSourceId;
-                created.Add(type);
+                // No `created.Add` here: the real-run post-pass below drives entirely off PostPassPending
+                // (a create records the type with PostPassDone=false), so this type is already covered
+                // whether it was created this run or is a recorded-but-unpassed reuse (finding 10).
             }
         }
 
@@ -99,6 +101,8 @@ public static class NotionSpineSync
         {
             foreach (var type in postPass.Where(t => created.Contains(t) || provisioner.PostPassPending(t.Type)))
             {
+                if (NotionProvisioner.HasSelfRelations(type))
+                    output.WriteLine($"  provision  {type.Type,-9} would add self-relation properties");
                 if (NotionProvisioner.HasRollups(type))
                     output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
                 if (NotionProvisioner.HasDeferredFormulas(type))
@@ -109,6 +113,12 @@ public static class NotionSpineSync
         {
             foreach (var type in postPass.Where(t => provisioner.PostPassPending(t.Type)))
             {
+                // Self-relations first: a deferred formula may read one, so it must exist before AddFormulas.
+                if (NotionProvisioner.HasSelfRelations(type))
+                {
+                    provisioner.AddSelfRelations(type);
+                    output.WriteLine($"  provision  {type.Type,-9} added self-relation properties");
+                }
                 if (NotionProvisioner.HasRollups(type))
                 {
                     provisioner.AddRollups(type);

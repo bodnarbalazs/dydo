@@ -193,6 +193,14 @@ internal static class AgentLifecycleHandlers
             return ExitCodes.ToolError;
         }
 
+        // A task name reaches the tasks tree as a file path (auto-create + needs-human mirror), so reject a
+        // traversal or rooted value here before any filesystem touch (SetRole re-validates as defence in depth).
+        if (!string.IsNullOrEmpty(task) && !PathUtils.IsValidTaskName(task))
+        {
+            ConsoleOutput.WriteError($"Invalid task name: '{task}'. Task names cannot contain path separators, '..', or be rooted.");
+            return ExitCodes.ValidationErrors;
+        }
+
         if (!registry.SetRole(sessionId, role, task, out var error))
         {
             ConsoleOutput.WriteError(error);

@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Sync.Notion;
 
 using DynaDocs.Sync.Model;
+using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 using DynaDocs.Sync.Notion.Provisioning;
 
@@ -218,37 +219,89 @@ public class NotionProvisionerTests : IDisposable
         Assert.Empty(client.DataSourceUpdates);
     }
 
+    private static SyncObjectType SelfRelationType() => new()
+    {
+        Type = "SprintTask",
+        NotionTitle = "Sprint Tasks",
+        Properties = new()
+        {
+            ["title"] = new SyncPropertyDef { Type = "title" },
+            ["sprint"] = new SyncPropertyDef { Type = "relation", To = "Sprint" },
+            ["blocked-by"] = new SyncPropertyDef { Type = "relation", To = "SprintTask" },
+        },
+    };
+
     [Fact]
-    public void Create_SelfRelation_CreatesWithoutIt_ThenPatchesItOntoTheDataSource()
+    public void Create_SelfRelation_CreatesWithoutIt_DefersToPostPass()
     {
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
-        var type = new SyncObjectType
-        {
-            Type = "SprintTask",
-            NotionTitle = "Sprint Tasks",
-            Properties = new()
-            {
-                ["title"] = new SyncPropertyDef { Type = "title" },
-                ["sprint"] = new SyncPropertyDef { Type = "relation", To = "Sprint" },
-                ["blocked-by"] = new SyncPropertyDef { Type = "relation", To = "SprintTask" },
-            },
-        };
+        var type = SelfRelationType();
 
         var record = provisioner.Create(type, "parent-page", new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
 
-        // First pass: the create carries the title and the cross-type relation, but NOT the self-relation.
+        // The create carries the title and the cross-type relation, but NOT the self-relation — and it
+        // does NOT PATCH during Create anymore: the self-relation is deferred to the post-pass (finding 3).
         var request = Assert.Single(client.CreatedDatabases);
         Assert.True(request.InitialDataSource.Properties.ContainsKey("sprint"));
         Assert.False(request.InitialDataSource.Properties.ContainsKey("blocked-by"));
         Assert.Equal("ds-sprint", request.InitialDataSource.Properties["sprint"].Relation!.DataSourceId);
+        Assert.Empty(client.DataSourceUpdates);
+        Assert.True(NotionProvisioner.HasSelfRelations(type));
 
-        // Second pass: the self-relation is PATCHed onto the just-created data source, pointing at itself.
+        // The post-pass PATCHes the self-relation onto the just-created data source, pointing at itself.
+        provisioner.AddSelfRelations(type);
         var (dataSourceId, update) = Assert.Single(client.DataSourceUpdates);
         Assert.Equal(record.DataSourceId, dataSourceId);
         var selfRelation = update.Properties["blocked-by"].Relation;
         Assert.NotNull(selfRelation);
         Assert.Equal(record.DataSourceId, selfRelation!.DataSourceId);
+    }
+
+    [Fact]
+    public void Create_PersistsRecord_BeforeSelfRelationPatch_SoARetryDoesNotReCreate()
+    {
+        // A crash DURING the self-relation PATCH must not lose the created database id (finding 3). The
+        // self-relation now runs in the post-pass; a throw there leaves the record persisted, so a retry
+        // reuses the database and the post-pass completes it — never a duplicate board.
+        var client = new FakeNotionClient { FailUpdateDataSourceAfter = 0 }; // the first UpdateDataSource throws
+        var first = new NotionProvisioner(client, _statePath);
+        var type = SelfRelationType();
+
+        var record = first.Create(type, "parent-page", new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
+        Assert.Throws<NotionApiException>(() => first.AddSelfRelations(type));
+
+        // The database was created exactly once, and the record was persisted the instant it existed.
+        Assert.Single(client.CreatedDatabases);
+
+        // Retry over the same state + client: the database is retrievable and still owns the recorded data
+        // source, so the type is REUSED (Lookup non-null) — no second CreateDatabase.
+        client.FailUpdateDataSourceAfter = null;
+        var second = new NotionProvisioner(client, _statePath);
+        var reused = second.Lookup("SprintTask");
+        Assert.NotNull(reused);
+        Assert.Equal(record.DataSourceId, reused!.DataSourceId);
+        Assert.Single(client.CreatedDatabases); // still one — never duplicated
+
+        // The post-pass completes the deferred self-relation on the reused database.
+        second.AddSelfRelations(type);
+        var patch = Assert.Single(client.DataSourceUpdates);
+        Assert.Equal(record.DataSourceId, patch.DataSourceId);
+        Assert.NotNull(patch.Request.Properties["blocked-by"].Relation);
+    }
+
+    [Fact]
+    public void AddSelfRelations_NoSelfRelation_IsNoOp()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Sprint"), "parent-page",
+            new Dictionary<string, string> { ["Campaign"] = "ds-campaign" });
+        client.DataSourceUpdates.Clear();
+
+        Assert.False(NotionProvisioner.HasSelfRelations(_model.Object("Sprint")));
+        provisioner.AddSelfRelations(_model.Object("Sprint"));
+        Assert.Empty(client.DataSourceUpdates);
     }
 
     [Fact]

@@ -14,8 +14,8 @@ using DynaDocs.Sync.Notion.Dtos;
 /// Databases are created in dependency order, so a child's relation to a <em>parent</em> resolves in the
 /// single create. Edges that cannot exist at create time run a post-create PATCH pass: self-relations
 /// (the type's own data source id is not known until it is created), rollups (they read a reverse relation
-/// that exists only after the child's dual-property relation), and formulas that read a rollup or another
-/// formula. Generic over the model: no object-type names appear here.
+/// that exists only after the child's dual-property relation), and formulas that read a rollup, a
+/// self-relation, or another formula. Generic over the model: no object-type names appear here.
 /// </summary>
 public sealed class NotionProvisioner
 {
@@ -41,14 +41,12 @@ public sealed class NotionProvisioner
     /// <summary>Create the database for a model object type and record its ids. Relation properties
     /// resolve their target via <paramref name="resolvedDataSourceIds"/> (parent type → data source id).
     /// A self-relation (target == this type) cannot be declared at create time — the type's own data
-    /// source id does not exist yet — so it is deferred to a second pass: the database is created without
-    /// its self-referencing relations, then those properties are PATCHed onto the data source once its
-    /// id is known. Non-self relations keep the single-pass path.</summary>
+    /// source id does not exist yet — so it is deferred to the recorded-but-not-yet-passed post-pass
+    /// (<see cref="AddSelfRelations"/>), alongside rollups and deferred formulas. Non-self relations keep
+    /// the single-pass path.</summary>
     public NotionProvisionedType Create(SyncObjectType type, string parentPageId, IReadOnlyDictionary<string, string> resolvedDataSourceIds)
     {
-        var selfRelations = type.Properties
-            .Where(p => p.Value.Type == "relation" && p.Value.To == type.Type)
-            .ToList();
+        var selfRelations = SelfRelations(type);
         // Rollups reference a reverse relation that only exists once the CHILD's dual-property relation is
         // created — later in the run — so they are deferred entirely to the post-create pass (AddRollups),
         // never emitted here.
@@ -68,26 +66,18 @@ public sealed class NotionProvisioner
             InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(firstPass, resolvedDataSourceIds) },
         });
 
-        var dataSourceId = db.DataSources.Count > 0 ? db.DataSources[0].Id : "";
-
-        if (selfRelations.Count > 0)
-        {
-            var withSelf = new Dictionary<string, string>(resolvedDataSourceIds) { [type.Type] = dataSourceId };
-            _client.UpdateDataSource(dataSourceId, new NotionDataSourceUpdateRequest
-            {
-                Properties = BuildSchema(selfRelations, withSelf),
-            });
-        }
-
         var record = new NotionProvisionedType
         {
             ObjectType = type.Type,
             DatabaseId = db.Id,
-            DataSourceId = dataSourceId,
+            DataSourceId = db.DataSources.Count > 0 ? db.DataSources[0].Id : "",
         };
         _state[type.Type] = record;
-        // Persist the instant this database exists (slice brief §5): a later create in the run throwing (rate
-        // limit, network) must not lose the ids already created, or the retry would duplicate the whole board.
+        // Persist the instant this database exists (finding 3): the self-relation PATCH, rollups, and deferred
+        // formulas all run in the recorded-but-not-yet-passed post-pass, so a throw in ANY of them — including
+        // the self-relation PATCH that used to sit between CreateDatabase and this Save — leaves the id
+        // recorded. The retry reuses the database (never duplicates the whole board) and completes the pending
+        // post-pass with the same idempotent PATCH semantics as rollups/deferred formulas.
         Save();
         return record;
     }
@@ -110,6 +100,30 @@ public sealed class NotionProvisioner
             Save();
         }
     }
+
+    /// <summary>Whether this type carries a self-relation the post-create pass must PATCH on once its own
+    /// data source id is known.</summary>
+    public static bool HasSelfRelations(SyncObjectType type) => SelfRelations(type).Count > 0;
+
+    /// <summary>Post-create pass (finding 3): PATCH this type's self-relations onto its OWN data source, now
+    /// that its data source id exists. Runs before rollups/formulas so a deferred formula reading a
+    /// self-relation finds it present. Idempotent — a retry re-PATCHes the same schema, same semantics as
+    /// <see cref="AddRollups"/>/<see cref="AddFormulas"/>.</summary>
+    public void AddSelfRelations(SyncObjectType type)
+    {
+        var selfRelations = SelfRelations(type);
+        if (selfRelations.Count == 0)
+            return;
+        var dataSourceId = _state[type.Type].DataSourceId;
+        var withSelf = new Dictionary<string, string> { [type.Type] = dataSourceId };
+        _client.UpdateDataSource(dataSourceId, new NotionDataSourceUpdateRequest
+        {
+            Properties = BuildSchema(selfRelations, withSelf),
+        });
+    }
+
+    private static List<KeyValuePair<string, SyncPropertyDef>> SelfRelations(SyncObjectType type) =>
+        type.Properties.Where(p => p.Value.Type == "relation" && p.Value.To == type.Type).ToList();
 
     /// <summary>Whether this type carries rollup properties the post-create pass must PATCH on once every
     /// database (and its dual-property reverse relations) exists.</summary>

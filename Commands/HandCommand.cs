@@ -60,16 +60,35 @@ public static class HandCommand
         }
 
         // A raise records an EXPLICIT flag (sticky — not swept, not cleared by the next tool call); a
-        // lower clears whatever is set, derived or explicit. The source arg is ignored when clearing.
-        if (!registry.SetNeedsHuman(agentName, value, NeedsHumanSource.Explicit))
+        // lower clears whatever is set, derived or explicit (source=Explicit force-clears). A deliberate
+        // escalation must not vanish on transient lock contention, so retry briefly, then FAIL non-zero
+        // with a clear message rather than reporting a phantom success (finding 6).
+        if (!SetNeedsHumanWithRetry(registry, agentName, value))
         {
-            Console.Error.WriteLine($"NOTICE: dydo hand — {agentName}'s state is locked; try again.");
-            return ExitCodes.Success;
+            Console.Error.WriteLine(
+                $"ERROR: dydo hand — could not update {agentName}'s state (locked by another process). " +
+                $"The {(value ? "raise" : "lower")} was NOT recorded; try again.");
+            return ExitCodes.ToolError;
         }
 
         Console.WriteLine(value
             ? $"Raised the needs-human flag on {agentName}."
             : $"Lowered the needs-human flag on {agentName}.");
         return ExitCodes.Success;
+    }
+
+    private const int LockRetryAttempts = 5;
+    private const int LockRetryDelayMs = 50;
+
+    private static bool SetNeedsHumanWithRetry(AgentRegistry registry, string agentName, bool value)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            if (registry.SetNeedsHuman(agentName, value, NeedsHumanSource.Explicit))
+                return true;
+            if (attempt >= LockRetryAttempts - 1)
+                return false;
+            Thread.Sleep(LockRetryDelayMs);
+        }
     }
 }

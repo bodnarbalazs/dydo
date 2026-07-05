@@ -40,6 +40,23 @@ public class AgentLifecycleHandlersTests : IDisposable
         try { Directory.Delete(_testDir, true); } catch { }
     }
 
+    private void CreateClaimedAgent(string agentName, string sessionId)
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            $$"""{"Agent":"{{agentName}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}","ClaimedPid":123}""");
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $"""
+            ---
+            agent: {agentName}
+            role: null
+            task: null
+            status: working
+            assigned: testuser
+            ---
+            """);
+    }
+
     [Fact]
     public void ExecuteClaim_StaleEnvVarMismatch_RefusedWithActionableError()
     {
@@ -133,5 +150,27 @@ public class AgentLifecycleHandlersTests : IDisposable
 
         Assert.Equal(ExitCodes.Success, exit);
         Assert.True(File.Exists(Path.Combine(_testDir, "dydo", "agents", "Charlie", ".session")));
+    }
+
+    [Fact]
+    public void ExecuteRole_TraversalTaskName_ExitsValidationErrors_WritesNothingOutsideTasksTree()
+    {
+        // The command surface validates the task name BEFORE any registry call (AgentLifecycleHandlers.ExecuteRole
+        // ~196-202): a traversal or rooted name — which would become a file path in the tasks tree and the
+        // needs-human mirror — must exit ValidationErrors, no filesystem touch. Previously only the registry's
+        // defence-in-depth path (SetRole) was covered; this pins the outer gate.
+        CreateClaimedAgent("Zelda", "sess-role");
+        new AgentRegistry(_testDir).StoreSessionContext("sess-role", "Zelda");
+
+        int exit = 0;
+        var stderr = ConsoleCapture.Stderr(() =>
+        {
+            exit = AgentLifecycleHandlers.ExecuteRole("code-writer", "../../evil");
+        });
+
+        Assert.Equal(ExitCodes.ValidationErrors, exit);
+        Assert.Contains("Invalid task name", stderr);
+        Assert.False(File.Exists(Path.Combine(_testDir, "evil.md")));
+        Assert.False(File.Exists(Path.Combine(_testDir, "dydo", "project", "tasks", "evil.md")));
     }
 }

@@ -48,6 +48,11 @@ public sealed class FakeNotionClient : INotionClient
     /// drives the mid-provision-failure test (provision state must persist the databases already created).</summary>
     public int? FailCreateDatabaseAfter { get; set; }
 
+    /// <summary>When set, <see cref="UpdateDataSource"/> throws once this many updates have succeeded — drives
+    /// the mid-post-pass-failure tests: a self-relation PATCH crash (finding 3) and a rollup/formula post-pass
+    /// crash proving per-type MarkPostPassDone incremental persistence (finding 10).</summary>
+    public int? FailUpdateDataSourceAfter { get; set; }
+
     /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
     public bool FailAppend { get; set; }
 
@@ -99,6 +104,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request)
     {
+        if (FailUpdateDataSourceAfter is { } limit && DataSourceUpdates.Count >= limit)
+            throw new NotionApiException(429, "simulated data source update failure");
         DataSourceUpdates.Add((dataSourceId, request));
         var schema = DataSourceSchema(dataSourceId).Properties;
         foreach (var (name, body) in request.Properties)

@@ -24,10 +24,17 @@ public sealed class FakeSyncAdapter : ISyncAdapter
 
     public void DeleteExternal(string externalId) => _records.Remove(externalId);
 
+    /// <summary>When true, <see cref="Apply"/> throws before touching any record — drives the partial-tick
+    /// tests where a failing Apply holds base advances back (a Retire must still commit, finding 7).</summary>
+    public bool FailApply { get; set; }
+
     public IReadOnlyList<SyncRecord> ReadExternalState() => _records.Values.ToList();
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned)
     {
+        if (FailApply)
+            throw new InvalidOperationException("simulated Apply failure");
+
         foreach (var upsert in changes.Upserts)
         {
             var id = upsert.ExternalId ?? $"ext-{_nextId++}";

@@ -115,6 +115,23 @@ public class BaseSnapshotStoreTests : IDisposable
     }
 
     [Fact]
+    public void PruneOrphanLastActivity_DropsEntriesWithNoBaseObject_KeepsBackedOnes()
+    {
+        // Finding 7: a last-activity with no surviving base object is an orphan (a crashed create's seed) that
+        // Retire can never reach; the sweep drops exactly those, leaving a base-backed entry intact.
+        var path = Path.Combine(_dir, "snapshot.json");
+        var store = new BaseSnapshotStore(path);
+        store.Set(Doc("live", "ext-1", "body"));
+        store.SetLastActivity("live", "2026-06-20");
+        store.SetLastActivity("orphan", "2026-01-01"); // no base object
+
+        store.PruneOrphanLastActivity();
+
+        Assert.Equal("2026-06-20", store.GetLastActivity("live")); // base-backed entry kept
+        Assert.Null(store.GetLastActivity("orphan"));              // orphan swept
+    }
+
+    [Fact]
     public void LocalIds_ListsAllObjects()
     {
         var store = new BaseSnapshotStore(Path.Combine(_dir, "snapshot.json"));

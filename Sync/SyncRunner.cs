@@ -110,6 +110,12 @@ public sealed class SyncRunner
         finally
         {
             CommitBase(results, assigned, applied);
+            // A completed tick has confirmed every create's external id, so any last-activity with no base
+            // entry is a genuine orphan (a crashed create's seed, or a doc whose base never existed) that
+            // Retire can never reach — sweep it before saving (finding 7). A partial tick leaves it for the
+            // retry, when the pending create either confirms (base entry appears) or is swept then.
+            if (applied)
+                _base.PruneOrphanLastActivity();
             _base.Save();
         }
 
@@ -194,9 +200,10 @@ public sealed class SyncRunner
     /// <para>The external id is taken ONLY from this tick's external read, never from the base snapshot: a
     /// refresh is legitimate only against a page present in the current read. Falling back to the base id
     /// would enqueue a property write against a page that vanished from the read — one archived/trashed
-    /// between ticks (repo file also deleted, so ReconcileEngine returns None and the seeded last-activity
-    /// survives). Real Notion rejects a property write on an archived page with 400, throwing mid-Apply
-    /// before the base advances, permanently wedging the type's sync with no self-heal (finding F1).</para></summary>
+    /// between ticks. Real Notion rejects a property write on an archived page with 400, throwing mid-Apply
+    /// before the base advances, permanently wedging the type's sync with no self-heal (finding F1). When the
+    /// repo file is also gone, ReconcileEngine.BothGone returns Retire (wave 4a), which removes the base entry
+    /// AND its last-activity — so no orphaned refresh is even considered for that object the next tick.</para></summary>
     private void EnqueueEngineComputedRefresh(string localId, ReconcileResult result, SyncDoc? external, SyncChangeSet changes)
     {
         if (!_adapter.WritesEngineComputed || result.ExternalWrite != null || result.Action == ReconcileAction.Delete)

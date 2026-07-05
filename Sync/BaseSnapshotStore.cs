@@ -57,6 +57,17 @@ public sealed class BaseSnapshotStore
     /// field snapshot — and therefore out of frontmatter — so persisting it never provokes an edit loop.</summary>
     public void SetLastActivity(string localId, string isoDate) => _lastActivity[localId] = isoDate;
 
+    /// <summary>Drop last-activity entries with no surviving base object (finding 7). A create whose external
+    /// id never confirmed (a crash mid-Apply) or a doc whose base entry never existed leaves a seeded
+    /// last-activity that Retire — which fires only for objects that HAVE a base entry — can never reach, so
+    /// it would leak in the snapshot forever. Swept after a completed tick, where every confirmed create has
+    /// its base entry, so a surviving orphan is genuinely unreachable rather than merely pending.</summary>
+    public void PruneOrphanLastActivity()
+    {
+        foreach (var localId in _lastActivity.Keys.Where(k => !_byLocalId.ContainsKey(k)).ToList())
+            _lastActivity.Remove(localId);
+    }
+
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);

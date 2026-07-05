@@ -245,6 +245,46 @@ public class SyncRunnerTests : IDisposable
     }
 
     [Fact]
+    public void CompletedTick_SweepsOrphanLastActivity_WithNoBaseEntry()
+    {
+        // Finding 7: a last-activity seeded for a doc whose create never confirmed a base entry is unreachable
+        // by Retire (which only fires for objects that HAVE a base entry). A completed tick must sweep it, while
+        // a live object's activity is left intact.
+        NewRunner().Run([RepoDoc("t", "body", ("status", "open"))]);
+        Assert.NotNull(_base.GetLastActivity("t"));
+
+        _base.SetLastActivity("orphan", "2026-01-01"); // no base object for "orphan"
+        NewRunner().Run([RepoDoc("t", "body", ("status", "open"))]); // a completed tick
+
+        Assert.Null(_base.GetLastActivity("orphan")); // orphan swept
+        Assert.NotNull(_base.GetLastActivity("t"));    // the live object's activity kept
+    }
+
+    [Fact]
+    public void RetireCommits_EvenWhenApplyFailsInSameTick_HoldingOtherAdvancesBack()
+    {
+        // Finding 7 / brief §10: a Retire (both sides gone, stale base entry) removes its base entry AND its
+        // last-activity in the same tick even when a failing Apply holds other advances back — because nothing
+        // was pushed for the retired object, dropping it is safe regardless of whether the batch applied. The
+        // failed push, by contrast, must NOT advance its base (it self-heals on retry).
+        NewRunner().Run([RepoDoc("gone", "body", ("status", "open")), RepoDoc("t", "body", ("status", "open"))]);
+        var goneExtId = _base.Get("gone")!.ExternalId!;
+        _adapter.DeleteExternal(goneExtId); // external side of "gone" disappears
+        _base.SetLastActivity("gone", "2026-01-01");
+
+        // This tick: "gone" is absent from repo AND external -> Retire; "t" is edited -> a push that will fail.
+        _adapter.FailApply = true;
+        Assert.Throws<InvalidOperationException>(() =>
+            NewRunner().Run([RepoDoc("t", "body", ("status", "done"))]));
+
+        // Retire committed despite the failed Apply: the stale base entry and its last-activity are gone.
+        Assert.Null(_base.Get("gone"));
+        Assert.Null(_base.GetLastActivity("gone"));
+        // The failed push did NOT advance "t"'s base — it still reads the pre-edit status.
+        Assert.Equal("open", _base.Get("t")!.GetField("status"));
+    }
+
+    [Fact]
     public void SteadyState_NoChanges_NoOps()
     {
         NewRunner().Run([RepoDoc("t", "body", ("status", "open"))]);

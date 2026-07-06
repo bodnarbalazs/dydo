@@ -1,0 +1,14 @@
+{
+  "session": "b4432298-fc79-4aa8-853d-233540c19d44",
+  "human": "balazs",
+  "started": "2026-07-03T19:01:45.1390974Z",
+  "git_head": "caa01b0",
+  "events": [
+    {
+      "ts": "2026-07-03T19:01:45.1379823Z",
+      "event": "Bash",
+      "tool": "bash",
+      "cmd": "Get-Process testhost -ErrorAction SilentlyContinue | Select-Object Id, StartTime, @{N=\u0027MemGB\u0027;E={[ma..."
+    }
+  ]
+}

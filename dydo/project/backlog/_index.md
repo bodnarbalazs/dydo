@@ -1,5 +1,5 @@
 ---
-area: project
+area: general
 type: hub
 ---
 
@@ -14,3 +14,4 @@ Index of backlog documentation.
 - [dydo 2.0 — Campaign Roadmap](./dydo-2-campaign-roadmap.md) - The sprint-by-sprint plan for the dydo 2.
 - [dydo 2.0 — Hardening, Cleanup & Onboarding Backlog](./dydo-2-hardening.md) - Deferred work surfaced while landing the 2.
 - [dydo 2.0 — Vision Follow-ups (backlog)](./dydo-2-vision-followups.md) - Items that emerged from the 2026-07-03 co-thinking session ([Decision 026](.
+- [Review Tiers & Attention — Implementation Backlog](./review-tiers-and-attention.md) - Follow-ups from the 2026-07-03 co-thinking session; design settled in [Decision 031](.

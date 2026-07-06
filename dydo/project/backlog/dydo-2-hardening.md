@@ -68,13 +68,17 @@ be picked up during the refine phase. Grouped by theme.
   passed as a REAL JSON array arrive re-stringified, silently collapsing a multi-slice sprint into one
   in-tree slice. Mitigated by a defensive JSON.parse in run-sprint.js normalizeSlices (landing via the
   run-sprint-hardening slice); the upstream harness behavior is worth reporting to Anthropic.
-- **Tier-2 subagents bypass the guard (issue #211).** Native subagents (Agent-tool code-writers /
-  reviewers) run without a claimed dydo identity, so they skip guard policy, produce no audit
-  attribution, and are unreachable via inbox — a misbehaving one can't be seen or stopped through dydo.
-  Surfaced live 2026-07-03: a Slice-B code-writer's Argon2id units bug (MemorySize is KiB not bytes, so
-  64*1024*1024 = 64 GiB/derivation) ballooned a testhost to 56 GB before it was caught by the human, not
-  the framework. Decide a policy: a lightweight Tier-2 registration/guard hook, or resource + attribution
-  guardrails for dispatched work.
+- **Tier-2 guard coverage: file nudges + attribution (issues #211, #212).** CORRECTED 2026-07-04
+  (Brian, code-verified at HEAD): Tier-2 workers do NOT bypass the guard — calls carrying `agent_id`
+  route to a dedicated worker lane (off-limits, dangerous-bash, bash-command nudges, git-safety,
+  dydo-command block all apply). Balazs's ruling: workers needing no claimed identity is by design
+  and stays. Two real gaps remain: (a) tool-scoped FILE nudges never fire in the worker lane —
+  issue #212 (e.g. "don't hand-edit migrations" is invisible to code-writers; fix = per-nudge tier
+  scoping in NudgeConfig); (b) attribution/reachability — an anonymous worker can't be seen or
+  stopped through dydo (issue #211 family; the 2026-07-03 Argon2id 56 GB testhost was caught by the
+  human, not the framework). Resource/attribution guardrails for dispatched work remain the open
+  policy question. Caveat: live guard behavior is the installed pre-2.0 binary's until the install
+  update above lands.
 
 ## QA-deferred cleanup (from the Notion inquisitions)
 

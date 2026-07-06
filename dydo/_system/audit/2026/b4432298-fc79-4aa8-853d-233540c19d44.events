@@ -1,0 +1,50 @@
+{"ts":"2026-07-03T19:02:22.684436Z","event":"Blocked","tool":"bash","cmd":"$p = Get-CimInstance Win32_Process -Filter \u0022ProcessId=39808\u0022; if ($p) { $chain = @(); $cur = $p; whi...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-07-03T19:02:29.480433Z","event":"Bash","tool":"bash","cmd":"Get-CimInstance Win32_Process -Filter \u0022ProcessId=39808\u0022 | Select-Object ProcessId, ParentProcessId, ..."}
+{"ts":"2026-07-03T19:02:41.4437684Z","event":"Bash","tool":"bash","cmd":"Get-CimInstance Win32_Process -Filter \u0022ProcessId=7756\u0022 | Select-Object ProcessId, ParentProcessId, N..."}
+{"ts":"2026-07-03T19:02:49.8221427Z","event":"Bash","tool":"bash","cmd":"Get-CimInstance Win32_Process -Filter \u0022ProcessId=35376\u0022 | Select-Object ProcessId, ParentProcessId, ..."}
+{"ts":"2026-07-03T19:22:51.3826862Z","event":"Bash","tool":"bash","cmd":"Get-CimInstance Win32_Process -Filter \u0022ProcessId=41252\u0022 | Select-Object ProcessId, ParentProcessId, ..."}
+{"ts":"2026-07-03T19:23:00.1862822Z","event":"Bash","tool":"bash","cmd":"Get-CimInstance Win32_Process -Filter \u0022ProcessId=40204\u0022 | Select-Object ProcessId, ParentProcessId, ..."}
+{"ts":"2026-07-03T19:33:59.4198638Z","event":"Bash","tool":"bash","cmd":"taskkill /PID 41252 /T /F"}
+{"ts":"2026-07-03T19:40:21.2723272Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\index.md","tool":"read"}
+{"ts":"2026-07-03T19:40:28.0064403Z","event":"Blocked","tool":"glob","reason":"No agent identity"}
+{"ts":"2026-07-03T20:10:06.2753058Z","event":"Blocked","tool":"glob","reason":"No agent identity"}
+{"ts":"2026-07-03T20:26:15.7979937Z","event":"Blocked","tool":"glob","reason":"No agent identity"}
+{"ts":"2026-07-03T20:27:00.6387678Z","event":"Bash","tool":"bash","cmd":"Get-ChildItem -Recurse -Directory \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\skills\u0022 | Select-..."}
+{"ts":"2026-07-03T20:27:08.9282809Z","event":"Bash","tool":"bash","cmd":"Get-Content \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\skills\\sprint-auditor\\SKILL.md\u0022"}
+{"ts":"2026-07-03T21:55:45.5199512Z","event":"Bash","tool":"bash","cmd":"Get-ChildItem \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\u0022 | Select-Object -Expa..."}
+{"ts":"2026-07-03T21:55:52.6470915Z","event":"Bash","tool":"bash","cmd":"Get-Content \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\029-notion-board-design...."}
+{"ts":"2026-07-03T21:56:38.3658585Z","event":"Blocked","tool":"bash","cmd":"Set-Content -Path \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\031-sprint-auditor...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-07-03T21:57:11.3974138Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\031-sprint-auditor-charter-rewrite.md","tool":"write","reason":"No agent identity"}
+{"ts":"2026-07-03T21:57:35.7449531Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b4432298-fc79-4aa8-853d-233540c19d44\\scratchpad\\031-sprint-auditor-charter-rewrite.md","tool":"write","reason":"No agent identity"}
+{"ts":"2026-07-03T21:59:15.8159822Z","event":"Bash","tool":"bash","cmd":"Get-Content \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\\settings.json\u0022"}
+{"ts":"2026-07-03T21:59:23.9526419Z","event":"Bash","tool":"bash","cmd":"Get-ChildItem \u0022C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.claude\u0022 | Select-Object -ExpandProperty Name..."}
+{"ts":"2026-07-03T21:59:40.9800465Z","event":"Claim","agent":"Adele","recovery_kind":"fresh"}
+{"ts":"2026-07-03T21:59:57.0247479Z","event":"Release","agent":"Adele"}
+{"ts":"2026-07-03T22:00:37.1434917Z","event":"Claim","agent":"Adele","recovery_kind":"fresh"}
+{"ts":"2026-07-03T22:00:52.3932598Z","event":"Role","role":"co-thinker"}
+{"ts":"2026-07-03T22:01:14.2249385Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\031-sprint-auditor-charter-rewrite.md","tool":"write","reason":"Missing general wait"}
+{"ts":"2026-07-03T22:01:47.7363556Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\031-sprint-auditor-charter-rewrite.md","tool":"write","reason":"Must-read files not yet read"}
+{"ts":"2026-07-03T22:01:56.4798761Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-07-03T22:01:57.1868768Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-07-03T22:01:57.301862Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\modes\\co-thinker.md","tool":"read"}
+{"ts":"2026-07-03T22:02:23.1371447Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\031-sprint-auditor-charter-rewrite.md","tool":"write"}
+{"ts":"2026-07-03T22:02:58.2886208Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\032-attention-ledger-and-housekeeping-nudge.md","tool":"write"}
+{"ts":"2026-07-03T22:03:15.9626091Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_decisions.md","tool":"read"}
+{"ts":"2026-07-03T22:03:22.5915296Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\decisions\\_index.md","tool":"read"}
+{"ts":"2026-07-03T22:04:15.7528558Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0211-active-agent-session-not-registered-in-dydo-agent-list-4-active-3-claimed.md","tool":"read"}
+{"ts":"2026-07-03T22:04:34.4129799Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\issues\\0211-active-agent-session-not-registered-in-dydo-agent-list-4-active-3-claimed.md","tool":"edit"}
+{"ts":"2026-07-04T00:27:18.1342294Z","event":"Blocked","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b4432298-fc79-4aa8-853d-233540c19d44\\tasks\\b53t5013f.output","tool":"read","reason":"Missing general wait"}
+{"ts":"2026-07-04T00:27:28.4302425Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b4432298-fc79-4aa8-853d-233540c19d44\\tasks\\b53t5013f.output","tool":"read"}
+{"ts":"2026-07-04T00:30:10.7580039Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\b4432298-fc79-4aa8-853d-233540c19d44\\tasks\\b3pcltu9v.output","tool":"read"}
+{"ts":"2026-07-04T11:45:22.2542137Z","event":"Blocked","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Sync\\Notion","tool":"grep","reason":"Unread messages"}
+{"ts":"2026-07-04T11:45:29.6208977Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\46b76db6-msg-general.md","tool":"read"}
+{"ts":"2026-07-04T11:45:36.4778081Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\404c9b23-msg-general.md","tool":"read"}
+{"ts":"2026-07-04T11:45:37.0128488Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Adele\\inbox\\570bf8f7-msg-identity-handoff-notice.md","tool":"read"}
+{"ts":"2026-07-04T11:45:51.0528974Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.Tests\\Sync\\Notion","tool":"grep"}
+{"ts":"2026-07-04T11:46:11.6014719Z","event":"Bash","tool":"bash","cmd":"ls dydo/project/backlog/ | head -10"}
+{"ts":"2026-07-04T11:46:18.4360026Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\backlog\\dydo-2-hardening.md","tool":"read"}
+{"ts":"2026-07-04T11:46:34.7239531Z","event":"Write","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\project\\backlog\\review-tiers-and-attention.md","tool":"write"}
+{"ts":"2026-07-04T11:47:01.6447574Z","event":"Bash","tool":"bash","cmd":"ls dydo/agents/Adele/archive/ 2\u003E/dev/null; find dydo/agents/Adele -name \u0022brief-dydo-2-upgrade.md\u0022 2\u003E..."}
+{"ts":"2026-07-04T11:48:41.7264434Z","event":"Release","agent":"Adele"}
+{"ts":"2026-07-04T11:49:18.6720636Z","event":"Write","path":"C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\dydo-claim-via-bash-only.md","tool":"write"}
+{"ts":"2026-07-04T11:49:26.2222739Z","event":"Edit","path":"C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\MEMORY.md","tool":"edit"}

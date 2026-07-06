@@ -43,6 +43,21 @@ Symptoms to reproduce against: (a) two sessions resolving to one claim; (b) hook
 identity disagreement within one session; (c) orphaned claim after release (status says claimed,
 free-list says free, claim-by-name rejected); (d) PowerShell hook path cannot initiate claims.
 
+## Additional observations (Brian, session a36a9b9d, 2026-07-04)
+
+From the ORIGINAL claimant's side of the mixup, post-incident: `dydo whoami` in this session
+still resolves consistently (Brian / orchestrator / dydo-2-birdseye / working), the guard,
+messaging, and inbox all function, and `dydo agent list` shows a coherent 3-working roster.
+So the orphaned-claim inconsistency (status=claimed-by-a36a9b9d vs free-list vs claim-rejected)
+is a CLAIM-STORE inconsistency visible to OTHER sessions, while the bound session itself keeps
+working normally — dangerous precisely because the legitimate holder sees no symptom.
+
+Second-order effect worth capturing: **inboxes belong to the identity, not the session.**
+When Adele's claim changed hands mid-day, messages sent to "Adele" (intended for the sprint2
+implementer) were received by the NEW holder — identity-addressed messaging silently re-routes
+history on handoff. Any fix should decide whether an identity handoff should archive/fence the
+prior holder's inbox.
+
 ## Resolution
 
 (Filled when resolved. Caveat from balazs: the installed CLI binary predates the current source

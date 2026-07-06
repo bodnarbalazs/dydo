@@ -127,12 +127,7 @@ dydo agent release
 
 ### If Review Fails
 
-Only dispatch a code-writer to fix issues if you were dispatched by a code-writer. In all other cases (inquisitor scout, judge evidence, orchestrator audit), report your findings back to the dispatcher and release — they decide what happens next.
-But if the review is a FAIL and you've been dispatched by a code-writer:
-
-```bash
-dydo dispatch --auto-close --role code-writer --task <task-name> --brief "Review failed. Issues: [list specific issues]"
-```
+On a FAIL, report your verdict and specific findings back to whoever invoked you — the `run-sprint` workflow, or the agent that spawned you. It decides what happens next. As a reviewer you assess and report; you don't dispatch fixes yourself.
 
 **Be specific.** Don't just say "fix the bugs." Say exactly what's wrong:
 - "Line 45: Null check missing, will throw if user is null"

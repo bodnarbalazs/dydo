@@ -34,7 +34,11 @@ public static class NotionPropertyMapper
         ["url"] = v => v.Url ?? "",
     };
 
-    private static readonly Dictionary<string, Func<string, NotionPropertyValue>> Writers = new()
+    // A builder returns null for a value that must be SKIPPED rather than written: an empty scalar (a blank
+    // date/select/number/url in frontmatter) would serialize to a bodyless value like {"type":"date"} — a
+    // Notion 400 — and a blank field means "unset", not "clear". Empty multi_select ([]) and checkbox (false)
+    // are valid, so those never return null.
+    private static readonly Dictionary<string, Func<string, NotionPropertyValue?>> Writers = new()
     {
         ["title"] = raw => new NotionPropertyValue { Type = "title", Title = NotionRichText.Of(raw) },
         ["rich_text"] = raw => new NotionPropertyValue { Type = "rich_text", RichText = NotionRichText.Of(raw) },
@@ -118,9 +122,9 @@ public static class NotionPropertyMapper
                 if (relation != null)
                     props[field.Key] = relation;
             }
-            else if (Writers.TryGetValue(type, out var build))
+            else if (Writers.TryGetValue(type, out var build) && build(field.Value) is { } value)
             {
-                props[field.Key] = build(field.Value);
+                props[field.Key] = value;
             }
         }
         return props;
@@ -175,11 +179,8 @@ public static class NotionPropertyMapper
         return title.Length > 0 ? title : NotionRichText.Flatten(v.RichText);
     }
 
-    private static NotionPropertyValue BuildSelect(string raw) => new()
-    {
-        Type = "select",
-        Select = string.IsNullOrEmpty(raw) ? null : new NotionSelectOption { Name = raw },
-    };
+    private static NotionPropertyValue? BuildSelect(string raw) =>
+        string.IsNullOrEmpty(raw) ? null : new() { Type = "select", Select = new NotionSelectOption { Name = raw } };
 
     private static NotionPropertyValue BuildMultiSelect(string raw) => new()
     {
@@ -190,11 +191,10 @@ public static class NotionPropertyMapper
             .ToList(),
     };
 
-    private static NotionPropertyValue BuildNumber(string raw) => new()
-    {
-        Type = "number",
-        Number = double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var n) ? n : null,
-    };
+    private static NotionPropertyValue? BuildNumber(string raw) =>
+        double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var n)
+            ? new() { Type = "number", Number = n }
+            : null;
 
     private static NotionPropertyValue BuildCheckbox(string raw) => new()
     {
@@ -202,15 +202,9 @@ public static class NotionPropertyMapper
         Checkbox = raw.Equals("true", StringComparison.OrdinalIgnoreCase),
     };
 
-    private static NotionPropertyValue BuildDate(string raw) => new()
-    {
-        Type = "date",
-        Date = string.IsNullOrEmpty(raw) ? null : new NotionDate { Start = raw },
-    };
+    private static NotionPropertyValue? BuildDate(string raw) =>
+        string.IsNullOrEmpty(raw) ? null : new() { Type = "date", Date = new NotionDate { Start = raw } };
 
-    private static NotionPropertyValue BuildUrl(string raw) => new()
-    {
-        Type = "url",
-        Url = string.IsNullOrEmpty(raw) ? null : raw,
-    };
+    private static NotionPropertyValue? BuildUrl(string raw) =>
+        string.IsNullOrEmpty(raw) ? null : new() { Type = "url", Url = raw };
 }

@@ -106,8 +106,11 @@ public class NotionPropertyMapperTests
     }
 
     [Fact]
-    public void ToProperties_EmptyValues_ProduceClearedPayloads()
+    public void ToProperties_EmptyScalarValues_AreSkipped_MultiSelectAndCheckboxStillWrite()
     {
+        // A blank date/select/url/number in frontmatter is UNSET, not "clear": a bodyless value like
+        // {"type":"date"} is a Notion 400 that aborts the whole reconcile (observed on sprint docs carrying
+        // empty end:/start:/gate-result:). Empty multi_select ([]) and checkbox (false) are valid and still write.
         var schema = new Dictionary<string, string>
         {
             ["Status"] = "select",
@@ -121,12 +124,12 @@ public class NotionPropertyMapperTests
             F(("Status", ""), ("Due", ""), ("Link", ""), ("Points", "not-a-number"), ("Tags", ""), ("Done", "no")),
             schema);
 
-        Assert.Null(props["Status"].Select);          // empty select cleared
-        Assert.Null(props["Due"].Date);                // empty date cleared
-        Assert.Null(props["Link"].Url);                // empty url cleared
-        Assert.Null(props["Points"].Number);           // unparseable number cleared
-        Assert.Empty(props["Tags"].MultiSelect!);      // empty multi-select
-        Assert.False(props["Done"].Checkbox);          // non-"true" is false
+        Assert.False(props.ContainsKey("Status")); // empty select skipped
+        Assert.False(props.ContainsKey("Due"));     // empty date skipped
+        Assert.False(props.ContainsKey("Link"));    // empty url skipped
+        Assert.False(props.ContainsKey("Points"));  // unparseable number skipped
+        Assert.Empty(props["Tags"].MultiSelect!);   // empty multi-select still written (a valid clear)
+        Assert.False(props["Done"].Checkbox);       // checkbox always written
     }
 
     [Fact]

@@ -134,6 +134,8 @@ public static class NotionSpineSync
                     output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
                 if (NotionProvisioner.HasDeferredFormulas(type))
                     output.WriteLine($"  provision  {type.Type,-9} would add formula properties");
+                if (NotionProvisioner.HasViews(type))
+                    output.WriteLine($"  provision  {type.Type,-9} would add {type.Views!.Count} view(s)");
             }
         }
         else
@@ -155,6 +157,12 @@ public static class NotionSpineSync
                 {
                     provisioner.AddFormulas(type);
                     output.WriteLine($"  provision  {type.Type,-9} added formula properties");
+                }
+                // Views last: they reference properties/rollups/formulas by id, so every column must exist first.
+                if (NotionProvisioner.HasViews(type))
+                {
+                    provisioner.AddViews(type);
+                    output.WriteLine($"  provision  {type.Type,-9} added {type.Views!.Count} view(s)");
                 }
                 // Persist completion immediately (mirrors the per-create Save) so a later throw in this same
                 // post-pass does not force an already-done type to re-run — and marks the flag for reuse ticks.

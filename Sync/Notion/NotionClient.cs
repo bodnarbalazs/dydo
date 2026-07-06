@@ -53,6 +53,26 @@ public sealed class NotionClient : INotionClient
         Send(HttpMethod.Patch, $"data_sources/{dataSourceId}", request,
             NotionJsonContext.Default.NotionDataSourceUpdateRequest, NotionJsonContext.Default.NotionDatabase);
 
+    // The created-view response is discarded (deserialized into the shared NotionDatabase shape, whose
+    // unknown-field tolerance ignores the view payload) — the provisioner needs only that it succeeded.
+    public void CreateView(NotionViewCreateRequest request) =>
+        Post("views", request, NotionJsonContext.Default.NotionViewCreateRequest, NotionJsonContext.Default.NotionDatabase);
+
+    public IReadOnlyList<string> ListViewIds(string databaseId) =>
+        Get($"views?database_id={databaseId}", NotionJsonContext.Default.NotionViewList).Results.Select(v => v.Id).ToList();
+
+    public void DeleteView(string viewId)
+    {
+        Throttle();
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"views/{viewId}");
+        using var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+        if (!resp.IsSuccessStatusCode)
+        {
+            var json = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            throw new NotionApiException((int)resp.StatusCode, json);
+        }
+    }
+
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
     {
         var pages = new List<NotionPage>();
@@ -92,9 +112,24 @@ public sealed class NotionClient : INotionClient
         return blocks;
     }
 
-    public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request) =>
-        Send(HttpMethod.Patch, $"blocks/{blockId}/children", request,
-            NotionJsonContext.Default.NotionAppendChildrenRequest, NotionJsonContext.Default.NotionBlockList);
+    public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) =>
+        GetBlockChildren(parentPageId)
+            .Where(b => b.Type == "child_page")
+            .Select(b => new NotionChildPage { Id = b.Id ?? "", Title = b.ChildPage?.Title ?? "" })
+            .ToList();
+
+    // Notion rejects an append of more than 100 children with a 400, so a large doc's body is chunked
+    // across successive PATCHes (DR 033). Zero children issues no request — Notion 400s an empty append.
+    public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
+    {
+        const int maxPerRequest = 100;
+        for (var i = 0; i < request.Children.Count; i += maxPerRequest)
+        {
+            var chunk = request.Children.GetRange(i, Math.Min(maxPerRequest, request.Children.Count - i));
+            Send(HttpMethod.Patch, $"blocks/{blockId}/children", new NotionAppendChildrenRequest { Children = chunk },
+                NotionJsonContext.Default.NotionAppendChildrenRequest, NotionJsonContext.Default.NotionBlockList);
+        }
+    }
 
     public void DeleteBlock(string blockId)
     {

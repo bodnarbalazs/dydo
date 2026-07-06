@@ -45,7 +45,12 @@ public static class NotionSyncService
 
         try
         {
-            NotionSpineSync.Run(clientFactory(token), config.GetDydoRoot(), parentPageId, dryRun, output, prune);
+            var client = clientFactory(token);
+            // Two Notion surfaces under the same parent page (DR 033): the queryable PM spine of databases, then
+            // the browsable docs mirror of nested pages. Both run every tick — the docs mirror is always-on
+            // alongside the spine, not a separate opt-in command.
+            NotionSpineSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output, prune);
+            DocsTreeSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output);
             return ExitCodes.Success;
         }
         catch (NotionApiException ex)

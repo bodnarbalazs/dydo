@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Services;
 
 using DynaDocs.Services;
+using DynaDocs.Sync.Model;
 
 public class FolderScaffolderTests : IDisposable
 {
@@ -33,7 +34,28 @@ public class FolderScaffolderTests : IDisposable
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "decisions")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "changelog")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "pitfalls")));
+        // The Notion PM sync spine (DR 025) — each object type maps to one of these project subfolders, so
+        // init must scaffold them or e.g. the "dydo Releases" board has no source folder.
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "releases")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "campaigns")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "sprints")));
+        Assert.True(Directory.Exists(Path.Combine(_testDir, "project", "sprint-tasks")));
         Assert.True(Directory.Exists(Path.Combine(_testDir, "agents")));
+    }
+
+    [Fact]
+    public void Scaffold_CreatesEverySyncModelSpineFolder()
+    {
+        // Drift guard: every object type in the default sync-model.json maps to a project subfolder, and init
+        // must scaffold each — else a shipped project can't sync that type (a "Releases" board with no source
+        // folder, the gap this fixed). Adding a spine object type without its scaffold folder fails here. The
+        // folder counterpart of the skills/agents "project uses only what ships with dydo" consistency checks.
+        _scaffolder.Scaffold(_testDir);
+
+        var model = SyncModelLoader.Load(_testDir);
+        foreach (var obj in model.Objects)
+            Assert.True(Directory.Exists(Path.Combine(_testDir, obj.Dir)),
+                $"scaffold is missing sync-model dir: {obj.Dir}");
     }
 
     [Fact]

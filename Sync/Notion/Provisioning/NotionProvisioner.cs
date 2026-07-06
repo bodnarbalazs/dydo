@@ -164,6 +164,107 @@ public sealed class NotionProvisioner
                 }));
     }
 
+    /// <summary>Whether this type declares views to provision beyond Notion's auto-created default.</summary>
+    public static bool HasViews(SyncObjectType type) => type.Views is { Count: > 0 };
+
+    /// <summary>Post-pass (board-views feature): create this type's declared views on its database, now that
+    /// every property/rollup/formula they reference by id exists. Runs last in the per-type post-pass so the
+    /// live schema — fetched here for the name→id map a view config needs — is complete. Views ride the same
+    /// once-per-database <c>PostPassDone</c> idempotency as rollups/formulas: created on a fresh mint, not
+    /// re-created on a reuse tick (a deleted view is not restored, mirroring schema-drift's create-only policy).</summary>
+    public void AddViews(SyncObjectType type)
+    {
+        if (type.Views is not { Count: > 0 } views)
+            return;
+        var record = _state[type.Type];
+        // The auto-created default view(s) present BEFORE we add ours — captured so they can be removed after,
+        // once the declared views exist (Notion requires a database keep at least one view). The default is a
+        // worse-ordered duplicate of the "All" view, so the board reads cleaner without it.
+        var defaultViews = _client.ListViewIds(record.DatabaseId);
+        var idByName = _client.RetrieveDataSource(record.DataSourceId).Properties
+            .ToDictionary(p => p.Key, p => p.Value.Id ?? "");
+        foreach (var view in views)
+            Push($"provisioning {type.Type} view \"{view.Name}\"",
+                () => _client.CreateView(BuildView(type, record, view, idByName)));
+        foreach (var viewId in defaultViews)
+            Push($"provisioning {type.Type} (remove default view)", () => _client.DeleteView(viewId));
+    }
+
+    private static NotionViewCreateRequest BuildView(
+        SyncObjectType type, NotionProvisionedType record, SyncViewDef view, IReadOnlyDictionary<string, string> idByName) => new()
+    {
+        DatabaseId = record.DatabaseId,
+        DataSourceId = record.DataSourceId,
+        Name = view.Name,
+        Type = view.Type,
+        Filter = BuildFilter(view.Filter, type),
+        Sorts = view.Sort?.Select(s => new NotionViewSortBody { Property = s.Property, Direction = s.Direction }).ToList(),
+        Configuration = BuildConfig(type, view, idByName),
+    };
+
+    /// <summary>The view's column list in the model's declared property order — the source of truth for
+    /// display order — each visible unless it is a compute-only helper (<see cref="SyncPropertyDef.Hidden"/>)
+    /// or this view hides it. Live-schema properties absent from the model (Notion's auto-created reverse
+    /// relations) are appended hidden, so a board never shows a raw "Sprints"/"Tasks" back-reference column.</summary>
+    private static NotionViewConfiguration BuildConfig(
+        SyncObjectType type, SyncViewDef view, IReadOnlyDictionary<string, string> idByName)
+    {
+        var hide = view.Hide is { } h ? new HashSet<string>(h, StringComparer.Ordinal) : [];
+        var props = new List<NotionViewPropertyRef>();
+        var placed = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (name, def) in type.Properties)
+            if (idByName.TryGetValue(name, out var id) && id.Length > 0)
+            {
+                props.Add(new NotionViewPropertyRef { PropertyId = id, Visible = !(def.Hidden || hide.Contains(name)) });
+                placed.Add(name);
+            }
+        foreach (var (name, id) in idByName)
+            if (!placed.Contains(name) && id.Length > 0)
+                props.Add(new NotionViewPropertyRef { PropertyId = id, Visible = false });
+
+        var config = new NotionViewConfiguration { Type = view.Type, Properties = props };
+        if (view.Type == "board" && view.GroupBy != null && idByName.TryGetValue(view.GroupBy, out var groupId))
+            config.GroupBy = new NotionViewGroupBy { PropertyId = groupId };
+        if (view.Type == "timeline")
+        {
+            if (view.DateStart != null && idByName.TryGetValue(view.DateStart, out var startId))
+                config.DatePropertyId = startId;
+            if (view.DateEnd != null && idByName.TryGetValue(view.DateEnd, out var endId))
+                config.EndDatePropertyId = endId;
+        }
+        return config;
+    }
+
+    /// <summary>Translate a model filter (property name + operator + value) to Notion's type-matched filter
+    /// body, chosen from the property's declared type: a <c>select</c> equals/does_not_equal, a <c>checkbox</c>
+    /// equals, or a <c>rollup</c> count &gt; 0. Notion cannot filter a formula column ("formula of unknown
+    /// type"), so the Needs-Attention view targets <c>needs-human</c> — a checkbox on the leaf types, a checked
+    /// rollup on the parents — the strongest and reliably-filterable human-queue signal. An unknown property
+    /// type falls back to a select condition.</summary>
+    private static NotionViewFilterBody? BuildFilter(SyncViewFilter? filter, SyncObjectType type)
+    {
+        if (filter == null)
+            return null;
+        var body = new NotionViewFilterBody { Property = filter.Property };
+        var propType = type.Properties.TryGetValue(filter.Property, out var def) ? def.Type : "select";
+        var wantTrue = filter.Value.Equals("true", StringComparison.OrdinalIgnoreCase);
+        switch (propType)
+        {
+            case "checkbox":
+                body.Checkbox = new NotionViewCheckboxCondition { EqualsValue = wantTrue };
+                break;
+            case "rollup":
+                body.Rollup = new NotionViewRollupCondition { Number = new NotionViewNumberCondition { GreaterThan = 0 } };
+                break;
+            default:
+                body.Select = filter.Operator == "does_not_equal"
+                    ? new NotionViewTextCondition { DoesNotEqual = filter.Value }
+                    : new NotionViewTextCondition { EqualsValue = filter.Value };
+                break;
+        }
+        return body;
+    }
+
     /// <summary>The names of formulas that must be deferred past the create: a formula that reads a rollup,
     /// a self-relation, or any other formula. A formula reading only stored properties is created inline.</summary>
     private static HashSet<string> DeferredFormulaNames(SyncObjectType type)

@@ -63,7 +63,13 @@ public static class NotionBlockConverter
     {
         var sb = new StringBuilder();
         foreach (var block in blocks)
+        {
+            // A child_page block is a nested sub-page (DR 033), not body content — the docs mirror keeps
+            // structure repo-owned, so it never renders into or round-trips through a page's body text.
+            if (block.Type == "child_page")
+                continue;
             sb.Append(BlockToLine(block)).Append('\n');
+        }
         return sb.ToString().TrimEnd('\n');
     }
 

@@ -198,6 +198,68 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void CreatePage_UnderPageParent_SerializesPageIdParent()
+    {
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"id":"child","properties":{}}""");
+
+        var req = new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page("parent-page"),
+            Properties = new() { ["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of("Understand") } },
+        };
+        var page = Client(handler).CreatePage(req);
+
+        var body = handler.Requests.Single().Body;
+        Assert.Contains("\"type\":\"page_id\"", body);
+        Assert.Contains("\"page_id\":\"parent-page\"", body);
+        // A page parent must not also carry a data_source_id, or Notion rejects the ambiguous parent.
+        Assert.DoesNotContain("data_source_id", body);
+        Assert.Equal("child", page.Id);
+    }
+
+    [Fact]
+    public void GetChildPages_GetsChildrenPath_AndProjectsOnlyChildPageBlocks()
+    {
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"results":[{"type":"child_page","id":"cp1","child_page":{"title":"Understand"}},{"type":"paragraph","id":"b1"}],"has_more":false}""");
+
+        var pages = Client(handler).GetChildPages("root");
+
+        Assert.Equal("/v1/blocks/root/children", handler.Requests[0].Path);
+        // The paragraph block is body content, not a nested page — only the child_page block is returned.
+        Assert.Equal(["cp1"], pages.Select(p => p.Id));
+        Assert.Equal("Understand", pages.Single().Title);
+    }
+
+    [Fact]
+    public void AppendBlockChildren_ChunksAt100ChildrenPerRequest()
+    {
+        // 250 children exceed Notion's 100-per-append cap, so the client must split them across 3 PATCHes.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < 3; i++)
+            handler.Enqueue("""{"results":[]}""");
+
+        var children = Enumerable.Range(0, 250)
+            .Select(i => new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("l" + i) } })
+            .ToList();
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = children });
+
+        Assert.Equal(3, handler.Requests.Count);
+        Assert.All(handler.Requests, r => Assert.Equal("PATCH", r.Method));
+        Assert.All(handler.Requests, r => Assert.Equal("/v1/blocks/p1/children", r.Path));
+    }
+
+    [Fact]
+    public void AppendBlockChildren_EmptyChildren_IssuesNoRequest()
+    {
+        var handler = new FakeHttpMessageHandler();
+
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = [] });
+
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
     public void DeleteBlock_SendsDelete()
     {
         var handler = new FakeHttpMessageHandler().Enqueue("""{"id":"b1"}""");

@@ -53,6 +53,12 @@ public sealed class SyncPropertyDef
     [JsonPropertyName("expression")]
     public string? Expression { get; set; }
 
+    /// <summary>A compute-only helper property (an intermediate rollup/formula projection, or an engine-owned
+    /// column) the provisioned views hide by default — it exists to feed other computed columns, not for the
+    /// human to read. Defaults false; a plain human-facing property shows in every view.</summary>
+    [JsonPropertyName("hidden")]
+    public bool Hidden { get; set; }
+
     /// <summary>A rollup property's source relation property name — the reverse relation on this type a
     /// child's dual-property relation created (view-only).</summary>
     [JsonPropertyName("rollupRelation")]

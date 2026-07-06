@@ -43,4 +43,10 @@ public sealed class NotionBlock
     [JsonPropertyName("code")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionBlockBody? Code { get; set; }
+
+    /// <summary>Set on a <c>child_page</c> block Notion returns for a nested sub-page (DR 033). Read-only:
+    /// child pages are created via the pages endpoint, never appended as blocks.</summary>
+    [JsonPropertyName("child_page")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NotionChildPageBody? ChildPage { get; set; }
 }

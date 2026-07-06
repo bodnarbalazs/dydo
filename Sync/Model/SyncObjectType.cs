@@ -27,6 +27,11 @@ public sealed class SyncObjectType
     [JsonPropertyName("properties")]
     public Dictionary<string, SyncPropertyDef> Properties { get; set; } = new();
 
+    /// <summary>The Notion views this type provisions beyond the auto-created default (board views feature).
+    /// Null/empty leaves only Notion's default table view. Views are provisioned idempotently by name.</summary>
+    [JsonPropertyName("views")]
+    public List<SyncViewDef>? Views { get; set; }
+
     /// <summary>The distinct object types this type's relations point at — its provisioning and sync
     /// dependencies, so a parent is always created and reconciled before its children.</summary>
     public IEnumerable<string> RelationTargets() =>

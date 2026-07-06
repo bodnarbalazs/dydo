@@ -11,6 +11,10 @@ public sealed class FakeNotionClient : INotionClient
     private readonly Dictionary<string, NotionPage> _pages = new();
     private readonly Dictionary<string, string> _pageDataSource = new();
     private readonly Dictionary<string, List<NotionBlock>> _blocks = new();
+    // Nested-page tree (DR 033): a page's parent page id and its title, so GetChildPages can walk the tree
+    // and the docs mirror can be exercised without HTTP.
+    private readonly Dictionary<string, string> _pageParent = new();
+    private readonly Dictionary<string, string> _pageTitle = new();
     private int _nextPage = 1;
     private int _nextBlock = 1;
     private int _nextDb = 1;
@@ -19,6 +23,13 @@ public sealed class FakeNotionClient : INotionClient
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
     public List<NotionDatabaseCreateRequest> CreatedDatabases { get; } = [];
     public List<(string DataSourceId, NotionDataSourceUpdateRequest Request)> DataSourceUpdates { get; } = [];
+    public List<NotionViewCreateRequest> CreatedViews { get; } = [];
+
+    /// <summary>View ids per database — seeded with an auto-created "default" on CreateDatabase (as real Notion
+    /// does), appended by CreateView, and pruned by DeleteView — so the provisioner's default-view removal is testable.</summary>
+    private readonly Dictionary<string, List<string>> _viewsByDb = new();
+    private int _nextView = 1;
+    public List<string> DeletedViews { get; } = [];
 
     /// <summary>Live property schema per data source id — seeded from CreateDatabase, merged by
     /// UpdateDataSource (a null property body deletes it), and read back by RetrieveDataSource. Lets
@@ -127,12 +138,17 @@ public sealed class FakeNotionClient : INotionClient
             DataSources = [new NotionDataSourceRef { Id = dataSourceId, Name = NotionRichText.Flatten(request.Title) }],
         };
         Databases[db.Id] = db;
+        _viewsByDb[db.Id] = [$"default-{n}"]; // Notion auto-creates a default view on database creation
         CreatedDatabases.Add(request);
         _dataSources[dataSourceId] = new NotionDataSource
         {
             Id = dataSourceId,
             Properties = new Dictionary<string, NotionPropertySchema>(request.InitialDataSource.Properties),
         };
+        // Real Notion assigns each property an id, returned on read and referenced by view configs; mirror that
+        // by using the property name as its id so RetrieveDataSource yields a usable name→id map in tests.
+        foreach (var (name, schema) in _dataSources[dataSourceId].Properties)
+            schema.Id ??= name;
         return db;
     }
 
@@ -145,10 +161,33 @@ public sealed class FakeNotionClient : INotionClient
         foreach (var (name, body) in request.Properties)
         {
             if (body == null)
+            {
                 schema.Remove(name); // a null body prunes the property
+            }
             else
+            {
+                body.Id ??= name; // mirror Notion assigning an id, so views can resolve it (see CreateDatabase)
                 schema[name] = body;
+            }
         }
+    }
+
+    public void CreateView(NotionViewCreateRequest request)
+    {
+        CreatedViews.Add(request);
+        if (!_viewsByDb.TryGetValue(request.DatabaseId, out var list))
+            _viewsByDb[request.DatabaseId] = list = [];
+        list.Add($"view-{_nextView++}");
+    }
+
+    public IReadOnlyList<string> ListViewIds(string databaseId) =>
+        _viewsByDb.TryGetValue(databaseId, out var list) ? list.ToList() : [];
+
+    public void DeleteView(string viewId)
+    {
+        DeletedViews.Add(viewId);
+        foreach (var list in _viewsByDb.Values)
+            list.Remove(viewId);
     }
 
     public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId)
@@ -170,10 +209,20 @@ public sealed class FakeNotionClient : INotionClient
         var id = $"page-{_nextPage++}";
         var page = new NotionPage { Id = id, Properties = request.Properties };
         _pages[id] = page;
-        _pageDataSource[id] = request.Parent.DataSourceId;
+        _pageDataSource[id] = request.Parent.DataSourceId ?? "";
+        if (request.Parent.PageId != null)
+            _pageParent[id] = request.Parent.PageId;
+        if (request.Properties.TryGetValue("title", out var title) && title.Title != null)
+            _pageTitle[id] = NotionRichText.Flatten(title.Title);
         _blocks[id] = request.Children ?? [];
         return page;
     }
+
+    public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) =>
+        _pages.Values
+            .Where(p => !p.Archived && _pageParent.TryGetValue(p.Id, out var parent) && parent == parentPageId)
+            .Select(p => new NotionChildPage { Id = p.Id, Title = _pageTitle.GetValueOrDefault(p.Id, "") })
+            .ToList();
 
     public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request)
     {

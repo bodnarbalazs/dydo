@@ -9,6 +9,13 @@ using System.Text.Json.Serialization;
 /// </summary>
 public sealed class NotionPropertySchema
 {
+    /// <summary>The property's Notion id, populated on read (GET /v1/data_sources) and omitted on write. A
+    /// view's column/group/timeline config references properties by id, so provisioning views resolves each
+    /// model property name to this id from the live schema.</summary>
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Id { get; set; }
+
     [JsonPropertyName("title")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NotionEmptyConfig? Title { get; set; }

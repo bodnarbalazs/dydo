@@ -146,10 +146,14 @@ public class NotionSyncServiceTests : IDisposable
         public NotionDataSource RetrieveDataSource(string dataSourceId) => throw new NotionApiException(500, "boom");
         public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) => throw new NotionApiException(429, "rate limited");
         public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) { }
+        public void CreateView(NotionViewCreateRequest request) { }
+        public IReadOnlyList<string> ListViewIds(string databaseId) => [];
+        public void DeleteView(string viewId) { }
         public IReadOnlyList<NotionPage> QueryDataSource(string dataSourceId) => [];
         public NotionPage CreatePage(NotionPageCreateRequest request) => new();
         public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request) => new();
         public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) => [];
+        public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) => [];
         public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request) { }
         public void DeleteBlock(string blockId) { }
         public IReadOnlyList<string> SearchDataSources() => [];

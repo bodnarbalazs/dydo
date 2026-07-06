@@ -213,6 +213,74 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
+    public void AddViews_EmitsDeclaredViews_WithOrderHideFilterAndGrouping()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Issue"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        Assert.True(NotionProvisioner.HasViews(_model.Object("Issue")));
+        provisioner.AddViews(_model.Object("Issue"));
+
+        var byName = client.CreatedViews.ToDictionary(v => v.Name);
+        Assert.Contains("Open", byName.Keys);
+        Assert.Contains("🚨 Needs Attention", byName.Keys);
+        Assert.Contains("By Area", byName.Keys);
+
+        // Open: status != resolved, sorted by severity desc.
+        var open = byName["Open"];
+        Assert.Equal("table", open.Type);
+        Assert.Equal("resolved", open.Filter!.Select!.DoesNotEqual);
+        Assert.Equal("severity", open.Sorts!.Single().Property);
+        Assert.Equal("descending", open.Sorts!.Single().Direction);
+        // Compute-only helper hidden; a human column visible; the fake ids each property by name.
+        var props = open.Configuration!.Properties!;
+        Assert.False(props.Single(p => p.PropertyId == "last-activity").Visible);
+        Assert.True(props.Single(p => p.PropertyId == "status").Visible);
+
+        // Needs Attention targets needs-human — a checkbox on Issue (Notion can't filter the attention formula).
+        Assert.True(byName["🚨 Needs Attention"].Filter!.Checkbox!.EqualsValue);
+
+        // By Area is a board grouped by the area select.
+        var board = byName["By Area"];
+        Assert.Equal("board", board.Type);
+        Assert.Equal("area", board.Configuration!.GroupBy!.PropertyId);
+    }
+
+    [Fact]
+    public void AddViews_TimelineView_CarriesRollupDateAxis()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        provisioner.Create(_model.Object("Campaign"), "parent-page", new Dictionary<string, string> { ["Release"] = "ds-release" });
+        provisioner.AddRollups(_model.Object("Campaign"));
+        provisioner.AddFormulas(_model.Object("Campaign"));
+
+        provisioner.AddViews(_model.Object("Campaign"));
+
+        var roadmap = client.CreatedViews.Single(v => v.Type == "timeline");
+        Assert.Equal("start", roadmap.Configuration!.DatePropertyId);
+        Assert.Equal("end", roadmap.Configuration!.EndDatePropertyId);
+    }
+
+    [Fact]
+    public void AddViews_RemovesTheAutoCreatedDefaultView()
+    {
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var record = provisioner.Create(_model.Object("Issue"), "parent-page",
+            new Dictionary<string, string> { ["Release"] = "ds-release" });
+
+        provisioner.AddViews(_model.Object("Issue"));
+
+        // The default view present at create time is deleted; only the declared views remain.
+        Assert.Contains(client.DeletedViews, id => id.StartsWith("default-", StringComparison.Ordinal));
+        var remaining = client.ListViewIds(record.DatabaseId);
+        Assert.DoesNotContain(remaining, id => id.StartsWith("default-", StringComparison.Ordinal));
+        Assert.Equal(_model.Object("Issue").Views!.Count, remaining.Count);
+    }
+
+    [Fact]
     public void AddFormulas_NotionRejectsExpression_ErrorNamesTypePropertyAndExpression()
     {
         // Notion's schema rejection ("Type error with formula") names neither the object type nor the

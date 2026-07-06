@@ -26,6 +26,8 @@ using DynaDocs.Sync.Notion.Provisioning;
 [JsonSerializable(typeof(NotionAppendChildrenRequest))]
 [JsonSerializable(typeof(NotionSearchRequest))]
 [JsonSerializable(typeof(NotionSearchResponse))]
+[JsonSerializable(typeof(NotionViewCreateRequest))]
+[JsonSerializable(typeof(NotionViewList))]
 internal partial class NotionJsonContext : JsonSerializerContext { }
 
 /// <summary>

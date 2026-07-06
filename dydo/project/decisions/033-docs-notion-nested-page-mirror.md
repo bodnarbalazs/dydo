@@ -20,10 +20,13 @@ split, and the concrete mechanics.
 
 ## Context
 
-Docs (`understand/`, `guides/`, `reference/`, `pitfalls/`, `inquisitions/`, changelog, …) are
-reference material to *read and browse*, not records to query and filter like the Campaign → Sprint →
-Task spine. Notion's **nested pages are the folder equivalent**, so mirroring the tree gives natural
-sidebar navigation and handles any custom folder structure by plain recursion.
+Docs (`understand/`, `guides/`, `reference/`, and any other non-`project/` reference material) are
+material to *read and browse*, not records to query and filter like the Campaign → Sprint → Task
+spine. [DR 034 — PM Record Taxonomy](./034-pm-record-taxonomy.md) confirms almost everything under
+`project/` is a queryable **record** (its own spine DB or a property of one), so in practice the
+mirror is essentially the non-`project/` reference tree. Notion's **nested pages are the folder
+equivalent**, so mirroring the tree gives natural sidebar navigation and handles any custom folder
+structure by plain recursion.
 
 025 never contemplated a hierarchy: its object model (§7) is flat database rows, so it never had to
 rule on who owns tree *shape*. It did, however, already establish (§4) that some things are **not
@@ -80,8 +83,11 @@ Mirror **every `.md` under `dydo/`**, minus:
 - **every dir backing a spine object type** — computed from `sync-model.json`, **never a hardcoded
   list**. Whatever the spine owns as a queryable DATABASE is automatically excluded from the mirror,
   so the two surfaces stay consistent **by construction** as the spine grows and no one has to patch
-  a list here again. Currently that set is `campaigns/`, `sprints/`, `sprint-tasks/`, `issues/`,
-  `releases/`, plus the newly-DB-bound `decisions/`, `future-features/`, and `pitfalls/` (spine track);
+  a list here again. Per [DR 034](./034-pm-record-taxonomy.md) that set is `campaigns/`, `sprints/`,
+  `sprint-tasks/`, `issues/`, `releases/`, `decisions/`, `pitfalls/`, and `future-features/` (the
+  confirmed `FutureFeature` type), and — once Brian lands the `Task` type — `tasks/` (incl.
+  `tasks/backlog/`) and the `changelog/` archive. `inquisitions/` is **not** mirrored either: DR 034 §8
+  dissolves the folder (its reports archive; directed findings flow through the qa-loop / `issues/`);
 - `_assets/` and `.obsidian/` (Obsidian machinery; no `.md` content anyway);
 - **any file the guard marks off-limits** — the mirror MUST honor the guard's universal off-limits
   patterns and **never** mirror such a file (e.g. `dydo/files-off-limits.md`, the root `index.md`,

@@ -1,4 +1,5 @@
 ---
+title: Watchdog and terminal launchers do not scrub or pin DYDO_AGENT on child ProcessStartInfo — Windows PowerShell startup window inherits the leaked value
 id: 197
 area: backend
 type: issue

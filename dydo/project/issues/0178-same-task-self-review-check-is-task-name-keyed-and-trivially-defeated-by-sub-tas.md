@@ -1,4 +1,5 @@
 ---
+title: Same-task self-review check is task-name-keyed and trivially defeated by sub-task suffixes — Brian reviewed his own PR2
 id: 178
 area: backend
 type: issue

@@ -67,4 +67,21 @@ public class NotionBlockConverterTests
         var blocks = NotionBlockConverter.ToBlocks("```\nunclosed");
         Assert.Equal("code", blocks.Single().Type);
     }
+
+    [Theory]
+    [InlineData("csharp", "c#")]   // the alias that wedged a live reconcile — Notion spells it "c#"
+    [InlineData("cs", "c#")]
+    [InlineData("pwsh", "powershell")]
+    [InlineData("text", "plain text")]
+    [InlineData("CSharp", "c#")]   // case-insensitive
+    [InlineData("bash", "bash")]   // already valid — passes through unchanged
+    [InlineData("c#", "c#")]
+    [InlineData("cobol", "plain text")] // unknown → fallback, so Notion never gets an invalid language again
+    public void CodeFence_Language_IsMappedToNotionVocabulary(string fence, string expected)
+    {
+        var blocks = NotionBlockConverter.ToBlocks($"```{fence}\ncode\n```");
+        var code = Assert.Single(blocks);
+        Assert.Equal("code", code.Type);
+        Assert.Equal(expected, code.Code!.Language);
+    }
 }

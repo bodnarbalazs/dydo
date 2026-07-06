@@ -1,4 +1,5 @@
 ---
+title: Tool-scoped file nudges never fire for Tier-2 workers (worker lane skips CheckFileNudges)
 id: 212
 area: general
 type: issue

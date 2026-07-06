@@ -1,4 +1,5 @@
 ---
+title: FixHubHandler.DeleteStaleTasksIndex banner-gated deletion lacks regression test pin
 id: 182
 area: general
 type: issue

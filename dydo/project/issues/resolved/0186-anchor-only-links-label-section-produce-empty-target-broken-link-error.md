@@ -1,4 +1,5 @@
 ---
+title: Anchor-only links [label](#section) produce empty-target Broken link error
 id: 186
 area: backend
 type: issue

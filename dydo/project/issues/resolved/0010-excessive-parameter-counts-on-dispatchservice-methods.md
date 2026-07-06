@@ -1,26 +1,24 @@
 ---
-id: 10
+title: Excessive parameter counts on DispatchService methods
 area: backend
-type: issue
+fix-release: 
+needs-human: false
+resolution: 
 severity: low
 status: resolved
+work-type: 
+id: 10
+type: issue
 found-by: inquisition
 date: 2026-04-03
 resolved-date: 2026-04-07
 ---
 
 # Excessive parameter counts on DispatchService methods
-
 Resolved low-severity code-quality finding: several `DispatchService` methods carried long parameter lists that hurt readability and made call sites brittle. Closed under the recent code-quality cleanup that grouped parameters into request objects.
-
 ## Description
-
 (Describe the issue)
-
 ## Reproduction
-
 (Steps to reproduce, if applicable)
-
 ## Resolution
-
 Fixed in recent code quality work

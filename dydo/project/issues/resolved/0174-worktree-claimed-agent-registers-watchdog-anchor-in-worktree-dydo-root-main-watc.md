@@ -1,4 +1,5 @@
 ---
+title: Worktree-claimed agent registers watchdog anchor in worktree dydo root; main watchdog cannot see it
 id: 174
 area: backend
 type: issue

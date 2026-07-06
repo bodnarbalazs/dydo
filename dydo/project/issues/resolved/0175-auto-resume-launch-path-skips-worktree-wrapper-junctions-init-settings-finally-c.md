@@ -1,4 +1,5 @@
 ---
+title: Auto-resume launch path skips worktree wrapper (junctions, init-settings, finally cleanup)
 id: 175
 area: backend
 type: issue

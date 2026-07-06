@@ -1,4 +1,5 @@
 ---
+title: dydo wait stderr suppressed by resume bodies in all three terminal launchers
 id: 191
 area: backend
 type: issue

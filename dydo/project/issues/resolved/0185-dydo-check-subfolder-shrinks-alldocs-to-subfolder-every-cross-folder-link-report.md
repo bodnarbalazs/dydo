@@ -1,4 +1,5 @@
 ---
+title: dydo check <subfolder> shrinks allDocs to subfolder, every cross-folder link reports as broken
 id: 185
 area: backend
 type: issue

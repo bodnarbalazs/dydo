@@ -1,4 +1,5 @@
 ---
+title: Extract TestProcess.cs helper for the three test-side git invocations
 id: 171
 area: general
 type: issue

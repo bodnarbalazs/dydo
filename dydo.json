@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "name": null,
   "structure": {
     "root": "dydo",
     "tasks": "project/tasks",
@@ -8,6 +9,7 @@
   "paths": {
     "source": [
       "Commands/**",
+      "Sync/**",
       "Services/**",
       "Models/**",
       "Rules/**",
@@ -88,14 +90,15 @@
     "launchInTab": true,
     "autoClose": false
   },
-  "tasks": {
-    "autoCompactInterval": 100
-  },
   "worktree": {
     "mergeSafety": {
       "ignore": [],
       "ignoreDefaults": true
     }
+  },
+  "notion": {
+    "parentPageId": null,
+    "tokenStorage": "local"
   },
   "models": {
     "tiers": {
@@ -114,7 +117,8 @@
       "inquisitor": "strong",
       "judge": "strong",
       "planner": "strong"
-    }
+    },
+    "efforts": {}
   },
   "queues": [
     "merge"
@@ -183,7 +187,11 @@
       "pattern": "{source}|{tests}",
       "message": "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
       "severity": "notice",
-      "tools": ["Edit", "Write", "NotebookEdit"]
+      "tools": [
+        "Edit",
+        "Write",
+        "NotebookEdit"
+      ]
     }
   ],
   "frameworkHashes": {

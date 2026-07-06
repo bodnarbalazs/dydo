@@ -69,6 +69,18 @@ public class IssueTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Issue_Create_WritesTitleFrontmatter_SoTheNotionTitleSyncs()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        await IssueCreateAsync("Sync me", area: "general", severity: "low");
+
+        // Issues carry `title:` in frontmatter like every other synced type, so the Notion board title is
+        // populated — the H1 alone never reached the title property (notion-sync-formula-fix follow-up).
+        AssertFileContains("dydo/project/issues/0001-sync-me.md", "title: Sync me");
+    }
+
+    [Fact]
     public async Task Issue_Create_WithFoundBy_SetsCorrectly()
     {
         await InitProjectAsync("none", "balazs", 3);

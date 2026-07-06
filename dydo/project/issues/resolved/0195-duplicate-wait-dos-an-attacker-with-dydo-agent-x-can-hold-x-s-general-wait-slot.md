@@ -1,4 +1,5 @@
 ---
+title: Duplicate-wait DoS: an attacker with DYDO_AGENT=X can hold X's general-wait slot indefinitely from a plain shell
 id: 195
 area: backend
 type: issue

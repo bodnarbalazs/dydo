@@ -1,4 +1,5 @@
 ---
+title: ResolveSessionFallback does not filter by AssignedHuman == currentHuman despite the April-09 plan
 id: 190
 area: backend
 type: issue

@@ -1,4 +1,5 @@
 ---
+title: dydo agent claim auto livelocks on contended head-of-list slot under concurrent claim pressure
 id: 200
 area: backend
 type: issue

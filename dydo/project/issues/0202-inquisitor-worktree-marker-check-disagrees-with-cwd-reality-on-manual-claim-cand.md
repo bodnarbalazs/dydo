@@ -1,4 +1,5 @@
 ---
+title: Inquisitor worktree-marker check disagrees with cwd reality on manual claim (candidate surface S14)
 id: 202
 area: backend
 type: issue

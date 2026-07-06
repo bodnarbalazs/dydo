@@ -1,4 +1,5 @@
 ---
+title: DocScanner recurses into _system/.local/worktrees/ - dydo check reports tens of spurious errors in projects with live worktrees
 id: 163
 area: project
 type: issue

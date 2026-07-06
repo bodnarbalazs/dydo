@@ -109,7 +109,56 @@ public static class NotionBlockConverter
         return "```" + lang + "\n" + Text(body) + "\n```";
     }
 
-    /// <summary>Notion requires a known language; default unspecified fences to "plain text".</summary>
-    private static string NormalizeLanguage(string language) =>
-        language.Length == 0 ? "plain text" : language;
+    /// <summary>Notion's code block accepts only a fixed language vocabulary and rejects anything else with a
+    /// 400 that aborts the whole reconcile (e.g. the ubiquitous "csharp" fence — Notion spells it "c#"). Map
+    /// the common markdown aliases to Notion's spelling, then fall back to "plain text" for any language Notion
+    /// does not accept, so an unrecognised fence degrades to an un-highlighted block instead of wedging the
+    /// sync. An empty fence defaults to "plain text". A repo body's original fence tag is not rewritten — the
+    /// adapter's NormalizeBody re-runs this mapping so the round-trip comparison matches Notion's echo.</summary>
+    private static string NormalizeLanguage(string language)
+    {
+        var lang = language.Trim().ToLowerInvariant();
+        if (lang.Length == 0)
+            return "plain text";
+        if (LanguageAliases.TryGetValue(lang, out var canonical))
+            lang = canonical;
+        return NotionLanguages.Contains(lang) ? lang : "plain text";
+    }
+
+    /// <summary>Common markdown / highlighter fence tags that differ from Notion's spelling.</summary>
+    private static readonly Dictionary<string, string> LanguageAliases = new(StringComparer.Ordinal)
+    {
+        ["csharp"] = "c#", ["cs"] = "c#",
+        ["cpp"] = "c++",
+        ["fsharp"] = "f#",
+        ["py"] = "python",
+        ["js"] = "javascript",
+        ["ts"] = "typescript",
+        ["yml"] = "yaml",
+        ["sh"] = "shell", ["zsh"] = "shell", ["console"] = "shell", ["shell-session"] = "shell",
+        ["pwsh"] = "powershell", ["ps1"] = "powershell",
+        ["md"] = "markdown",
+        ["text"] = "plain text", ["plaintext"] = "plain text", ["plain"] = "plain text", ["txt"] = "plain text",
+        ["dockerfile"] = "docker",
+        ["objc"] = "objective-c",
+        ["vb"] = "visual basic",
+        ["asm"] = "assembly",
+        ["tex"] = "latex",
+        ["golang"] = "go", ["rs"] = "rust", ["kt"] = "kotlin", ["rb"] = "ruby",
+    };
+
+    /// <summary>Notion's accepted code-block languages (Notion-Version 2026-03-11). A language outside this set
+    /// is rejected with a validation_error, so NormalizeLanguage maps to it or falls back to "plain text".</summary>
+    private static readonly HashSet<string> NotionLanguages = new(StringComparer.Ordinal)
+    {
+        "abap", "abc", "agda", "arduino", "ascii art", "assembly", "bash", "basic", "bnf", "c", "c#", "c++",
+        "clojure", "coffeescript", "coq", "css", "dart", "dhall", "diff", "docker", "ebnf", "elixir", "elm",
+        "erlang", "f#", "flow", "fortran", "gherkin", "glsl", "go", "graphql", "groovy", "haskell", "hcl",
+        "html", "idris", "java", "javascript", "json", "julia", "kotlin", "latex", "less", "lisp", "livescript",
+        "llvm ir", "lua", "makefile", "markdown", "markup", "matlab", "mathematica", "mermaid", "nix",
+        "notion formula", "objective-c", "ocaml", "pascal", "perl", "php", "plain text", "powershell", "prolog",
+        "protobuf", "purescript", "python", "r", "racket", "reason", "ruby", "rust", "sass", "scala", "scheme",
+        "scss", "shell", "smalltalk", "solidity", "sql", "swift", "toml", "typescript", "vb.net", "verilog",
+        "vhdl", "visual basic", "webassembly", "xml", "yaml", "java/c/c++/c#",
+    };
 }

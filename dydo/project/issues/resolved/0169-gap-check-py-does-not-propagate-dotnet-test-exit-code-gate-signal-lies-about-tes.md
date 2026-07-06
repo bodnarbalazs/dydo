@@ -1,4 +1,5 @@
 ---
+title: gap_check.py does not propagate dotnet test exit code: gate signal lies about test outcome
 id: 169
 area: general
 type: issue

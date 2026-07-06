@@ -1,4 +1,5 @@
 ---
+title: Two-phase StoreSessionContext in HandleDydoBashCommand publishes an unverifiable single-line session id between phase 1 and phase 2
 id: 196
 area: backend
 type: issue

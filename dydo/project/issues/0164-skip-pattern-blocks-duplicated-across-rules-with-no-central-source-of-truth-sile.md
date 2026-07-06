@@ -1,4 +1,5 @@
 ---
+title: Skip-pattern blocks duplicated across rules with no central source of truth - silent inconsistency vector
 id: 164
 area: project
 type: issue

@@ -1,4 +1,5 @@
 ---
+title: dydo agent claim does not refuse or warn when DYDO_AGENT is set to a different agent
 id: 193
 area: backend
 type: issue

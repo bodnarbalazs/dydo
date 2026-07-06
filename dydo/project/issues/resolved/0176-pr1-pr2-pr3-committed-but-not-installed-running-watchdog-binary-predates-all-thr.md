@@ -1,4 +1,5 @@
 ---
+title: PR1/PR2/PR3 committed but not installed: running watchdog binary predates all three fixes — install + watchdog restart required
 id: 176
 area: backend
 type: issue

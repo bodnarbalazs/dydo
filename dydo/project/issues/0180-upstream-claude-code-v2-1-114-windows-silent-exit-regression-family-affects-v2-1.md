@@ -1,4 +1,5 @@
 ---
+title: Upstream: Claude Code v2.1.114+ Windows silent-exit regression family — affects v2.1.132 sessions; not actionable from dydo
 id: 180
 area: backend
 type: issue

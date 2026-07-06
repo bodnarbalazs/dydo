@@ -1,4 +1,5 @@
 ---
+title: Anchor-only [label](#section) literals in issue/task body text trip post-fix link validator (backtick-escape per workaround)
 id: 205
 area: project
 type: issue

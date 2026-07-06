@@ -1,4 +1,5 @@
 ---
+title: Two parallel link resolver implementations (LinkResolver vs DocLinkResolver)
 id: 187
 area: backend
 type: issue

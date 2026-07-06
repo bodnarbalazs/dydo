@@ -1,4 +1,5 @@
 ---
+title: Identity hijack round 2: dydo agent role mutates other agent's record + phantom-inbox deadlock
 id: 183
 area: backend
 type: issue

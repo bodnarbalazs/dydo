@@ -1,13 +1,12 @@
 ---
 area: general
-name: release-2-0-0
+name: notion-sync-formula-fix
 status: pending
-created: 2026-07-06T10:36:01.4030533Z
-assigned: Charlie
-needs-human: false
+created: 2026-07-06T12:34:31.6553995Z
+assigned: Brian
 ---
 
-# Task: release-2-0-0
+# Task: notion-sync-formula-fix
 
 (No description)
 

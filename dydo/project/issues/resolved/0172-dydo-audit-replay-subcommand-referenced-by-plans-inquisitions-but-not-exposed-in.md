@@ -1,4 +1,5 @@
 ---
+title: dydo audit replay subcommand referenced by plans/inquisitions but not exposed in the CLI
 id: 172
 area: general
 type: issue

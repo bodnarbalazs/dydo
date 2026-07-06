@@ -58,13 +58,13 @@ public sealed class NotionProvisioner
         var firstPass = type.Properties.Where(p =>
             !selfRelations.Contains(p) && !rollups.Contains(p) && !deferredFormulas.Contains(p.Key));
 
-        var db = _client.CreateDatabase(new NotionDatabaseCreateRequest
+        var db = Push($"provisioning {type.Type} (create database)", () => _client.CreateDatabase(new NotionDatabaseCreateRequest
         {
             Parent = new NotionDatabaseParent { PageId = parentPageId },
             Title = NotionRichText.Of(type.NotionTitle),
             Icon = NotionIcon.Of(type.Icon),
             InitialDataSource = new NotionInitialDataSource { Properties = BuildSchema(firstPass, resolvedDataSourceIds) },
-        });
+        }));
 
         var record = new NotionProvisionedType
         {
@@ -116,10 +116,11 @@ public sealed class NotionProvisioner
             return;
         var dataSourceId = _state[type.Type].DataSourceId;
         var withSelf = new Dictionary<string, string> { [type.Type] = dataSourceId };
-        _client.UpdateDataSource(dataSourceId, new NotionDataSourceUpdateRequest
-        {
-            Properties = BuildSchema(selfRelations, withSelf),
-        });
+        Push($"provisioning {type.Type} self-relation properties", () =>
+            _client.UpdateDataSource(dataSourceId, new NotionDataSourceUpdateRequest
+            {
+                Properties = BuildSchema(selfRelations, withSelf),
+            }));
     }
 
     private static List<KeyValuePair<string, SyncPropertyDef>> SelfRelations(SyncObjectType type) =>
@@ -138,10 +139,11 @@ public sealed class NotionProvisioner
         var rollups = type.Properties.Where(p => p.Value.Type == "rollup").ToList();
         if (rollups.Count == 0)
             return;
-        _client.UpdateDataSource(_state[type.Type].DataSourceId, new NotionDataSourceUpdateRequest
-        {
-            Properties = BuildSchema(rollups, EmptyResolved),
-        });
+        Push($"provisioning {type.Type} rollup properties", () =>
+            _client.UpdateDataSource(_state[type.Type].DataSourceId, new NotionDataSourceUpdateRequest
+            {
+                Properties = BuildSchema(rollups, EmptyResolved),
+            }));
     }
 
     /// <summary>Whether this type carries formulas the post-create pass must PATCH on after the rollups they
@@ -155,10 +157,11 @@ public sealed class NotionProvisioner
     public void AddFormulas(SyncObjectType type)
     {
         foreach (var formula in OrderedDeferredFormulas(type))
-            _client.UpdateDataSource(_state[type.Type].DataSourceId, new NotionDataSourceUpdateRequest
-            {
-                Properties = BuildSchema([formula], EmptyResolved),
-            });
+            Push($"provisioning {type.Type}.{formula.Key} (formula: {formula.Value.Expression})", () =>
+                _client.UpdateDataSource(_state[type.Type].DataSourceId, new NotionDataSourceUpdateRequest
+                {
+                    Properties = BuildSchema([formula], EmptyResolved),
+                }));
     }
 
     /// <summary>The names of formulas that must be deferred past the create: a formula that reads a rollup,
@@ -210,6 +213,27 @@ public sealed class NotionProvisioner
         expression.Contains($"prop(\"{propertyName}\")");
 
     private static readonly Dictionary<string, string> EmptyResolved = new();
+
+    /// <summary>Run a schema push, re-throwing any Notion rejection tagged with what was being provisioned.
+    /// A Notion schema error — most opaquely <c>"Type error with formula"</c> — names neither the object type
+    /// nor the property, so a bare failure is unactionable; the context turns it into
+    /// <c>"provisioning Sprint.health (formula: …) — Notion API returned 400: …"</c>. The
+    /// <c>Context == null</c> guard tags only the innermost push, so an already-annotated exception passes
+    /// through unwrapped.</summary>
+    private static T Push<T>(string context, Func<T> push)
+    {
+        try
+        {
+            return push();
+        }
+        catch (NotionApiException e) when (e.Context == null)
+        {
+            throw new NotionApiException(e.StatusCode, e.Body, context);
+        }
+    }
+
+    private static void Push(string context, Action push) =>
+        Push(context, () => { push(); return true; });
 
     /// <summary>The <c>properties</c> schema map for a set of model properties — the one place a model
     /// property's type is translated to its Notion schema body. Relation properties resolve their

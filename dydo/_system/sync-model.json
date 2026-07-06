@@ -20,7 +20,7 @@
         "health": { "type": "formula",
           "expression": "if(and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1)), \"Off Track\", if(or(prop(\"needs-human\") > 0, or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2)))))), \"At Risk\", \"On Track\"))" },
         "attention": { "type": "formula",
-          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"attention-count\") > 0, prop(\"health\") != \"On Track\"))" }
+          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"attention-count\") > 0, if(and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1)), \"Off Track\", if(or(prop(\"needs-human\") > 0, or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2)))))), \"At Risk\", \"On Track\")) != \"On Track\"))" }
       }
     },
     {
@@ -48,7 +48,7 @@
         "health": { "type": "formula",
           "expression": "if(and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1)), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\"))" },
         "attention": { "type": "formula",
-          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"attention-count\") > 0, prop(\"health\") != \"On Track\"))" }
+          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"attention-count\") > 0, if(and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1)), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\")) != \"On Track\"))" }
       }
     },
     {
@@ -74,7 +74,7 @@
         "health": { "type": "formula",
           "expression": "if(or(prop(\"gate-result\") == \"fail\", and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1))), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\"))" },
         "attention": { "type": "formula",
-          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"status\") == \"escalated\", or(prop(\"attention-count\") > 0, prop(\"health\") != \"On Track\")))" }
+          "expression": "or(prop(\"needs-human\") > 0, or(prop(\"status\") == \"escalated\", or(prop(\"attention-count\") > 0, if(or(prop(\"gate-result\") == \"fail\", and(not empty(prop(\"end\")), and(dateBetween(now(), prop(\"end\"), \"days\") > 0, prop(\"progress\") < 1))), \"Off Track\", if(or(prop(\"attention-count\") > 0, and(not empty(prop(\"start\")), and(not empty(prop(\"end\")), and(dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0, and(dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\") > 0.6, prop(\"progress\") < (dateBetween(now(), prop(\"start\"), \"days\") / dateBetween(prop(\"end\"), prop(\"start\"), \"days\")) / 2))))), \"At Risk\", \"On Track\")) != \"On Track\")))" }
       }
     },
     {
@@ -99,14 +99,14 @@
         "stale": { "type": "formula",
           "expression": "and(or(prop(\"status\") == \"in-progress\", prop(\"status\") == \"in-review\"), and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
         "attention": { "type": "formula",
-          "expression": "or(prop(\"needs-human\"), or(prop(\"status\") == \"blocked\", prop(\"stale\")))" }
+          "expression": "or(prop(\"needs-human\"), or(prop(\"status\") == \"blocked\", and(or(prop(\"status\") == \"in-progress\", prop(\"status\") == \"in-review\"), and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))))" }
       }
     },
     {
       "type": "Issue",
       "dir": "project/issues",
       "notionTitle": "dydo Issues",
-      "icon": "🐞",
+      "icon": "🪲",
       "properties": {
         "title": { "type": "title" },
         "status": { "type": "select", "options": ["triage", "open", "resolved"], "folders": { "resolved": "resolved" },
@@ -124,7 +124,7 @@
         "stale": { "type": "formula",
           "expression": "and(prop(\"status\") == \"open\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3))" },
         "attention": { "type": "formula",
-          "expression": "or(prop(\"needs-human\"), prop(\"stale\"))" }
+          "expression": "or(prop(\"needs-human\"), and(prop(\"status\") == \"open\", and(not empty(prop(\"last-activity\")), dateBetween(now(), prop(\"last-activity\"), \"days\") > 3)))" }
       }
     }
   ]

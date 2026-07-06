@@ -1,4 +1,5 @@
 ---
+title: dydo issue create output cannot satisfy SummaryRule - every issue stub triggers a Missing summary paragraph warning
 id: 161
 area: project
 type: issue

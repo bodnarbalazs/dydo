@@ -1,4 +1,5 @@
 ---
+title: Open-ended Bash poll-loops in agent shell calls crash claude — neither original nor resumed session reaches a tool call
 id: 177
 area: backend
 type: issue

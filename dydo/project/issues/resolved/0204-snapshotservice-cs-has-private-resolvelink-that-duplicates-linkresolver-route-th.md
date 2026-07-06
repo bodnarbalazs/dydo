@@ -1,4 +1,5 @@
 ---
+title: SnapshotService.cs has private ResolveLink that duplicates LinkResolver — route through ILinkResolver.ResolveToRelativeKey
 id: 204
 area: backend
 type: issue

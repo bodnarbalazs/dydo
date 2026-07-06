@@ -1,4 +1,5 @@
 ---
+title: Tests AgentRegistryTests.GetSessionContext_PrefersDydoAgentEnvVar_OverFile and GetCurrentAgent_PrefersDydoAgentEnvVar_OverHintFile encode the wrong contract
 id: 189
 area: backend
 type: issue

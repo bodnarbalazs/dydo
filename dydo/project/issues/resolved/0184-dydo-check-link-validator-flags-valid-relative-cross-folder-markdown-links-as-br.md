@@ -1,4 +1,5 @@
 ---
+title: dydo check link validator flags valid relative cross-folder markdown links as broken (dydo graph resolver works)
 id: 184
 area: backend
 type: issue

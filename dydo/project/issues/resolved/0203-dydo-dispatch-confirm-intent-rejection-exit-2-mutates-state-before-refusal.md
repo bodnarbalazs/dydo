@@ -1,4 +1,5 @@
 ---
+title: dydo dispatch confirm-intent rejection (exit 2) mutates state before refusal
 id: 203
 area: backend
 type: issue

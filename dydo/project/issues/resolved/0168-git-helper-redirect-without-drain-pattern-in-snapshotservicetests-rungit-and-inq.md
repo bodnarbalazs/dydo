@@ -1,4 +1,5 @@
 ---
+title: Git-helper redirect-without-drain pattern in SnapshotServiceTests.RunGit and InquisitionTests.InitGitRepo
 id: 168
 area: backend
 type: issue

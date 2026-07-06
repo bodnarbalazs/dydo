@@ -1,4 +1,5 @@
 ---
+title: GetSessionContext env path skips IsValidAgentName validation
 id: 208
 area: backend
 type: issue

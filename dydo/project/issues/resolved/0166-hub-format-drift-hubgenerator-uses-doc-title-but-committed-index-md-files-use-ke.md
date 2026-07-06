@@ -1,4 +1,5 @@
 ---
+title: Hub format drift: HubGenerator uses doc.Title but committed _index.md files use KebabToTitleCase(filename), causing 18-file noise on every dydo fix
 id: 166
 area: backend
 type: issue

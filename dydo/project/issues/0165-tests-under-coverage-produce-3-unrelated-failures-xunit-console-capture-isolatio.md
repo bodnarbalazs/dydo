@@ -1,4 +1,5 @@
 ---
+title: Tests-under-coverage produce 3 unrelated failures (xunit Console-capture isolation + concurrency timing)
 id: 165
 area: general
 type: issue

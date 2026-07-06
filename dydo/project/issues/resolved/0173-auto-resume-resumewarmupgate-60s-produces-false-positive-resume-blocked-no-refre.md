@@ -1,4 +1,5 @@
 ---
+title: Auto-resume ResumeWarmupGate=60s produces false-positive resume_blocked: no_refresh_after_warmup on real-but-slow rehydrations
 id: 173
 area: backend
 type: issue

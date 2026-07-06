@@ -151,8 +151,14 @@ public class NotionProvisionerTests : IDisposable
     }
 
     [Fact]
-    public void Create_DefersFormulasThatReadRollupsOrOtherFormulas_KeepsLeafFormulasInline()
+    public void Create_SprintTaskFormulas_AreAllInline_SinceNoneReadsARollupOrFormula()
     {
+        // Notion rejects a formula that references another formula property (notion-sync-formula-fix), so
+        // SprintTask.attention inlines the `stale` staleness condition rather than reading prop("stale").
+        // Every SprintTask formula (done, stale, attention) now reads only stored properties, so all three
+        // are created inline and NONE is deferred. The deferral paths stay covered elsewhere: rollup-reading
+        // formulas by the Sprint tests, and a formula-reads-formula by AddFormulas_NotionRejectsExpression's
+        // synthetic type.
         var client = new FakeNotionClient();
         var provisioner = new NotionProvisioner(client, _statePath);
 
@@ -160,13 +166,11 @@ public class NotionProvisionerTests : IDisposable
             new Dictionary<string, string> { ["Sprint"] = "ds-sprint" });
 
         var props = Assert.Single(client.CreatedDatabases).InitialDataSource.Properties;
-        // done + stale read only stored props, so they are created inline; the engine-owned last-activity
-        // date column is created too.
         Assert.NotNull(props["done"].Formula);
         Assert.NotNull(props["stale"].Formula);
+        Assert.NotNull(props["attention"].Formula);
         Assert.NotNull(props["last-activity"].Date);
-        // attention reads the stale formula, so it is deferred past the create.
-        Assert.False(props.ContainsKey("attention"));
+        Assert.False(NotionProvisioner.HasDeferredFormulas(_model.Object("SprintTask")));
     }
 
     [Fact]
@@ -190,6 +194,52 @@ public class NotionProvisionerTests : IDisposable
         Assert.Equal(["health", "attention"], formulaPatches);
         var health = client.DataSourceUpdates.Single(u => u.Request.Properties.ContainsKey("health"));
         Assert.Contains("On Track", health.Request.Properties["health"].Formula!.Expression);
+    }
+
+    [Fact]
+    public void DefaultModel_NoFormulaReferencesAnotherFormula_WhichNotionForbids()
+    {
+        // Notion (API 2026-03-11) rejects a formula whose expression references another formula property with
+        // "Type error with formula" — verified live against every attention/health/stale combination
+        // (notion-sync-formula-fix). Guard the shipped model against a regression: no formula may read
+        // prop("<otherFormula>"); compose by inlining the referenced body instead.
+        foreach (var type in _model.Objects)
+        {
+            var formulaNames = type.Properties.Where(p => p.Value.Type == "formula").Select(p => p.Key).ToList();
+            foreach (var (name, def) in type.Properties.Where(p => p.Value.Type == "formula"))
+                foreach (var other in formulaNames.Where(f => f != name))
+                    Assert.DoesNotContain($"prop(\"{other}\")", def.Expression ?? "");
+        }
+    }
+
+    [Fact]
+    public void AddFormulas_NotionRejectsExpression_ErrorNamesTypePropertyAndExpression()
+    {
+        // Notion's schema rejection ("Type error with formula") names neither the object type nor the
+        // property, so a bare failure is unactionable against a five-type board. The provisioner must tag it
+        // with what it was pushing (finding: notion-sync-formula-fix). Widget.derived reads the `done` formula,
+        // so it is deferred to AddFormulas — the pass that PATCHes it one at a time.
+        var client = new FakeNotionClient();
+        var provisioner = new NotionProvisioner(client, _statePath);
+        var type = new SyncObjectType
+        {
+            Type = "Widget",
+            NotionTitle = "Widgets",
+            Properties = new()
+            {
+                ["title"] = new SyncPropertyDef { Type = "title" },
+                ["status"] = new SyncPropertyDef { Type = "select", Options = ["open", "done"] },
+                ["done"] = new SyncPropertyDef { Type = "formula", Expression = "prop(\"status\") == \"done\"" },
+                ["derived"] = new SyncPropertyDef { Type = "formula", Expression = "not empty(prop(\"done\"))" },
+            },
+        };
+        provisioner.Create(type, "parent-page", new Dictionary<string, string>());
+        client.FailUpdateDataSourceAfter = 0; // the deferred-formula PATCH is rejected, as live Notion would
+
+        var ex = Assert.Throws<NotionApiException>(() => provisioner.AddFormulas(type));
+        Assert.Contains("Widget.derived", ex.Message);
+        Assert.Contains("not empty(prop(\"done\"))", ex.Message); // the exact expression the operator must fix
+        Assert.Equal(429, ex.StatusCode); // the underlying status is preserved through the re-wrap
     }
 
     [Fact]

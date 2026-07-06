@@ -1,4 +1,5 @@
 ---
+title: Lifecycle audit events record the hijacked agent because AgentRegistry.SetRole/ReleaseAgent/ClaimAgent pass the poisoned sessionId from GetSessionContext
 id: 194
 area: backend
 type: issue

@@ -1,4 +1,5 @@
 ---
+title: NOTICE handler has no operator escape hatch when the cited inbox file is unreachable by the calling agent
 id: 192
 area: backend
 type: issue

@@ -1,4 +1,5 @@
 ---
+title: ExecuteCleanup prints 'Worktree X: cleaned up.' even when RemoveZombieDirectory failed (misleading log on Windows file-lock)
 id: 179
 area: backend
 type: issue

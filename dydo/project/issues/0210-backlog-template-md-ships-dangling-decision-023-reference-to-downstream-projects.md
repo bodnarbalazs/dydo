@@ -1,4 +1,5 @@
 ---
+title: _backlog.template.md ships dangling Decision 023 reference to downstream projects
 id: 210
 area: project
 type: issue

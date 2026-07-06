@@ -1,4 +1,5 @@
 ---
+title: Production Process.Start callers redirect both streams but read only stdout: same deadlock pattern as #0148
 id: 170
 area: backend
 type: issue

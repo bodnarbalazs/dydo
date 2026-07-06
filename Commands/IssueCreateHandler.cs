@@ -126,6 +126,7 @@ internal static partial class IssueCreateHandler
     {
         return $"""
             ---
+            title: {title}
             id: {id}
             area: {meta.Area}
             type: issue

@@ -1,4 +1,5 @@
 ---
+title: Active agent session not registered in dydo agent list (4 active, 3 claimed)
 id: 211
 area: general
 type: issue

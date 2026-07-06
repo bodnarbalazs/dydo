@@ -60,11 +60,11 @@ const perLens = await pipeline(
   LENSES,
   lens => agent(
     `You are auditing ${scope}.\n\n${lens.prompt}\n\nReturn up to 8 concrete findings with file:line locations. Only real, nameable problems — no speculation.`,
-    { agentType: 'reviewer', label: `sweep:${lens.key}`, phase: 'Sweep', schema: FINDINGS }),
+    { agentType: 'inquisitor', label: `sweep:${lens.key}`, phase: 'Sweep', schema: FINDINGS }),
   (found, lens) => parallel((found?.findings ?? []).map(f => () =>
     agent(
       `Adversarially verify this ${lens.key} finding from an audit of ${scope}.\n\nFinding: ${f.title}\nLocation: ${f.location}\nClaim: ${f.rationale}\n\nDefault to "refuted" unless you can confirm it from the actual code (cite the line). "plausible" only if realistic but state-dependent.`,
-      { agentType: 'reviewer', label: `verify:${lens.key}`, phase: 'Verify', schema: VERDICT })
+      { agentType: 'inquisitor', label: `verify:${lens.key}`, phase: 'Verify', schema: VERDICT })
       .then(v => ({ ...f, lens: lens.key, verdict: v?.verdict ?? 'refuted', evidence: v?.evidence }))))
 )
 

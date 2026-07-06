@@ -5,44 +5,23 @@ type: reference
 
 # Inquisitor
 
-Adversarial hypothesis-driven QA. Finds what reviewers didn't — the subtle bugs, untested paths, and silent assumptions in code that already passed review.
+The campaign-end QA sweeper — a read-only agent the `inquisition` workflow spawns to audit landed work. It is **not a claimable dydo role**: it exists only as a Claude Code agent + skill (`.claude/agents/inquisitor.md` + `.claude/skills/inquisitor/`), spawned by the workflow, never claimed by a human. The `inquisitor` (and `judge`) *roles* from earlier versions were retired in [Decision 024](../../project/decisions/024-dydo-2-native-pivot.md); the adversarial-QA job now lives in the workflow.
 
-## Category
+## What It Does
 
-Specialist role. Dispatchable.
+The `inquisition` workflow fans out one `inquisitor` subagent per QA lens — correctness, test-coverage gaps, security, dead code, and doc drift — then spawns more inquisitors to adversarially verify each finding (refute-by-default: a finding survives only if the code confirms it). Its signature concern is **test-coverage gaps** — what a per-change review never checks. The workflow gates on confirmed high-severity findings.
 
-## Permissions
+## Tools
 
-| Access | Paths |
-|--------|-------|
-| Write | agent workspace, `project/inquisitions/**` |
-| Read | source, tests, templates |
-
-Source code is read-only. The inquisitor investigates — it doesn't fix.
-
-## Privileges
-
-- Dispatch — dispatches test-writers to prove hypotheses, judges to validate findings
-
-## Workflow
-
-1. Receive investigation scope (files, feature, subsystem)
-2. Read code, check prior inquisitions for the area
-3. Form testable hypotheses about what could go wrong
-4. Dispatch test-writers to prove or disprove each hypothesis
-5. Send confirmed findings to a judge for validation
-6. Produce inquisition report at `project/inquisitions/{area}.md`
+`Read, Grep, Glob, Bash` — read-only. The inquisitor assesses and reports; it never modifies the project.
 
 ## Design Notes
 
-- Quality over quantity. One confirmed finding beats ten speculative ones.
-- Designed for human-scarce operation: dispatched and left to work autonomously, asking the human only when genuinely stuck.
-- No constraints in `.role.json` — the role is straightforward dispatch-and-work.
-- Source code is read-only (H1) — the inquisitor investigates, it doesn't fix.
-- See decision 007 for full rationale.
+- Distinct from the reviewer by design (see [Decision 031](../../project/decisions/031-sprint-auditor-charter-rewrite.md) for the sibling sprint-auditor charter): a per-change reviewer checks a diff; the inquisitor audits a whole landed campaign, codebase-wide, hunting for what slipped through.
+- Its methodology skill is kept laser-focused on one lens at a time, so a sweep is many single-purpose passes rather than one diffuse one.
 
 ## Related
 
-- [Test-Writer](./test-writer.md) — dispatched to prove/disprove hypotheses
-- [Judge](./judge.md) — dispatched to validate findings
-- [Guardrails Reference](../guardrails.md) — H1 (role-based write permissions)
+- [Reviewer](./reviewer.md) — per-change review, the complementary read-only role
+- [Test-Writer](./test-writer.md) — writes the tests that coverage gaps call for
+- [Guardrails Reference](../guardrails.md) — universal off-limits and nudges

@@ -41,6 +41,21 @@ dydo whoami
 
 ---
 
+### dydo sync
+
+Compile dydo role definitions into native Claude Code artifacts — a `.claude/agents/<role>.md` sub-agent and a `.claude/skills/<role>/SKILL.md` per role (Decision 024).
+
+```bash
+dydo sync   # emit .claude/agents/ and .claude/skills/ from roles + docs
+```
+
+**Behavior:**
+- Worker roles (code-writer, reviewer, test-writer, docs-writer, sprint-auditor) emit both an agent definition and a skill.
+- Tier-1 managers (orchestrator, co-thinker, chief-of-staff) and `planner` emit a skill only.
+- Model tiers declared per role are bound to concrete models at sync time (Decision 028).
+
+---
+
 ## Documentation Commands
 
 ### dydo check
@@ -586,40 +601,6 @@ dydo review complete auth-login --status fail --notes "Found security issue"
 
 ---
 
-## Audit Commands
-
-### dydo audit
-
-View and visualize agent activity logs.
-
-```bash
-dydo audit                   # Generate activity replay visualization
-dydo audit /2025             # Filter to specific year
-dydo audit --list            # List available sessions
-dydo audit --session <id>    # Show details for a session
-```
-
-**Arguments:**
-- `path` - Path filter (e.g., /2025 for year 2025)
-
-**Options:**
-- `--list` - List available sessions
-- `--session <id>` - Show details for a specific session ID
-
-### dydo audit compact
-
-Compact audit snapshots using baseline+delta compression.
-
-```bash
-dydo audit compact           # Compact current year
-dydo audit compact 2025      # Compact specific year
-```
-
-**Arguments:**
-- `year` - Year to compact (e.g., 2025). Defaults to current year.
-
----
-
 ## Template Commands
 
 ### dydo template update
@@ -644,32 +625,6 @@ dydo template update --force   # Overwrite even if re-anchoring fails (backs up 
 - Binary files (`_assets/dydo-diagram.svg`) use byte-level hash comparison
 
 **Exit codes:** 0 = success, 1 = warnings (unplaceable tags without `--force`).
-
----
-
-## Inquisition Commands
-
-### dydo inquisition coverage
-
-Show inquisition coverage across project areas.
-
-```bash
-dydo inquisition coverage                    # Folder-level overview
-dydo inquisition coverage --files            # File-level coverage heatmap
-dydo inquisition coverage --files --gaps-only # Only gap and low-coverage files
-dydo inquisition coverage --summary          # Folder-level aggregates only
-dydo inquisition coverage --path Commands/   # Scope to a subtree
-dydo inquisition coverage --since 90         # Only consider last 90 days
-```
-
-**Options:**
-- `--files` - File-level coverage heatmap (shows per-file scores)
-- `--gaps-only` - Only show gap (never inspected) and low-coverage files
-- `--summary` - Folder-level aggregates only
-- `--path <path>` - Scope output to a subtree
-- `--since <days>` - Days lookback (default: 365)
-
-**Output:** Lists project areas with their inquisition coverage status based on reports in `dydo/project/inquisitions/`.
 
 ---
 
@@ -825,14 +780,4 @@ $env:DYDO_HUMAN = "your_name"
 
 ## Role Permissions
 
-| Role | Can Edit | Cannot Edit |
-|------|----------|-------------|
-| `code-writer` | `src/**`, `tests/**` | `dydo/**`, `project/**` |
-| `reviewer` | (read-only) | (all files) |
-| `co-thinker` | `dydo/agents/{agent}/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
-| `docs-writer` | `dydo/**` | `dydo/agents/**`, `src/**`, `tests/**` |
-| `planner` | `dydo/agents/{agent}/**`, `dydo/project/tasks/**` | `src/**` |
-| `test-writer` | `dydo/agents/{agent}/**`, `tests/**`, `dydo/project/pitfalls/**` | `src/**` |
-| `orchestrator` | `dydo/agents/{agent}/**`, `dydo/project/tasks/**`, `dydo/project/decisions/**` | `src/**`, `tests/**` |
-| `inquisitor` | `dydo/agents/{agent}/**`, `dydo/project/inquisitions/**` | `src/**`, `tests/**` |
-| `judge` | `dydo/agents/{agent}/**`, `dydo/project/issues/**`, `dydo/project/inquisitions/**` | `src/**`, `tests/**` |
+As of 2.0 (Decision 024), dydo no longer enforces per-role writable/read-only **path matrices**. The guard enforces **universal off-limits + nudges** for every agent, and a worker role's read-only scope is set by its **native tool allowlist** — `dydo sync` emits read-only agents (reviewer, inquisitor, sprint-auditor) with no `Edit`/`Write` tool.

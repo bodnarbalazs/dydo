@@ -15,10 +15,10 @@ This is the DyDo project itself. If you're an agent, this is the framework that 
 ## What DyDo Does
 
 - **Documentation as memory** — agents onboard themselves each session by reading structured docs
-- **Guard enforcement** — a `PreToolUse` hook checks every file operation against role permissions
-- **Agent orchestration** — dispatch, inbox, messaging, and task tracking coordinate multi-agent workflows
-- **Role-based access** — nine base roles (code-writer, reviewer, docs-writer, etc.) with customizable permissions
-- **Audit trail** — every agent action recorded for replay and accountability
+- **Guard enforcement** — a `PreToolUse` hook checks every tool call (main thread *and* subagents) against universal off-limits and custom nudges
+- **Native orchestration** — `dydo sync` compiles roles and docs into Claude Code's native agents, skills, and workflows; light Tier-1 messaging coordinates the agents you talk to
+- **Data-driven roles** — seven base roles (code-writer, reviewer, docs-writer, etc.) with customizable permissions; add your own
+- **Optional Notion sync** — a two-way team PM board view over your canonical repo files
 
 ---
 

@@ -6,7 +6,7 @@ must-read: true
 
 # Architecture Overview
 
-DynaDocs (`dydo`) is a .NET 10 CLI tool for documentation-driven AI agent orchestration. It enforces agent identity, role-based file permissions, and workflow integrity by intercepting every file operation via Claude Code's `PreToolUse` hook.
+DynaDocs (`dydo`) is a .NET 10 CLI tool for documentation-driven AI agent orchestration. It enforces agent identity, universal off-limits + nudges, and workflow integrity by intercepting every tool call via Claude Code's `PreToolUse` hook — for the main thread and its subagents alike.
 
 ---
 
@@ -50,7 +50,7 @@ The guard is the enforcement backbone — a staged access model checked on every
 |-------|-----------|--------|
 | 0 | No identity | Read bootstrap files only (`index.md`, `workflow.md`) |
 | 1 | Claimed, no role | Read bootstrap + own mode files |
-| 2 | Claimed + role set | Read everything, write per role permissions |
+| 2 | Claimed + role set | Read everything; writes gated by universal off-limits + nudges (per-role write RBAC removed — [Decision 024](../project/decisions/024-dydo-2-native-pivot.md)) |
 
 Additional layers: off-limits patterns (secrets, credentials) block all agents globally; dangerous bash patterns (fork bombs, `rm -rf /`) are always blocked; must-read enforcement blocks writes until critical docs are read.
 
@@ -60,9 +60,9 @@ Additional layers: off-limits patterns (secrets, credentials) block all agents g
 
 ## Role System
 
-Nine base roles with data-driven permissions defined in `.role.json` files under `dydo/_system/roles/`. Each role specifies writable paths, read-only paths, a mode template, and optional constraints (e.g., reviewer cannot review their own code-writer work on the same task).
+Seven base roles defined in `.role.json` files under `dydo/_system/roles/` — three Tier-1 managers (chief-of-staff, co-thinker, orchestrator) you claim and talk to, and four Tier-2 workers (code-writer, reviewer, test-writer, docs-writer) that `dydo sync` compiles into native subagents ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). Per-role write RBAC was removed: a role's `writablePaths` now shape the **compiled agent's tool profile** (own-workspace-only ⇒ read-only, no Edit/Write) rather than a runtime write-check. `dydo sync` also emits the non-role QA agents (sprint-auditor, inquisitor) and the planner skill.
 
-Custom roles: add a `.role.json` file with `"base": false`. Path patterns use `{source}`, `{tests}`, and `{self}` placeholders resolved from `dydo.json` and agent identity.
+Custom roles: add a `.role.json` file with `"base": false`, then run `dydo sync`. Path patterns use `{source}`, `{tests}`, and `{self}` placeholders resolved from `dydo.json` and agent identity.
 
 ---
 
@@ -76,9 +76,7 @@ A task lifecycle tracks work through states: pending → in-progress → review-
 
 ## Audit Trail
 
-Every agent session produces a JSON audit file in `dydo/_system/audit/YYYY/`. Sessions capture a project snapshot (files, folders, doc links) and timestamped events (reads, writes, blocks, role changes). Compaction reduces storage via baseline+delta compression. An HTML replay visualization shows agent activity as an animated timeline.
-
-The Claim event optionally carries three nullable fields recording how a session reached its current state: `recovery_kind` (`fresh` | `auto` | `manual` — `auto` if the watchdog reclaimed the same `SessionId`, `manual` if the user re-claimed with a new session via e.g. `claude <agent> --inbox`), `resume_predecessor_session` (the prior session id when `recovery_kind != 'fresh'`), and `resume_attempts_at_claim` (a snapshot of `state.ResumeAttempts` preserved across the bookkeeping reset, so inquisitors can count auto-resume attempts that preceded a manual recovery without joining against the watchdog log). All three are emitted with `JsonIgnoreCondition.WhenWritingNull`, so pre-v1.4.6 audit JSONs parse forward-compatibly. The terminal-state counterpart per resume episode is the `resume_outcome` event written to the watchdog log (see Watchdog). See [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md); enriched schema landed in commit `036b88c`.
+**Removed in 2.0** ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). dydo no longer writes its own JSON audit sessions or the HTML replay — Claude Code's native session transcripts are the record now. The `dydo audit` command is gone and the `dydo/_system/audit/` tree is legacy. Crash-resume bookkeeping the watchdog still needs (recovery kind, resume outcome) lives in the watchdog log, not an audit trail — see Watchdog and [Decision 022](../project/decisions/022-auto-resume-crashed-agents.md).
 
 ---
 
@@ -104,9 +102,9 @@ See [DynaDocs](../reference/about-dynadocs.md) for issue workflow details and [d
 
 ---
 
-## Inquisition Coverage
+## Attention Ledger
 
-Coverage metrics derived from audit session data, tracking which codebase areas have been audited. Reports stored as Markdown at `dydo/project/inquisitions/`.
+Replaces the old audit-derived "inquisition coverage" ([Decision 032](../project/decisions/032-attention-ledger-and-housekeeping-nudge.md)): a computed view — not maintained state — of when each area of the project was last looked at, derived from artifacts rather than the (now-removed) audit trail. Campaign-end QA still lands as inquisition reports (Markdown) at `dydo/project/inquisitions/`, produced by the `inquisition` workflow.
 
 ---
 

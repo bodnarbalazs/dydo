@@ -13,22 +13,24 @@ Each role defines what an agent can do and what it can't. Roles are enforced by 
 
 ## Contents
 
-- 9 roles total (interviewer was dropped — absorbed by co-thinker, see decision 006)
-- 3 categories: standard workflow, oversight, specialist
+- **7 base roles**, split into Tier-1 managers (you claim and talk to) and Tier-2 workers (Claude-managed subagents), per [Decision 024](../../project/decisions/024-dydo-2-native-pivot.md).
+- Plus **non-role agents/skills** that workflows use: `planner`, and the read-only QA agents `sprint-auditor` and `inquisitor`.
 
-## All Roles
+## Base Roles
 
-| Role | Category | Purpose |
-|------|----------|---------|
-| **code-writer** | Standard | Implements features and fixes bugs in source code |
-| **reviewer** | Standard | Reviews code changes for quality and correctness |
-| **co-thinker** | Standard | Collaborates on design decisions and architecture |
-| **planner** | Standard | Creates implementation plans and task breakdowns |
-| **docs-writer** | Specialist | Creates and maintains documentation |
-| **test-writer** | Specialist | Writes and maintains test suites |
-| **orchestrator** | Oversight | Coordinates multi-agent workflows and task dispatch |
-| **inquisitor** | Oversight | Conducts adversarial QA and knowledge audits |
-| **judge** | Oversight | Evaluates inquisition reports and arbitrates disputes |
+| Role | Tier | Purpose |
+|------|------|---------|
+| **chief-of-staff** | Tier-1 manager | The human's right hand — triages, routes, reports, mediates |
+| **co-thinker** | Tier-1 manager | Collaborates on design decisions and architecture |
+| **orchestrator** | Tier-1 manager | Coordinates multi-agent workflows |
+| **code-writer** | Tier-2 worker | Implements features and fixes bugs in source code |
+| **reviewer** | Tier-2 worker | Reviews code changes for quality and correctness (read-only) |
+| **test-writer** | Tier-2 worker | Writes and maintains test suites |
+| **docs-writer** | Tier-2 worker | Creates and maintains documentation |
+
+## Not Claimable Roles
+
+`planner` is a planning-discipline skill a Tier-1 agent applies in its own thread. `inquisitor` and `sprint-auditor` are read-only agents that workflows spawn (campaign-end QA and whole-sprint audit). The old `inquisitor`/`judge` *roles* were retired in [Decision 024](../../project/decisions/024-dydo-2-native-pivot.md).
 
 ## When to Add Docs Here
 

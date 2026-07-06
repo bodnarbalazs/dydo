@@ -7,6 +7,8 @@ type: reference
 
 The three-tier system that shapes agent behavior. Every guardrail falls into one of three categories based on how strictly it constrains the agent.
 
+> **2.0 note ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).** Per-role write RBAC was removed: **H1** (role-based write permissions), the **N7/N8** denial-hint nudges that rode on it, and the `writablePaths`/`readOnlyPaths` soft-coding in Extensibility reflect the **pre-2.0** model. Write enforcement is now universal off-limits (H2) + nudges, with read-only worker scope set by native tool allowlists. **H12** (judge panel) was retired with the judge role. Everything else in this catalog still holds.
+
 ---
 
 ## Tier 1: Nudges (Contextual Injection)

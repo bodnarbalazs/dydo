@@ -7,6 +7,8 @@ type: concept
 
 How dydo enforces agent behavior through the PreToolUse hook. Every file operation passes through `dydo guard` before execution.
 
+> **2.0 note ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).** Per-role *write* RBAC — the `WritablePaths`/`ReadOnlyPaths` matrices matched on every write — was **removed** (`GuardCommand.cs:414`). Write enforcement is now **universal off-limits + nudges**, applied to every agent regardless of role; a worker role's read-only scope comes from its **native tool allowlist** (`dydo sync` emits read-only agents with no Edit/Write). Everything else here — staged onboarding, off-limits, must-reads, bash safety, soft-blocks, and the hard rules — still holds. Passages that describe per-role `WritablePaths` matching (H1, the old "Role-Based Permission Checking" step) reflect the pre-2.0 model.
+
 ---
 
 ## How the Hook Intercepts Tool Calls
@@ -45,15 +47,15 @@ See [Agent Lifecycle](./agent-lifecycle.md) for the full stage progression.
 
 ---
 
-## Role-Based Permission Checking
+## Write Enforcement (off-limits + nudges)
 
-When an agent attempts a write operation, the guard checks the file path against the role's permission set. Off-limits checking is a separate, earlier stage in the guard pipeline (see above). The role permission check (`IsPathAllowed`) resolves in this order:
+Per-role write RBAC was removed in 2.0 ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)); the guard no longer matches writes against per-role `WritablePaths`/`ReadOnlyPaths`. Write enforcement is now:
 
-1. **ReadOnlyPaths check** — if the path matches a `ReadOnlyPaths` pattern and is NOT also in `WritablePaths`, block. This gives roles like reviewer read-only access to source code.
-2. **WritablePaths match** — if the path matches any pattern in the role's `WritablePaths`, the write is allowed.
-3. **Denial** — if no pattern matches, the write is blocked. The role's `denialHint` is appended to the error message to guide the agent.
+1. **Universal off-limits** (below) — sensitive paths hard-block for every agent, regardless of role.
+2. **Nudges** — soft guidance injected on allowed operations; a project can define a nudge that blocks.
+3. **Native tool allowlists** — read-only roles are enforced at the tool level: `dydo sync` emits worker agents (reviewer, inquisitor, sprint-auditor) whose allowlist omits Edit/Write, so they physically cannot modify files.
 
-Path patterns use glob syntax (`**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for single character) and support tokens like `{self}`, `{source}`, and `{tests}` that are expanded at role assignment time.
+Coarse write scope is set by the agent's native tool profile, not a dydo path matrix. Off-limits patterns still use glob syntax (`**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for single character).
 
 ---
 
@@ -130,8 +132,9 @@ dydo guard restore <agent>       # Restore guard enforcement
 1. `dydo guard lift` writes a marker file at `dydo/agents/{agent}/.guard-lift.json` containing the agent name, who lifted it, the timestamp, and an optional expiration time.
 2. On every write operation, the guard checks `IsGuardLifted()` before RBAC. If the marker exists and hasn't expired, RBAC is skipped entirely and the write is allowed.
 3. Off-limits enforcement (Layer 1) is NOT bypassed — system files like `state.md`, mode files, and `files-off-limits.md` remain protected.
-4. All actions performed while lifted are logged to the audit trail with a `lifted: true` flag.
-5. Expired markers are automatically deleted on the next guard check.
+4. Expired markers are automatically deleted on the next guard check.
+
+(With per-role write RBAC removed in 2.0, the lift's original job — skipping the `WritablePaths` check — is moot for worker scope; it remains as a human-only escape hatch for the gates that survive. See the 2.0 note at the top.)
 
 ### Protection
 
@@ -155,7 +158,7 @@ All guardrails fall into three tiers:
 **Hard Rules (H-tier):** Exit 2, no override, no retry. Categories include:
 - **Access control** (H1–H6, H27): Role permissions, off-limits, staged reads, must-read enforcement, search tool lockout, plan mode lockout
 - **Onboarding** (H7–H9): No identity/role blocks writes, session ID required
-- **Role constraints** (H10–H12): No self-review, orchestrator graduation, judge panel limit (doc-shorthand for `.role.json` constraint types)
+- **Role constraints** (H10–H11): No self-review, orchestrator graduation (doc-shorthand for `.role.json` constraint types; the H12 judge-panel limit was retired with the judge role in Decision 024)
 - **Release blocking** (H13–H16, H25): Unprocessed inbox, active waits, pending replies, worktree merges, code-writer review enforcement
 - **Bash safety** (H17, H18, H20, H26, H28, H29): Dangerous commands, chained cd, foreground wait, git stash, direct git merge in worktree, human-only dydo subcommands. (H19 indirect-dydo is a severity-pinned default nudge — pattern editable, severity force-restored to `block`. See [Guardrails Reference](../reference/guardrails.md) under Extensibility.)
 - **Messaging** (H21–H22): No self-messaging, no cross-human messaging

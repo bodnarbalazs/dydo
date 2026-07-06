@@ -7,6 +7,8 @@ type: guide
 
 How to create custom roles, modify permission sets, and extend the role system.
 
+> **2.0 note ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).** `writablePaths`/`readOnlyPaths` are **no longer enforced as a runtime write-RBAC**. They now inform `dydo sync`: a role writable only to its own workspace (`{self}` paths) compiles to a **read-only** native agent (no Edit/Write); anything broader compiles to a read-write worker. So the schema below still matters — it shapes the compiled agent's tool profile — but "can't write path X" is enforced by universal off-limits + the tool allowlist, not a per-role matrix. After editing a role, run `dydo sync` to recompile it.
+
 ---
 
 ## When to create a custom role

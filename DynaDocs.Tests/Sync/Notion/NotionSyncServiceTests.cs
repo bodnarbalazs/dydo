@@ -105,6 +105,27 @@ public class NotionSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public void Execute_InProject_DryRunFalse_CreatesDocsPage_EndToEnd()
+    {
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter());
+
+            Assert.Equal(ExitCodes.Success, code);
+            // The docs mirror ran end-to-end alongside the spine: a "Docs" root page exists under the parent.
+            Assert.Contains(client.GetChildPages("page-root"), p => p.Title == "Docs");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
     public void Execute_NotionApiError_ReportsAndExitsToolError()
     {
         var savedCwd = Directory.GetCurrentDirectory();

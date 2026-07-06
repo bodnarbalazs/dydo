@@ -199,4 +199,99 @@ public class DocsTreeSyncTests : IDisposable
         Assert.True(topTitles.IndexOf("Zzz") < topTitles.IndexOf("guides"),
             "nav-order:1 folder must be created before the alphabetically-earlier 'guides'");
     }
+
+    [Fact]
+    public void Run_NavOrderFrontmatter_OrdersFileSiblingsAheadOfAlphabetical()
+    {
+        // 'zzz-note.md' sorts last alphabetically within guides/ but nav-order:1 lifts its page ahead of 'coding.md'.
+        // (nav-order applies to BOTH folders and files — decision on finding 4.)
+        Seed("guides/zzz-note.md", "---\ntitle: Zzz Note\nnav-order: 1\n---\n\nFirst by nav-order.");
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var guides = Child(client, Root(client), "guides");
+        var titles = client.GetChildPages(guides).Select(p => p.Title).ToList();
+        Assert.True(titles.IndexOf("Zzz Note") < titles.IndexOf("Coding"),
+            "nav-order:1 file must be created before the alphabetically-earlier 'Coding'");
+    }
+
+    [Fact]
+    public void Run_DeeperFolder_NameCollidesWithSpineLeaf_IsNotExcluded()
+    {
+        // 'releases' is a spine dir (top-level). A DEEPER folder that merely shares the bare name 'releases'
+        // must still be mirrored — only the full-path spine dir is excluded (finding 3).
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Release", "dir": "releases", "notionTitle": "Releases",
+                  "properties": { "title": { "type": "title" } } }
+              ]
+            }
+            """);
+        Seed("releases/v1.md", "---\ntitle: v1\n---\n\nSpine release row, excluded.");
+        Seed("understand/releases/notes.md", "---\ntitle: Release Notes\n---\n\nA browsable doc.");
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var root = Root(client);
+        // The top-level spine 'releases' dir minted no page.
+        Assert.DoesNotContain(client.GetChildPages(root), p => p.Title is "Releases" or "releases");
+        // The deeper understand/releases folder IS mirrored despite the bare-name collision.
+        var understand = Child(client, root, "Understand");
+        var releases = Child(client, understand, "releases");
+        Assert.Contains(client.GetChildPages(releases), p => p.Title == "Release Notes");
+    }
+
+    [Fact]
+    public void Run_OffLimitsFiles_AreNeverMirrored()
+    {
+        // The guard marks the root index and files-off-limits.md off-limits (a hard §5 security invariant): a
+        // mirrored page would be externally editable in Notion and merge back through the engine's file I/O,
+        // bypassing the PreToolUse guard. The mirror must honor the SAME off-limits source the guard uses.
+        File.WriteAllText(Path.Combine(_root, "dydo.json"), "{\"version\":1}");
+        Seed("index.md", "---\ntitle: Docs Root\n---\n\nRoot index body — off-limits, must not upload.");
+        Seed("understand/secret.md", "---\ntitle: Secret\n---\n\ntop secret, must not upload.");
+        File.WriteAllText(Path.Combine(_dydoRoot, "files-off-limits.md"),
+            "# Off-limits\n\n```\ndydo/index.md\ndydo/files-off-limits.md\ndydo/understand/secret.md\n```\n");
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var root = Root(client);
+        // The off-limits root index was never uploaded — the "Docs" page is a bare container.
+        Assert.Equal("", NotionBlockConverter.FromBlocks(client.GetBlockChildren(root)));
+        // files-off-limits.md never became a root child page.
+        Assert.DoesNotContain(client.GetChildPages(root), p => p.Title is "files-off-limits" or "Off-limits");
+        // The off-limits secret doc minted no page under understand.
+        var understand = Child(client, root, "Understand");
+        Assert.DoesNotContain(client.GetChildPages(understand), p => p.Title == "Secret");
+    }
+
+    [Fact]
+    public void Run_CreatePageFailsMidStructuralPhase_ReRunCreatesNoDuplicates()
+    {
+        // A CreatePage failure part-way through the structural phase (a 429/500 under the throttle, or a kill):
+        // the pages minted before the crash must be persisted so the re-run reuses them and never duplicates.
+        var client = new FakeNotionClient { FailCreateAfter = 3 };
+        Assert.Throws<NotionApiException>(() =>
+            DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter()));
+
+        client.FailCreateAfter = null;
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        // Exactly one "Docs" root under the parent, and no folder/doc page appears twice under any parent.
+        Assert.Single(client.GetChildPages("workspace"));
+        AssertNoDuplicateChildTitles(client, Root(client));
+    }
+
+    private static void AssertNoDuplicateChildTitles(FakeNotionClient client, string parentId)
+    {
+        var children = client.GetChildPages(parentId).ToList();
+        var titles = children.Select(c => c.Title).ToList();
+        Assert.Equal(titles.Count, titles.Distinct().Count());
+        foreach (var child in children)
+            AssertNoDuplicateChildTitles(client, child.Id);
+    }
 }

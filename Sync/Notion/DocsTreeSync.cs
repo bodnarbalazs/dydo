@@ -1,6 +1,7 @@
 namespace DynaDocs.Sync.Notion;
 
 using DynaDocs.Models;
+using DynaDocs.Services;
 using DynaDocs.Sync.Model;
 using DynaDocs.Sync.Notion.Dtos;
 
@@ -25,7 +26,8 @@ public static class DocsTreeSync
     public static void Run(INotionClient client, string dydoRoot, string parentPageId, bool dryRun, TextWriter output)
     {
         var excluded = ExcludedDirs(dydoRoot);
-        var root = BuildTree(dydoRoot, excluded);
+        var offLimits = LoadOffLimits(dydoRoot);
+        var root = BuildTree(dydoRoot, excluded, offLimits);
 
         if (dryRun)
         {
@@ -36,13 +38,15 @@ public static class DocsTreeSync
 
         var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, AdapterName));
 
-        // 1. Structure (repo-owned, one-way): ensure the root "Docs" page and every folder page exist, top-down,
-        //    so a child's parent page id is always resolved before its own page is created. Persist immediately —
-        //    a crash between minting these pages and the body-merge tick must not orphan them into duplicates.
+        // 1. Structure (repo-owned, one-way): ensure the root "Docs" page, then every folder page (top-down, so a
+        //    child's parent id is always resolved first), then every file page (after all folders exist, so
+        //    sub-folders precede files in the sidebar — DR 033 §7). Each new page is persisted to the store the
+        //    instant it is created: a mid-phase CreatePage failure (a 429/500 under the ~3 req/s throttle, or a
+        //    process kill) must never leave a created page unrecorded and re-minted as a duplicate on retry.
         var rootPageId = EnsureRootPage(client, store, parentPageId);
         var folderPageId = new Dictionary<string, string> { [RootLocalId] = rootPageId };
         EnsureFolderPages(client, store, root, rootPageId, folderPageId);
-        store.Save();
+        EnsureFilePages(client, store, root, folderPageId);
 
         // 2. Body + frontmatter (bidirectional): reconcile every folder-index body and doc file through the engine.
         var docs = new List<SyncDoc>();
@@ -78,6 +82,19 @@ public static class DocsTreeSync
         return excluded;
     }
 
+    /// <summary>The guard's universal off-limits checker (DR 033 §5), so the mirror honors the SAME source the
+    /// <c>PreToolUse</c> guard uses and never uploads a guard-off-limits file. Loading against <paramref name="dydoRoot"/>
+    /// finds the project's <c>files-off-limits.md</c>; outside a project no patterns load and nothing is excluded.</summary>
+    private static IOffLimitsService LoadOffLimits(string dydoRoot)
+    {
+        var service = new OffLimitsService();
+        service.LoadPatterns(dydoRoot);
+        return service;
+    }
+
+    private static bool IsOffLimits(IOffLimitsService offLimits, string path) =>
+        offLimits.IsPathOffLimits(path) != null;
+
     private static string EnsureRootPage(INotionClient client, BaseSnapshotStore store, string parentPageId)
     {
         var existing = store.Get(RootLocalId)?.ExternalId;
@@ -90,12 +107,14 @@ public static class DocsTreeSync
             Properties = TitleProperty(RootTitle),
         });
         store.Set(RootBase(RootLocalId, page.Id));
+        store.Save();
         return page.Id;
     }
 
     /// <summary>Create each subfolder's page under its parent's page (top-down), reusing an existing page from the
     /// store so a re-run never duplicates. A newly minted page is recorded with an empty body — the engine fills it
-    /// from the folder's index doc on the same tick — and its id published so its own children resolve their parent.</summary>
+    /// from the folder's index doc on the same tick — persisted immediately (crash-safety, §1) and its id published
+    /// so its own children resolve their parent.</summary>
     private static void EnsureFolderPages(
         INotionClient client, BaseSnapshotStore store, DocsNode node, string nodePageId, Dictionary<string, string> folderPageId)
     {
@@ -111,10 +130,34 @@ public static class DocsTreeSync
                 });
                 pageId = page.Id;
                 store.Set(RootBase(child.LocalId, pageId));
+                store.Save();
             }
             folderPageId[child.LocalId] = pageId;
             EnsureFolderPages(client, store, child, pageId, folderPageId);
         }
+    }
+
+    /// <summary>Create each file's page under its folder's page, in nav-order then alphabetical (DR 033 §7), after
+    /// every folder page already exists so a folder's sub-folders always precede its files in the Notion sidebar.
+    /// Reuses an existing page from the store so a re-run never duplicates; a newly minted page is recorded with an
+    /// empty body — the engine fills it from the file on the same tick — and persisted immediately (crash-safety, §1).</summary>
+    private static void EnsureFilePages(
+        INotionClient client, BaseSnapshotStore store, DocsNode node, IReadOnlyDictionary<string, string> folderPageId)
+    {
+        foreach (var file in OrderedFiles(node))
+        {
+            if (store.Get(file.LocalId)?.ExternalId != null)
+                continue;
+            var page = client.CreatePage(new NotionPageCreateRequest
+            {
+                Parent = NotionParent.Page(folderPageId[node.LocalId]),
+                Properties = TitleProperty(file.Title),
+            });
+            store.Set(RootBase(file.LocalId, page.Id));
+            store.Save();
+        }
+        foreach (var child in OrderedFolders(node))
+            EnsureFilePages(client, store, child, folderPageId);
     }
 
     /// <summary>Flatten the tree into the engine's inputs: a <see cref="SyncDoc"/> per folder (its index body) and
@@ -163,15 +206,19 @@ public static class DocsTreeSync
 
     // ---- Tree building -----------------------------------------------------------------------------------
 
-    private static DocsNode BuildTree(string dydoRoot, ISet<string> excluded) =>
-        BuildNode(dydoRoot, RootLocalId, RootTitle, excluded)!; // the root is always kept, even if empty
+    private static DocsNode BuildTree(string dydoRoot, ISet<string> excluded, IOffLimitsService offLimits) =>
+        BuildNode(dydoRoot, RootLocalId, RootTitle, excluded, offLimits)!; // the root is always kept, even if empty
 
     /// <summary>Build a folder node: its index doc (title + nav-order), its non-index <c>.md</c> files, and its
     /// included subfolders. A non-root folder with no files, no kept subfolders, and no index doc is pruned
-    /// (returns null) so empty scaffolding folders never mint a barren Notion page.</summary>
-    private static DocsNode? BuildNode(string dir, string localId, string titleDefault, ISet<string> excluded)
+    /// (returns null) so empty scaffolding folders never mint a barren Notion page. A guard-off-limits index or
+    /// file is omitted (DR 033 §5): it must never become externally editable in Notion and merge back through the
+    /// engine's file I/O, bypassing the <c>PreToolUse</c> guard — so an off-limits index leaves a bare container.</summary>
+    private static DocsNode? BuildNode(string dir, string localId, string titleDefault, ISet<string> excluded, IOffLimitsService offLimits)
     {
         var indexPath = FindIndex(dir);
+        if (indexPath != null && IsOffLimits(offLimits, indexPath))
+            indexPath = null;
         var (title, navOrder) = indexPath != null ? TitleAndOrder(indexPath, titleDefault) : (titleDefault, DefaultNavOrder);
 
         var node = new DocsNode { LocalId = localId, Title = title, Dir = dir, IndexPath = indexPath, NavOrder = navOrder };
@@ -182,6 +229,8 @@ public static class DocsTreeSync
             // Index files are the folder body (handled above); other underscore-prefixed files are metadata by dydo
             // convention (templates, drafts) and are not browsable docs.
             if (IsIndex(name) || name.StartsWith('_'))
+                continue;
+            if (IsOffLimits(offLimits, file))
                 continue;
             var stem = Path.GetFileNameWithoutExtension(name);
             var (fileTitle, fileOrder) = TitleAndOrder(file, stem);
@@ -198,9 +247,11 @@ public static class DocsTreeSync
         {
             var name = Path.GetFileName(sub);
             var subLocalId = Join(localId, name);
-            if (excluded.Contains(subLocalId) || excluded.Contains(name))
+            // Full-path match only (finding 3): a bare leaf-name match would wrongly exclude ANY folder anywhere
+            // whose name collides with a spine/framework dir (e.g. a deeper understand/releases/).
+            if (excluded.Contains(subLocalId))
                 continue;
-            var child = BuildNode(sub, subLocalId, name, excluded);
+            var child = BuildNode(sub, subLocalId, name, excluded, offLimits);
             if (child != null)
                 node.Folders.Add(child);
         }
@@ -212,6 +263,9 @@ public static class DocsTreeSync
 
     private static IEnumerable<DocsNode> OrderedFolders(DocsNode node) =>
         node.Folders.OrderBy(f => f.NavOrder).ThenBy(f => f.LocalId, StringComparer.Ordinal);
+
+    private static IEnumerable<DocsFile> OrderedFiles(DocsNode node) =>
+        node.Files.OrderBy(f => f.NavOrder).ThenBy(f => f.LocalId, StringComparer.Ordinal);
 
     private static string Join(string localId, string segment) =>
         localId == RootLocalId ? segment : localId + "/" + segment;

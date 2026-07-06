@@ -250,6 +250,36 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void AppendBlockChildren_Exactly100Children_IssuesOneRequest()
+    {
+        // The 100-per-append cap is inclusive: exactly 100 children fit in a single PATCH.
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"results":[]}""");
+
+        var children = Enumerable.Range(0, 100)
+            .Select(i => new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("l" + i) } })
+            .ToList();
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = children });
+
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public void AppendBlockChildren_Exactly200Children_IssuesTwoRequests()
+    {
+        // 200 children split into exactly two full 100-child PATCHes — no empty third request.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < 2; i++)
+            handler.Enqueue("""{"results":[]}""");
+
+        var children = Enumerable.Range(0, 200)
+            .Select(i => new NotionBlock { Type = "paragraph", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("l" + i) } })
+            .ToList();
+        Client(handler).AppendBlockChildren("p1", new NotionAppendChildrenRequest { Children = children });
+
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
     public void AppendBlockChildren_EmptyChildren_IssuesNoRequest()
     {
         var handler = new FakeHttpMessageHandler();

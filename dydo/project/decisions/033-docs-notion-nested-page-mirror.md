@@ -82,10 +82,16 @@ Mirror **every `.md` under `dydo/`**, minus:
   so the two surfaces stay consistent **by construction** as the spine grows and no one has to patch
   a list here again. Currently that set is `campaigns/`, `sprints/`, `sprint-tasks/`, `issues/`,
   `releases/`, plus the newly-DB-bound `decisions/`, `future-features/`, and `pitfalls/` (spine track);
-- `_assets/` and `.obsidian/` (Obsidian machinery; no `.md` content anyway).
+- `_assets/` and `.obsidian/` (Obsidian machinery; no `.md` content anyway);
+- **any file the guard marks off-limits** — the mirror MUST honor the guard's universal off-limits
+  patterns and **never** mirror such a file (e.g. `dydo/files-off-limits.md`, the root `index.md`,
+  system-state files). These would otherwise become externally editable in Notion and merge back
+  through the sync engine's file I/O, **bypassing the `PreToolUse` guard** (the engine's writes are
+  not tool calls). This is a hard security invariant, not a nicety.
 
 Special-case: `_index.md` / `index.md` are **consumed as their folder's page body**, not skipped
-(the spine loader's blanket `_`-prefix skip does not apply here).
+(the spine loader's blanket `_`-prefix skip does not apply here) — **unless** the file is off-limits,
+in which case it is omitted and the folder/root page is a bare container with no body.
 
 **Taxonomy is consumed here, not decided here.** *Which* dirs are queryable spine DBs vs. browsable
 docs (still open for `tasks/`, `backlog/`, `changelog/`, …) is a cross-cutting decision that feeds

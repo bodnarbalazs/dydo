@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dydo": {
+      "version": "2.0.0",
+      "commands": [
+        "dydo"
+      ],
+      "rollForward": false
+    }
+  }
+}

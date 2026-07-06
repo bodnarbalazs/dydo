@@ -205,3 +205,32 @@
 {"ts":"2026-07-06T10:11:38.3269453Z","event":"Edit","path":"C:\\Users\\User\\.claude\\projects\\C--Users-User-Desktop-Projects-DynaDocs\\memory\\workflow-args-must-be-json.md","tool":"edit"}
 {"ts":"2026-07-06T10:11:56.6152158Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\c4e704f0-msg-harness-anomalies.md","tool":"read"}
 {"ts":"2026-07-06T10:12:22.5672162Z","event":"Edit","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\log-catchup-briefing.md","tool":"edit"}
+{"ts":"2026-07-06T11:15:52.4525802Z","event":"Role","role":"code-writer","task":"release-2-0-0"}
+{"ts":"2026-07-06T11:16:01.6220552Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj","tool":"read"}
+{"ts":"2026-07-06T11:16:14.670399Z","event":"Bash","tool":"bash","cmd":"git log --oneline -2 -- DynaDocs.csproj; git diff HEAD --stat -- DynaDocs.csproj; echo \u0022---clean if ..."}
+{"ts":"2026-07-06T11:16:25.0556555Z","event":"Blocked","tool":"bash","cmd":"dotnet build -c Release --nologo -v q \u0026\u0026 dotnet test -c Release --nologo --no-build -v q","reason":"Nudge (warn): Use the worktree-isolated test runner instead: python DynaDocs.Tests/coverage/run_tests.py -c Release --nologo --no-build -v q\nThis avoids DLL lock contention when multiple agents run tests concurrently."}
+{"ts":"2026-07-06T11:16:33.68267Z","event":"Bash","tool":"bash","cmd":"dotnet build -c Release --nologo -v q \u0026\u0026 python DynaDocs.Tests/coverage/run_tests.py -c Release --no..."}
+{"ts":"2026-07-06T11:16:45.218126Z","event":"Bash","tool":"bash","cmd":"Get-Process dydo -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime, Path | Fo..."}
+{"ts":"2026-07-06T11:16:55.3643088Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc57-47b2-a2ef-c4aead057aab\\tasks\\by03h7i34.output","tool":"read"}
+{"ts":"2026-07-06T11:17:24.5382755Z","event":"Bash","tool":"bash","cmd":"dotnet pack -c Release -o nupkg --nologo -v q 2\u003E\u00261 | tail -3; ls -t nupkg/*.nupkg | head -3"}
+{"ts":"2026-07-06T11:17:45.6911932Z","event":"Blocked","tool":"bash","cmd":"Start-Sleep -Seconds 3; Get-Process dydo -ErrorAction SilentlyContinue | Select-Object Id, StartTime...","reason":"Missing general wait"}
+{"ts":"2026-07-06T11:18:16.4301615Z","event":"Blocked","tool":"bash","cmd":"tasklist | grep -i dydo","reason":"Missing general wait"}
+{"ts":"2026-07-06T11:20:00.2147091Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc57-47b2-a2ef-c4aead057aab\\tasks\\b872tq64e.output","tool":"read"}
+{"ts":"2026-07-06T11:20:16.8862126Z","event":"Bash","tool":"bash","cmd":"Get-Process dydo -ErrorAction SilentlyContinue | Select-Object Id, StartTime | Format-Table -AutoSiz..."}
+{"ts":"2026-07-06T11:21:01.5169367Z","event":"Blocked","tool":"bash","cmd":"dydo watchdog stop; dydo msg --to Charlie --body \u0022SWAP COORDINATION, action needed: please run \u0027dydo...","reason":"Missing general wait"}
+{"ts":"2026-07-06T11:21:19.6571721Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc57-47b2-a2ef-c4aead057aab\\tasks\\b872tq64e.output","tool":"read"}
+{"ts":"2026-07-06T11:21:53.8927657Z","event":"Blocked","tool":"bash","cmd":"$dest = \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc...","reason":"Unread messages"}
+{"ts":"2026-07-06T11:21:59.9378771Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\inbox\\8adffe54-msg-general.md","tool":"read"}
+{"ts":"2026-07-06T11:22:13.5121863Z","event":"Blocked","tool":"bash","cmd":"$dest = \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc...","reason":"Must-read files not yet read"}
+{"ts":"2026-07-06T11:22:20.79729Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\about.md","tool":"read"}
+{"ts":"2026-07-06T11:22:21.202827Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\understand\\architecture.md","tool":"read"}
+{"ts":"2026-07-06T11:22:28.2152875Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\guides\\coding-standards.md","tool":"read"}
+{"ts":"2026-07-06T11:22:28.6222016Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Brian\\modes\\code-writer.md","tool":"read"}
+{"ts":"2026-07-06T11:22:39.1545286Z","event":"Blocked","tool":"bash","cmd":"$dest = \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-07-06T11:22:48.0508031Z","event":"Bash","tool":"bash","cmd":"Expand-Archive -Path \u0022nupkg\\dydo.2.0.0.nupkg\u0022 -DestinationPath \u0022C:\\Users\\User\\AppData\\Local\\Temp\\cla..."}
+{"ts":"2026-07-06T11:23:16.0625682Z","event":"Blocked","tool":"bash","cmd":"Copy-Item \u0022nupkg\\dydo.2.0.0.nupkg\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Pr...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-07-06T11:23:27.6862259Z","event":"Bash","tool":"bash","cmd":"Copy-Item \u0022nupkg\\dydo.2.0.0.nupkg\u0022 \u0022C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Pr..."}
+{"ts":"2026-07-06T11:23:36.6022139Z","event":"Bash","tool":"bash","cmd":"(Get-Item \u0022C:\\Users\\User\\.nuget\\packages\\dydo\\2.0.0\\tools\\net10.0\\any\\dydo.dll\u0022).VersionInfo.Product..."}
+{"ts":"2026-07-06T11:24:47.7577189Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\5afd686e-cc57-47b2-a2ef-c4aead057aab\\tasks\\b59srdot3.output","tool":"read"}
+{"ts":"2026-07-06T11:25:06.2869123Z","event":"Bash","tool":"bash","cmd":"Get-Process dydo -ErrorAction SilentlyContinue | Select-Object Id, StartTime | Format-Table -AutoSiz..."}
+{"ts":"2026-07-06T11:25:22.9827902Z","event":"Bash","tool":"bash","cmd":"Get-CimInstance Win32_Process -Filter \u0022Name = \u0027dydo.exe\u0027\u0022 | Select-Object ProcessId, CommandLine | F..."}

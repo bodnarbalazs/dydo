@@ -5264,3 +5264,17 @@
 {"ts":"2026-07-06T10:36:43.6154703Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.csproj -v q --nologo 2\u003E\u00261 | tail -4"}
 {"ts":"2026-07-06T10:36:53.1177737Z","event":"Bash","tool":"bash","cmd":"git diff --stat \u0026\u0026 echo \u0022---\u0022 \u0026\u0026 grep -n \u0022Version\u003E2\\|\\\u0022version\\\u0022: \\\u00222\u0022 DynaDocs.csproj npm/package.j..."}
 {"ts":"2026-07-06T10:37:06.2899739Z","event":"Bash","tool":"bash","cmd":"git add DynaDocs.csproj npm/package.json \u0026\u0026 git commit -m \u0022chore(release): bump version to 2.0.0\u0022 -m..."}
+{"ts":"2026-07-06T11:13:26.002646Z","event":"Bash","tool":"bash","cmd":"git log --oneline -1 d23eb9d7c5ccb9f97108a8a9d6d4de0c40de96cb 2\u003E\u00261; echo \u0022---IS-ANCESTOR-OF-HEAD?---..."}
+{"ts":"2026-07-06T11:13:26.9192765Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\DynaDocs.csproj","tool":"read"}
+{"ts":"2026-07-06T11:14:09.6212929Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== recent history (mine was c103fa4) ===\u0022; git log --oneline -8; echo \u0022=== the two \u0027version b..."}
+{"ts":"2026-07-06T11:14:10.0463958Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dotnet-tools.json","tool":"read"}
+{"ts":"2026-07-06T11:15:05.853078Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== cached 2.0.0 package contents ===\u0022; ls -la ~/.nuget/packages/dydo/2.0.0/ 2\u003E\u00261 | head; echo..."}
+{"ts":"2026-07-06T11:16:02.4211434Z","event":"Bash","tool":"bash","cmd":"dotnet build DynaDocs.csproj -c Release --no-incremental -v q --nologo 2\u003E\u00261 | tail -3"}
+{"ts":"2026-07-06T11:16:14.8931278Z","event":"Blocked","tool":"bash","cmd":"$dll = Get-ChildItem -Recurse -Path bin\\Release -Filter dydo.dll | Select-Object -First 1; if ($dll)...","reason":"Write with bypass attempt (command substitution/variable expansion)"}
+{"ts":"2026-07-06T11:16:20.6363754Z","event":"Bash","tool":"bash","cmd":"find bin/Release -name dydo.dll 2\u003E/dev/null; echo \u0022---\u0022; find bin/Release -name dydo.dll -exec strin..."}
+{"ts":"2026-07-06T11:16:29.3649517Z","event":"Bash","tool":"bash","cmd":"(Get-Item \u0022bin\\Release\\net10.0\\dydo.dll\u0022).VersionInfo | Format-List ProductVersion, FileVersion"}
+{"ts":"2026-07-06T11:18:36.7467465Z","event":"Read","path":"C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-Desktop-Projects-DynaDocs\\d076622e-55fc-4a95-85e5-b8919a2d5022\\tasks\\bw5wnixy3.output","tool":"read"}
+{"ts":"2026-07-06T11:20:04.4593383Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\dydo\\agents\\Charlie\\inbox\\6dbbe923-msg-general.md","tool":"read"}
+{"ts":"2026-07-06T11:24:50.5056894Z","event":"Blocked","tool":"bash","cmd":"echo \u0022=== CI workflows ===\u0022; ls -la .github/workflows/ 2\u003E\u00261; echo \u0022=== pack/publish scripts anywhere...","reason":"Missing general wait"}
+{"ts":"2026-07-06T11:25:32.2102114Z","event":"Bash","tool":"bash","cmd":"echo \u0022=== CI workflows ===\u0022; ls -la .github/workflows/ 2\u003E\u00261; echo \u0022=== pack/publish references ===\u0022;..."}
+{"ts":"2026-07-06T11:25:37.2844038Z","event":"Read","path":"C:\\Users\\User\\Desktop\\Projects\\DynaDocs\\.github\\workflows\\release.yml","tool":"read"}

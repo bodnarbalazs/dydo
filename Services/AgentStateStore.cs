@@ -51,15 +51,6 @@ public class AgentStateStore
         WriteStateFile(agentName, state);
     }
 
-    public void SetDispatchMetadata(string agentName, string? windowId, bool autoClose, Func<string, bool> isValidName)
-    {
-        UpdateAgentState(agentName, s =>
-        {
-            s.WindowId = windowId;
-            s.AutoClose = autoClose;
-        }, isValidName);
-    }
-
     public void WriteStateFile(string agentName, AgentState state)
     {
         var workspace = _getAgentWorkspace(agentName);

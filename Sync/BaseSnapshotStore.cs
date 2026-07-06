@@ -29,18 +29,30 @@ public sealed class BaseSnapshotStore
     public static string PathFor(string dydoRoot, string adapterName) =>
         Path.Combine(dydoRoot, "_system", ".local", "sync", adapterName, "snapshot.json");
 
-    /// <summary>Durably clear a type's base snapshot by deleting its file (review R2-1). Called at MINT time —
-    /// the instant a re-provision creates a fresh EMPTY database — so the reset survives a crash between the mint
-    /// and the end-of-tick <see cref="Save"/>. An in-memory <see cref="Reset"/> alone is not persisted until that
-    /// Save, so an abort in between (a transient probe failure in schema-drift, a throw in the adapter's external
-    /// read, a process kill) would leave the fresh database recorded while the STALE snapshot.json survived on
-    /// disk — and the next run, reusing the now-valid empty database with nothing minted, would read every base+repo
-    /// pair as an external delete and wipe the repo. Deleting the file here makes the reset crash-safe. A missing
-    /// file is already reset: a no-op.</summary>
+    /// <summary>Durably clear a type's base snapshot by deleting its file (review R2-1). Called BEFORE the mint —
+    /// the instant a re-provision is about to create a fresh EMPTY database — so the reset survives a crash between
+    /// the delete and the end-of-tick <see cref="Save"/>. An in-memory <see cref="Reset"/> alone is not persisted
+    /// until that Save, so an abort in between (a transient probe failure in schema-drift, a throw in the adapter's
+    /// external read, a process kill) would leave the fresh database recorded while the STALE snapshot.json survived
+    /// on disk — and the next run, reusing the now-valid empty database with nothing minted, would read every
+    /// base+repo pair as an external delete and wipe the repo. Ordering the delete before the mint makes the window
+    /// data-preserving both ways (finding 2): a crash after the delete but before the create just re-mints next run,
+    /// and a delete FAILURE aborts before any database exists — so it must surface, never silently proceed. A
+    /// share-lock (AV/OneDrive/another process), a read-only attribute, or any other I/O fault is re-raised with a
+    /// clear message rather than swallowed. A missing file is already reset: a no-op.</summary>
     public static void DeleteSnapshot(string filePath)
     {
-        if (File.Exists(filePath))
+        if (!File.Exists(filePath))
+            return;
+        try
+        {
             File.Delete(filePath);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException(
+                $"failed to reset base snapshot '{filePath}' before re-provisioning; aborting so a stale snapshot cannot mass-delete the repo on the next run: {e.Message}", e);
+        }
     }
 
     public SyncDoc? Get(string localId)

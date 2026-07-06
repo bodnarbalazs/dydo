@@ -6,6 +6,9 @@ using DynaDocs.Models;
 /// An in-memory <see cref="ISyncAdapter"/> for exercising the engine bidirectionally without
 /// Notion. Tests seed/edit external records directly via <see cref="Seed"/> / <see cref="Edit"/>
 /// / <see cref="DeleteExternal"/> and assert what the engine pushes back through <see cref="Apply"/>.
+///
+/// Test-only: this lives in the test assembly (namespaced <c>DynaDocs.Sync</c> so it sits beside the
+/// engine it fakes) so the Native-AOT production binary never ships it (slice brief finding 5).
 /// </summary>
 public sealed class FakeSyncAdapter : ISyncAdapter
 {

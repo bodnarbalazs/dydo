@@ -116,20 +116,6 @@ public class AgentStateStoreTests : IDisposable
 
     #endregion
 
-    #region SetDispatchMetadata
-
-    [Fact]
-    public void SetDispatchMetadata_SetsWindowIdAndAutoClose()
-    {
-        _store.SetDispatchMetadata("Alice", "win-123", true, AlwaysValid);
-
-        var state = _store.GetAgentState("Alice", AlwaysValid);
-        Assert.Equal("win-123", state!.WindowId);
-        Assert.True(state.AutoClose);
-    }
-
-    #endregion
-
     #region ParseStateFile edge cases
 
     [Fact]

@@ -854,14 +854,16 @@ public class ReconcileEngineTests
     }
 
     [Fact]
-    public void WriteToRepo_PassThroughRelation_ExternalAllUnresolvable_CollapsesToEmpty_NoRawId()
+    public void WriteToRepo_ExternalAddsAllUnresolvableRelation_RepoLacksIt_CollapsesToEmpty_NoRawId()
     {
-        // Round-3 defect (finding 3, pass-through branch, all-unresolvable external). The repo relation is fully
-        // resolvable (blocked-by: b), so it is neither invisible nor pending. The board repoints it SOLELY at an
-        // archived/unmapped page — which renders as a raw Notion page id — and edits another field. The pass-through
-        // must reduce the relation to its (empty) resolvable subset, never write the raw page id into frontmatter.
-        var b = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
-        var repo = Doc("t", "body", ("title", "T"), ("status", "open"), ("blocked-by", "b"));
+        // Overlay externalRelationKeys branch (finding 3, pass-through). The repo does NOT carry the relation (so
+        // it is neither stale, invisible, nor pending) and the board ADDS a relation pointing solely at an
+        // unmapped/archived page — a raw Notion page id — while editing status. The pass-through must reduce the
+        // added relation to its (empty) resolvable subset, never write the raw page id into frontmatter. (When the
+        // REPO holds the resolvable relation instead, this is the finding-1 STALE shape — repo wins and re-pushes,
+        // covered below — not a collapse-to-empty.)
+        var b = Doc("t", "body", ("title", "T"), ("status", "open"));
+        var repo = Doc("t", "body", ("title", "T"), ("status", "open"));
         var ext = Doc("t", "body", ("title", "T"), ("status", "done"), ("blocked-by", "page-raw-only"));
 
         var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveBlockedBySubset);
@@ -1072,5 +1074,133 @@ public class ReconcileEngineTests
 
         Assert.Equal(ReconcileAction.WriteToRepo, result.Action);
         Assert.Equal("", result.RepoWrite!.GetField("blocked-by"));
+    }
+
+    // A relation normalizer for the `sprint` field faithful to NotionSyncAdapter.ResolveRelationSubset: only the
+    // re-provisioned parent's NEW local id ("sprint-7") resolves; an empty value stays "" (a valid clear); and any
+    // other value — a stale OLD parent page id the board still points at, rendered as a raw Notion page id — drops
+    // the key whole (its subset is empty). Models a child→parent relation across a parent re-provision (finding 1).
+    private static readonly HashSet<string> ResolvableSprints = new(StringComparer.Ordinal) { "sprint-7" };
+    private static SyncDoc ResolveSprintSubset(SyncDoc d) => new()
+    {
+        LocalId = d.LocalId, ExternalId = d.ExternalId, Body = d.Body, SourcePath = d.SourcePath,
+        Fields = d.Fields.SelectMany(f =>
+        {
+            if (f.Key != "sprint")
+                return new[] { f };
+            var ids = f.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (ids.Length == 0)
+                return new[] { new SyncField { Key = "sprint", Value = "" } };
+            var kept = ids.Where(ResolvableSprints.Contains).ToList();
+            return kept.Count == 0 ? [] : new[] { new SyncField { Key = "sprint", Value = string.Join(", ", kept) } };
+        }).ToList(),
+    };
+
+    [Fact]
+    public void ReprovisionedParentStaleRelationEcho_RepoWins_RePushes_NeverCleared()
+    {
+        // Finding 1 (HIGH, crux). A parent type re-provisioned: its pages were re-created with NEW ids, so the
+        // child's relation on the board still points at the OLD parent page — a raw page id the normalizer drops,
+        // leaving the external's resolvable subset EMPTY. The repo value still resolves (the write map holds the new
+        // page) and equals base. This is a STALE echo, not a clear: repo wins, the relation is RE-PUSHED (resolving
+        // to the new page on the write side), and it is NEVER collapsed to "" (the finding-1 silent data loss).
+        var b = Doc("task-1", "body", ("title", "T"), ("sprint", "sprint-7"));
+        b.ExternalId = "child-page";
+        var repo = Doc("task-1", "body", ("title", "T"), ("sprint", "sprint-7"));
+        var ext = Doc("task-1", "body", ("title", "T"), ("sprint", "old-parent-page")); // stale raw page id
+        ext.ExternalId = "child-page";
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveSprintSubset);
+
+        Assert.Equal(ReconcileAction.PushToExternal, result.Action);        // re-push, not WriteToRepo/None
+        Assert.Null(result.RepoWrite);                                      // repo already correct, never rewritten to ""
+        Assert.Equal("sprint-7", result.ExternalWrite!.GetField("sprint")); // re-pushed; the write map resolves it to the new page
+        Assert.Equal("child-page", result.ExternalWrite.ExternalId);        // an UPDATE of the existing child page
+        Assert.Equal("sprint-7", result.NewBase!.GetField("sprint"));       // base keeps the relation, never ""
+        Assert.False(result.RepoChanged);                                   // a stale re-push, not a repo-side edit (no activity bump)
+    }
+
+    [Fact]
+    public void ReprovisionedParentStaleRelation_ConcurrentBoardEdit_MergesAndRePushes_NeverCleared()
+    {
+        // Finding 1, concurrent-edit variant. The board edits a DIFFERENT field (status) the same tick the parent
+        // re-mints. Without the fix the stale relation is read as a clear and MergeBoth pushes the empty relation to
+        // the board (archiving the refs). With it: the board edit merges, the relation is preserved from the repo
+        // AND re-pushed, and nothing is cleared.
+        var b = Doc("task-1", "body", ("title", "T"), ("status", "open"), ("sprint", "sprint-7"));
+        b.ExternalId = "child-page";
+        var repo = Doc("task-1", "body", ("title", "T"), ("status", "open"), ("sprint", "sprint-7"));
+        var ext = Doc("task-1", "body", ("title", "T"), ("status", "done"), ("sprint", "old-parent-page"));
+        ext.ExternalId = "child-page";
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveSprintSubset);
+
+        Assert.Equal(ReconcileAction.Merged, result.Action);
+        Assert.Equal("done", result.RepoWrite!.GetField("status"));         // the board edit is honored
+        Assert.Equal("sprint-7", result.RepoWrite.GetField("sprint"));      // relation preserved, not cleared
+        Assert.Equal("sprint-7", result.ExternalWrite!.GetField("sprint")); // re-pushed resolvably to the new page
+        Assert.Equal("sprint-7", result.NewBase!.GetField("sprint"));
+    }
+
+    [Fact]
+    public void ReprovisionedParentStaleRelation_ConvergesInTwoTicks_NoChurn()
+    {
+        // Finding 1 + finding 4 fold-in. Tick 1 re-pushes the stale relation. Once the board points at the new page,
+        // the external resolves to sprint-7 == base, so tick 2 (and every tick after) is a clean no-op — convergence
+        // in <=2 ticks with zero WriteToRepo churn (the non-converging shape finding 4 named).
+        var b = Doc("task-1", "body", ("title", "T"), ("sprint", "sprint-7"));
+        b.ExternalId = "child-page";
+        var repo = Doc("task-1", "body", ("title", "T"), ("sprint", "sprint-7"));
+        var extStale = Doc("task-1", "body", ("title", "T"), ("sprint", "old-parent-page"));
+        extStale.ExternalId = "child-page";
+
+        var tick1 = ReconcileEngine.Reconcile(b, repo, extStale, fieldNormalizer: ResolveSprintSubset);
+        Assert.Equal(ReconcileAction.PushToExternal, tick1.Action);
+
+        // The re-push updated the board to the new page; the external now resolves the relation.
+        var extHealed = Doc("task-1", "body", ("title", "T"), ("sprint", "sprint-7"));
+        extHealed.ExternalId = "child-page";
+        var tick2 = ReconcileEngine.Reconcile(tick1.NewBase, repo, extHealed, fieldNormalizer: ResolveSprintSubset);
+        Assert.Equal(ReconcileAction.None, tick2.Action);
+    }
+
+    [Fact]
+    public void ReprovisionedParentStaleRelation_RepoAlsoEdited_PushesRepo_NeverCleared()
+    {
+        // Finding 1, both-sides variant. The repo genuinely changed a field (status) AND the parent re-minted, so
+        // the board relation is stale. The repo change drives a PushToExternal that already re-pushes the relation
+        // resolvably; the stale echo must not be misrouted to a merge that reads it as a clear.
+        var b = Doc("task-1", "body", ("title", "T"), ("status", "open"), ("sprint", "sprint-7"));
+        b.ExternalId = "child-page";
+        var repo = Doc("task-1", "body", ("title", "T"), ("status", "done"), ("sprint", "sprint-7")); // repo edited status
+        var ext = Doc("task-1", "body", ("title", "T"), ("status", "open"), ("sprint", "old-parent-page"));
+        ext.ExternalId = "child-page";
+
+        var result = ReconcileEngine.Reconcile(b, repo, ext, fieldNormalizer: ResolveSprintSubset);
+
+        Assert.Equal(ReconcileAction.PushToExternal, result.Action);
+        Assert.Equal("done", result.ExternalWrite!.GetField("status"));
+        Assert.Equal("sprint-7", result.ExternalWrite.GetField("sprint")); // relation re-pushed, never cleared
+        Assert.Equal("sprint-7", result.NewBase!.GetField("sprint"));
+    }
+
+    [Fact]
+    public void DeleteOneResurrect_UnmappedExternalRelation_SanitizedToResolvableSubset_NoRawId()
+    {
+        // Finding 3. Repo deleted the file while the board edited the page (so it resurrects); the page's relation
+        // references an unmapped/archived page rendered as a raw Notion page id. The resurrect must sanitize the
+        // relation to its resolvable subset — the raw page id must NEVER enter frontmatter or the base (the fourth
+        // overlay-ingestion path the wave-7 resolvable-subset fix missed).
+        var b = Doc("task-1", "body", ("title", "T"), ("sprint", "sprint-7"));
+        b.ExternalId = "child-page";
+        var ext = Doc("task-1", "body", ("title", "T2"), ("sprint", "raw-page-id")); // edited since base; relation unmapped
+        ext.ExternalId = "child-page";
+
+        var result = ReconcileEngine.Reconcile(b, null, ext, fieldNormalizer: ResolveSprintSubset);
+
+        Assert.Equal(ReconcileAction.Conflict, result.Action);
+        Assert.Equal("T2", result.RepoWrite!.GetField("title"));  // the board edit resurrected the file
+        Assert.Null(result.RepoWrite.GetField("sprint"));         // raw page id NOT written to frontmatter
+        Assert.Null(result.NewBase!.GetField("sprint"));          // nor recorded in the base
     }
 }

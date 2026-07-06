@@ -78,16 +78,28 @@ public static class NotionSpineSync
             }
             else
             {
-                var record = provisioner.Create(type, parentPageId, dataSourceIds);
-                // Durably reset this type's base snapshot the instant the fresh EMPTY database is minted (review
-                // R2-1). NotionProvisioner.Create persists the new database's ids immediately, but the in-memory
-                // store.Reset() in Reconcile is not persisted until SyncRunner's end-of-tick Save — so an abort
-                // between the mint and that Save (a transient 429/5xx in CheckDrift, a throw in the adapter's
-                // external read, a process kill) would leave the fresh database recorded while the STALE
-                // snapshot.json survived on disk, and the NEXT run — reusing the now-valid empty database with
-                // nothing minted, hence no reset — would read every base+repo pair as an external delete and wipe
-                // the repo. Deleting the file here, in the same step as the mint, closes that crash window.
+                // Durably reset this type's base snapshot BEFORE the fresh EMPTY database is minted (finding 2,
+                // strictly better than after: review R2-1). NotionProvisioner.Create persists the new database's ids
+                // immediately, but the in-memory store.Reset() in Reconcile is not persisted until SyncRunner's
+                // end-of-tick Save — so an abort between the mint and that Save (a transient 429/5xx in CheckDrift, a
+                // throw in the adapter's external read, a process kill) would leave the fresh database recorded while
+                // the STALE snapshot.json survived on disk, and the NEXT run — reusing the now-valid empty database
+                // with nothing minted, hence no reset — would read every base+repo pair as an external delete and
+                // wipe the repo. Deleting first makes the window data-preserving both ways: a crash after the delete
+                // but before the create just re-mints next run, and a delete failure (share-lock/AV/read-only) throws
+                // BEFORE any database exists, so nothing is minted against a stale snapshot.
+                //
+                // SCOPE BOUNDARY (wave 8, item 1): re-minting a PARENT type here re-creates its pages with new ids, and
+                // a child's still-valid relation is preserved and re-pushed to point at those new pages (ReconcileEngine's
+                // stale-echo branch). What is NOT done is re-pointing the CHILD relation property's SCHEMA — pinned to the
+                // parent's original data_source_id at child-create time — to the new parent data source. So the re-pushed
+                // page ids target a relation schema whose data source was deleted; live Notion MAY reject that, wedging the
+                // child's sync loudly mid-tick. This is strictly non-destructive (an aborted tick advances no base and
+                // deletes no repo file) — a loud wedge, never the pre-wave-8 silent clear. Full convergence requires schema
+                // re-pointing plus reverse-relation/rollup re-synthesis, deferred to the retro-provisioning work pending
+                // live-Notion verification.
                 BaseSnapshotStore.DeleteSnapshot(BaseSnapshotStore.PathFor(dydoRoot, "notion-" + type.Type.ToLowerInvariant()));
+                var record = provisioner.Create(type, parentPageId, dataSourceIds);
                 output.WriteLine($"  provision  {type.Type,-9} created database {record.DatabaseId} (data source {record.DataSourceId})");
                 dataSourceIds[type.Type] = record.DataSourceId;
                 minted.Add(type.Type);

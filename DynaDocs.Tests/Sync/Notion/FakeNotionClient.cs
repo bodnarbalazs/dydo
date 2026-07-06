@@ -58,6 +58,11 @@ public sealed class FakeNotionClient : INotionClient
     /// definitive 404/object_not_found re-provisions as a genuinely deleted database (finding 1).</summary>
     public NotionApiException? FailRetrieveDatabase { get; set; }
 
+    /// <summary>Database ids that <see cref="RetrieveDatabase"/> 404s (object_not_found) — a PER-DATABASE
+    /// definitive not-found, so a test can re-provision ONE type (a deleted/unshared parent) while its
+    /// children reuse their still-valid databases: the cross-type re-provision seam of finding 1.</summary>
+    public HashSet<string> NotFoundDatabaseIds { get; } = [];
+
     /// <summary>When set, <see cref="RetrieveDataSource"/> throws this exception — drives the durable-reset test
     /// (review R2-1): a re-provision mints a fresh EMPTY database, then CheckDrift (which calls RetrieveDataSource
     /// per type, between Provision and Reconcile) throws, aborting the tick after the mint but before the
@@ -96,6 +101,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionDatabase RetrieveDatabase(string databaseId)
     {
+        if (NotFoundDatabaseIds.Contains(databaseId))
+            throw new NotionApiException(404, "{\"code\":\"object_not_found\"}");
         if (FailRetrieveDatabase is { } ex)
             throw ex;
         return Databases.TryGetValue(databaseId, out var db) ? db : new NotionDatabase { Id = databaseId };

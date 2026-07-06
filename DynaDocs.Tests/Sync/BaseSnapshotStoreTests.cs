@@ -139,4 +139,37 @@ public class BaseSnapshotStoreTests : IDisposable
         store.Set(Doc("b", null, "y"));
         Assert.Equal(["a", "b"], store.LocalIds.OrderBy(x => x));
     }
+
+    [Fact]
+    public void DeleteSnapshot_ExistingFile_Removes_MissingFile_NoOp()
+    {
+        var path = Path.Combine(_dir, "snapshot.json");
+        var store = new BaseSnapshotStore(path);
+        store.Set(Doc("t", null, "body"));
+        store.Save();
+        Assert.True(File.Exists(path));
+
+        BaseSnapshotStore.DeleteSnapshot(path);
+        Assert.False(File.Exists(path));
+
+        BaseSnapshotStore.DeleteSnapshot(path); // already gone -> no throw
+    }
+
+    [Fact]
+    public void DeleteSnapshot_LockedFile_ThrowsIOException_WithClearMessage()
+    {
+        // Finding 2: the reset runs BEFORE the re-provision mint, so a delete failure (a share-lock from AV /
+        // OneDrive / another process, a read-only attribute) must SURFACE and abort before any database exists —
+        // never silently proceed and leave a stale snapshot to mass-delete the repo on the next run.
+        var path = Path.Combine(_dir, "snapshot.json");
+        var store = new BaseSnapshotStore(path);
+        store.Set(Doc("t", null, "body"));
+        store.Save();
+
+        // Hold an exclusive handle so File.Delete cannot remove it.
+        using var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        var ex = Assert.Throws<IOException>(() => BaseSnapshotStore.DeleteSnapshot(path));
+        Assert.Contains("failed to reset base snapshot", ex.Message);
+        Assert.Contains(path, ex.Message);
+    }
 }

@@ -73,9 +73,12 @@ public static class ReconcileEngine
                     ExternalDelete = externalId,
                 };
 
-            // Resurrect the repo file from the surviving external edits — an external-driven write, not
-            // repo activity.
-            var survivor = WithExternalId(external!, externalId);
+            // Resurrect the repo file from the surviving external edits — an external-driven write, not repo
+            // activity. Sanitize through the field normalizer first (finding 3): this is a FOURTH overlay-ingestion
+            // path the wave-7 resolvable-subset fix missed (it covered union/pending/pass-through), so a relation the
+            // board points at an unmapped/archived page — rendered as a raw Notion page id the write map can never
+            // resolve — must be reduced to its resolvable subset, never planted verbatim into frontmatter or the base.
+            var survivor = fieldNorm(WithExternalId(external!, externalId));
             return new ReconcileResult
             {
                 LocalId = baseDoc.LocalId,
@@ -123,42 +126,126 @@ public static class ReconcileEngine
     /// <summary>Both sides present: propagate a one-sided change, else 3-way merge.</summary>
     private static ReconcileResult ReconcileExisting(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
     {
+        // A parent-type re-provision re-creates its pages with NEW ids (wave 7), so a child's relation on the board
+        // still points at the OLD, now-abandoned parent page. That renders as a raw page id the field normalizer
+        // drops, making the external's resolvable subset for the key EMPTY — yet the repo value still resolves (the
+        // write map holds the new page id) and equals the base's recorded value. That is a STALE board echo, not a
+        // clear: the repo wins and the relation must be RE-PUSHED so the board points at the new page (finding 1).
+        // De-stale the external view here so neither change-detection nor the 3-way merge misreads the stale echo as
+        // a board-side clear and collapses the still-valid repo relation to "" (the finding-1 data loss).
+        //
+        // SCOPE BOUNDARY (wave 8, item 1): this preserves the child's repo relation DATA and re-pushes it so the
+        // board points at the re-minted parent PAGE — but it does NOT re-point the child relation PROPERTY's SCHEMA,
+        // still pinned to the parent's original data_source_id at child-create time (NotionProvisioner.RelationSchema).
+        // On a real parent-only re-mint the re-push writes new-parent page ids into a relation whose schema targets
+        // the deleted data source; live Notion MAY reject that, wedging this child's sync loudly mid-tick. That is
+        // strictly non-destructive: an aborted tick advances no base and deletes no repo file, so worst case is a
+        // loud wedge, never the pre-wave-8 silent clear. Full convergence needs schema re-pointing plus reverse-
+        // relation/rollup re-synthesis, deferred to the retro-provisioning work pending live-Notion verification.
+        var stale = StaleRelationKeys(baseDoc, repo, external, fieldNorm);
+        var hasStale = stale.Count > 0;
+        var externalView = hasStale ? DeStaleRelations(external, repo, stale, fieldNorm) : external;
+
         var repoChanged = !Equal(baseDoc, repo, norm, fieldNorm);
-        var extChanged = !Equal(baseDoc, external, norm, fieldNorm);
+        var extChanged = !Equal(baseDoc, externalView, norm, fieldNorm);
         var externalId = baseDoc.ExternalId ?? external.ExternalId;
 
-        if (!repoChanged && !extChanged)
-            return Simple(repo.LocalId, ReconcileAction.None);
+        if (extChanged)
+            // A one-sided external change with no stale echo writes to the repo; anything else — two-sided, or an
+            // external change alongside a stale relation to re-push — 3-way merges against the DE-STALED external so
+            // the stale relation is preserved from the repo AND re-pushed with the merge, never read as a clear the
+            // merge would archive on the board (finding 1, concurrent-edit variant).
+            return !repoChanged && !hasStale
+                ? WriteToRepoResult(external, repo, baseDoc, externalId, fieldNorm)
+                : MergeBoth(baseDoc, repo, externalView, fieldNorm);
 
-        if (repoChanged && !extChanged)
-            return new ReconcileResult
-            {
-                LocalId = repo.LocalId,
-                Action = ReconcileAction.PushToExternal,
-                ExternalWrite = WithExternalId(repo, externalId),
-                // Record only what the external view can round-trip: the push carries the full repo doc, but a
-                // field the external drops (an as-yet-unresolvable relation) reads back absent, so an un-normalized
-                // base would misread that absence next tick as a deletion and blank the repo value (slice brief §1).
-                NewBase = fieldNorm(WithExternalId(repo, externalId)),
-                RepoChanged = true,
-            };
+        if (repoChanged)
+            return PushToExternalResult(repo, externalId, fieldNorm, repoChanged: true);
 
-        if (!repoChanged && extChanged)
+        // Neither side changed. A lingering stale echo means the board still points at the abandoned parent page —
+        // re-push the repo relation to resolve it to the new page id (finding 1; folds in finding 4's no-converge
+        // churn), not a repo-side edit (RepoChanged stays false). Otherwise a genuine no-op.
+        return hasStale
+            ? PushToExternalResult(repo, externalId, fieldNorm, repoChanged: false)
+            : Simple(repo.LocalId, ReconcileAction.None);
+    }
+
+    /// <summary>Push the repo doc to the external side, recording only the round-trippable subset in the base (a
+    /// field the external drops — an as-yet-unresolvable relation — reads back absent, so an un-normalized base would
+    /// misread that absence next tick as a deletion and blank the repo value, slice brief §1). <paramref name="repoChanged"/>
+    /// is false only for a stale-echo re-push (finding 1): the repo already equals the base, so no activity bump.</summary>
+    private static ReconcileResult PushToExternalResult(SyncDoc repo, string? externalId, Func<SyncDoc, SyncDoc> fieldNorm, bool repoChanged) => new()
+    {
+        LocalId = repo.LocalId,
+        Action = ReconcileAction.PushToExternal,
+        ExternalWrite = WithExternalId(repo, externalId),
+        NewBase = fieldNorm(WithExternalId(repo, externalId)),
+        RepoChanged = repoChanged,
+    };
+
+    /// <summary>Write a one-sided external change back to the repo, overlaying the repo's adapter-invisible fields
+    /// so the external side's inability to round-trip them does not blank the file, and recording only the
+    /// round-trippable subset in the base so those fields are not read as an external deletion next tick (§1).</summary>
+    private static ReconcileResult WriteToRepoResult(SyncDoc external, SyncDoc repo, SyncDoc baseDoc, string? externalId, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var toRepo = OverlayAdapterInvisibleFields(WithSourcePath(external, repo.SourcePath), repo, baseDoc, fieldNorm);
+        return new ReconcileResult
         {
-            var toRepo = OverlayAdapterInvisibleFields(WithSourcePath(external, repo.SourcePath), repo, baseDoc, fieldNorm);
-            return new ReconcileResult
-            {
-                LocalId = repo.LocalId,
-                Action = ReconcileAction.WriteToRepo,
-                RepoWrite = toRepo,
-                // The overlay restores the repo's adapter-invisible fields onto the file, but the external side
-                // holds none of them; normalizing keeps the base aligned with external state so those fields are
-                // not read back as an external deletion next tick (slice brief §1).
-                NewBase = fieldNorm(WithExternalId(toRepo, externalId)),
-            };
-        }
+            LocalId = repo.LocalId,
+            Action = ReconcileAction.WriteToRepo,
+            RepoWrite = toRepo,
+            NewBase = fieldNorm(WithExternalId(toRepo, externalId)),
+        };
+    }
 
-        return MergeBoth(baseDoc, repo, external, fieldNorm);
+    /// <summary>Relation keys whose external echo is STALE rather than a board clear (slice brief finding 1): the
+    /// repo still resolves the key to a value that EQUALS the base's recorded value, but the external's resolvable
+    /// subset for it is EMPTY because the board points at an id the read cannot resolve — a re-provisioned parent's
+    /// abandoned page, rendered as a raw page id the normalizer drops whole. Such a key must not be read as a clear:
+    /// the repo wins and the relation is re-pushed. Excluded so the genuine cases still apply: a key the repo value
+    /// itself CHANGED from base (a real repo edit — pushed normally); a key the base never recorded (the wave-7
+    /// empty-echo, treated as absent); and a genuine board CLEAR, where the external echoes the key EMPTY ("") and so
+    /// its resolvable subset is present (just empty) rather than dropping out.</summary>
+    private static HashSet<string> StaleRelationKeys(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var repoVisible = FirstWins(fieldNorm(repo).Fields);
+        var externalVisible = FirstWins(fieldNorm(external).Fields);
+        var baseRecorded = FirstWins(baseDoc.Fields);
+        var externalRaw = FirstWins(external.Fields);
+
+        var stale = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, repoValue) in repoVisible)
+        {
+            if (externalVisible.ContainsKey(key))
+                continue; // external still resolves it (or echoes a genuine empty clear) — not a stale drop
+            if (!baseRecorded.TryGetValue(key, out var baseValue) || baseValue != repoValue)
+                continue; // base never recorded it, or the repo value itself changed — not the finding-1 shape
+            if (!externalRaw.TryGetValue(key, out var rawValue) || rawValue.Length == 0)
+                continue; // external genuinely lacks/cleared the key — a real absence, not a stale raw-id echo
+            if (IsRelationKey(key, repo, fieldNorm))
+                stale.Add(key);
+        }
+        return stale;
+    }
+
+    /// <summary>Replace each stale relation echo in the external doc with the repo's RESOLVABLE value (slice brief
+    /// finding 1). The two are equal by construction (a stale key is one whose repo resolvable value equals the
+    /// base), so this only swaps the board's unresolvable raw-id rendering for the resolvable local id: change-
+    /// detection and the 3-way merge then see the key as unchanged from base and the overlay keeps it resolvable,
+    /// never collapsing it to "". Every other field is untouched, so a genuine board edit to another field applies.</summary>
+    private static SyncDoc DeStaleRelations(SyncDoc external, SyncDoc repo, HashSet<string> staleKeys, Func<SyncDoc, SyncDoc> fieldNorm)
+    {
+        var repoResolvable = FirstWins(fieldNorm(repo).Fields);
+        return new SyncDoc
+        {
+            LocalId = external.LocalId,
+            ExternalId = external.ExternalId,
+            Fields = external.Fields
+                .Select(f => staleKeys.Contains(f.Key) ? new SyncField { Key = f.Key, Value = repoResolvable[f.Key] } : f)
+                .ToList(),
+            Body = external.Body,
+            SourcePath = external.SourcePath,
+        };
     }
 
     private static ReconcileResult MergeBoth(SyncDoc baseDoc, SyncDoc repo, SyncDoc external, Func<SyncDoc, SyncDoc> fieldNorm)

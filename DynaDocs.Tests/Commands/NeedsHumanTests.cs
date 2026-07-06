@@ -493,19 +493,33 @@ public class NeedsHumanTests : IDisposable
     [Fact]
     public void SetRole_ContentionClearingWithinRetryWindow_Succeeds()
     {
-        // Finding 5: SetRole now bounded-retries the per-agent lock (3x / 50 ms) rather than a single fail-fast
-        // attempt, so a watchdog per-agent sweep briefly holding the lock (~30 ms) is ridden out and the role set
-        // succeeds — the old single fail-fast attempt spuriously failed `dydo role` on such a collision.
+        // Finding 5: SetRole bounded-retries the per-agent lock (3x / 50 ms) rather than a single fail-fast attempt,
+        // so a watchdog per-agent sweep briefly holding the lock is ridden out and the role set succeeds — the old
+        // single fail-fast attempt spuriously failed `dydo role` on such a collision.
+        //
+        // Made deterministic (finding 6): the prior version raced a fixed 30 ms releaser against SetRole's ~100 ms
+        // retry budget, which a loaded CI box could lose (Thread.Sleep overshoot). Here the contender holds the lock
+        // until SetRole is actually in flight, then releases it — so SetRole starts against a held lock (proving the
+        // retry path) yet always has its full window free afterward, regardless of scheduling load.
         WriteState("Adele", status: "working", task: "null", needsHuman: false, sessionId: "sess-1");
 
         var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
         Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
         var contender = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        var releaser = new Thread(() => { Thread.Sleep(30); contender.Dispose(); });
-        releaser.Start();
 
-        var ok = _registry.SetRole("sess-1", "code-writer", "contended-task", out var err);
-        releaser.Join();
+        var inFlight = new ManualResetEventSlim();
+        var ok = false;
+        var err = "";
+        var worker = new Thread(() =>
+        {
+            inFlight.Set();
+            ok = _registry.SetRole("sess-1", "code-writer", "contended-task", out err);
+        });
+        worker.Start();
+
+        inFlight.Wait();     // the worker is entering SetRole; its first lock attempt finds the lock held
+        contender.Dispose(); // release now, leaving SetRole its whole retry window to acquire — no timing race
+        worker.Join();
 
         Assert.True(ok, err);
         Assert.Equal("contended-task", _registry.GetAgentState("Adele")!.Task); // the role set rode out contention

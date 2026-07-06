@@ -1375,6 +1375,137 @@ public class NotionSpineSyncTests : IDisposable
         Assert.Equal(2, client.QueryDataSource("ds-2").Count);
     }
 
+    /// <summary>A parent Sprint + child SprintTask model whose child carries a `sprint` relation, seeded with one
+    /// of each, for the cross-type re-provision test (finding 1).</summary>
+    private void SeedParentChildRelationSpine()
+    {
+        WriteModel("""
+            {
+              "objects": [
+                { "type": "Sprint", "dir": "project/sprints", "notionTitle": "Sprints",
+                  "properties": { "title": { "type": "title" } } },
+                { "type": "SprintTask", "dir": "project/sprint-tasks", "notionTitle": "Tasks",
+                  "properties": { "title": { "type": "title" },
+                    "sprint": { "type": "relation", "to": "Sprint" } } }
+              ]
+            }
+            """);
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprints", "notion-sync.md"));     // ctor seed, off-model
+        File.Delete(Path.Combine(_dydoRoot, "project", "sprint-tasks", "spine-task.md")); // ctor seed, off-model
+        Seed("project/sprints/sprint-7", "---\ntitle: Sprint 7\n---\n\nParent.");
+        Seed("project/sprint-tasks/task-1", "---\ntitle: Task 1\nsprint: sprint-7\n---\n\nChild.");
+    }
+
+    [Fact]
+    public void Run_ReprovisionParent_ChildRelationSurvives_RePushesToNewParentPage_ZeroSilentClears()
+    {
+        // Finding 1 (HIGH, the cross-type crux — spine-level acceptance bar). A PARENT type's database 404s (deleted
+        // or unshared), so it re-provisions into a fresh EMPTY database and its page is re-created with a NEW id. Its
+        // CHILD type reuses its own still-valid database, so the child's relation on the board still points at the
+        // OLD parent page — a raw id the read cannot resolve, leaving the external's resolvable subset EMPTY. The
+        // child's repo value still resolves (the write map holds the NEW parent page) and equals base. The engine
+        // must treat the board echo as STALE: keep the child's relation in the repo (never clear it), and RE-PUSH it
+        // so the child page points at the new parent page. Converges in <=2 ticks with zero silent clears.
+        SeedParentChildRelationSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: provision both
+
+        NotionPage Child() => client.QueryDataSource("ds-2").Single(p => !p.Archived);
+        var oldParentPageId = client.QueryDataSource("ds-1").Single().Id;
+        Assert.Equal(oldParentPageId, Child().Properties["sprint"].Relation!.Single().Id); // baseline: child -> old parent page
+
+        // The PARENT database is definitively gone; only it re-provisions on the next tick (the child reuses ds-2).
+        client.NotFoundDatabaseIds.Add("db-1");
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 2: parent re-mints; child stale echo -> re-push
+
+        // The child's relation SURVIVED in the repo — never silently cleared to empty.
+        Assert.Contains("sprint: sprint-7", File.ReadAllText(TaskPath("task-1")));
+
+        // The child page was RE-PUSHED to the NEW parent page (a fresh database ds-3), not left dangling or cleared.
+        var newParentPageId = client.QueryDataSource("ds-3").Single().Id;
+        Assert.NotEqual(oldParentPageId, newParentPageId);
+        Assert.Equal(newParentPageId, Child().Properties["sprint"].Relation!.Single().Id);
+
+        // Tick 3: the relation has converged — the board now resolves it, so the child's sprint is stable (no
+        // conflict, still pointed at the new parent page, still `sprint: sprint-7` in frontmatter). The relation no
+        // longer churns: the finding-1 stale echo is gone once the board points at the re-minted pages.
+        var output = new StringWriter();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, output);
+        Assert.DoesNotContain("conflict", output.ToString());
+        Assert.Contains("sprint: sprint-7", File.ReadAllText(TaskPath("task-1")));
+        Assert.Equal(newParentPageId, Child().Properties["sprint"].Relation!.Single().Id);
+    }
+
+    [Fact]
+    public void Run_ReprovisionSnapshotDeleteFails_AbortsBeforeMintingDatabase()
+    {
+        // Finding 2 (ordering). The base-snapshot reset now runs BEFORE the mint. If the delete FAILS (a share-lock
+        // from AV / OneDrive / another process on the snapshot file), the re-provision must abort BEFORE any database
+        // is created — a data-preserving order — rather than minting a fresh database against a stale snapshot that
+        // would mass-delete the repo next run. Here the snapshot file is held open exclusively, so DeleteSnapshot
+        // throws and no new database is minted.
+        SeedReprovisionSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        Assert.Single(client.CreatedDatabases);
+
+        // The recorded database is definitively gone, so tick 2 would re-provision — but the snapshot delete fails.
+        client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
+        using (new FileStream(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask"), FileMode.Open, FileAccess.Read, FileShare.None))
+            Assert.Throws<IOException>(
+                () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+
+        // Delete precedes create: the failed reset aborted before any fresh database was minted.
+        Assert.Single(client.CreatedDatabases);
+    }
+
+    [Fact]
+    public void Run_ReprovisionSnapshotDeletedThenCreateThrows_RetryReminsFresh_ZeroRepoDeletions()
+    {
+        // Finding 1 (the NEW crash window opened by the wave-8 delete-before-create ordering). The reset now
+        // deletes the snapshot BEFORE the mint, so a crash can land AFTER a SUCCESSFUL snapshot delete but
+        // BEFORE provisioner.Create — leaving the snapshot file gone while provision.json still records the
+        // now-dead database. The ordering claims this is data-preserving ("just re-mints next run"): the retry
+        // must see the recorded database still gone, re-provision into a fresh EMPTY database, and re-push every
+        // repo doc as a CREATE against the empty base — ZERO repo deletions. This pins that exact window, which
+        // the delete-FAILURE test (aborts before the window) and the post-mint abort test (the OLD window) do not.
+        SeedReprovisionSpine();
+
+        var client = new FakeNotionClient();
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()); // tick 1: ds-1 + 2 pages
+        Assert.Equal(2, client.QueryDataSource("ds-1").Count);
+
+        // Tick 2: the recorded database is definitively gone (404), forcing a re-provision. The snapshot delete
+        // succeeds, but the mint then throws — the create knob fires the instant zero creates remain permitted,
+        // so provisioner.Create fails immediately after DeleteSnapshot removed the file. This is the crash window.
+        var snapshotPath = BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask");
+        client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
+        client.FailCreateDatabaseAfter = 0;
+        Assert.Throws<NotionApiException>(
+            () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
+
+        // The window's exact state: the snapshot file is gone (the delete succeeded), yet no fresh database was
+        // minted (the create threw) and provision.json still records the dead database db-1.
+        Assert.False(File.Exists(snapshotPath));
+        Assert.Single(client.CreatedDatabases);
+        Assert.Contains("db-1", File.ReadAllText(NotionProvisioner.PathFor(_dydoRoot)));
+
+        // Tick 3: the transient create failure clears, but the database is still genuinely gone (FailRetrieveDatabase
+        // stays set — that IS the reason we re-provision; clearing it would resurrect a phantom-valid db-1 whose stale
+        // orphan pages the empty base cannot map, filing junk page-id repo docs instead of re-minting). The retry
+        // re-provisions into a fresh EMPTY database (ds-2) and, against the durably-cleared base, re-pushes both docs
+        // as creates. No repo file is ever deleted.
+        client.FailCreateDatabaseAfter = null;
+        NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter());
+
+        Assert.True(File.Exists(TaskPath("task-1")));  // never deleted
+        Assert.True(File.Exists(TaskPath("task-2")));
+        Assert.Equal(2, client.CreatedDatabases.Count);        // a fresh database was minted on the retry
+        Assert.Equal(2, client.QueryDataSource("ds-2").Count); // both docs re-pushed as creates into it
+    }
+
     [Fact]
     public void Run_RelationLifecycle_PendingResolvesRetiresBoardEdits_NoImmortalRawId_ArchivePropagates()
     {

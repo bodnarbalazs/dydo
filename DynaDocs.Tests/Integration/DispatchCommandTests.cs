@@ -47,6 +47,58 @@ public class DispatchCommandTests : IntegrationTestBase
         Assert.True(inboxFiles.Length > 0);
     }
 
+    [Fact]
+    public async Task Dispatch_MetadataWriteContended_WarnsButProceeds()
+    {
+        // Finding 6: SetDispatchMetadata's write can lose to persistent per-agent lock contention and return false.
+        // The dispatch must NOT fail — it proceeds (the assignment is written, exit success) and surfaces a
+        // non-fatal warning so the operator knows the window/auto-close metadata was not recorded and can
+        // re-dispatch, rather than a terminal silently mis-closing.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var brianDir = Path.Combine(TestDir, "dydo", "agents", "Brian");
+        var lockPath = Path.Combine(brianDir, ".claim.lock");
+        var inboxDir = Path.Combine(brianDir, "inbox");
+        Directory.CreateDirectory(brianDir);
+        int InboxCount() => Directory.Exists(inboxDir) ? Directory.GetFiles(inboxDir, "*.md").Length : 0;
+        var inboxBefore = InboxCount();
+
+        // Reservation runs BEFORE the metadata write, with the lock free — so the dispatch still reserves Brian. The
+        // assignment inbox item is written right after reservation (the lock already released) and several steps
+        // before SetDispatchMetadata, so it is a reliable "lock is now free" signal: grab the lock the instant the
+        // item appears and hold it through SetDispatchMetadata's whole retry window (10x / 50 ms), so every retry
+        // fails and it returns false. Tight-spin (no sleep) so the grab lands within the pre-metadata-write window.
+        var stop = false;
+        FileStream? held = null;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var holder = new Thread(() =>
+        {
+            while (held == null && sw.ElapsedMilliseconds < 5000)
+            {
+                try
+                {
+                    if (InboxCount() > inboxBefore)
+                        held = new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                }
+                catch (IOException) { /* transiently contended; retry */ }
+            }
+            while (!stop) // hold the lock across the dispatch's metadata write
+                Thread.Sleep(5);
+        });
+        holder.Start();
+
+        var result = await DispatchAsync("code-writer", "contended-dispatch", "Brief", to: "Brian");
+        stop = true;
+        holder.Join();
+        held?.Dispose();
+        if (File.Exists(lockPath)) File.Delete(lockPath);
+
+        result.AssertSuccess(); // non-fatal: the dispatch proceeded despite the contended metadata write
+        result.AssertStdoutContains("could not record dispatch window/auto-close metadata");
+        var inbox = Directory.GetFiles(Path.Combine(brianDir, "inbox"), "*.md");
+        Assert.NotEmpty(inbox); // the assignment inbox item was still written
+    }
+
     #endregion
 
     #region --to Error Cases

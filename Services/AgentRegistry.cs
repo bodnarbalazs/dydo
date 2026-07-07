@@ -393,7 +393,12 @@ public partial class AgentRegistry : IAgentRegistry
             // HandleExistingSession returns true for both "proceed" and "idempotent reclaim";
             // if the error string is empty and we got a match, it was idempotent.
             if (IsIdempotentReclaim(existingSession, state, sessionId))
+            {
+                PublishClaimedSessionContext(agentName, sessionId,
+                    existingSession?.Host ?? host,
+                    existingSession?.Model ?? model);
                 return true;
+            }
 
             // Capture the prior session/state BEFORE SetupAgentWorkspace overwrites .session and
             // resets state.md — the recovery_kind classification needs the pre-reset values.
@@ -553,7 +558,7 @@ public partial class AgentRegistry : IAgentRegistry
         try { WatchdogService.RegisterMainAnchor(ProcessUtils.FindAgentHostAncestor(host), _basePath); }
         catch { /* anchoring is best-effort; never fail a claim because of it */ }
 
-        try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
+        PublishClaimedSessionContext(agentName, sessionId, session.Host, session.Model);
 
         try
         {
@@ -561,6 +566,12 @@ public partial class AgentRegistry : IAgentRegistry
             if (File.Exists(nudgePath)) File.Delete(nudgePath);
         }
         catch { }
+    }
+
+    private void PublishClaimedSessionContext(string agentName, string sessionId, string host, string model)
+    {
+        try { _sessionManager.StoreSessionContext(sessionId, agentName, host, model); } catch { }
+        try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
     }
 
     public bool ClaimAuto(out string claimedAgent, out string error)
@@ -1045,6 +1056,7 @@ public partial class AgentRegistry : IAgentRegistry
     {
         if (session.ClaimedPid is not int claimedPid) return false;
         if (Environment.ProcessId == claimedPid) return true;
+        if (ProcessUtils.IsCurrentProcessDescendantOf(claimedPid)) return true;
         var ancestor = ProcessUtils.FindAgentHostAncestor(session.Host);
         return ancestor.HasValue && ancestor.Value == claimedPid;
     }

@@ -1,13 +1,13 @@
 ---
 area: general
-name: slice-b-dispatch-autoclose-nudge
+name: auto-close-test-204
 status: pending
-created: 2026-07-07T18:57:50.2057184Z
-assigned: Iris
+created: 2026-07-07T20:26:35.6848841Z
+assigned: Kate
 needs-human: false
 ---
 
-# Task: slice-b-dispatch-autoclose-nudge
+# Task: auto-close-test-204
 
 (No description)
 

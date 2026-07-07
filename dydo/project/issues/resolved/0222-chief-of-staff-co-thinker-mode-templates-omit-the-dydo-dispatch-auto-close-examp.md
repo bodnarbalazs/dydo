@@ -3,9 +3,10 @@ id: 222
 area: general
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 date: 2026-07-07
+resolved-date: 2026-07-07
 ---
 
 # chief-of-staff + co-thinker mode templates omit the dydo dispatch --auto-close example (orchestrator/code-writer/etc. have it); no guard nudge soft-blocks dispatch without --auto-close, so released tabs leak

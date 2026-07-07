@@ -12,8 +12,8 @@ using DynaDocs.Sync.Notion.Dtos;
 /// </summary>
 public class NotionClientTests
 {
-    private static NotionClient Client(FakeHttpMessageHandler handler) =>
-        new(new HttpClient(handler), "secret-token", TimeSpan.Zero);
+    private static NotionClient Client(FakeHttpMessageHandler handler, Action<TimeSpan>? sleep = null) =>
+        new(new HttpClient(handler), "secret-token", TimeSpan.Zero, sleep);
 
     [Fact]
     public void EveryRequest_CarriesNotionVersionAndBearerToken()
@@ -324,5 +324,68 @@ public class NotionClientTests
         var ex = Assert.Throws<NotionApiException>(() => Client(handler).RetrieveDatabase("db1"));
         Assert.Equal(401, ex.StatusCode);
         Assert.Contains("unauthorized", ex.Message);
+    }
+
+    [Fact]
+    public void TransientServerError_RetriesAndSucceeds()
+    {
+        // A single transient 503 must not abort the call — the client retries and succeeds on the 200.
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"message":"unavailable"}""", HttpStatusCode.ServiceUnavailable)
+            .Enqueue("""{"id":"db1","data_sources":[]}""");
+
+        var db = Client(handler, sleep: _ => { }).RetrieveDatabase("db1");
+
+        Assert.Equal("db1", db.Id);
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    public void RateLimited_HonorsRetryAfterHeader_ThenSucceeds()
+    {
+        // On a 429 the client waits exactly the server-supplied Retry-After (2s here), not a computed
+        // backoff — captured via the injected sleep so no real waiting happens.
+        var delays = new List<TimeSpan>();
+        var handler = new FakeHttpMessageHandler()
+            .Enqueue("""{"message":"rate limited"}""", (HttpStatusCode)429, retryAfterSeconds: 2)
+            .Enqueue("""{"id":"db1","data_sources":[]}""");
+
+        var db = Client(handler, sleep: delays.Add).RetrieveDatabase("db1");
+
+        Assert.Equal("db1", db.Id);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(TimeSpan.FromSeconds(2), Assert.Single(delays));
+    }
+
+    [Fact]
+    public void PersistentServerError_ThrowsAfterExactlyMaxAttempts()
+    {
+        // A 500 that never clears is surfaced as today — but only after the bounded retry budget is spent.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < NotionClient.MaxAttempts; i++)
+            handler.Enqueue("""{"message":"server error"}""", HttpStatusCode.InternalServerError);
+
+        var ex = Assert.Throws<NotionApiException>(() => Client(handler, sleep: _ => { }).RetrieveDatabase("db1"));
+
+        Assert.Equal(500, ex.StatusCode);
+        Assert.Equal(NotionClient.MaxAttempts, handler.Requests.Count);
+    }
+
+    [Fact]
+    public void HardClientError_FailsImmediately_WithNoRetry()
+    {
+        // The archived-ancestor 400 is a hard error: it must fail on the first try, with no retry and no
+        // backoff wait, so operator mistakes aren't silently hammered MaxAttempts times.
+        var sleepCalls = 0;
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"object":"error","status":400,"code":"validation_error","message":"Can't edit a block that is archived."}""",
+            HttpStatusCode.BadRequest);
+
+        var ex = Assert.Throws<NotionApiException>(
+            () => Client(handler, sleep: _ => sleepCalls++).RetrieveDatabase("db1"));
+
+        Assert.Equal(400, ex.StatusCode);
+        Assert.Single(handler.Requests);
+        Assert.Equal(0, sleepCalls);
     }
 }

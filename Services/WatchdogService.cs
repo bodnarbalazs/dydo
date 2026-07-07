@@ -25,6 +25,12 @@ public static class WatchdogService
     internal static Func<string, List<int>>? FindProcessesOverride { get; set; }
 
     /// <summary>
+    /// When set, EnsureRunning uses this instead of scanning process command lines to decide
+    /// whether the pidfile PID is a live watchdog. Test hook.
+    /// </summary>
+    internal static Func<int, bool>? IsWatchdogProcessOverride { get; set; }
+
+    /// <summary>
     /// When set, Run()'s polling loop waits for this interval instead of the default 10s.
     /// Test hook to keep behavioural assertions fast.
     /// </summary>
@@ -121,11 +127,12 @@ public static class WatchdogService
             try
             {
                 if (int.TryParse(File.ReadAllText(pidFile).Trim(), out var existingPid) &&
-                    ProcessUtils.IsProcessRunning(existingPid))
+                    ProcessUtils.IsProcessRunning(existingPid) &&
+                    IsWatchdogProcess(existingPid))
                     return false;
             }
             catch { return false; } // File locked — another thread/process is handling startup
-            // Stale PID — remove so we can re-create atomically
+            // Stale or recycled PID — remove so we can re-create atomically
             try { File.Delete(pidFile); } catch { return false; }
         }
 
@@ -189,6 +196,18 @@ public static class WatchdogService
         {
             stream.Close();
         }
+    }
+
+    // A pidfile PID counts as a live watchdog only if its command line is a "watchdog run"
+    // invocation. Bare IsProcessRunning is not enough: when the watchdog dies its PID is
+    // quickly recycled on Windows (observed: an npx/cmd process reusing it), and the recycled
+    // process would masquerade as a live watchdog, so EnsureRunning would return false and
+    // NEVER respawn — silently disabling --auto-close until someone noticed lingering tabs.
+    // Matching the command line defeats PID reuse.
+    internal static bool IsWatchdogProcess(int pid)
+    {
+        if (IsWatchdogProcessOverride != null) return IsWatchdogProcessOverride(pid);
+        return ProcessUtils.FindProcessesByCommandLine("watchdog run").Contains(pid);
     }
 
     /// <summary>

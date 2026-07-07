@@ -18,19 +18,27 @@ public sealed class NotionClient : INotionClient
     public const string BaseUrl = "https://api.notion.com/v1/";
     public const string NotionVersion = "2026-03-11";
 
+    /// <summary>Total tries (initial + retries) for a transient failure before the error is surfaced.</summary>
+    public const int MaxAttempts = 5;
+
     private static readonly TimeSpan DefaultMinInterval = TimeSpan.FromMilliseconds(334);
+    private static readonly TimeSpan BaseBackoff = TimeSpan.FromMilliseconds(250);
 
     private readonly HttpClient _http;
     private readonly TimeSpan _minInterval;
+    private readonly Action<TimeSpan> _sleep;
     private DateTime _lastRequestUtc = DateTime.MinValue;
 
     /// <param name="http">The transport. Tests pass one built over a fake handler.</param>
     /// <param name="token">Notion integration token — set as the bearer header, never logged.</param>
     /// <param name="minInterval">Minimum gap between requests; pass <see cref="TimeSpan.Zero"/> in tests.</param>
-    public NotionClient(HttpClient http, string token, TimeSpan? minInterval = null)
+    /// <param name="sleep">Backoff wait hook; defaults to <see cref="Thread.Sleep(TimeSpan)"/>. Tests inject
+    /// a capture to assert the computed delay without real sleeping.</param>
+    public NotionClient(HttpClient http, string token, TimeSpan? minInterval = null, Action<TimeSpan>? sleep = null)
     {
         _http = http;
         _minInterval = minInterval ?? DefaultMinInterval;
+        _sleep = sleep ?? Thread.Sleep;
         if (_http.BaseAddress == null)
             _http.BaseAddress = new Uri(BaseUrl);
         _http.DefaultRequestHeaders.Authorization =
@@ -63,9 +71,7 @@ public sealed class NotionClient : INotionClient
 
     public void DeleteView(string viewId)
     {
-        Throttle();
-        using var request = new HttpRequestMessage(HttpMethod.Delete, $"views/{viewId}");
-        using var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+        using var resp = SendWithRetry(() => new HttpRequestMessage(HttpMethod.Delete, $"views/{viewId}"));
         if (!resp.IsSuccessStatusCode)
         {
             var json = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -133,9 +139,7 @@ public sealed class NotionClient : INotionClient
 
     public void DeleteBlock(string blockId)
     {
-        Throttle();
-        using var request = new HttpRequestMessage(HttpMethod.Delete, $"blocks/{blockId}");
-        using var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+        using var resp = SendWithRetry(() => new HttpRequestMessage(HttpMethod.Delete, $"blocks/{blockId}"));
         if (!resp.IsSuccessStatusCode)
         {
             var json = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -155,9 +159,7 @@ public sealed class NotionClient : INotionClient
 
     private TResp Get<TResp>(string path, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo)
     {
-        Throttle();
-        using var request = new HttpRequestMessage(HttpMethod.Get, path);
-        using var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+        using var resp = SendWithRetry(() => new HttpRequestMessage(HttpMethod.Get, path));
         return ReadResponse(resp, respInfo);
     }
 
@@ -172,13 +174,53 @@ public sealed class NotionClient : INotionClient
         System.Text.Json.Serialization.Metadata.JsonTypeInfo<TReq> reqInfo,
         System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo)
     {
-        Throttle();
-        using var request = new HttpRequestMessage(method, path)
+        using var resp = SendWithRetry(() => new HttpRequestMessage(method, path)
         {
             Content = JsonContent.Create(body, reqInfo),
-        };
-        using var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+        });
         return ReadResponse(resp, respInfo);
+    }
+
+    /// <summary>
+    /// The single send path every request helper routes through, so spine and docs syncs share one
+    /// resiliency policy. Retries transient failures (429 + 500/502/503/504) up to <see cref="MaxAttempts"/>
+    /// total tries: on 429 it honours a <c>Retry-After</c> header when present, otherwise it backs off
+    /// exponentially with jitter. Every other status — success or a hard 4xx like the archived-ancestor
+    /// 400 — returns on the first try, so non-retryable errors still fail immediately. The request is
+    /// rebuilt per attempt because an <see cref="HttpRequestMessage"/> (and its content stream) cannot be
+    /// resent. <see cref="Throttle"/> still gates each attempt; the backoff is in addition to it.
+    /// </summary>
+    private HttpResponseMessage SendWithRetry(Func<HttpRequestMessage> requestFactory)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            Throttle();
+            using var request = requestFactory();
+            var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+            if (resp.IsSuccessStatusCode || attempt >= MaxAttempts || !IsRetryable((int)resp.StatusCode))
+                return resp;
+
+            var delay = RetryDelay(resp, attempt);
+            resp.Dispose();
+            _sleep(delay);
+        }
+    }
+
+    private static bool IsRetryable(int status) => status is 429 or 500 or 502 or 503 or 504;
+
+    private static TimeSpan RetryDelay(HttpResponseMessage resp, int attempt)
+    {
+        if ((int)resp.StatusCode == 429 && resp.Headers.RetryAfter is { } retryAfter)
+        {
+            if (retryAfter.Delta is { } delta && delta > TimeSpan.Zero)
+                return delta;
+            if (retryAfter.Date is { } date && date - DateTimeOffset.UtcNow is { Ticks: > 0 } until)
+                return until;
+        }
+        // Exponential backoff (250ms, 500ms, 1s, …) plus jitter up to one base interval to de-correlate
+        // concurrent retriers — jitter never applies to the deterministic Retry-After path above.
+        var backoff = BaseBackoff * Math.Pow(2, attempt - 1);
+        return backoff + TimeSpan.FromMilliseconds(Random.Shared.Next((int)BaseBackoff.TotalMilliseconds));
     }
 
     private static TResp ReadResponse<TResp>(

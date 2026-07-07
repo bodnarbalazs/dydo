@@ -21,10 +21,11 @@ using DynaDocs.Utils;
 public static class ModelCapService
 {
     /// <summary>Test hook: replaces the real <c>dydo sync</c> re-run so tests exercising the
-    /// cap/restore config surgery don't emit native agent files.</summary>
-    internal static Func<int>? ResyncOverride { get; set; }
+    /// cap/restore config surgery don't emit native agent files. Receives the resolved project
+    /// root so a test can assert the re-sync targets the right project (not the process CWD).</summary>
+    internal static Func<string, int>? ResyncOverride { get; set; }
 
-    private static int Resync(string projectRoot) => ResyncOverride?.Invoke() ?? SyncCommand.Execute(projectRoot);
+    private static int Resync(string projectRoot) => ResyncOverride?.Invoke(projectRoot) ?? SyncCommand.Execute(projectRoot);
 
     private static string MarkerDir(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "model-caps");
@@ -50,8 +51,7 @@ public static class ModelCapService
         }
 
         var loaded = config.LoadConfig(startPath);
-        var models = loaded?.Models;
-        if (loaded == null || models == null)
+        if (loaded?.Models is not { } models)
         {
             err.WriteLine("model cap: dydo.json has no models section — nothing to cap.");
             return ExitCodes.ValidationErrors;

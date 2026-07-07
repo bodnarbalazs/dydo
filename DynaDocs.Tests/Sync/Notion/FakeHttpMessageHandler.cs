@@ -10,12 +10,12 @@ using System.Net.Http;
 /// </summary>
 public sealed class FakeHttpMessageHandler : HttpMessageHandler
 {
-    private readonly Queue<(HttpStatusCode Status, string Body)> _responses = new();
+    private readonly Queue<(HttpStatusCode Status, string Body, int? RetryAfter)> _responses = new();
     public List<Capture> Requests { get; } = [];
 
-    public FakeHttpMessageHandler Enqueue(string json, HttpStatusCode status = HttpStatusCode.OK)
+    public FakeHttpMessageHandler Enqueue(string json, HttpStatusCode status = HttpStatusCode.OK, int? retryAfterSeconds = null)
     {
-        _responses.Enqueue((status, json));
+        _responses.Enqueue((status, json, retryAfterSeconds));
         return this;
     }
 
@@ -31,8 +31,13 @@ public sealed class FakeHttpMessageHandler : HttpMessageHandler
             request.Headers.Authorization?.ToString(),
             body));
 
-        var (status, respBody) = _responses.Count > 0 ? _responses.Dequeue() : (HttpStatusCode.OK, "{}");
-        return new HttpResponseMessage(status) { Content = new StringContent(respBody) };
+        var (status, respBody, retryAfter) = _responses.Count > 0
+            ? _responses.Dequeue()
+            : (HttpStatusCode.OK, "{}", (int?)null);
+        var response = new HttpResponseMessage(status) { Content = new StringContent(respBody) };
+        if (retryAfter is { } seconds)
+            response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(seconds));
+        return response;
     }
 
     public sealed record Capture(

@@ -23,6 +23,9 @@ public class WatchdogCommandTests : IDisposable
 
         // Prevent real process spawning
         WatchdogService.StartProcessOverride = _ => null;
+        // Dummy pidfile PIDs stand in for a live watchdog; treat them as one so the
+        // command-line verification added for #224 doesn't reject them.
+        WatchdogService.IsWatchdogProcessOverride = _ => true;
         Environment.CurrentDirectory = _testDir;
     }
 
@@ -30,6 +33,7 @@ public class WatchdogCommandTests : IDisposable
     {
         Environment.CurrentDirectory = _originalDir;
         WatchdogService.StartProcessOverride = null;
+        WatchdogService.IsWatchdogProcessOverride = null;
         try
         {
             if (Directory.Exists(_testDir))

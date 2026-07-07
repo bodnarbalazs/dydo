@@ -25,6 +25,10 @@ The failing retest (agent Jack, dispatched `--auto-close --tab`, told to release
 
 `dydo dispatch --auto-close --tab --role docs-writer --task X --brief "onboard then immediately release"` → observe the tab does NOT close after release (watchdog leaves it open). Worked pre-2.0.3.
 
+## Corrected diagnosis (Emma, 2026-07-07 — supersedes the codex-regression theory above)
+
+**NOT a codex/`49b2981` regression.** Emma bisected the diff + pulled live evidence: the `AgentRegistry`/`WatchdogService` kill-path is **intact and unit-tested** (`PollAndCleanup_ProcessesRunning_KillsImmediately` etc. pass; kill whitelist covers claude/codex/node; release preserves auto-close). The tab lingers because **no watchdog is running** — `watchdog.log`'s last tick was ~6h ago (it died hard), and `watchdog.pid` still holds PID 22548, which has since been **reused by a `cmd` process**. `EnsureRunning()` (WatchdogService.cs:119–130) only checks `IsProcessRunning(pidfilePid)` — it does **not** verify the PID is actually a watchdog — so the reused PID reads as "alive" and the watchdog is **never restarted**. Every `--auto-close` dispatch after the reuse (incl. the Jack retest) silently got no watchdog → tab lingers. This is a **pre-existing PID-reuse fragility exposed once the watchdog died for any reason**, not the codex diff.
+
 ## Resolution
 
-Route to the host-refactor owner (Codex): the completed host-refactor must **restore working auto-close** and **add a regression test** (a released `--auto-close` agent closes its terminal). Bisect `d2a81ac`'s `AgentRegistry.cs` delta against the auto-close flow to find the exact break.
+Emma implementing: (1) harden `EnsureRunning` to confirm the pidfile PID is a dydo watchdog-run process (command-line match) before skipping restart, + regression test (reused non-watchdog PID → restart); (2) immediate remediation — clear the stale pidfile so a watchdog restarts now. **Related but distinct:** the general-wait intermittent `exit 1` (my flaky wait) *is* a genuine `49b2981` regression — the host-liveness check now walks `FindAgentHostAncestor`→`FindClaudeAncestor`, which matches transient `node` ancestors of the backgrounded wait shell; fix = anchor `WaitCommand` to persisted `session.ClaimedPid`. Both fixed under task `fix-224-autoclose-wait-regression`.

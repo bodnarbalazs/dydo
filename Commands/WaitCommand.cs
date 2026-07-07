@@ -102,7 +102,7 @@ public static class WaitCommand
         }
 
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
-        var hostPid = ProcessUtils.FindAgentHostAncestor(registry.GetSession(agentName)?.Host);
+        var hostPid = ResolveHostLivenessPid(registry, agentName);
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
@@ -165,7 +165,7 @@ public static class WaitCommand
     private static int WaitForTask(AgentRegistry registry, string agentName, string inboxPath, string task)
     {
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
-        var hostPid = ProcessUtils.FindAgentHostAncestor(registry.GetSession(agentName)?.Host);
+        var hostPid = ResolveHostLivenessPid(registry, agentName);
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
@@ -216,6 +216,19 @@ public static class WaitCommand
                 .Where(m => !m.Task.StartsWith('_'))
                 .Select(m => m.Task),
             StringComparer.OrdinalIgnoreCase);
+    }
+
+    // Host-tab liveness for a backgrounded wait keys off the PID captured and validated at
+    // claim time (session.ClaimedPid — "PID whose liveness indicates the claiming tab is still
+    // around"), NOT a fresh ancestry walk. `dydo wait` runs in a background shell whose process
+    // tree does not reliably reach the durable host, and on Windows FindClaudeAncestor also
+    // matches transient `node` wrappers — so re-walking here bound to a short-lived ancestor
+    // and dropped the wait with a spurious exit-1 while the tab was still alive. Fall back to the
+    // walk only for legacy sessions with no persisted ClaimedPid.
+    internal static int? ResolveHostLivenessPid(AgentRegistry registry, string agentName)
+    {
+        var session = registry.GetSession(agentName);
+        return session?.ClaimedPid ?? ProcessUtils.FindAgentHostAncestor(session?.Host);
     }
 
     private static bool OwnerProcessExited(int? parentPid, int? hostPid) =>

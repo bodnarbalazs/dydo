@@ -20,6 +20,10 @@ public class WatchdogServiceTests : IDisposable
         // Tests that need a specific CWD set it themselves; Dispose parks CWD at
         // Path.GetTempPath() so deleting _testDir is always safe.
         WatchdogService.StartProcessOverride = _ => null;
+        // Dummy pidfile PIDs stand in for a live watchdog; treat them as one so the
+        // command-line verification added for #224 doesn't reject them. Tests that
+        // exercise the recycled-PID path override this back to `_ => false`.
+        WatchdogService.IsWatchdogProcessOverride = _ => true;
     }
 
     public void Dispose()
@@ -35,6 +39,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.LaunchResumeOverride = null;
         WatchdogService.ResumeAttemptsCapOverride = null;
         WatchdogService.ResumeWarmupGateOverride = null;
+        WatchdogService.IsWatchdogProcessOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
         ProcessUtils.IsProcessRunningOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
@@ -117,13 +122,42 @@ public class WatchdogServiceTests : IDisposable
     }
 
     [Fact]
-    public void EnsureRunning_ReturnsFalse_WhenProcessAlreadyRunning()
+    public void EnsureRunning_ReturnsFalse_WhenWatchdogAlreadyRunning()
     {
         using var proc = StartDummyProcess();
-        WritePidFile(proc.Id);
+        WritePidFile(proc.Id);   // default IsWatchdogProcessOverride treats it as a watchdog
 
         Assert.False(WatchdogService.EnsureRunning(_testDir));
         proc.Kill();
+    }
+
+    [Fact]
+    public void EnsureRunning_Restarts_WhenPidfilePidRecycledByNonWatchdog()
+    {
+        // #224: the watchdog died and its PID was recycled by an unrelated live process
+        // (observed: an npx/cmd process reusing it). Bare IsProcessRunning would treat the
+        // recycled PID as a live watchdog and never respawn, silently disabling --auto-close.
+        // The command-line verification must reject it so a fresh watchdog starts.
+        using var recycled = StartDummyProcess();   // live, but NOT a watchdog
+        WritePidFile(recycled.Id);
+        WatchdogService.IsWatchdogProcessOverride = _ => false;
+
+        using var spawned = StartDummyProcess();
+        WatchdogService.StartProcessOverride = _ => spawned;
+
+        try
+        {
+            Assert.True(WatchdogService.EnsureRunning(_testDir),
+                "a recycled non-watchdog PID must not block the restart");
+
+            var pidFile = WatchdogService.GetPidFilePath(_testDir);
+            Assert.Equal(spawned.Id.ToString(), File.ReadAllText(pidFile).Trim());
+        }
+        finally
+        {
+            if (!recycled.HasExited) recycled.Kill();
+            if (!spawned.HasExited) spawned.Kill();
+        }
     }
 
     [Fact]

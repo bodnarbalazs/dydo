@@ -456,17 +456,19 @@ public class WaitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task WaitForTask_ExitsWhenClaudeAncestorDies()
+    public async Task WaitForTask_ExitsWhenClaimedHostPidDies()
     {
         await InitProjectAsync("none", "testuser", 3);
+
+        // Stamp .session.ClaimedPid = 9999 at claim time (ResolveClaimedPid uses the ancestor
+        // walk). The wait keys host-liveness off this persisted PID, not a fresh walk.
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 9999;
         await ClaimAgentAsync("Adele");
 
         var registry = new AgentRegistry(TestDir);
         registry.CreateWaitMarker("Adele", "my-task", "Brian");
 
-        // Parent alive, but Claude ancestor dead
-        ProcessUtils.FindAncestorProcessOverride = (name, _) =>
-            name.Contains("claude", StringComparison.OrdinalIgnoreCase) ? 9999 : null;
+        // Parent alive, but the claim-validated host PID is dead.
         ProcessUtils.IsProcessRunningOverride = pid => pid != 9999;
         try
         {
@@ -490,13 +492,14 @@ public class WaitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task WaitGeneral_ExitsWhenClaudeAncestorDies()
+    public async Task WaitGeneral_ExitsWhenClaimedHostPidDies()
     {
         await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 9999;
         await ClaimAgentAsync("Adele");
 
-        ProcessUtils.FindAncestorProcessOverride = (name, _) =>
-            name.Contains("claude", StringComparison.OrdinalIgnoreCase) ? 9999 : null;
+        // Parent alive, but the claim-validated host PID is dead.
         ProcessUtils.IsProcessRunningOverride = pid => pid != 9999;
         try
         {
@@ -514,6 +517,58 @@ public class WaitCommandTests : IntegrationTestBase
         {
             ProcessUtils.FindAncestorProcessOverride = null;
             ProcessUtils.IsProcessRunningOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task ResolveHostLivenessPid_PrefersClaimedPid_OverFreshAncestryWalk()
+    {
+        // Regression for the 49b2981 wait flake (#224): the wait must anchor host-liveness to
+        // the claim-validated session.ClaimedPid, NOT re-walk the ancestry at wait time. From a
+        // backgrounded `dydo wait` the fresh walk can bind to a transient host ancestor and drop
+        // the wait with a spurious exit-1 while the tab is alive.
+        await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 4242;  // stamps ClaimedPid at claim
+        await ClaimAgentAsync("Adele");
+
+        var registry = new AgentRegistry(TestDir);
+        Assert.Equal(4242, registry.GetSession("Adele")?.ClaimedPid);
+
+        // A fresh walk would now resolve a DIFFERENT pid — resolution must ignore it.
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 9999;
+        try
+        {
+            Assert.Equal(4242, WaitCommand.ResolveHostLivenessPid(registry, "Adele"));
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task ResolveHostLivenessPid_FallsBackToAncestryWalk_WhenClaimedPidNull()
+    {
+        // Legacy sessions predate ClaimedPid — fall back to the ancestry walk so they keep working.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+
+        var sessionPath = Path.Combine(TestDir, "dydo", "agents", "Adele", ".session");
+        File.WriteAllText(sessionPath,
+            $$"""{"Agent":"Adele","SessionId":"sess-legacy","Claimed":"{{DateTime.UtcNow:o}}"}""");
+
+        var registry = new AgentRegistry(TestDir);
+        Assert.Null(registry.GetSession("Adele")?.ClaimedPid);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 7777;
+        try
+        {
+            Assert.Equal(7777, WaitCommand.ResolveHostLivenessPid(registry, "Adele"));
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
         }
     }
 

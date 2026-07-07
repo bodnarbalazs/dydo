@@ -202,11 +202,19 @@ public sealed class NotionProvisioner
         Configuration = BuildConfig(type, view, idByName),
     };
 
+    private static NotionViewConfiguration BuildConfig(
+        SyncObjectType type, SyncViewDef view, IReadOnlyDictionary<string, string> idByName)
+    {
+        var config = new NotionViewConfiguration { Type = view.Type, Properties = BuildColumns(type, view, idByName) };
+        ApplyGroupingAndDates(config, view, idByName);
+        return config;
+    }
+
     /// <summary>The view's column list in the model's declared property order — the source of truth for
     /// display order — each visible unless it is a compute-only helper (<see cref="SyncPropertyDef.Hidden"/>)
     /// or this view hides it. Live-schema properties absent from the model (Notion's auto-created reverse
     /// relations) are appended hidden, so a board never shows a raw "Sprints"/"Tasks" back-reference column.</summary>
-    private static NotionViewConfiguration BuildConfig(
+    private static List<NotionViewPropertyRef> BuildColumns(
         SyncObjectType type, SyncViewDef view, IReadOnlyDictionary<string, string> idByName)
     {
         var hide = view.Hide is { } h ? new HashSet<string>(h, StringComparer.Ordinal) : [];
@@ -221,8 +229,15 @@ public sealed class NotionProvisioner
         foreach (var (name, id) in idByName)
             if (!placed.Contains(name) && id.Length > 0)
                 props.Add(new NotionViewPropertyRef { PropertyId = id, Visible = false });
+        return props;
+    }
 
-        var config = new NotionViewConfiguration { Type = view.Type, Properties = props };
+    /// <summary>Layer the view-type-specific layout onto <paramref name="config"/>: a board's group-by column
+    /// and a timeline's start/end date columns, each resolved by name against the live schema and applied only
+    /// when the model declares it and the id exists.</summary>
+    private static void ApplyGroupingAndDates(
+        NotionViewConfiguration config, SyncViewDef view, IReadOnlyDictionary<string, string> idByName)
+    {
         if (view.Type == "board" && view.GroupBy != null && idByName.TryGetValue(view.GroupBy, out var groupId))
             config.GroupBy = new NotionViewGroupBy { PropertyId = groupId };
         if (view.Type == "timeline")
@@ -232,7 +247,6 @@ public sealed class NotionProvisioner
             if (view.DateEnd != null && idByName.TryGetValue(view.DateEnd, out var endId))
                 config.EndDatePropertyId = endId;
         }
-        return config;
     }
 
     /// <summary>Translate a model filter (property name + operator + value) to Notion's type-matched filter

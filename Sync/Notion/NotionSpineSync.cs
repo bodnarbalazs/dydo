@@ -125,51 +125,65 @@ public static class NotionSpineSync
         // reverse relations a parent's rollups read are all present: running the post-pass child-first is safe.
         var postPass = types.Reverse().ToList();
         if (dryRun)
-        {
-            foreach (var type in postPass.Where(t => created.Contains(t) || provisioner.PostPassPending(t.Type)))
-            {
-                if (NotionProvisioner.HasSelfRelations(type))
-                    output.WriteLine($"  provision  {type.Type,-9} would add self-relation properties");
-                if (NotionProvisioner.HasRollups(type))
-                    output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
-                if (NotionProvisioner.HasDeferredFormulas(type))
-                    output.WriteLine($"  provision  {type.Type,-9} would add formula properties");
-                if (NotionProvisioner.HasViews(type))
-                    output.WriteLine($"  provision  {type.Type,-9} would add {type.Views!.Count} view(s)");
-            }
-        }
+            PreviewPostPass(provisioner, postPass, created, output);
         else
-        {
-            foreach (var type in postPass.Where(t => provisioner.PostPassPending(t.Type)))
-            {
-                // Self-relations first: a deferred formula may read one, so it must exist before AddFormulas.
-                if (NotionProvisioner.HasSelfRelations(type))
-                {
-                    provisioner.AddSelfRelations(type);
-                    output.WriteLine($"  provision  {type.Type,-9} added self-relation properties");
-                }
-                if (NotionProvisioner.HasRollups(type))
-                {
-                    provisioner.AddRollups(type);
-                    output.WriteLine($"  provision  {type.Type,-9} added rollup properties");
-                }
-                if (NotionProvisioner.HasDeferredFormulas(type))
-                {
-                    provisioner.AddFormulas(type);
-                    output.WriteLine($"  provision  {type.Type,-9} added formula properties");
-                }
-                // Views last: they reference properties/rollups/formulas by id, so every column must exist first.
-                if (NotionProvisioner.HasViews(type))
-                {
-                    provisioner.AddViews(type);
-                    output.WriteLine($"  provision  {type.Type,-9} added {type.Views!.Count} view(s)");
-                }
-                // Persist completion immediately (mirrors the per-create Save) so a later throw in this same
-                // post-pass does not force an already-done type to re-run — and marks the flag for reuse ticks.
-                provisioner.MarkPostPassDone(type.Type);
-            }
-        }
+            RunPostPass(provisioner, postPass, output);
         return (dataSourceIds, minted);
+    }
+
+    /// <summary>Dry-run preview of the rollup/formula/view post-pass: for every type that a real run would
+    /// post-pass — created this run, or recorded-but-unpassed — report which schema layers it would add,
+    /// writing nothing to Notion.</summary>
+    private static void PreviewPostPass(
+        NotionProvisioner provisioner, IReadOnlyList<SyncObjectType> postPass,
+        List<SyncObjectType> created, TextWriter output)
+    {
+        foreach (var type in postPass.Where(t => created.Contains(t) || provisioner.PostPassPending(t.Type)))
+        {
+            if (NotionProvisioner.HasSelfRelations(type))
+                output.WriteLine($"  provision  {type.Type,-9} would add self-relation properties");
+            if (NotionProvisioner.HasRollups(type))
+                output.WriteLine($"  provision  {type.Type,-9} would add rollup properties");
+            if (NotionProvisioner.HasDeferredFormulas(type))
+                output.WriteLine($"  provision  {type.Type,-9} would add formula properties");
+            if (NotionProvisioner.HasViews(type))
+                output.WriteLine($"  provision  {type.Type,-9} would add {type.Views!.Count} view(s)");
+        }
+    }
+
+    /// <summary>Execute the rollup/formula/view post-pass for every recorded-but-unpassed type, PATCHing each
+    /// schema layer in dependency order and marking the type post-passed the instant it completes.</summary>
+    private static void RunPostPass(
+        NotionProvisioner provisioner, IReadOnlyList<SyncObjectType> postPass, TextWriter output)
+    {
+        foreach (var type in postPass.Where(t => provisioner.PostPassPending(t.Type)))
+        {
+            // Self-relations first: a deferred formula may read one, so it must exist before AddFormulas.
+            if (NotionProvisioner.HasSelfRelations(type))
+            {
+                provisioner.AddSelfRelations(type);
+                output.WriteLine($"  provision  {type.Type,-9} added self-relation properties");
+            }
+            if (NotionProvisioner.HasRollups(type))
+            {
+                provisioner.AddRollups(type);
+                output.WriteLine($"  provision  {type.Type,-9} added rollup properties");
+            }
+            if (NotionProvisioner.HasDeferredFormulas(type))
+            {
+                provisioner.AddFormulas(type);
+                output.WriteLine($"  provision  {type.Type,-9} added formula properties");
+            }
+            // Views last: they reference properties/rollups/formulas by id, so every column must exist first.
+            if (NotionProvisioner.HasViews(type))
+            {
+                provisioner.AddViews(type);
+                output.WriteLine($"  provision  {type.Type,-9} added {type.Views!.Count} view(s)");
+            }
+            // Persist completion immediately (mirrors the per-create Save) so a later throw in this same
+            // post-pass does not force an already-done type to re-run — and marks the flag for reuse ticks.
+            provisioner.MarkPostPassDone(type.Type);
+        }
     }
 
     private static void Reconcile(

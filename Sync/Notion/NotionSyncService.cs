@@ -20,7 +20,10 @@ public static class NotionSyncService
         bool dryRun,
         TextWriter output,
         TextWriter error,
-        bool prune = false)
+        bool prune = false,
+        string? parentPageOverride = null,
+        bool docsOnly = false,
+        bool spineOnly = false)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -35,7 +38,11 @@ public static class NotionSyncService
             return ExitCodes.Success;
         }
 
-        var parentPageId = NotionParentResolver.Resolve(config.LoadConfig()?.Notion?.ParentPageId);
+        // An explicit --parent-page wins over config/env (NotionParentResolver): a smoke can target a SCRATCH
+        // page without touching the configured workspace. Absent it, resolution is unchanged.
+        var parentPageId = !string.IsNullOrWhiteSpace(parentPageOverride)
+            ? parentPageOverride
+            : NotionParentResolver.Resolve(config.LoadConfig()?.Notion?.ParentPageId);
         if (string.IsNullOrWhiteSpace(parentPageId))
         {
             error.WriteLine(
@@ -47,10 +54,12 @@ public static class NotionSyncService
         {
             var client = clientFactory(token);
             // Two Notion surfaces under the same parent page (DR 033): the queryable PM spine of databases, then
-            // the browsable docs mirror of nested pages. Both run every tick — the docs mirror is always-on
-            // alongside the spine, not a separate opt-in command.
-            NotionSpineSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output, prune);
-            DocsTreeSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output);
+            // the browsable docs mirror of nested pages. Both run every tick by default; --docs-only / --spine-only
+            // scope a run to one surface (a docs smoke must never touch the live PM board).
+            if (!docsOnly)
+                NotionSpineSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output, prune);
+            if (!spineOnly)
+                DocsTreeSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output);
             return ExitCodes.Success;
         }
         catch (NotionApiException ex)

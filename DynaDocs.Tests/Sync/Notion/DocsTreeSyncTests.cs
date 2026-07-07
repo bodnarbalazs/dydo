@@ -175,6 +175,29 @@ public class DocsTreeSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_DryRun_WritesObservablePlan_PerformsZeroClientWrites()
+    {
+        var client = new FakeNotionClient();
+        var output = new StringWriter();
+
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: true, output);
+
+        var text = output.ToString();
+        // A non-empty plan: the root "Docs" page, then a create line per folder/doc naming its repo path and title.
+        Assert.Contains("--dry-run", text);
+        Assert.Contains("\"Docs\" (root page)", text);
+        Assert.Contains("create", text);
+        Assert.Contains("understand/architecture", text);
+        Assert.Contains("(Architecture)", text);
+
+        // Zero writes: dry-run only reads. No pages minted, no bodies appended, no blocks deleted, no snapshot saved.
+        Assert.Empty(client.GetChildPages("workspace"));
+        Assert.Empty(client.AppendedTo);
+        Assert.Empty(client.DeletedBlocks);
+        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.AdapterName)));
+    }
+
+    [Fact]
     public void Run_EmptyScaffoldingFolder_MintsNoPage()
     {
         // A folder with no docs and no index is pruned — it never mints a barren Notion page.

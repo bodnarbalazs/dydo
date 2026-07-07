@@ -126,6 +126,80 @@ public class NotionSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public void Execute_ParentPageOverride_TakesPrecedenceOverResolver()
+    {
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter(),
+                prune: false, parentPageOverride: "scratch-page");
+
+            Assert.Equal(ExitCodes.Success, code);
+            // An explicit --parent-page wins over the configured notion.parentPageId: the "Docs" root nests under the
+            // scratch page, never the configured page — so a smoke never touches the real workspace.
+            Assert.Contains(client.GetChildPages("scratch-page"), p => p.Title == "Docs");
+            Assert.DoesNotContain(client.GetChildPages("page-root"), p => p.Title == "Docs");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
+    public void Execute_DocsOnly_SkipsSpine_CreatesDocsPage()
+    {
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        var output = new StringWriter();
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, output, new StringWriter(),
+                prune: false, parentPageOverride: null, docsOnly: true);
+
+            Assert.Equal(ExitCodes.Success, code);
+            // The docs mirror ran: a "Docs" root page exists under the parent.
+            Assert.Contains(client.GetChildPages("page-root"), p => p.Title == "Docs");
+            // The spine was skipped: no databases provisioned, no spine reconcile output — a smoke never touches the board.
+            Assert.Empty(client.CreatedDatabases);
+            Assert.DoesNotContain("provisioning", output.ToString());
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
+    public void Execute_SpineOnly_SkipsDocsMirror()
+    {
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter(),
+                prune: false, parentPageOverride: null, docsOnly: false, spineOnly: true);
+
+            Assert.Equal(ExitCodes.Success, code);
+            // The spine ran: at least one database was provisioned.
+            Assert.NotEmpty(client.CreatedDatabases);
+            // The docs mirror was skipped: no "Docs" root page was minted.
+            Assert.DoesNotContain(client.GetChildPages("page-root"), p => p.Title == "Docs");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
     public void Execute_NotionApiError_ReportsAndExitsToolError()
     {
         var savedCwd = Directory.GetCurrentDirectory();

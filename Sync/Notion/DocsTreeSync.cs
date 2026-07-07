@@ -31,8 +31,7 @@ public static class DocsTreeSync
 
         if (dryRun)
         {
-            output.WriteLine(
-                $"notion docs sync --dry-run: would mirror {CountFolders(root)} folder page(s) and {CountFiles(root)} doc page(s) under a \"{RootTitle}\" page");
+            WriteDryRunPlan(root, dydoRoot, output);
             return;
         }
 
@@ -309,6 +308,42 @@ public static class DocsTreeSync
         Body = "",
         SourcePath = "",
     };
+
+    /// <summary>Preview the reconcile without writing (DR 033, smoke visibility): a header, then one line per page
+    /// the run WOULD touch — the root "Docs" page, each folder page, each doc page — plus an archive line for every
+    /// managed page whose repo doc/folder has disappeared. Membership in the <c>notion-docs</c> snapshot store
+    /// distinguishes create (unseen) from update (already mapped); the store is only READ here, never saved, so a
+    /// dry-run leaves no trace.</summary>
+    private static void WriteDryRunPlan(DocsNode root, string dydoRoot, TextWriter output)
+    {
+        var known = new HashSet<string>(new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, AdapterName)).LocalIds);
+        output.WriteLine(
+            $"notion docs sync --dry-run: {CountFolders(root)} folder page(s) and {CountFiles(root)} doc page(s) under a \"{RootTitle}\" page");
+
+        var planned = new HashSet<string>();
+        WritePlanNode(root, known, planned, output, isRoot: true);
+
+        foreach (var localId in known.Where(id => !planned.Contains(id)).OrderBy(x => x, StringComparer.Ordinal))
+            output.WriteLine($"  docs       {"archive",-7}  {localId}");
+    }
+
+    private static void WritePlanNode(DocsNode node, ISet<string> known, ISet<string> planned, TextWriter output, bool isRoot)
+    {
+        planned.Add(node.LocalId);
+        output.WriteLine(isRoot
+            ? $"  docs       {Action(known, node.LocalId),-7}  \"{RootTitle}\" (root page)"
+            : $"  docs       {Action(known, node.LocalId),-7}  {node.LocalId}  ({node.Title})");
+
+        foreach (var file in OrderedFiles(node))
+        {
+            planned.Add(file.LocalId);
+            output.WriteLine($"  docs       {Action(known, file.LocalId),-7}  {file.LocalId}  ({file.Title})");
+        }
+        foreach (var child in OrderedFolders(node))
+            WritePlanNode(child, known, planned, output, isRoot: false);
+    }
+
+    private static string Action(ISet<string> known, string localId) => known.Contains(localId) ? "update" : "create";
 
     private static int CountFolders(DocsNode node) => 1 + node.Folders.Sum(CountFolders);
     private static int CountFiles(DocsNode node) => node.Files.Count + node.Folders.Sum(CountFiles);

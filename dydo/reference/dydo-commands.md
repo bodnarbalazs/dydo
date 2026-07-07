@@ -740,10 +740,14 @@ Reconcile the sync model's object types (default `Release` → `Campaign` → `S
 
 The sync model owns the schema shape one-way (project → Notion): data values sync both ways, but which properties and select options exist flows only from the model. Schema drift — a property or select option added in Notion but absent from the model — is reported as a warning and left untouched by default. Pass `--prune` to delete it instead (rogue properties are removed; a drifted select's options are reset to the model's set). A rogue option's stored value still round-trips as data; only the schema option is pruned.
 
+Alongside the PM spine, sync also mirrors the browsable docs tree to a nested-page hierarchy under the same parent (a `Docs` page). Scope a run to one surface with `--docs-only` (docs mirror only — never touches the PM board) or `--spine-only` (spine only); the two are mutually exclusive. Pass `--parent-page <page-id>` to mirror under an explicit page, overriding `notion.parentPageId` / `DYDO_NOTION_PARENT_PAGE` — e.g. to smoke-test the docs mirror against a scratch page.
+
 ```bash
 dydo notion sync
 dydo notion sync --dry-run
 dydo notion sync --prune
+dydo notion sync --docs-only --parent-page <scratch-page-id>
+dydo notion sync --spine-only
 ```
 
 ---

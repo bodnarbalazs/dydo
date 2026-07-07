@@ -85,14 +85,37 @@ public static class NotionCommand
         {
             Description = "Delete schema drift: properties or select options present in Notion but absent from the project's sync model. Without it, drift is warned about and left untouched.",
         };
+        var parentPage = new Option<string?>("--parent-page")
+        {
+            Description = "Notion page id to mirror under, overriding notion.parentPageId / DYDO_NOTION_PARENT_PAGE. Point it at a scratch page to smoke-test without touching the configured workspace.",
+        };
+        var docsOnly = new Option<bool>("--docs-only")
+        {
+            Description = "Run only the docs nested-page mirror, skipping the PM spine. Mutually exclusive with --spine-only.",
+        };
+        var spineOnly = new Option<bool>("--spine-only")
+        {
+            Description = "Run only the PM spine, skipping the docs mirror. Mutually exclusive with --docs-only.",
+        };
         command.Options.Add(dryRun);
         command.Options.Add(prune);
-        command.SetAction(parse => RunSync(parse.GetValue(dryRun), parse.GetValue(prune)));
+        command.Options.Add(parentPage);
+        command.Options.Add(docsOnly);
+        command.Options.Add(spineOnly);
+        command.SetAction(parse => RunSync(
+            parse.GetValue(dryRun), parse.GetValue(prune),
+            parse.GetValue(parentPage), parse.GetValue(docsOnly), parse.GetValue(spineOnly)));
         return command;
     }
 
-    private static int RunSync(bool dryRun, bool prune)
+    private static int RunSync(bool dryRun, bool prune, string? parentPageOverride, bool docsOnly, bool spineOnly)
     {
+        if (docsOnly && spineOnly)
+        {
+            Console.Error.WriteLine("notion sync: --docs-only and --spine-only are mutually exclusive.");
+            return ExitCodes.ValidationErrors;
+        }
+
         var config = new ConfigService();
         var loaded = config.LoadConfig();
         var token = NotionTokenResolver.Resolve(
@@ -112,7 +135,8 @@ public static class NotionCommand
             return ExitCodes.ToolError;
         }
 
-        return NotionSyncService.Execute(token, config, CreateClient, dryRun, Console.Out, Console.Error, prune);
+        return NotionSyncService.Execute(
+            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docsOnly, spineOnly);
     }
 
     /// <summary>Reads a secret (token or passphrase) from stdin: masked when a TTY (so it never lands in

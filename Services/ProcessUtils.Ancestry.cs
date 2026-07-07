@@ -13,11 +13,18 @@ public static partial class ProcessUtils
     public static Func<string, int, int?>? FindAncestorProcessOverride { get; set; }
 
     /// <summary>
+    /// When set, GetParentPid uses this instead of probing the system.
+    /// </summary>
+    public static Func<int, int?>? GetParentPidOverride { get; set; }
+
+    /// <summary>
     /// Gets the parent process ID for a given PID.
     /// Uses .NET's Process class on Windows; parses /proc on Linux; ps on macOS.
     /// </summary>
     public static int? GetParentPid(int pid)
     {
+        if (GetParentPidOverride != null) return GetParentPidOverride(pid);
+
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -30,6 +37,26 @@ public static partial class ProcessUtils
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Returns true when the given PID is in the current process's parent chain.
+    /// This backs the non-host fallback claim path where dydo records the parent shell.
+    /// </summary>
+    public static bool IsCurrentProcessDescendantOf(int ancestorPid, int maxDepth = 10)
+    {
+        if (ancestorPid <= 1) return false;
+
+        var pid = Environment.ProcessId;
+        for (var i = 0; i < maxDepth; i++)
+        {
+            var parentPid = GetParentPid(pid);
+            if (parentPid == null || parentPid <= 1) return false;
+            if (parentPid.Value == ancestorPid) return true;
+            pid = parentPid.Value;
+        }
+
+        return false;
     }
 
     /// <summary>

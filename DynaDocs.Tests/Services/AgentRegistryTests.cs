@@ -22,6 +22,7 @@ public class AgentRegistryTests : IDisposable
         AgentRegistry.IsLauncherAliveOverride = null;
         AgentRegistry.IsSessionPidAliveOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
+        ProcessUtils.GetParentPidOverride = null;
         WatchdogLogger.LogPathOverride = null;
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
@@ -191,6 +192,28 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ClaimAgent_SucceedsWithPendingSession_PublishesVerifiedSessionContext()
+    {
+        SetupConfig(new[] { "Adele", "Frank" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Frank" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+
+        registry.StorePendingSessionId("Adele", "stale-adele", "claude");
+        Assert.True(registry.ClaimAgent("Adele", out var adeleError), adeleError);
+
+        registry.StorePendingSessionId("Frank", "fresh-frank", "codex", "gpt-5-codex");
+        Assert.True(registry.ClaimAgent("Frank", out var frankError), frankError);
+
+        var sessionId = registry.GetSessionContext();
+        var current = registry.GetCurrentAgent(sessionId);
+
+        Assert.Equal("fresh-frank", sessionId);
+        Assert.NotNull(current);
+        Assert.Equal("Frank", current.Name);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
     public void ClaimAgent_PersistsPendingSessionHost()
     {
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
@@ -263,6 +286,47 @@ public class AgentRegistryTests : IDisposable
         Assert.Equal("sess-X", refreshed.SessionId);                // identity preserved
         Assert.Equal(originalClaimed, refreshed.Claimed.ToString("o")); // identity preserved
         Assert.NotEqual(99999999, refreshed.ClaimedPid);            // PID refreshed
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
+    public void ClaimAgent_SameSessionIdReclaim_PublishesVerifiedSessionContext()
+    {
+        SetupConfig(new[] { "Adele", "Frank" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele", "Frank" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var frankWorkspace = Path.Combine(_testDir, "dydo", "agents", "Frank");
+        Directory.CreateDirectory(frankWorkspace);
+        File.WriteAllText(Path.Combine(frankWorkspace, ".session"),
+            $"{{\"Agent\":\"Frank\",\"SessionId\":\"sess-frank\",\"Host\":\"codex\",\"Model\":\"gpt-5-codex\",\"Claimed\":\"{DateTime.UtcNow.AddMinutes(-5):o}\",\"ClaimedPid\":99999999}}");
+        File.WriteAllText(Path.Combine(frankWorkspace, "state.md"), """
+            ---
+            agent: Frank
+            status: working
+            assigned: testuser
+            ---
+            """);
+        var adeleWorkspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(adeleWorkspace);
+        File.WriteAllText(Path.Combine(adeleWorkspace, ".session"),
+            $"{{\"Agent\":\"Adele\",\"SessionId\":\"stale-adele\",\"Claimed\":\"{DateTime.UtcNow.AddMinutes(-5):o}\",\"ClaimedPid\":111111}}");
+        File.WriteAllText(Path.Combine(adeleWorkspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            ---
+            """);
+        var registry = new AgentRegistry(_testDir);
+        registry.StoreSessionContext("stale-adele", "Adele");
+        registry.StorePendingSessionId("Frank", "sess-frank", "codex", "gpt-5-codex");
+
+        Assert.True(registry.ClaimAgent("Frank", out var error), error);
+
+        var sessionId = registry.GetSessionContext();
+        var current = registry.GetCurrentAgent(sessionId);
+        Assert.Equal("sess-frank", sessionId);
+        Assert.NotNull(current);
+        Assert.Equal("Frank", current.Name);
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
@@ -2940,6 +3004,16 @@ public class AgentRegistryTests : IDisposable
         ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "claude" ? ancestor : null;
         var session = new AgentSession { Agent = "Adele", SessionId = "s", Host = "codex", ClaimedPid = ancestor };
         Assert.False(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_MatchesParentShellFallback_ReturnsTrue()
+    {
+        const int parentShellPid = 818181;
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        ProcessUtils.GetParentPidOverride = pid => pid == Environment.ProcessId ? parentShellPid : null;
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = parentShellPid };
+        Assert.True(AgentRegistry.IsOwnedByCaller(session));
     }
 
     [Fact]

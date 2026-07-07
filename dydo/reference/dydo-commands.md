@@ -687,6 +687,37 @@ dydo validate
 
 ---
 
+## Model Commands
+
+### dydo model cap
+
+Temporarily rebind every tier using an unavailable model to a fallback model, then re-sync native agent definitions. The watchdog restores the original bindings after the reset time passes.
+
+```bash
+dydo model cap claude-fable-5 --until "07-14 09:00"
+dydo model cap claude-fable-5 --until "2026-07-14 09:00" --fallback claude-opus-4-1
+```
+
+**Arguments:**
+- `model` - Unavailable model id to cap.
+
+**Options:**
+- `--until <time>` - Local reset time from the limit error, as `[yyyy-]mm-dd hh:mm`.
+- `--fallback <model>` - Model to rebind capped tiers to. Defaults to `models.fallback` in `dydo.json`.
+
+### dydo model uncap
+
+Restore a capped model's original tier bindings, clear the local cap marker, and re-sync native agent definitions.
+
+```bash
+dydo model uncap claude-fable-5
+```
+
+**Arguments:**
+- `model` - Capped model id to restore.
+
+---
+
 ## Utility Commands
 
 ### dydo completions

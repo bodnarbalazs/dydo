@@ -26,8 +26,10 @@ public class NotionTokenResolverTests
     [Fact]
     public void SlugFor_PrefersConfigName_ElseProjectRootDirName()
     {
-        Assert.Equal("FROM_NAME", NotionTokenResolver.SlugFor(new DydoConfig { Name = "from-name" }, @"C:\x\dir-name"));
-        Assert.Equal("DIR_NAME", NotionTokenResolver.SlugFor(new DydoConfig(), @"C:\x\dir-name"));
+        // Forward-slash paths so the directory-name split is host-OS-agnostic: on Linux a backslash is an
+        // ordinary filename character, so a "C:\x\dir-name" literal would parse as one segment, not three.
+        Assert.Equal("FROM_NAME", NotionTokenResolver.SlugFor(new DydoConfig { Name = "from-name" }, "/x/dir-name"));
+        Assert.Equal("DIR_NAME", NotionTokenResolver.SlugFor(new DydoConfig(), "/x/dir-name"));
         Assert.Equal("DIR_NAME", NotionTokenResolver.SlugFor(null, "/home/u/dir.name/"));
     }
 
@@ -62,9 +64,10 @@ public class NotionTokenResolverTests
     {
         var dydoRoot = TempDydoRoot();
         // No config name -> slug derives from the project-root directory name "cool-proj" -> COOL_PROJ.
+        // Forward-slash path so the directory-name split holds on Linux too (a backslash is a filename char there).
         WithEnv("DYDO_COOL_PROJ_NOTION_TOKEN", "dir-namespaced", () =>
         {
-            Assert.Equal("dir-namespaced", NotionTokenResolver.Resolve(new DydoConfig(), @"C:\x\cool-proj", dydoRoot));
+            Assert.Equal("dir-namespaced", NotionTokenResolver.Resolve(new DydoConfig(), "/x/cool-proj", dydoRoot));
         });
     }
 

@@ -166,8 +166,8 @@ public class BaseSnapshotStoreTests : IDisposable
         store.Set(Doc("t", null, "body"));
         store.Save();
 
-        // Hold an exclusive handle so File.Delete cannot remove it.
-        using var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        // Make the file undeletable (share-lock on Windows, write-locked parent dir on Unix) so File.Delete fails.
+        using var held = new UndeletableFile(path);
         var ex = Assert.Throws<IOException>(() => BaseSnapshotStore.DeleteSnapshot(path));
         Assert.Contains("failed to reset base snapshot", ex.Message);
         Assert.Contains(path, ex.Message);

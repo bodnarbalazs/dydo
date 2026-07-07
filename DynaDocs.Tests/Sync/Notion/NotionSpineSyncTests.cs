@@ -1453,7 +1453,7 @@ public class NotionSpineSyncTests : IDisposable
 
         // The recorded database is definitively gone, so tick 2 would re-provision — but the snapshot delete fails.
         client.FailRetrieveDatabase = new NotionApiException(404, "{\"code\":\"object_not_found\"}");
-        using (new FileStream(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask"), FileMode.Open, FileAccess.Read, FileShare.None))
+        using (new UndeletableFile(BaseSnapshotStore.PathFor(_dydoRoot, "notion-sprinttask")))
             Assert.Throws<IOException>(
                 () => NotionSpineSync.Run(client, _dydoRoot, "parent-page", dryRun: false, new StringWriter()));
 

@@ -30,6 +30,25 @@ public class MessageIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Message_ToActiveAgent_WritesSenderRuntimeProvenance()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentWithRuntimeAsync("Adele", "claude", "claude-sonnet-4-5");
+        await SetRoleAsync("code-writer", "test-task");
+
+        ClaimAgentInSeparateSession("Brian");
+
+        var result = await SendMessageAsync("Brian", "Hello from Adele");
+        result.AssertSuccess();
+
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*-msg-*.md");
+        var content = File.ReadAllText(inboxFiles[0]);
+        Assert.Contains("from: Adele", content);
+        Assert.Contains("from_vendor: claude", content);
+        Assert.Contains("from_model: claude-sonnet-4-5", content);
+    }
+
+    [Fact]
     public async Task Message_ToActiveAgent_UpdatesUnreadMessages()
     {
         await InitProjectAsync("none", "testuser", 3);

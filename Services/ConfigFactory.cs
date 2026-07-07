@@ -117,7 +117,12 @@ public static class ConfigFactory
             ["inquisitor"] = "strong",
             ["judge"] = "strong",
             ["planner"] = "strong"
-        }
+        },
+        // The declared second-line model `dydo model cap` rebinds to when the strong
+        // tier's model (Fable) hits its spend cap — matches the out-of-band reviewer
+        // workaround (issue #214). Kept in step with FALLBACK_MODEL in the run-sprint /
+        // inquisition harness scripts, which retry a stage on this same model.
+        Fallback = "claude-sonnet-5"
     };
 
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)

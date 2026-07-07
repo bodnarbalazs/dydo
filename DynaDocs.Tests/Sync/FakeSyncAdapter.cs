@@ -33,7 +33,10 @@ public sealed class FakeSyncAdapter : ISyncAdapter
 
     public IReadOnlyList<SyncRecord> ReadExternalState() => _records.Values.ToList();
 
-    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned)
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>
+        Apply(changes, assigned, new HashSet<string>());
+
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted)
     {
         if (FailApply)
             throw new InvalidOperationException("simulated Apply failure");
@@ -47,6 +50,9 @@ public sealed class FakeSyncAdapter : ISyncAdapter
         }
 
         foreach (var id in changes.Deletes)
+        {
             _records.Remove(id);
+            deleted.Add(id);
+        }
     }
 }

@@ -192,6 +192,19 @@ public abstract class IntegrationTestBase : IDisposable
         return result;
     }
 
+    protected async Task<CommandResult> ClaimAgentWithRuntimeAsync(string agentName, string host, string model)
+    {
+        var registry = new AgentRegistry(TestDir);
+        registry.StorePendingSessionId(agentName, TestSessionId, host, model);
+        StoreSessionContext();
+
+        var command = AgentCommand.Create();
+        var result = await RunAsync(command, "claim", agentName);
+
+        StoreSessionContext();
+        return result;
+    }
+
     /// <summary>
     /// Resolve a letter to an agent name.
     /// </summary>

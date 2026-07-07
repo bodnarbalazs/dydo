@@ -7,8 +7,10 @@ namespace DynaDocs.Models;
 public class AgentSession
 {
     public const string UnknownHost = "unknown";
+    public const string UnknownModel = "unknown";
 
     private string? _host = UnknownHost;
+    private string? _model = UnknownModel;
 
     public required string Agent { get; init; }
     public required string SessionId { get; init; }
@@ -16,6 +18,11 @@ public class AgentSession
     {
         get => NormalizeHost(_host);
         init => _host = value;
+    }
+    public string Model
+    {
+        get => NormalizeModel(_model);
+        init => _model = value;
     }
     public DateTime Claimed { get; set; }
 
@@ -36,5 +43,13 @@ public class AgentSession
             "codex" => "codex",
             _ => UnknownHost
         };
+    }
+
+    public static string NormalizeModel(string? model)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+            return UnknownModel;
+
+        return model.Trim();
     }
 }

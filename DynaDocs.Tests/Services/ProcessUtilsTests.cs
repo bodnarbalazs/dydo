@@ -226,6 +226,68 @@ public class ProcessUtilsTests
         }
     }
 
+    [Fact]
+    public void FindCodexAncestor_ReturnsCodexKey_WhenInjected()
+    {
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "codex" ? 24680 : null;
+        try
+        {
+            var pid = ProcessUtils.FindCodexAncestor();
+            Assert.Equal(24680, pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindCodexAncestor_OnWindows_FallsBackToNodeKey()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "node" ? 13579 : null;
+        try
+        {
+            var pid = ProcessUtils.FindCodexAncestor();
+            Assert.Equal(13579, pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindAgentHostAncestor_Codex_UsesCodexKey()
+    {
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "codex" ? 11223 : null;
+        try
+        {
+            var pid = ProcessUtils.FindAgentHostAncestor("codex");
+            Assert.Equal(11223, pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindAgentHostAncestor_Unknown_PreservesClaudeLookup()
+    {
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "claude" ? 44556 : null;
+        try
+        {
+            var pid = ProcessUtils.FindAgentHostAncestor("unknown");
+            Assert.Equal(44556, pid);
+        }
+        finally
+        {
+            ProcessUtils.FindAncestorProcessOverride = null;
+        }
+    }
+
     [Theory]
     [InlineData("claude", "claude", true)]
     [InlineData("claude.exe", "claude", true)]
@@ -245,6 +307,11 @@ public class ProcessUtilsTests
     [InlineData("claude.exe.old.abc", "claude", false)]          // non-numeric timestamp
     [InlineData("xclaude.exe.old.42", "claude", false)]          // anchored — no prefix bypass
     [InlineData("claude.exe.old.42x", "claude", false)]          // anchored — no suffix bypass
+    [InlineData("codex", "codex", true)]
+    [InlineData("codex.exe", "codex", true)]
+    [InlineData("CODEX.EXE", "codex", true)]
+    [InlineData("codex-dev", "codex", false)]
+    [InlineData("openai-codex", "codex", false)]
     [InlineData("node", "node", true)]
     [InlineData("node.exe", "node", true)]
     [InlineData("NODE.EXE", "node", true)]

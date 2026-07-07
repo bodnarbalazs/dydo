@@ -286,6 +286,10 @@ dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --f
 - `--no-launch` - Don't launch terminal, just write to inbox
 - `--tab` - Launch in a new tab instead of a new window (overrides config)
 - `--new-window` - Launch in a new window (overrides config)
+- `--codex` - Launch the dispatched agent in Codex
+- `--claude` - Launch the dispatched agent in Claude Code
+
+By default, dispatch launches the same host as the calling agent's session. If the caller host is unknown, it launches Claude Code. `--codex` and `--claude` override the default and cannot be used together.
 
 **Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
 

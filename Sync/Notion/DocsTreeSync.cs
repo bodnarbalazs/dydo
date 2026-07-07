@@ -328,11 +328,16 @@ public static class DocsTreeSync
     /// page whose repo doc/folder has disappeared. Membership in the parent-scoped snapshot store distinguishes
     /// create (unseen) from update (already mapped); the store is only READ here, never saved, so a dry-run leaves
     /// no trace.
-    /// <para>The disappeared-doc lines are ACCURATE, not a local-only guess (finding 5a): the real run archives such
-    /// a page only if it still EXISTS in Notion (repo gone + page present → archive); a page already gone from Notion
-    /// reconciles to Retire, not archive. So the live managed tree is read here to label each honestly — "archive"
-    /// when the page is still present, "retire" when it is already gone — instead of over-predicting an archive the
-    /// run would not perform. Reads only; no page is minted, no body appended, no snapshot saved.</para></summary>
+    /// <para>The disappeared-doc lines are ACCURATE, not a local-only guess (finding 5a, issue 0221): the real run
+    /// only archives a removed doc's page when the page still EXISTS in Notion AND its body has not drifted from the
+    /// base since the last sync. So each is labeled from the live tree read here:
+    /// <list type="bullet">
+    /// <item>"retire" — the page is already gone from Notion (both sides gone → Retire, not archive);</item>
+    /// <item>"resurrect" — the page is present but its body drifted from the base, so <see cref="ReconcileEngine"/>'s
+    /// delete-vs-external-edit Conflict RESURRECTS the repo file from the surviving Notion edit rather than archiving;</item>
+    /// <item>"archive" — the page is present and unchanged, so the removal propagates as a genuine archive.</item>
+    /// </list>
+    /// Reads only; no page is minted, no body appended, no snapshot saved.</para></summary>
     private static void WriteDryRunPlan(DocsNode root, INotionClient client, string dydoRoot, string parentPageId, TextWriter output)
     {
         var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, SnapshotAdapterName(parentPageId)));
@@ -347,27 +352,41 @@ public static class DocsTreeSync
         if (disappeared.Count == 0)
             return;
 
-        var present = PresentExternalIds(client, store);
+        var present = PresentExternalBodies(client, store);
         foreach (var localId in disappeared)
         {
             var externalId = store.Get(localId)?.ExternalId;
-            var label = externalId != null && present.Contains(externalId) ? "archive" : "retire";
-            output.WriteLine($"  docs       {label,-7}  {localId}");
+            string label;
+            if (externalId == null || !present.TryGetValue(externalId, out var externalBody))
+                label = "retire";
+            else
+                label = BodyDrifted(store.Get(localId)?.Body ?? "", externalBody) ? "resurrect" : "archive";
+            output.WriteLine($"  docs       {label,-9}  {localId}");
         }
     }
 
-    /// <summary>The external ids the live managed tree still returns, so the dry-run can tell an archive (page
-    /// still present) from a retire (page already gone). Reads the Notion tree via the same walk the real run uses;
-    /// an empty store (nothing minted yet) has no root page, so nothing is present.</summary>
-    private static HashSet<string> PresentExternalIds(INotionClient client, BaseSnapshotStore store)
+    /// <summary>The live managed tree's current pages keyed external id → body, so the dry-run can tell a retire
+    /// (page gone), a resurrect (page present but body drifted from base), and an archive (page present, unchanged)
+    /// apart. Reads the Notion tree via the same walk the real run uses; an empty store (nothing minted yet) has no
+    /// root page, so nothing is present.</summary>
+    private static Dictionary<string, string> PresentExternalBodies(INotionClient client, BaseSnapshotStore store)
     {
         var rootPageId = store.Get(RootLocalId)?.ExternalId;
         if (rootPageId == null)
             return [];
         var adapter = new DocsPageAdapter(
             client, rootPageId, new Dictionary<string, string>(), new Dictionary<string, string>(), ManagedPageIds(store));
-        return adapter.ReadExternalState().Select(r => r.ExternalId).ToHashSet();
+        return adapter.ReadExternalState().ToDictionary(r => r.ExternalId, r => r.Body);
     }
+
+    /// <summary>Whether a Notion page's body has drifted from the base snapshot's recorded body, compared modulo the
+    /// converter's lossy block round-trip and line endings — exactly the equality <see cref="ReconcileEngine"/> uses
+    /// to decide the delete-vs-external-edit branch. A drift means the real run resurrects rather than archives.</summary>
+    private static bool BodyDrifted(string baseBody, string externalBody) =>
+        NormalizeBody(baseBody) != NormalizeBody(externalBody);
+
+    private static string NormalizeBody(string body) =>
+        NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body.Replace("\r\n", "\n")));
 
     private static void WritePlanNode(DocsNode node, ISet<string> known, ISet<string> planned, TextWriter output, bool isRoot)
     {

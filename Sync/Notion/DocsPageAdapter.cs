@@ -41,8 +41,8 @@ public sealed class DocsPageAdapter : ISyncAdapter
     /// <param name="parentPageIdByLocalId">Where to create each doc's page — its repo-owned parent's Notion page id.</param>
     /// <param name="titleByLocalId">The Notion page title to set when a doc's page is first created.</param>
     /// <param name="managedPageIds">Page ids the sync already tracks, so the tree walk ignores unmanaged pages.</param>
-    /// <param name="log">Optional sink for a per-archive failure that is logged and skipped so one bad archive
-    /// never wedges the whole tick.</param>
+    /// <param name="log">Optional sink for the one tolerated archive skip — a page already trashed under an
+    /// archived ancestor (issue 0221). Every other archive failure propagates rather than being logged and swallowed.</param>
     public DocsPageAdapter(
         INotionClient client,
         string rootPageId,
@@ -92,7 +92,10 @@ public sealed class DocsPageAdapter : ISyncAdapter
         }
     }
 
-    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned)
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>
+        Apply(changes, assigned, new HashSet<string>());
+
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted)
     {
         foreach (var upsert in changes.Upserts)
         {
@@ -121,20 +124,37 @@ public sealed class DocsPageAdapter : ISyncAdapter
         // local id is a path-prefix of its descendants' — so ascending puts every ancestor before its children.
         // Notion rejects editing (incl. archiving) a page whose ancestor is already archived (400 "archived
         // ancestor"), so archiving ancestor-first wedges the tick. Reversing the ascending order archives
-        // children first, when their ancestors are still live. Each archive is isolated: one failure (a stray
-        // 400, a page already trashed by hand) is logged and skipped so it never wedges the remaining deletes.
+        // children first, when their ancestors are still live.
+        //
+        // The catch tolerates ONLY the archived-ancestor 400 (issue 0221): a page already trashed under an
+        // archived ancestor is effectively gone, so skipping it is safe — but it is deliberately NOT recorded as
+        // landed, so its base entry survives and next tick's both-sides-gone Retire prunes it cleanly (never
+        // dropping tracking for a live page). EVERY other NotionApiException — 429 rate-limit, 401 auth, 5xx,
+        // permissions — PROPAGATES, so NotionSyncService surfaces a loud ToolError and the base is left
+        // un-advanced for retry instead of silently orphaning a live Notion page behind a success exit.
         foreach (var externalId in Enumerable.Reverse(changes.Deletes))
         {
             try
             {
                 _client.UpdatePage(externalId, new NotionPageUpdateRequest { Archived = true });
+                deleted.Add(externalId);
             }
-            catch (NotionApiException ex)
+            catch (NotionApiException ex) when (IsArchivedAncestor(ex))
             {
-                _log?.WriteLine($"notion docs sync: could not archive page {externalId}, skipping — {ex.Message}");
+                _log?.WriteLine($"notion docs sync: page {externalId} already archived under an archived ancestor, skipping — {ex.Message}");
             }
         }
     }
+
+    /// <summary>The one archive failure this loop tolerates (issue 0221): a 400 rejecting the archive because the
+    /// page's ANCESTOR is already archived — Notion cascades archive into the trash, so the descendant is already
+    /// gone and re-archiving it is a redundant no-op. Detected by the 400 status plus the "archived"/"ancestor"
+    /// signature in the error body. Every other <see cref="NotionApiException"/> (rate-limit, auth, permission,
+    /// 5xx) is a real failure that must propagate so the base is not advanced for a page still live in Notion.</summary>
+    private static bool IsArchivedAncestor(NotionApiException ex) =>
+        ex.StatusCode == 400
+        && ex.Body.Contains("archived", StringComparison.OrdinalIgnoreCase)
+        && ex.Body.Contains("ancestor", StringComparison.OrdinalIgnoreCase);
 
     private string TitleFor(string localId) =>
         _titleByLocalId.TryGetValue(localId, out var title) && title.Length > 0 ? title : localId;

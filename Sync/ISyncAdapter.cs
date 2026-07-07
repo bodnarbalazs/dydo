@@ -22,8 +22,13 @@ public interface ISyncAdapter
     /// into <paramref name="assigned"/> (keyed by <c>LocalId</c>) as soon as that page is created — so
     /// if a later create in the same batch throws, the caller still holds the ids of everything already
     /// created and can persist them, preventing duplicate re-creation on the next tick (slice brief §3).
+    /// Every delete that actually LANDS is recorded into <paramref name="deleted"/> (by external id) the
+    /// instant its archive succeeds — the same pattern as <paramref name="assigned"/>, so the caller
+    /// advances a delete's base only for archives that truly happened. A delete an adapter deliberately
+    /// tolerates and skips (the docs mirror's archived-ancestor case, issue 0221) is NOT recorded, so its
+    /// base entry is retained for the next tick rather than orphaning a still-live page.
     /// </summary>
-    void Apply(SyncChangeSet changes, IDictionary<string, string> assigned);
+    void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted);
 
     /// <summary>
     /// The body this view echoes back when the given body is written and re-read. Views that convert

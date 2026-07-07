@@ -26,11 +26,18 @@ public static class NotionSyncService
         bool docsOnly = false,
         bool spineOnly = false)
     {
-        // Belt-and-suspenders: the CLI already rejects this combination, but Execute is also called directly
+        // Belt-and-suspenders: the CLI already rejects these combinations, but Execute is also called directly
         // (tests, any future caller), so guard the incoherent scope here too rather than silently favouring one.
         if (docsOnly && spineOnly)
         {
             error.WriteLine("notion sync: --docs-only and --spine-only are mutually exclusive.");
+            return ExitCodes.ValidationErrors;
+        }
+
+        // --docs adds the mirror, --spine-only skips it — reject rather than silently dropping --docs (issue 0221).
+        if (docs && spineOnly)
+        {
+            error.WriteLine("notion sync: --docs and --spine-only are mutually exclusive.");
             return ExitCodes.ValidationErrors;
         }
 

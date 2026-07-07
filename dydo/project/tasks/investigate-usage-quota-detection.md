@@ -1,13 +1,13 @@
 ---
 area: general
-name: investigate-guard-templates-writethrough
+name: investigate-usage-quota-detection
 status: pending
-created: 2026-07-07T14:01:13.7621183Z
-assigned: Henry
+created: 2026-07-07T14:31:32.6211917Z
+assigned: Dexter
 needs-human: false
 ---
 
-# Task: investigate-guard-templates-writethrough
+# Task: investigate-usage-quota-detection
 
 (No description)
 

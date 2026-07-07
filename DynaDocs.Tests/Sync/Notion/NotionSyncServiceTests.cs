@@ -176,6 +176,33 @@ public class NotionSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public void Execute_DocsAndSpineOnly_IsRejected()
+    {
+        // Issue 0221 finding 3: --docs (add the mirror) and --spine-only (skip it) are contradictory. Reject
+        // rather than silently letting --spine-only win and dropping --docs with no word.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        var err = new StringWriter();
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), err,
+                prune: false, parentPageOverride: null, docs: true, docsOnly: false, spineOnly: true);
+
+            Assert.Equal(ExitCodes.ValidationErrors, code);
+            Assert.Contains("mutually exclusive", err.ToString());
+            // Neither surface ran: no database provisioned, no "Docs" page minted.
+            Assert.Empty(client.CreatedDatabases);
+            Assert.Empty(client.GetChildPages("page-root"));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
     public void Execute_ParentPageOverride_TakesPrecedenceOverResolver()
     {
         var savedCwd = Directory.GetCurrentDirectory();

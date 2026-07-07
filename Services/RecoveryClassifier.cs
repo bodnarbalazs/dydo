@@ -28,7 +28,7 @@ internal static class RecoveryClassifier
     /// cyclomatic complexity stays under the gap_check T1 threshold. Returns
     /// <c>ShouldRefresh=true</c> iff ALL of: sessionId non-empty; agent owns sessionId and
     /// is Working; .session matches sessionId and has a ClaimedPid; ClaimedPid is dead;
-    /// a live claude ancestor exists. The under-lock half (steps 7–11) re-validates everything.
+    /// a live claimed-host ancestor exists. The under-lock half (steps 7–11) re-validates everything.
     /// </summary>
     internal static ResumedPidRefreshDecision ShouldRefreshResumedPid(
         string? sessionId,
@@ -50,7 +50,7 @@ internal static class RecoveryClassifier
         if (ProcessUtils.IsProcessRunning(claimedPid)) return default;
 
         // Never write a null PID — would break F11 for everyone.
-        var livePid = ProcessUtils.FindClaudeAncestor();
+        var livePid = ProcessUtils.FindAgentHostAncestor(session.Host);
         if (livePid is not int live) return default;
 
         return new ResumedPidRefreshDecision(true, agent.Name, live);

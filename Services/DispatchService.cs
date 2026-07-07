@@ -27,10 +27,22 @@ public static class DispatchService
                 return ExitCodes.ToolError;
             }
         }
+        else if (!opts.AutoClose && !(registry.Config?.Dispatch?.AutoClose ?? false))
+        {
+            // A launched dispatch with no effective auto-close leaves the target's terminal
+            // open after it releases. --no-launch dispatches launch nothing, so they're exempt.
+            var nudgeError = CheckAutoCloseNudge(registry, sessionId, opts.Task);
+            if (nudgeError != null)
+            {
+                ConsoleOutput.WriteError(nudgeError);
+                return ExitCodes.ToolError;
+            }
+        }
 
         var sender = registry.GetCurrentAgent(sessionId);
         var senderName = sender?.Name ?? "Unknown";
         var origin = GetOriginForTask(registry, sender, opts.Task) ?? senderName;
+        var launchHost = ResolveLaunchHost(registry, sender, opts.HostOverride);
 
         var (targetAgentName, targetError) = SelectTargetAgent(registry, opts, currentHuman, senderName, origin);
         if (targetError != null)
@@ -39,10 +51,23 @@ public static class DispatchService
             return ExitCodes.ToolError;
         }
 
-        WriteAndLaunch(registry, targetAgentName!, senderName, origin, opts);
+        WriteAndLaunch(registry, targetAgentName!, senderName, origin, opts, launchHost);
 
         PrintReleaseHint(registry, sender, senderName);
         return ExitCodes.Success;
+    }
+
+    internal static string ResolveLaunchHost(AgentRegistry registry, AgentState? sender, string? hostOverride)
+    {
+        var normalizedOverride = AgentSession.NormalizeHost(hostOverride);
+        if (normalizedOverride is "claude" or "codex")
+            return normalizedOverride;
+
+        var currentHost = sender != null
+            ? AgentSession.NormalizeHost(registry.GetSession(sender.Name)?.Host)
+            : AgentSession.UnknownHost;
+
+        return currentHost is "claude" or "codex" ? currentHost : "claude";
     }
 
     private static (string? agentName, string? error) SelectTargetAgent(
@@ -63,7 +88,7 @@ public static class DispatchService
     }
 
     private static void WriteAndLaunch(AgentRegistry registry, string targetAgentName, string senderName,
-        string origin, DispatchOptions opts)
+        string origin, DispatchOptions opts, string launchHost)
     {
         var itemPath = WriteInboxItemToAgent(registry, targetAgentName, senderName, origin,
             opts.Role, opts.Task, opts.Brief, opts.Files, opts.Escalate);
@@ -82,7 +107,7 @@ public static class DispatchService
             // mis-closing.
             Console.WriteLine($"  Warning: could not record dispatch window/auto-close metadata for {targetAgentName} (lock contended); re-dispatch if --auto-close behaves unexpectedly.");
 
-        LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose, windowName);
+        LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose, windowName, launchHost);
 
         if (effectiveAutoClose)
             WatchdogService.EnsureRunning();
@@ -184,14 +209,14 @@ public static class DispatchService
     }
 
     private static int LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
-        bool effectiveAutoClose, string? windowName)
+        bool effectiveAutoClose, string? windowName, string launchHost)
     {
         if (noLaunch)
             return 0;
 
         var projectRoot = PathUtils.FindProjectRoot();
-        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, null, windowName);
-        Console.WriteLine($"  Terminal launched with --inbox {targetAgentName}");
+        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, null, windowName, host: launchHost);
+        Console.WriteLine($"  Terminal launched with --inbox {targetAgentName} ({launchHost})");
         return pid;
     }
 
@@ -211,6 +236,33 @@ public static class DispatchService
             return "You dispatched with the --no-launch flag, it means that the agent you dispatched to will not be activated " +
                    "and the user will have to call them manually. Unless the user was explicit about using no-launch or there is a " +
                    "good reason for it you shouldn't use this flag. If you insist you may run it again and it will pass.";
+        }
+        File.Delete(markerPath);
+        return null;
+    }
+
+    /// <summary>
+    /// Slice B of #222: soft-block a launched dispatch that omits --auto-close, since the
+    /// target's terminal then lingers open after it releases. Mirrors CheckNoLaunchNudge's
+    /// block-once toggle — the first bare dispatch writes a per-task marker and blocks; the
+    /// next run of the same command clears it and proceeds, preserving the deliberate
+    /// keep-terminal-open case.
+    /// </summary>
+    private static string? CheckAutoCloseNudge(AgentRegistry registry, string? sessionId, string task)
+    {
+        var sender = registry.GetCurrentAgent(sessionId);
+        if (sender == null) return null;
+
+        var senderWorkspace = registry.GetAgentWorkspace(sender.Name);
+        var nudgeKey = PathUtils.SanitizeForFilename(task);
+        var markerPath = Path.Combine(senderWorkspace, $".auto-close-nudge-{nudgeKey}");
+
+        if (!File.Exists(markerPath))
+        {
+            Directory.CreateDirectory(senderWorkspace);
+            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+            return "dydo dispatch without --auto-close leaves the agent terminal open after it releases; " +
+                   "add --auto-close, or re-run to proceed if you deliberately want the terminal left open to inspect.";
         }
         File.Delete(markerPath);
         return null;

@@ -121,6 +121,14 @@ public static class NotionCommand
             return ExitCodes.ValidationErrors;
         }
 
+        // --docs asks to ADD the mirror; --spine-only asks to SKIP it — contradictory. Reject rather than
+        // silently letting --spine-only win and dropping --docs with no word (issue 0221).
+        if (docs && spineOnly)
+        {
+            Console.Error.WriteLine("notion sync: --docs and --spine-only are mutually exclusive.");
+            return ExitCodes.ValidationErrors;
+        }
+
         var config = new ConfigService();
         var loaded = config.LoadConfig();
         var token = NotionTokenResolver.Resolve(

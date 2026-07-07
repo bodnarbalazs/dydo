@@ -210,6 +210,26 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ClaimAgent_CodexHost_StampsCodexAncestorPid()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "codex" ? 24680 : null;
+        var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+
+        registry.StorePendingSessionId("Adele", "session-codex", "codex");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent failed: {error}");
+        var session = registry.GetSession("Adele");
+        Assert.NotNull(session);
+        Assert.Equal("codex", session.Host);
+        Assert.Equal(24680, session.ClaimedPid);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
     public void ClaimAgent_SameSessionIdReclaim_RefreshesClaimedPid()
     {
         // #0143: after watchdog auto-resume, the resumed claude calls `dydo agent claim`
@@ -2902,6 +2922,24 @@ public class AgentRegistryTests : IDisposable
         ProcessUtils.FindAncestorProcessOverride = (_, _) => ancestor;
         var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = ancestor };
         Assert.True(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_CodexSession_MatchesCodexAncestor_ReturnsTrue()
+    {
+        const int ancestor = 909091;
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "codex" ? ancestor : null;
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", Host = "codex", ClaimedPid = ancestor };
+        Assert.True(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    [Fact]
+    public void IsOwnedByCaller_CodexSession_IgnoresClaudeAncestor_ReturnsFalse()
+    {
+        const int ancestor = 909092;
+        ProcessUtils.FindAncestorProcessOverride = (name, _) => name == "claude" ? ancestor : null;
+        var session = new AgentSession { Agent = "Adele", SessionId = "s", Host = "codex", ClaimedPid = ancestor };
+        Assert.False(AgentRegistry.IsOwnedByCaller(session));
     }
 
     [Fact]

@@ -65,7 +65,9 @@ public class IssueTests : IntegrationTestBase
 
         await IssueCreateAsync("Manual issue", area: "general", severity: "low");
 
-        AssertFileContains("dydo/project/issues/0001-manual-issue.md", "found-by: manual");
+        var content = ReadFile("dydo/project/issues/0001-manual-issue.md");
+        Assert.Contains("found-by: manual", content);
+        Assert.DoesNotContain("found-by-agent:", content);
     }
 
     [Fact]
@@ -89,6 +91,37 @@ public class IssueTests : IntegrationTestBase
 
         result.AssertSuccess();
         AssertFileContains("dydo/project/issues/0001-inquisition-issue.md", "found-by: inquisition");
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithClaimedAgent_WritesRuntimeProvenance()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentWithRuntimeAsync("Adele", "codex", "gpt-5");
+
+        var result = await IssueCreateAsync("Runtime issue", area: "general", severity: "low");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-runtime-issue.md");
+        Assert.Contains("found-by: manual", content);
+        Assert.Contains("found-by-agent: Adele", content);
+        Assert.Contains("found-by-vendor: codex", content);
+        Assert.Contains("found-by-model: gpt-5", content);
+    }
+
+    [Fact]
+    public async Task Issue_Create_WithClaimedAgentAndNoRuntimeModel_EmitsUnknownModel()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var result = await IssueCreateAsync("Unknown model issue", area: "general", severity: "low");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/issues/0001-unknown-model-issue.md");
+        Assert.Contains("found-by-agent: Adele", content);
+        Assert.Contains("found-by-vendor: unknown", content);
+        Assert.Contains("found-by-model: unknown", content);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ namespace DynaDocs.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using DynaDocs.Models;
 
 public static partial class ProcessUtils
 {
@@ -92,6 +93,51 @@ public static partial class ProcessUtils
         return null;
     }
 
+    /// <summary>
+    /// Walks up the process tree returning the first ancestor that looks like the
+    /// host runtime that claimed a dydo identity. Unknown hosts preserve the
+    /// historical Claude lookup so old sessions keep working.
+    /// </summary>
+    public static int? FindAgentHostAncestor(string? host, int maxDepth = 10) =>
+        AgentSession.NormalizeHost(host) switch
+        {
+            "codex" => FindCodexAncestor(maxDepth),
+            _ => FindClaudeAncestor(maxDepth)
+        };
+
+    /// <summary>
+    /// Walks up the process tree returning the first ancestor that looks like the
+    /// running Codex CLI. On Windows, npm-installed CLIs may run under node.exe, so
+    /// the Windows-only node fallback mirrors Claude's host detection.
+    /// </summary>
+    public static int? FindCodexAncestor(int maxDepth = 10)
+    {
+        if (FindAncestorProcessOverride != null)
+        {
+            var injected = FindAncestorProcessOverride("codex", maxDepth);
+            if (injected.HasValue) return injected;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return FindAncestorProcessOverride("node", maxDepth);
+            return null;
+        }
+
+        var pid = Environment.ProcessId;
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        for (var i = 0; i < maxDepth; i++)
+        {
+            var parentPid = GetParentPid(pid);
+            if (parentPid == null || parentPid <= 1) return null;
+
+            var name = GetProcessName(parentPid.Value);
+            if (MatchesProcessName(name, "codex")) return parentPid.Value;
+            if (isWindows && MatchesProcessName(name, "node")) return parentPid.Value;
+
+            pid = parentPid.Value;
+        }
+        return null;
+    }
+
     // Anchored regex per known needle. Closes #0128 ("claudia.exe", "claude-dev.exe"
     // must NOT match) and #0151's post-update rename (after a Claude Code self-update
     // on Windows the running image name becomes "claude.exe.old.<unix-ms>"; the OS
@@ -102,6 +148,8 @@ public static partial class ProcessUtils
     private static readonly Dictionary<string, Regex> ProcessNameRegexes = new(StringComparer.OrdinalIgnoreCase)
     {
         ["claude"] = new Regex(@"^claude(\.exe(\.old\.\d+)?)?$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+        ["codex"] = new Regex(@"^codex(\.exe)?$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
         ["node"] = new Regex(@"^node(\.exe)?$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),

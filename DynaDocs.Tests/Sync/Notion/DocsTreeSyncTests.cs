@@ -398,6 +398,30 @@ public class DocsTreeSyncTests : IDisposable
     }
 
     [Fact]
+    public void Run_DryRun_RemovedDocWithDriftedNotionBody_LabeledResurrect_NotArchive()
+    {
+        // Finding 2 (issue 0221): a removed doc whose Notion page body DRIFTED from the base is not archived by
+        // the real run — the delete-vs-external-edit conflict RESURRECTS the repo file from the surviving edit.
+        // The dry-run must predict "resurrect", not "archive", so the preview matches the real outcome.
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var understand = Child(client, Root(client), "Understand");
+        var arch = Child(client, understand, "Architecture");
+        // A colleague edits the page body in Notion since the last sync, then the repo doc is removed.
+        client.SetBlockChildren(arch, NotionBlockConverter.ToBlocks("# Arch\n\nedited in notion since base."));
+        File.Delete(DocPath("understand/architecture.md"));
+
+        var output = new StringWriter();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: true, output);
+
+        var text = output.ToString();
+        Assert.Contains("resurrect", text);
+        Assert.Contains("understand/architecture", text);
+        Assert.DoesNotContain("archive", text); // must NOT over-predict an archive the real run would not perform
+    }
+
+    [Fact]
     public void Run_DryRun_RemovedDocPageAlreadyGone_LabeledRetire_NotArchive()
     {
         // The accurate-plan payoff (finding 5a): a removed doc whose page is ALSO already gone from Notion is

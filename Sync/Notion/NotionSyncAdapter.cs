@@ -104,7 +104,10 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         return records;
     }
 
-    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned)
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>
+        Apply(changes, assigned, new HashSet<string>());
+
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted)
     {
         var schema = EnsureSchema();
 
@@ -149,7 +152,12 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         }
 
         foreach (var externalId in changes.Deletes)
+        {
             _client.UpdatePage(externalId, new NotionPageUpdateRequest { Archived = true });
+            // Record the archive the instant it lands, so a later delete in this batch throwing does not
+            // make the caller drop this one's base entry (it advances only confirmed archives — issue 0221).
+            deleted.Add(externalId);
+        }
     }
 
     /// <summary>Whether a page already carries the engine's current engine-computed value for every

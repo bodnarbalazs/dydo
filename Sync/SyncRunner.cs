@@ -101,15 +101,16 @@ public sealed class SyncRunner
         // still records the ids of pages already created and persists the base, so a crashed tick that
         // created some pages does not re-create them (duplicate them) on retry.
         var assigned = new Dictionary<string, string>();
+        var deleted = new HashSet<string>();
         var applied = false;
         try
         {
-            _adapter.Apply(changes, assigned);
+            _adapter.Apply(changes, assigned, deleted);
             applied = true;
         }
         finally
         {
-            CommitBase(results, assigned, applied);
+            CommitBase(results, assigned, deleted, applied);
             // A completed tick has confirmed every create's external id, so any last-activity with no base
             // entry is a genuine orphan (a crashed create's seed, or a doc whose base never existed) that
             // Retire can never reach — sweep it before saving (finding 7). A partial tick leaves it for the
@@ -124,9 +125,13 @@ public sealed class SyncRunner
 
     /// <summary>Advance the base snapshot after Apply. A create records its base only once its external
     /// id is confirmed in <paramref name="assigned"/> — a create that failed leaves no base entry, so it
-    /// is retried (not seen as an external delete) and never duplicated. Non-create advances commit only
-    /// when the whole batch applied, so a failed tick self-heals on retry.</summary>
-    private void CommitBase(List<ReconcileResult> results, IReadOnlyDictionary<string, string> assigned, bool applied)
+    /// is retried (not seen as an external delete) and never duplicated. A delete that pushed an external
+    /// archive advances its base only once that archive is confirmed in <paramref name="deleted"/> — the
+    /// same per-item gate — so a transient/auth archive failure (or a tolerated archived-ancestor skip)
+    /// leaves the entry for retry instead of dropping tracking for a still-live page (issue 0221).
+    /// Non-create, non-delete advances commit only when the whole batch applied, so a failed tick
+    /// self-heals on retry.</summary>
+    private void CommitBase(List<ReconcileResult> results, IReadOnlyDictionary<string, string> assigned, IReadOnlySet<string> deleted, bool applied)
     {
         foreach (var result in results)
         {
@@ -142,7 +147,11 @@ public sealed class SyncRunner
                     break;
 
                 case ReconcileAction.Delete:
-                    if (applied)
+                    // A delete that archived an external page drops its base only if THAT archive landed
+                    // (issue 0221): a swallowed archived-ancestor skip or a propagated transient/auth failure
+                    // leaves the entry for retry, never orphaning a live page. A delete with only a repo-file
+                    // removal and no external archive still gates on the batch applying.
+                    if (result.ExternalDelete != null ? deleted.Contains(result.ExternalDelete) : applied)
                         _base.Remove(result.LocalId);
                     break;
 

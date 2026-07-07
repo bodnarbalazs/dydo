@@ -9,11 +9,13 @@ public static class MacTerminalLauncher
     private const string TerminalReset = "; printf \\\"\\\\e[?1004l\\\"";
 
     private static (string shellCommand, string postCheck) BuildShellComponents(string agentName, string? workingDirectory,
-        bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot)
+        bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot,
+        string host = "claude")
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var agentExport = $"export DYDO_AGENT={agentName}; ";
         var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
+        var executable = TerminalLauncher.GetLaunchExecutable(host);
 
         string wtSetup = "", wtCleanup = "";
         if (worktreeId != null)
@@ -27,16 +29,17 @@ public static class MacTerminalLauncher
             wtCleanup = $"; cd '{TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot)}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
-        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; claude \\\"{agentName} --inbox\\\"{TerminalReset}";
+        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executable} \\\"{agentName} --inbox\\\"{TerminalReset}";
         var postCheck = wtCleanup + (autoClose ? $"; {TerminalLauncher.BashPostClaudeCheck(agentName)}" : "");
 
         return (shellCommand, postCheck);
     }
 
     public static string GetArguments(string agentName, string? workingDirectory = null,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
-        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
@@ -111,9 +114,11 @@ public static class MacTerminalLauncher
 
     public static int Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string? workingDirectory = null, bool useTab = false,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
-        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
+        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
 
         var runningTerminal = terminalDetector.GetRunningTerminal();
         var useITerm = runningTerminal == "iTerm"
@@ -125,7 +130,7 @@ public static class MacTerminalLauncher
             // For iTerm, don't bake DYDO_WINDOW into the shell command —
             // AppleScript captures the real window ID and injects it dynamically
             var (iTermShell, iTermPost) = BuildShellComponents(agentName, workingDirectory,
-                autoClose, worktreeId, windowName: null, cleanupWorktreeId, mainProjectRoot);
+                autoClose, worktreeId, windowName: null, cleanupWorktreeId, mainProjectRoot, launchHost);
 
             script = useTab
                 ? GetITermTabScript(iTermShell, iTermPost, windowName)

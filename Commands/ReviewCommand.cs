@@ -94,6 +94,8 @@ public static class ReviewCommand
         }
 
         var reviewerName = agent?.Name ?? "Unknown";
+        var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
+        var provenanceLines = RenderReviewProvenance(provenance);
         var reviewTime = DateTime.UtcNow;
 
         if (status == "pass")
@@ -107,6 +109,7 @@ public static class ReviewCommand
                 ## Code Review
 
                 - Reviewed by: {reviewerName}
+                {provenanceLines}
                 - Date: {reviewTime:yyyy-MM-dd HH:mm}
                 - Result: PASSED
                 {(string.IsNullOrEmpty(notes) ? "" : $"- Notes: {notes}")}
@@ -148,6 +151,7 @@ public static class ReviewCommand
                 ## Code Review ({reviewTime:yyyy-MM-dd HH:mm})
 
                 - Reviewed by: {reviewerName}
+                {provenanceLines}
                 - Result: FAILED
                 - Issues: {notes ?? "(No details provided)"}
 
@@ -165,6 +169,16 @@ public static class ReviewCommand
         }
 
         return ExitCodes.Success;
+    }
+
+    private static string RenderReviewProvenance(ArtifactProvenance? provenance)
+    {
+        if (provenance == null) return "";
+
+        return $"""
+            - reviewed-by-vendor: {provenance.Vendor}
+            - reviewed-by-model: {provenance.Model}
+            """;
     }
 
     private static void RouteVerdictMessages(AgentRegistry registry, Models.AgentState reviewer,

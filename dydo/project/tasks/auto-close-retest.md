@@ -1,13 +1,13 @@
 ---
 area: general
-name: investigate-guard-templates-writethrough
+name: auto-close-retest
 status: pending
-created: 2026-07-07T14:01:13.7621183Z
-assigned: Henry
+created: 2026-07-07T19:56:16.9347439Z
+assigned: Jack
 needs-human: false
 ---
 
-# Task: investigate-guard-templates-writethrough
+# Task: auto-close-retest
 
 (No description)
 

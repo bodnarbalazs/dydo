@@ -100,6 +100,10 @@ public static class HelpCommand
         Console.WriteLine("  notion reveal-token    Print the stored Notion token (guarded)");
         Console.WriteLine("  notion sync            Reconcile dydo docs with a Notion workspace");
         Console.WriteLine();
+        Console.WriteLine("Model Commands:");
+        Console.WriteLine("  model cap <model>      Rebind an unavailable model's tiers to a fallback");
+        Console.WriteLine("  model uncap <model>    Restore a capped model's tier bindings");
+        Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");
         Console.WriteLine("  version                Display version information");

@@ -18,6 +18,10 @@ internal static class TaskCreateHandler
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
         var agent = registry.GetCurrentAgent(sessionId);
+        var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
+        var provenanceYaml = provenance == null
+            ? ""
+            : $"\nassigned-vendor: {provenance.Vendor}\nassigned-model: {provenance.Model}";
 
         var tasksPath = TaskCommand.GetTasksPath();
         Directory.CreateDirectory(tasksPath);
@@ -52,7 +56,7 @@ internal static class TaskCreateHandler
             name: {name}
             status: pending
             created: {DateTime.UtcNow:o}
-            assigned: {agent?.Name ?? "unassigned"}
+            assigned: {agent?.Name ?? "unassigned"}{provenanceYaml}
             ---
 
             # Task: {name}

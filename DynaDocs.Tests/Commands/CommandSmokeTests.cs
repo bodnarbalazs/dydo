@@ -42,7 +42,8 @@ public class CommandSmokeTests
             SyncCommand.Create,
             WorkspaceCommand.Create,
             WorktreeCommand.Create,
-            NotionCommand.Create
+            NotionCommand.Create,
+            ModelCommand.Create
         };
 
         foreach (var createCommand in commands)

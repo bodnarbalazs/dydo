@@ -1,13 +1,13 @@
 ---
 area: general
-name: investigate-guard-templates-writethrough
+name: fix-master-ci-test-failures
 status: pending
-created: 2026-07-07T14:01:13.7621183Z
-assigned: Henry
+created: 2026-07-07T14:43:22.9122520Z
+assigned: Brian
 needs-human: false
 ---
 
-# Task: investigate-guard-templates-writethrough
+# Task: fix-master-ci-test-failures
 
 (No description)
 

@@ -19,10 +19,11 @@ public static class WindowsTerminalLauncher
         "if($__dydoP -and (Test-Path -LiteralPath $__dydoP)){" +
         "try{. $__dydoP}catch{Write-Warning ('dydo: profile load failed: ' + $_)}}}; ";
 
-    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null)
+    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null, string host = "claude")
     {
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
         var escapedPrompt = prompt.Replace("'", "''");
+        var executable = TerminalLauncher.GetLaunchExecutable(host);
         var postClaudeCheck = autoClose
             ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
             : "";
@@ -54,7 +55,7 @@ public static class WindowsTerminalLauncher
                        WorktreeCommand.GeneratePsJunctionScript(escapedRoot, isVariable: false) +
                        $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                        $"Start-Sleep -Seconds 1; " +
-                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                        $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
             }
 
@@ -64,7 +65,7 @@ public static class WindowsTerminalLauncher
                    WorktreeCommand.GeneratePsJunctionScript("$_wt_root.Path", isVariable: true) +
                    $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +
-                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
@@ -79,11 +80,11 @@ public static class WindowsTerminalLauncher
                    $"{setLocation}" +
                    $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +
-                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
         }
 
-        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; claude '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
+        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
     }
 
     public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
@@ -165,9 +166,10 @@ public static class WindowsTerminalLauncher
     }
 
     public static int Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,
-        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
         var shell = ProcessUtils.ResolvePowerShell();
+        var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
 
         // Try Windows Terminal first (modern)
         try
@@ -189,7 +191,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, launchHost).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -205,7 +207,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory),
+            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, launchHost),
             UseShellExecute = true
         };
         if (workingDirectory != null)

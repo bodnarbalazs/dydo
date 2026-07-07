@@ -5,9 +5,14 @@ using System.Diagnostics;
 public static class LinuxTerminalLauncher
 {
     private static string ApplyOverrides(string baseArgs, string agentName,
-        bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot, string? workingDirectory)
+        bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot, string? workingDirectory,
+        string host = "claude")
     {
         var args = baseArgs;
+        var executable = TerminalLauncher.GetLaunchExecutable(host);
+        if (executable != "claude")
+            args = args.Replace("claude ", $"{executable} ");
+
         args = args.Replace("unset CLAUDECODE", $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE");
 
         if (windowName != null)
@@ -32,7 +37,8 @@ public static class LinuxTerminalLauncher
     }
 
     public static string GetArguments(string terminalName, string agentName, string? workingDirectory = null,
-        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
         var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
@@ -41,7 +47,7 @@ public static class LinuxTerminalLauncher
             ? config.GetTabArguments(agentName, workingDirectory)
             : config.GetArguments(agentName, workingDirectory);
 
-        return ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
+        return ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host);
     }
 
     /// <summary>
@@ -132,7 +138,8 @@ public static class LinuxTerminalLauncher
 
     public static int TryLaunch(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
         string agentName, string? workingDirectory = null, bool useTab = false,
-        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+        bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
         foreach (var terminal in terminals)
         {
@@ -142,7 +149,7 @@ public static class LinuxTerminalLauncher
                     ? terminal.GetTabArguments(agentName, workingDirectory)
                     : terminal.GetArguments(agentName, workingDirectory);
 
-                var arguments = ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
+                var arguments = ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host);
 
                 var psi = new ProcessStartInfo
                 {

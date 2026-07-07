@@ -107,6 +107,41 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void GetCodexCommand_FormatsCorrectly()
+    {
+        var command = TerminalLauncher.GetCodexCommand("Adele");
+
+        Assert.Equal("codex \"Adele --inbox\"", command);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Codex_UsesCodexCli()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
+
+        Assert.Contains("codex 'Adele --inbox'", args);
+        Assert.DoesNotContain("claude 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_Codex_UsesCodexCli()
+    {
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "codex");
+
+        Assert.Contains("codex 'Adele --inbox'", args);
+        Assert.DoesNotContain("claude 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Codex_UsesCodexCli()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", host: "codex");
+
+        Assert.Contains("codex \\\"Adele --inbox\\\"", args);
+        Assert.DoesNotContain("claude \\\"Adele --inbox\\\"", args);
+    }
+
+    [Fact]
     public void GetWindowsArguments_ExactFormat()
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele");

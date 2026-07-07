@@ -48,6 +48,20 @@ const LENSES = [
   { key: 'docdrift', prompt: 'Hunt for documentation drift: docs/comments/help-text/templates that describe behavior the code no longer has, or commands/features that were removed.' },
 ]
 
+// The inquisitor stages are bound to the strong tier's model; agent() returns null when it is
+// unavailable — the canonical case is Fable hitting its weekly spend cap, which the API blocks
+// with no retry and no native fallback (issue #214). Retrying ONCE on a declared fallback keeps a
+// model outage from silently voiding the whole QA sweep. Hardcoded (not read from dydo.json's
+// models.fallback) because the workflow sandbox has no filesystem/config access — keep it in step
+// with ConfigFactory.CreateDefaultModels().Fallback.
+const FALLBACK_MODEL = 'claude-sonnet-5'
+
+async function agentWithFallback(prompt, opts) {
+  const result = await agent(prompt, opts)
+  if (result != null) return result
+  return agent(prompt, { ...opts, model: FALLBACK_MODEL, label: `${opts.label ?? 'stage'}:fallback` })
+}
+
 phase('Sweep')
 const scope = typeof args === 'string' && args.trim()
   ? args.trim()
@@ -58,11 +72,11 @@ log(`Inquisition over: ${scope}`)
 // so a lens's findings verify as soon as that sweep returns (no barrier).
 const perLens = await pipeline(
   LENSES,
-  lens => agent(
+  lens => agentWithFallback(
     `You are auditing ${scope}.\n\n${lens.prompt}\n\nReturn up to 8 concrete findings with file:line locations. Only real, nameable problems — no speculation.`,
     { agentType: 'inquisitor', label: `sweep:${lens.key}`, phase: 'Sweep', schema: FINDINGS }),
   (found, lens) => parallel((found?.findings ?? []).map(f => () =>
-    agent(
+    agentWithFallback(
       `Adversarially verify this ${lens.key} finding from an audit of ${scope}.\n\nFinding: ${f.title}\nLocation: ${f.location}\nClaim: ${f.rationale}\n\nDefault to "refuted" unless you can confirm it from the actual code (cite the line). "plausible" only if realistic but state-dependent.`,
       { agentType: 'inquisitor', label: `verify:${lens.key}`, phase: 'Verify', schema: VERDICT })
       .then(v => ({ ...f, lens: lens.key, verdict: v?.verdict ?? 'refuted', evidence: v?.evidence }))))

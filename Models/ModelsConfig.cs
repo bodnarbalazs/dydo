@@ -25,4 +25,14 @@ public class ModelsConfig
     /// </summary>
     [JsonPropertyName("efforts")]
     public Dictionary<string, string> Efforts { get; set; } = new();
+
+    /// <summary>
+    /// Optional vendor-agnostic fallback model (issue #214): the second-line model that
+    /// <c>dydo model cap</c> rebinds a capped model's tiers to when no explicit
+    /// <c>--fallback</c> is given. A declared safe target for any provider outage — a spend
+    /// cap, a capacity error, a provider being down — kept in the abstraction we already own
+    /// rather than a runtime failover interceptor.
+    /// </summary>
+    [JsonPropertyName("fallback")]
+    public string? Fallback { get; set; }
 }

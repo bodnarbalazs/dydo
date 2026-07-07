@@ -205,26 +205,25 @@ public partial class AgentRegistry : IAgentRegistry
         && !IsSessionPidAlive(agentName)
         && !ResumeInFlight(state);
 
-    // PID to persist in .session so a later claim can probe Claude-tab liveness.
-    // Prefer the nearest Claude ancestor (survives shell/subshell churn). On Windows
-    // claude ships as a Node script, so FindClaudeAncestor also accepts "node" (#0151).
-    // If the claim isn't running under a Claude tab (e.g. CLI tests), fall back to the
-    // immediate parent shell, which at least dies with the current terminal.
-    private static int? ResolveClaimedPid() =>
-        ProcessUtils.FindClaudeAncestor() ??
+    // PID to persist in .session so a later claim can probe host-tab liveness.
+    // Prefer the nearest known agent-host ancestor (survives shell/subshell churn).
+    // If the claim isn't running under a known host tab (e.g. CLI tests), fall back
+    // to the immediate parent shell, which at least dies with the current terminal.
+    private static int? ResolveClaimedPid(string? host) =>
+        ProcessUtils.FindAgentHostAncestor(host) ??
         ProcessUtils.GetParentPid(Environment.ProcessId);
 
     private void RefreshClaimedPid(string agentName, AgentSession existingSession)
     {
-        var newPid = ResolveClaimedPid();
+        var newPid = ResolveClaimedPid(existingSession.Host);
         if (newPid == existingSession.ClaimedPid) return;
         WriteClaimedPid(agentName, existingSession, newPid);
     }
 
     // Writes a .session with ClaimedPid mutated to newPid, preserving Agent/SessionId/Claimed.
     // Extracted from RefreshClaimedPid so RefreshResumedAgentSession can write a PID it has
-    // already validated against FindClaudeAncestor under the lock — without re-running
-    // ResolveClaimedPid, which would fall back to a non-claude parent shell PID if the
+    // already validated against the claimed host under the lock — without re-running
+    // ResolveClaimedPid, which would fall back to a non-host parent shell PID if the
     // ancestor briefly vanished after the validation step.
     private void WriteClaimedPid(string agentName, AgentSession existingSession, int? newPid)
     {
@@ -233,6 +232,7 @@ public partial class AgentRegistry : IAgentRegistry
             Agent = existingSession.Agent,
             SessionId = existingSession.SessionId,
             Host = AgentSession.NormalizeHost(existingSession.Host),
+            Model = existingSession.Model,
             Claimed = existingSession.Claimed,
             ClaimedPid = newPid
         };
@@ -316,7 +316,7 @@ public partial class AgentRegistry : IAgentRegistry
             if (priorState == null || priorState.Status != AgentStatus.Working) return;
 
             // 9. write the already-validated livePid directly. Do NOT call RefreshClaimedPid
-            //    (which re-runs ResolveClaimedPid and could fall back to a non-claude
+            //    (which re-runs ResolveClaimedPid and could fall back to a non-host
             //    parent shell PID if the ancestor vanished between predicate eval and now).
             WriteClaimedPid(agentName, fresh, livePid);
 
@@ -369,7 +369,7 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        var (sessionId, host) = ResolveSession(agentName);
+        var (sessionId, host, model) = ResolveSession(agentName);
         if (string.IsNullOrEmpty(sessionId))
         {
             error = "No session ID available. Claim must be initiated via hook.";
@@ -398,7 +398,7 @@ public partial class AgentRegistry : IAgentRegistry
             // Capture the prior session/state BEFORE SetupAgentWorkspace overwrites .session and
             // resets state.md — the recovery_kind classification needs the pre-reset values.
             // Closes the PR3 instrumentation half of the agent-crash-fixes batch.
-            SetupAgentWorkspace(agentName, sessionId, human, IsDispatched(state), host,
+            SetupAgentWorkspace(agentName, sessionId, human, IsDispatched(state), host, model,
                 priorSession: existingSession, priorState: state);
             return true;
         }
@@ -417,13 +417,13 @@ public partial class AgentRegistry : IAgentRegistry
     private static bool IsDispatched(AgentState? state) =>
         state?.Status == AgentStatus.Dispatched;
 
-    private (string? SessionId, string Host) ResolveSession(string agentName)
+    private (string? SessionId, string Host, string Model) ResolveSession(string agentName)
     {
         var pending = GetPendingSession(agentName);
         if (pending != null)
             return pending.Value;
 
-        return (GetSessionContext(), AgentSession.UnknownHost);
+        return (GetSessionContext(), AgentSession.UnknownHost, AgentSession.UnknownModel);
     }
 
     private bool ValidateClaimPreconditions(string agentName, string sessionId, string? human, out string error)
@@ -501,7 +501,7 @@ public partial class AgentRegistry : IAgentRegistry
     }
 
     private void SetupAgentWorkspace(string agentName, string sessionId, string? human, bool wasDispatched,
-        string host,
+        string host, string model,
         AgentSession? priorSession = null, AgentState? priorState = null)
     {
         var workspace = GetAgentWorkspace(agentName);
@@ -519,8 +519,9 @@ public partial class AgentRegistry : IAgentRegistry
             Agent = agentName,
             SessionId = sessionId,
             Host = AgentSession.NormalizeHost(host),
+            Model = AgentSession.NormalizeModel(model),
             Claimed = DateTime.UtcNow,
-            ClaimedPid = ResolveClaimedPid()
+            ClaimedPid = ResolveClaimedPid(host)
         };
 
         var sessionPath = Path.Combine(workspace, ".session");
@@ -542,14 +543,14 @@ public partial class AgentRegistry : IAgentRegistry
             }
         });
 
-        // Anchor the watchdog to this claim's claude ancestor. RegisterMainAnchor
+        // Anchor the watchdog to this claim's agent-host ancestor. RegisterMainAnchor
         // routes through PathUtils.FindMainDydoRoot so the anchor always lands in
         // the MAIN dydo root, never a worktree's — the watchdog only reads main.
         // Pass _basePath so the worktree-walkback seed is the registry's project
         // root rather than the process CWD (matters when the claim runs inside a
         // worktree dispatcher whose CWD is the worktree dir).
         // Closes #0154 (anchor-on-claim) and #0174 (worktree-claim wrong-dir).
-        try { WatchdogService.RegisterMainAnchor(ProcessUtils.FindClaudeAncestor(), _basePath); }
+        try { WatchdogService.RegisterMainAnchor(ProcessUtils.FindAgentHostAncestor(host), _basePath); }
         catch { /* anchoring is best-effort; never fail a claim because of it */ }
 
         try { File.WriteAllText(GetAgentHintPath(), agentName); } catch { }
@@ -755,6 +756,9 @@ public partial class AgentRegistry : IAgentRegistry
             File.Delete(marker);
 
         foreach (var marker in Directory.GetFiles(workspace, ".no-launch-nudge-*"))
+            File.Delete(marker);
+
+        foreach (var marker in Directory.GetFiles(workspace, ".auto-close-nudge-*"))
             File.Delete(marker);
 
         foreach (var marker in Directory.GetFiles(workspace, ".no-wait-nudge-*"))
@@ -1032,17 +1036,17 @@ public partial class AgentRegistry : IAgentRegistry
 
     // Closes #0183 (F1): the env-var fast paths in GetSessionContext / GetCurrentAgent used
     // to trust DYDO_AGENT unconditionally, so a parent shell that set DYDO_AGENT=X could
-    // make a `dydo` subprocess in a different agent's claude tab impersonate X. Now we
-    // require the named agent's ClaimedPid to match either this process or its claude
-    // ancestor. Honest dispatched-terminal callers pass (their .session.ClaimedPid is the
-    // claude PID their terminal spawned). Plain-shell attackers fail (no claude ancestor;
-    // PID mismatch). Override hook on ProcessUtils.FindClaudeAncestor lets tests inject.
+    // make a `dydo` subprocess in a different agent-host tab impersonate X. Now we
+    // require the named agent's ClaimedPid to match either this process or its claimed
+    // host ancestor. Honest dispatched-terminal callers pass (their .session.ClaimedPid is
+    // the host PID their terminal spawned). Plain-shell attackers fail (no host ancestor;
+    // PID mismatch). Override hook on ProcessUtils.FindAgentHostAncestor lets tests inject.
     internal static bool IsOwnedByCaller(AgentSession session)
     {
         if (session.ClaimedPid is not int claimedPid) return false;
         if (Environment.ProcessId == claimedPid) return true;
-        var claude = ProcessUtils.FindClaudeAncestor();
-        return claude.HasValue && claude.Value == claimedPid;
+        var ancestor = ProcessUtils.FindAgentHostAncestor(session.Host);
+        return ancestor.HasValue && ancestor.Value == claimedPid;
     }
 
     /// <summary>
@@ -1145,7 +1149,7 @@ public partial class AgentRegistry : IAgentRegistry
         return pending?.SessionId;
     }
 
-    private (string SessionId, string Host)? GetPendingSession(string agentName)
+    private (string SessionId, string Host, string Model)? GetPendingSession(string agentName)
     {
         var path = GetPendingSessionPath(agentName);
         if (!File.Exists(path)) return null;
@@ -1154,8 +1158,8 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var content = FileReadRetry.Read(path);
             File.Delete(path);  // Clean up after reading
-            var (sessionId, host) = AgentSessionManager.ParsePendingSession(content ?? "");
-            return string.IsNullOrEmpty(sessionId) ? null : (sessionId, host);
+            var (sessionId, host, model) = AgentSessionManager.ParsePendingSession(content ?? "");
+            return string.IsNullOrEmpty(sessionId) ? null : (sessionId, host, model);
         }
         catch
         {
@@ -1168,17 +1172,23 @@ public partial class AgentRegistry : IAgentRegistry
     /// Called by the guard hook when it intercepts a claim command.
     /// </summary>
     public void StorePendingSessionId(string agentName, string sessionId) =>
-        StorePendingSessionId(agentName, sessionId, AgentSession.UnknownHost);
+        StorePendingSessionId(agentName, sessionId, AgentSession.UnknownHost, AgentSession.UnknownModel);
 
     public void StorePendingSessionId(string agentName, string sessionId, string host)
+        => StorePendingSessionId(agentName, sessionId, host, AgentSession.UnknownModel);
+
+    public void StorePendingSessionId(string agentName, string sessionId, string host, string model)
     {
         var path = GetPendingSessionPath(agentName);
         var dir = Path.GetDirectoryName(path);
         if (dir != null) Directory.CreateDirectory(dir);
         var normalizedHost = AgentSession.NormalizeHost(host);
-        var content = normalizedHost == AgentSession.UnknownHost
+        var normalizedModel = AgentSession.NormalizeModel(model);
+        var content = normalizedHost == AgentSession.UnknownHost && normalizedModel == AgentSession.UnknownModel
             ? sessionId
-            : $"{sessionId}\n{normalizedHost}";
+            : normalizedModel == AgentSession.UnknownModel
+                ? $"{sessionId}\n{normalizedHost}"
+                : $"{sessionId}\n{normalizedHost}\n{normalizedModel}";
 
         // Retry on file access errors (concurrent access in tests)
         for (var i = 0; i < 3; i++)
@@ -1225,6 +1235,11 @@ public partial class AgentRegistry : IAgentRegistry
     public void StoreSessionContext(string sessionId, string? agentName, string host)
     {
         _sessionManager.StoreSessionContext(sessionId, agentName, host);
+    }
+
+    public void StoreSessionContext(string sessionId, string? agentName, string host, string model)
+    {
+        _sessionManager.StoreSessionContext(sessionId, agentName, host, model);
     }
 
     #endregion

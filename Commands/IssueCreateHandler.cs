@@ -18,6 +18,7 @@ internal static partial class IssueCreateHandler
             return ExitCodes.ToolError;
 
         var summaryLine = NormalizeSummary(summary);
+        var provenance = GetCurrentAgentProvenance();
 
         var issuesPath = IssueCommand.GetIssuesPath();
         Directory.CreateDirectory(issuesPath);
@@ -33,7 +34,7 @@ internal static partial class IssueCreateHandler
         var fileName = $"{newId:D4}-{Slugify(title)}.md";
         var filePath = Path.Combine(issuesPath, fileName);
 
-        File.WriteAllText(filePath, RenderIssueContent(newId, title, meta, summaryLine, bodyContent));
+        File.WriteAllText(filePath, RenderIssueContent(newId, title, meta, summaryLine, bodyContent, provenance));
         Console.WriteLine($"Created issue #{newId}: {fileName}");
 
         return ExitCodes.Success;
@@ -122,8 +123,21 @@ internal static partial class IssueCreateHandler
         return null;
     }
 
-    private static string RenderIssueContent(int id, string title, IssueMeta meta, string summaryLine, string? bodyContent)
+    private static ArtifactProvenance? GetCurrentAgentProvenance()
     {
+        var registry = new AgentRegistry();
+        var sessionId = registry.GetSessionContext();
+        var agent = registry.GetCurrentAgent(sessionId);
+        return agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
+    }
+
+    private static string RenderIssueContent(int id, string title, IssueMeta meta, string summaryLine, string? bodyContent,
+        ArtifactProvenance? provenance)
+    {
+        var provenanceYaml = provenance == null
+            ? ""
+            : $"\nfound-by-agent: {provenance.Agent}\nfound-by-vendor: {provenance.Vendor}\nfound-by-model: {provenance.Model}";
+
         return $"""
             ---
             title: {title}
@@ -132,7 +146,7 @@ internal static partial class IssueCreateHandler
             type: issue
             severity: {meta.Severity.ToString().ToLowerInvariant()}
             status: {IssueStatus.Open.ToString().ToLowerInvariant()}
-            found-by: {meta.FoundBy.ToString().ToLowerInvariant()}
+            found-by: {meta.FoundBy.ToString().ToLowerInvariant()}{provenanceYaml}
             date: {DateTime.UtcNow:yyyy-MM-dd}
             ---
 

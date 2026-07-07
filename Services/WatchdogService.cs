@@ -355,6 +355,7 @@ public static class WatchdogService
                         PollOrphanedWaits(dydoRoot);
                         PollAndResumeCrashedAgents(dydoRoot);
                         PollNeedsHuman(dydoRoot);
+                        PollModelCaps(dydoRoot);
                     }
                     catch (Exception ex)
                     {
@@ -427,7 +428,7 @@ public static class WatchdogService
                 ? FindProcessesOverride(pattern)
                 : ProcessUtils.FindProcessesByCommandLine(pattern);
 
-            var killsAttempted = KillClaudeProcesses(dydoRoot, agentName, pattern, pids, dispatchedBy, since);
+            var killsAttempted = KillAgentHostProcesses(dydoRoot, agentName, pattern, pids, dispatchedBy, since);
 
             // Same retry semantics as before: clear auto-close only when we actually killed
             // a whitelisted target, or when there are no candidates left at all. When matches
@@ -764,14 +765,14 @@ public static class WatchdogService
 
     // Whitelist target: claude (Linux/Mac, including the post-update
     // "claude.exe.old.<unix-ms>" rename on Windows) or node (Windows, where
-    // claude ships as a Node script). Every other matching PID — terminal
+    // claude/codex may ship as Node scripts), or codex. Every other matching PID — terminal
     // emulators that carry the prompt in their argv (gnome-terminal, konsole,
     // alacritty, kitty, …), bash wrappers, editors that happen to substring-
     // match — is fail-closed protected. Routing through MatchesProcessName
     // keeps the kill-side and anchor-side rename coverage in lockstep
     // (closes #0122, augments #0151).
-    private static int KillClaudeProcesses(string dydoRoot, string agentName, string pattern,
-                                           List<int> pids, string? dispatchedBy, string? since)
+    private static int KillAgentHostProcesses(string dydoRoot, string agentName, string pattern,
+                                              List<int> pids, string? dispatchedBy, string? since)
     {
         var killsAttempted = 0;
         foreach (var pid in pids)
@@ -781,6 +782,7 @@ public static class WatchdogService
                 var procName = ProcessUtils.GetProcessName(pid);
                 if (procName == null) continue;
                 if (!ProcessUtils.MatchesProcessName(procName, "claude") &&
+                    !ProcessUtils.MatchesProcessName(procName, "codex") &&
                     !ProcessUtils.MatchesProcessName(procName, "node"))
                     continue;
                 killsAttempted++;
@@ -869,6 +871,14 @@ public static class WatchdogService
             catch { }
         }
     }
+
+    /// <summary>
+    /// Per-tick restore of expired model caps (issue #214): once a <c>dydo model cap</c>'s reset time
+    /// passes, rebind its tiers back to the original model and re-sync. Extends the existing reconcile
+    /// rather than adding a daemon; a no-op on ticks with no expired (or no) caps.
+    /// </summary>
+    public static void PollModelCaps(string dydoRoot) =>
+        ModelCapService.RestoreExpired(DateTimeOffset.UtcNow, dydoRoot);
 
     /// <summary>
     /// Per-tick reconcile of the derived needs-human attention flag (Decision 030 §1). SETs it on a

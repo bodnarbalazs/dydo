@@ -102,7 +102,7 @@ public static class WaitCommand
         }
 
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
-        var claudePid = ProcessUtils.FindAncestorProcess("claude");
+        var hostPid = ProcessUtils.FindAgentHostAncestor(registry.GetSession(agentName)?.Host);
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
@@ -149,11 +149,7 @@ public static class WaitCommand
                     return ExitCodes.Success;
                 }
 
-                if (parentPid.HasValue && !ProcessUtils.IsProcessRunning(parentPid.Value))
-                    return ExitCodes.ToolError;
-
-                // Background bash survives Claude exit on Windows — check Claude ancestor too
-                if (claudePid.HasValue && !ProcessUtils.IsProcessRunning(claudePid.Value))
+                if (OwnerProcessExited(parentPid, hostPid))
                     return ExitCodes.ToolError;
 
                 Thread.Sleep(PollIntervalMs);
@@ -169,7 +165,7 @@ public static class WaitCommand
     private static int WaitForTask(AgentRegistry registry, string agentName, string inboxPath, string task)
     {
         var parentPid = ProcessUtils.GetParentPid(Environment.ProcessId);
-        var claudePid = ProcessUtils.FindAncestorProcess("claude");
+        var hostPid = ProcessUtils.FindAgentHostAncestor(registry.GetSession(agentName)?.Host);
         var cancelled = false;
         Console.CancelKeyPress += (_, e) => { cancelled = true; e.Cancel = true; };
 
@@ -191,10 +187,7 @@ public static class WaitCommand
                     return ExitCodes.Success;
                 }
 
-                if (parentPid.HasValue && !ProcessUtils.IsProcessRunning(parentPid.Value))
-                    return ExitCodes.ToolError;
-
-                if (claudePid.HasValue && !ProcessUtils.IsProcessRunning(claudePid.Value))
+                if (OwnerProcessExited(parentPid, hostPid))
                     return ExitCodes.ToolError;
 
                 Thread.Sleep(PollIntervalMs);
@@ -224,6 +217,12 @@ public static class WaitCommand
                 .Select(m => m.Task),
             StringComparer.OrdinalIgnoreCase);
     }
+
+    private static bool OwnerProcessExited(int? parentPid, int? hostPid) =>
+        IsDead(parentPid) || IsDead(hostPid);
+
+    private static bool IsDead(int? pid) =>
+        pid.HasValue && !ProcessUtils.IsProcessRunning(pid.Value);
 
     private static void PrintMessage(MessageFinder.MessageInfo message)
     {

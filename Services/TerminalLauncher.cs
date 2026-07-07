@@ -3,6 +3,7 @@ namespace DynaDocs.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using DynaDocs.Commands;
+using DynaDocs.Models;
 
 public class TerminalLauncher
 {
@@ -25,10 +26,28 @@ public class TerminalLauncher
         return $"{agentName} --inbox";
     }
 
+    internal static string NormalizeLaunchHost(string? host) =>
+        AgentSession.NormalizeHost(host) == "codex" ? "codex" : "claude";
+
+    internal static string GetLaunchExecutable(string? host) =>
+        NormalizeLaunchHost(host);
+
     public static string GetClaudeCommand(string agentName)
     {
         var prompt = GetClaudePrompt(agentName);
         return $"claude \"{prompt}\"";
+    }
+
+    public static string GetCodexCommand(string agentName)
+    {
+        var prompt = GetClaudePrompt(agentName);
+        return $"codex \"{prompt}\"";
+    }
+
+    public static string GetLaunchCommand(string agentName, string? host)
+    {
+        var prompt = GetClaudePrompt(agentName);
+        return $"{GetLaunchExecutable(host)} \"{prompt}\"";
     }
 
     /// <summary>
@@ -159,14 +178,14 @@ public class TerminalLauncher
         return $"cd '{workingDirectory}' && ";
     }
 
-    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null)
-        => WindowsTerminalLauncher.GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory);
+    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null, string host = "claude")
+        => WindowsTerminalLauncher.GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host);
 
-    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-        => LinuxTerminalLauncher.GetArguments(terminalName, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        => LinuxTerminalLauncher.GetArguments(terminalName, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
 
-    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
-        => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
 
     public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
         => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
@@ -185,13 +204,14 @@ public class TerminalLauncher
 
     public static IProcessStarter? ProcessStarterOverride { get; set; }
 
-    public static int LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public static int LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
-        return new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+        return new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
     }
 
-    public int Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null)
+    public int Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
+        var launchHost = NormalizeLaunchHost(host);
         try
         {
             // A dispatch can outlive its working directory (e.g. a merger finalized
@@ -202,11 +222,11 @@ public class TerminalLauncher
                     $"Working directory no longer exists: {workingDirectory}");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+                return WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+                return MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
 
-            var pid = LinuxTerminalLauncher.TryLaunch(_processStarter, LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot);
+            var pid = LinuxTerminalLauncher.TryLaunch(_processStarter, LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
             if (pid == 0)
                 throw new InvalidOperationException("No terminal found");
             return pid;
@@ -215,7 +235,7 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetClaudeCommand(agentName)}");
+            Console.WriteLine($"  {GetLaunchCommand(agentName, launchHost)}");
             return 0;
         }
     }

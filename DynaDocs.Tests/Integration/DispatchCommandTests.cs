@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
+using DynaDocs.Tests.Services;
 
 /// <summary>
 /// Integration tests for dispatch command --to and --escalate flags.
@@ -97,6 +99,101 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertStdoutContains("could not record dispatch window/auto-close metadata");
         var inbox = Directory.GetFiles(Path.Combine(brianDir, "inbox"), "*.md");
         Assert.NotEmpty(inbox); // the assignment inbox item was still written
+    }
+
+    [Theory]
+    [InlineData("claude")]
+    [InlineData("codex")]
+    public async Task Dispatch_DefaultsToCallingAgentSessionHost(string host)
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        var claim = await ClaimAgentWithHostAsync("Adele", host);
+        claim.AssertSuccess();
+
+        var recorder = new RecordingProcessStarter();
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        WatchdogService.StartProcessOverride = _ => null;
+        try
+        {
+            var result = await DispatchLaunchedAsync("code-writer", $"host-default-{host}", "Brief", to: "Brian", autoClose: true);
+
+            result.AssertSuccess();
+            Assert.NotEmpty(recorder.Started);
+            Assert.Contains($"{host} 'Brian --inbox'", JoinedArguments(recorder));
+        }
+        finally
+        {
+            WatchdogService.StartProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task Dispatch_UnknownCallingHost_DefaultsToClaude()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        var claim = await ClaimAgentAsync("Adele");
+        claim.AssertSuccess();
+
+        var recorder = new RecordingProcessStarter();
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        WatchdogService.StartProcessOverride = _ => null;
+        try
+        {
+            var result = await DispatchLaunchedAsync("code-writer", "host-unknown", "Brief", to: "Brian", autoClose: true);
+
+            result.AssertSuccess();
+            Assert.NotEmpty(recorder.Started);
+            Assert.Contains("claude 'Brian --inbox'", JoinedArguments(recorder));
+        }
+        finally
+        {
+            WatchdogService.StartProcessOverride = null;
+        }
+    }
+
+    [Theory]
+    [InlineData("claude", "--codex", "codex")]
+    [InlineData("codex", "--claude", "claude")]
+    public async Task Dispatch_HostOverrideWinsOverCallingAgentSessionHost(string callerHost, string flag, string expectedHost)
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        var claim = await ClaimAgentWithHostAsync("Adele", callerHost);
+        claim.AssertSuccess();
+
+        var recorder = new RecordingProcessStarter();
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        WatchdogService.StartProcessOverride = _ => null;
+        try
+        {
+            var result = await DispatchLaunchedAsync("code-writer", $"host-override-{expectedHost}", "Brief",
+                to: "Brian", autoClose: true, hostFlag: flag);
+
+            result.AssertSuccess();
+            Assert.NotEmpty(recorder.Started);
+            Assert.Contains($"{expectedHost} 'Brian --inbox'", JoinedArguments(recorder));
+        }
+        finally
+        {
+            WatchdogService.StartProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task Dispatch_CodexAndClaudeFlagsAreMutuallyExclusive()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var command = DispatchCommand.Create();
+        var result = await RunAsync(command,
+            "--role", "code-writer",
+            "--task", "host-conflict",
+            "--brief", "Brief",
+            "--no-launch",
+            "--codex",
+            "--claude");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Cannot specify both --codex and --claude");
     }
 
     #endregion
@@ -1069,6 +1166,108 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region --auto-close Nudge Tests (#222 Slice B)
+
+    [Fact]
+    public async Task Dispatch_MissingAutoClose_FirstAttempt_FailsWithNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "autoclose-test");
+
+        // Launched dispatch (no --no-launch) without --auto-close: soft-block once.
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "autoclose-test", "--brief", "Test brief" };
+        var result = await RunAsync(command, args);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("without --auto-close");
+        result.AssertStderrContains("re-run to proceed");
+    }
+
+    [Fact]
+    public async Task Dispatch_MissingAutoClose_SecondAttempt_Succeeds()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "autoclose-test");
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "autoclose-test", "--brief", "Test brief" };
+
+        // First attempt: blocked by the nudge
+        var result1 = await RunAsync(command, args);
+        result1.AssertExitCode(2);
+
+        // Re-running the same bare command proceeds
+        var result2 = await RunAsync(command, args);
+        result2.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_WithAutoClose_PassesClean()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "autoclose-test");
+
+        // --auto-close spins up the watchdog; keep it a no-op in tests.
+        WatchdogService.StartProcessOverride = _ => null;
+        try
+        {
+            var command = DispatchCommand.Create();
+            var args = new[] { "--role", "code-writer", "--task", "autoclose-test", "--brief", "Test brief", "--auto-close" };
+            var result = await RunAsync(command, args);
+
+            result.AssertSuccess();
+            Assert.DoesNotContain("without --auto-close", result.Stderr);
+            AssertFileNotExists("dydo/agents/Adele/.auto-close-nudge-autoclose-test");
+        }
+        finally
+        {
+            WatchdogService.StartProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public async Task Dispatch_NoLaunch_DoesNotFireAutoCloseNudge()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "autoclose-test");
+
+        // --no-launch has no terminal to linger, so it takes the no-launch nudge path,
+        // never the auto-close one — no auto-close marker is written.
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "autoclose-test", "--brief", "Test brief", "--no-launch" };
+        var result = await RunAsync(command, args);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("--no-launch flag");
+        Assert.DoesNotContain("without --auto-close", result.Stderr);
+        AssertFileNotExists("dydo/agents/Adele/.auto-close-nudge-autoclose-test");
+    }
+
+    [Fact]
+    public async Task Dispatch_MissingAutoClose_MarkerCleanedOnRelease()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("orchestrator", "autoclose-test");
+
+        var command = DispatchCommand.Create();
+        var args = new[] { "--role", "code-writer", "--task", "autoclose-test", "--brief", "Test brief" };
+        await RunAsync(command, args);
+
+        var markerPath = Path.Combine(TestDir, "dydo/agents/Adele/.auto-close-nudge-autoclose-test");
+        Assert.True(File.Exists(markerPath));
+
+        await ReleaseAgentAsync();
+        Assert.False(File.Exists(markerPath));
+    }
+
+    #endregion
+
     #region Inbox Prioritization
 
     [Fact]
@@ -1199,6 +1398,43 @@ public class DispatchCommandTests : IntegrationTestBase
         BypassNoLaunchNudge(task);
         return await RunAsync(command, args.ToArray());
     }
+
+    private async Task<CommandResult> DispatchLaunchedAsync(
+        string role,
+        string task,
+        string brief,
+        string? to = null,
+        bool autoClose = false,
+        string? hostFlag = null)
+    {
+        var command = DispatchCommand.Create();
+        var args = new List<string>
+        {
+            "--role", role,
+            "--task", task,
+            "--brief", brief,
+        };
+
+        if (to != null) { args.Add("--to"); args.Add(to); }
+        if (autoClose) { args.Add("--auto-close"); }
+        if (hostFlag != null) { args.Add(hostFlag); }
+
+        return await RunAsync(command, args.ToArray());
+    }
+
+    private async Task<CommandResult> ClaimAgentWithHostAsync(string agentName, string host)
+    {
+        var registry = new AgentRegistry(TestDir);
+        registry.StorePendingSessionId(agentName, TestSessionId, host);
+
+        var command = AgentCommand.Create();
+        var result = await RunAsync(command, "claim", agentName);
+        StoreSessionContext();
+        return result;
+    }
+
+    private static string JoinedArguments(RecordingProcessStarter recorder) =>
+        string.Join("\n", recorder.Started.Select(p => p.Arguments));
 
     private async Task<CommandResult> InboxShowAsync()
     {

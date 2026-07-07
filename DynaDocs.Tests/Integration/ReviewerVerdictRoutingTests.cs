@@ -58,6 +58,31 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task ReviewCompletePass_AppendsReviewerRuntimeProvenance()
+    {
+        await InitProjectAsync("none", "testuser", 4);
+
+        await ClaimAgentWithRuntimeAsync("Charlie", "codex", "gpt-5");
+        await SetRoleAsync("reviewer", "provenance-task");
+
+        WriteAgentStateFile("Brian", role: "code-writer", dispatchedBy: null, dispatchedByRole: null, status: "working");
+        PatchDispatchedBy("Charlie", "Brian", "code-writer");
+
+        var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
+        Directory.CreateDirectory(tasksPath);
+        var taskPath = Path.Combine(tasksPath, "provenance-task.md");
+        File.WriteAllText(taskPath, "---\nname: provenance-task\nstatus: review-pending\n---\n");
+
+        var result = await ReviewCompleteAsync("provenance-task", "pass", "LGTM");
+        result.AssertSuccess();
+
+        var content = File.ReadAllText(taskPath);
+        Assert.Contains("- Reviewed by: Charlie", content);
+        Assert.Contains("- reviewed-by-vendor: codex", content);
+        Assert.Contains("- reviewed-by-model: gpt-5", content);
+    }
+
+    [Fact]
     public async Task ReviewCompletePass_NoOrchestratorInChain_DoesNotCC()
     {
         await InitProjectAsync("none", "testuser", 3);

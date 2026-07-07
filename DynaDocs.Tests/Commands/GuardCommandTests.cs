@@ -130,6 +130,22 @@ public class GuardCommandTests : IDisposable
         Assert.Equal("unknown", host);
     }
 
+    [Fact]
+    public void InferModel_ExplicitDydoModel_ReturnsModel()
+    {
+        var model = GuardCommand.InferModel("""{"dydo_model":"gpt-5"}""");
+
+        Assert.Equal("gpt-5", model);
+    }
+
+    [Fact]
+    public void InferModel_NoSignal_ReturnsUnknown()
+    {
+        var model = GuardCommand.InferModel("""{"session_id":"s"}""");
+
+        Assert.Equal("unknown", model);
+    }
+
     #endregion
 
     #region Off-Limits Integration Tests

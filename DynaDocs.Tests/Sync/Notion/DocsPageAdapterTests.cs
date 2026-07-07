@@ -234,6 +234,86 @@ public class DocsPageAdapterTests : IDisposable
         Assert.Contains("line THREE notion", merged);
     }
 
+    [Fact]
+    public void Apply_ArchiveFailsNonAncestor_Propagates_AndIsNotRecordedAsLanded()
+    {
+        // Issue 0221: a NON-ancestor archive failure (a transient 5xx / rate-limit / auth) must PROPAGATE, never
+        // be swallowed — and the failed page must NOT be reported as a landed delete, so the caller keeps its base.
+        var (client, root, child) = SeedTree("");
+        var adapter = AdapterOver(client, root, root, child);
+        client.FailUpdate = true; // UpdatePage throws a 500 — not an archived-ancestor 400
+
+        var changes = new SyncChangeSet();
+        changes.Deletes.Add(child);
+        var deleted = new List<string>();
+
+        Assert.Throws<NotionApiException>(() => adapter.Apply(changes, new Dictionary<string, string>(), deleted));
+        Assert.DoesNotContain(child, deleted);       // never reported as landed
+        Assert.False(client.IsArchived(child));       // the live page was not archived
+    }
+
+    [Fact]
+    public void Apply_ArchiveUnderArchivedAncestor_IsTolerated_ButNotRecordedAsLanded()
+    {
+        // The ONE tolerated case (issue 0221): the page's ancestor is already archived, so Notion 400s the
+        // redundant archive. The adapter swallows it (the page is already trashed under its ancestor) — but it
+        // must NOT report the page as landed, so the caller keeps the base entry for the next tick's Retire.
+        var client = new FakeNotionClient();
+        var root = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page("workspace"),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Docs") } },
+        }).Id;
+        var folder = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page(root),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Folder") } },
+        }).Id;
+        var child = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page(folder),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Child") } },
+        }).Id;
+        client.UpdatePage(folder, new NotionPageUpdateRequest { Archived = true }); // ancestor pre-archived out of band
+
+        var adapter = AdapterOver(client, root, root, folder, child);
+        var changes = new SyncChangeSet();
+        changes.Deletes.Add(child); // archiving the child now 400s with "archived ancestor"
+        var deleted = new List<string>();
+
+        var ex = Record.Exception(() => adapter.Apply(changes, new Dictionary<string, string>(), deleted));
+
+        Assert.Null(ex);                        // tolerated, not propagated
+        Assert.DoesNotContain(child, deleted);  // but NOT recorded as landed — base retained for Retire
+    }
+
+    [Fact]
+    public void RunThroughEngine_ArchiveFailsNonAncestor_SurfacesError_RetainsBaseForRetry()
+    {
+        // Issue 0221 end-to-end: a repo doc is deleted and its page archive fails non-ancestrally. The failure
+        // must surface (so NotionSyncService returns ToolError) AND the base entry must be RETAINED for retry —
+        // never silently dropped, which would orphan the still-live Notion page behind a success exit.
+        var (client, root, child) = SeedTree("original");
+        var repoPath = Path.Combine(_dir, "guide.md");
+
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+        store.Set(new SyncDoc { LocalId = "guide", ExternalId = child, Fields = [], Body = "original", SourcePath = "" });
+
+        DocsPageAdapter Adapter() => new(
+            client, root, new Dictionary<string, string>(),
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
+
+        // The repo doc is gone (never written) → its page archive is queued; UpdatePage fails with a 500.
+        client.FailUpdate = true;
+        Assert.Throws<NotionApiException>(() => Runner().Run([]));
+
+        var retained = store.Get("guide");
+        Assert.NotNull(retained);                    // base entry kept for retry, not dropped
+        Assert.Equal(child, retained!.ExternalId);
+        Assert.False(client.IsArchived(child));       // the live page was never archived
+    }
+
     private static HashSet<string> ManagedFrom(BaseSnapshotStore store)
     {
         var ids = new HashSet<string>();

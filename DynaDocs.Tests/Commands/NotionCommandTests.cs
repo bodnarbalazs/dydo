@@ -97,6 +97,18 @@ public class NotionCommandTests
     }
 
     [Fact]
+    public void Sync_DocsAndSpineOnly_RejectedBeforeAnyWork()
+    {
+        // Issue 0221 finding 3: --docs + --spine-only is contradictory and rejected, consistent with
+        // --docs-only + --spine-only (before the fix --spine-only silently won and --docs was dropped).
+        var (code, _, stderr) = ConsoleCapture.All(() =>
+            NotionCommand.Create().Parse("sync --docs --spine-only").Invoke());
+
+        Assert.Equal(1, code);
+        Assert.Contains("mutually exclusive", stderr);
+    }
+
+    [Fact]
     public void Create_HasConnectAndRevealSubcommands()
     {
         var cmd = NotionCommand.Create();

@@ -44,11 +44,15 @@ public static class MessageService
 
         var filePath = Path.Combine(inboxPath, $"{messageId}-msg-{sanitizedSubject}.md");
         var subjectYaml = !string.IsNullOrEmpty(subject) ? $"\nsubject: {subject}" : "";
+        var provenance = ArtifactProvenance.FromSession(registry, fromName);
+        var provenanceYaml = provenance == null
+            ? ""
+            : $"\nfrom_vendor: {provenance.Vendor}\nfrom_model: {provenance.Model}";
         var content = $"""
             ---
             id: {messageId}
             type: message
-            from: {fromName}{subjectYaml}
+            from: {fromName}{provenanceYaml}{subjectYaml}
             received: {DateTime.UtcNow:o}
             ---
 

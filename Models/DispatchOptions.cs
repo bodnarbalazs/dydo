@@ -10,5 +10,6 @@ public record DispatchOptions(
     bool Escalate = false,
     bool UseTab = false,
     bool UseNewWindow = false,
-    bool AutoClose = false
+    bool AutoClose = false,
+    string? HostOverride = null
 );

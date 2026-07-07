@@ -22,6 +22,21 @@ const MAX_REVIEW_ROUNDS = 5
 const RAISE_HAND_NOTE =
   '\n\nIf the brief is ambiguous, contradicts the codebase, or you find yourself thrashing on the same root cause across rounds, set raiseHand=true with a reason instead of guessing — a human will step in.'
 
+// A model-bound QA-gate stage (reviewer, sprint-auditor) returns null from agent() when its
+// bound model is unavailable — the canonical case is Fable hitting its weekly spend cap, which
+// the API blocks with no retry and no native fallback (issue #214). Retrying ONCE on a declared
+// fallback keeps a model outage from taking the whole review/audit gate down: a null result then
+// means a real no-result, not a swallowed outage. Hardcoded (not read from dydo.json's
+// models.fallback) because the workflow sandbox has no filesystem/config access — keep it in step
+// with ConfigFactory.CreateDefaultModels().Fallback.
+const FALLBACK_MODEL = 'claude-sonnet-5'
+
+async function agentWithFallback(prompt, opts) {
+  const result = await agent(prompt, opts)
+  if (result != null) return result
+  return agent(prompt, { ...opts, model: FALLBACK_MODEL, label: `${opts.label ?? 'stage'}:fallback` })
+}
+
 // Worker structured outputs. All carry a `raiseHand` circuit-breaker so any
 // worker can proactively pull the human in mid-loop, independent of the cap.
 // branch/worktreePath are required so the merge phase knows where each slice's
@@ -178,7 +193,7 @@ phase('Audit')
 // code rounds (v1) — the findings surface to the orchestrator/human via the return.
 let auditVerdict, auditFindings
 if (results.some(r => r.merged)) {
-  const audit = await agent(auditPrompt(baseCommit), {
+  const audit = await agentWithFallback(auditPrompt(baseCommit), {
     agentType: 'sprint-auditor',
     label: 'sprint-audit',
     phase: 'Audit',
@@ -234,7 +249,7 @@ async function runSlice(slice) {
     if (!code || code.raiseHand)
       return escalate(slice, 'code-writer', round, code?.reason ?? 'code-writer did not return a result', { summary: code?.summary, ...work })
 
-    const review = await agent(reviewPrompt(slice, code.summary, work), {
+    const review = await agentWithFallback(reviewPrompt(slice, code.summary, work), {
       agentType: 'reviewer',
       label: `review:${slice.name}#${round}`,
       phase: 'Implement & review',

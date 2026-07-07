@@ -67,6 +67,16 @@ public static class DispatchCommand
             Description = "Auto-close the dispatched agent's terminal after release"
         };
 
+        var codexOption = new Option<bool>("--codex")
+        {
+            Description = "Launch the dispatched agent in Codex"
+        };
+
+        var claudeOption = new Option<bool>("--claude")
+        {
+            Description = "Launch the dispatched agent in Claude Code"
+        };
+
         var command = new Command("dispatch", "Dispatch work to another agent");
         command.Options.Add(roleOption);
         command.Options.Add(taskOption);
@@ -79,6 +89,8 @@ public static class DispatchCommand
         command.Options.Add(autoCloseOption);
         command.Options.Add(tabOption);
         command.Options.Add(newWindowOption);
+        command.Options.Add(codexOption);
+        command.Options.Add(claudeOption);
 
         command.SetAction(parseResult =>
         {
@@ -93,6 +105,14 @@ public static class DispatchCommand
             var useTab = parseResult.GetValue(tabOption);
             var useNewWindow = parseResult.GetValue(newWindowOption);
             var autoClose = parseResult.GetValue(autoCloseOption);
+            var useCodex = parseResult.GetValue(codexOption);
+            var useClaude = parseResult.GetValue(claudeOption);
+
+            if (useCodex && useClaude)
+            {
+                ConsoleOutput.WriteError("Cannot specify both --codex and --claude.");
+                return ExitCodes.ToolError;
+            }
 
             var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))
@@ -122,7 +142,8 @@ public static class DispatchCommand
                 }
             }
 
-            return DispatchService.Execute(new DispatchOptions(role, task, brief, files, to, noLaunch, escalate, useTab, useNewWindow, autoClose));
+            var hostOverride = useCodex ? "codex" : useClaude ? "claude" : null;
+            return DispatchService.Execute(new DispatchOptions(role, task, brief, files, to, noLaunch, escalate, useTab, useNewWindow, autoClose, hostOverride));
         });
 
         return command;

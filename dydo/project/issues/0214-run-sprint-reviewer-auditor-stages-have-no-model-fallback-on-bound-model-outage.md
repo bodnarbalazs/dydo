@@ -80,6 +80,33 @@ error-catching; stays out of Anthropic's lane; disposable when they ship native 
 Touches `ModelsConfig` (schema + fallback), a new `dydo model` command group, and the watchdog
 reconcile — Brian's compiler/sync territory.
 
+## Trigger automation — how to DETECT the cap (Dexter investigation, 2026-07-07)
+
+The agreed design leaves the *trigger* manual (`dydo model cap`). Investigation into programmatic
+detection (full report: `dydo/agents/Dexter/findings-usage-quota-detection.md`) found **no proactive
+per-model quota read** — you cannot ask "how much Fable is left" before a run — but **two reactive,
+model-tagged signals** that can automate the trigger:
+
+- **Option A (preferred, zero new infra).** On a hard cap the Fable-bound subagent terminates with the
+  plain-text marker `Agent terminated early due to an API error` and workflow `agent()` returns `null`
+  (also lands in `agent-<id>.jsonl` / `journal.jsonl`). run-sprint/inquisition **already half-see this** —
+  the bug is they treat this API-error-null identically to a genuine "no findings," which is what fires
+  the false "reviewer did not return a result" escalation. Fix: distinguish it → (1) don't escalate as
+  no-result, (2) retry the stage once on the declared fallback model, (3) optionally auto-write the
+  `dydo model cap` marker. Turns the silent hard-fail into a self-healing retry.
+- **Option B (upgrade, more infra).** Claude Code's OTel `claude_code.api_error` event carries
+  `status_code` (429 vs 529), `model`, and `query_source` (main|subagent|auxiliary) — the only surface
+  that's machine-readable AND model-tagged AND subagent-aware. Needs the OTLP exporter configured + exact
+  attribute names confirmed against live telemetry. Hold as the decoupled-detection upgrade.
+
+Dead ends confirmed: `/usage` (interactive-only), hooks (no usage fields; no 429 hook), statusline
+`rate_limits` (account-level 5h/7d, Pro/Max-only, main-session-only), `anthropic-ratelimit-*` headers
+(consumed internally by Claude Code, off dydo's path), `fallbackModel` (529-only; never 429 spend caps).
+
+**Recommended path:** ship A first, hold B. Both only automate the *trigger* and feed the already-agreed
+cap→rebind→re-sync→auto-restore machinery — so both stay disposable when Anthropic ships native spend-cap
+failover.
+
 ## Reproduction
 1. Hit the Fable 5 monthly spend limit (or otherwise make the reviewer tier's model unavailable).
 2. Run any `run-sprint`.

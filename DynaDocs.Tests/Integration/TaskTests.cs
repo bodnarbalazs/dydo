@@ -48,6 +48,21 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_Create_AssignedCurrentAgent_WritesRuntimeProvenance()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentWithRuntimeAsync("Adele", "codex", "gpt-5");
+
+        var result = await TaskCreateAsync("provenance-task", area: "general");
+
+        result.AssertSuccess();
+        var content = ReadFile("dydo/project/tasks/provenance-task.md");
+        Assert.Contains("assigned: Adele", content);
+        Assert.Contains("assigned-vendor: codex", content);
+        Assert.Contains("assigned-model: gpt-5", content);
+    }
+
+    [Fact]
     public async Task Task_Create_WithSpecialChars_SanitizesFilename()
     {
         await InitProjectAsync("none", "balazs", 3);

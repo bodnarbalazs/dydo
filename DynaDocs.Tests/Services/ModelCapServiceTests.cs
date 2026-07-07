@@ -156,14 +156,28 @@ public class ModelCapServiceTests : IDisposable
     [Fact]
     public void RestoreExpired_RestoresPastDueCap_ReSyncsOnce()
     {
-        ModelCapService.Cap("claude-fable-5", DateTimeOffset.Now.AddHours(-1), null, TextWriter.Null, TextWriter.Null, _projectRoot);
+        // Cap with a future reset, then advance the passed-in "now" past it — Cap rejects a past
+        // --until, so the expiry is modelled by moving the clock forward, not by capping into the past.
+        var until = DateTimeOffset.Now.AddHours(1);
+        ModelCapService.Cap("claude-fable-5", until, null, TextWriter.Null, TextWriter.Null, _projectRoot);
         _resyncCalls = 0;
 
-        var restored = ModelCapService.RestoreExpired(DateTimeOffset.UtcNow, _projectRoot);
+        var restored = ModelCapService.RestoreExpired(until.AddMinutes(1), _projectRoot);
 
         Assert.Equal(1, restored);
         Assert.Equal(1, _resyncCalls);
         Assert.Equal("claude-fable-5", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
+        Assert.False(File.Exists(MarkerPath("claude-fable-5")));
+    }
+
+    [Fact]
+    public void Cap_PastUntil_IsRejected()
+    {
+        var code = ModelCapService.Cap("claude-fable-5", DateTimeOffset.Now.AddHours(-1), null,
+            TextWriter.Null, TextWriter.Null, _projectRoot);
+
+        Assert.Equal(1, code);
+        Assert.Equal(0, _resyncCalls);
         Assert.False(File.Exists(MarkerPath("claude-fable-5")));
     }
 
@@ -193,11 +207,34 @@ public class ModelCapServiceTests : IDisposable
     [Fact]
     public void PollModelCaps_RestoresExpiredCapThroughWatchdogEntry()
     {
-        ModelCapService.Cap("claude-fable-5", DateTimeOffset.Now.AddMinutes(-5), null, TextWriter.Null, TextWriter.Null, _projectRoot);
+        // PollModelCaps compares against the real UtcNow, so seed an already-past marker directly
+        // rather than through Cap (which rejects a past --until).
+        SeedExpiredCap("claude-fable-5", "claude-sonnet-5", "anthropic", "strong");
 
         WatchdogService.PollModelCaps(Path.Combine(_projectRoot, "dydo"));
 
         Assert.Equal("claude-fable-5", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
+        Assert.False(File.Exists(MarkerPath("claude-fable-5")));
+    }
+
+    // Simulates a cap already applied and now past-due: rebind the tier and drop a past-due marker,
+    // bypassing Cap()'s future-until guard so the watchdog restore path can be exercised directly.
+    private void SeedExpiredCap(string model, string fallback, string vendor, string tier)
+    {
+        var config = LoadConfig();
+        config.Models!.Tiers[vendor][tier] = fallback;
+        SaveConfig(config);
+
+        var cap = new ModelCap
+        {
+            Model = model,
+            Fallback = fallback,
+            Until = DateTimeOffset.Now.AddMinutes(-5),
+            ReboundTiers = new List<ModelCapBinding> { new() { Vendor = vendor, Tier = tier } },
+        };
+        Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath(model))!);
+        File.WriteAllText(MarkerPath(model),
+            JsonSerializer.Serialize(cap, DydoDefaultJsonContext.Default.ModelCap));
     }
 
     [Theory]
@@ -212,14 +249,27 @@ public class ModelCapServiceTests : IDisposable
     }
 
     [Fact]
-    public void ParseUntil_YearOmitted_AssumesCurrentYear()
+    public void ParseUntil_YearOmitted_PreservesMonthDayAndNeverResolvesToThePast()
     {
-        var parsed = ModelCapService.ParseUntil("07-13 09:00");
+        // Dec 31 keeps its month/day through any rollover, and a year-omitted reset must always land
+        // in the future — even across a Dec->Jan boundary (the cap-defeating bug the review caught).
+        var parsed = ModelCapService.ParseUntil("12-31 23:59");
 
         Assert.NotNull(parsed);
-        Assert.Equal(DateTime.Now.Year, parsed.Value.Year);
-        Assert.Equal(7, parsed.Value.Month);
-        Assert.Equal(13, parsed.Value.Day);
+        Assert.Equal(12, parsed.Value.Month);
+        Assert.Equal(31, parsed.Value.Day);
+        Assert.True(parsed.Value > DateTimeOffset.Now);
+    }
+
+    [Fact]
+    public void ParseUntil_YearOmitted_RollsForwardWhenDateAlreadyPast()
+    {
+        // Jan 1 00:00 of the current year is (essentially always) already past, so it must roll to
+        // next year rather than resolve to a past instant that the watchdog would instantly restore.
+        var parsed = ModelCapService.ParseUntil("01-01 00:00");
+
+        Assert.NotNull(parsed);
+        Assert.True(parsed.Value > DateTimeOffset.Now, $"expected a future instant, got {parsed}");
     }
 
     [Fact]

@@ -119,6 +119,11 @@ public static partial class WatchdogLogger
             new ExitEvent(Now(), "exit", reason),
             WatchdogLogJsonContext.Default.ExitEvent);
 
+    public static void LogModelCapRestore(string dydoRoot, string model, string fallback) =>
+        Write(dydoRoot,
+            new ModelCapRestoreEvent(Now(), "model_cap_restored", model, fallback),
+            WatchdogLogJsonContext.Default.ModelCapRestoreEvent);
+
     private sealed record StartEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event,
@@ -191,6 +196,12 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("event")] string Event,
         [property: JsonPropertyName("reason")] string Reason);
 
+    private sealed record ModelCapRestoreEvent(
+        [property: JsonPropertyName("ts")] string Ts,
+        [property: JsonPropertyName("event")] string Event,
+        [property: JsonPropertyName("model")] string Model,
+        [property: JsonPropertyName("fallback")] string Fallback);
+
     [JsonSerializable(typeof(StartEvent))]
     [JsonSerializable(typeof(TickEvent))]
     [JsonSerializable(typeof(KillEvent))]
@@ -200,5 +211,6 @@ public static partial class WatchdogLogger
     [JsonSerializable(typeof(ParseFailureEvent))]
     [JsonSerializable(typeof(PollErrorEvent))]
     [JsonSerializable(typeof(ExitEvent))]
+    [JsonSerializable(typeof(ModelCapRestoreEvent))]
     private partial class WatchdogLogJsonContext : JsonSerializerContext { }
 }

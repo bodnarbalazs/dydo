@@ -24,7 +24,7 @@ public static class ModelCapService
     /// cap/restore config surgery don't emit native agent files.</summary>
     internal static Func<int>? ResyncOverride { get; set; }
 
-    private static int Resync() => ResyncOverride?.Invoke() ?? SyncCommand.Execute();
+    private static int Resync(string projectRoot) => ResyncOverride?.Invoke() ?? SyncCommand.Execute(projectRoot);
 
     private static string MarkerDir(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "model-caps");
@@ -68,6 +68,14 @@ public static class ModelCapService
             err.WriteLine("model cap: --fallback must differ from the capped model.");
             return ExitCodes.ValidationErrors;
         }
+        // Boundary validation: a non-future reset (a typo'd date, or a year-omitted reset that
+        // resolved to the past) would make the watchdog restore the cap on its very next tick,
+        // silently undoing it. Reject it here rather than write a self-defeating marker.
+        if (until <= DateTimeOffset.Now)
+        {
+            err.WriteLine($"model cap: --until {until:yyyy-MM-dd HH:mm} is not in the future.");
+            return ExitCodes.ValidationErrors;
+        }
 
         var dydoRoot = config.GetDydoRoot(startPath);
         var existing = LoadMarker(MarkerPath(dydoRoot, model));
@@ -97,7 +105,7 @@ public static class ModelCapService
             Until = until,
             ReboundTiers = toRebind,
         });
-        Resync();
+        Resync(Path.GetDirectoryName(configPath)!);
 
         @out.WriteLine($"Capped {model} → {fallback} until {until:yyyy-MM-dd HH:mm} "
             + $"({toRebind.Count} tier binding(s) rebound). Re-synced native agents.");
@@ -137,7 +145,7 @@ public static class ModelCapService
         RestoreBindings(loaded.Models, cap);
         config.SaveConfig(loaded, configPath);
         TryDelete(markerPath);
-        Resync();
+        Resync(Path.GetDirectoryName(configPath)!);
 
         @out.WriteLine($"Uncapped {model} — restored {cap.ReboundTiers.Count} tier binding(s). Re-synced native agents.");
         return ExitCodes.Success;
@@ -173,9 +181,14 @@ public static class ModelCapService
         foreach (var (_, cap) in expired)
             RestoreBindings(loaded.Models, cap);
         config.SaveConfig(loaded, configPath);
-        foreach (var (path, _) in expired)
+        foreach (var (path, cap) in expired)
+        {
             TryDelete(path);
-        Resync();
+            // Watchdog-only path: a cap silently expiring is a state change worth a trace, matching
+            // every other per-tick reconcile in the loop (the marker itself is gitignored).
+            WatchdogLogger.LogModelCapRestore(dydoRoot, cap.Model, cap.Fallback);
+        }
+        Resync(Path.GetDirectoryName(configPath)!);
 
         return expired.Count;
     }
@@ -197,8 +210,15 @@ public static class ModelCapService
         string[] noYear = { "MM-dd HH:mm", "M-d H:mm", "MM/dd HH:mm" };
         foreach (var f in noYear)
             if (DateTime.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-                return new DateTimeOffset(new DateTime(
-                    DateTime.Now.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0, DateTimeKind.Local));
+            {
+                // Year omitted: a weekly reset stated as "01-03" in late December means NEXT January,
+                // not the one ~360 days in the past. Roll forward so a year-omitted cap never resolves
+                // to a past instant (which the watchdog would restore on its very next tick).
+                var candidate = new DateTime(DateTime.Now.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0, DateTimeKind.Local);
+                if (candidate <= DateTime.Now)
+                    candidate = candidate.AddYears(1);
+                return new DateTimeOffset(candidate);
+            }
 
         // Last resort: honor anything the framework can read (e.g. an ISO string), assuming local.
         return DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var any)

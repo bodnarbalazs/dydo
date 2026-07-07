@@ -66,9 +66,9 @@ public static partial class SyncCommand
         return command;
     }
 
-    internal static int Execute()
+    internal static int Execute(string? projectRoot = null)
     {
-        var projectRoot = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
+        projectRoot ??= PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
         var baseRoles = RoleDefinitionService.GetBaseRoleDefinitions();
         var models = new ConfigService().LoadConfig(projectRoot)?.Models;
 

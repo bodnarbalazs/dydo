@@ -351,6 +351,12 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | `dydo notion sync [--dry-run] [--prune]` | Reconcile repo files ⇄ Notion |
 | `dydo notion reveal-token [--yes]` | Print the stored token (guarded break-glass) |
 
+### Model
+| Command | Description |
+|---------|-------------|
+| `dydo model cap <model> --until <time> [--fallback <model>]` | Rebind an unavailable model's tiers to a fallback until a reset time |
+| `dydo model uncap <model>` | Restore a capped model's tier bindings |
+
 ### Roles
 | Command | Description |
 |---------|-------------|

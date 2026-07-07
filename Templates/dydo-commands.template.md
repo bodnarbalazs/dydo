@@ -759,6 +759,29 @@ dydo notion sync --spine-only
 
 ---
 
+## Model Commands
+
+Time-boxed operational swaps for a model outage (issue #214). When a tier's bound model becomes unavailable — the canonical case is Fable hitting its weekly spend cap, which the API blocks with no retry and no native fallback — cap it to a fallback so the review/audit gate keeps running, then let it auto-restore.
+
+### dydo model cap
+
+Rebind every tier currently pointing at `<model>` to a fallback and re-run `dydo sync` so the compiled agents use it. Pass `--until <time>` (required) with the reset time from the limit error, in `[yyyy-]mm-dd hh:mm` local-time form (the year is optional). Pass `--fallback <model>` to choose the replacement; without it, `models.fallback` from dydo.json is used. A local marker records what to restore, and the watchdog puts the original bindings back once the reset time passes.
+
+```bash
+dydo model cap claude-fable-5 --until "07-13 09:00"
+dydo model cap claude-fable-5 --until "2026-07-13 09:00" --fallback claude-opus-4-8
+```
+
+### dydo model uncap
+
+Restore `<model>`'s tier bindings immediately — the manual counterpart to the watchdog's time-based restore. Reverses the rebind, clears the cap marker, and re-syncs.
+
+```bash
+dydo model uncap claude-fable-5
+```
+
+---
+
 ## Environment Variables
 
 | Variable | Description |

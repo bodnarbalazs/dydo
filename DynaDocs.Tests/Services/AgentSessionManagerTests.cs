@@ -59,6 +59,25 @@ public class AgentSessionManagerTests : IDisposable
     }
 
     [Fact]
+    public void GetSession_WithHost_ReturnsHost()
+    {
+        var dir = Path.Combine(_agentsPath, "Alice");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, ".session"), """
+            {
+              "Agent": "Alice",
+              "SessionId": "sess-1",
+              "Host": "codex",
+              "Claimed": "2026-01-01T00:00:00Z"
+            }
+            """);
+
+        var session = _manager.GetSession("Alice");
+        Assert.NotNull(session);
+        Assert.Equal("codex", session.Host);
+    }
+
+    [Fact]
     public void GetSession_CorruptFile_ReturnsNull()
     {
         var dir = Path.Combine(_agentsPath, "Alice");
@@ -140,6 +159,32 @@ public class AgentSessionManagerTests : IDisposable
 
         // File should be deleted after get
         Assert.Null(_manager.GetPendingSessionId("Alice"));
+    }
+
+    [Fact]
+    public void StorePendingSessionId_WithHost_ThenGetPendingSession()
+    {
+        _manager.StorePendingSessionId("Alice", "pending-456", "codex");
+
+        var result = _manager.GetPendingSession("Alice");
+
+        Assert.NotNull(result);
+        Assert.Equal("pending-456", result.Value.SessionId);
+        Assert.Equal("codex", result.Value.Host);
+    }
+
+    [Fact]
+    public void GetPendingSession_LegacySingleLine_DefaultsHostUnknown()
+    {
+        var dir = Path.Combine(_agentsPath, "Alice");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, ".pending-session"), "legacy-pending");
+
+        var result = _manager.GetPendingSession("Alice");
+
+        Assert.NotNull(result);
+        Assert.Equal("legacy-pending", result.Value.SessionId);
+        Assert.Equal("unknown", result.Value.Host);
     }
 
     [Fact]
@@ -258,7 +303,7 @@ public class AgentSessionManagerTests : IDisposable
     [Fact]
     public void ParseSessionContext_LegacyFormat_ReturnsSessionIdOnly()
     {
-        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("abc-123");
+        var (sessionId, agentName, _) = AgentSessionManager.ParseSessionContext("abc-123");
         Assert.Equal("abc-123", sessionId);
         Assert.Null(agentName);
     }
@@ -266,15 +311,39 @@ public class AgentSessionManagerTests : IDisposable
     [Fact]
     public void ParseSessionContext_VerifiedFormat_ReturnsBoth()
     {
-        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("abc-123\nAlice");
+        var (sessionId, agentName, _) = AgentSessionManager.ParseSessionContext("abc-123\nAlice");
         Assert.Equal("abc-123", sessionId);
         Assert.Equal("Alice", agentName);
     }
 
     [Fact]
+    public void ParseSessionContext_WithHost_ReturnsHost()
+    {
+        var (sessionId, agentName, host) = AgentSessionManager.ParseSessionContext("abc-123\nAlice\ncodex");
+        Assert.Equal("abc-123", sessionId);
+        Assert.Equal("Alice", agentName);
+        Assert.Equal("codex", host);
+    }
+
+    [Fact]
+    public void AgentSession_DeserializeLegacyJson_DefaultsHostUnknown()
+    {
+        var session = JsonSerializer.Deserialize("""
+            {
+              "Agent": "Alice",
+              "SessionId": "sess-1",
+              "Claimed": "2026-01-01T00:00:00Z"
+            }
+            """, DydoDefaultJsonContext.Default.AgentSession);
+
+        Assert.NotNull(session);
+        Assert.Equal("unknown", session.Host);
+    }
+
+    [Fact]
     public void ParseSessionContext_EmptyAgentName_ReturnsNull()
     {
-        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("abc-123\n");
+        var (sessionId, agentName, _) = AgentSessionManager.ParseSessionContext("abc-123\n");
         Assert.Equal("abc-123", sessionId);
         Assert.Null(agentName);
     }
@@ -282,7 +351,7 @@ public class AgentSessionManagerTests : IDisposable
     [Fact]
     public void ParseSessionContext_WhitespaceHandled()
     {
-        var (sessionId, agentName) = AgentSessionManager.ParseSessionContext("  abc-123  \n  Alice  ");
+        var (sessionId, agentName, _) = AgentSessionManager.ParseSessionContext("  abc-123  \n  Alice  ");
         Assert.Equal("abc-123", sessionId);
         Assert.Equal("Alice", agentName);
     }

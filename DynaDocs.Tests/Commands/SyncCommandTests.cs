@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Commands;
 
+using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -29,6 +30,37 @@ public class SyncCommandTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", "reviewer.md")));
         Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", "reviewer", "SKILL.md")));
+    }
+
+    [Fact]
+    public void SyncCodexRole_WritesAgentAndRepoSkillFiles()
+    {
+        SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+
+        Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml")));
+        Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", "reviewer", "SKILL.md")));
+    }
+
+    [Fact]
+    public void SyncCodexRole_EmitsOpenAiModelBinding()
+    {
+        SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
+        Assert.Contains("model = \"gpt-5.5\"", agent);
+    }
+
+    [Fact]
+    public void SyncCodexRole_EmitsDeveloperInstructions()
+    {
+        SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
+        Assert.Contains("developer_instructions = \"\"\"", agent);
+        Assert.Contains("Read these for project context before working:", agent);
+        Assert.Contains("- dydo/guides/coding-standards.md", agent);
+        Assert.DoesNotContain("must_reads", agent);
+        Assert.DoesNotContain(agent.Split('\n'), line => line.StartsWith("instructions = \"\"\""));
     }
 
     [Fact]
@@ -143,12 +175,153 @@ public class SyncCommandTests : IDisposable
             {
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "agents", $"{role}.md")), $"missing agent: {role}");
                 Assert.True(File.Exists(Path.Combine(_testDir, ".claude", "skills", role, "SKILL.md")), $"missing skill: {role}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "agents", $"{role}.toml")), $"missing codex agent: {role}");
+                Assert.True(File.Exists(Path.Combine(_testDir, ".agents", "skills", role, "SKILL.md")), $"missing repo skill: {role}");
             }
+            Assert.True(File.Exists(Path.Combine(_testDir, ".codex", "hooks.json")), "missing codex hooks");
+            AssertCodexHooksShape();
         }
         finally
         {
             Directory.SetCurrentDirectory(originalDir);
         }
+    }
+
+    [Fact]
+    public void WriteCodexHooks_PreservesCustomEntries()
+    {
+        Directory.CreateDirectory(Path.Combine(_testDir, ".codex"));
+        File.WriteAllText(Path.Combine(_testDir, ".codex", "hooks.json"), """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  {
+                    "matcher": "CustomTool",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo custom"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": "CustomSubstring",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo before dydo guard after"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": "Mixed",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "dydo guard"
+                      },
+                      {
+                        "type": "command",
+                        "command": "echo mixed custom"
+                      }
+                    ]
+                  }
+                ],
+                "Stop": [
+                  {
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "dydo guard --stop"
+                      },
+                      {
+                        "type": "command",
+                        "command": "echo stop"
+                      }
+                    ]
+                  },
+                  {
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo before dydo guard --stop after"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+            """);
+
+        SyncCommand.WriteCodexHooks(_testDir);
+
+        var settings = ReadCodexHooks();
+        var hooks = Assert.IsType<JsonObject>(settings["hooks"]);
+        Assert.Null(settings["PreToolUse"]);
+        Assert.Null(settings["Stop"]);
+
+        var preToolUse = Assert.IsType<JsonArray>(hooks["PreToolUse"]);
+        Assert.Contains(preToolUse, entry => entry?["matcher"]?.GetValue<string>() == "CustomTool");
+        Assert.Contains(preToolUse, entry =>
+            entry?["matcher"]?.GetValue<string>() == "CustomSubstring" &&
+            HookCommands(entry).Contains("echo before dydo guard after"));
+        Assert.Contains(preToolUse, entry =>
+            entry?["matcher"]?.GetValue<string>() == "Mixed" &&
+            HookCommands(entry).SequenceEqual(["echo mixed custom"]));
+        Assert.Equal(1, CountExactHookCommand(preToolUse, "dydo guard"));
+
+        var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
+        Assert.Contains(stop, entry => HookCommands(entry).SequenceEqual(["echo stop"]));
+        Assert.Contains(stop, entry => HookCommands(entry).Contains("echo before dydo guard --stop after"));
+        Assert.Equal(1, CountExactHookCommand(stop, "dydo guard --stop"));
+    }
+
+    private JsonObject ReadCodexHooks() =>
+        Assert.IsType<JsonObject>(JsonNode.Parse(
+            File.ReadAllText(Path.Combine(_testDir, ".codex", "hooks.json"))));
+
+    private static List<string> HookCommands(JsonNode? entry)
+    {
+        var entryObject = Assert.IsType<JsonObject>(entry);
+        var hooks = Assert.IsType<JsonArray>(entryObject["hooks"]);
+        return hooks
+            .OfType<JsonObject>()
+            .Select(hook => hook["command"]?.GetValue<string>())
+            .Where(command => command != null)
+            .Select(command => command!)
+            .ToList();
+    }
+
+    private static int CountExactHookCommand(JsonArray entries, string command) =>
+        entries.Sum(entry => HookCommands(entry).Count(existing => existing == command));
+
+    private void AssertCodexHooksShape()
+    {
+        var settings = ReadCodexHooks();
+        Assert.Null(settings["PreToolUse"]);
+        Assert.Null(settings["Stop"]);
+
+        var hooks = Assert.IsType<JsonObject>(settings["hooks"]);
+        var preToolUse = Assert.IsType<JsonArray>(hooks["PreToolUse"]);
+        var guardEntry = Assert.Single(preToolUse, entry =>
+            entry?.ToJsonString().Contains("dydo guard") == true);
+        Assert.NotNull(guardEntry);
+        var matcher = guardEntry["matcher"]?.GetValue<string>();
+        Assert.NotNull(matcher);
+        Assert.Contains("Edit", matcher);
+        Assert.Contains("Write", matcher);
+        Assert.Contains("Read", matcher);
+        Assert.Contains("Bash", matcher);
+        Assert.Contains("PowerShell", matcher);
+        Assert.Contains("Agent", matcher);
+        Assert.Contains("EnterPlanMode", matcher);
+        Assert.Contains("ExitPlanMode", matcher);
+        Assert.Contains("NotebookEdit", matcher);
+        Assert.Contains("AskUserQuestion", matcher);
+        Assert.Contains("apply_patch", matcher);
+
+        var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
+        Assert.Contains(stop, entry => entry?.ToJsonString().Contains("dydo guard --stop") == true);
     }
 
     [Fact]
@@ -283,6 +456,15 @@ public class SyncCommandTests : IDisposable
     {
         var (model, effort) = SyncCommand.ResolveModel(TestModels(), "reviewer");
         Assert.Equal("model-strong", model);
+        Assert.Null(effort);
+    }
+
+    [Fact]
+    public void ResolveModel_OpenAiDefault_ReturnsGpt55()
+    {
+        var (model, effort) = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), "reviewer", "openai");
+
+        Assert.Equal("gpt-5.5", model);
         Assert.Null(effort);
     }
 

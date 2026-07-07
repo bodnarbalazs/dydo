@@ -33,13 +33,13 @@ internal static class AgentListHandler
 
         if (hasWorktrees)
         {
-            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Waiting For",-14} {"Worktree",-16} {"Role",-15}");
-            Console.WriteLine(new string('-', 82));
+            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Host",-8} {"Human",-12} {"Waiting For",-14} {"Worktree",-16} {"Role",-15}");
+            Console.WriteLine(new string('-', 91));
         }
         else
         {
-            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Human",-12} {"Waiting For",-14} {"Role",-15}");
-            Console.WriteLine(new string('-', 66));
+            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Host",-8} {"Human",-12} {"Waiting For",-14} {"Role",-15}");
+            Console.WriteLine(new string('-', 75));
         }
 
         var allWithInbox = new HashSet<string>(
@@ -50,6 +50,7 @@ internal static class AgentListHandler
         {
             var displayName = allWithInbox.Contains(agent.Name) ? agent.Name + "*" : agent.Name;
             var status = agent.Status.ToString().ToLowerInvariant();
+            var host = GetHostDisplay(registry, agent.Name);
             var assignedHuman = agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "-";
             var role = agent.Role ?? "-";
             var waitTargets = registry.GetWaitMarkers(agent.Name);
@@ -60,11 +61,11 @@ internal static class AgentListHandler
             if (hasWorktrees)
             {
                 var wt = worktrees.TryGetValue(agent.Name, out var info) ? info.Display : "-";
-                Console.WriteLine($"{displayName,-10} {status,-10} {assignedHuman,-12} {waitingFor,-14} {wt,-16} {role,-15}");
+                Console.WriteLine($"{displayName,-10} {status,-10} {host,-8} {assignedHuman,-12} {waitingFor,-14} {wt,-16} {role,-15}");
             }
             else
             {
-                Console.WriteLine($"{displayName,-10} {status,-10} {assignedHuman,-12} {waitingFor,-14} {role,-15}");
+                Console.WriteLine($"{displayName,-10} {status,-10} {host,-8} {assignedHuman,-12} {waitingFor,-14} {role,-15}");
             }
         }
 
@@ -122,13 +123,13 @@ internal static class AgentListHandler
 
         if (hasWorktrees)
         {
-            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Role",-15} {"Waiting For",-14} {"Worktree",-16} {"Task"}");
-            Console.WriteLine(new string('-', 82));
+            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Host",-8} {"Role",-15} {"Waiting For",-14} {"Worktree",-16} {"Task"}");
+            Console.WriteLine(new string('-', 91));
         }
         else
         {
-            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Role",-15} {"Waiting For",-14} {"Task"}");
-            Console.WriteLine(new string('-', 66));
+            Console.WriteLine($"{"Agent",-10} {"Status",-10} {"Host",-8} {"Role",-15} {"Waiting For",-14} {"Task"}");
+            Console.WriteLine(new string('-', 75));
         }
 
         var agentsWithInbox = new HashSet<string>(
@@ -139,6 +140,7 @@ internal static class AgentListHandler
         {
             var displayName = agentsWithInbox.Contains(agent.Name) ? agent.Name + "*" : agent.Name;
             var status = agent.Status.ToString().ToLowerInvariant();
+            var host = GetHostDisplay(registry, agent.Name);
             var role = agent.Role ?? "-";
             var task = agent.Task ?? "-";
             var waitTargets = registry.GetWaitMarkers(agent.Name);
@@ -149,11 +151,11 @@ internal static class AgentListHandler
             if (hasWorktrees)
             {
                 var wt = worktrees.TryGetValue(agent.Name, out var info) ? info.Display : "-";
-                Console.WriteLine($"{displayName,-10} {status,-10} {role,-15} {waitingFor,-14} {wt,-16} {task}");
+                Console.WriteLine($"{displayName,-10} {status,-10} {host,-8} {role,-15} {waitingFor,-14} {wt,-16} {task}");
             }
             else
             {
-                Console.WriteLine($"{displayName,-10} {status,-10} {role,-15} {waitingFor,-14} {task}");
+                Console.WriteLine($"{displayName,-10} {status,-10} {host,-8} {role,-15} {waitingFor,-14} {task}");
             }
         }
 
@@ -183,6 +185,12 @@ internal static class AgentListHandler
             result[agent.Name] = (display, stale);
         }
         return result;
+    }
+
+    private static string GetHostDisplay(AgentRegistry registry, string agentName)
+    {
+        var host = registry.GetSession(agentName)?.Host;
+        return string.IsNullOrWhiteSpace(host) ? "-" : AgentSession.NormalizeHost(host);
     }
 
     private static void PrintLegend(bool hasInbox, bool hasStale)

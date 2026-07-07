@@ -232,6 +232,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             Agent = existingSession.Agent,
             SessionId = existingSession.SessionId,
+            Host = AgentSession.NormalizeHost(existingSession.Host),
             Claimed = existingSession.Claimed,
             ClaimedPid = newPid
         };
@@ -368,7 +369,7 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        var sessionId = ResolveSessionId(agentName);
+        var (sessionId, host) = ResolveSession(agentName);
         if (string.IsNullOrEmpty(sessionId))
         {
             error = "No session ID available. Claim must be initiated via hook.";
@@ -397,7 +398,7 @@ public partial class AgentRegistry : IAgentRegistry
             // Capture the prior session/state BEFORE SetupAgentWorkspace overwrites .session and
             // resets state.md — the recovery_kind classification needs the pre-reset values.
             // Closes the PR3 instrumentation half of the agent-crash-fixes batch.
-            SetupAgentWorkspace(agentName, sessionId, human, IsDispatched(state),
+            SetupAgentWorkspace(agentName, sessionId, human, IsDispatched(state), host,
                 priorSession: existingSession, priorState: state);
             return true;
         }
@@ -416,12 +417,13 @@ public partial class AgentRegistry : IAgentRegistry
     private static bool IsDispatched(AgentState? state) =>
         state?.Status == AgentStatus.Dispatched;
 
-    private string? ResolveSessionId(string agentName)
+    private (string? SessionId, string Host) ResolveSession(string agentName)
     {
-        var sessionId = GetPendingSessionId(agentName);
-        if (string.IsNullOrEmpty(sessionId))
-            sessionId = GetSessionContext();
-        return sessionId;
+        var pending = GetPendingSession(agentName);
+        if (pending != null)
+            return pending.Value;
+
+        return (GetSessionContext(), AgentSession.UnknownHost);
     }
 
     private bool ValidateClaimPreconditions(string agentName, string sessionId, string? human, out string error)
@@ -499,6 +501,7 @@ public partial class AgentRegistry : IAgentRegistry
     }
 
     private void SetupAgentWorkspace(string agentName, string sessionId, string? human, bool wasDispatched,
+        string host,
         AgentSession? priorSession = null, AgentState? priorState = null)
     {
         var workspace = GetAgentWorkspace(agentName);
@@ -515,6 +518,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             Agent = agentName,
             SessionId = sessionId,
+            Host = AgentSession.NormalizeHost(host),
             Claimed = DateTime.UtcNow,
             ClaimedPid = ResolveClaimedPid()
         };
@@ -1137,14 +1141,21 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     public string? GetPendingSessionId(string agentName)
     {
+        var pending = GetPendingSession(agentName);
+        return pending?.SessionId;
+    }
+
+    private (string SessionId, string Host)? GetPendingSession(string agentName)
+    {
         var path = GetPendingSessionPath(agentName);
         if (!File.Exists(path)) return null;
 
         try
         {
-            var sessionId = FileReadRetry.Read(path)?.Trim();
+            var content = FileReadRetry.Read(path);
             File.Delete(path);  // Clean up after reading
-            return sessionId;
+            var (sessionId, host) = AgentSessionManager.ParsePendingSession(content ?? "");
+            return string.IsNullOrEmpty(sessionId) ? null : (sessionId, host);
         }
         catch
         {
@@ -1156,18 +1167,25 @@ public partial class AgentRegistry : IAgentRegistry
     /// Stores a pending session ID for an agent.
     /// Called by the guard hook when it intercepts a claim command.
     /// </summary>
-    public void StorePendingSessionId(string agentName, string sessionId)
+    public void StorePendingSessionId(string agentName, string sessionId) =>
+        StorePendingSessionId(agentName, sessionId, AgentSession.UnknownHost);
+
+    public void StorePendingSessionId(string agentName, string sessionId, string host)
     {
         var path = GetPendingSessionPath(agentName);
         var dir = Path.GetDirectoryName(path);
         if (dir != null) Directory.CreateDirectory(dir);
+        var normalizedHost = AgentSession.NormalizeHost(host);
+        var content = normalizedHost == AgentSession.UnknownHost
+            ? sessionId
+            : $"{sessionId}\n{normalizedHost}";
 
         // Retry on file access errors (concurrent access in tests)
         for (var i = 0; i < 3; i++)
         {
             try
             {
-                File.WriteAllText(path, sessionId);
+                File.WriteAllText(path, content);
                 return;
             }
             catch (IOException) when (i < 2)
@@ -1202,6 +1220,11 @@ public partial class AgentRegistry : IAgentRegistry
     public void StoreSessionContext(string sessionId, string? agentName = null)
     {
         _sessionManager.StoreSessionContext(sessionId, agentName);
+    }
+
+    public void StoreSessionContext(string sessionId, string? agentName, string host)
+    {
+        _sessionManager.StoreSessionContext(sessionId, agentName, host);
     }
 
     #endregion

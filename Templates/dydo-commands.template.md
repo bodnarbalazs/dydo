@@ -16,13 +16,14 @@ Complete reference for all `dydo` commands.
 Initialize DynaDocs in a project.
 
 ```bash
-dydo init <integration>              # Initialize with integration (claude, none)
+dydo init <integration>              # Initialize with integration (claude, codex, none)
 dydo init <integration> --join       # Join existing project as new team member
 dydo init claude --name "Your Name" --agents 3  # Non-interactive setup
+dydo init codex --name "Your Name" --agents 3   # Non-interactive Codex setup
 ```
 
 **Arguments:**
-- `integration` - Integration type: `claude` (with hooks wired up) or `none` (for other systems, more setup needed)
+- `integration` - Integration type: `claude` or `codex` (with hooks wired up), or `none` (for other systems, more setup needed)
 
 **Options:**
 - `--join` - Join existing project instead of creating new
@@ -43,15 +44,16 @@ dydo whoami
 
 ### dydo sync
 
-Compile dydo role definitions into native Claude Code artifacts — a `.claude/agents/<role>.md` sub-agent and a `.claude/skills/<role>/SKILL.md` per role (Decision 024).
+Compile dydo role definitions into native Claude Code and Codex artifacts — Claude `.claude/agents/<role>.md` / `.claude/skills/<role>/SKILL.md` outputs plus Codex `.codex/agents/<role>.toml` / `.agents/skills/<role>/SKILL.md` outputs (Decision 024).
 
 ```bash
-dydo sync   # emit .claude/agents/ and .claude/skills/ from roles + docs
+dydo sync   # emit Claude and Codex agents/skills from roles + docs
 ```
 
 **Behavior:**
 - Worker roles (code-writer, reviewer, test-writer, docs-writer, sprint-auditor) emit both an agent definition and a skill.
 - Tier-1 managers (orchestrator, co-thinker, chief-of-staff) and `planner` emit a skill only.
+- Codex outputs are written to `.codex/agents/` and `.agents/skills/`.
 - Model tiers declared per role are bound to concrete models at sync time (Decision 028).
 
 ---

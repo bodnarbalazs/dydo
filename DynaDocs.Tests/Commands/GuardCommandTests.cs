@@ -80,6 +80,58 @@ public class GuardCommandTests : IDisposable
         }
     }
 
+    #region Host Inference
+
+    [Fact]
+    public void InferHost_ExplicitCodex_ReturnsCodex()
+    {
+        var input = new HookInput { TranscriptPath = "C:/Users/me/.claude/projects/session.jsonl" };
+
+        var host = GuardCommand.InferHost(input, """{"dydo_host":"codex"}""");
+
+        Assert.Equal("codex", host);
+    }
+
+    [Fact]
+    public void InferHost_ExplicitUnknown_DoesNotUseTranscriptPath()
+    {
+        var input = new HookInput { TranscriptPath = "C:/Users/me/.claude/projects/session.jsonl" };
+
+        var host = GuardCommand.InferHost(input, """{"host":"unknown"}""");
+
+        Assert.Equal("unknown", host);
+    }
+
+    [Fact]
+    public void InferHost_CodexTranscriptPath_ReturnsCodex()
+    {
+        var input = new HookInput { TranscriptPath = "C:/Users/me/.codex/sessions/session.jsonl" };
+
+        var host = GuardCommand.InferHost(input);
+
+        Assert.Equal("codex", host);
+    }
+
+    [Fact]
+    public void InferHost_ClaudeTranscriptPath_ReturnsClaude()
+    {
+        var input = new HookInput { TranscriptPath = "C:/Users/me/.claude/projects/session.jsonl" };
+
+        var host = GuardCommand.InferHost(input);
+
+        Assert.Equal("claude", host);
+    }
+
+    [Fact]
+    public void InferHost_NoSignal_ReturnsUnknown()
+    {
+        var host = GuardCommand.InferHost(new HookInput());
+
+        Assert.Equal("unknown", host);
+    }
+
+    #endregion
+
     #region Off-Limits Integration Tests
 
     [Theory]

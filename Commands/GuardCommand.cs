@@ -130,7 +130,7 @@ public static partial class GuardCommand
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
         bool? RunInBackground, bool HasCliArgs,
-        string? AgentId, string? AgentType);
+        string? AgentId, string? AgentType, string Host);
 
     private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
     {
@@ -138,6 +138,7 @@ public static partial class GuardCommand
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
         string? agentId = null, agentType = null;
+        var host = AgentSession.UnknownHost;
         bool? runInBackground = null;
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
@@ -150,6 +151,7 @@ public static partial class GuardCommand
                     sessionId = hookInput.SessionId;
                     agentId = hookInput.AgentId;
                     agentType = hookInput.AgentType;
+                    host = InferHost(hookInput, json);
                     filePath = hookInput.GetFilePath();
                     action = hookInput.GetAction();
                     toolName = hookInput.ToolName?.ToLowerInvariant();
@@ -169,7 +171,61 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, runInBackground, hasCliArgs,
-            agentId, agentType);
+            agentId, agentType, host);
+    }
+
+    internal static string InferHost(HookInput hookInput, string? rawJson = null)
+    {
+        var explicitHost = TryReadExplicitHost(rawJson);
+        if (explicitHost != null)
+            return explicitHost;
+
+        return InferHostFromPath(hookInput.TranscriptPath);
+    }
+
+    private static string? TryReadExplicitHost(string? rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(rawJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+                return null;
+
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                if (!IsExplicitHostProperty(property.Name) || property.Value.ValueKind != JsonValueKind.String)
+                    continue;
+
+                return AgentSession.NormalizeHost(property.Value.GetString());
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static bool IsExplicitHostProperty(string propertyName) =>
+        propertyName.Equals("host", StringComparison.OrdinalIgnoreCase) ||
+        propertyName.Equals("dydo_host", StringComparison.OrdinalIgnoreCase);
+
+    private static string InferHostFromPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return AgentSession.UnknownHost;
+
+        var normalized = path.Replace('\\', '/').ToLowerInvariant();
+        if (normalized.Contains("/.claude/", StringComparison.Ordinal))
+            return "claude";
+        if (normalized.Contains("/.codex/", StringComparison.Ordinal))
+            return "codex";
+
+        return AgentSession.UnknownHost;
     }
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
@@ -267,7 +323,7 @@ public static partial class GuardCommand
 
         var routed = RouteToolLayers(
             filePath, action, bashCommand, toolName, searchPath, runInBackground,
-            sessionId, offLimitsService, bashAnalyzer, registry);
+            sessionId, ctx.Host, offLimitsService, bashAnalyzer, registry);
         if (routed != null) return routed.Value;
 
         // ============================================================
@@ -347,7 +403,7 @@ public static partial class GuardCommand
     /// </summary>
     private static int? RouteToolLayers(
         string? filePath, string? action, string? bashCommand, string? toolName,
-        string? searchPath, bool? runInBackground, string? sessionId,
+        string? searchPath, bool? runInBackground, string? sessionId, string host,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
@@ -362,7 +418,7 @@ public static partial class GuardCommand
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(toolName, bashCommand))
         {
-            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry, runInBackground);
+            return HandleBashCommand(bashCommand!, sessionId, host, offLimitsService, bashAnalyzer, registry, runInBackground);
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — require
@@ -472,7 +528,9 @@ public static partial class GuardCommand
         AgentRegistry registry)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
-            return HandleBashCommand(ctx.BashCommand!, ctx.SessionId, offLimitsService, bashAnalyzer, registry, runInBackground, isWorker: true);
+            return HandleBashCommand(
+                ctx.BashCommand!, ctx.SessionId, AgentSession.UnknownHost,
+                offLimitsService, bashAnalyzer, registry, runInBackground, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
@@ -613,6 +671,7 @@ public static partial class GuardCommand
     private static int HandleBashCommand(
         string command,
         string? sessionId,
+        string host,
         IOffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry,
@@ -632,7 +691,7 @@ public static partial class GuardCommand
                 Console.Error.WriteLine("  messaging belong to the top-level orchestrator, not a worker.");
                 return ExitCodes.ToolError;
             }
-            return HandleDydoBashCommand(command, sessionId, registry, runInBackground);
+            return HandleDydoBashCommand(command, sessionId, host, registry, runInBackground);
         }
 
         // Hardcoded dangerous patterns — security checks before configurable nudges
@@ -848,13 +907,14 @@ public static partial class GuardCommand
         return nudges;
     }
 
-    private static int HandleDydoBashCommand(string command, string sessionId, AgentRegistry registry, bool? runInBackground)
+    private static int HandleDydoBashCommand(
+        string command, string sessionId, string host, AgentRegistry registry, bool? runInBackground)
     {
         // #0196: phase-1 single-line write removed. The unverifiable shape it produced is now
         // discarded by AgentSessionManager.GetSessionContext, so writing it served no purpose
         // beyond opening the cross-terminal race window. Only the verified phase-2 write below
         // (with agent name) is published.
-        HandleClaimSessionStorage(command, sessionId, registry);
+        HandleClaimSessionStorage(command, sessionId, host, registry);
 
         var agent = registry.GetCurrentAgent(sessionId);
 
@@ -884,14 +944,14 @@ public static partial class GuardCommand
 
         // Phase 2: enrich session context with agent name for race detection.
         if (agent != null)
-            registry.StoreSessionContext(sessionId, agent.Name);
+            registry.StoreSessionContext(sessionId, agent.Name, host);
 
         EmitWorktreeAllowIfNeeded();
 
         return ExitCodes.Success;
     }
 
-    private static void HandleClaimSessionStorage(string command, string sessionId, AgentRegistry registry)
+    private static void HandleClaimSessionStorage(string command, string sessionId, string host, AgentRegistry registry)
     {
         var (isClaim, agentName) = ParseClaimCommand(command);
         if (!isClaim || string.IsNullOrEmpty(agentName)) return;
@@ -916,7 +976,7 @@ public static partial class GuardCommand
         }
 
         if (registry.IsValidAgentName(agentName))
-            registry.StorePendingSessionId(agentName, sessionId);
+            registry.StorePendingSessionId(agentName, sessionId, host);
     }
 
     private static int HandleNonDydoBash(

@@ -20,7 +20,7 @@ public static class HelpCommand
         Console.WriteLine("DynaDocs (dydo) - Documentation-driven context and agent orchestration for AI coding assistants.");
         Console.WriteLine();
         Console.WriteLine("Setup Commands:");
-        Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, none)");
+        Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, codex, none)");
         Console.WriteLine("  init <int> --join      Join existing project as new team member");
         Console.WriteLine("  whoami                 Show current agent identity");
         Console.WriteLine();
@@ -67,7 +67,7 @@ public static class HelpCommand
         Console.WriteLine("  roles create <name>    Scaffold a new custom role definition");
         Console.WriteLine("  roles reset            Regenerate base role files (human only)");
         Console.WriteLine("  roles reset --all      Remove all roles and regenerate base (human only)");
-        Console.WriteLine("  sync                   Compile roles into native .claude/ agents + skills");
+        Console.WriteLine("  sync                   Compile roles into native Claude + Codex agents/skills");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate config, roles, templates, agent state");

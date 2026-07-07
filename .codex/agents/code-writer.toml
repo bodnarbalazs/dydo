@@ -1,8 +1,10 @@
 name = "code-writer"
 description = "Implements features and fixes bugs in source code."
+model = "gpt-5.5"
+tools = "read, grep, glob, bash, edit, write"
+
 developer_instructions = """
-You are a **code-writer**. Implements features and fixes bugs in source code. You produce and modify the project's files as your task requires. Your methodology lives in
-the `code-writer` skill; follow it.
+You are a **code-writer**. Implements features and fixes bugs in source code. You produce and modify the project's files as your task requires. Your methodology lives in the `code-writer` skill; follow it.
 
 
 Read these for project context before working:

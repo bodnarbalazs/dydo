@@ -7,11 +7,11 @@ type: reference
 
 Own your project's knowledge — then put agents to work on it.
 
-DynaDocs (dydo) is the **policy and context layer** for AI coding agents. It gives Claude Code's native agents structured, versioned project knowledge to work from, and a guard that enforces your rules of the road on every action they take. **Claude owns the engine — spawning, scheduling, isolation, fan-out. dydo owns the map and the rules.**
+DynaDocs (dydo) is the **policy and context layer** for AI coding agents. It gives native coding-agent runtimes structured, versioned project knowledge to work from, and a guard that enforces your rules of the road on every action they take. **The coding tool owns the engine - spawning, scheduling, isolation, fan-out. dydo owns the map and the rules.**
 
 Your knowledge lives in your repo as human-readable, git-diffable docs — the single source of truth. Turn on the optional Notion sync and your team gets a live PM board as a *view*; the data never leaves your control.
 
-**Built for Claude Code.** dydo uses Claude Code's `PreToolUse` hook for guard enforcement and compiles into its native subagents, skills, and workflows. Support for other AI coding tools may come later.
+**Built for Claude Code and Codex.** dydo wires guard hooks for both runtimes and compiles roles into their native agents and skills.
 
 <!-- VISUAL: demo video goes here. The old poem-orchestration video shows terminal-dispatch, which no longer exists in 2.0 — it needs re-recording. See "Demo video shot list" note handed to balazs. -->
 
@@ -21,7 +21,7 @@ Your time is the most precious resource in the equation. You should focus on you
 
 Agents write code. Agents review code. Agents write tests. Agents write documentation. Agents coordinate other agents. The human is the last step, not the first reviewer. If it can be done by an agent, why waste your time on it?
 
-dydo makes this dependable. On its own, an AI agent starts every session cold and works without rails. dydo fixes both: it gives agents **persistent, structured memory** (your docs), **enforced guardrails** (a guard hook that fires on every action — including inside subagents and workflows), and a **compiler** that turns your roles and docs into the native agents and skills Claude Code runs. You describe what you want. Agents figure out the rest — inside the lines you drew.
+dydo makes this dependable. On its own, an AI agent starts every session cold and works without rails. dydo fixes both: it gives agents **persistent, structured memory** (your docs), **enforced guardrails** (a guard hook that fires on every action — including inside subagents and workflows), and a **compiler** that turns your roles and docs into the native agents and skills. You describe what you want. Agents figure out the rest — inside the lines you drew.
 
 ```mermaid
 flowchart LR
@@ -46,7 +46,7 @@ dydo gives you explicit, structured control over project context. Your documenta
 
 - **Documentation as memory** — Your docs are the source of truth; agents re-read them each session, and `dydo sync` preloads the right context into each role.
 - **Universal guardrails** — Off-limits paths (hard block) and custom nudges (regex → block or warn) enforced on *every* tool call, in the main thread **and** inside every subagent and workflow. This is the crown jewel.
-- **Compiles to native Claude Code** — `dydo sync` turns your roles and docs into `.claude/agents/` and `.claude/skills/`. No hand-maintained agent files.
+- **Compiles to native artifacts** - `dydo sync` turns your roles and docs into Claude `.claude/agents/` / `.claude/skills/` and Codex `.codex/agents/` / `.agents/skills/`. No hand-maintained agent files.
 - **Read-only roles, natively enforced** — The reviewer agent ships without Edit/Write tools. "Reviewers don't write code" isn't a policy, it's the tool profile.
 - **No self-review** — The agent that wrote the code doesn't review it. Fresh eyes, by construction.
 - **Native orchestration** — Fan out dozens of subagents through Claude Code workflows. Ships flagship workflows: `run-sprint` (sliced code→review→merge→audit) and `inquisition` (multi-lens QA gate).
@@ -112,9 +112,11 @@ Run from your project's root directory:
 
 ```bash
 dydo init claude
+# or
+dydo init codex
 ```
 
-This creates the `dydo/` documentation tree, templates, and configures the Claude Code guard hook automatically.
+This creates the `dydo/` documentation tree, templates, and configures the selected runtime's guard hook automatically.
 
 ### 2. Compile your roles into native agents
 
@@ -122,11 +124,11 @@ This creates the `dydo/` documentation tree, templates, and configures the Claud
 dydo sync
 ```
 
-This emits `.claude/agents/` and `.claude/skills/` from your role and doc definitions — the subagents and methodology skills Claude Code will run. Re-run it whenever you change a role or its context.
+This emits Claude `.claude/agents/` / `.claude/skills/` and Codex `.codex/agents/` / `.agents/skills/` from your role and doc definitions. Re-run it whenever you change a role or its context.
 
 ### 3. Link your AI entry point
 
-Add this to your `CLAUDE.md`:
+Add this to your runtime entry point (`CLAUDE.md` for Claude Code, `AGENTS.md` for Codex):
 
 ```markdown
 This project uses an agent orchestration framework (dydo).
@@ -171,7 +173,7 @@ Two tiers of identity make this work:
 | Tier | Who | Form |
 |------|-----|------|
 | **Tier 1** | co-thinker, orchestrator, chief-of-staff — the agents you talk to | Named, persistent identity; one per terminal; claims with `dydo agent claim` |
-| **Tier 2** | code-writer, reviewer, test-writer, docs-writer, sprint-auditor, inquisitor | Claude-managed subagents; identity = agent type + instance; **no claim**, spawned on demand |
+| **Tier 2** | code-writer, reviewer, test-writer, docs-writer, sprint-auditor, inquisitor | Runtime-managed subagents; identity = agent type + instance; **no claim**, spawned on demand |
 
 ---
 
@@ -198,7 +200,7 @@ flowchart TB
 
 ## Agent Roles
 
-dydo ships **seven base roles**. `dydo sync` compiles each into the native artifacts Claude Code runs.
+dydo ships **seven base roles**. `dydo sync` compiles each into the native artifacts your coding runtime runs.
 
 | Role | Purpose | Compiles to |
 |------|---------|-------------|
@@ -236,22 +238,25 @@ The token is read from stdin (never a CLI argument, never logged) and stored loc
 
 ```
 project/
-├── dydo.json                    # Configuration (paths, roles, model tiers, Notion)
-├── CLAUDE.md                    # AI entry point
-├── .claude/
-│   ├── agents/                  # Compiled subagents  ← dydo sync
-│   └── skills/                  # Compiled role skills ← dydo sync
-└── dydo/
-    ├── index.md                 # Documentation root
-    ├── understand/              # Domain concepts, architecture
-    ├── guides/                  # How-to guides
-    ├── reference/               # API docs, specs
-    ├── project/                 # Decisions, issues, tasks, backlog, changelog
-    ├── _system/templates/       # Customizable templates
-    ├── _system/template-additions/  # Template extension points
-    ├── _system/roles/           # Role definitions (.role.json)
-    ├── _assets/                 # Images, diagrams
-    └── agents/                  # Tier-1 agent workspaces (gitignored)
+|-- dydo.json                    # Configuration (paths, roles, model tiers, Notion)
+|-- CLAUDE.md                    # Claude Code entry point
+|-- AGENTS.md                    # Codex entry point
+|-- .claude/
+|   |-- agents/                  # Compiled Claude subagents <- dydo sync
+|   `-- skills/                  # Compiled Claude role skills <- dydo sync
+|-- .codex/agents/               # Compiled Codex agents <- dydo sync
+|-- .agents/skills/              # Compiled Codex skills <- dydo sync
+`-- dydo/
+    |-- index.md                 # Documentation root
+    |-- understand/              # Domain concepts, architecture
+    |-- guides/                  # How-to guides
+    |-- reference/               # API docs, specs
+    |-- project/                 # Decisions, issues, tasks, backlog, changelog
+    |-- _system/templates/       # Customizable templates
+    |-- _system/template-additions/  # Template extension points
+    |-- _system/roles/           # Role definitions (.role.json)
+    |-- _assets/                 # Images, diagrams
+    `-- agents/                  # Tier-1 agent workspaces (gitignored)
 ```
 
 ---
@@ -279,9 +284,9 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 ### Setup
 | Command | Description |
 |---------|-------------|
-| **`dydo init <integration>`** | **Initialize project (`claude`, `none`)** |
+| **`dydo init <integration>`** | **Initialize project (`claude`, `codex`, `none`)** |
 | **`dydo init <integration> --join`** | **Join existing project as a new team member** |
-| **`dydo sync`** | **Compile roles → `.claude/` agents + skills** |
+| **`dydo sync`** | **Compile roles to Claude and Codex agents + skills** |
 | `dydo validate` | Validate configuration and roles |
 | *`dydo whoami`* | *Show current agent identity* |
 

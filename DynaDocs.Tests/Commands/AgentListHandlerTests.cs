@@ -53,6 +53,31 @@ public class AgentListHandlerTests : IDisposable
     }
 
     [Fact]
+    public void ShowAllAgents_ShowsHostColumn()
+    {
+        WriteAgentSession("Adele", "codex");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        Assert.Contains("Host", stdout);
+        var columns = SplitAgentLine(stdout, "Adele");
+        Assert.Equal("codex", columns[2]);
+    }
+
+    [Fact]
+    public void ShowAllAgents_NoSession_ShowsHostDash()
+    {
+        CreateAgentWorkspace("Adele");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        var columns = SplitAgentLine(stdout, "Adele");
+        Assert.Equal("-", columns[2]);
+    }
+
+    [Fact]
     public void ShowAllAgents_WithoutWorktrees_OmitsWorktreeColumn()
     {
         CreateAgentWorkspace("Adele");
@@ -127,6 +152,20 @@ public class AgentListHandlerTests : IDisposable
 
         Assert.Contains("Worktree", stdout);
         Assert.Contains("Adele-0314", stdout);
+    }
+
+    [Fact]
+    public void ShowHumanAgents_ShowsHostColumn()
+    {
+        WriteAgentState("Adele", "working");
+        WriteAgentSession("Adele", "claude");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowHumanAgents(_registry, false, "testuser"));
+
+        Assert.Contains("Host", stdout);
+        var columns = SplitAgentLine(stdout, "Adele");
+        Assert.Equal("claude", columns[2]);
     }
 
     [Fact]
@@ -242,6 +281,27 @@ public class AgentListHandlerTests : IDisposable
     private void CreateWorktreeDir(string worktreeId)
     {
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId));
+    }
+
+    private void WriteAgentSession(string name, string host)
+    {
+        var workspace = _registry.GetAgentWorkspace(name);
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".session"), $$"""
+            {
+              "Agent": "{{name}}",
+              "SessionId": "session-{{name}}",
+              "Host": "{{host}}",
+              "Claimed": "2026-01-01T00:00:00Z"
+            }
+            """);
+    }
+
+    private static string[] SplitAgentLine(string stdout, string agentName)
+    {
+        var line = stdout.Split(Environment.NewLine)
+            .Single(l => l.StartsWith(agentName, StringComparison.Ordinal));
+        return line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
     private static string CaptureStdout(Action action) => ConsoleCapture.Stdout(action);

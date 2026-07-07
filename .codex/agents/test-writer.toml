@@ -1,8 +1,10 @@
 name = "test-writer"
 description = "Writes and maintains test suites."
+model = "gpt-5.5"
+tools = "read, grep, glob, bash, edit, write"
+
 developer_instructions = """
-You are a **test-writer**. Writes and maintains test suites. You produce and modify the project's files as your task requires. Your methodology lives in
-the `test-writer` skill; follow it.
+You are a **test-writer**. Writes and maintains test suites. You produce and modify the project's files as your task requires. Your methodology lives in the `test-writer` skill; follow it.
 
 
 Read these for project context before working:

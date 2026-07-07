@@ -99,6 +99,12 @@ public static class ConfigFactory
                 ["strong"] = "claude-fable-5",
                 ["standard"] = "claude-opus-4-8",
                 ["light"] = "claude-haiku-4-5"
+            },
+            ["openai"] = new()
+            {
+                ["strong"] = "gpt-5.5",
+                ["standard"] = "gpt-5.5",
+                ["light"] = "gpt-5.5"
             }
         },
         Roles = new Dictionary<string, string>

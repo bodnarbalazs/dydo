@@ -108,14 +108,21 @@ public class AgentSessionManager
     /// </summary>
     public string? GetPendingSessionId(string agentName)
     {
+        var pending = GetPendingSession(agentName);
+        return pending?.SessionId;
+    }
+
+    internal (string SessionId, string Host)? GetPendingSession(string agentName)
+    {
         var path = GetPendingSessionPath(agentName);
         if (!File.Exists(path)) return null;
 
         try
         {
-            var sessionId = FileReadRetry.Read(path)?.Trim();
+            var content = FileReadRetry.Read(path);
             File.Delete(path);
-            return sessionId;
+            var (sessionId, host) = ParsePendingSession(content ?? "");
+            return string.IsNullOrEmpty(sessionId) ? null : (sessionId, host);
         }
         catch
         {
@@ -123,20 +130,32 @@ public class AgentSessionManager
         }
     }
 
+    internal static (string? SessionId, string Host) ParsePendingSession(string content)
+    {
+        var lines = content.Replace("\r\n", "\n").Split('\n');
+        var sessionId = lines.Length > 0 ? lines[0].Trim() : null;
+        var host = lines.Length > 1 ? lines[1].Trim() : null;
+        return (sessionId, AgentSession.NormalizeHost(host));
+    }
+
     /// <summary>
     /// Stores a pending session ID for an agent.
     /// </summary>
-    public void StorePendingSessionId(string agentName, string sessionId)
+    public void StorePendingSessionId(string agentName, string sessionId, string host = AgentSession.UnknownHost)
     {
         var path = GetPendingSessionPath(agentName);
         var dir = Path.GetDirectoryName(path);
         if (dir != null) Directory.CreateDirectory(dir);
+        var normalizedHost = AgentSession.NormalizeHost(host);
+        var content = normalizedHost == AgentSession.UnknownHost
+            ? sessionId
+            : $"{sessionId}\n{normalizedHost}";
 
         for (var i = 0; i < 3; i++)
         {
             try
             {
-                File.WriteAllText(path, sessionId);
+                File.WriteAllText(path, content);
                 return;
             }
             catch (IOException) when (i < 2)
@@ -161,7 +180,7 @@ public class AgentSessionManager
             var content = FileReadRetry.Read(path);
             if (content == null) return null;
 
-            var (sessionId, agentName) = ParseSessionContext(content);
+            var (sessionId, agentName, _) = ParseSessionContext(content);
             if (string.IsNullOrEmpty(sessionId)) return null;
 
             // #0196: drop the legacy single-line read. Only the verified two-line format
@@ -188,15 +207,16 @@ public class AgentSessionManager
     /// - Legacy: "{sessionId}" (single line)
     /// - Verified: "{sessionId}\n{agentName}" (two lines)
     /// </summary>
-    internal static (string? sessionId, string? agentName) ParseSessionContext(string content)
+    internal static (string? SessionId, string? AgentName, string Host) ParseSessionContext(string content)
     {
-        var newlineIdx = content.IndexOf('\n');
-        if (newlineIdx < 0)
-            return (content.Trim(), null);
-
-        var sessionId = content[..newlineIdx].Trim();
-        var agentName = content[(newlineIdx + 1)..].Trim();
-        return (sessionId, string.IsNullOrEmpty(agentName) ? null : agentName);
+        var lines = content.Replace("\r\n", "\n").Split('\n');
+        var sessionId = lines.Length > 0 ? lines[0].Trim() : null;
+        var agentName = lines.Length > 1 ? lines[1].Trim() : null;
+        var host = lines.Length > 2 ? lines[2].Trim() : null;
+        return (
+            sessionId,
+            string.IsNullOrEmpty(agentName) ? null : agentName,
+            AgentSession.NormalizeHost(host));
     }
 
     /// <summary>
@@ -238,13 +258,18 @@ public class AgentSessionManager
     /// Stores the session ID to context file, optionally with the agent name
     /// for cross-terminal race detection.
     /// </summary>
-    public void StoreSessionContext(string sessionId, string? agentName = null)
+    public void StoreSessionContext(string sessionId, string? agentName = null, string host = AgentSession.UnknownHost)
     {
         var path = GetSessionContextPath();
         var dir = Path.GetDirectoryName(path);
         if (dir != null) Directory.CreateDirectory(dir);
 
-        var content = agentName != null ? $"{sessionId}\n{agentName}" : sessionId;
+        var normalizedHost = AgentSession.NormalizeHost(host);
+        var content = agentName != null
+            ? normalizedHost == AgentSession.UnknownHost
+                ? $"{sessionId}\n{agentName}"
+                : $"{sessionId}\n{agentName}\n{normalizedHost}"
+            : sessionId;
 
         for (var i = 0; i < 3; i++)
         {

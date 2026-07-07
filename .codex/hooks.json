@@ -2,11 +2,21 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell",
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion|apply_patch",
         "hooks": [
           {
             "type": "command",
             "command": "dydo guard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard --stop"
           }
         ]
       }

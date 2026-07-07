@@ -23,7 +23,7 @@ public static class InitCommand
         var integrationArgument = new Argument<string>("integration")
         {
             Arity = ArgumentArity.ExactlyOne,
-            Description = "Integration to configure (claude, none)"
+            Description = "Integration to configure (claude, codex, none)"
         };
 
         var joinOption = new Option<bool>("--join")
@@ -72,6 +72,7 @@ public static class InitCommand
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
+        integration = integration.ToLowerInvariant();
 
         var configService = new ConfigService();
         var existingConfig = configService.FindConfigFile();
@@ -107,7 +108,7 @@ public static class InitCommand
             Console.WriteLine($"  ✓ {ConfigService.ConfigFileName}");
 
             ScaffoldProject(configService, config, configPath, projectRoot, integration);
-            PrintInitSummary(config, humanName);
+            PrintInitSummary(config, humanName, integration);
 
             return ExitCodes.Success;
         }
@@ -127,6 +128,14 @@ public static class InitCommand
             Path.Combine(projectRoot, "CLAUDE.md"),
             () => TemplateGenerator.GenerateClaudeMd(projectName),
             "CLAUDE.md (entry point)");
+
+        if (integration == "codex")
+        {
+            WriteIfNotExists(
+                Path.Combine(projectRoot, "AGENTS.md"),
+                () => GenerateAgentsMd(projectName),
+                "AGENTS.md (Codex entry point)");
+        }
 
         var dydoRoot = Path.Combine(projectRoot, config.Structure.Root);
         Directory.CreateDirectory(dydoRoot);
@@ -152,11 +161,16 @@ public static class InitCommand
             ConfigureClaudeHooks(projectRoot);
             Console.WriteLine("  ✓ Claude Code hooks configured");
         }
+        else if (integration == "codex")
+        {
+            ConfigureCodexHooks(projectRoot);
+            Console.WriteLine("  - Codex hooks configured");
+        }
 
         GenerateRoleFilesIfMissing(projectRoot);
     }
 
-    private static void PrintInitSummary(DydoConfig config, string humanName)
+    private static void PrintInitSummary(DydoConfig config, string humanName, string integration)
     {
         Console.WriteLine();
         var agentNamesList = string.Join(", ", config.Agents.Pool.Take(5));
@@ -166,7 +180,12 @@ public static class InitCommand
         Console.WriteLine($"Agents assigned to {humanName}: {agentNamesList}");
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
-        Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
+        if (integration == "codex")
+            Console.WriteLine("  AGENTS.md -> dydo/index.md -> dydo/workflows/*.md -> must-reads");
+        else
+        {
+            Console.WriteLine("  CLAUDE.md → dydo/index.md → dydo/workflows/*.md → must-reads");
+        }
         Console.WriteLine();
         Console.WriteLine("Next steps:");
         Console.WriteLine($"  1. Set environment variable: export DYDO_HUMAN=\"{humanName}\"");
@@ -190,6 +209,7 @@ public static class InitCommand
     {
         if (!IsValidIntegration(integration))
             return IntegrationError(integration);
+        integration = integration.ToLowerInvariant();
 
         var configService = new ConfigService();
         var configPath = configService.FindConfigFile();
@@ -265,6 +285,16 @@ public static class InitCommand
 
         GenerateRoleFilesIfMissing(projectRoot);
 
+        if (integration == "codex")
+        {
+            WriteIfNotExists(
+                Path.Combine(projectRoot, "AGENTS.md"),
+                () => GenerateAgentsMd(Path.GetFileName(projectRoot)),
+                "AGENTS.md (Codex entry point)");
+            ConfigureCodexHooks(projectRoot);
+            Console.WriteLine("  - Codex hooks configured");
+        }
+
         Console.WriteLine();
         Console.WriteLine($"Agents assigned to {humanName}: {string.Join(", ", assignedAgents)}");
         Console.WriteLine();
@@ -301,7 +331,7 @@ public static class InitCommand
 
     private static int IntegrationError(string integration)
     {
-        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, none");
+        ConsoleOutput.WriteError($"Unknown integration: {integration}. Valid options: claude, codex, none");
         return ExitCodes.ToolError;
     }
 
@@ -310,6 +340,7 @@ public static class InitCommand
         return integration.ToLowerInvariant() switch
         {
             "claude" => true,
+            "codex" => true,
             "none" => true,
             _ => false
         };
@@ -329,7 +360,7 @@ public static class InitCommand
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
         var settings = LoadJsonSettings(settingsPath);
 
-        ConfigureGuardHook(settings);
+        ConfigureGuardHook(settings, GuardMatcher);
         ConfigureStopHook(settings);
         ConfigureAllowList(settings);
 
@@ -342,7 +373,9 @@ public static class InitCommand
     private const string GuardMatcher =
         "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion";
 
-    private static void ConfigureGuardHook(JsonNode settings)
+    private const string CodexGuardMatcher = GuardMatcher + "|apply_patch";
+
+    private static void ConfigureGuardHook(JsonNode settings, string matcher)
     {
         var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
         settings["hooks"] = hooks;
@@ -362,7 +395,7 @@ public static class InitCommand
 
         var guardEntry = new JsonObject
         {
-            ["matcher"] = GuardMatcher,
+            ["matcher"] = matcher,
             ["hooks"] = hooksArray
         };
         preToolUse.Add((JsonNode)guardEntry);
@@ -428,15 +461,47 @@ public static class InitCommand
         return new JsonObject();
     }
 
-    // Removes only the dydo-managed hook entries (those whose command contains <paramref name="needle"/>),
-    // leaving every other entry — including a project's own custom hooks — untouched. This keeps the
-    // shared hooks block extended, never clobbered, and makes re-running init idempotent.
-    private static void RemoveDydoGuardEntries(JsonArray entries, string needle)
+    internal static void ConfigureCodexHooks(string projectRoot)
+    {
+        var codexDir = Path.Combine(projectRoot, ".codex");
+        Directory.CreateDirectory(codexDir);
+
+        var hooksPath = Path.Combine(codexDir, "hooks.json");
+        var settings = LoadJsonSettings(hooksPath);
+
+        ConfigureGuardHook(settings, CodexGuardMatcher);
+        ConfigureStopHook(settings);
+
+        File.WriteAllText(hooksPath, settings.ToJsonString(WriteOptions));
+    }
+
+    internal static JsonNode BuildCodexHooks()
+    {
+        var settings = new JsonObject();
+        ConfigureGuardHook(settings, CodexGuardMatcher);
+        ConfigureStopHook(settings);
+        return settings;
+    }
+
+    // Removes only exact dydo-managed hook commands, leaving custom hooks in mixed entries intact.
+    private static void RemoveDydoGuardEntries(JsonArray entries, string managedCommand)
     {
         for (int i = entries.Count - 1; i >= 0; i--)
         {
-            var entryHooks = entries[i]?["hooks"];
-            if (entryHooks != null && entryHooks.ToJsonString().Contains(needle))
+            if (entries[i] is not JsonObject entry ||
+                entry["hooks"] is not JsonArray entryHooks)
+                continue;
+
+            for (int hookIndex = entryHooks.Count - 1; hookIndex >= 0; hookIndex--)
+            {
+                if (entryHooks[hookIndex] is JsonObject hook &&
+                    hook["command"] is JsonValue commandNode &&
+                    commandNode.TryGetValue<string>(out var command) &&
+                    command == managedCommand)
+                    entryHooks.RemoveAt(hookIndex);
+            }
+
+            if (entryHooks.Count == 0)
                 entries.RemoveAt(i);
         }
     }
@@ -498,6 +563,16 @@ public static class InitCommand
             File.WriteAllText(path, contentFactory());
             Console.WriteLine($"  ✓ {label}");
         }
+    }
+
+    private static string GenerateAgentsMd(string projectName)
+    {
+        return $"""
+            # {projectName}
+
+            This project uses DynaDocs for documentation and AI agent workflow management.
+            Before starting any task, read [dydo/index.md](dydo/index.md) and follow the onboarding process.
+            """;
     }
 
     private static string PromptForInput(string prompt)

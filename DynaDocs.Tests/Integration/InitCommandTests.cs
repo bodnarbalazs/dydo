@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Models;
 
 namespace DynaDocs.Tests.Integration;
@@ -157,6 +158,214 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileExists(".claude/settings.local.json");
         AssertFileContains(".claude/settings.local.json", "PreToolUse");
         AssertFileContains(".claude/settings.local.json", "dydo guard");
+    }
+
+    [Fact]
+    public async Task Init_Codex_CreatesProjectAndHooksWithoutClaudeSettings()
+    {
+        var result = await InitProjectAsync("codex", "balazs", 3);
+
+        result.AssertSuccess();
+        AssertFileExists("dydo.json");
+        AssertFileExists("dydo/index.md");
+        AssertFileExists("AGENTS.md");
+        AssertFileExists(".codex/hooks.json");
+        AssertFileContains("AGENTS.md", "dydo/index.md");
+        AssertFileContains("dydo.json", "\"codex\": true");
+        result.AssertStdoutContains("AGENTS.md -> dydo/index.md");
+        AssertFileNotExists(".claude/settings.local.json");
+    }
+
+    [Fact]
+    public async Task Init_Codex_HooksContainPreToolUseDydoGuard()
+    {
+        var result = await InitProjectAsync("codex", "balazs", 3);
+
+        result.AssertSuccess();
+
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".codex/hooks.json")));
+        Assert.Null(settings["PreToolUse"]);
+
+        var hooks = Assert.IsType<JsonObject>(settings["hooks"]);
+        var preToolUse = Assert.IsType<JsonArray>(hooks["PreToolUse"]);
+        var preToolUseEntry = Assert.Single(preToolUse);
+        Assert.NotNull(preToolUseEntry);
+        var matcher = preToolUseEntry["matcher"]?.GetValue<string>();
+        Assert.NotNull(matcher);
+        Assert.Contains("Edit", matcher);
+        Assert.Contains("Write", matcher);
+        Assert.Contains("Read", matcher);
+        Assert.Contains("Bash", matcher);
+        Assert.Contains("PowerShell", matcher);
+        Assert.Contains("Agent", matcher);
+        Assert.Contains("EnterPlanMode", matcher);
+        Assert.Contains("ExitPlanMode", matcher);
+        Assert.Contains("NotebookEdit", matcher);
+        Assert.Contains("AskUserQuestion", matcher);
+        Assert.Contains("apply_patch", matcher);
+
+        var guardHooks = Assert.IsType<JsonArray>(preToolUseEntry["hooks"]);
+        var guardHook = Assert.Single(guardHooks);
+        Assert.NotNull(guardHook);
+        Assert.Equal("command", guardHook["type"]?.GetValue<string>());
+        Assert.Equal("dydo guard", guardHook["command"]?.GetValue<string>());
+
+        var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
+        var stopEntry = Assert.Single(stop);
+        Assert.NotNull(stopEntry);
+        var stopHooks = Assert.IsType<JsonArray>(stopEntry["hooks"]);
+        var stopHook = Assert.Single(stopHooks);
+        Assert.NotNull(stopHook);
+        Assert.Equal("dydo guard --stop", stopHook["command"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Init_Codex_PreservesExistingHooks()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/hooks.json", """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  {
+                    "matcher": "CustomTool",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo custom"
+                      }
+                    ]
+                  }
+                ],
+                "PostToolUse": [
+                  {
+                    "matcher": "AnyTool",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo post"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "otherSetting": true
+            }
+            """);
+
+        var result = await InitProjectAsync("codex", "balazs", 3);
+
+        result.AssertSuccess();
+        var content = ReadFile(".codex/hooks.json");
+        Assert.Contains("CustomTool", content);
+        Assert.Contains("echo custom", content);
+        Assert.Contains("PostToolUse", content);
+        Assert.Contains("echo post", content);
+        Assert.Contains("otherSetting", content);
+        Assert.Contains("dydo guard", content);
+        Assert.Contains("dydo guard --stop", content);
+    }
+
+    [Fact]
+    public async Task Init_Codex_PreservesCustomHooksWhenRemovingDydoHooks()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/hooks.json", """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  {
+                    "matcher": "CustomSubstring",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo before dydo guard after"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": "Mixed",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "dydo guard"
+                      },
+                      {
+                        "type": "command",
+                        "command": "echo custom"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": "ManagedOnly",
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "dydo guard"
+                      }
+                    ]
+                  }
+                ],
+                "Stop": [
+                  {
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "dydo guard --stop"
+                      },
+                      {
+                        "type": "command",
+                        "command": "echo stop custom"
+                      }
+                    ]
+                  },
+                  {
+                    "hooks": [
+                      {
+                        "type": "command",
+                        "command": "echo before dydo guard --stop after"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+            """);
+
+        var result = await InitProjectAsync("codex", "balazs", 3);
+
+        result.AssertSuccess();
+
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".codex/hooks.json")));
+        var hooks = Assert.IsType<JsonObject>(settings["hooks"]);
+        var preToolUse = Assert.IsType<JsonArray>(hooks["PreToolUse"]);
+        Assert.Contains(preToolUse, entry =>
+            entry?["matcher"]?.GetValue<string>() == "CustomSubstring" &&
+            HookCommands(entry).Contains("echo before dydo guard after"));
+        Assert.Contains(preToolUse, entry =>
+            entry?["matcher"]?.GetValue<string>() == "Mixed" &&
+            HookCommands(entry).SequenceEqual(["echo custom"]));
+        Assert.DoesNotContain(preToolUse, entry =>
+            entry?["matcher"]?.GetValue<string>() == "ManagedOnly");
+        Assert.Equal(1, CountExactHookCommand(preToolUse, "dydo guard"));
+
+        var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
+        Assert.Contains(stop, entry => HookCommands(entry).SequenceEqual(["echo stop custom"]));
+        Assert.Contains(stop, entry => HookCommands(entry).Contains("echo before dydo guard --stop after"));
+        Assert.Equal(1, CountExactHookCommand(stop, "dydo guard --stop"));
+    }
+
+    [Fact]
+    public async Task Init_Codex_DoesNotDuplicateDydoHook()
+    {
+        await InitProjectAsync("codex", "balazs", 3);
+
+        var result = await JoinProjectAsync("codex", "alice", 2);
+
+        result.AssertSuccess();
+        var content = ReadFile(".codex/hooks.json");
+        Assert.Equal(1, content.Split("\"dydo guard\"").Length - 1);
+        Assert.Equal(1, content.Split("dydo guard --stop").Length - 1);
     }
 
     [Fact]
@@ -487,7 +696,9 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("none", "balazs", 3);
 
         result.AssertSuccess();
-        Assert.False(File.Exists(Path.Combine(TestDir, ".claude/settings.local.json")));
+        AssertFileNotExists(".claude/settings.local.json");
+        AssertFileNotExists(".codex/hooks.json");
+        AssertFileNotExists("AGENTS.md");
     }
 
     #endregion
@@ -620,6 +831,7 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("Unknown integration");
+        result.AssertStderrContains("Valid options: claude, codex, none");
     }
 
     [Fact]
@@ -676,4 +888,19 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     #endregion
+
+    private static List<string> HookCommands(JsonNode? entry)
+    {
+        var entryObject = Assert.IsType<JsonObject>(entry);
+        var hooks = Assert.IsType<JsonArray>(entryObject["hooks"]);
+        return hooks
+            .OfType<JsonObject>()
+            .Select(hook => hook["command"]?.GetValue<string>())
+            .Where(command => command != null)
+            .Select(command => command!)
+            .ToList();
+    }
+
+    private static int CountExactHookCommand(JsonArray entries, string command) =>
+        entries.Sum(entry => HookCommands(entry).Count(existing => existing == command));
 }

@@ -191,6 +191,25 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ClaimAgent_PersistsPendingSessionHost()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+
+        registry.StorePendingSessionId("Adele", "session-codex", "codex");
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(result, $"ClaimAgent failed: {error}");
+        var session = registry.GetSession("Adele");
+        Assert.NotNull(session);
+        Assert.Equal("session-codex", session.SessionId);
+        Assert.Equal("codex", session.Host);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
     public void ClaimAgent_SameSessionIdReclaim_RefreshesClaimedPid()
     {
         // #0143: after watchdog auto-resume, the resumed claude calls `dydo agent claim`

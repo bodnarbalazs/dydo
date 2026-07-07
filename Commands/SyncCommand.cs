@@ -8,9 +8,9 @@ using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Compiles dydo role definitions into native Claude Code artifacts (Decision 024):
-/// a <c>.claude/agents/&lt;role&gt;.md</c> sub-agent definition (identity + tool profile)
-/// and a <c>.claude/skills/&lt;role&gt;/SKILL.md</c> with the role's working methodology.
+/// Compiles dydo role definitions into native agent artifacts (Decision 024):
+/// Claude Code <c>.claude/agents/&lt;role&gt;.md</c> / <c>.claude/skills/&lt;role&gt;/SKILL.md</c>
+/// and Codex <c>.codex/agents/&lt;role&gt;.toml</c> / <c>.agents/skills/&lt;role&gt;/SKILL.md</c>.
 ///
 /// The role JSON supplies the metadata (name, description, permission shape → tool
 /// profile). The mode template supplies the methodology prose, minus the old-runtime
@@ -56,11 +56,12 @@ public static partial class SyncCommand
     // Vendor key used when compiling Claude-native artifacts (Decision 028 §2). A future
     // Codex target reads a different vendor key from the same tiers map; the role → tier
     // section never changes per vendor.
-    private const string ModelVendor = "anthropic";
+    private const string ClaudeModelVendor = "anthropic";
+    private const string OpenAiModelVendor = "openai";
 
     public static Command Create()
     {
-        var command = new Command("sync", "Compile dydo roles into native .claude/ agents and skills");
+        var command = new Command("sync", "Compile dydo roles into native agent and skill artifacts");
         command.SetAction(_ => Execute());
         return command;
     }
@@ -73,16 +74,25 @@ public static partial class SyncCommand
 
         var workerRoles = baseRoles.Where(r => WorkerRoles.Contains(r.Name)).ToList();
         foreach (var role in workerRoles)
+        {
             SyncRole(role, projectRoot, models);
+            SyncCodexRole(role, projectRoot, models);
+        }
 
         var skillOnlyRoles = baseRoles
             .Where(r => SkillOnlyRoles.Contains(r.Name) || Tier1ManagerRoles.Contains(r.Name))
             .ToList();
         foreach (var role in skillOnlyRoles)
+        {
             SyncSkillOnlyRole(role, projectRoot);
+            SyncCodexSkill(role, projectRoot);
+        }
+
+        WriteCodexHooks(projectRoot);
 
         Console.WriteLine($"Synced {workerRoles.Count} worker role(s) to .claude/ (agents + skills): {string.Join(", ", workerRoles.Select(r => r.Name))}");
         Console.WriteLine($"Synced {skillOnlyRoles.Count} skill-only role(s) to .claude/ (skills only): {string.Join(", ", skillOnlyRoles.Select(r => r.Name))}");
+        Console.WriteLine($"Synced Codex artifacts to .agents/skills and .codex/agents.");
         return ExitCodes.Success;
     }
 
@@ -101,6 +111,26 @@ public static partial class SyncCommand
     /// </summary>
     internal static void SyncSkillOnlyRole(RoleDefinition role, string projectRoot) =>
         WriteSkill(role, projectRoot);
+
+    internal static void SyncCodexRole(RoleDefinition role, string projectRoot, ModelsConfig? models = null)
+    {
+        SyncCodexSkill(role, projectRoot);
+
+        var agentDir = Path.Combine(projectRoot, ".codex", "agents");
+        Directory.CreateDirectory(agentDir);
+        WriteLf(Path.Combine(agentDir, $"{role.Name}.toml"),
+            BuildCodexAgent(role, ExtractMustReads(role, projectRoot), models));
+    }
+
+    internal static void SyncCodexSkill(RoleDefinition role, string projectRoot)
+    {
+        var skillDir = Path.Combine(projectRoot, ".agents", "skills", role.Name);
+        Directory.CreateDirectory(skillDir);
+        WriteLf(Path.Combine(skillDir, "SKILL.md"), BuildSkill(role, ExtractMethodology(role, projectRoot)));
+    }
+
+    internal static void WriteCodexHooks(string projectRoot)
+        => InitCommand.ConfigureCodexHooks(projectRoot);
 
     private static void WriteSkill(RoleDefinition role, string projectRoot)
     {
@@ -169,14 +199,46 @@ public static partial class SyncCommand
     /// agent runs on the session model instead of silently downgrading.
     /// </summary>
     internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string roleName)
+        => ResolveModel(models, roleName, ClaudeModelVendor);
+
+    internal static (string? Model, string? Effort) ResolveModel(ModelsConfig? models, string roleName, string vendor)
     {
         if (models == null || !models.Roles.TryGetValue(roleName, out var tier))
             return (null, null);
-        if (!models.Tiers.TryGetValue(ModelVendor, out var vendorTiers)
+        if (!models.Tiers.TryGetValue(vendor, out var vendorTiers)
             || !vendorTiers.TryGetValue(tier, out var model))
             return (null, null);
         return (model, models.Efforts.GetValueOrDefault(roleName));
     }
+
+    private static string BuildCodexAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models)
+    {
+        var readOnly = IsReadOnlyRole(role);
+        var tools = readOnly
+            ? "read, grep, glob, bash"
+            : "read, grep, glob, bash, edit, write";
+        var stance = readOnly
+            ? "You are read-only: assess and report without modifying project files."
+            : "You produce and modify the project's files as your task requires.";
+        var contextBlock = mustReads.Count == 0 ? "" :
+            "\n\nRead these for project context before working:\n"
+            + string.Join('\n', mustReads.Select(p => $"- {p}"));
+        var (model, _) = ResolveModel(models, role.Name, OpenAiModelVendor);
+
+        return $""""
+            name = "{EscapeToml(role.Name)}"
+            description = "{EscapeToml(role.Description)}"
+            model = "{EscapeToml(model ?? "gpt-5.5")}"
+            tools = "{tools}"
+
+            developer_instructions = """
+            You are a **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}
+            """
+            """";
+    }
+
+    private static string EscapeToml(string value) =>
+        value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     private static string BuildSkill(RoleDefinition role, string methodology) => $"""
         ---

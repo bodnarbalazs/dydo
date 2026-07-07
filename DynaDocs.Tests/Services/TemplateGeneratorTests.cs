@@ -480,20 +480,21 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ReferencesDiagram()
+    public void GenerateAboutDynadocsMd_ReferencesVisualPlaceholder()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
 
-        Assert.Contains("dydo-diagram.svg", content);
+        // The diagram was replaced by a deliberate placeholder pointing at the _assets folder.
+        Assert.Contains("<!-- VISUAL:", content);
         Assert.Contains("_assets", content);
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_ContainsInboxFlag()
+    public void GenerateAboutDynadocsMd_DocumentsInboxCommands()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();
 
-        Assert.Contains("--inbox", content);
+        Assert.Contains("dydo inbox list", content);
         Assert.Contains("dydo inbox show", content);
     }
 

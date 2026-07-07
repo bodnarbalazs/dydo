@@ -69,7 +69,7 @@ So 2.0 pivots: **Claude Code owns orchestration** (subagents, skills, workflows)
 - **New** — `dydo sync` (the compiler), two-tier identity, model tiers, un-suppressed native memory, and optional two-way Notion sync.
 - **Kept & sharpened** — the guard (now universal off-limits + nudges, firing *inside* subagents and workflows too) and the whole documentation system.
 
-See [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) for the full rationale.
+See [Decision 024](https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/024-dydo-2-native-pivot.md) for the full rationale.
 
 ---
 

@@ -350,7 +350,8 @@ public class FolderScaffolderTests : IDisposable
 
         var content = File.ReadAllText(aboutDynadocsPath);
         Assert.Contains("DynaDocs (dydo)", content);
-        Assert.Contains("dydo-diagram.svg", content);
+        // The diagram was replaced by a deliberate visual placeholder (screenshot pending from balazs).
+        Assert.Contains("<!-- VISUAL:", content);
     }
 
     [Fact]
@@ -361,8 +362,8 @@ public class FolderScaffolderTests : IDisposable
         var aboutDynadocsPath = Path.Combine(_testDir, "reference", "about-dynadocs.md");
         var content = File.ReadAllText(aboutDynadocsPath);
 
-        // Should reference the diagram in _assets relative to reference/
-        Assert.Contains("_assets/dydo-diagram.svg", content);
+        // The visual placeholder points at the _assets folder where the pending screenshot will live.
+        Assert.Contains("_assets", content);
     }
 
     [Fact]

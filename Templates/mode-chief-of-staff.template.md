@@ -85,6 +85,14 @@ Ideas, findings, and requests land in `dydo/project/backlog/` and `dydo/project/
 - **Route** — hand each item to the domain orchestrator whose slice it belongs to, with enough context to act. Routing means messaging (`dydo msg`) or, when a fresh session is warranted, a top-level dispatch of an orchestrator or co-thinker.
 - **Suggest promotion or demotion** — flag items that look ready for a sprint, and items that have gone stale. The human (or the domain orchestrator) decides; you propose.
 
+When a fresh session is warranted, dispatch the orchestrator or co-thinker:
+
+```bash
+dydo dispatch --auto-close --role <role> --task <task-name> --brief "..."
+```
+
+Always pass `--auto-close` so the dispatched agent's terminal tab closes when it releases; omit only when you deliberately want to inspect the terminal after it finishes.
+
 ### 2. Status Reports
 
 When the human asks "what do I do next?", the answer is always one of three lists — keep them current so you can produce them on demand:

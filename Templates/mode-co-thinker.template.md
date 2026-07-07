@@ -139,7 +139,13 @@ When the thinking session is done, choose based on what emerged:
 
 ### Task Emerged → Plan It
 
-Apply the **planner skill** in your own thread: turn the conclusions into a task breakdown of disjoint, independently verifiable slices, captured as a brief in your workspace. For a sub-domain big enough to need its own coordination, hand the brief to a domain orchestrator instead (top-level dispatch of a co-thinker/orchestrator is still how Tier-1 sessions start).
+Apply the **planner skill** in your own thread: turn the conclusions into a task breakdown of disjoint, independently verifiable slices, captured as a brief in your workspace. For a sub-domain big enough to need its own coordination, hand the brief to a domain orchestrator instead (top-level dispatch of a co-thinker/orchestrator is still how Tier-1 sessions start):
+
+```bash
+dydo dispatch --auto-close --role <role> --task <task-name> --brief "..."
+```
+
+Always pass `--auto-close` so the dispatched agent's terminal tab closes when it releases; omit only when you deliberately want to inspect the terminal after it finishes.
 
 ### Ready to Implement → Run a Workflow
 

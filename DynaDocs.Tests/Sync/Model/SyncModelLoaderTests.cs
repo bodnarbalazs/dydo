@@ -35,7 +35,7 @@ public class SyncModelLoaderTests : IDisposable
         var model = SyncModelLoader.Load(_dydoRoot);
 
         Assert.True(File.Exists(path));
-        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue"], model.Objects.Select(o => o.Type));
+        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue", "Task", "FutureFeature"], model.Objects.Select(o => o.Type));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class SyncModelLoaderTests : IDisposable
 
         var campaign = model.Object("Campaign");
         Assert.Equal("project/campaigns", campaign.Dir);
-        Assert.Equal("dydo Campaigns", campaign.NotionTitle);
+        Assert.Equal("Campaigns", campaign.NotionTitle);
         Assert.Equal("🚀", campaign.Icon);
         Assert.Equal("title", campaign.Properties["title"].Type);
         Assert.Equal(["proposed", "active", "done", "abandoned"], campaign.Properties["status"].Options!);
@@ -57,7 +57,7 @@ public class SyncModelLoaderTests : IDisposable
 
         var sprintTask = model.Object("SprintTask");
         Assert.Equal("project/sprint-tasks", sprintTask.Dir);
-        Assert.Equal("dydo Sprint Tasks", sprintTask.NotionTitle);
+        Assert.Equal("Sprint Tasks", sprintTask.NotionTitle);
         Assert.Equal("Sprint", sprintTask.Properties["sprint"].To);
     }
 
@@ -68,7 +68,7 @@ public class SyncModelLoaderTests : IDisposable
 
         var release = model.Object("Release");
         Assert.Equal("project/releases", release.Dir);
-        Assert.Equal("dydo Releases", release.NotionTitle);
+        Assert.Equal("Releases", release.NotionTitle);
         Assert.Equal("rich_text", release.Properties["specRef"].Type);
         Assert.Equal(["planned", "active", "shipped", "abandoned"], release.Properties["status"].Options!);
 
@@ -227,6 +227,33 @@ public class SyncModelLoaderTests : IDisposable
     }
 
     [Fact]
+    public void Load_DefaultModel_CarriesTaskAndFutureFeatureTypes()
+    {
+        // DR 034: the two-altitude work funnel. Task is the tactical work unit (backlog partition, done
+        // archive read from the changelog); FutureFeature is the strategic intake.
+        var model = SyncModelLoader.Load(_dydoRoot);
+
+        var task = model.Object("Task");
+        Assert.Equal("project/tasks", task.Dir);
+        Assert.Equal("Tasks", task.NotionTitle);
+        Assert.Equal(["backlog", "in-progress", "in-review", "done"], task.Properties["status"].Options!);
+        // backlog routes into tasks/backlog/; done is handler-placed (date-nested changelog) so it stays
+        // unmapped and files at root — only backlog is in the folders map.
+        var routing = task.FolderRouting();
+        Assert.NotNull(routing);
+        Assert.Equal("status", routing.Value.Field);
+        Assert.Equal("backlog", routing.Value.Folders["backlog"]);
+        Assert.False(routing.Value.Folders.ContainsKey("done"));
+
+        var futureFeature = model.Object("FutureFeature");
+        Assert.Equal("project/future-features", futureFeature.Dir);
+        Assert.Equal("Future Features", futureFeature.NotionTitle);
+        Assert.Equal(["raw", "shaping", "promoted", "dropped"], futureFeature.Properties["status"].Options!);
+        // Low-volume strategic intake: no subfolder partition.
+        Assert.Null(futureFeature.FolderRouting());
+    }
+
+    [Fact]
     public void Load_ExistingFile_IsReadVerbatim_NotReseeded()
     {
         WriteModel("""
@@ -252,7 +279,7 @@ public class SyncModelLoaderTests : IDisposable
     public void InDependencyOrder_DefaultModel_PutsParentsBeforeChildren()
     {
         var ordered = SyncModelLoader.Load(_dydoRoot).InDependencyOrder();
-        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue"], ordered.Select(o => o.Type));
+        Assert.Equal(["Release", "Campaign", "Sprint", "SprintTask", "Issue", "Task", "FutureFeature"], ordered.Select(o => o.Type));
     }
 
     [Fact]

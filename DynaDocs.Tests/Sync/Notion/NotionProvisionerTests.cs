@@ -43,7 +43,7 @@ public class NotionProvisionerTests : IDisposable
         var request = Assert.Single(client.CreatedDatabases);
         Assert.Equal("page_id", request.Parent.Type);
         Assert.Equal("parent-page", request.Parent.PageId);
-        Assert.Equal("dydo Campaigns", NotionRichText.Flatten(request.Title));
+        Assert.Equal("Campaigns", NotionRichText.Flatten(request.Title));
         Assert.Equal("🚀", request.Icon!.Emoji);
         // Exactly one title property; the select carries its options from the model.
         Assert.NotNull(request.InitialDataSource.Properties["title"].Title);
@@ -227,12 +227,13 @@ public class NotionProvisionerTests : IDisposable
         Assert.Contains("🚨 Needs Attention", byName.Keys);
         Assert.Contains("By Area", byName.Keys);
 
-        // Open: status != resolved, sorted by severity desc.
+        // Open: status != resolved, sorted by severity ascending — options are critical-first, and Notion
+        // sorts a select by option position, so ascending puts critical/high on top (issue #215).
         var open = byName["Open"];
         Assert.Equal("table", open.Type);
         Assert.Equal("resolved", open.Filter!.Select!.DoesNotEqual);
         Assert.Equal("severity", open.Sorts!.Single().Property);
-        Assert.Equal("descending", open.Sorts!.Single().Direction);
+        Assert.Equal("ascending", open.Sorts!.Single().Direction);
         // Compute-only helper hidden; a human column visible; the fake ids each property by name.
         var props = open.Configuration!.Properties!;
         Assert.False(props.Single(p => p.PropertyId == "last-activity").Visible);

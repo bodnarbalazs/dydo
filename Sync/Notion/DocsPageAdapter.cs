@@ -31,23 +31,32 @@ public sealed class DocsPageAdapter : ISyncAdapter
     private readonly IReadOnlyDictionary<string, string> _parentPageIdByLocalId;
     private readonly IReadOnlyDictionary<string, string> _titleByLocalId;
     private readonly IReadOnlySet<string> _managedPageIds;
+    private readonly TextWriter? _log;
+
+    /// <summary>Structure is repo-owned (DR 033 §2): the engine must never delete a repo doc or archive its page
+    /// because the page was merely missing from an eventual-consistency-lagged external read.</summary>
+    public bool RepoOwnedStructure => true;
 
     /// <param name="rootPageId">The "Docs" root page all top-level docs nest under; read for its own body too.</param>
     /// <param name="parentPageIdByLocalId">Where to create each doc's page — its repo-owned parent's Notion page id.</param>
     /// <param name="titleByLocalId">The Notion page title to set when a doc's page is first created.</param>
     /// <param name="managedPageIds">Page ids the sync already tracks, so the tree walk ignores unmanaged pages.</param>
+    /// <param name="log">Optional sink for a per-archive failure that is logged and skipped so one bad archive
+    /// never wedges the whole tick.</param>
     public DocsPageAdapter(
         INotionClient client,
         string rootPageId,
         IReadOnlyDictionary<string, string> parentPageIdByLocalId,
         IReadOnlyDictionary<string, string> titleByLocalId,
-        IReadOnlySet<string> managedPageIds)
+        IReadOnlySet<string> managedPageIds,
+        TextWriter? log = null)
     {
         _client = client;
         _rootPageId = rootPageId;
         _parentPageIdByLocalId = parentPageIdByLocalId;
         _titleByLocalId = titleByLocalId;
         _managedPageIds = managedPageIds;
+        _log = log;
     }
 
     public IReadOnlyList<SyncRecord> ReadExternalState()
@@ -108,8 +117,23 @@ public sealed class DocsPageAdapter : ISyncAdapter
             }
         }
 
-        foreach (var externalId in changes.Deletes)
-            _client.UpdatePage(externalId, new NotionPageUpdateRequest { Archived = true });
+        // Archive DESCENDANTS BEFORE ANCESTORS. SyncRunner emits deletes ascending by local id, and a folder's
+        // local id is a path-prefix of its descendants' — so ascending puts every ancestor before its children.
+        // Notion rejects editing (incl. archiving) a page whose ancestor is already archived (400 "archived
+        // ancestor"), so archiving ancestor-first wedges the tick. Reversing the ascending order archives
+        // children first, when their ancestors are still live. Each archive is isolated: one failure (a stray
+        // 400, a page already trashed by hand) is logged and skipped so it never wedges the remaining deletes.
+        foreach (var externalId in Enumerable.Reverse(changes.Deletes))
+        {
+            try
+            {
+                _client.UpdatePage(externalId, new NotionPageUpdateRequest { Archived = true });
+            }
+            catch (NotionApiException ex)
+            {
+                _log?.WriteLine($"notion docs sync: could not archive page {externalId}, skipping — {ex.Message}");
+            }
+        }
     }
 
     private string TitleFor(string localId) =>

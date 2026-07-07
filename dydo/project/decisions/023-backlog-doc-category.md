@@ -1,11 +1,18 @@
 ---
 type: decision
-status: accepted
+status: superseded
+superseded-by: 034-pm-record-taxonomy
 date: 2026-05-19
 area: project
 ---
 
 # 023 — Backlog and Future-Features Doc Categories
+
+> **Superseded by [DR 034 — PM Record Taxonomy](./034-pm-record-taxonomy.md) (2026-07-06).**
+> `backlog/` and `future-features/` are no longer convention-only `type: context` doc categories.
+> `backlog` is now a **`Task` status** (partition `tasks/backlog/`); `future-features/` is its own
+> **`FutureFeature`** spine DB. The backlog-vs-task *separate-record* split in §5 collapses into one
+> `Task` lifecycle. Read this record for history; DR 034 is authoritative.
 
 `dydo/project/` gains two new doc-categories — `backlog/` and `future-features/` — added as defaults to every `dydo init`. `backlog/` holds identified, scoped, ready-ish work that isn't in flight and isn't yet an active task. `future-features/` holds far-out ideas without a concrete next step. Distinct from `issues/` (broken things). Convention-only: no CLI surface, no new frontmatter types. Items in both folders use the existing `type: context` value.
 

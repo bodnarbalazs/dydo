@@ -77,6 +77,26 @@ public class NotionCommandTests
     }
 
     [Fact]
+    public void SyncCommand_HasDocsOptOutFlags()
+    {
+        var sync = NotionCommand.Create().Subcommands.First(c => c.Name == "sync");
+        Assert.Contains(sync.Options, o => o.Name == "--docs");
+        Assert.Contains(sync.Options, o => o.Name == "--docs-only");
+        Assert.Contains(sync.Options, o => o.Name == "--spine-only");
+    }
+
+    [Fact]
+    public void Sync_DocsOnlyAndSpineOnly_RejectedBeforeAnyWork()
+    {
+        // The mutual-exclusion guard is the first thing RunSync checks, so it trips regardless of token/project.
+        var (code, _, stderr) = ConsoleCapture.All(() =>
+            NotionCommand.Create().Parse("sync --docs-only --spine-only").Invoke());
+
+        Assert.Equal(1, code);
+        Assert.Contains("mutually exclusive", stderr);
+    }
+
+    [Fact]
     public void Create_HasConnectAndRevealSubcommands()
     {
         var cmd = NotionCommand.Create();

@@ -19,6 +19,20 @@ public static class DocsTreeSync
 {
     public const string AdapterName = "notion-docs";
     private const string RootTitle = "Docs";
+
+    /// <summary>The parent-scoped snapshot store name (finding 4). <see cref="BaseSnapshotStore.PathFor"/> keys
+    /// only by adapter name, so a bare <c>notion-docs</c> would make two different <c>--parent-page</c> targets
+    /// (a scratch smoke page vs. the real workspace) share ONE snapshot — the scratch run's external ids then
+    /// leak into the real run as stale/foreign state. Folding a short stable hash of the parent page id into the
+    /// name gives each target its own snapshot, so alternating targets never cross-contaminate.</summary>
+    public static string SnapshotAdapterName(string parentPageId) =>
+        AdapterName + "-" + ShortHash(parentPageId);
+
+    private static string ShortHash(string value)
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(value));
+        return Convert.ToHexString(bytes)[..8].ToLowerInvariant();
+    }
     // The dydo-root folder's local id — its page is the "Docs" root. A single reserved token so it can never
     // collide with a real doc path (a repo path is never bare ".").
     private const string RootLocalId = ".";
@@ -31,11 +45,11 @@ public static class DocsTreeSync
 
         if (dryRun)
         {
-            WriteDryRunPlan(root, dydoRoot, output);
+            WriteDryRunPlan(root, client, dydoRoot, parentPageId, output);
             return;
         }
 
-        var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, AdapterName));
+        var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, SnapshotAdapterName(parentPageId)));
 
         // 1. Structure (repo-owned, one-way): ensure the root "Docs" page, then every folder page (top-down, so a
         //    child's parent id is always resolved first), then every file page (after all folders exist, so
@@ -55,7 +69,7 @@ public static class DocsTreeSync
         Collect(root, folderPageId, docs, parentByLocalId, titleByLocalId, pathByLocalId);
 
         var managed = ManagedPageIds(store);
-        var adapter = new DocsPageAdapter(client, rootPageId, parentByLocalId, titleByLocalId, managed);
+        var adapter = new DocsPageAdapter(client, rootPageId, parentByLocalId, titleByLocalId, managed, output);
         var runner = new SyncRunner(adapter, store, (localId, _, _) =>
             pathByLocalId.TryGetValue(localId, out var path) ? path : Path.Combine(dydoRoot, localId + ".md"));
 
@@ -310,21 +324,49 @@ public static class DocsTreeSync
     };
 
     /// <summary>Preview the reconcile without writing (DR 033, smoke visibility): a header, then one line per page
-    /// the run WOULD touch — the root "Docs" page, each folder page, each doc page — plus an archive line for every
-    /// managed page whose repo doc/folder has disappeared. Membership in the <c>notion-docs</c> snapshot store
-    /// distinguishes create (unseen) from update (already mapped); the store is only READ here, never saved, so a
-    /// dry-run leaves no trace.</summary>
-    private static void WriteDryRunPlan(DocsNode root, string dydoRoot, TextWriter output)
+    /// the run WOULD touch — the root "Docs" page, each folder page, each doc page — plus a line for every managed
+    /// page whose repo doc/folder has disappeared. Membership in the parent-scoped snapshot store distinguishes
+    /// create (unseen) from update (already mapped); the store is only READ here, never saved, so a dry-run leaves
+    /// no trace.
+    /// <para>The disappeared-doc lines are ACCURATE, not a local-only guess (finding 5a): the real run archives such
+    /// a page only if it still EXISTS in Notion (repo gone + page present → archive); a page already gone from Notion
+    /// reconciles to Retire, not archive. So the live managed tree is read here to label each honestly — "archive"
+    /// when the page is still present, "retire" when it is already gone — instead of over-predicting an archive the
+    /// run would not perform. Reads only; no page is minted, no body appended, no snapshot saved.</para></summary>
+    private static void WriteDryRunPlan(DocsNode root, INotionClient client, string dydoRoot, string parentPageId, TextWriter output)
     {
-        var known = new HashSet<string>(new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, AdapterName)).LocalIds);
+        var store = new BaseSnapshotStore(BaseSnapshotStore.PathFor(dydoRoot, SnapshotAdapterName(parentPageId)));
+        var known = new HashSet<string>(store.LocalIds);
         output.WriteLine(
             $"notion docs sync --dry-run: {CountFolders(root)} folder page(s) and {CountFiles(root)} doc page(s) under a \"{RootTitle}\" page");
 
         var planned = new HashSet<string>();
         WritePlanNode(root, known, planned, output, isRoot: true);
 
-        foreach (var localId in known.Where(id => !planned.Contains(id)).OrderBy(x => x, StringComparer.Ordinal))
-            output.WriteLine($"  docs       {"archive",-7}  {localId}");
+        var disappeared = known.Where(id => !planned.Contains(id)).OrderBy(x => x, StringComparer.Ordinal).ToList();
+        if (disappeared.Count == 0)
+            return;
+
+        var present = PresentExternalIds(client, store);
+        foreach (var localId in disappeared)
+        {
+            var externalId = store.Get(localId)?.ExternalId;
+            var label = externalId != null && present.Contains(externalId) ? "archive" : "retire";
+            output.WriteLine($"  docs       {label,-7}  {localId}");
+        }
+    }
+
+    /// <summary>The external ids the live managed tree still returns, so the dry-run can tell an archive (page
+    /// still present) from a retire (page already gone). Reads the Notion tree via the same walk the real run uses;
+    /// an empty store (nothing minted yet) has no root page, so nothing is present.</summary>
+    private static HashSet<string> PresentExternalIds(INotionClient client, BaseSnapshotStore store)
+    {
+        var rootPageId = store.Get(RootLocalId)?.ExternalId;
+        if (rootPageId == null)
+            return [];
+        var adapter = new DocsPageAdapter(
+            client, rootPageId, new Dictionary<string, string>(), new Dictionary<string, string>(), ManagedPageIds(store));
+        return adapter.ReadExternalState().Select(r => r.ExternalId).ToHashSet();
     }
 
     private static void WritePlanNode(DocsNode node, ISet<string> known, ISet<string> planned, TextWriter output, bool isRoot)

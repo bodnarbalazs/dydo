@@ -20,9 +20,14 @@ public static class ReconcileEngine
     /// Notion drops an unresolvable relation, which reads back empty). Fields are compared modulo this map
     /// so adapter-lossiness is not mistaken for a real external edit — which would silently blank the repo
     /// value (slice brief §1). Defaults to identity for views that round-trip fields verbatim.</param>
+    /// <param name="repoOwnedStructure">When true (DR 033 §2 — the docs mirror), a page absent from the
+    /// external read while its repo doc is present is re-created from the repo, never treated as a deletion:
+    /// a present repo doc's page is never archived and its file is never deleted. Default false keeps the
+    /// spine's bidirectional delete/modify semantics.</param>
     public static ReconcileResult Reconcile(
         SyncDoc? baseDoc, SyncDoc? repo, SyncDoc? external,
-        Func<string, string>? bodyNormalizer = null, Func<SyncDoc, SyncDoc>? fieldNormalizer = null)
+        Func<string, string>? bodyNormalizer = null, Func<SyncDoc, SyncDoc>? fieldNormalizer = null,
+        bool repoOwnedStructure = false)
     {
         var norm = bodyNormalizer ?? (static s => s);
         var fieldNorm = fieldNormalizer ?? (static d => d);
@@ -34,7 +39,7 @@ public static class ReconcileEngine
             return ReconcileNew(repo, external, fieldNorm);
 
         if (repo == null || external == null)
-            return DeleteOne(baseDoc, repo, external, norm, fieldNorm);
+            return DeleteOne(baseDoc, repo, external, norm, fieldNorm, repoOwnedStructure);
 
         return ReconcileExisting(baseDoc, repo, external, norm, fieldNorm);
     }
@@ -58,7 +63,7 @@ public static class ReconcileEngine
     /// surviving side was edited since base, this is a delete/modify CONFLICT: the edit wins (never a
     /// silent clobber, Decision 025 §3) — resurrect the deleted side with the surviving edits, advance
     /// base to the survivor, and report a conflict rather than deleting.</summary>
-    private static ReconcileResult DeleteOne(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
+    private static ReconcileResult DeleteOne(SyncDoc baseDoc, SyncDoc? repo, SyncDoc? external, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm, bool repoOwnedStructure)
     {
         var externalId = baseDoc.ExternalId ?? repo?.ExternalId ?? external?.ExternalId;
 
@@ -88,7 +93,7 @@ public static class ReconcileEngine
             };
         }
 
-        return ExternalDeleted(baseDoc, repo, norm, fieldNorm);
+        return ExternalDeleted(baseDoc, repo, norm, fieldNorm, repoOwnedStructure);
     }
 
     /// <summary>External side deleted. Repo unchanged -> propagate the delete; repo edited -> conflict. "Unchanged"
@@ -100,8 +105,18 @@ public static class ReconcileEngine
     /// unresolvable relation the normalizer drops whole (absent from base), counts as CHANGED and resurrects the
     /// page rather than silently deleting the file and losing the entry forever (finding 1b). A genuine unchanged
     /// file — no un-pushed relation content — matches base normalized and still deletes.</summary>
-    private static ReconcileResult ExternalDeleted(SyncDoc baseDoc, SyncDoc repo, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm)
+    private static ReconcileResult ExternalDeleted(SyncDoc baseDoc, SyncDoc repo, Func<string, string> norm, Func<SyncDoc, SyncDoc> fieldNorm, bool repoOwnedStructure)
     {
+        // Structure is repo-owned (DR 033 §2): a page missing from the external read while its repo doc is
+        // still present is never a deletion — it is Notion listing eventual-consistency after a bulk create, or
+        // a colleague's stray archive. Re-create it from the repo (a fresh page, id assigned on Apply) rather
+        // than deleting the repo file or archiving the page. This is the hard invariant that a present repo
+        // doc's page is NEVER archived; archive fires only when the repo doc is genuinely gone (the repo==null
+        // branch above). A spurious duplicate from an eventual-consistency miss is recoverable; a mass repo
+        // deletion is not — the same data-preserving tradeoff the spine's fresh-mint reset already accepts.
+        if (repoOwnedStructure)
+            return CreateToExternal(repo, fieldNorm);
+
         if (Equal(baseDoc, repo, norm, fieldNorm) && !HasUnpushedRelation(baseDoc, repo, fieldNorm))
             return new ReconcileResult
             {

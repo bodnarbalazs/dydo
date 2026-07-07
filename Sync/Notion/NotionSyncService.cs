@@ -22,9 +22,18 @@ public static class NotionSyncService
         TextWriter error,
         bool prune = false,
         string? parentPageOverride = null,
+        bool docs = false,
         bool docsOnly = false,
         bool spineOnly = false)
     {
+        // Belt-and-suspenders: the CLI already rejects this combination, but Execute is also called directly
+        // (tests, any future caller), so guard the incoherent scope here too rather than silently favouring one.
+        if (docsOnly && spineOnly)
+        {
+            error.WriteLine("notion sync: --docs-only and --spine-only are mutually exclusive.");
+            return ExitCodes.ValidationErrors;
+        }
+
         if (string.IsNullOrWhiteSpace(token))
         {
             error.WriteLine(
@@ -54,11 +63,14 @@ public static class NotionSyncService
         {
             var client = clientFactory(token);
             // Two Notion surfaces under the same parent page (DR 033): the queryable PM spine of databases, then
-            // the browsable docs mirror of nested pages. Both run every tick by default; --docs-only / --spine-only
-            // scope a run to one surface (a docs smoke must never touch the live PM board).
-            if (!docsOnly)
+            // the browsable docs mirror of nested pages. The docs mirror is OPT-IN (release safety): the default
+            // run is the spine ONLY. --docs adds the mirror (spine + docs); --docs-only runs the mirror alone;
+            // --spine-only is the explicit spine-only (== default). A docs smoke must never touch the live PM board.
+            var runSpine = !docsOnly;
+            var runDocs = !spineOnly && (docs || docsOnly);
+            if (runSpine)
                 NotionSpineSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output, prune);
-            if (!spineOnly)
+            if (runDocs)
                 DocsTreeSync.Run(client, config.GetDydoRoot(), parentPageId, dryRun, output);
             return ExitCodes.Success;
         }

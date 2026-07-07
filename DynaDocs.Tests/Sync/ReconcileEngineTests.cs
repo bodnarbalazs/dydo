@@ -178,6 +178,26 @@ public class ReconcileEngineTests
     }
 
     [Fact]
+    public void RepoOwnedStructure_ExternalMissingRepoPresent_ReCreatesPage_NeverDeletesRepoNorArchives()
+    {
+        // DR 033 §2: for the repo-owned docs mirror, a page missing from the external read while its repo doc
+        // is present is eventual-consistency lag, not a deletion. The invariant is that a present repo doc's page
+        // is NEVER archived and its file NEVER deleted — so the engine re-creates the page (fresh, no external
+        // id) instead of taking the spine's delete-the-repo branch a bidirectional adapter would.
+        var b = Doc("understand/foo", "body");
+        b.ExternalId = "ext-1";
+        var repo = Doc("understand/foo", "body"); // unchanged since base — the spine would DELETE the repo here
+
+        var result = ReconcileEngine.Reconcile(b, repo, null, repoOwnedStructure: true);
+
+        Assert.Equal(ReconcileAction.Create, result.Action);
+        Assert.NotNull(result.ExternalWrite);
+        Assert.Null(result.ExternalWrite!.ExternalId); // re-created as a fresh page
+        Assert.Null(result.RepoDelete);                // repo file never deleted
+        Assert.Null(result.ExternalDelete);            // page never archived
+    }
+
+    [Fact]
     public void DeletedInRepo_DeletesExternal()
     {
         var b = Doc("t", "body", ("status", "open"));

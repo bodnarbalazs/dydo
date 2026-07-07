@@ -52,4 +52,15 @@ public interface ISyncAdapter
     /// use the default, and the runner never enqueues a refresh they would ignore.
     /// </summary>
     bool WritesEngineComputed => false;
+
+    /// <summary>
+    /// Whether this view's TREE STRUCTURE is repo-owned one-way (DR 033 §2 — the docs nested-page mirror),
+    /// as opposed to the fully bidirectional spine. When true, a page missing from the external read while its
+    /// repo doc is still present is NEVER a deletion — it is listing eventual-consistency lag, or a colleague's
+    /// stray archive — so the engine re-creates it from the repo instead of deleting the repo file or archiving
+    /// the page. The invariant: a present repo doc's page is never archived; archive fires only when the repo
+    /// doc is genuinely gone. The default (false) keeps the spine's delete/modify semantics, where an
+    /// external-side deletion is a meaningful signal.
+    /// </summary>
+    bool RepoOwnedStructure => false;
 }

@@ -97,6 +97,16 @@ public sealed class FakeNotionClient : INotionClient
 
     private int _createCount;
 
+    /// <summary>Page ids the tree listing omits even though the page still exists and is not archived — simulates
+    /// Notion's list eventual-consistency after a bulk create (a just-made page not yet visible to a child_page
+    /// enumeration). Lets a test reproduce the repo-present-but-external-missing case the docs mirror must never
+    /// treat as a deletion.</summary>
+    public HashSet<string> HiddenFromListing { get; } = [];
+
+    /// <summary>Whether a page is archived (in trash) — a test hook for asserting the docs mirror's archive
+    /// ordering actually archived a page, since <see cref="GetChildPages"/> hides archived pages from the walk.</summary>
+    public bool IsArchived(string pageId) => _pages.TryGetValue(pageId, out var p) && p.Archived;
+
     /// <summary>Replace a page's block children outright — simulates an external body edit in Notion.</summary>
     public void SetBlockChildren(string pageId, List<NotionBlock> blocks) => _blocks[pageId] = blocks;
 
@@ -220,7 +230,8 @@ public sealed class FakeNotionClient : INotionClient
 
     public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) =>
         _pages.Values
-            .Where(p => !p.Archived && _pageParent.TryGetValue(p.Id, out var parent) && parent == parentPageId)
+            .Where(p => !p.Archived && !HiddenFromListing.Contains(p.Id)
+                && _pageParent.TryGetValue(p.Id, out var parent) && parent == parentPageId)
             .Select(p => new NotionChildPage { Id = p.Id, Title = _pageTitle.GetValueOrDefault(p.Id, "") })
             .ToList();
 
@@ -229,6 +240,12 @@ public sealed class FakeNotionClient : INotionClient
         if (FailUpdate)
             throw new NotionApiException(500, "simulated update failure");
         var page = _pages[pageId];
+        // Real Notion rejects editing OR archiving a page whose ANCESTOR is already archived with a 400
+        // ("Can't edit page ... with an archived ancestor"). This is the live constraint the docs-mirror delete
+        // ordering must respect: archiving a folder before its children makes each child's archive fail. The
+        // fake now enforces it so a test can catch the ancestor-before-descendant bug the old fake missed.
+        if (HasArchivedAncestor(pageId))
+            throw new NotionApiException(400, $"Can't edit page on block '{pageId}': its ancestor is archived.");
         // Real Notion rejects a property write on an archived (in-trash) page with 400 — the page must be
         // restored first. Archiving/unarchiving itself carries no Properties, so those still pass.
         if (page.Archived && request.Properties != null)
@@ -243,6 +260,20 @@ public sealed class FakeNotionClient : INotionClient
         if (request.Archived == true)
             page.Archived = true;
         return page;
+    }
+
+    /// <summary>Whether any ancestor of <paramref name="pageId"/> (walking the child→parent chain) is archived —
+    /// the condition real Notion rejects an edit/archive under.</summary>
+    private bool HasArchivedAncestor(string pageId)
+    {
+        var current = pageId;
+        while (_pageParent.TryGetValue(current, out var parent))
+        {
+            if (_pages.TryGetValue(parent, out var p) && p.Archived)
+                return true;
+            current = parent;
+        }
+        return false;
     }
 
     public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) =>

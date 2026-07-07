@@ -171,7 +171,7 @@ public class DocsTreeSyncTests : IDisposable
 
         Assert.Contains("--dry-run", output.ToString());
         Assert.Empty(client.GetChildPages("workspace")); // no "Docs" root minted
-        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.AdapterName)));
+        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.SnapshotAdapterName("workspace"))));
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class DocsTreeSyncTests : IDisposable
         Assert.Empty(client.GetChildPages("workspace"));
         Assert.Empty(client.AppendedTo);
         Assert.Empty(client.DeletedBlocks);
-        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.AdapterName)));
+        Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.SnapshotAdapterName("workspace"))));
     }
 
     [Fact]
@@ -307,6 +307,131 @@ public class DocsTreeSyncTests : IDisposable
         // Exactly one "Docs" root under the parent, and no folder/doc page appears twice under any parent.
         Assert.Single(client.GetChildPages("workspace"));
         AssertNoDuplicateChildTitles(client, Root(client));
+    }
+
+    [Fact]
+    public void Run_DeletesAncestorAndDescendantInOneTick_ArchivesDescendantBeforeAncestor()
+    {
+        // A folder page is an ANCESTOR of its doc pages; Notion rejects archiving a page under an already-archived
+        // ancestor (the fake now enforces this). Deleting a whole folder queues both its page AND its child doc's
+        // page for archive in one tick — archiving must go descendant-first, or the child's archive 400s and (via
+        // the per-archive skip guard) the child is left un-archived.
+        Seed("understand/deep/_index.md", "---\ntitle: Deep\n---\n\nDeep index.");
+        Seed("understand/deep/note.md", "---\ntitle: Note\n---\n\nA note.");
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var understand = Child(client, Root(client), "Understand");
+        var deep = Child(client, understand, "Deep");
+        var note = Child(client, deep, "Note");
+
+        // Delete the whole folder so its page and its child's page both archive this tick.
+        Directory.Delete(Path.Combine(_dydoRoot, "understand", "deep"), recursive: true);
+        var ex = Record.Exception(() =>
+            DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter()));
+
+        Assert.Null(ex);
+        // Descendant-first ordering archived BOTH: an ancestor-first order would 400 on the child and leave it live.
+        Assert.True(client.IsArchived(note), "the descendant doc page must be archived");
+        Assert.True(client.IsArchived(deep), "the ancestor folder page must be archived");
+    }
+
+    [Fact]
+    public void Run_RepoDocPresentButExternalMissing_ReCreatesPage_NeverArchivesNorDeletesRepo()
+    {
+        // DR 033 §2: structure is repo-owned. A page missing from the tree walk while its repo doc is present is
+        // Notion list eventual-consistency, NOT a deletion — the page must be re-created, never archived, and the
+        // repo file never deleted. (Before the fix this crashed a fresh run by archiving a page that should exist.)
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var understand = Child(client, Root(client), "Understand");
+        var arch = Child(client, understand, "Architecture");
+
+        client.HiddenFromListing.Add(arch); // the page exists but the walk misses it this tick
+        var ex = Record.Exception(() =>
+            DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter()));
+
+        Assert.Null(ex);
+        Assert.False(client.IsArchived(arch)); // never archived — the invariant
+        Assert.True(File.Exists(DocPath("understand/architecture.md"))); // repo file never deleted
+        // Re-created rather than lost: an Architecture page is present under Understand once the walk sees it again.
+        client.HiddenFromListing.Clear();
+        Assert.Contains(client.GetChildPages(understand), p => p.Title == "Architecture");
+    }
+
+    [Fact]
+    public void Run_DryRun_AfterRealRun_KnownDocs_LabeledUpdate()
+    {
+        // A dry-run after a real run: docs already in the snapshot are labeled "update", not "create".
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var output = new StringWriter();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: true, output);
+
+        var text = output.ToString();
+        Assert.Contains("update", text);
+        Assert.Contains("understand/architecture", text);
+    }
+
+    [Fact]
+    public void Run_DryRun_RemovedDocStillInNotion_LabeledArchive()
+    {
+        // Accurate archive prediction (finding 5a): a removed doc whose page STILL exists in Notion is labeled
+        // "archive" — the real run would archive it. The dry-run itself archives nothing (reads only).
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        File.Delete(DocPath("understand/architecture.md"));
+
+        var output = new StringWriter();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: true, output);
+
+        var text = output.ToString();
+        Assert.Contains("archive", text);
+        Assert.Contains("understand/architecture", text);
+        // No real archive happened: the page is still live under Understand.
+        var understand = Child(client, Root(client), "Understand");
+        Assert.Contains(client.GetChildPages(understand), p => p.Title == "Architecture");
+    }
+
+    [Fact]
+    public void Run_DryRun_RemovedDocPageAlreadyGone_LabeledRetire_NotArchive()
+    {
+        // The accurate-plan payoff (finding 5a): a removed doc whose page is ALSO already gone from Notion is
+        // labeled "retire", not "archive" — the old local-only prediction would have wrongly cried "archive".
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var understand = Child(client, Root(client), "Understand");
+        var arch = Child(client, understand, "Architecture");
+        client.UpdatePage(arch, new NotionPageUpdateRequest { Archived = true }); // colleague trashed it out-of-band
+        File.Delete(DocPath("understand/architecture.md"));                        // and the repo doc is removed
+
+        var output = new StringWriter();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: true, output);
+
+        var text = output.ToString();
+        Assert.Contains("retire", text);
+        Assert.Contains("understand/architecture", text);
+    }
+
+    [Fact]
+    public void Run_DifferentParentPages_UseSeparateSnapshotFiles()
+    {
+        // The notion-docs snapshot is scoped by parent page (finding 4): alternating --parent-page targets must
+        // never share one snapshot, or a scratch smoke's external ids leak into the real workspace run.
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "scratch-a", dryRun: false, new StringWriter());
+        DocsTreeSync.Run(client, _dydoRoot, "scratch-b", dryRun: false, new StringWriter());
+
+        var pathA = BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.SnapshotAdapterName("scratch-a"));
+        var pathB = BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.SnapshotAdapterName("scratch-b"));
+        Assert.NotEqual(pathA, pathB);
+        Assert.True(File.Exists(pathA));
+        Assert.True(File.Exists(pathB));
     }
 
     private static void AssertNoDuplicateChildTitles(FakeNotionClient client, string parentId)

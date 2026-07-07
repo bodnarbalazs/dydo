@@ -1,11 +1,16 @@
 ---
 area: project
 type: backlog
-status: open
+status: done
 date: 2026-07-06
 ---
 
 # PM Record Folder Taxonomy + Status-Folder Cleanup — design brief
+
+> **Design delivered → [DR 034 — PM Record Taxonomy](../decisions/034-pm-record-taxonomy.md)** (co-thinker
+> round with Balazs, Dexter). Execution is the follow-on sprint
+> [pm-record-taxonomy-migration](./pm-record-taxonomy-migration.md). Brian (sync-model) and Charlie
+> (DR 033) coordinated.
 
 Spun off during the Docs → Notion nested-page work ([[033-docs-notion-nested-page-mirror]]) when the
 set of `dydo/project/` dirs that should be spine DATABASES (not browsable docs) kept growing

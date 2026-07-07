@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Sync.Notion;
 
 using DynaDocs.Services;
+using DynaDocs.Sync;
 using DynaDocs.Sync.Notion;
 using DynaDocs.Sync.Notion.Dtos;
 using DynaDocs.Utils;
@@ -105,7 +106,7 @@ public class NotionSyncServiceTests : IDisposable
     }
 
     [Fact]
-    public void Execute_InProject_DryRunFalse_CreatesDocsPage_EndToEnd()
+    public void Execute_Default_RunsSpineOnly_NoDocsMirror()
     {
         var savedCwd = Directory.GetCurrentDirectory();
         var project = SetUpProject(out var client, parentPageId: "page-root");
@@ -116,8 +117,57 @@ public class NotionSyncServiceTests : IDisposable
                 "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter());
 
             Assert.Equal(ExitCodes.Success, code);
-            // The docs mirror ran end-to-end alongside the spine: a "Docs" root page exists under the parent.
+            // The docs mirror is OPT-IN: a plain sync provisions the spine but mints NO "Docs" root page.
+            Assert.NotEmpty(client.CreatedDatabases);
+            Assert.DoesNotContain(client.GetChildPages("page-root"), p => p.Title == "Docs");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
+    public void Execute_Docs_RunsSpinePlusDocsMirror()
+    {
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter(),
+                prune: false, parentPageOverride: null, docs: true);
+
+            Assert.Equal(ExitCodes.Success, code);
+            // --docs runs both surfaces: the spine is provisioned AND a "Docs" root page exists under the parent.
+            Assert.NotEmpty(client.CreatedDatabases);
             Assert.Contains(client.GetChildPages("page-root"), p => p.Title == "Docs");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
+    public void Execute_DocsOnlyAndSpineOnly_IsRejected()
+    {
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        var err = new StringWriter();
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            var code = NotionSyncService.Execute(
+                "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), err,
+                prune: false, parentPageOverride: null, docs: false, docsOnly: true, spineOnly: true);
+
+            Assert.Equal(ExitCodes.ValidationErrors, code);
+            Assert.Contains("mutually exclusive", err.ToString());
+            // Neither surface ran: no database provisioned, no "Docs" page minted.
+            Assert.Empty(client.CreatedDatabases);
+            Assert.Empty(client.GetChildPages("page-root"));
         }
         finally
         {
@@ -135,13 +185,41 @@ public class NotionSyncServiceTests : IDisposable
             Directory.SetCurrentDirectory(project);
             var code = NotionSyncService.Execute(
                 "tok", new ConfigService(), _ => client, dryRun: false, new StringWriter(), new StringWriter(),
-                prune: false, parentPageOverride: "scratch-page");
+                prune: false, parentPageOverride: "scratch-page", docs: true);
 
             Assert.Equal(ExitCodes.Success, code);
             // An explicit --parent-page wins over the configured notion.parentPageId: the "Docs" root nests under the
             // scratch page, never the configured page — so a smoke never touches the real workspace.
             Assert.Contains(client.GetChildPages("scratch-page"), p => p.Title == "Docs");
             Assert.DoesNotContain(client.GetChildPages("page-root"), p => p.Title == "Docs");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(savedCwd);
+        }
+    }
+
+    [Fact]
+    public void Execute_DifferentParentPages_UseDifferentSnapshotFiles()
+    {
+        // The notion-docs snapshot is scoped by parent page (finding 4): a scratch smoke and the real workspace
+        // must never share one snapshot, or the scratch run's external ids leak into the real run as stale state.
+        var savedCwd = Directory.GetCurrentDirectory();
+        var project = SetUpProject(out var client, parentPageId: "page-root");
+        try
+        {
+            Directory.SetCurrentDirectory(project);
+            NotionSyncService.Execute("tok", new ConfigService(), _ => client, dryRun: false,
+                new StringWriter(), new StringWriter(), prune: false, parentPageOverride: "scratch-a", docsOnly: true);
+            NotionSyncService.Execute("tok", new ConfigService(), _ => client, dryRun: false,
+                new StringWriter(), new StringWriter(), prune: false, parentPageOverride: "scratch-b", docsOnly: true);
+
+            var dydoRoot = Path.Combine(project, "dydo");
+            var pathA = BaseSnapshotStore.PathFor(dydoRoot, DocsTreeSync.SnapshotAdapterName("scratch-a"));
+            var pathB = BaseSnapshotStore.PathFor(dydoRoot, DocsTreeSync.SnapshotAdapterName("scratch-b"));
+            Assert.NotEqual(pathA, pathB);
+            Assert.True(File.Exists(pathA));
+            Assert.True(File.Exists(pathB));
         }
         finally
         {

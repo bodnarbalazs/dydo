@@ -4,6 +4,7 @@ name: readme-2.0-rewrite
 status: pending
 created: 2026-07-06T11:20:11.1134700Z
 assigned: Adele
+needs-human: false
 ---
 
 # Task: readme-2.0-rewrite

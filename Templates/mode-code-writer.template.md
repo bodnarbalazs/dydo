@@ -114,6 +114,7 @@ The brief should include:
 - What you implemented (1-2 sentences)
 - Plan deviations and why (if any)
 - Key decisions made
+- The id of any tracked issue this work resolves — flag it so your supervisor can close it; closing issues is the dispatching manager's call, not the worker's
 
 After dispatching the reviewer, your work is handed off. The reviewer reports its verdict back to the origin, so you do not need to message your origin separately.
 

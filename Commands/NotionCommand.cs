@@ -89,26 +89,31 @@ public static class NotionCommand
         {
             Description = "Notion page id to mirror under, overriding notion.parentPageId / DYDO_NOTION_PARENT_PAGE. Point it at a scratch page to smoke-test without touching the configured workspace.",
         };
+        var docs = new Option<bool>("--docs")
+        {
+            Description = "Also run the docs nested-page mirror alongside the PM spine. Off by default — the plain sync runs the spine only.",
+        };
         var docsOnly = new Option<bool>("--docs-only")
         {
             Description = "Run only the docs nested-page mirror, skipping the PM spine. Mutually exclusive with --spine-only.",
         };
         var spineOnly = new Option<bool>("--spine-only")
         {
-            Description = "Run only the PM spine, skipping the docs mirror. Mutually exclusive with --docs-only.",
+            Description = "Run only the PM spine, skipping the docs mirror (the default scope). Mutually exclusive with --docs-only.",
         };
         command.Options.Add(dryRun);
         command.Options.Add(prune);
         command.Options.Add(parentPage);
+        command.Options.Add(docs);
         command.Options.Add(docsOnly);
         command.Options.Add(spineOnly);
         command.SetAction(parse => RunSync(
             parse.GetValue(dryRun), parse.GetValue(prune),
-            parse.GetValue(parentPage), parse.GetValue(docsOnly), parse.GetValue(spineOnly)));
+            parse.GetValue(parentPage), parse.GetValue(docs), parse.GetValue(docsOnly), parse.GetValue(spineOnly)));
         return command;
     }
 
-    private static int RunSync(bool dryRun, bool prune, string? parentPageOverride, bool docsOnly, bool spineOnly)
+    private static int RunSync(bool dryRun, bool prune, string? parentPageOverride, bool docs, bool docsOnly, bool spineOnly)
     {
         if (docsOnly && spineOnly)
         {
@@ -136,7 +141,7 @@ public static class NotionCommand
         }
 
         return NotionSyncService.Execute(
-            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docsOnly, spineOnly);
+            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docs, docsOnly, spineOnly);
     }
 
     /// <summary>Reads a secret (token or passphrase) from stdin: masked when a TTY (so it never lands in

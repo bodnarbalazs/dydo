@@ -241,6 +241,9 @@ public class NotionProvisionerTests : IDisposable
 
         // Needs Attention targets needs-human — a checkbox on Issue (Notion can't filter the attention formula).
         Assert.True(byName["🚨 Needs Attention"].Filter!.Checkbox!.EqualsValue);
+        // ...and sorts severity ascending too — the other half of the #215 fix (critical/high on top).
+        Assert.Equal("severity", byName["🚨 Needs Attention"].Sorts!.Single().Property);
+        Assert.Equal("ascending", byName["🚨 Needs Attention"].Sorts!.Single().Direction);
 
         // By Area is a board grouped by the area select.
         var board = byName["By Area"];

@@ -1,13 +1,12 @@
 ---
 area: general
-name: codex-integration-idea
+name: agent-inner-workings-memory
 status: pending
-created: 2026-07-08T13:09:58.7825959Z
-assigned: Henry
-needs-human: false
+created: 2026-07-08T14:44:06.9436093Z
+assigned: Leo
 ---
 
-# Task: codex-integration-idea
+# Task: agent-inner-workings-memory
 
 (No description)
 

@@ -17,7 +17,7 @@ internal static class TaskCreateHandler
 
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentAgent(sessionId);
+        var agent = registry.GetCurrentOwnedAgent(sessionId);
         var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
         var provenanceYaml = provenance == null
             ? ""

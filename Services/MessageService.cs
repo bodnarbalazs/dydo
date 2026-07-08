@@ -11,7 +11,12 @@ public static class MessageService
         var sessionId = registry.GetSessionContext();
         var currentHuman = registry.GetCurrentHuman();
 
-        var sender = registry.GetCurrentAgent(sessionId);
+        if (!registry.TryGetCurrentOwnedAgent(sessionId, out var sender, out var ownershipError))
+        {
+            ConsoleOutput.WriteError(ownershipError!);
+            return ExitCodes.ToolError;
+        }
+
         var validationError = ValidateSendRequest(registry, sender, to, subject, currentHuman, force);
         if (validationError != null)
         {

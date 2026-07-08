@@ -127,7 +127,7 @@ internal static partial class IssueCreateHandler
     {
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentAgent(sessionId);
+        var agent = registry.GetCurrentOwnedAgent(sessionId);
         return agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
     }
 

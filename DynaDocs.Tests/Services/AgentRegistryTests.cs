@@ -1475,6 +1475,27 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void ClaimAgent_DoesNotFallbackToSharedSessionContext()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        var scaffolder = new FolderScaffolder();
+        var registry = new AgentRegistry(_testDir, null, scaffolder);
+
+        registry.StorePendingSessionId("Adele", "owned-session");
+        Assert.True(registry.ClaimAgent("Adele", out var claimError), claimError);
+
+        File.WriteAllText(Path.Combine(_testDir, "dydo", "agents", ".session-context"), "owned-session\nAdele");
+        File.Delete(Path.Combine(_testDir, "dydo", "agents", "Adele", ".pending-session"));
+
+        var result = registry.ClaimAgent("Adele", out var error);
+
+        Assert.False(result);
+        Assert.Contains("No session ID available", error);
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+    }
+
+    [Fact]
     public void ClaimAgent_CleansUpLockFileAfterAttempt()
     {
         // Setup config
@@ -1597,59 +1618,47 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
-    public async Task ClaimAgent_ConcurrentClaims_OnlyOneLockSucceeds()
+    public void ClaimAgent_ConcurrentClaims_OnlyOneLockSucceeds()
     {
         // Setup config
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
         Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
 
-        var successCount = 0;
-        var lockInProgressCount = 0;
-        var otherErrorCount = 0;
-
         // Pre-create workspace to avoid directory creation race
         var workspacePath = Path.Combine(_testDir, "dydo", "agents", "Adele");
         Directory.CreateDirectory(workspacePath);
 
-        // Store a single pending session (in real usage, guard runs before each claim)
         var scaffolder = new FolderScaffolder();
         var registry = new AgentRegistry(_testDir, null, scaffolder);
         registry.StorePendingSessionId("Adele", "shared-session");
 
-        // Launch multiple concurrent claim attempts (simulates multiple processes trying to claim)
-        var tasks = Enumerable.Range(0, 5).Select(i => Task.Run(() =>
+        var lockPath = Path.Combine(workspacePath, ".claim.lock");
+        Assert.True(AgentRegistry.TryAcquireLockAtPath(lockPath, "Adele", out var lockError), lockError);
+        try
         {
-            var taskRegistry = new AgentRegistry(_testDir, null, scaffolder);
+            var blockedRegistry = new AgentRegistry(_testDir, null, scaffolder);
 
-            // Note: All tasks use same pending session (race condition on who reads it first)
-            var result = taskRegistry.ClaimAgent("Adele", out var error);
+            var blocked = blockedRegistry.ClaimAgent("Adele", out var blockedError);
 
-            if (result)
-            {
-                Interlocked.Increment(ref successCount);
-            }
-            else if (error.Contains("claim in progress"))
-            {
-                Interlocked.Increment(ref lockInProgressCount);
-            }
-            else
-            {
-                Interlocked.Increment(ref otherErrorCount);
-            }
-        })).ToArray();
-
-        await Task.WhenAll(tasks);
-
-        // At most one should succeed (the one that reads pending session first and acquires lock)
-        Assert.True(successCount <= 1, $"At most one claim should succeed, got {successCount}");
-
-        // Lock file should be cleaned up (allow brief delay for file system on Windows)
-        var lockPath = Path.Combine(_testDir, "dydo", "agents", "Adele", ".claim.lock");
-        for (var i = 0; i < 10 && File.Exists(lockPath); i++)
-        {
-            await Task.Delay(50);
+            Assert.False(blocked);
+            Assert.Contains("claim in progress", blockedError);
+            Assert.True(File.Exists(Path.Combine(workspacePath, ".pending-session")),
+                "A failed lock contender must not consume the pending session.");
         }
-        Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after concurrent claims");
+        finally
+        {
+            AgentRegistry.ReleaseLockAtPath(lockPath);
+        }
+
+        var claimed = registry.ClaimAgent("Adele", out var error);
+
+        Assert.True(claimed, $"ClaimAgent failed after lock release: {error}");
+        var session = registry.GetSession("Adele");
+        Assert.NotNull(session);
+        Assert.Equal("shared-session", session.SessionId);
+        Assert.False(File.Exists(Path.Combine(workspacePath, ".pending-session")),
+            "The successful claim should consume the pending session exactly once.");
+        Assert.False(File.Exists(lockPath), "Lock file should be cleaned up after claim");
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 

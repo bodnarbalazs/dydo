@@ -68,7 +68,7 @@ public static class ReviewCommand
     {
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentAgent(sessionId);
+        var agent = registry.GetCurrentOwnedAgent(sessionId);
 
         var tasksPath = GetTasksPath();
         var taskPath = Path.Combine(tasksPath, $"{taskName}.md");

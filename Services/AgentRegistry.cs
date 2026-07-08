@@ -369,18 +369,18 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        var (sessionId, host, model) = ResolveSession(agentName);
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            error = "No session ID available. Claim must be initiated via hook.";
-            return false;
-        }
-
         if (!TryAcquireLock(agentName, out error))
             return false;
 
         try
         {
+            var (sessionId, host, model) = ResolveSession(agentName);
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                error = "No session ID available. Claim must be initiated via hook.";
+                return false;
+            }
+
             var human = GetCurrentHuman();
             if (!ValidateClaimPreconditions(agentName, sessionId, human, out error))
                 return false;
@@ -428,7 +428,7 @@ public partial class AgentRegistry : IAgentRegistry
         if (pending != null)
             return pending.Value;
 
-        return (GetSessionContext(), AgentSession.UnknownHost, AgentSession.UnknownModel);
+        return (null, AgentSession.UnknownHost, AgentSession.UnknownModel);
     }
 
     private bool ValidateClaimPreconditions(string agentName, string sessionId, string? human, out string error)
@@ -1071,6 +1071,29 @@ public partial class AgentRegistry : IAgentRegistry
     {
         var session = GetSession(agentName);
         return session != null && IsOwnedByCaller(session);
+    }
+
+    public AgentState? GetCurrentOwnedAgent(string? sessionId)
+    {
+        var agent = GetCurrentAgent(sessionId);
+        if (agent == null) return null;
+        return VerifyCallerOwnsAgent(agent.Name) ? agent : null;
+    }
+
+    public bool TryGetCurrentOwnedAgent(string? sessionId, out AgentState? agent, out string? error)
+    {
+        agent = GetCurrentAgent(sessionId);
+        error = null;
+
+        if (agent == null)
+            return true;
+
+        if (VerifyCallerOwnsAgent(agent.Name))
+            return true;
+
+        error = $"Session context belongs to agent {agent.Name}, but this process does not own that agent.";
+        agent = null;
+        return false;
     }
 
     // Fastest path of GetCurrentAgent — extracted so the outer method's cyclomatic complexity

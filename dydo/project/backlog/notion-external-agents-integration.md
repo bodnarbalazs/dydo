@@ -58,7 +58,15 @@ help category). Beta, moving target — re-verify before designing.
 - DR-036 just retired our human approve gate; a Notion-agent PR flow adds an external work
   source whose gate is the GitHub PR — decide where that meets the dydo lifecycle.
 
-## Next step
+## balazs ruling (2026-07-08, same day)
 
-Co-thinker design round with balazs (his call on timing): pick which angles to pursue and fold
-into the [[notion-agent-board-and-reverse-messaging]] campaign design.
+"It's not that great." Angle by angle:
+1. **ADOPT the pattern** — "good idea to adapt the pattern, it probably works, that's why it's
+   there." Fold the move-a-row-to-ready assignment UX into the agent-board / DR-034 track.
+2. **REJECTED** — "no need to divide things. Claude Code stays. no mix." No hosted-Claude
+   satellite workforce; dydo work runs on Claude Code agents only.
+3. **PARKED** — "maybe later it will be a game-changer. For now it's not that important."
+   Watch item only (External Agent registration opening up).
+
+No co-thinker round needed; the ruling replaces it. Design lands inside
+[[notion-agent-board-and-reverse-messaging]] Half B when that campaign runs.

@@ -1,13 +1,12 @@
 ---
 area: general
-name: adopt-orphaned-codex-slices
+name: codex-mcp-exploration
 status: pending
-created: 2026-07-08T10:24:43.9353638Z
-assigned: Grace
-needs-human: false
+created: 2026-07-08T19:14:04.6968127Z
+assigned: Noah
 ---
 
-# Task: adopt-orphaned-codex-slices
+# Task: codex-mcp-exploration
 
 (No description)
 

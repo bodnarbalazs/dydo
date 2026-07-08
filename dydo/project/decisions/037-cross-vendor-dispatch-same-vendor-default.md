@@ -65,6 +65,21 @@ A vendor override targeting an unconfigured/unavailable vendor must fail fast wi
   3. A Codex Tier-1 manager running a sprint of Codex workers, Claude-hosted audit at the gate.
   4. Measure per DR 028 §6: rounds-per-slice and wall-clock vs. comparable Claude-workflow slices. The speed hypothesis is empirical, not assumed.
 
+## Addendum — default work-split routing (balazs, 2026-07-08, same day)
+
+Set hours after acceptance, when a 500k-token in-branch sprint ran ~3 hours wall-clock while
+balazs actively waited: token spend is the normal part; **foreground latency is the problem**.
+The standing routing policy (the "predictable class of work" the Revisit-When paragraph
+anticipated — recorded here rather than waiting for it to become config):
+
+- **Fable / Claude:** chief-of-staff, planning, and intelligence-critical work (design rounds,
+  thorough reviews, inquisitions, audit gates).
+- **Codex:** simple plans and implementation — "we'll give them a chance to do things fast and
+  correctly" (probationary: adoption step 4's measurement still applies).
+- **Dynamic workflows** (run-sprint and kin) stay first-choice for **background/parallel** work;
+  anything a human is actively waiting on routes to the fast path (dispatched sessions) instead.
+- Balance is an explicit goal: "with enough balance we can max out both of the subscriptions."
+
 ## Revisit When
 
 - Manual vendor overrides become routine for a predictable class of work → consider a config-expressed dispatch default for that class (the deferred routing idea).

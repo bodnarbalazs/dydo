@@ -36,7 +36,8 @@ Located at the project root. Created by `dydo init`. This is the primary configu
     }
   },
   "integrations": {
-    "claude": true
+    "claude": true,
+    "codex": false
   },
   "dispatch": {
     "launchInTab": true,
@@ -60,6 +61,7 @@ Located at the project root. Created by `dydo init`. This is the primary configu
 | `agents.pool` | string[] | — | All available agent names |
 | `agents.assignments` | dict | — | Maps human names to their assigned agent names |
 | `integrations.claude` | bool | `true` | Whether Claude Code integration is active |
+| `integrations.codex` | bool | `false` | Whether Codex integration is active |
 | `dispatch.launchInTab` | bool | `true` | Open dispatched agents in a new tab (vs new window) |
 | `dispatch.autoClose` | bool | `false` | Auto-close terminal when agent releases |
 | `frameworkHashes` | dict | — | SHA256 hashes of framework-owned files for `dydo template update` |
@@ -87,7 +89,9 @@ $env:DYDO_HUMAN = "your_name"
 
 ## Hook Configuration
 
-For Claude Code, `dydo init claude` writes `.claude/settings.local.json` automatically:
+`dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically. Claude Code stores its hook configuration in `.claude/settings.local.json`; Codex stores it in `.codex/hooks.json`.
+
+Claude Code example:
 
 ```json
 {
@@ -103,11 +107,21 @@ For Claude Code, `dydo init claude` writes `.claude/settings.local.json` automat
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell",
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion",
         "hooks": [
           {
             "type": "command",
             "command": "dydo guard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard --stop"
           }
         ]
       }
@@ -116,9 +130,39 @@ For Claude Code, `dydo init claude` writes `.claude/settings.local.json` automat
 }
 ```
 
-The `PreToolUse` hook intercepts every Edit, Write, Read, Bash, Glob, Grep, Agent, EnterPlanMode, ExitPlanMode, and PowerShell tool call. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block).
+Codex example:
 
-The `permissions.allow` list pre-approves common dydo commands so the human doesn't get prompted for every agent lifecycle call.
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard --stop"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The `PreToolUse` hook intercepts each matched tool call and sends it to `dydo guard`; Codex additionally includes `apply_patch` because Codex exposes file edits through that tool. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block). The `Stop` hook calls `dydo guard --stop` so dydo can derive a needs-human attention flag when a turn ends mid-task.
+
+For Claude Code, the `permissions.allow` list also pre-approves common dydo commands so the human doesn't get prompted for every agent lifecycle call.
 
 ---
 

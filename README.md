@@ -36,7 +36,7 @@ flowchart LR
 
 AI coding tools have memory features — but that memory is unstructured, opaque, and not under your control. You can't organize it, version it, review it in a pull request, or decide what each role is allowed to see.
 
-dydo gives you explicit, structured control over project context. Your documentation is the versioned, human-readable source of truth. Agents onboard themselves each session by reading it. You decide what's documented, how it's organized, and what each role needs to know. Claude Code's own auto-memory still works alongside it — the split is deliberate: **CLAUDE.md is your rules, native memory is the agent's scratch notes, and dydo docs are curated, reviewed knowledge.**
+dydo gives you explicit, structured control over project context. Your documentation is the versioned, human-readable source of truth. Agents onboard themselves each session by reading it. You decide what's documented, how it's organized, and what each role needs to know. Runtime-native memory still works alongside it — the split is deliberate: **CLAUDE.md or AGENTS.md is your rules, native memory is the agent's scratch notes, and dydo docs are curated, reviewed knowledge.**
 
 ### What you get
 
@@ -45,7 +45,7 @@ dydo gives you explicit, structured control over project context. Your documenta
 - **Compiles to native artifacts** - `dydo sync` turns your roles and docs into Claude `.claude/agents/` / `.claude/skills/` and Codex `.codex/agents/` / `.agents/skills/`. No hand-maintained agent files.
 - **Read-only roles, natively enforced** — The reviewer agent ships without Edit/Write tools. "Reviewers don't write code" isn't a policy, it's the tool profile.
 - **No self-review** — The agent that wrote the code doesn't review it. Fresh eyes, by construction.
-- **Native orchestration** — Fan out dozens of subagents through Claude Code workflows. Ships flagship workflows: `run-sprint` (sliced code→review→merge→audit) and `inquisition` (multi-lens QA gate).
+- **Native orchestration** — Fan out dozens of subagents through runtime-native workflows. Ships flagship workflows: `run-sprint` (sliced code→review→merge→audit) and `inquisition` (multi-lens QA gate).
 - **Model tiers** — Roles declare an abstract tier (`strong` / `standard` / `light`) and effort; the compiler binds the concrete model. Swap models without touching a workflow.
 - **Worktree isolation** — Parallel agents work in separate git worktrees without stepping on each other.
 - **Notion as a view (optional)** — Two-way sync to a team PM board. Repo files stay canonical; the token is stored locally (or in an opt-in encrypted vault) and never committed by default.
@@ -58,7 +58,7 @@ dydo gives you explicit, structured control over project context. Your documenta
 
 Almost everything. Earlier versions shipped dydo's *own* multi-agent runtime — orchestrators dispatching workers into terminal tabs, with inbox, messaging, queues, and worktree plumbing to coordinate them. Then Claude Code introduced dynamic workflows and governable subagents, and dydo's hand-rolled orchestration was suddenly *fighting* the native runtime instead of riding it. That's a bad place to be.
 
-So 2.0 pivots: **Claude Code owns orchestration** (subagents, skills, workflows), and **dydo becomes the policy + context layer** that plugs into it — keeping and sharpening the parts with no native equivalent.
+So 2.0 pivots: **the coding-agent runtime owns orchestration** (subagents, skills, workflows), and **dydo becomes the policy + context layer** that plugs into it — keeping and sharpening the parts with no native equivalent.
 
 - **Gone** — worker-tier dispatch, inbox/messaging/queues for workers, per-role RBAC path matrices, the audit-replay trail, and the `inquisitor`/`judge` roles.
 - **Now native** — subagents and workflows do the fan-out; worktree isolation handles parallel collisions; `run-sprint` and `inquisition` are workflows. (The inquisitor/judge *roles* are retired; the inquisitor is reborn as a dedicated read-only agent the `inquisition` workflow spawns, and per-sprint auditing is the `sprint-auditor`.)
@@ -158,7 +158,7 @@ You're ready to go. Keep docs accurate to your intent — they're the memory you
 
 **Example prompt:** `Hey Adele, help me fix this bug in the auth service`
 
-1. The named **Tier-1 agent** reads `CLAUDE.md`, gets redirected to `dydo/index.md`, and onboards through the doc funnel.
+1. The named **Tier-1 agent** reads `CLAUDE.md` or `AGENTS.md`, gets redirected to `dydo/index.md`, and onboards through the doc funnel.
 2. It claims its identity (`dydo agent claim Adele`) and reads the project context it needs.
 3. It **plans the work and runs it as native subagents/workflows** — a code-writer to implement, a reviewer to check. Tier-1 manages; the workers execute. (Tier-1 agents are managers: the code writes happen in workers, not in the thread you're talking to.)
 4. On **every** tool call — the main thread and each subagent alike — the `dydo guard` hook enforces universal off-limits and your nudges.
@@ -262,6 +262,8 @@ project/
 Each team member gets their own pool of agents — no conflicts. Join an existing project with:
 
 ```bash
+dydo init codex --join
+# or
 dydo init claude --join
 ```
 

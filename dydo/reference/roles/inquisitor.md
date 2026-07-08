@@ -5,7 +5,7 @@ type: reference
 
 # Inquisitor
 
-The campaign-end QA sweeper — a read-only agent the `inquisition` workflow spawns to audit landed work. It is **not a claimable dydo role**: it exists only as a Claude Code agent + skill (`.claude/agents/inquisitor.md` + `.claude/skills/inquisitor/`), spawned by the workflow, never claimed by a human. The `inquisitor` (and `judge`) *roles* from earlier versions were retired in [Decision 024](../../project/decisions/024-dydo-2-native-pivot.md); the adversarial-QA job now lives in the workflow.
+The campaign-end QA sweeper — a read-only agent the `inquisition` workflow spawns to audit landed work. It is **not a claimable dydo role**: it exists as runtime-generated agent and skill artifacts, such as Claude Code `.claude/agents/inquisitor.md` / `.claude/skills/inquisitor/` and Codex `.codex/agents/inquisitor.toml` / `.agents/skills/inquisitor/`, spawned by the workflow and never claimed by a human. The `inquisitor` (and `judge`) *roles* from earlier versions were retired in [Decision 024](../../project/decisions/024-dydo-2-native-pivot.md); the adversarial-QA job now lives in the workflow.
 
 ## What It Does
 

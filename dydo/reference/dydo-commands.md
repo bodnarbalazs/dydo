@@ -374,8 +374,8 @@ dydo wait --cancel                 # Cancel all active waits
 
 ### dydo guard
 
-Check if current agent can perform an action. Used by the hooks. 
-For Claude Code they're wired up automatically for other tools it has to be set up manually.
+Check if current agent can perform an action. Used by Claude Code and Codex guard hooks.
+For `claude` and `codex` integrations, `dydo init <integration>` wires hooks automatically (`.claude/settings.local.json` for Claude Code, `.codex/hooks.json` for Codex). Other tools require manual hook setup.
 
 ```bash
 # Via stdin (hook mode)

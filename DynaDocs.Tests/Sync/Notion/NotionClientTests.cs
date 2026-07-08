@@ -388,4 +388,64 @@ public class NotionClientTests
         Assert.Single(handler.Requests);
         Assert.Equal(0, sleepCalls);
     }
+
+    [Fact]
+    public void TransientTransportThrow_RetriesAndSucceeds()
+    {
+        // A forcibly-closed socket surfaces as HttpRequestException before any response exists — the
+        // status-code retry never sees it, so SendWithRetry must catch the throw and retry to the 200.
+        var handler = new FakeHttpMessageHandler()
+            .EnqueueThrow(new HttpRequestException("connection forcibly closed"))
+            .Enqueue("""{"id":"db1","data_sources":[]}""");
+
+        var db = Client(handler, sleep: _ => { }).RetrieveDatabase("db1");
+
+        Assert.Equal("db1", db.Id);
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    public void PersistentTransportThrow_WrapsInNotionApiException_AfterMaxAttempts()
+    {
+        // A transport failure that never clears must not escape as a raw HttpRequestException (that
+        // crashed the whole sync unhandled) — it's wrapped in NotionApiException so the caller's existing
+        // catch surfaces a clean ToolError. Assert.Throws<NotionApiException> also proves it's NOT the raw
+        // HttpRequestException.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < NotionClient.MaxAttempts; i++)
+            handler.EnqueueThrow(new HttpRequestException("connection forcibly closed"));
+
+        var ex = Assert.Throws<NotionApiException>(() => Client(handler, sleep: _ => { }).RetrieveDatabase("db1"));
+
+        Assert.Contains("connection forcibly closed", ex.Message);
+        Assert.Equal(NotionClient.MaxAttempts, handler.Requests.Count);
+    }
+
+    [Fact]
+    public void TimeoutThrow_RetriesAndSucceeds()
+    {
+        // A client timeout surfaces as TaskCanceledException (no external CancellationToken is ever passed,
+        // so a cancellation here can only be a timeout) — likewise transient and retried to the 200.
+        var handler = new FakeHttpMessageHandler()
+            .EnqueueThrow(new TaskCanceledException("timed out"))
+            .Enqueue("""{"id":"db1","data_sources":[]}""");
+
+        var db = Client(handler, sleep: _ => { }).RetrieveDatabase("db1");
+
+        Assert.Equal("db1", db.Id);
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    public void PersistentTimeoutThrow_WrapsInNotionApiException_AfterMaxAttempts()
+    {
+        // A timeout that never clears is wrapped just like a socket reset — never an unhandled crash.
+        var handler = new FakeHttpMessageHandler();
+        for (var i = 0; i < NotionClient.MaxAttempts; i++)
+            handler.EnqueueThrow(new TaskCanceledException("timed out"));
+
+        Assert.Throws<NotionApiException>(() => Client(handler, sleep: _ => { }).RetrieveDatabase("db1"));
+
+        Assert.Equal(NotionClient.MaxAttempts, handler.Requests.Count);
+    }
 }

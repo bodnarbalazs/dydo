@@ -187,12 +187,17 @@ public sealed class NotionClient : INotionClient
 
     /// <summary>
     /// The single send path every request helper routes through, so spine and docs syncs share one
-    /// resiliency policy. Retries transient failures (429 + 500/502/503/504) up to <see cref="MaxAttempts"/>
-    /// total tries: on 429 it honours a <c>Retry-After</c> header when present, otherwise it backs off
-    /// exponentially with jitter. Every other status — success or a hard 4xx like the archived-ancestor
-    /// 400 — returns on the first try, so non-retryable errors still fail immediately. The request is
-    /// rebuilt per attempt because an <see cref="HttpRequestMessage"/> (and its content stream) cannot be
-    /// resent. <see cref="Throttle"/> still gates each attempt; the backoff is in addition to it.
+    /// resiliency policy. Retries transient failures — both retryable statuses (429 + 500/502/503/504)
+    /// and transport-level throws (a forcibly-closed socket / connection reset surfaces as an
+    /// <see cref="HttpRequestException"/> before any response exists; a client timeout as a
+    /// <see cref="TaskCanceledException"/>) — up to <see cref="MaxAttempts"/> total tries: on 429 it
+    /// honours a <c>Retry-After</c> header when present, otherwise it backs off exponentially with
+    /// jitter. Every other status — success or a hard 4xx like the archived-ancestor 400 — returns on
+    /// the first try, so non-retryable errors still fail immediately. On the final try a transport
+    /// throw is wrapped in a <see cref="NotionApiException"/> so the caller's existing catch surfaces a
+    /// clean error instead of an unhandled crash. The request is rebuilt per attempt because an
+    /// <see cref="HttpRequestMessage"/> (and its content stream) cannot be resent. <see cref="Throttle"/>
+    /// still gates each attempt; the backoff is in addition to it.
     /// </summary>
     private HttpResponseMessage SendWithRetry(Func<HttpRequestMessage> requestFactory)
     {
@@ -200,7 +205,19 @@ public sealed class NotionClient : INotionClient
         {
             Throttle();
             using var request = requestFactory();
-            var resp = _http.SendAsync(request).GetAwaiter().GetResult();
+            HttpResponseMessage resp;
+            try
+            {
+                resp = _http.SendAsync(request).GetAwaiter().GetResult();
+            }
+            catch (Exception ex) when (IsTransientTransport(ex))
+            {
+                if (attempt >= MaxAttempts)
+                    throw new NotionApiException(0, ex.Message);
+                _sleep(Backoff(attempt));
+                continue;
+            }
+
             if (resp.IsSuccessStatusCode || attempt >= MaxAttempts || !IsRetryable((int)resp.StatusCode))
                 return resp;
 
@@ -212,6 +229,13 @@ public sealed class NotionClient : INotionClient
 
     private static bool IsRetryable(int status) => status is 429 or 500 or 502 or 503 or 504;
 
+    // A transport failure throws before any HTTP response: a forcibly-closed socket / IO error surfaces
+    // as HttpRequestException, and a client-side timeout as TaskCanceledException (OperationCanceledException).
+    // No external CancellationToken is ever passed in, so a cancellation here can only be a timeout —
+    // transient, and safe to retry.
+    private static bool IsTransientTransport(Exception ex) =>
+        ex is HttpRequestException or OperationCanceledException;
+
     private static TimeSpan RetryDelay(HttpResponseMessage resp, int attempt)
     {
         if ((int)resp.StatusCode == 429 && resp.Headers.RetryAfter is { } retryAfter)
@@ -221,11 +245,14 @@ public sealed class NotionClient : INotionClient
             if (retryAfter.Date is { } date && date - DateTimeOffset.UtcNow is { Ticks: > 0 } until)
                 return until;
         }
-        // Exponential backoff (250ms, 500ms, 1s, …) plus jitter up to one base interval to de-correlate
-        // concurrent retriers — jitter never applies to the deterministic Retry-After path above.
-        var backoff = BaseBackoff * Math.Pow(2, attempt - 1);
-        return backoff + TimeSpan.FromMilliseconds(Random.Shared.Next((int)BaseBackoff.TotalMilliseconds));
+        return Backoff(attempt);
     }
+
+    // Exponential backoff (250ms, 500ms, 1s, …) plus jitter up to one base interval to de-correlate
+    // concurrent retriers — a transport throw has no Retry-After, so this is its only delay source.
+    private static TimeSpan Backoff(int attempt) =>
+        BaseBackoff * Math.Pow(2, attempt - 1)
+        + TimeSpan.FromMilliseconds(Random.Shared.Next((int)BaseBackoff.TotalMilliseconds));
 
     private static TResp ReadResponse<TResp>(
         HttpResponseMessage resp, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResp> respInfo)

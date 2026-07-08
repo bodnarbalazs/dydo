@@ -11,6 +11,9 @@ related-decisions: [037]
 
 # Codex-via-MCP delegation — one gated experiment
 
+Codex CLI can run as an MCP server, letting a Claude manager delegate implementation steps
+mid-session; one measured, worktree-isolated experiment decides whether this becomes a rail.
+
 ## The capability (verified 2026-07-08)
 
 Codex CLI ships a native MCP server mode (`codex mcp-server`); an MCP client (Claude Code) that

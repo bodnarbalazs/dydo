@@ -10,6 +10,9 @@ related-decisions: [024, 037]
 
 # Portable skill definitions — extend dydo sync beyond roles
 
+Define skills once, vendor-neutral, under dydo and let `dydo sync` compile them to every
+configured platform — the role pipeline already does this; non-role skills need the same.
+
 ## What exists today (verified 2026-07-08)
 
 For **role-shaped** things the feature is already live: `dydo roles create my-role` scaffolds a

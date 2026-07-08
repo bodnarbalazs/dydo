@@ -50,8 +50,8 @@ A + B together is probably the cleanest. A fixes the cause; B keeps drain operat
 ## Resolution
 Fixed at HEAD: WaitGeneral captures a registration-time unread snapshot and excludes it from firing (WaitCommand.cs:109-145, comments cite #0149), so stacked unreads no longer re-fire the wait. Note: installed binary lags HEAD; behavior goes live with the 2.0 install. Triage sweep 2026-07-04 (Brian, CoS).
 ## Related
-- [Decision 021 — Unified General Wait](../decisions/021-unified-general-wait.md) — the universal-wait policy that sharpens the deadlock.
-- [Issue #0147 (resolved)](resolved/0147-wait-fails-to-trigger-on-a-message-that-arrives-during-the-wait-re-arm-gap-race.md) — fix for the single-message wait-re-arm race; this issue is the multi-message flood shape.
-- [Issue #0141 (resolved)](resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) — earlier auto-exit-on-already-unread observation; resolution made re-registration nonzero. The fire-on-stacked-unread behavior remained.
+- [Decision 021 — Unified General Wait](../../decisions/021-unified-general-wait.md) — the universal-wait policy that sharpens the deadlock.
+- [Issue #0147 (resolved)](./0147-wait-fails-to-trigger-on-a-message-that-arrives-during-the-wait-re-arm-gap-race.md) — fix for the single-message wait-re-arm race; this issue is the multi-message flood shape.
+- [Issue #0141 (resolved)](./0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) — earlier auto-exit-on-already-unread observation; resolution made re-registration nonzero. The fire-on-stacked-unread behavior remained.
 - `Commands/WaitCommand.cs` — wait fire/exit logic.
 - `Commands/GuardCommand.cs` — `MissingGeneralWait` enforcement.

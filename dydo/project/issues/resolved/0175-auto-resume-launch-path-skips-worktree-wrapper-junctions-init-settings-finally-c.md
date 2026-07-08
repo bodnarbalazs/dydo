@@ -68,8 +68,8 @@ The resume launch should mirror the dispatch launch's worktree wrapper. Two opti
 
 ## Related
 
-- [Decision 022 — Auto-Resume Crashed Agents](../decisions/022-auto-resume-crashed-agents.md)
-- [#0144](0144-auto-resume-opens-in-new-window-should-reuse-the-original-window-as-a-new-tab-wh.md) — companion polish on the resume launch path.
+- [Decision 022 — Auto-Resume Crashed Agents](../../decisions/022-auto-resume-crashed-agents.md)
+- [#0144](../0144-auto-resume-opens-in-new-window-should-reuse-the-original-window-as-a-new-tab-wh.md) — companion polish on the resume launch path.
 - `Services/WindowsTerminalLauncher.cs:32-127` (`GetArguments` vs `GetResumeArguments` / `LaunchResume`).
 - `Services/LinuxTerminalLauncher.cs:53-74` (`BuildResumeBashCommand`).
 - `Commands/WorktreeCommand.cs` — `GeneratePsJunctionScript`, `init-settings`, `cleanup`.

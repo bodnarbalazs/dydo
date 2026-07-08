@@ -83,8 +83,8 @@ Three options, in increasing order of correctness:
 
 ## Related
 
-- [Decision 022 — Auto-Resume Crashed Agents](../decisions/022-auto-resume-crashed-agents.md)
-- [#0150](0150-auto-resume-on-crash-sometimes-fails-to-trigger-watchdog-misses-dead-claude-process.md) — umbrella "auto-resume sometimes fails to trigger." This issue is the specific identified mechanism for the post-v1.4.3 era.
+- [Decision 022 — Auto-Resume Crashed Agents](../../decisions/022-auto-resume-crashed-agents.md)
+- [#0150](../0150-auto-resume-on-crash-sometimes-fails-to-trigger-watchdog-misses-dead-claude-process.md) — umbrella "auto-resume sometimes fails to trigger." This issue is the specific identified mechanism for the post-v1.4.3 era.
 - [#0152](0152-auto-resume-race-watchdog-fires-duplicate-launches-during-the-resumed-claude-war.md) — the warmup gate itself was the fix for #0152 (cap-saturation race). This issue documents that the fix overshoots — the gate is too short and SaturateResumeAttempts too heavy.
 - [#0153](0153-resume-attempts-is-not-reset-on-same-session-reclaims-so-the-counter-accumulates.md) — `ResetResumeBookkeeping` partly self-heals the cap saturation once the resumed claude eventually re-claims.
 - `Services/WatchdogService.cs:73` (`ResumeWarmupGate`), lines 458-464 (the SaturateResumeAttempts callsite), lines 544-548 (`IsBadSessionFailFast`).

@@ -37,8 +37,8 @@ Either way, do not leave the current claim in place: it gives a future maintaine
 ## Related
 - `Commands/WaitCommand.cs:103-108` — the comment.
 - Issue [#0149](./0149-wait-rearm-gap-deadlocks-agent-when-3-plus-messages-stack-faster-than-agent-can-process.md) — the lived deadlock the comment denies.
-- Decision [021](../decisions/021-unified-general-wait.md) — universal must-keep-general-wait gate that broke the comment's invariant.
-- Inquisition: [wait-rearm-flood-deadlock](../inquisitions/wait-rearm-flood-deadlock.md) (Finding #5) — drift discovered during #0149 investigation.
+- Decision [021](../../decisions/021-unified-general-wait.md) — universal must-keep-general-wait gate that broke the comment's invariant.
+- Inquisition: [wait-rearm-flood-deadlock](../../inquisitions/wait-rearm-flood-deadlock.md) (Finding #5) — drift discovered during #0149 investigation.
 ## Reproduction
 (Steps to reproduce, if applicable)
 ## Resolution

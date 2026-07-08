@@ -52,3 +52,4 @@ Index of decisions documentation.
 - [036 — Task Approval Reform: Verifier Flips Done, the Done Window, and the Archive Sweep](./036-task-approval-reform.md) - The per-task **human approve gate is retired**.
 - [037 — Cross-Vendor Dispatch: Same-Vendor Default, Explicit Override at the Dispatch Boundary, No New Abstraction](./037-cross-vendor-dispatch-same-vendor-default.md) - Cross-vendor work (Claude + Codex in one flock) needs **no new dydo abstraction**.
 - [038 — Auto-Memory Policy: dydo-First Routing, Memory as Buffer, Chief-of-Staff Sweep](./038-auto-memory-policy.md) - Harness auto-memory (the per-user, per-project memory directory the agent runtime maintains **outside the repo**) is kept, but demoted from archive...
+- [039 — Planner Role, Review-Target Subskills, and the Plan Gate](./039-planner-role-review-target-subskills-and-the-plan-gate.md) - Planning becomes a first-class, gated stage of implementation work.

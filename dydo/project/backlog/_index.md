@@ -12,10 +12,12 @@ Index of backlog documentation.
 ## Contents
 
 - [Auto-Memory Policy — Implementation Backlog](./auto-memory-policy.md) - Follow-ups from the 2026-07-08 co-thinking round (balazs + Leo); design settled in [Decision 038](.
+- [Codex-via-MCP delegation — one gated experiment](./codex-mcp-delegation-experiment.md) - Codex CLI can run as an MCP server, letting a Claude manager delegate implementation steps mid-session; one measured, worktree-isolated experiment ...
 - [Cross-vendor agent integration (Claude + Codex in one flock)](./cross-vendor-agent-integration.md) - FutureFeature-class.
 - [dydo 2.0 — Campaign Roadmap](./dydo-2-campaign-roadmap.md) - The sprint-by-sprint plan for the dydo 2.
 - [dydo 2.0 — Hardening, Cleanup & Onboarding Backlog](./dydo-2-hardening.md) - Deferred work surfaced while landing the 2.
 - [dydo 2.0 — Vision Follow-ups (backlog)](./dydo-2-vision-followups.md) - Items that emerged from the 2026-07-03 co-thinking session ([Decision 026](.
+- [Exact-model provenance on display surfaces (not vendor names)](./exact-model-provenance-display.md) - Provenance surfaces should show the exact model (Fable 5, Opus 4.
 - [Notion Agent Board + reverse (Notion → agent) messaging](./notion-agent-board-and-reverse-messaging.md) - FutureFeature-class (campaign-sized).
 - [Notion Board (DR 029/030) — Follow-ups Backlog](./notion-board-followups.md) - Deferred items surfaced during the DR 029/030 board sprint and its five-round inquisition QA loop (waves 4a–8, commits fea7915…12c45cc + the wave-8...
 - [Docs → Notion Nested-Pages Sync — design brief](./notion-docs-nested-pages.md) - A parallel-track feature spun off during the notion-sync live shakedown (2026-07-06).
@@ -23,5 +25,7 @@ Index of backlog documentation.
 - [`dydo notion reset` — wipe-then-recreate the board from the sync model](./notion-reset-command.md) - > **Scheduling (balazs, 2026-07-07):** slated for the **next sprint**, after the > PM-record-taxonomy migration lands — *not* folded into the curre...
 - [PM Record Folder Taxonomy + Status-Folder Cleanup — design brief](./pm-record-folder-taxonomy.md) - > **Design delivered → [DR 034 — PM Record Taxonomy](.
 - [PM Record Taxonomy Migration — follow-on sprint](./pm-record-taxonomy-migration.md) - Execution of [DR 034](.
+- [Portable skill definitions — extend dydo sync beyond roles](./portable-skill-definitions.md) - Define skills once, vendor-neutral, under dydo and let `dydo sync` compile them to every configured platform — the role pipeline already does this;...
+- [Post-2.0.6 Sprint Pipeline (chief-of-staff triage, 2026-07-08)](./post-2.0.6-sprint-pipeline.md) - High-level portfolio only.
 - [Review Tiers & Attention — Implementation Backlog](./review-tiers-and-attention.md) - Follow-ups from the 2026-07-03 co-thinking session; design settled in [Decision 031](.
 - [Rethink the task approve/archive workflow](./task-approve-workflow-rethink.md) - > **Resolved 2026-07-08** — the co-thinker round converged; design settled in > [Decision 036](.

@@ -18,7 +18,7 @@ A chief-of-staff/co-thinker onboards without ever being shown `dydo dispatch --a
 Two systemic gaps:
 
 1. **Docs gap.** `Templates/mode-chief-of-staff.template.md` and `Templates/mode-co-thinker.template.md` contain **no `dydo dispatch` example** — they only describe routing prose ("a top-level dispatch of an orchestrator or co-thinker"). Meanwhile `mode-orchestrator/code-writer/docs-writer/planner` templates all show `dydo dispatch --auto-close …`. So the two Tier-1 roles that route work most are the ones whose onboarding never demonstrates the flag. (The shared `agent-workflow.template.md` quick-ref does list it, but the role playbook doesn't reinforce it.)
-2. **Enforcement gap.** No guard nudge soft-blocks `dydo dispatch` when `--auto-close` is omitted. A 1.x-era soft-block for this existed but was removed with the worker-tier-dispatch teardown ([DR 024](../decisions/024-dydo-2-native-pivot.md)). `dydo.json` (nudges) and the dispatch guard path are off-limits to CoS → code-writer work.
+2. **Enforcement gap.** No guard nudge soft-blocks `dydo dispatch` when `--auto-close` is omitted. A 1.x-era soft-block for this existed but was removed with the worker-tier-dispatch teardown ([DR 024](../../decisions/024-dydo-2-native-pivot.md)). `dydo.json` (nudges) and the dispatch guard path are off-limits to CoS → code-writer work.
 
 Not a regression in the auto-close feature itself — a `--auto-close` test dispatch closes correctly. The failure mode is purely "flag not taught, not enforced."
 

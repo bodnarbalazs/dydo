@@ -10,6 +10,9 @@ related-decisions: [037]
 
 # Exact-model provenance on display surfaces (not vendor names)
 
+Provenance surfaces should show the exact model (Fable 5, Opus 4.8, Gpt 5.5) instead of a bare
+vendor name; needs runtime model capture on the Claude side plus an id→display-name map.
+
 ## Current state (verified 2026-07-08)
 
 The provenance fields already exist and are written — `found-by-agent/vendor/model` on issues

@@ -7,6 +7,12 @@ requested-by: balazs
 
 # Rethink the task approve/archive workflow
 
+> **Resolved 2026-07-08** — the co-thinker round converged; design settled in
+> [Decision 036](../decisions/036-task-approval-reform.md) (verifier flips done, done window,
+> CoS/human-only archive sweep). This record stays as the incident/trigger history; the
+> mechanical fixes below survive inside DR-036 §3's archive rails. Implementation: DR-036
+> outline (R1–R3), sequenced after DR-034 S2a.
+
 ## Trigger
 
 On 2026-07-08 balazs intended to approve two review-pending tasks and accidentally

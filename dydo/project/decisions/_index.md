@@ -36,7 +36,7 @@ Index of decisions documentation.
 - [020 — Worktree Usage Policy: Power Option, Not Default](./020-worktree-usage-policy-power-option.md) - Worktrees are reframed from "default for parallel code work" (Decision 011) to a **power option** orchestrators reach for only in narrow, sized cas...
 - [021 — Unified General Wait for All Roles](./021-unified-general-wait.md) - Every claimed agent registers a single always-active general wait once their role is set, replacing the orchestrator-only general-wait policy.
 - [022 — Auto-Resume Crashed Agents](./022-auto-resume-crashed-agents.md) - When the watchdog detects that an agent's claude process has died while `state.
-- [023 — Backlog and Future-Features Doc Categories](./023-backlog-doc-category.md) - `dydo/project/` gains two new doc-categories — `backlog/` and `future-features/` — added as defaults to every `dydo init`.
+- [023 — Backlog and Future-Features Doc Categories](./023-backlog-doc-category.md) - > **Superseded by [DR 034 — PM Record Taxonomy](.
 - [024 — dydo 2.0: Pivot to a Policy + Context Layer over Native Orchestration](./024-dydo-2-native-pivot.md) - dydo stops shipping its own *worker-tier* runtime (dispatching code-writers/reviewers into terminals, plus their inbox/messaging/queues/worktree ma...
 - [025 — Notion Sync: Canonical Files + a Swappable View Adapter](./025-notion-sync-architecture.md) - dydo's repo files stay the **single source of truth**.
 - [026 — Tier-1 Agents Are Managers: Code Writes Happen in Workflows](./026-tier1-managers-doctrine.md) - Every Tier-1 agent (the named agents the human talks to — see [024 §1](.
@@ -46,3 +46,7 @@ Index of decisions documentation.
 - [030 — Board Attention Signals and Adopted PM Properties](./030-board-attention-and-pm-properties.md) - Extends the [DR 029](.
 - [031 — Sprint-Auditor Charter Rewrite: One Identity, One Invariant, a Budget Instead of a Prohibition](./031-sprint-auditor-charter-rewrite.md) - The sprint-auditor skill is rewritten from scratch.
 - [032 — Attention Ledger and Housekeeping Nudge: Artifact-Derived Coverage, Folder-Anchored Areas, Human-Gated Escalation](./032-attention-ledger-and-housekeeping-nudge.md) - Inquisition coverage is replaced by an **attention ledger**: a computed view — not maintained state — of when each area of the project was last loo...
+- [033 — Docs → Notion Nested-Page Mirror: Repo-Owned Tree, Bidirectional Bodies](./033-docs-notion-nested-page-mirror.md) - The knowledge-base docs tree is mirrored to Notion as a **nested-page hierarchy** that follows the repo folder shape.
+- [034 — PM Record Taxonomy: `project/` = Records, the Two-Altitude Work Funnel, the Partition Convention](./034-pm-record-taxonomy.md) - `dydo/project/**` is the home of **PM records** — typed rows that live as `.
+- [035 — Docs Body Sync via Notion's Native Markdown API (supersedes DR 025 §6's custom block conversion)](./035-docs-body-sync-via-notion-native-markdown-api.md) - The docs-mirror ([DR 033](.
+- [036 — Task Approval Reform: Verifier Flips Done, the Done Window, and the Archive Sweep](./036-task-approval-reform.md) - The per-task **human approve gate is retired**.

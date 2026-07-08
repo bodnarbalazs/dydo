@@ -12,12 +12,12 @@ date: 2026-07-06
 > [pm-record-taxonomy-migration](./pm-record-taxonomy-migration.md). Brian (sync-model) and Charlie
 > (DR 033) coordinated.
 
-Spun off during the Docs → Notion nested-page work ([[033-docs-notion-nested-page-mirror]]) when the
+Spun off during the Docs → Notion nested-page work ([033-docs-notion-nested-page-mirror](../decisions/033-docs-notion-nested-page-mirror.md)) when the
 set of `dydo/project/` dirs that should be spine DATABASES (not browsable docs) kept growing
 (decisions, future-features, pitfalls, …). Balazs wants the whole `dydo/project/` tree made **uniform
 and clean across the stack** rather than patched dir-by-dir. Needs a **co-thinker round with Balazs →
 a decision record → a migration sprint**. Coordinates with Brian (owns `sync-model`, the spine
-object types) and Charlie (owns [[033-docs-notion-nested-page-mirror]], whose mirror auto-consumes the
+object types) and Charlie (owns [033-docs-notion-nested-page-mirror](../decisions/033-docs-notion-nested-page-mirror.md), whose mirror auto-consumes the
 result).
 
 ## The settled framing (from Balazs)

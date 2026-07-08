@@ -4,12 +4,13 @@ id: 230
 area: backend
 type: issue
 severity: high
-status: in-flight
+status: resolved
 found-by: inquisition
 found-by-agent: Adele
 found-by-vendor: unknown
 found-by-model: unknown
 date: 2026-07-07
+resolved-date: 2026-07-08
 ---
 
 # Shared session context lets non-owner commands act as the active agent
@@ -26,4 +27,4 @@ Inquisition finding: AgentRegistry.GetSessionContext falls back to shared .sessi
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in f7e8751 (registry gates + msg/provenance) and de0d63f (dispatch gate): AgentRegistry gains GetCurrentOwnedAgent (soft) / TryGetCurrentOwnedAgent (hard) built on VerifyCallerOwnsAgent; MessageService and DispatchService hard-gate on caller ownership before any mutation; issue/task/review provenance stamping soft-gates (unowned callers produce unstamped provenance). Claim no longer falls back to shared .session-context, and the pending session is resolved only after winning the claim lock. Regression-covered by IdentityHijackMutatingCommandTests.

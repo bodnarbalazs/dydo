@@ -4,12 +4,13 @@ id: 227
 area: backend
 type: issue
 severity: high
-status: in-flight
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: unknown
 found-by-model: unknown
 date: 2026-07-07
+resolved-date: 2026-07-08
 ---
 
 # Codex dispatch launch fails: launcher invokes bare 'codex' which is not on the dydo-spawned terminal's PATH (resolves in the user's interactive shell but not the launched one, unlike 'claude'); needs robust resolution
@@ -46,4 +47,4 @@ Get-Command codex -All
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in de0d63f: TerminalLauncher resolves the launch executable on PATH per platform (Windows PATHEXT-aware), rejects non-launchable WindowsApps OpenAI.Codex_* aliases with an actionable error, quotes resolved paths per shell; DispatchService pre-flights resolution and fails before any inbox/state mutation. Tests exercise real resolution against temp PATH layouts, not just command-string formatting.

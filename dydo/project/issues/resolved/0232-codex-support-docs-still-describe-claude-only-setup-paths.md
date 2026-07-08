@@ -4,12 +4,13 @@ id: 232
 area: reference
 type: issue
 severity: medium
-status: in-flight
+status: resolved
 found-by: inquisition
 found-by-agent: Adele
 found-by-vendor: unknown
 found-by-model: unknown
 date: 2026-07-07
+resolved-date: 2026-07-08
 ---
 
 # Codex support docs still describe Claude-only setup paths
@@ -26,4 +27,4 @@ Inquisition doc-drift finding: Codex is now wired through .codex/hooks.json and 
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in dc1333b: guard/init docs describe both Claude (.claude/settings.local.json) and Codex (.codex/hooks.json) wiring; configuration reference gains integrations.codex, the Stop hook, and per-runtime matchers (incl. apply_patch); runtime-neutral phrasing (CLAUDE.md or AGENTS.md) across about-dynadocs.md, its template, and the README clone triple; 'dydo init codex --join' documented; inquisitor role doc lists Codex artifact paths. A sprint-audit finding (four README paragraphs left diverged outside the clone-sync test's enforced sections) was fixed and re-reviewed before landing.

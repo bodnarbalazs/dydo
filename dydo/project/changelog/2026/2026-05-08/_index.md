@@ -1,5 +1,5 @@
 ---
-area: project
+area: general
 type: hub
 ---
 
@@ -11,19 +11,19 @@ Index of 2026-05-08 documentation.
 
 ## Contents
 
-- [Append Survivorship Bias Caveat](./append-survivorship-bias-caveat.md)
-- [Docs Pr3 Instrumentation](./docs-pr3-instrumentation.md)
-- [Fix Changelog Broken Link](./fix-changelog-broken-link.md)
-- [Fix Ci Failures](./fix-ci-failures.md)
-- [Fix Pr2 Xmldoc Centralization Claim](./fix-pr2-xmldoc-centralization-claim.md)
-- [Fix Pr2 Xmldoc](./fix-pr2-xmldoc.md)
-- [Implement Pr1 Honest Resume Gating](./implement-pr1-honest-resume-gating.md)
-- [Implement Pr2 Worktree Anchor And Wrapper](./implement-pr2-worktree-anchor-and-wrapper.md)
-- [Implement Pr3 Instrumentation](./implement-pr3-instrumentation.md)
-- [Plan Agent Crash Fixes](./plan-agent-crash-fixes.md)
-- [Pre Tag Bookkeeping](./pre-tag-bookkeeping.md)
-- [Review Pr2 Worktree Anchor V2](./review-pr2-worktree-anchor-v2.md)
-- [Review Pr2 Worktree Anchor](./review-pr2-worktree-anchor.md)
-- [Run Dydo Fix Pre Tag](./run-dydo-fix-pre-tag.md)
-- [Ship Pre Tag Final Fixes](./ship-pre-tag-final-fixes.md)
-- [User Cothink](./user-cothink.md)
+- [Task: append-survivorship-bias-caveat](./append-survivorship-bias-caveat.md) - (No description)
+- [Task: docs-pr3-instrumentation](./docs-pr3-instrumentation.md) - (No description)
+- [Task: fix-changelog-broken-link](./fix-changelog-broken-link.md) - (No description)
+- [Task: fix-ci-failures](./fix-ci-failures.md) - Review commit 834b00f on master — two test-only fixes that turned Linux CI from red to green (run 25459952823, build+test 1m44s).
+- [Task: fix-pr2-xmldoc-centralization-claim](./fix-pr2-xmldoc-centralization-claim.md) - (No description)
+- [Task: fix-pr2-xmldoc](./fix-pr2-xmldoc.md) - Re-review of commit 87d9f6f (xmldoc fix on RegisterMainAnchor in Services/WatchdogService.
+- [Task: implement-pr1-honest-resume-gating](./implement-pr1-honest-resume-gating.md) - Review PR1 of agent-crash-fixes (commit e80730c).
+- [Task: implement-pr2-worktree-anchor-and-wrapper](./implement-pr2-worktree-anchor-and-wrapper.md) - Review PR2 of agent-crash-fixes batch (commit de50134, CI run 25504955467 green).
+- [Task: implement-pr3-instrumentation](./implement-pr3-instrumentation.md) - Review PR3 of agent-crash-fixes (commit 036b88c).
+- [Task: plan-agent-crash-fixes](./plan-agent-crash-fixes.md) - Plan implementation of clear-cut fixes from `dydo/project/inquisitions/agent-crashes.
+- [Task: pre-tag-bookkeeping](./pre-tag-bookkeeping.md) - (No description)
+- [Task: review-pr2-worktree-anchor-v2](./review-pr2-worktree-anchor-v2.md) - (No description)
+- [Task: review-pr2-worktree-anchor](./review-pr2-worktree-anchor.md) - (No description)
+- [Task: run-dydo-fix-pre-tag](./run-dydo-fix-pre-tag.md) - Review commit 95d7224 ("docs(hubs): regenerate auto-gen index files post-wave").
+- [Task: ship-pre-tag-final-fixes](./ship-pre-tag-final-fixes.md) - Review commit 3c34dd2 for v1.
+- [Task: user-cothink](./user-cothink.md) - (No description)

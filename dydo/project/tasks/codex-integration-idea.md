@@ -1,13 +1,12 @@
 ---
 area: general
-name: plan-dr034-migration-slices
+name: codex-integration-idea
 status: pending
-created: 2026-07-08T10:25:31.8871306Z
-assigned: Olivia
-needs-human: false
+created: 2026-07-08T13:09:58.7825959Z
+assigned: Henry
 ---
 
-# Task: plan-dr034-migration-slices
+# Task: codex-integration-idea
 
 (No description)
 

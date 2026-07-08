@@ -16,7 +16,7 @@ date: 2026-07-08
 # PM-spine body sync shares the same lossy-converter phantom-conflict risk (latent)
 
 Surfaced while root-causing the docs-mirror corruption
-([[0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter]]).
+([0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter](./0235-docs-mirror-bidirectional-body-sync-corrupts-repo-with-phantom-conflicts-from-lossy-converter.md)).
 The PM-spine sync (`NotionSpineSync` → `NotionSyncAdapter` → `SyncRunner`/`ReconcileEngine`) reconciles
 each DB row's **page body** through the **same** lossy `NotionBlockConverter` round-trip and the **same**
 raw-text 3-way merge that manufactured phantom conflicts in the docs mirror. So the spine carries the

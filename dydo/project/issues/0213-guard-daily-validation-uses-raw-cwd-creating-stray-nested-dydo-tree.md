@@ -15,7 +15,7 @@ date: 2026-07-06
 
 # Guard daily-validation uses raw cwd + hardcoded "dydo", creating a stray nested dydo tree
 
-Surfaced while reviewing the Docs → Notion mirror sprint ([[033-docs-notion-nested-page-mirror]]):
+Surfaced while reviewing the Docs → Notion mirror sprint ([033-docs-notion-nested-page-mirror](../decisions/033-docs-notion-nested-page-mirror.md)):
 the working tree accumulated a stray `dydo/project/dydo/_system/.local/last-validation` directory.
 It is **not** caused by the docs-mirror code or its tests (those use isolated temp roots) — it traces
 to the guard's daily-validation path construction.

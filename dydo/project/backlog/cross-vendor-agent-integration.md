@@ -5,13 +5,21 @@ status: open
 created: 2026-07-07
 created-by: Adele
 origin: balazs — heuristic for same-vendor dispatch with a cross-vendor reroute on model-limit, and how to integrate Codex agents into the flock cooperatively.
-related-issues: [0214]
-related-decisions: [024, 028]
+related-issues: [0214, 0239]
+related-decisions: [024, 028, 037]
 ---
 
 # Cross-vendor agent integration (Claude + Codex in one flock)
 
 FutureFeature-class. Keep for later; develop via a co-thinker → decision record before any build.
+
+> **2026-07-08 — co-thinker round concluded: [DR 037](../decisions/037-cross-vendor-dispatch-same-vendor-default.md) (accepted).**
+> Ruling: no new abstraction — same-vendor dispatch by default, cross-vendor as an explicit dispatch-time
+> override; vendor binds only at the dispatch boundary (roles vendor-free, workflows vendor-homogeneous);
+> sprints may mix vendors across slices, workflows never do. Hardening: [[0239]] (friendly error on
+> unavailable vendor override). Still open here: the Codex guard adapter (Codex has pre/post tool-use
+> hooks, GA — install `dydo guard` there at init/sync), and the reroute-on-limit heuristic below, which
+> stays deferred until manual overrides prove routine.
 
 ## balazs's heuristic (to preserve)
 

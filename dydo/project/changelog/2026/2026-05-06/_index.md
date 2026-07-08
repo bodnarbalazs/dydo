@@ -1,5 +1,5 @@
 ---
-area: project
+area: general
 type: hub
 ---
 
@@ -11,24 +11,24 @@ Index of 2026-05-06 documentation.
 
 ## Contents
 
-- [Docs Human Only Clean Force](./docs-human-only-clean-force.md)
-- [Docs Pr2 Test Isolation](./docs-pr2-test-isolation.md)
-- [Docs Pr3 Reference Sync](./docs-pr3-reference-sync.md)
-- [Fix Hub Format Drift](./fix-hub-format-drift.md)
-- [Fix Pr2 Dead Test](./fix-pr2-dead-test.md)
-- [Implement Human Only Clean Force](./implement-human-only-clean-force.md)
-- [Implement Pr1 Gap Check Exit](./implement-pr1-gap-check-exit.md)
-- [Implement Pr2 Rule Corrections](./implement-pr2-rule-corrections.md)
-- [Implement Pr2 Test Isolation](./implement-pr2-test-isolation.md)
-- [Implement Pr3 Git Helper Drain](./implement-pr3-git-helper-drain.md)
-- [Implement Pr3 Issue Summary](./implement-pr3-issue-summary.md)
-- [Implement Pr4 Production Drain](./implement-pr4-production-drain.md)
-- [Investigate Audit Duplicate Key](./investigate-audit-duplicate-key.md)
-- [Investigate Human Only Commands](./investigate-human-only-commands.md)
-- [Plan Human Only Clean Force](./plan-human-only-clean-force.md)
-- [Plan Runtime Regression Batch](./plan-runtime-regression-batch.md)
-- [Pr1 Scan Boundary](./pr1-scan-boundary.md)
-- [Review Fix Pr2 Dead Test](./review-fix-pr2-dead-test.md)
-- [Review Hub Format Drift](./review-hub-format-drift.md)
-- [Review Human Only Clean Force](./review-human-only-clean-force.md)
-- [Review Pr1 Gap Check Exit](./review-pr1-gap-check-exit.md)
+- [Task: docs-human-only-clean-force](./docs-human-only-clean-force.md) - (No description)
+- [Task: docs-pr2-test-isolation](./docs-pr2-test-isolation.md) - (No description)
+- [Task: docs-pr3-reference-sync](./docs-pr3-reference-sync.md) - (No description)
+- [Task: fix-hub-format-drift](./fix-hub-format-drift.md) - Review commit 844579f for fix-hub-format-drift (#0166).
+- [Task: fix-pr2-dead-test](./fix-pr2-dead-test.md) - Review commit e3e6c47 on master, the fix to PR #0167's dead test that Frank flagged.
+- [Task: implement-human-only-clean-force](./implement-human-only-clean-force.md) - Review commit 3ad12ba: gate `dydo agent clean --force` as human-only via HumanOnlyDydoCommandRegex.
+- [Task: implement-pr1-gap-check-exit](./implement-pr1-gap-check-exit.md) - Review PR1 of runtime-regression batch (#0169): gap_check.
+- [Task: implement-pr2-rule-corrections](./implement-pr2-rule-corrections.md) - Review PR2 of the dydo-check-drift batch (4 commits on master, 0 in PR-isolation).
+- [Task: implement-pr2-test-isolation](./implement-pr2-test-isolation.md) - PR2 #0167 implementation in commit 405a220.
+- [Task: implement-pr3-git-helper-drain](./implement-pr3-git-helper-drain.md) - Review PR3 of the runtime-regression batch — commit 6d00b4c on master.
+- [Task: implement-pr3-issue-summary](./implement-pr3-issue-summary.md) - REVIEW PR3 of the dydo-check-drift batch (#0161).
+- [Task: implement-pr4-production-drain](./implement-pr4-production-drain.md) - Review PR4 of the runtime-regression batch — the final piece.
+- [Task: investigate-audit-duplicate-key](./investigate-audit-duplicate-key.md) - (No description)
+- [Task: investigate-human-only-commands](./investigate-human-only-commands.md) - (No description)
+- [Task: plan-human-only-clean-force](./plan-human-only-clean-force.md) - (No description)
+- [Task: plan-runtime-regression-batch](./plan-runtime-regression-batch.md) - (No description)
+- [Task: pr1-scan-boundary](./pr1-scan-boundary.md) - PR1 of dydo-check-drift batch (#0163 + D5 scaffold).
+- [Task: review-fix-pr2-dead-test](./review-fix-pr2-dead-test.md) - (No description)
+- [Task: review-hub-format-drift](./review-hub-format-drift.md) - (No description)
+- [Task: review-human-only-clean-force](./review-human-only-clean-force.md) - (No description)
+- [Task: review-pr1-gap-check-exit](./review-pr1-gap-check-exit.md) - (No description)

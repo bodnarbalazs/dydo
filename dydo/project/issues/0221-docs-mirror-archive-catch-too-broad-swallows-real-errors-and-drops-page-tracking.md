@@ -15,7 +15,7 @@ date: 2026-07-07
 
 # Docs-mirror archive try/catch is too broad — swallows real Notion errors and drops page tracking
 
-Found by the Sonnet review of the docs-mirror archive-fix ([[033-docs-notion-nested-page-mirror]],
+Found by the Sonnet review of the docs-mirror archive-fix ([033-docs-notion-nested-page-mirror](../decisions/033-docs-notion-nested-page-mirror.md),
 shipped dormant in v2.0.2). The archived-ancestor ordering fix added a per-archive `try/catch` for
 robustness, but it catches **every** `NotionApiException`, not just the archived-ancestor 400 — and a
 swallowed failure still advances the base snapshot, orphaning a live Notion page. **Low real-world

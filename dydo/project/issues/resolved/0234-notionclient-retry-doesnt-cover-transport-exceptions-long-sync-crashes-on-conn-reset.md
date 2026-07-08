@@ -17,7 +17,7 @@ resolved-date: 2026-07-08
 # NotionClient retry covers HTTP status codes but not transport exceptions — long syncs crash on a connection reset
 
 Found by the DR 033 docs-mirror live re-smoke (the retry-robust build). The 0226 retry
-([[0226-notionclient-no-retry-on-transient-5xx-429-makes-long-syncs-fragile]]) only inspects the HTTP
+([0226-notionclient-no-retry-on-transient-5xx-429-makes-long-syncs-fragile](./0226-notionclient-no-retry-on-transient-5xx-429-makes-long-syncs-fragile.md)) only inspects the HTTP
 **status code** (429/500/502/503/504). A transport-level failure — a forcibly-closed socket / connection
 reset / timeout — throws `HttpRequestException` **before any response exists**, so the retry never sees
 it; the exception propagates **unhandled** and crashes the whole sync (exit 1, raw stack trace), because

@@ -11,16 +11,10 @@ Index of tasks documentation.
 
 ## Contents
 
-- [Task: crash-resume-session-id-investigation](./crash-resume-session-id-investigation.md) - (No description)
-- [Task: dydo-2-birdseye](./dydo-2-birdseye.md) - Birds-eye co-thinking on the dydo 2.
-- [Task: dydo-2-sprint1-guard](./dydo-2-sprint1-guard.md) - (No description)
-- [Task: dydo-2-sprint2-sync](./dydo-2-sprint2-sync.md) - (No description)
-- [Task: dydo-2-upgrade](./dydo-2-upgrade.md) - (No description)
-- [Task: f11-guard-side-impl](./f11-guard-side-impl.md) - Review #0207 part 2 (guard-side ClaimedPid auto-refresh).
-- [Task: f11-guard-side-replan](./f11-guard-side-replan.md) - Re-plan of #0207 part 2: replace the rejected prompt-driven re-claim with a guard-side `ClaimedPid` auto-refresh.
-- [Task: f11-regression-fix-plan](./f11-regression-fix-plan.md) - (No description)
-- [Task: f11-regression-fix](./f11-regression-fix.md) - Review the PART-1 CHECKPOINT of the #0207 F11 regression fix — commit fe9e551 on branch fix/identity-hijack-slice-a.
-- [Task: notion-board-design](./notion-board-design.md) - (No description)
-- [Task: spike-f11-plain](./spike-f11-plain.md) - (No description)
-- [Task: spike-resume](./spike-resume.md) - (No description)
-- [Task: task-lock-deadlock-fix](./task-lock-deadlock-fix.md) - (No description)
+- [Task: adopt-0227-0231-codex-launch-resume](./adopt-0227-0231-codex-launch-resume.md) - Adopt orphaned slice: Codex executable resolution (0227) + host-aware watchdog resume (0231) incl.
+- [Task: adopt-0230-ownership-claim-hardening](./adopt-0230-ownership-claim-hardening.md) - Adopt orphaned slice: 0230 ownership gates (msg/dispatch/provenance) + AgentRegistry concurrent-claim fix + IdentityHijackMutatingCommandTests; rev...
+- [Task: adopt-0232-codex-docs](./adopt-0232-codex-docs.md) - Adopt orphaned slice: Codex doc surfaces (0232) across 8 files + README clone-sync triple; review, land atomically
+- [Task: adopt-orphaned-codex-slices](./adopt-orphaned-codex-slices.md) - (No description)
+- [Task: chief-of-staff-takeover](./chief-of-staff-takeover.md) - New chief-of-staff session (Fable) took over after the previous Adele released mid-flight.
+- [Task: notion-docs-nested-pages](./notion-docs-nested-pages.md) - (No description)
+- [Task: plan-dr034-migration-slices](./plan-dr034-migration-slices.md) - (No description)

@@ -35,6 +35,19 @@ never perfect."
    creates a duplicated filename stem across subfolders — which crashes the Notion spine
    sync (DR 034 loader keys rows by stem).
 
+## balazs's deeper reframe (2026-07-08, supersedes the mechanical fixes below as the primary goal)
+
+The human-approve gate itself is the problem, not just its ergonomics. His words: typing each task
+name is "super menial", so "99% of cases I ran dydo task approve --all. And that made me think.
+It's useless. I'm not reviewing any of them myself. I already rely on it being done. And I review
+in a different pace." The task lifecycle stays (decided), but the human-approval step is theater:
+automated review gates (run-sprint reviewer + sprint-auditor) are what he actually relies on, and
+his real review happens asynchronously at his own pace, decoupled from task completion. The reform
+should redesign WHAT (if anything) a human gate certifies, WHEN tasks flip to done, and how
+balazs's actual async review pace gets first-class support instead of a fake synchronous gate.
+A co-thinker design round was dispatched for this (2026-07-08). Interaction: DR-034 S2a implements
+the status vocab (data model) independently; the reform re-wires who/what flips in-review -> done.
+
 ## Directions to consider
 
 - `--all` should only sweep tasks in `review-pending` (or `human-reviewed`) state; require

@@ -19,6 +19,13 @@ A good brief is:
 
 The agent reading your brief starts fresh. It has no memory of your conversation, your reasoning, or the files you looked at. Everything it needs must be in the brief.
 
+**Never write model choices into a brief.** Which model a reviewer, auditor, or worker runs on
+comes from the dydo config, injected at `dydo sync` time (and rebound by `dydo model cap`/`uncap`
+during an outage) — it is a command's job, not prose. A brief that says "run the reviewer on
+model X" bypasses the single source of truth and outlives the conditions that motivated it
+(balazs, 2026-07-08). If the bound model is unavailable, that's a `dydo model cap` decision for
+the human or chief-of-staff — escalate, don't route around it in text.
+
 ---
 
 ## Brief anatomy

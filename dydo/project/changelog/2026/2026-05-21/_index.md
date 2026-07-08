@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -11,12 +11,12 @@ Index of 2026-05-21 documentation.
 
 ## Contents
 
-- [Task: backlog-folder-introduction-impl](./backlog-folder-introduction-impl.md) - Review the backlog/ and future-features/ port.
-- [Task: backlog-folder-introduction](./backlog-folder-introduction.md) - (No description)
-- [Task: file-identity-hijack-addendum-issues](./file-identity-hijack-addendum-issues.md) - (No description)
-- [Task: identity-hijack-f13-windows-replan](./identity-hijack-f13-windows-replan.md) - (No description)
-- [Task: identity-hijack-fix-plan](./identity-hijack-fix-plan.md) - Plan the implementation slice that closes the identity-hijack bug class (F1–F13 from Brian's inquisition) and the nine sub-issues filed by the prio...
-- [Task: identity-hijack-slice-a](./identity-hijack-slice-a.md) - Review Slice A of the identity-hijack fix on branch fix/identity-hijack-slice-a (commit b9a94f6).
-- [Task: investigate-identity-hijack-round-2](./investigate-identity-hijack-round-2.md) - (No description)
-- [Task: link-validator-fix-plan](./link-validator-fix-plan.md) - (No description)
-- [Task: link-validator-fix](./link-validator-fix.md) - Review the link-validator fix slice (#0185 #0186 #0187 #0188).
+- [Backlog Folder Introduction Impl](./backlog-folder-introduction-impl.md)
+- [Backlog Folder Introduction](./backlog-folder-introduction.md)
+- [File Identity Hijack Addendum Issues](./file-identity-hijack-addendum-issues.md)
+- [Identity Hijack F13 Windows Replan](./identity-hijack-f13-windows-replan.md)
+- [Identity Hijack Fix Plan](./identity-hijack-fix-plan.md)
+- [Identity Hijack Slice A](./identity-hijack-slice-a.md)
+- [Investigate Identity Hijack Round 2](./investigate-identity-hijack-round-2.md)
+- [Link Validator Fix Plan](./link-validator-fix-plan.md)
+- [Link Validator Fix](./link-validator-fix.md)

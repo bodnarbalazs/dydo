@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -11,14 +11,14 @@ Index of 2026-04-27 documentation.
 
 ## Contents
 
-- [Task: audit-leftovers](./audit-leftovers.md) - (No description)
-- [Task: explore-orchestrator-general-wait](./explore-orchestrator-general-wait.md) - (No description)
-- [Task: fix-0118-roleconstraint-crap](./fix-0118-roleconstraint-crap.md) - Review #0118 refactor + tests.
-- [Task: fix-ci-after-audit-recovery](./fix-ci-after-audit-recovery.md) - CI went red on master after the audit cherry-pick recovery.
-- [Task: orchestrator-general-wait-priority-routing](./orchestrator-general-wait-priority-routing.md) - Review wait priority routing + new orchestrator general-wait guardrail + orchestrator template change.
-- [Task: quick-fixes-89-115-116-merge](./quick-fixes-89-115-116-merge.md) - (No description)
-- [Task: quick-fixes-89-115-116](./quick-fixes-89-115-116.md) - Review quick fixes for #0089, #0115, #0116.
-- [Task: recover-audit-cherry-pick](./recover-audit-cherry-pick.md) - (No description)
-- [Task: recover-role-perms-merge](./recover-role-perms-merge.md) - (No description)
-- [Task: test-additions-92-93-117](./test-additions-92-93-117.md) - Review test additions for #0092 / #0093 / #0117.
-- [Task: worktree-reliability](./worktree-reliability.md) - (No description)
+- [Audit Leftovers](./audit-leftovers.md)
+- [Explore Orchestrator General Wait](./explore-orchestrator-general-wait.md)
+- [Fix 0118 Roleconstraint Crap](./fix-0118-roleconstraint-crap.md)
+- [Fix Ci After Audit Recovery](./fix-ci-after-audit-recovery.md)
+- [Orchestrator General Wait Priority Routing](./orchestrator-general-wait-priority-routing.md)
+- [Quick Fixes 89 115 116 Merge](./quick-fixes-89-115-116-merge.md)
+- [Quick Fixes 89 115 116](./quick-fixes-89-115-116.md)
+- [Recover Audit Cherry Pick](./recover-audit-cherry-pick.md)
+- [Recover Role Perms Merge](./recover-role-perms-merge.md)
+- [Test Additions 92 93 117](./test-additions-92-93-117.md)
+- [Worktree Reliability](./worktree-reliability.md)

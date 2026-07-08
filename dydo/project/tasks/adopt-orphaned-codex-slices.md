@@ -1,0 +1,23 @@
+---
+area: general
+name: adopt-orphaned-codex-slices
+status: pending
+created: 2026-07-08T10:24:43.9353638Z
+assigned: Grace
+---
+
+# Task: adopt-orphaned-codex-slices
+
+(No description)
+
+## Progress
+
+- [ ] (Not started)
+
+## Files Changed
+
+(None yet)
+
+## Review Summary
+
+(Pending)

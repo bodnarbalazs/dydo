@@ -38,6 +38,8 @@ The engine ships as a plain, transport-agnostic command (`dydo notion sync`). Th
 ### 6. Notion access: direct REST, source-generated JSON, no SDK
 Talk to the Notion REST API directly via `HttpClient` + source-generated `System.Text.Json` DTOs (the existing `DydoJsonContext` pattern), behind our `INotionClient`. Rationale: (a) **Native AOT** — the unofficial .NET SDKs use reflection-based serialization, an AOT liability; (b) **loose coupling** — a third-party SDK couples us to both Notion's model and the library's choices, which is exactly what §1 forbids. The surface we use is small (query a database, create/update a page, read/write block children). The `Notion-Version` header is pinned and the current data-source API shape is confirmed against live docs at build time. The token comes from `DYDO_NOTION_TOKEN` (env var or gitignored local config) and is **never written to a committed or synced file**.
 
+> **Superseded in part by [DR 035](./035-docs-body-sync-via-notion-native-markdown-api.md) (2026-07-08):** the *custom* in-house block↔markdown conversion mandated here proved lossy enough to corrupt the repo via phantom conflicts (issue 0235). Notion's **native Markdown Content API** (`GET/PATCH /v1/pages/:id/markdown`, `Notion-Version: 2026-03-11`) now does that mapping server-side, so body sync uses it and drops the converter. Everything else in §6 — **direct REST, no SDK, source-generated JSON, AOT** — is unchanged; only "we convert blocks↔markdown ourselves" is retired.
+
 ### 7. PM object model (strawman — fields refined during build)
 Spine **Campaign → Sprint → Task**, with **Requirements** and **Blockers** hanging off Tasks/Sprints, and **Agent** as a live read-only projection.
 

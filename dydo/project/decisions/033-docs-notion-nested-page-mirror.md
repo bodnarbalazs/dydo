@@ -125,10 +125,14 @@ spine databases.
 
 ## Consequences & known limitations
 
-- **Lossy converter.** `NotionBlockConverter` is line-oriented — no inline bold/italic, no nested
-  lists, no tables. Rich Notion formatting **flattens** on the Notion → markdown round-trip. 025
-  §Consequences already accepted "best-effort conversion + 3-way *text* merge" for bodies; docs make
-  it more visible. Converter enrichment (inline rich-text, nesting) is a candidate follow-up.
+- **Lossy converter — SUPERSEDED by [DR 035](./035-docs-body-sync-via-notion-native-markdown-api.md).**
+  `NotionBlockConverter` was line-oriented (no inline formatting, nesting, tables, or even blank-line
+  fidelity), so the round-trip drifted and the bidirectional merge fabricated conflict markers into
+  the canonical repo (issue 0235 — 176 docs corrupted in a live smoke). The fix is **not** converter
+  enrichment: body sync moves to Notion's **native Markdown API** (Notion maps blocks↔markdown
+  server-side), with a thin Markdig dialect-normalization for the merge and **shadow-file conflicts**
+  (never write markers into a canonical file). See DR 035. The two-way body model of this DR is
+  unchanged — only the conversion mechanism.
 - **100-block append cap.** `AppendBlockChildren` is not currently batched; large docs exceed
   Notion's 100-children-per-request limit. Must chunk. (Same class of live-only constraint that bit
   the PM-board sync — the fake client cannot surface it.)

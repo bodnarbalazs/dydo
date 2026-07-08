@@ -11,6 +11,11 @@ public sealed class FakeNotionClient : INotionClient
     private readonly Dictionary<string, NotionPage> _pages = new();
     private readonly Dictionary<string, string> _pageDataSource = new();
     private readonly Dictionary<string, List<NotionBlock>> _blocks = new();
+    // Native markdown bodies (DR 035): the docs mirror reads/writes page bodies as markdown strings, mapped
+    // block↔markdown server-side by real Notion. The fake echoes the stored markdown verbatim — a faithful
+    // model of a lossless round-trip; the Notion-flavored dialect drift only a live board exhibits is covered
+    // by the DocsMarkdownNormalizer unit tests and Charlie's live smoke, not simulated here.
+    private readonly Dictionary<string, string> _pageMarkdown = new();
     // Nested-page tree (DR 033): a page's parent page id and its title, so GetChildPages can walk the tree
     // and the docs mirror can be exercised without HTTP.
     private readonly Dictionary<string, string> _pageParent = new();
@@ -50,6 +55,11 @@ public sealed class FakeNotionClient : INotionClient
     public List<string> AppendedTo { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
+    /// <summary>Page ids that received a body write via <see cref="UpdatePageMarkdown"/>, in call order — one
+    /// entry per write, so a docs-mirror test can assert a body landed AND that a no-op tick issues no repeated
+    /// markdown write (the DR 035 replacement for the append-then-delete block dance).</summary>
+    public List<string> MarkdownUpdates { get; } = [];
+
     /// <summary>Page ids that received an engine-computed <c>last-activity</c> property write via
     /// <see cref="UpdatePage"/> — one entry per write, so a test can assert the value lands AND that a
     /// no-op tick issues no repeated write (DR 030 §3, finding 1).</summary>
@@ -88,6 +98,22 @@ public sealed class FakeNotionClient : INotionClient
     /// <summary>When true, <see cref="AppendBlockChildren"/> throws — drives the non-atomic ReplaceBody test.</summary>
     public bool FailAppend { get; set; }
 
+    /// <summary>When true, a create-with-body DROPS the carried markdown field instead of storing it — modelling
+    /// live Notion SILENTLY IGNORING the create's <c>markdown</c> field (DR 035 finding). The page is created
+    /// empty, so a read-back returns "": drives the read-back-guard test that the sync THROWS rather than record a
+    /// full-body base against an empty page (the issue 0235 wipe).</summary>
+    public bool SilentlyIgnoreCreateMarkdown { get; set; }
+
+    /// <summary>Page ids whose <see cref="GetPageMarkdown"/> throws a 404 — models a page archived/trashed in
+    /// Notion whose body read now fails (DR 035 finding), driving the promotion-read guard test.</summary>
+    public HashSet<string> FailMarkdownReadFor { get; } = [];
+
+    /// <summary>When true, <see cref="UpdatePageMarkdown"/> throws — drives the create-with-body atomicity test
+    /// (DR 035 §1, issue 0235): a resurrect create must persist its body in the CREATE call, never a separate
+    /// UpdatePageMarkdown that could independently fail and leave a full-body base against an empty page. With
+    /// this set, a create-with-body still lands its body (the create carries it), proving the write is atomic.</summary>
+    public bool FailMarkdownUpdate { get; set; }
+
     /// <summary>When true, <see cref="QueryDataSource"/> echoes every schema RELATION property a page lacks as
     /// an EMPTY relation — exactly as real Notion does (it returns all schema properties, so an all-unresolvable
     /// relation reads back as an empty value, not an absent key). Off by default so existing tests are unaffected;
@@ -113,6 +139,10 @@ public sealed class FakeNotionClient : INotionClient
 
     /// <summary>Replace a page's block children outright — simulates an external body edit in Notion.</summary>
     public void SetBlockChildren(string pageId, List<NotionBlock> blocks) => _blocks[pageId] = blocks;
+
+    /// <summary>Replace a page's native markdown body outright — simulates an external body edit in Notion for
+    /// the docs mirror's markdown-API path (DR 035), the counterpart to <see cref="SetBlockChildren"/>.</summary>
+    public void SetPageMarkdown(string pageId, string markdown) => _pageMarkdown[pageId] = markdown;
 
     public NotionPage SeedPage(string id, Dictionary<string, NotionPropertyValue> props,
         List<NotionBlock>? blocks = null, string dataSourceId = "ds1")
@@ -241,6 +271,12 @@ public sealed class FakeNotionClient : INotionClient
         if (request.Properties.TryGetValue("title", out var title) && title.Title != null)
             _pageTitle[id] = NotionRichText.Flatten(title.Title);
         _blocks[id] = request.Children ?? [];
+        // Create-with-body (DR 035 §1): a markdown body carried in the create is stored atomically with the page,
+        // so the read-back echoes it verbatim — modelling the atomic create the docs mirror relies on. It is NOT
+        // recorded in MarkdownUpdates (which tracks UpdatePageMarkdown calls only), so a test can assert an atomic
+        // create issued zero separate body writes.
+        if (request.Markdown != null && !SilentlyIgnoreCreateMarkdown)
+            _pageMarkdown[id] = request.Markdown;
         return page;
     }
 
@@ -294,6 +330,23 @@ public sealed class FakeNotionClient : INotionClient
 
     public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) =>
         _blocks.TryGetValue(blockId, out var b) ? b : [];
+
+    // An unwritten page reads back as the empty string, never null — matching the real markdown API's echo of
+    // an empty body and INotionClient's contract. A page in FailMarkdownReadFor 404s (archived/trashed).
+    public string GetPageMarkdown(string pageId)
+    {
+        if (FailMarkdownReadFor.Contains(pageId))
+            throw new NotionApiException(404, $"{{\"code\":\"object_not_found\",\"message\":\"page {pageId} not found\"}}");
+        return _pageMarkdown.GetValueOrDefault(pageId, "");
+    }
+
+    public void UpdatePageMarkdown(string pageId, string markdown)
+    {
+        if (FailMarkdownUpdate)
+            throw new NotionApiException(500, "simulated markdown update failure");
+        MarkdownUpdates.Add(pageId);
+        _pageMarkdown[pageId] = markdown;
+    }
 
     public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)
     {

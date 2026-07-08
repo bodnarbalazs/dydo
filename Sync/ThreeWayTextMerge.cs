@@ -19,6 +19,15 @@ public static class ThreeWayTextMerge
     private const string MidLabel = "=======";
     private const string TheirsLabel = ">>>>>>> external";
 
+    /// <summary>Whether a body carries this merge's conflict sentinels — the backstop the docs mirror's
+    /// safety-rail invariant (DR 035 §5) checks before persisting a body to a canonical repo file: a body
+    /// bearing markers is routed to the shadow tree, never written to the canonical file. Matches the exact
+    /// opening/closing labels this merge emits, so ordinary prose that happens to contain a run of angle
+    /// brackets is not misread as a conflict.</summary>
+    public static bool ContainsConflictMarkers(string text) =>
+        text.Contains(OursLabel, StringComparison.Ordinal)
+        && text.Contains(TheirsLabel, StringComparison.Ordinal);
+
     public static Result Merge(string baseText, string ours, string theirs)
     {
         var b = Split(baseText);

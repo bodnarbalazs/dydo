@@ -11,7 +11,7 @@ Working notes for the Notion sync adapter (`Sync/Notion/**`): the API version an
 
 ## API Essentials
 
-Verified against live docs (2026-06-17).
+Verified against live docs (2026-06-17). **Exception:** the DR-035 native-markdown rows (marked † below) are doc-sourced from the Notion API reference and are **pending Charlie's live smoke** — they were not part of the 2026-06-17 verification, and the create-with-body markdown field in particular has not been confirmed against a live `page_id` parent.
 
 - **`Notion-Version` header:** `2026-03-11`. The **data-source model** landed in `2025-09-03` and is a breaking change.
 - **Data-source model:** a "database" is now a *container* of one or more **data sources** (the actual table of pages). Always resolve database → `data_source_id` before querying or creating.
@@ -26,9 +26,12 @@ Verified against live docs (2026-06-17).
 | Retrieve DB + its data sources | `GET /v1/databases/{database_id}` → `data_sources[]` with `id`/`name` |
 | Query a data source | `/v1/data_sources/{data_source_id}/query` with filter + pagination (`start_cursor`/`has_more`/`next_cursor`) — verify the HTTP method at build time; docs have said PATCH but Notion query has historically been **POST** |
 | Create a page under a data source | `POST /v1/pages` with `parent: { "type": "data_source_id", "data_source_id": "{id}" }` + `properties` + optional `children` |
+| Create a page under a page (nested) **†** | `POST /v1/pages` with `parent: { "type": "page_id", "page_id": "{id}" }` + `properties` + optional `markdown` (create-with-body, DR 035 §1 — mutually exclusive with `children`; the docs mirror carries the body here so create+body is atomic, closing the wipe window of issue 0235). A read-back guard throws if a non-empty body reads back empty, so a silent field-ignore surfaces loudly instead of corrupting — but the field itself is still pending the live smoke. |
 | Update page properties | `PATCH /v1/pages/{page_id}` |
-| Read body content | `GET /v1/blocks/{block_id}/children` |
-| Append body content | `PATCH /v1/blocks/{block_id}/children` (block-children API unchanged) |
+| Read page body as markdown **†** | `GET /v1/pages/{page_id}/markdown` → `{ "markdown": "…" }` (Notion maps blocks→markdown server-side, DR 035 — the **docs mirror** body-read path) |
+| Replace page body from markdown **†** | `PATCH /v1/pages/{page_id}/markdown` with `{ "markdown": "…", "allow_deleting_content": true }` (Notion maps markdown→blocks server-side, DR 035 — the **docs mirror** body-write path) |
+| Read body content — **spine only** | `GET /v1/blocks/{block_id}/children` (block-children API; the docs mirror uses the markdown endpoints above, DR 035 — the converter stays for the spine, issue 0236) |
+| Append body content — **spine only** | `PATCH /v1/blocks/{block_id}/children` (block-children API unchanged; docs-mirror bodies go through the markdown endpoints, DR 035) |
 | Search | filter accepts `value: "page" \| "data_source"` (no longer `"database"`) |
 
 ### Provisioning

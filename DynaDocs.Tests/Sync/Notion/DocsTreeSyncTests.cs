@@ -94,7 +94,7 @@ public class DocsTreeSyncTests : IDisposable
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         var understand = Child(client, Root(client), "Understand");
-        Assert.Equal("The understand area.", NotionBlockConverter.FromBlocks(client.GetBlockChildren(understand)));
+        Assert.Equal("The understand area.", client.GetPageMarkdown(understand));
     }
 
     [Fact]
@@ -104,8 +104,9 @@ public class DocsTreeSyncTests : IDisposable
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         var architecture = Child(client, Child(client, Root(client), "Understand"), "Architecture");
-        // Blank lines collapse through the lossy converter; the structural content round-trips.
-        Assert.Equal("# Arch\nbody one.", NotionBlockConverter.FromBlocks(client.GetBlockChildren(architecture)));
+        // The body round-trips verbatim through the native markdown API — blank lines are preserved (DR 035),
+        // unlike the retired lossy converter that collapsed them.
+        Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture));
     }
 
     [Fact]
@@ -135,14 +136,14 @@ public class DocsTreeSyncTests : IDisposable
         var topCountBefore = client.GetChildPages(root).Count;
         var understandCountBefore = client.GetChildPages(understand).Count;
 
-        // A second identical tick creates nothing new and appends no body.
-        client.AppendedTo.Clear();
+        // A second identical tick creates nothing new and re-pushes no body.
+        client.MarkdownUpdates.Clear();
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         Assert.Single(client.GetChildPages("workspace")); // still exactly one "Docs" root
         Assert.Equal(topCountBefore, client.GetChildPages(root).Count);
         Assert.Equal(understandCountBefore, client.GetChildPages(understand).Count);
-        Assert.Empty(client.AppendedTo); // no body re-pushed
+        Assert.Empty(client.MarkdownUpdates); // no body re-pushed
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public class DocsTreeSyncTests : IDisposable
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         var architecture = Child(client, Child(client, Root(client), "Understand"), "Architecture");
-        client.SetBlockChildren(architecture, NotionBlockConverter.ToBlocks("# Arch\n\nedited in notion."));
+        client.SetPageMarkdown(architecture, "# Arch\n\nedited in notion.");
 
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
@@ -190,10 +191,9 @@ public class DocsTreeSyncTests : IDisposable
         Assert.Contains("understand/architecture", text);
         Assert.Contains("(Architecture)", text);
 
-        // Zero writes: dry-run only reads. No pages minted, no bodies appended, no blocks deleted, no snapshot saved.
+        // Zero writes: dry-run only reads. No pages minted, no body markdown pushed, no snapshot saved.
         Assert.Empty(client.GetChildPages("workspace"));
-        Assert.Empty(client.AppendedTo);
-        Assert.Empty(client.DeletedBlocks);
+        Assert.Empty(client.MarkdownUpdates);
         Assert.False(File.Exists(BaseSnapshotStore.PathFor(_dydoRoot, DocsTreeSync.SnapshotAdapterName("workspace"))));
     }
 
@@ -284,7 +284,7 @@ public class DocsTreeSyncTests : IDisposable
 
         var root = Root(client);
         // The off-limits root index was never uploaded — the "Docs" page is a bare container.
-        Assert.Equal("", NotionBlockConverter.FromBlocks(client.GetBlockChildren(root)));
+        Assert.Equal("", client.GetPageMarkdown(root));
         // files-off-limits.md never became a root child page.
         Assert.DoesNotContain(client.GetChildPages(root), p => p.Title is "files-off-limits" or "Off-limits");
         // The off-limits secret doc minted no page under understand.
@@ -409,7 +409,7 @@ public class DocsTreeSyncTests : IDisposable
         var understand = Child(client, Root(client), "Understand");
         var arch = Child(client, understand, "Architecture");
         // A colleague edits the page body in Notion since the last sync, then the repo doc is removed.
-        client.SetBlockChildren(arch, NotionBlockConverter.ToBlocks("# Arch\n\nedited in notion since base."));
+        client.SetPageMarkdown(arch, "# Arch\n\nedited in notion since base.");
         File.Delete(DocPath("understand/architecture.md"));
 
         var output = new StringWriter();

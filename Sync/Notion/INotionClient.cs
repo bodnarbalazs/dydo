@@ -49,6 +49,18 @@ public interface INotionClient
     /// is its block children; a nested sub-page shows up here as a <c>child_page</c> block (DR 033).</summary>
     IReadOnlyList<NotionBlock> GetBlockChildren(string blockId);
 
+    /// <summary>Read a page's body as Notion-flavored markdown (GET /v1/pages/{id}/markdown, DR 035). Notion
+    /// maps the page's blocks to markdown server-side, at higher fidelity than the block converter — the docs
+    /// mirror reads bodies through this instead of <see cref="GetBlockChildren"/> + <c>NotionBlockConverter</c>.
+    /// An empty page reads back as the empty string. Nested child pages are structure, not body, and do not
+    /// appear here.</summary>
+    string GetPageMarkdown(string pageId);
+
+    /// <summary>Replace a page's body from a markdown string (PATCH /v1/pages/{id}/markdown, DR 035). Notion
+    /// maps the markdown to blocks server-side. Sent with <c>allow_deleting_content</c> because replacing a body
+    /// is destructive. The docs mirror writes bodies through this instead of the append-then-delete block dance.</summary>
+    void UpdatePageMarkdown(string pageId, string markdown);
+
     /// <summary>Enumerate the sub-pages nested directly under a page — its <c>child_page</c> blocks (DR 033
     /// §3). The docs mirror walks the page tree with this the way the spine queries a data source.</summary>
     IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId);

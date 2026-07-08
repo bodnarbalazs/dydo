@@ -20,11 +20,6 @@ public class DocsPageAdapterTests : IDisposable
         if (Directory.Exists(_dir)) Directory.Delete(_dir, true);
     }
 
-    private static NotionBlock ChildPageBlock(string id, string title) => new()
-    {
-        Type = "child_page", Id = id, ChildPage = new NotionChildPageBody { Title = title },
-    };
-
     /// <summary>Seed the fake with a "Docs" root page holding one managed child page, and return
     /// (client, rootId, childId). Uses CreatePage so the fake tracks parent/title for GetChildPages.</summary>
     private static (FakeNotionClient Client, string Root, string Child) SeedTree(string childBody)
@@ -40,10 +35,10 @@ public class DocsPageAdapterTests : IDisposable
             Parent = NotionParent.Page(root),
             Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Guide") } },
         }).Id;
-        // Append (not CreatePage children) so the body blocks receive ids, as real Notion assigns them —
-        // a body replace must be able to delete the old blocks by id.
+        // Seed the child page's native markdown body (DR 035) — the docs mirror reads bodies through the
+        // markdown API, not block children.
         if (childBody.Length != 0)
-            client.AppendBlockChildren(child, new NotionAppendChildrenRequest { Children = NotionBlockConverter.ToBlocks(childBody) });
+            client.SetPageMarkdown(child, childBody);
         return (client, root, child);
     }
 
@@ -55,7 +50,7 @@ public class DocsPageAdapterTests : IDisposable
     public void ReadExternalState_WalksTree_ReadingRootAndManagedChildBodies()
     {
         var (client, root, child) = SeedTree("Child body line");
-        client.SetBlockChildren(root, NotionBlockConverter.ToBlocks("Root index body"));
+        client.SetPageMarkdown(root, "Root index body");
         var adapter = AdapterOver(client, root, root, child);
 
         var records = adapter.ReadExternalState();
@@ -105,34 +100,38 @@ public class DocsPageAdapterTests : IDisposable
         var newId = assigned["understand/architecture"];
         var created = client.GetChildPages(root).Single(p => p.Id == newId);
         Assert.Equal("Architecture", created.Title);
-        // The blank line collapses through the intentionally lossy converter (one block per non-blank line).
-        Assert.Equal("# Architecture\nbody", NotionBlockConverter.FromBlocks(client.GetBlockChildren(newId)));
+        // The body is written through the native markdown API verbatim — blank lines survive, unlike the
+        // retired lossy converter (DR 035).
+        Assert.Equal("# Architecture\n\nbody", client.GetPageMarkdown(newId));
     }
 
     [Fact]
-    public void Apply_Update_ReplacesBody_WithoutArchivingNestedChildPages()
+    public void Apply_Update_ReplacesBody_ViaMarkdown_WithoutArchivingNestedChildPages()
     {
-        // A folder page holds body blocks AND a nested child_page. Replacing its body must delete the body
-        // blocks but never the child_page (that would archive the sub-page — structure is repo-owned).
+        // A folder page holds a body AND a nested child page. Replacing its body via the markdown API updates
+        // the body and never archives the nested sub-page (structure is repo-owned) — Notion maps the markdown
+        // to the page's own blocks, leaving child pages intact.
         var client = new FakeNotionClient();
         var root = client.CreatePage(new NotionPageCreateRequest
         {
             Parent = NotionParent.Page("workspace"),
             Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Docs") } },
         }).Id;
-        client.SetBlockChildren(root, [
-            new NotionBlock { Type = "paragraph", Id = "body-1", Paragraph = new NotionBlockBody { RichText = NotionRichText.Of("old body") } },
-            ChildPageBlock("nested-page", "Sub"),
-        ]);
-        var adapter = AdapterOver(client, root, root);
+        client.SetPageMarkdown(root, "old body");
+        var nested = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page(root),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Sub") } },
+        }).Id;
+        var adapter = AdapterOver(client, root, root, nested);
 
         var changes = new SyncChangeSet();
         changes.Upserts.Add(new SyncUpsert { LocalId = ".", ExternalId = root, Fields = [], Body = "new body" });
         adapter.Apply(changes, new Dictionary<string, string>());
 
-        Assert.Contains("body-1", client.DeletedBlocks);        // stale body block removed
-        Assert.DoesNotContain("nested-page", client.DeletedBlocks); // nested sub-page preserved
-        Assert.Equal("new body", NotionBlockConverter.FromBlocks(client.GetBlockChildren(root)));
+        Assert.Equal("new body", client.GetPageMarkdown(root));                        // body replaced
+        Assert.Contains(client.GetChildPages(root), p => p.Id == nested);              // nested sub-page preserved
+        Assert.False(client.IsArchived(nested));
     }
 
     [Fact]
@@ -170,15 +169,13 @@ public class DocsPageAdapterTests : IDisposable
         // Repo edits the body.
         File.WriteAllText(repoPath, "---\ntitle: Guide\narea: general\n---\n\nedited in repo");
         Runner().Run([Read()]);
-        Assert.Equal("edited in repo", NotionBlockConverter.FromBlocks(client.GetBlockChildren(child)));
+        Assert.Equal("edited in repo", client.GetPageMarkdown(child));
 
-        // Unchanged tick: no create, append, or delete.
-        client.AppendedTo.Clear();
-        client.DeletedBlocks.Clear();
+        // Unchanged tick: no create and no markdown body write.
+        client.MarkdownUpdates.Clear();
         var result = Runner().Run([Read()]);
         Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
-        Assert.Empty(client.AppendedTo);
-        Assert.Empty(client.DeletedBlocks);
+        Assert.Empty(client.MarkdownUpdates);
     }
 
     [Fact]
@@ -199,7 +196,7 @@ public class DocsPageAdapterTests : IDisposable
         SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
 
         // A colleague edits the page body in Notion.
-        client.SetBlockChildren(child, NotionBlockConverter.ToBlocks("edited in notion"));
+        client.SetPageMarkdown(child, "edited in notion");
         Runner().Run([SyncDocFile.Read(repoPath, "guide", repoPath)]);
 
         var merged = SyncDocFile.Read(repoPath, "guide", repoPath);
@@ -224,7 +221,7 @@ public class DocsPageAdapterTests : IDisposable
 
         // Repo changes the first line; Notion changes the last line — disjoint.
         File.WriteAllText(repoPath, "---\ntitle: Guide\n---\n\nline ONE repo\n\nline two\n\nline three");
-        client.SetBlockChildren(child, NotionBlockConverter.ToBlocks("line one\n\nline two\n\nline THREE notion"));
+        client.SetPageMarkdown(child, "line one\n\nline two\n\nline THREE notion");
 
         var result = new SyncRunner(Adapter(), store, (_, _, _) => repoPath).Run([SyncDocFile.Read(repoPath, "guide", repoPath)]);
 
@@ -232,6 +229,86 @@ public class DocsPageAdapterTests : IDisposable
         var merged = SyncDocFile.Read(repoPath, "guide", repoPath).Body;
         Assert.Contains("line ONE repo", merged);
         Assert.Contains("line THREE notion", merged);
+    }
+
+    [Fact]
+    public void RunThroughEngine_ResurrectCreate_WritesBodyAtomically_NeverWipesCanonicalFile()
+    {
+        // Issue 0235 canonical-body WIPE window: the old two-step create (CreatePage then a SEPARATE
+        // UpdatePageMarkdown) could throw AFTER the page existed, recording a full-body base against an empty
+        // Notion page; the next tick then read that empty page as an external clear and EMPTIED the canonical
+        // repo file. The fix carries the body in the create itself (DR 035 §1 create-with-body), so it lands
+        // atomically. This test pins that even with the separate body write BROKEN, a resurrect create still
+        // persists the full body and the canonical file is never modified.
+        var (client, root, child) = SeedTree("canonical body");
+        var repoPath = Path.Combine(_dir, "guide.md");
+        var repoContent = "---\ntitle: Guide\narea: general\n---\n\ncanonical body";
+        File.WriteAllText(repoPath, repoContent);
+
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+        store.Set(new SyncDoc { LocalId = "guide", ExternalId = child, Fields = [], Body = "canonical body", SourcePath = "" });
+
+        DocsPageAdapter Adapter() => new(
+            client, root, new Dictionary<string, string> { ["guide"] = root },
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        SyncDoc Read() => SyncDocFile.Read(repoPath, "guide", repoPath);
+        SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
+
+        // The page vanishes from the external listing (eventual consistency / a colleague's stray archive) while
+        // the repo doc is still present — the repo-owned-structure resurrect path (CreateToExternal). The separate
+        // body write is broken, so a two-step create would throw mid-batch and poison the base.
+        client.HiddenFromListing.Add(child);
+        client.FailMarkdownUpdate = true;
+
+        Assert.Null(Record.Exception(() => Runner().Run([Read()])));   // atomic create — no separate write to fail on
+
+        var resurrectedId = store.Get("guide")!.ExternalId!;
+        Assert.NotEqual(child, resurrectedId);                          // a fresh page was minted
+        Assert.Equal("canonical body", client.GetPageMarkdown(resurrectedId)); // body landed IN the create
+        Assert.Empty(client.MarkdownUpdates);                          // never a separate UpdatePageMarkdown
+        Assert.Equal(repoContent, File.ReadAllText(repoPath));          // canonical file byte-unchanged
+
+        // The next tick reads the resurrected page (now visible) with the full body: base, repo, and external all
+        // agree, so it is a pure no-op — the empty-page-vs-full-base wipe never materialises.
+        var result = Runner().Run([Read()]);
+        Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action));
+        Assert.Equal(repoContent, File.ReadAllText(repoPath));
+    }
+
+    [Fact]
+    public void RunThroughEngine_CreateWithBody_SilentlyIgnored_Throws_DoesNotAdvanceBaseNorWipeCanonical()
+    {
+        // The self-enforcing read-back guard (DR 035): the create-with-body markdown field is doc-sourced. If live
+        // Notion SILENTLY IGNORES it, the page is created empty — and recording the full-body base against that
+        // empty page is the exact issue 0235 wipe (next tick reads the empty page as a clear and empties canonical).
+        // The guard reads the body straight back after the create and THROWS on the empty echo, before the base
+        // advances — so the wipe can never fire.
+        var (client, root, child) = SeedTree("canonical body");
+        var repoPath = Path.Combine(_dir, "guide.md");
+        var repoContent = "---\ntitle: Guide\narea: general\n---\n\ncanonical body";
+        File.WriteAllText(repoPath, repoContent);
+
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+        store.Set(new SyncDoc { LocalId = "guide", ExternalId = child, Fields = [], Body = "canonical body", SourcePath = "" });
+
+        DocsPageAdapter Adapter() => new(
+            client, root, new Dictionary<string, string> { ["guide"] = root },
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        SyncDoc Read() => SyncDocFile.Read(repoPath, "guide", repoPath);
+        SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
+
+        // The page vanishes from the listing (repo-owned-structure resurrect → create-with-body), and live Notion
+        // silently drops the create's markdown field: the resurrected page is created EMPTY.
+        client.HiddenFromListing.Add(child);
+        client.SilentlyIgnoreCreateMarkdown = true;
+
+        Assert.Throws<NotionApiException>(() => Runner().Run([Read()]));
+
+        // The base still points at the original page with the full body — never advanced to the empty resurrect.
+        Assert.Equal(child, store.Get("guide")!.ExternalId);
+        Assert.Equal("canonical body", store.Get("guide")!.Body);
+        // The canonical file is byte-unchanged — the wipe never fires.
+        Assert.Equal(repoContent, File.ReadAllText(repoPath));
     }
 
     [Fact]

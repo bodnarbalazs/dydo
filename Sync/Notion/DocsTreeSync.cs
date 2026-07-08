@@ -68,15 +68,110 @@ public static class DocsTreeSync
         var pathByLocalId = new Dictionary<string, string>();
         Collect(root, folderPageId, docs, parentByLocalId, titleByLocalId, pathByLocalId);
 
+        // Promote any shadow file a human has resolved (DR 035 §4) before reconciling, so its content becomes the
+        // repo doc this tick and is pushed — the resolution flow's second half. Done against pathByLocalId, so a
+        // promoted body lands on the canonical file BuildTree/Collect already read; re-read it after promotion.
+        if (PromoteResolvedShadows(dydoRoot, client, store, pathByLocalId))
+        {
+            docs.Clear(); parentByLocalId.Clear(); titleByLocalId.Clear(); pathByLocalId.Clear();
+            Collect(root, folderPageId, docs, parentByLocalId, titleByLocalId, pathByLocalId);
+        }
+
         var managed = ManagedPageIds(store);
         var adapter = new DocsPageAdapter(client, rootPageId, parentByLocalId, titleByLocalId, managed, output);
-        var runner = new SyncRunner(adapter, store, (localId, _, _) =>
-            pathByLocalId.TryGetValue(localId, out var path) ? path : Path.Combine(dydoRoot, localId + ".md"));
+        var runner = new SyncRunner(adapter, store,
+            (localId, _, _) => pathByLocalId.TryGetValue(localId, out var path) ? path : Path.Combine(dydoRoot, localId + ".md"),
+            // A genuine two-sided conflict is diverted here — never written to the canonical repo file (DR 035
+            // §4/§5, the root-cause fix for issue 0235). The shadow tree lives under _system, already excluded
+            // from the mirror's walk (ExcludedDirs), so a conflict can never cascade back through the sync.
+            localId => ShadowPathFor(dydoRoot, localId));
 
         var result = runner.Run(docs);
         output.WriteLine($"notion docs sync: reconciled {result.Results.Count} page(s) under \"{RootTitle}\"");
-        if (result.ConflictCount > 0)
-            output.WriteLine($"  {result.ConflictCount} conflict(s): {string.Join(", ", result.ConflictedLocalIds)}");
+        if (result.ShadowedLocalIds.Count > 0)
+            output.WriteLine(
+                $"  {result.ShadowedLocalIds.Count} conflict(s) diverted to {ShadowDirRel} (canonical files untouched): "
+                + string.Join(", ", result.ShadowedLocalIds));
+    }
+
+    /// <summary>The shadow tree root (DR 035 §4), under <c>_system</c> so it is already outside the mirror's walk
+    /// (see <see cref="ExcludedDirs"/>) — a diverted conflict can never be re-uploaded and cascade.</summary>
+    private const string ShadowDirRel = "_system/notion_sync";
+
+    /// <summary>The shadow-file path mirroring a doc's repo-relative path (DR 035 §4). The dydo-root index's
+    /// reserved <c>.</c> local id has no relative path, so it maps to a reserved stem that can never collide with
+    /// a real doc.</summary>
+    private static string ShadowPathFor(string dydoRoot, string localId) =>
+        Path.Combine(dydoRoot, "_system", "notion_sync", (localId == RootLocalId ? "_root" : localId) + ".md");
+
+    /// <summary>Promote every shadow file a human has resolved — one no longer carrying merge sentinels — onto its
+    /// canonical repo doc, then delete it (DR 035 §4 resolution flow). A shadow file still bearing markers is left
+    /// untouched: the human has not finished, and the reconcile re-derives the same conflict deterministically. The
+    /// canonical path is recovered from the shadow's relative path, independent of the current tree so a doc that
+    /// vanished from the tree while its resolution was pending is still restored.
+    /// <para>The resolution must WIN over the still-diverged Notion side (else the reconcile re-detects the two-
+    /// sided edit and re-diverts): the base is aligned to the CURRENT external body, so the reconcile reads Notion
+    /// as unchanged and pushes the resolved repo body over it (repo-wins) rather than merging a fresh conflict. That
+    /// alignment read is GUARDED: a base entry always carries an external id (a create records it only with the
+    /// assigned id), but the page it points at may have been archived/trashed in Notion while the conflict sat
+    /// unresolved, so the read 404/400s — on failure the alignment is SKIPPED (the base left as-is) rather than
+    /// throwing at the same point every tick and wedging the whole sync; the reconcile then resurrects the doc from
+    /// the repo-owned structure. Returns whether anything was promoted, so the caller re-reads the affected docs.</para></summary>
+    private static bool PromoteResolvedShadows(
+        string dydoRoot, INotionClient client, BaseSnapshotStore store, IReadOnlyDictionary<string, string> pathByLocalId)
+    {
+        var shadowRoot = Path.Combine(dydoRoot, "_system", "notion_sync");
+        if (!Directory.Exists(shadowRoot))
+            return false;
+
+        var promoted = false;
+        foreach (var shadowFile in Directory.EnumerateFiles(shadowRoot, "*.md", SearchOption.AllDirectories))
+        {
+            var content = File.ReadAllText(shadowFile);
+            if (ThreeWayTextMerge.ContainsConflictMarkers(content))
+                continue; // still unresolved — leave it for the human
+
+            var relative = Path.GetRelativePath(shadowRoot, shadowFile);
+            var stem = relative[..^".md".Length].Replace('\\', '/');
+            var localId = stem == "_root" ? RootLocalId : stem;
+            // The canonical path is the CURRENT tree's path for this local id — the root index (its reserved "."
+            // local id maps to the real _index.md/index.md, never the junk "dydo/..md" that RootLocalId + ".md"
+            // would build) for _root, else the doc's own path. The fallback covers a doc that vanished from the
+            // tree while its resolution was pending: an absent root restores to _index.md, an absent doc to its stem.
+            var canonical = pathByLocalId.GetValueOrDefault(localId,
+                stem == "_root"
+                    ? Path.Combine(dydoRoot, "_index.md")
+                    : Path.Combine(dydoRoot, stem.Replace('/', Path.DirectorySeparatorChar) + ".md"));
+
+            Directory.CreateDirectory(Path.GetDirectoryName(canonical)!);
+            File.WriteAllText(canonical, content);
+            File.Delete(shadowFile);
+            promoted = true;
+
+            if (store.Get(localId) is { ExternalId: { } pageId } snap)
+            {
+                try
+                {
+                    store.Set(new SyncDoc
+                    {
+                        LocalId = snap.LocalId,
+                        ExternalId = snap.ExternalId,
+                        Fields = snap.Fields,
+                        Body = DocsMarkdownNormalizer.CleanForPersist(client.GetPageMarkdown(pageId)),
+                        SourcePath = "",
+                    });
+                }
+                catch (NotionApiException)
+                {
+                    // The page was archived/trashed in Notion while the conflict sat unresolved, so its body read
+                    // 404/400s. Skip the base alignment (leave the base as-is) rather than wedge the whole sync on
+                    // one unreadable page — the reconcile resurrects the doc from the repo-owned structure.
+                }
+            }
+        }
+        if (promoted)
+            store.Save();
+        return promoted;
     }
 
     /// <summary>The dydo-root-relative dirs to exclude from the mirror (DR 033 §5). The spine dirs are DERIVED
@@ -380,13 +475,10 @@ public static class DocsTreeSync
     }
 
     /// <summary>Whether a Notion page's body has drifted from the base snapshot's recorded body, compared modulo the
-    /// converter's lossy block round-trip and line endings — exactly the equality <see cref="ReconcileEngine"/> uses
-    /// to decide the delete-vs-external-edit branch. A drift means the real run resurrects rather than archives.</summary>
+    /// markdown dialect normalization (DR 035 §3) and line endings — exactly the equality <see cref="ReconcileEngine"/>
+    /// uses to decide the delete-vs-external-edit branch. A drift means the real run resurrects rather than archives.</summary>
     private static bool BodyDrifted(string baseBody, string externalBody) =>
-        NormalizeBody(baseBody) != NormalizeBody(externalBody);
-
-    private static string NormalizeBody(string body) =>
-        NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body.Replace("\r\n", "\n")));
+        DocsMarkdownNormalizer.Normalize(baseBody) != DocsMarkdownNormalizer.Normalize(externalBody);
 
     private static void WritePlanNode(DocsNode node, ISet<string> known, ISet<string> planned, TextWriter output, bool isRoot)
     {

@@ -7,11 +7,14 @@ using DynaDocs.Sync.Notion.Dtos;
 /// The page-tree <see cref="ISyncAdapter"/> (DR 033) — the docs mirror's analogue of
 /// <see cref="NotionSyncAdapter"/>. Where the spine adapter maps the rows of ONE data source, this maps the
 /// managed pages of a nested-page TREE: it enumerates the tree via <see cref="INotionClient.GetChildPages"/>,
-/// reads each managed page's body via <see cref="INotionClient.GetBlockChildren"/> +
-/// <see cref="NotionBlockConverter.FromBlocks"/>, creates a doc's page under its repo-owned parent via
-/// <see cref="INotionClient.CreatePage"/> + <see cref="NotionParent.Page"/>, replaces a body via the
-/// append-then-delete pattern, and archives a removed doc's page via <c>UpdatePage { Archived = true }</c>.
-/// The 3-way merge, base-snapshot store, and converter round-trip are reused as-is — no new merge machinery.
+/// reads each managed page's body via <see cref="INotionClient.GetPageMarkdown"/> (Notion maps blocks→markdown
+/// server-side, DR 035), creates a doc's page under its repo-owned parent via
+/// <see cref="INotionClient.CreatePage"/> + <see cref="NotionParent.Page"/>, replaces a body via
+/// <see cref="INotionClient.UpdatePageMarkdown"/> (Notion maps markdown→blocks server-side), and archives a
+/// removed doc's page via <c>UpdatePage { Archived = true }</c>. Bodies round-trip through Notion's native
+/// markdown API instead of the lossy <c>NotionBlockConverter</c> — retiring the phantom-conflict corruption
+/// class (issue 0235) at its root — while the 3-way merge and base-snapshot store are reused as-is. The
+/// converter stays for the spine (issue 0236) but the docs mirror no longer touches it for bodies.
 ///
 /// <para>Structure is repo-owned (DR 033 §2): a page's parent and the tree's shape come from the repo, so the
 /// adapter is handed a repo-path → parent-page-id map. Folder pages are pre-created by <see cref="DocsTreeSync"/>
@@ -70,11 +73,16 @@ public sealed class DocsPageAdapter : ISyncAdapter
         return records;
     }
 
+    // The body is read through Notion's native markdown API (DR 035). It is cleaned structure-preservingly — not
+    // fully normalized — because this body may be written back to a canonical repo file on a Notion-side edit:
+    // CleanForPersist strips the expiring-URL signatures (never persist an expiring URL) and normalizes line
+    // endings while leaving tables and every other construct intact. Dialect/whitespace drift is collapsed only
+    // for the merge's change detection, via NormalizeBody — never in the content persisted to disk.
     private SyncRecord ReadPage(string pageId) => new()
     {
         ExternalId = pageId,
         Fields = [],
-        Body = NotionBlockConverter.FromBlocks(_client.GetBlockChildren(pageId)),
+        Body = DocsMarkdownNormalizer.CleanForPersist(_client.GetPageMarkdown(pageId)),
     };
 
     /// <summary>Depth-first walk of the managed page tree from a parent via child_page enumeration (DR 033 §3).
@@ -99,9 +107,14 @@ public sealed class DocsPageAdapter : ISyncAdapter
     {
         foreach (var upsert in changes.Upserts)
         {
-            var blocks = NotionBlockConverter.ToBlocks(upsert.Body);
             if (upsert.ExternalId == null)
             {
+                // Create the child page AND its body in ONE atomic call (DR 035 §1 create-with-body). A two-step
+                // create-then-UpdatePageMarkdown left a window: a throw after the page existed recorded a full-body
+                // base against an empty Notion page, so the next tick read the empty page as an external clear and
+                // wiped the canonical repo file (issue 0235). Carrying the body in the create closes the window —
+                // the page is created with its body or, on a throw, not at all, so no base is ever advanced against
+                // a half-written page. An empty body sends no markdown field, matching a bodyless folder page.
                 var page = _client.CreatePage(new NotionPageCreateRequest
                 {
                     Parent = NotionParent.Page(_parentPageIdByLocalId[upsert.LocalId]),
@@ -109,14 +122,25 @@ public sealed class DocsPageAdapter : ISyncAdapter
                     {
                         ["title"] = new() { Type = "title", Title = NotionRichText.Of(TitleFor(upsert.LocalId)) },
                     },
-                    Children = blocks.Count > 0 ? blocks : null,
+                    Markdown = upsert.Body.Length > 0 ? upsert.Body : null,
                 });
-                // Record the id the instant the page exists so a later throw in this batch does not lose it.
+                // Self-enforcing guard against a SILENT create-with-body ignore (DR 035 finding). The create's
+                // markdown field is doc-sourced, not live-verified: if live Notion silently ignores it (e.g. for a
+                // page_id parent), the page is created EMPTY while the base would record the full body — the next
+                // tick then reads the empty page as an external clear and WIPES the canonical file (the issue 0235
+                // wipe). Read the body straight back: a non-empty body that comes back empty means the field was
+                // ignored, so throw BEFORE recording the assigned id — the base never advances against the empty
+                // page and the wipe cannot fire. The read-back is confined to this rare create-with-body path.
+                if (upsert.Body.Length > 0 && _client.GetPageMarkdown(page.Id).Length == 0)
+                    throw new NotionApiException(500,
+                        $"create-with-body page {page.Id} ({upsert.LocalId}) sent a non-empty body but read back empty — Notion ignored the markdown field on create");
                 assigned[upsert.LocalId] = page.Id;
             }
             else
             {
-                ReplaceBody(upsert.ExternalId, blocks);
+                // Notion maps the markdown to blocks and replaces the body server-side (allow_deleting_content
+                // is set by the client). A page's nested sub-pages are structure, not body, so they are untouched.
+                _client.UpdatePageMarkdown(upsert.ExternalId, upsert.Body);
             }
         }
 
@@ -159,27 +183,11 @@ public sealed class DocsPageAdapter : ISyncAdapter
     private string TitleFor(string localId) =>
         _titleByLocalId.TryGetValue(localId, out var title) && title.Length > 0 ? title : localId;
 
-    /// <summary>Replace a page's BODY, appending the new blocks before deleting the old (their ids snapshotted
-    /// first) so a failed append never empties the page (mirrors <see cref="NotionSyncAdapter"/>). A page's
-    /// nested sub-pages surface here as <c>child_page</c> blocks — those are repo-owned structure, not body, so
-    /// they are excluded from the delete set: replacing a folder's index body never archives its child pages.</summary>
-    private void ReplaceBody(string pageId, List<NotionBlock> blocks)
-    {
-        var existingIds = _client.GetBlockChildren(pageId)
-            .Where(b => b.Type != "child_page")
-            .Select(b => b.Id)
-            .Where(id => id != null)
-            .ToList();
-
-        if (blocks.Count > 0)
-            _client.AppendBlockChildren(pageId, new NotionAppendChildrenRequest { Children = blocks });
-
-        foreach (var id in existingIds)
-            _client.DeleteBlock(id!);
-    }
-
-    public string NormalizeBody(string body) =>
-        NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body));
+    /// <summary>Compare bodies MODULO Notion's markdown dialect and whitespace drift (DR 035 §3): local docs are
+    /// CommonMark, Notion echoes back Notion-flavored markdown, so a byte compare would read that well-defined
+    /// dialect difference as an edit and churn a phantom conflict every tick. Canonicalizing both sides through
+    /// <see cref="DocsMarkdownNormalizer"/> collapses the difference, so an untouched doc stays a no-op.</summary>
+    public string NormalizeBody(string body) => DocsMarkdownNormalizer.Normalize(body);
 
     /// <summary>Drop every field: a plain page carries no properties, so frontmatter is adapter-invisible. The
     /// engine preserves it on the repo (via the invisible-field overlay) and never reads the field-less page as

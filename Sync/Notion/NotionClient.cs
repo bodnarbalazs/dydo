@@ -122,6 +122,16 @@ public sealed class NotionClient : INotionClient
         return blocks;
     }
 
+    public string GetPageMarkdown(string pageId) =>
+        Get($"pages/{pageId}/markdown", NotionJsonContext.Default.NotionMarkdownResponse).Markdown;
+
+    // A body replace is destructive (it removes the page's existing blocks), so allow_deleting_content is
+    // always sent. The response echoes the stored markdown; the caller does not need it, so it is discarded.
+    public void UpdatePageMarkdown(string pageId, string markdown) =>
+        Send(HttpMethod.Patch, $"pages/{pageId}/markdown",
+            new NotionMarkdownUpdateRequest { Markdown = markdown, AllowDeletingContent = true },
+            NotionJsonContext.Default.NotionMarkdownUpdateRequest, NotionJsonContext.Default.NotionMarkdownResponse);
+
     public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) =>
         GetBlockChildren(parentPageId)
             .Where(b => b.Type == "child_page")

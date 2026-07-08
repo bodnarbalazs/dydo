@@ -18,16 +18,27 @@ public sealed class SyncRunner
     private readonly ISyncAdapter _adapter;
     private readonly BaseSnapshotStore _base;
     private readonly Func<string, IReadOnlyList<SyncField>, string?, string> _repoPathFor;
+    private readonly Func<string, string>? _conflictShadowPathFor;
 
     /// <param name="repoPathFor">The canonical repo path for a doc, given its local id, fields, and current
     /// on-disk path (null when the doc has none yet). Fields are passed so folder placement can derive from
     /// status (slice brief §3); the current path lets an unmapped status keep an existing doc in place rather
     /// than pulling it to the root (finding 1). A flat layout simply ignores both. See <see cref="RepoFolderLayout"/>.</param>
-    public SyncRunner(ISyncAdapter adapter, BaseSnapshotStore baseStore, Func<string, IReadOnlyList<SyncField>, string?, string> repoPathFor)
+    /// <param name="conflictShadowPathFor">Where to divert a conflicted body instead of the canonical repo file
+    /// (DR 035 §4/§5 — the docs mirror). When set, a body about to be persisted that carries this run's merge
+    /// sentinels is written to the returned shadow path and the canonical file is left at its last-good state,
+    /// so the sync can NEVER corrupt a canonical doc with conflict markers (root cause of issue 0235). Null
+    /// (the default, and the spine) keeps the historical behavior of writing the merged body — markers and all —
+    /// to the canonical file.</param>
+    public SyncRunner(
+        ISyncAdapter adapter, BaseSnapshotStore baseStore,
+        Func<string, IReadOnlyList<SyncField>, string?, string> repoPathFor,
+        Func<string, string>? conflictShadowPathFor = null)
     {
         _adapter = adapter;
         _base = baseStore;
         _repoPathFor = repoPathFor;
+        _conflictShadowPathFor = conflictShadowPathFor;
     }
 
     /// <summary>
@@ -82,6 +93,7 @@ public sealed class SyncRunner
 
         var changes = new SyncChangeSet();
         var results = new List<ReconcileResult>();
+        var shadowed = new HashSet<string>();
 
         foreach (var localId in localIds.OrderBy(x => x))
         {
@@ -92,6 +104,8 @@ public sealed class SyncRunner
             var result = ReconcileEngine.Reconcile(baseDoc, repo, external, _adapter.NormalizeBody, _adapter.NormalizeFields, _adapter.RepoOwnedStructure);
             results.Add(result);
             RecordActivity(result, repo);
+            if (RouteConflictToShadow(result, shadowed))
+                continue;
             ApplyResult(localId, result, repo, changes);
             EnqueueEngineComputedRefresh(localId, result, external, changes);
         }
@@ -110,7 +124,7 @@ public sealed class SyncRunner
         }
         finally
         {
-            CommitBase(results, assigned, deleted, applied);
+            CommitBase(results, shadowed, assigned, deleted, applied);
             // A completed tick has confirmed every create's external id, so any last-activity with no base
             // entry is a genuine orphan (a crashed create's seed, or a doc whose base never existed) that
             // Retire can never reach — sweep it before saving (finding 7). A partial tick leaves it for the
@@ -120,7 +134,36 @@ public sealed class SyncRunner
             _base.Save();
         }
 
-        return new SyncRunResult { Results = results };
+        return new SyncRunResult { Results = results, ShadowedLocalIds = shadowed.ToList() };
+    }
+
+    /// <summary>Divert a conflicted body to the shadow tree instead of the canonical repo file (DR 035 §4/§5 —
+    /// the docs mirror). Active only when a shadow-path resolver was supplied; the spine passes none and this is
+    /// a no-op. Two things route a body here, both caught by one check on the body about to be persisted: a
+    /// genuine two-sided <see cref="ReconcileAction.Conflict"/> whose merged body carries this run's conflict
+    /// sentinels, and — the safety-rail backstop — ANY result whose body about to be written bears them. The
+    /// conflicted body is written to the shadow path; the canonical file is left untouched at its last-good
+    /// state, the external push is skipped, and the base is NOT advanced (see <see cref="CommitBase"/>), so the
+    /// two-sided edit is re-detected until a human resolves the shadow file (promoted on the next sync). This is
+    /// the hard invariant behind issue 0235: the sync can never corrupt a canonical doc with conflict markers.
+    /// Returns true when the result was shadowed, so the caller skips <see cref="ApplyResult"/> for it.</summary>
+    private bool RouteConflictToShadow(ReconcileResult result, HashSet<string> shadowed)
+    {
+        if (_conflictShadowPathFor == null || result.RepoWrite is not { } repoWrite)
+            return false;
+        if (!ThreeWayTextMerge.ContainsConflictMarkers(repoWrite.Body))
+            return false;
+
+        var shadowPath = _conflictShadowPathFor(result.LocalId);
+        // Don't clobber a human's in-progress resolution: if the shadow already exists and still carries conflict
+        // markers, the previous tick recorded this same two-sided edit and the human may be mid-edit — overwriting
+        // would discard their partial work. Leave it; the conflict stays active (shadowed below, base un-advanced)
+        // until the human finishes and the resolved shadow is promoted. A fully resolved shadow (no markers) is
+        // promoted before the reconcile, so it is never seen here.
+        if (!(File.Exists(shadowPath) && ThreeWayTextMerge.ContainsConflictMarkers(File.ReadAllText(shadowPath))))
+            SyncDocFile.Write(shadowPath, repoWrite);
+        shadowed.Add(result.LocalId);
+        return true;
     }
 
     /// <summary>Advance the base snapshot after Apply. A create records its base only once its external
@@ -131,10 +174,15 @@ public sealed class SyncRunner
     /// leaves the entry for retry instead of dropping tracking for a still-live page (issue 0221).
     /// Non-create, non-delete advances commit only when the whole batch applied, so a failed tick
     /// self-heals on retry.</summary>
-    private void CommitBase(List<ReconcileResult> results, IReadOnlyDictionary<string, string> assigned, IReadOnlySet<string> deleted, bool applied)
+    private void CommitBase(List<ReconcileResult> results, IReadOnlySet<string> shadowed, IReadOnlyDictionary<string, string> assigned, IReadOnlySet<string> deleted, bool applied)
     {
         foreach (var result in results)
         {
+            // A shadowed conflict (DR 035 §4) was neither written to the canonical file nor pushed, so its base
+            // must NOT advance — leaving it lets the next tick re-detect the two-sided edit until a human resolves
+            // the shadow file. Advancing here would record the un-persisted conflict body as synced and lose it.
+            if (shadowed.Contains(result.LocalId))
+                continue;
             switch (result.Action)
             {
                 case ReconcileAction.None:

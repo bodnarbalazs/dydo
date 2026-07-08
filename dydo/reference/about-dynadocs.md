@@ -349,6 +349,7 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 |---------|-------------|
 | `dydo notion connect [--parent-page <id>] [--vault]` | Store the Notion token (local-only by default) |
 | `dydo notion sync [--dry-run] [--prune]` | Reconcile repo files ⇄ Notion |
+| `dydo notion reset [--dry-run] [--yes]` | Wipe the tracked databases and recreate them from the model |
 | `dydo notion reveal-token [--yes]` | Print the stored token (guarded break-glass) |
 
 ### Model

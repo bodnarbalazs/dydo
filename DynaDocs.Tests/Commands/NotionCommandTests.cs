@@ -109,6 +109,22 @@ public class NotionCommandTests
     }
 
     [Fact]
+    public void Create_HasResetSubcommand()
+    {
+        var cmd = NotionCommand.Create();
+        Assert.Contains(cmd.Subcommands, c => c.Name == "reset");
+    }
+
+    [Fact]
+    public void ResetCommand_HasExpectedOptions()
+    {
+        var reset = NotionCommand.Create().Subcommands.First(c => c.Name == "reset");
+        Assert.Contains(reset.Options, o => o.Name == "--dry-run");
+        Assert.Contains(reset.Options, o => o.Name == "--yes");
+        Assert.Contains(reset.Options, o => o.Name == "--parent-page");
+    }
+
+    [Fact]
     public void Create_HasConnectAndRevealSubcommands()
     {
         var cmd = NotionCommand.Create();

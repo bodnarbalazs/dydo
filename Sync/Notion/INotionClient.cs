@@ -23,6 +23,10 @@ public interface INotionClient
     /// Used for the self-relation second pass, where the target data source id is only known post-create.</summary>
     void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request);
 
+    /// <summary>Archive (trash) a database — PATCH /v1/databases/{id} with <c>in_trash: true</c>. The wipe half
+    /// of <c>dydo notion reset</c>; Notion has no hard delete, so archiving is the strongest removal available.</summary>
+    void ArchiveDatabase(string databaseId);
+
     /// <summary>Create a database view (POST /v1/views) — a board/table/timeline beyond the auto-created
     /// default, with its own filter, sorts, and column order/visibility.</summary>
     void CreateView(NotionViewCreateRequest request);

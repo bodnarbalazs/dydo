@@ -61,6 +61,10 @@ public sealed class NotionClient : INotionClient
         Send(HttpMethod.Patch, $"data_sources/{dataSourceId}", request,
             NotionJsonContext.Default.NotionDataSourceUpdateRequest, NotionJsonContext.Default.NotionDatabase);
 
+    public void ArchiveDatabase(string databaseId) =>
+        Send(HttpMethod.Patch, $"databases/{databaseId}", new NotionDatabaseUpdateRequest { InTrash = true },
+            NotionJsonContext.Default.NotionDatabaseUpdateRequest, NotionJsonContext.Default.NotionDatabase);
+
     // The created-view response is discarded (deserialized into the shared NotionDatabase shape, whose
     // unknown-field tolerance ignores the view payload) — the provisioner needs only that it succeeded.
     public void CreateView(NotionViewCreateRequest request) =>

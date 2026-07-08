@@ -26,6 +26,7 @@ public static class NotionCommand
         command.Subcommands.Add(CreateConnectCommand());
         command.Subcommands.Add(CreateRevealCommand());
         command.Subcommands.Add(CreateSyncCommand());
+        command.Subcommands.Add(CreateResetCommand());
         return command;
     }
 
@@ -130,26 +131,71 @@ public static class NotionCommand
         }
 
         var config = new ConfigService();
+        if (ResolveToken(config, out var token) is { } failCode)
+            return failCode;
+
+        return NotionSyncService.Execute(
+            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docs, docsOnly, spineOnly);
+    }
+
+    private static Command CreateResetCommand()
+    {
+        var command = new Command("reset", "Wipe the tracked Notion databases and recreate them fresh from the sync model");
+        var dryRun = new Option<bool>("--dry-run")
+        {
+            Description = "Print the archive + recreate plan without touching Notion.",
+        };
+        var yes = new Option<bool>("--yes")
+        {
+            Description = "Skip the destructive-action confirmation prompt.",
+        };
+        var parentPage = new Option<string?>("--parent-page")
+        {
+            Description = "Notion page id to recreate the spine under, overriding notion.parentPageId / DYDO_NOTION_PARENT_PAGE. Point it at a scratch page to reset a throwaway workspace.",
+        };
+        command.Options.Add(dryRun);
+        command.Options.Add(yes);
+        command.Options.Add(parentPage);
+        command.SetAction(parse => RunReset(parse.GetValue(dryRun), parse.GetValue(yes), parse.GetValue(parentPage)));
+        return command;
+    }
+
+    private static int RunReset(bool dryRun, bool yes, string? parentPageOverride)
+    {
+        var config = new ConfigService();
+        if (ResolveToken(config, out var token) is { } failCode)
+            return failCode;
+
+        Func<bool> confirm = yes
+            ? () => true
+            : () => ConfirmYesNo("This archives the tracked Notion databases and recreates them from the model — board data is discarded. Continue? [y/N] ");
+
+        return NotionReset.Execute(
+            token, config, CreateClient, dryRun, confirm, Console.Out, Console.Error, parentPageOverride);
+    }
+
+    /// <summary>Resolve the Notion token for a command, failing CLOSED when a project has opted into a committed
+    /// vault but can't unlock it (wrong/rotted passphrase, or no local key on a fresh clone): silently no-op'ing
+    /// would leave CI green while sync/reset stops, and the "not configured" hint points at the wrong knob. A
+    /// missing vault file still falls through to the clean no-op inside the service. Returns null on success
+    /// (token set, possibly null for the graceful not-configured path), or the exit code already reported.</summary>
+    private static int? ResolveToken(ConfigService config, out string? token)
+    {
         var loaded = config.LoadConfig();
-        var token = NotionTokenResolver.Resolve(
+        token = NotionTokenResolver.Resolve(
             loaded, config.GetProjectRoot(), config.GetDydoRoot(),
             () => ReadSecretFromStdin("Vault passphrase (input hidden): "));
 
-        // Fail CLOSED for vault mode: a project that has opted into a committed vault but can't unlock it
-        // (wrong/rotted passphrase, or no local key on a fresh clone) must not silently no-op — that would
-        // leave CI green while sync stops, and the generic "not configured" hint points at the wrong knob.
-        // A missing vault file still falls through to the clean no-op inside NotionSyncService.
         if (token == null
             && (loaded?.Notion?.TokenStorage ?? NotionTokenStore.LocalMode) == NotionTokenStore.VaultMode
             && File.Exists(NotionTokenStore.VaultPathFor(config.GetDydoRoot())))
         {
             Console.Error.WriteLine(
-                "notion sync: could not unlock the vault (no local key or wrong passphrase). Run `dydo notion connect --vault`, or set the passphrase env var for CI.");
+                "notion: could not unlock the vault (no local key or wrong passphrase). Run `dydo notion connect --vault`, or set the passphrase env var for CI.");
             return ExitCodes.ToolError;
         }
 
-        return NotionSyncService.Execute(
-            token, config, CreateClient, dryRun, Console.Out, Console.Error, prune, parentPageOverride, docs, docsOnly, spineOnly);
+        return null;
     }
 
     /// <summary>Reads a secret (token or passphrase) from stdin: masked when a TTY (so it never lands in

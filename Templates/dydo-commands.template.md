@@ -788,6 +788,16 @@ dydo notion sync --docs-only --parent-page <scratch-page-id>
 dydo notion sync --spine-only
 ```
 
+### dydo notion reset
+
+Wipe the tracked Notion databases and recreate them fresh from the sync model. Unlike `dydo notion sync` — a forward, create-only reconcile that never renames a database, restores a deleted view, or reverts a manual layout edit — a reset makes the live board match the model again regardless of manual mess. It archives (trashes) the tracked databases by their recorded ids, clears the provision state, then re-runs the normal spine provision, re-minting every database and re-pushing every repo doc. The archive happens **before** the state is cleared so the old databases are never orphaned into duplicates. Notion has no hard delete, so the wipe archives to Notion Trash — you can restore from there if needed. This is destructive to board data, so it confirms interactively first (pass `--yes` to skip). Use `--dry-run` to print the archive + recreate plan without touching Notion, and `--parent-page <page-id>` to recreate under an explicit page (e.g. a throwaway scratch workspace). If a reset is interrupted mid-run, re-run `dydo notion reset` (it is idempotent) rather than `dydo notion sync` — sync would try to reuse an already-archived database.
+
+```bash
+dydo notion reset --dry-run
+dydo notion reset
+dydo notion reset --yes --parent-page <scratch-page-id>
+```
+
 ---
 
 ## Model Commands

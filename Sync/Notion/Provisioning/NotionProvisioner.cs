@@ -34,6 +34,11 @@ public sealed class NotionProvisioner
     public static string PathFor(string dydoRoot) =>
         Path.Combine(dydoRoot, "_system", ".local", "notion", "provision.json");
 
+    /// <summary>Every recorded database, straight from the state file — the source of truth for what
+    /// <c>dydo notion reset</c> must archive, independent of the current model (a type dropped from the model
+    /// is still tracked and must still be wiped). Returns empty when nothing has been provisioned.</summary>
+    public static IReadOnlyList<NotionProvisionedType> LoadTracked(string statePath) => Load(statePath).Types;
+
     /// <summary>The recorded, still-valid ids for a type, or null if it must be (re)created.</summary>
     public NotionProvisionedType? Lookup(string objectType) =>
         _state.TryGetValue(objectType, out var rec) && StillValid(rec) ? rec : null;

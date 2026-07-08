@@ -99,6 +99,7 @@ public static class HelpCommand
         Console.WriteLine("  notion connect         Store a Notion integration token locally");
         Console.WriteLine("  notion reveal-token    Print the stored Notion token (guarded)");
         Console.WriteLine("  notion sync            Reconcile dydo docs with a Notion workspace");
+        Console.WriteLine("  notion reset           Wipe the tracked databases and recreate them from the model");
         Console.WriteLine();
         Console.WriteLine("Model Commands:");
         Console.WriteLine("  model cap <model>      Rebind an unavailable model's tiers to a fallback");

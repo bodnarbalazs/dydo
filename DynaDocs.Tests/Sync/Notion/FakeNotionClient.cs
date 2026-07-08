@@ -22,6 +22,10 @@ public sealed class FakeNotionClient : INotionClient
     public List<string> DiscoverableDataSources { get; } = [];
     public Dictionary<string, NotionDatabase> Databases { get; } = new();
     public List<NotionDatabaseCreateRequest> CreatedDatabases { get; } = [];
+
+    /// <summary>Database ids passed to <see cref="ArchiveDatabase"/>, in call order — lets a reset test assert
+    /// the tracked databases were trashed before the reprovision minted fresh ones.</summary>
+    public List<string> ArchivedDatabases { get; } = [];
     public List<(string DataSourceId, NotionDataSourceUpdateRequest Request)> DataSourceUpdates { get; } = [];
     public List<NotionViewCreateRequest> CreatedViews { get; } = [];
 
@@ -180,6 +184,18 @@ public sealed class FakeNotionClient : INotionClient
                 schema[name] = body;
             }
         }
+    }
+
+    /// <summary>When true, <see cref="ArchiveDatabase"/> throws — drives the reset Notion-API-error path.</summary>
+    public bool FailArchiveDatabase { get; set; }
+
+    // Records the archive; the database stays retrievable, mirroring real Notion (a trashed database returns
+    // in_trash: true, it does not 404) — which is exactly why reset must clear provision state to force a fresh mint.
+    public void ArchiveDatabase(string databaseId)
+    {
+        if (FailArchiveDatabase)
+            throw new NotionApiException(500, "simulated archive failure");
+        ArchivedDatabases.Add(databaseId);
     }
 
     public void CreateView(NotionViewCreateRequest request)

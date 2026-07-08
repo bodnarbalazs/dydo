@@ -346,6 +346,7 @@ public class NotionSyncServiceTests : IDisposable
         public NotionDataSource RetrieveDataSource(string dataSourceId) => throw new NotionApiException(500, "boom");
         public NotionDatabase CreateDatabase(NotionDatabaseCreateRequest request) => throw new NotionApiException(429, "rate limited");
         public void UpdateDataSource(string dataSourceId, NotionDataSourceUpdateRequest request) { }
+        public void ArchiveDatabase(string databaseId) { }
         public void CreateView(NotionViewCreateRequest request) { }
         public IReadOnlyList<string> ListViewIds(string databaseId) => [];
         public void DeleteView(string viewId) { }

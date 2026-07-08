@@ -196,6 +196,27 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertStderrContains("Cannot specify both --codex and --claude");
     }
 
+    [Fact]
+    public async Task Dispatch_LaunchExecutableResolutionFailure_FailsBeforeMutatingTarget()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        var claim = await ClaimAgentWithHostAsync("Adele", "codex");
+        claim.AssertSuccess();
+
+        TerminalLauncher.ExecutableResolverOverride = host =>
+            throw new InvalidOperationException($"{host} WindowsApps alias is not launchable");
+
+        var result = await DispatchLaunchedAsync("code-writer", "codex-launch-fails", "Brief",
+            to: "Brian", autoClose: true);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Cannot launch codex");
+        Assert.Empty(Directory.GetFiles(Path.Combine(TestDir, "dydo", "agents", "Brian", "inbox"), "*.md"));
+        var brianState = Path.Combine(TestDir, "dydo", "agents", "Brian", "state.md");
+        if (File.Exists(brianState))
+            Assert.DoesNotContain("status: dispatched", File.ReadAllText(brianState));
+    }
+
     #endregion
 
     #region --to Error Cases

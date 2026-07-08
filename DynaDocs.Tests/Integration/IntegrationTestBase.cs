@@ -25,6 +25,7 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextReader _originalIn;
     private readonly IProcessStarter? _originalTerminalLauncherStarter;
     private readonly Func<string, int, int?>? _originalFindAncestorOverride;
+    private readonly Func<string, string>? _originalExecutableResolverOverride;
 
     protected IntegrationTestBase()
     {
@@ -41,9 +42,15 @@ public abstract class IntegrationTestBase : IDisposable
         _originalIn = Console.In;
         _originalTerminalLauncherStarter = TerminalLauncher.ProcessStarterOverride;
         _originalFindAncestorOverride = ProcessUtils.FindAncestorProcessOverride;
+        _originalExecutableResolverOverride = TerminalLauncher.ExecutableResolverOverride;
 
         // Prevent tests from launching real terminals or browsers
         TerminalLauncher.ProcessStarterOverride = new NoOpProcessStarter();
+
+        // Pin launch-host resolution to the bare name so dispatch arguments are deterministic
+        // regardless of whether claude/codex happen to be installed on the test host (#227).
+        // Without this, resolution finds claude on a developer machine but not in CI. Reset in Dispose.
+        TerminalLauncher.ExecutableResolverOverride = host => host;
 
         // Pin the claude-ancestor lookup to this test process so .session.ClaimedPid stamped
         // during claim, and AgentRegistry.IsOwnedByCaller's check downstream, both resolve
@@ -70,6 +77,7 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetIn(_originalIn);
         TerminalLauncher.ProcessStarterOverride = _originalTerminalLauncherStarter;
         ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
+        TerminalLauncher.ExecutableResolverOverride = _originalExecutableResolverOverride;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))

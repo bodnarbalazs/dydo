@@ -44,13 +44,14 @@ public static class WatchdogService
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this instead of TerminalLauncher.LaunchResumeTerminal.
-    /// Test hook — receives (agentName, sessionId, workingDirectory, windowName, useTab,
-    /// worktreeId, mainProjectRoot), returns the (faked) launched PID. The worktreeId/
+    /// Test hook — receives (agentName, sessionId, host, workingDirectory, windowName, useTab,
+    /// worktreeId, mainProjectRoot), returns the (faked) launched PID. The host is the resumed
+    /// agent's launch host (claude/codex) so a crashed Codex agent resumes as Codex (#0231). The worktreeId/
     /// mainProjectRoot pair carries the worktree context so the resume launcher can wrap
     /// the resumed claude in the same Set-Location / init-settings / cleanup envelope as
     /// the original dispatch (Finding #4 of agent-crashes inquisition; closes #0175).
     /// </summary>
-    internal static Func<string, string, string?, string?, bool, string?, string?, int>? LaunchResumeOverride { get; set; }
+    internal static Func<string, string, string, string?, string?, bool, string?, string?, int>? LaunchResumeOverride { get; set; }
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this cap instead of ResumeAttemptsCap.
@@ -481,6 +482,7 @@ public static class WatchdogService
     private sealed record ResumeContext(
         string AgentName,
         string SessionId,
+        string Host,
         int ClaimedPid,
         DateTime? LastResumeAt,
         int Attempts,
@@ -567,8 +569,8 @@ public static class WatchdogService
         var mainProjectRoot = projectRoot;
 
         var launchedPid = LaunchResumeOverride != null
-            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot)
-            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot);
+            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, ctx.Host, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot)
+            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot, ctx.Host);
 
         // PID > 1 only — 0/1 mean launch failed or returned an init-like sentinel.
         // Leaving LaunchedPid null in that case lets the next tick's liveness check
@@ -613,7 +615,7 @@ public static class WatchdogService
             if (lastResumeAt.HasValue && DateTime.UtcNow - lastResumeAt.Value < gate)
                 return null;
 
-            return new ResumeContext(agentName, session.SessionId, pid, lastResumeAt,
+            return new ResumeContext(agentName, session.SessionId, TerminalLauncher.NormalizeLaunchHost(session.Host), pid, lastResumeAt,
                 attempts, preResumePid, launchedPid, windowId, cap, gate);
         }
         finally

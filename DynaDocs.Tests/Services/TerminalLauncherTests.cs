@@ -6,8 +6,15 @@ using DynaDocs.Services;
 using Xunit;
 
 [Collection("ProcessUtils")]
-public class TerminalLauncherTests
+public class TerminalLauncherTests : IDisposable
 {
+    // Pin launch-host resolution to the bare name so argument-format assertions are deterministic
+    // regardless of whether claude/codex are installed on the test host (#227). Resolution tests
+    // that exercise the real PATH search clear this override explicitly.
+    public TerminalLauncherTests() => TerminalLauncher.ExecutableResolverOverride = host => host;
+
+    public void Dispose() => TerminalLauncher.ExecutableResolverOverride = null;
+
     #region Argument Generation Tests
 
     [Theory]
@@ -140,6 +147,206 @@ public class TerminalLauncherTests
         Assert.Contains("codex \\\"Adele --inbox\\\"", args);
         Assert.DoesNotContain("claude \\\"Adele --inbox\\\"", args);
     }
+
+    #endregion
+
+    #region Executable Resolution Tests (#227)
+
+    // A rooted path for the running OS (so Path.IsPathRooted agrees) with a space, to also
+    // exercise the quoting the child terminal needs for a resolved path like "C:\Program Files\...".
+    private static string ResolvedHostPath =>
+        OperatingSystem.IsWindows() ? @"C:\Program Files\codex\codex.exe" : "/opt/my tools/codex";
+
+    [Fact]
+    public void GetLaunchExecutable_ResolvesToAbsolutePath_WhenHostOnPath()
+    {
+        TerminalLauncher.ExecutableResolverOverride = null; // exercise the real PATH search
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            // On Windows only PATHEXT extensions are launchable (CreateProcess/where.exe semantics),
+            // so the resolvable executable carries an extension; on Unix it is extensionless.
+            var exe = OperatingSystem.IsWindows()
+                ? Path.Combine(dir, "codex.cmd")
+                : Path.Combine(dir, "codex");
+            File.WriteAllText(exe, "");
+            Environment.SetEnvironmentVariable("PATH", dir);
+            if (OperatingSystem.IsWindows())
+                Environment.SetEnvironmentVariable("PATHEXT", ".CMD");
+
+            // Windows resolves the extension in PATHEXT's casing; File.Exists is case-insensitive.
+            Assert.Equal(exe, TerminalLauncher.GetLaunchExecutable("codex"),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Environment.SetEnvironmentVariable("PATHEXT", originalPathExt);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_WindowsSkipsExtensionlessShim_ResolvesToCmdSibling()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        TerminalLauncher.ExecutableResolverOverride = null; // exercise the real PATH search
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            // npm ships an extensionless sh shim alongside the launchable .cmd in its global bin dir.
+            // The extensionless file is a silent no-op under PowerShell's call operator, so resolution
+            // must skip it and return the .cmd sibling.
+            File.WriteAllText(Path.Combine(dir, "codex"), "");
+            var cmd = Path.Combine(dir, "codex.cmd");
+            File.WriteAllText(cmd, "");
+            Environment.SetEnvironmentVariable("PATH", dir);
+            Environment.SetEnvironmentVariable("PATHEXT", ".CMD");
+
+            Assert.Equal(cmd, TerminalLauncher.GetLaunchExecutable("codex"),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Environment.SetEnvironmentVariable("PATHEXT", originalPathExt);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_FallsBackToBareName_WhenHostNotOnPath()
+    {
+        TerminalLauncher.ExecutableResolverOverride = null; // exercise the real PATH search
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir); // empty — codex not present
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", dir);
+
+            Assert.Equal("codex", TerminalLauncher.GetLaunchExecutable("codex"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_WindowsCodexSkipsWindowsAppsAlias_WhenLaunchableCliAlsoOnPath()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        TerminalLauncher.ExecutableResolverOverride = null;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
+        var root = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        var aliasDir = Path.Combine(root, "Program Files", "WindowsApps",
+            "OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0", "app", "resources");
+        var cliDir = Path.Combine(root, "tools");
+        Directory.CreateDirectory(aliasDir);
+        Directory.CreateDirectory(cliDir);
+        try
+        {
+            File.WriteAllText(Path.Combine(aliasDir, "codex.exe"), "");
+            var launchable = Path.Combine(cliDir, "codex.exe");
+            File.WriteAllText(launchable, "");
+            Environment.SetEnvironmentVariable("PATH", aliasDir + Path.PathSeparator + cliDir);
+            Environment.SetEnvironmentVariable("PATHEXT", ".EXE");
+
+            Assert.Equal(launchable, TerminalLauncher.GetLaunchExecutable("codex"),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Environment.SetEnvironmentVariable("PATHEXT", originalPathExt);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_WindowsCodexOnlyWindowsAppsAlias_ThrowsExplicitly()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        TerminalLauncher.ExecutableResolverOverride = null;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
+        var root = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        var aliasDir = Path.Combine(root, "Program Files", "WindowsApps",
+            "OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0", "app", "resources");
+        Directory.CreateDirectory(aliasDir);
+        try
+        {
+            File.WriteAllText(Path.Combine(aliasDir, "codex.exe"), "");
+            Environment.SetEnvironmentVariable("PATH", aliasDir);
+            Environment.SetEnvironmentVariable("PATHEXT", ".EXE");
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                TerminalLauncher.GetLaunchExecutable("codex"));
+            Assert.Contains("WindowsApps alias", ex.Message);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Environment.SetEnvironmentVariable("PATHEXT", originalPathExt);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetWindowsArguments_ResolvedPath_UsesCallOperatorWithQuotedPath()
+    {
+        TerminalLauncher.ExecutableResolverOverride = _ => ResolvedHostPath;
+
+        var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
+
+        Assert.Contains($"& '{ResolvedHostPath}' 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_BareName_DoesNotUseCallOperator()
+    {
+        // Bare fallback (identity resolver) — invoked directly, no call operator needed.
+        var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
+
+        Assert.Contains("codex 'Adele --inbox'", args);
+        Assert.DoesNotContain("& 'codex'", args);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_ResolvedPath_IsSingleQuoted()
+    {
+        TerminalLauncher.ExecutableResolverOverride = _ => ResolvedHostPath;
+
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "codex");
+
+        Assert.Contains($"'{ResolvedHostPath}' 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_ResolvedPath_IsSingleQuoted()
+    {
+        TerminalLauncher.ExecutableResolverOverride = _ => ResolvedHostPath;
+
+        var args = TerminalLauncher.GetMacArguments("Adele", host: "codex");
+
+        Assert.Contains($"'{ResolvedHostPath}' \\\"Adele --inbox\\\"", args);
+    }
+
+    #endregion
+
+    #region Argument Generation Tests (continued)
 
     [Fact]
     public void GetWindowsArguments_ExactFormat()
@@ -2720,6 +2927,17 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void GetWindowsResumeArguments_CodexHost_UsesCodexResume()
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc", host: "codex");
+
+        // Codex CLI has no root --resume flag; resuming is the `codex resume <id> [prompt]`
+        // subcommand (developers.openai.com/codex/cli/reference). #0231.
+        Assert.Contains("codex resume 'sess-abc'", args);
+        Assert.DoesNotContain("--resume", args);
+    }
+
+    [Fact]
     public void GetLinuxResumeArguments_DoesNotSpawnDydoWait()
     {
         var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc");
@@ -2729,12 +2947,34 @@ public class TerminalLauncherTests
     }
 
     [Fact]
+    public void GetLinuxResumeArguments_CodexHost_UsesCodexResume()
+    {
+        var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc", host: "codex");
+
+        // Codex CLI has no root --resume flag; resuming is the `codex resume <id> [prompt]`
+        // subcommand (developers.openai.com/codex/cli/reference). #0231.
+        Assert.Contains("codex resume 'sess-abc'", args);
+        Assert.DoesNotContain("--resume", args);
+    }
+
+    [Fact]
     public void GetMacResumeArguments_DoesNotSpawnDydoWait()
     {
         var args = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc");
 
         Assert.DoesNotContain("(dydo wait", args);
         Assert.Contains("claude --resume", args);
+    }
+
+    [Fact]
+    public void GetMacResumeArguments_CodexHost_UsesCodexResume()
+    {
+        var args = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc", host: "codex");
+
+        // Codex CLI has no root --resume flag; resuming is the `codex resume <id> [prompt]`
+        // subcommand (developers.openai.com/codex/cli/reference). #0231.
+        Assert.Contains("codex resume", args);
+        Assert.DoesNotContain("--resume", args);
     }
 
     [Fact]

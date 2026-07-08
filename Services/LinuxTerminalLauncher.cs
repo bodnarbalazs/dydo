@@ -11,7 +11,10 @@ public static class LinuxTerminalLauncher
         var args = baseArgs;
         var executable = TerminalLauncher.GetLaunchExecutable(host);
         if (executable != "claude")
-            args = args.Replace("claude ", $"{executable} ");
+        {
+            var invocation = TerminalLauncher.ShellExecutableToken(executable) + " ";
+            args = args.Replace("claude ", invocation);
+        }
 
         args = args.Replace("unset CLAUDECODE", $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE");
 
@@ -59,16 +62,18 @@ public static class LinuxTerminalLauncher
     /// (Finding #4; closes #0175).
     /// </summary>
     internal static string BuildResumeBashCommand(string agentName, string sessionId,
-        string? worktreeId = null, string? mainProjectRoot = null)
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
         var escapedSession = sessionId.Replace("'", "'\\''");
         var escapedPrompt = TerminalLauncher.BashSingleQuoteEscape(TerminalLauncher.ResumeContinuationPrompt);
+        var executable = TerminalLauncher.GetLaunchExecutable(host);
+        var executableToken = TerminalLauncher.ShellExecutableToken(executable);
         // #0207: no shell-spawned `dydo wait` re-arm — it is a sibling of `claude`, never
         // a descendant, so it cannot pass the F11 ownership gate and failed silently on
         // every resume. How a resumed agent arms its own wait is handled separately
         // (#0207 part 2).
         var resumeBody = $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE; " +
-                         $"claude --resume '{escapedSession}' '{escapedPrompt}'; " +
+                         $"{executableToken} {TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'; " +
                          $"printf '\\e[?1004l'";
 
         if (worktreeId != null && mainProjectRoot != null)
@@ -90,12 +95,13 @@ public static class LinuxTerminalLauncher
     /// parallel 9-arm switch (CRAP) that mirrors the existing config table.
     /// </summary>
     public static string GetResumeArguments(string terminalName, string agentName, string sessionId,
-        string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
+        string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
         var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
         return SwapInResumeBody(config.GetArguments(agentName, workingDirectory),
-            BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot));
+            BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot, host));
     }
 
     private static string SwapInResumeBody(string baseArgs, string resumeBashBody)
@@ -113,9 +119,10 @@ public static class LinuxTerminalLauncher
 
     public static int TryLaunchResume(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
         string agentName, string sessionId, string? workingDirectory = null,
-        string? worktreeId = null, string? mainProjectRoot = null)
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
-        var resumeBody = BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot);
+        var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
+        var resumeBody = BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot, launchHost);
         foreach (var terminal in terminals)
         {
             try

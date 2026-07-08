@@ -16,6 +16,7 @@ public static class MacTerminalLauncher
         var agentExport = $"export DYDO_AGENT={agentName}; ";
         var windowExport = windowName != null ? $"export DYDO_WINDOW={windowName}; " : "";
         var executable = TerminalLauncher.GetLaunchExecutable(host);
+        var executableToken = TerminalLauncher.ShellExecutableToken(executable);
 
         string wtSetup = "", wtCleanup = "";
         if (worktreeId != null)
@@ -29,7 +30,7 @@ public static class MacTerminalLauncher
             wtCleanup = $"; cd '{TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot)}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
-        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executable} \\\"{agentName} --inbox\\\"{TerminalReset}";
+        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executableToken} \\\"{agentName} --inbox\\\"{TerminalReset}";
         var postCheck = wtCleanup + (autoClose ? $"; {TerminalLauncher.BashPostClaudeCheck(agentName)}" : "");
 
         return (shellCommand, postCheck);
@@ -44,12 +45,14 @@ public static class MacTerminalLauncher
     }
 
     private static (string shellCommand, string postCheck) BuildResumeShellComponents(string agentName, string sessionId,
-        string? workingDirectory, string? worktreeId = null, string? mainProjectRoot = null)
+        string? workingDirectory, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var agentExport = $"export DYDO_AGENT={agentName}; ";
         var escapedSession = sessionId.Replace("\\\"", "\\\\\\\"");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("\"", "\\\"");
+        var executable = TerminalLauncher.GetLaunchExecutable(host);
+        var executableToken = TerminalLauncher.ShellExecutableToken(executable);
 
         // Symmetry with the BuildShellComponents dispatch path (#0175): worktree
         // setup recreates junctions + init-settings; cleanup runs on tab exit so
@@ -67,23 +70,24 @@ public static class MacTerminalLauncher
         // every resume. How a resumed agent arms its own wait is handled separately
         // (#0207 part 2).
         var shellCommand = $"{cdPrefix}{agentExport}{wtSetup}unset CLAUDECODE; " +
-                           $"claude --resume \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
+                           $"{executableToken} {TerminalLauncher.ResumeArgumentToken(host)} \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
         return (shellCommand, wtCleanup);
     }
 
     public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
-        string? worktreeId = null, string? mainProjectRoot = null)
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
-        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
     public static int LaunchResume(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string sessionId, string? workingDirectory = null,
         string? windowName = null, bool useTab = false,
-        string? worktreeId = null, string? mainProjectRoot = null)
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
-        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
+        var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost);
 
         var runningTerminal = terminalDetector.GetRunningTerminal();
         var useITerm = runningTerminal == "iTerm"

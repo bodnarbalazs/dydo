@@ -18,31 +18,27 @@ public static class DispatchService
         var sessionId = registry.GetSessionContext();
         var currentHuman = registry.GetCurrentHuman();
 
-        if (opts.NoLaunch)
+        if (!registry.TryGetCurrentOwnedAgent(sessionId, out var sender, out var ownershipError))
         {
-            var nudgeError = CheckNoLaunchNudge(registry, sessionId, opts.Task);
-            if (nudgeError != null)
-            {
-                ConsoleOutput.WriteError(nudgeError);
-                return ExitCodes.ToolError;
-            }
-        }
-        else if (!opts.AutoClose && !(registry.Config?.Dispatch?.AutoClose ?? false))
-        {
-            // A launched dispatch with no effective auto-close leaves the target's terminal
-            // open after it releases. --no-launch dispatches launch nothing, so they're exempt.
-            var nudgeError = CheckAutoCloseNudge(registry, sessionId, opts.Task);
-            if (nudgeError != null)
-            {
-                ConsoleOutput.WriteError(nudgeError);
-                return ExitCodes.ToolError;
-            }
+            ConsoleOutput.WriteError(ownershipError!);
+            return ExitCodes.ToolError;
         }
 
-        var sender = registry.GetCurrentAgent(sessionId);
+        var nudgeError = CheckDispatchNudges(registry, sender, opts);
+        if (nudgeError != null)
+        {
+            ConsoleOutput.WriteError(nudgeError);
+            return ExitCodes.ToolError;
+        }
+
         var senderName = sender?.Name ?? "Unknown";
         var origin = GetOriginForTask(registry, sender, opts.Task) ?? senderName;
         var launchHost = ResolveLaunchHost(registry, sender, opts.HostOverride);
+        if (!opts.NoLaunch && !CanResolveLaunchExecutable(launchHost, out var launchError))
+        {
+            ConsoleOutput.WriteError(launchError!);
+            return ExitCodes.ToolError;
+        }
 
         var (targetAgentName, targetError) = SelectTargetAgent(registry, opts, currentHuman, senderName, origin);
         if (targetError != null)
@@ -57,6 +53,21 @@ public static class DispatchService
         return ExitCodes.Success;
     }
 
+    // Both nudges are block-once soft-blocks: they return a message on the first bare dispatch
+    // and null on the re-run. --no-launch launches nothing, so it only gets the no-launch nudge;
+    // a launched dispatch with no effective auto-close leaves the target's terminal open after
+    // it releases, so it gets the auto-close nudge instead.
+    private static string? CheckDispatchNudges(AgentRegistry registry, AgentState? sender, DispatchOptions opts)
+    {
+        if (opts.NoLaunch)
+            return CheckNoLaunchNudge(registry, sender, opts.Task);
+
+        if (!opts.AutoClose && !(registry.Config?.Dispatch?.AutoClose ?? false))
+            return CheckAutoCloseNudge(registry, sender, opts.Task);
+
+        return null;
+    }
+
     internal static string ResolveLaunchHost(AgentRegistry registry, AgentState? sender, string? hostOverride)
     {
         var normalizedOverride = AgentSession.NormalizeHost(hostOverride);
@@ -68,6 +79,21 @@ public static class DispatchService
             : AgentSession.UnknownHost;
 
         return currentHost is "claude" or "codex" ? currentHost : "claude";
+    }
+
+    private static bool CanResolveLaunchExecutable(string launchHost, out string? error)
+    {
+        error = null;
+        try
+        {
+            _ = TerminalLauncher.GetLaunchExecutable(launchHost);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"Cannot launch {launchHost}: {ex.Message}";
+            return false;
+        }
     }
 
     private static (string? agentName, string? error) SelectTargetAgent(
@@ -220,9 +246,8 @@ public static class DispatchService
         return pid;
     }
 
-    private static string? CheckNoLaunchNudge(AgentRegistry registry, string? sessionId, string task)
+    private static string? CheckNoLaunchNudge(AgentRegistry registry, AgentState? sender, string task)
     {
-        var sender = registry.GetCurrentAgent(sessionId);
         if (sender == null) return null;
 
         var senderWorkspace = registry.GetAgentWorkspace(sender.Name);
@@ -248,9 +273,8 @@ public static class DispatchService
     /// next run of the same command clears it and proceeds, preserving the deliberate
     /// keep-terminal-open case.
     /// </summary>
-    private static string? CheckAutoCloseNudge(AgentRegistry registry, string? sessionId, string task)
+    private static string? CheckAutoCloseNudge(AgentRegistry registry, AgentState? sender, string task)
     {
-        var sender = registry.GetCurrentAgent(sessionId);
         if (sender == null) return null;
 
         var senderWorkspace = registry.GetAgentWorkspace(sender.Name);

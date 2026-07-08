@@ -1428,7 +1428,7 @@ public class WatchdogServiceTests : IDisposable
         WriteResumeAgentSession(dydoRoot, "Adele", "sess-live", live.Id);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1446,12 +1446,30 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         var calls = new List<(string agent, string sessionId)>();
-        WatchdogService.LaunchResumeOverride = (a, s, _, _, _, _, _) => { calls.Add((a, s)); return 12345; };
+        WatchdogService.LaunchResumeOverride = (a, s, _, _, _, _, _, _) => { calls.Add((a, s)); return 12345; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
         Assert.Single(calls);
         Assert.Equal(("Adele", "sess-abc"), calls[0]);
+        Assert.Equal(1, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void PollAndResumeForAgent_CodexSession_PassesCodexHostToLauncher()
+    {
+        var dydoRoot = ResumeDydoRoot();
+        WriteResumeAgentState(dydoRoot, "Adele", status: "working", resumeAttempts: 0);
+        WriteResumeAgentSession(dydoRoot, "Adele", "sess-codex", 99999999, host: "codex");
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        WatchdogService.ResumeAttemptsCapOverride = 3;
+
+        string? capturedHost = null;
+        WatchdogService.LaunchResumeOverride = (_, _, h, _, _, _, _, _) => { capturedHost = h; return 12345; };
+
+        WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
+
+        Assert.Equal("codex", capturedHost);
         Assert.Equal(1, ReadResumeAttempts(dydoRoot, "Adele"));
     }
 
@@ -1465,7 +1483,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1482,7 +1500,7 @@ public class WatchdogServiceTests : IDisposable
         ProcessUtils.IsProcessRunningOverride = _ => false;
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1497,7 +1515,7 @@ public class WatchdogServiceTests : IDisposable
         // No .session file written.
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1526,7 +1544,7 @@ public class WatchdogServiceTests : IDisposable
         WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", 99999998);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) =>
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) =>
         {
             launchCount++;
             // Simulate the resumed claude refreshing its PID before the next poll —
@@ -1556,7 +1574,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         string? capturedWorkingDirectory = null;
-        WatchdogService.LaunchResumeOverride = (_, _, wd, _, _, _, _) => { capturedWorkingDirectory = wd; return 12345; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, wd, _, _, _, _) => { capturedWorkingDirectory = wd; return 12345; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1583,7 +1601,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         string? capturedWorkingDirectory = null;
-        WatchdogService.LaunchResumeOverride = (_, _, wd, _, _, _, _) => { capturedWorkingDirectory = wd; return 12345; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, wd, _, _, _, _) => { capturedWorkingDirectory = wd; return 12345; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1605,7 +1623,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1628,7 +1646,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1652,7 +1670,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1675,7 +1693,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1699,7 +1717,7 @@ public class WatchdogServiceTests : IDisposable
 
         string? capturedWindowName = null;
         var capturedUseTab = false;
-        WatchdogService.LaunchResumeOverride = (_, _, _, w, t, _, _) =>
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, w, t, _, _) =>
         {
             capturedWindowName = w;
             capturedUseTab = t;
@@ -1725,7 +1743,7 @@ public class WatchdogServiceTests : IDisposable
 
         string? capturedWindowName = "sentinel";
         var capturedUseTab = true;
-        WatchdogService.LaunchResumeOverride = (_, _, _, w, t, _, _) =>
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, w, t, _, _) =>
         {
             capturedWindowName = w;
             capturedUseTab = t;
@@ -1748,7 +1766,7 @@ public class WatchdogServiceTests : IDisposable
         WriteResumeAgentSession(dydoRoot, "Adele", "sess-abc", claimedPid: null);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1768,7 +1786,7 @@ public class WatchdogServiceTests : IDisposable
         File.WriteAllText(sessionPath, "{not valid json");
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1787,7 +1805,7 @@ public class WatchdogServiceTests : IDisposable
         File.WriteAllText(sessionPath, "null");
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1829,7 +1847,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1856,7 +1874,7 @@ public class WatchdogServiceTests : IDisposable
 
         string? capturedWorktreeId = null;
         string? capturedMainProjectRoot = null;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, wt, mr) =>
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, wt, mr) =>
         {
             capturedWorktreeId = wt;
             capturedMainProjectRoot = mr;
@@ -1886,7 +1904,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         string? capturedWorktreeId = "sentinel";
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, wt, _) =>
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, wt, _) =>
         {
             capturedWorktreeId = wt;
             return 12345;
@@ -1917,7 +1935,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
         string? capturedWorkingDirectory = null;
-        WatchdogService.LaunchResumeOverride = (_, _, wd, _, _, _, _) => { capturedWorkingDirectory = wd; return 12345; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, wd, _, _, _, _) => { capturedWorkingDirectory = wd; return 12345; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1947,7 +1965,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -1976,7 +1994,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -2003,7 +2021,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -2023,7 +2041,7 @@ public class WatchdogServiceTests : IDisposable
         ProcessUtils.IsProcessRunningOverride = _ => false;
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => 54321;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => 54321;
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -2045,7 +2063,7 @@ public class WatchdogServiceTests : IDisposable
         ProcessUtils.IsProcessRunningOverride = _ => false;
         WatchdogService.ResumeAttemptsCapOverride = 3;
 
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => 0;
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -2072,7 +2090,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = 3;
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => 0;
 
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
 
@@ -2103,7 +2121,7 @@ public class WatchdogServiceTests : IDisposable
         ProcessUtils.IsProcessRunningOverride = _ => false;
         WatchdogService.ResumeAttemptsCapOverride = 3;
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => 0;
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => 0;
 
         // Two consecutive polls — second poll must NOT re-emit failed or fire a gave_up.
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
@@ -2139,7 +2157,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeWarmupGateOverride = TimeSpan.FromSeconds(60);
 
         var launchCount = 0;
-        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _) => { launchCount++; return 0; };
+        WatchdogService.LaunchResumeOverride = (_, _, _, _, _, _, _, _) => { launchCount++; return 0; };
 
         // Three polls — first emits gave_up, the next two must be silent.
         WatchdogService.PollAndResumeCrashedAgents(dydoRoot);
@@ -2432,12 +2450,13 @@ public class WatchdogServiceTests : IDisposable
             """);
     }
 
-    private void WriteResumeAgentSession(string dydoRoot, string agentName, string sessionId, int? claimedPid)
+    private void WriteResumeAgentSession(string dydoRoot, string agentName, string sessionId, int? claimedPid,
+        string host = "claude")
     {
         var agentDir = Path.Combine(dydoRoot, "agents", agentName);
         Directory.CreateDirectory(agentDir);
         var pidJson = claimedPid.HasValue ? claimedPid.Value.ToString() : "null";
-        var json = $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"{sessionId}\",\"Claimed\":\"{DateTime.UtcNow:o}\",\"ClaimedPid\":{pidJson}}}";
+        var json = $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"{sessionId}\",\"Host\":\"{host}\",\"Claimed\":\"{DateTime.UtcNow:o}\",\"ClaimedPid\":{pidJson}}}";
         File.WriteAllText(Path.Combine(agentDir, ".session"), json);
     }
 

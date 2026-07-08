@@ -29,13 +29,138 @@ public class TerminalLauncher
     internal static string NormalizeLaunchHost(string? host) =>
         AgentSession.NormalizeHost(host) == "codex" ? "codex" : "claude";
 
-    internal static string GetLaunchExecutable(string? host) =>
-        NormalizeLaunchHost(host);
+    /// <summary>
+    /// When set, <see cref="GetLaunchExecutable"/> uses this instead of searching the
+    /// dispatcher's PATH. Test hook for deterministic resolution.
+    /// </summary>
+    internal static Func<string, string>? ExecutableResolverOverride { get; set; }
 
-    public static string GetClaudeCommand(string agentName)
+    /// <summary>
+    /// Resolves the launch host (claude/codex) to the absolute path of its executable on the
+    /// <em>dispatcher's</em> PATH. dydo inherits the user's interactive PATH, but the terminal it
+    /// spawns does not — so a bare 'codex' that resolves here fails with 'not recognized' in the
+    /// child (#227). Falls back to the bare name when the executable is not found, which keeps a
+    /// globally-installed host (e.g. claude) working.
+    /// </summary>
+    internal static string GetLaunchExecutable(string? host) =>
+        (ExecutableResolverOverride ?? ResolveOnPath)(NormalizeLaunchHost(host));
+
+    private static string ResolveOnPath(string command)
+    {
+        var pathVar = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathVar))
+            return command;
+
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        string[] extensions = isWindows
+            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".COM;.EXE;.BAT;.CMD")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+            : [];
+
+        var rejectedWindowsAppsCodex = false;
+        foreach (var dir in pathVar.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            // Only probe the extensionless name on Unix. On Windows CreateProcess/where.exe match
+            // PATHEXT extensions exclusively — an extensionless file (e.g. npm's `claude`/`codex` sh
+            // shim shipped alongside `.cmd`/`.ps1`) is not launchable and PowerShell's call operator
+            // silently no-ops on it, so returning it breaks every launch/resume.
+            if (!isWindows)
+            {
+                var directCandidate = Path.Combine(dir, command);
+                if (File.Exists(directCandidate))
+                    return directCandidate;
+            }
+
+            foreach (var ext in extensions)
+            {
+                var candidate = Path.Combine(dir, command + ext);
+                if (!File.Exists(candidate))
+                    continue;
+                if (IsRejectedWindowsCodexAlias(command, candidate))
+                {
+                    rejectedWindowsAppsCodex = true;
+                    continue;
+                }
+
+                return candidate;
+            }
+        }
+
+        if (rejectedWindowsAppsCodex)
+            throw new InvalidOperationException(
+                "Codex resolves only to the packaged WindowsApps alias, which cannot be launched from dydo terminals. " +
+                "Install a launchable Codex CLI on PATH or launch the agent manually.");
+
+        return command;
+    }
+
+    private static bool IsRejectedWindowsCodexAlias(string command, string candidate)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return false;
+        if (!string.Equals(command, "codex", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Reject any codex under a WindowsApps directory — covers both the Program Files
+        // packaged layout (…\WindowsApps\OpenAI.Codex_*\…\codex.exe) and the MSIX App Execution
+        // Alias on the default user PATH (%LOCALAPPDATA%\Microsoft\WindowsApps\codex.exe); neither
+        // is launchable from a dydo-spawned terminal.
+        var parts = candidate.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        for (var i = 0; i + 1 < parts.Length; i++)
+        {
+            if (string.Equals(parts[i], "WindowsApps", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string GetBareLaunchExecutable(string? host) => NormalizeLaunchHost(host);
+
+    private static string GetBareLaunchCommand(string agentName, string? host)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"claude \"{prompt}\"";
+        return $"{GetBareLaunchExecutable(host)} \"{prompt}\"";
+    }
+
+    /// <summary>
+    /// The continuation prompt used when the watchdog auto-resumes a crashed
+    /// host session. Identity is restored by the resumed conversation.
+    /// Verbatim from Decision 022.
+    /// </summary>
+    public const string ResumeContinuationPrompt =
+        "Your terminal tab crashed and you have been auto-resumed. " +
+        "Your dydo identity, role, and task are unchanged. " +
+        "Re-orient briefly from your most recent context and continue from where you left off.";
+
+    /// <summary>
+    /// The host-appropriate resume argument that precedes the session id. The Codex CLI has no
+    /// root-level <c>--resume</c> flag; resuming is the subcommand form <c>codex resume &lt;id&gt;
+    /// [prompt]</c> (developers.openai.com/codex/cli/reference). Emitting <c>--resume</c> for codex
+    /// fails with an unexpected-argument error and burns the watchdog's resume budget (#0231).
+    /// Claude uses the <c>--resume &lt;id&gt;</c> flag.
+    /// </summary>
+    internal static string ResumeArgumentToken(string? host) =>
+        NormalizeLaunchHost(host) == "codex" ? "resume" : "--resume";
+
+    private static string GetBareResumeCommand(string sessionId, string? host) =>
+        $"{GetBareLaunchExecutable(host)} {ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
+
+    public static string GetClaudeResumeCommand(string sessionId) =>
+        GetBareResumeCommand(sessionId, "claude");
+
+    internal static string ShellExecutableToken(string executable)
+    {
+        return Path.IsPathRooted(executable)
+            ? $"'{BashSingleQuoteEscape(executable)}'"
+            : executable;
+    }
+
+    internal static string PowerShellExecutableInvocation(string executable, string arguments)
+    {
+        return Path.IsPathRooted(executable)
+            ? $"& '{executable.Replace("'", "''")}' {arguments}"
+            : $"{executable} {arguments}";
     }
 
     public static string GetCodexCommand(string agentName)
@@ -44,24 +169,11 @@ public class TerminalLauncher
         return $"codex \"{prompt}\"";
     }
 
-    public static string GetLaunchCommand(string agentName, string? host)
+    public static string GetClaudeCommand(string agentName)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"{GetLaunchExecutable(host)} \"{prompt}\"";
+        return $"claude \"{prompt}\"";
     }
-
-    /// <summary>
-    /// The continuation prompt used when the watchdog auto-resumes a crashed
-    /// claude session. Identity-agnostic — claude already knows its dydo identity
-    /// from the resumed conversation. Verbatim from Decision 022.
-    /// </summary>
-    public const string ResumeContinuationPrompt =
-        "Your terminal tab crashed and you have been auto-resumed. " +
-        "Your dydo identity, role, and task are unchanged. " +
-        "Re-orient briefly from your most recent context and continue from where you left off.";
-
-    public static string GetClaudeResumeCommand(string sessionId) =>
-        $"claude --resume \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
 
     public static string GenerateWorktreeId(string taskName, string? parentWorktreeId = null)
     {
@@ -187,14 +299,14 @@ public class TerminalLauncher
     public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
         => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
 
-    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
-        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
+    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
 
-    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
-        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
+    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
 
-    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null)
-        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
+    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
 
     public static string GetITermTabScript(string shellCommand, string postCheck, string? windowId = null)
         => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck, windowId);
@@ -235,21 +347,24 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetLaunchCommand(agentName, launchHost)}");
+            Console.WriteLine($"  {GetBareLaunchCommand(agentName, launchHost)}");
             return 0;
         }
     }
 
     public static int LaunchResumeTerminal(string agentName, string sessionId, string? workingDirectory = null,
-        string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null)
+        string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
         return new TerminalLauncher(ProcessStarterOverride)
-            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot);
+            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, host);
     }
 
     public int LaunchResume(string agentName, string sessionId, string? workingDirectory = null,
-        string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null)
+        string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null,
+        string host = "claude")
     {
+        var launchHost = NormalizeLaunchHost(host);
         try
         {
             if (workingDirectory != null && !Directory.Exists(workingDirectory))
@@ -257,11 +372,11 @@ public class TerminalLauncher
                     $"Working directory no longer exists: {workingDirectory}");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot);
+                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, launchHost);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot);
+                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, launchHost);
 
-            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot);
+            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost);
             if (pid == 0)
                 throw new InvalidOperationException("No terminal found");
             return pid;
@@ -270,7 +385,7 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch resume terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetClaudeResumeCommand(sessionId)}");
+            Console.WriteLine($"  {GetBareResumeCommand(sessionId, launchHost)}");
             return 0;
         }
     }

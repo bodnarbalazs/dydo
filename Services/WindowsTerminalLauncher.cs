@@ -24,6 +24,7 @@ public static class WindowsTerminalLauncher
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
         var escapedPrompt = prompt.Replace("'", "''");
         var executable = TerminalLauncher.GetLaunchExecutable(host);
+        var launchInvocation = TerminalLauncher.PowerShellExecutableInvocation(executable, $"'{escapedPrompt}'");
         var postClaudeCheck = autoClose
             ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
             : "";
@@ -55,7 +56,7 @@ public static class WindowsTerminalLauncher
                        WorktreeCommand.GeneratePsJunctionScript(escapedRoot, isVariable: false) +
                        $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                        $"Start-Sleep -Seconds 1; " +
-                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+                       $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {launchInvocation}{TerminalReset}{postClaudeCheck} }} " +
                        $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
             }
 
@@ -65,7 +66,7 @@ public static class WindowsTerminalLauncher
                    WorktreeCommand.GeneratePsJunctionScript("$_wt_root.Path", isVariable: true) +
                    $"try {{ dydo worktree init-settings --main-root $_wt_root.Path }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +
-                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {launchInvocation}{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location $_wt_root; dydo worktree cleanup {worktreeId} --agent {agentName} }}\"";
         }
 
@@ -80,18 +81,21 @@ public static class WindowsTerminalLauncher
                    $"{setLocation}" +
                    $"try {{ dydo worktree init-settings --main-root '{escapedRoot}' }} catch {{ Write-Warning ('init-settings failed: ' + $_) }}; " +
                    $"Start-Sleep -Seconds 1; " +
-                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck} }} " +
+                   $"try {{ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {launchInvocation}{TerminalReset}{postClaudeCheck} }} " +
                    $"finally {{ Set-Location '{escapedRoot}'; dydo worktree cleanup {cleanupWorktreeId} --agent {agentName} }}\"";
         }
 
-        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {executable} '{escapedPrompt}'{TerminalReset}{postClaudeCheck}\"";
+        return $"{noExitFlag}-Command \"{agentEnv}{windowEnv}Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; {launchInvocation}{TerminalReset}{postClaudeCheck}\"";
     }
 
     public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
-        string? worktreeId = null, string? mainProjectRoot = null)
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
         var escapedSession = sessionId.Replace("'", "''");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
+        var executable = TerminalLauncher.GetLaunchExecutable(host);
+        var resumeInvocation = TerminalLauncher.PowerShellExecutableInvocation(
+            executable, $"{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'");
         // #0197 (F13): pin DYDO_AGENT first, then re-source profiles — same as GetArguments.
         var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; " + ProfileReSource;
         // #0207: no shell-spawned `dydo wait` re-arm here. Such a wait is a sibling of
@@ -99,7 +103,7 @@ public static class WindowsTerminalLauncher
         // it failed silently on every resume. How a resumed agent arms its own general
         // wait is handled separately (#0207 part 2).
         var resumeBody = $"Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue; " +
-                         $"claude --resume '{escapedSession}' '{escapedPrompt}'{TerminalReset}";
+                         $"{resumeInvocation}{TerminalReset}";
 
         // Symmetry with GetArguments worktree path (#0175): wrap the resume body in
         // Set-Location → junctions → init-settings → try/finally cleanup so the
@@ -123,9 +127,10 @@ public static class WindowsTerminalLauncher
 
     public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId,
         string? workingDirectory = null, string? windowName = null, bool useTab = false,
-        string? worktreeId = null, string? mainProjectRoot = null)
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
         var shell = ProcessUtils.ResolvePowerShell();
+        var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
 
         try
         {
@@ -143,7 +148,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -157,7 +162,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot),
+            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost),
             UseShellExecute = true
         };
         if (workingDirectory != null)

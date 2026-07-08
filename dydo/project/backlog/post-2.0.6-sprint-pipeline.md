@@ -47,6 +47,30 @@ each sprint gets its own planner → plan-review gate at execution time; nothing
    cap status, 0242/0243/0244 small ergonomics, flaky-test cluster (0119/0120/0135/0136/0137/
    0165), 0249 residue post-M1.
 
+## Parallel stress-test posture (balazs, 2026-07-08)
+
+His intent, verbatim in substance: once 2.0.6 lands and holds, **stress-test — run as many of
+these in parallel as possible**; use the DR-039 planning paradigm (plan → plan-review →
+green-lit rows), then "unleash codex to do the grunt work fast. No hours-long sprints."
+Consequences for how the plans get written:
+
+- **Parallelism is bought at plan time**: every plan must declare its full file footprint, and
+  the plan-review gate checks CROSS-SPRINT disjointness against the other in-flight sprints'
+  footprints, not just internal slice disjointness.
+- **Parallel-safe pairs today**: C1 ∥ H1 (disjoint code + mechanical debt), C1 ∥ M1's doc slices.
+  **Collision pairs**: C1's dispatch-validation files vs M1-S2a's command handlers (both under
+  Commands/) — resolvable by slicing, must be checked at plan review. A1 stays hard-serial
+  behind M1-S2a (vocab dependency).
+- **The junction investigation (M1-S2a) is the parallelism multiplier**: if the junction
+  machinery is confirmed dead and removed, PM-dir moves stop being in-branch-only and M1's
+  S2b–S5 open up. Prioritize that investigation INSIDE S2a's first hours.
+- **The global test gate stays the serial choke point**: parallel implementation, SEQUENCED
+  landings through the chief-of-staff (one merge-back at a time, full gates per landing). Wall
+  clock parallelizes; landing order does not.
+- **Hours-long sprints are a smell**: slices sized to one review round (DR-039 rubric), Codex
+  dispatch for implementation per the DR-037 addendum, workflows reserved for background QA.
+  If a sprint forecast exceeds ~1h wall-clock, split it or parallelize it at plan review.
+
 ## Campaigns (design round with balazs first, not yet sprints)
 
 - **Agent board & cockpit** *(post-M1; wants the Task DB)*: live Agent DB view, reverse

@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -11,34 +11,34 @@ Index of 2026-04-26 documentation.
 
 ## Contents
 
-- [Task: add-worktree-merge-self-merge-issue](./add-worktree-merge-self-merge-issue.md) - (No description)
-- [Task: autoclose-smoke-test-2](./autoclose-smoke-test-2.md) - (No description)
-- [Task: autoclose-smoke-test](./autoclose-smoke-test.md) - (No description)
-- [Task: co-think-session](./co-think-session.md) - (No description)
-- [Task: docs-guardrails-taxonomy](./docs-guardrails-taxonomy.md) - (No description)
-- [Task: docs-how-to-merge-worktrees-update](./docs-how-to-merge-worktrees-update.md) - (No description)
-- [Task: fix-0113-per-agent-clean-marker-removal](./fix-0113-per-agent-clean-marker-removal.md) - Review #0113 fix: extracted RemoveWorktreeMarkers helper in Services/WorkspaceCleaner.
-- [Task: fix-ci-xunit1031](./fix-ci-xunit1031.md) - Review fix-ci-xunit1031.
-- [Task: fix-reviewer-dispatch-allow-test-writer](./fix-reviewer-dispatch-allow-test-writer.md) - (No description)
-- [Task: fix-watchdog-anchor-regression](./fix-watchdog-anchor-regression.md) - def1fa4 anchored the watchdog on its immediate parent (the short-lived dydo dispatch CLI).
-- [Task: fix-worktree-merge-self-merge-redo-merge](./fix-worktree-merge-self-merge-redo-merge.md) - (No description)
-- [Task: guard-worktree-and-phantom-inbox-doc](./guard-worktree-and-phantom-inbox-doc.md) - (No description)
-- [Task: guard-worktree-and-phantom-inbox](./guard-worktree-and-phantom-inbox.md) - Fix #99 (HandleSearchTool worktree-allow), #100 (unanchored substring match), #101 (guard-system.
-- [Task: investigate-per-agent-clean-marker-leak](./investigate-per-agent-clean-marker-leak.md) - (No description)
-- [Task: investigate-reviewer-merger-guard](./investigate-reviewer-merger-guard.md) - (No description)
-- [Task: investigate-worktree-race-review-fixes](./investigate-worktree-race-review-fixes.md) - Follow-up on the `investigate-worktree-race` fix after reviewer Brian FAILED the first-round review.
-- [Task: investigate-worktree-race](./investigate-worktree-race.md) - PowerShell fails with `ERROR_DIRECTORY (0x8007010b)` / "Could not access starting directory" when a dispatched agent is launched in a worktree path...
-- [Task: issue-create-body-and-test-name](./issue-create-body-and-test-name.md) - Mirror new --body and --body-file options into the live reference doc.
-- [Task: regression-test-auto-close-2](./regression-test-auto-close-2.md) - (No description)
-- [Task: regression-test-auto-close](./regression-test-auto-close.md) - (No description)
-- [Task: release-validation](./release-validation.md) - (No description)
-- [Task: reviewer-verdict-routing](./reviewer-verdict-routing.md) - Implemented Frank's design (option A variant).
-- [Task: triage-audit](./triage-audit.md) - (No description)
-- [Task: triage-guard-bash](./triage-guard-bash.md) - (No description)
-- [Task: triage-misc](./triage-misc.md) - (No description)
-- [Task: triage-roles-docs](./triage-roles-docs.md) - Verification-only triage of ten roles/permissions/docs issues an initial pass had marked STILL-VALID.
-- [Task: triage-worktree](./triage-worktree.md) - (No description)
-- [Task: watchdog-lifecycle-fixes](./watchdog-lifecycle-fixes.md) - Fix inquisition issues #95, #96, #97 as one coherent watchdog-lifecycle change.
-- [Task: watchdog-lifecycle-review](./watchdog-lifecycle-review.md) - Review Adele's zombied watchdog-lifecycle-fixes work on master.
-- [Task: worktree-cleanup-hardening](./worktree-cleanup-hardening.md) - Fix critical #104 (junction-follow deletion) + #98 (prune doesn't sweep orphan watchdog.
-- [Task: worktree-reliability](./worktree-reliability.md) - (No description)
+- [Add Worktree Merge Self Merge Issue](./add-worktree-merge-self-merge-issue.md)
+- [Autoclose Smoke Test 2](./autoclose-smoke-test-2.md)
+- [Autoclose Smoke Test](./autoclose-smoke-test.md)
+- [Co Think Session](./co-think-session.md)
+- [Docs Guardrails Taxonomy](./docs-guardrails-taxonomy.md)
+- [Docs How To Merge Worktrees Update](./docs-how-to-merge-worktrees-update.md)
+- [Fix 0113 Per Agent Clean Marker Removal](./fix-0113-per-agent-clean-marker-removal.md)
+- [Fix Ci Xunit1031](./fix-ci-xunit1031.md)
+- [Fix Reviewer Dispatch Allow Test Writer](./fix-reviewer-dispatch-allow-test-writer.md)
+- [Fix Watchdog Anchor Regression](./fix-watchdog-anchor-regression.md)
+- [Fix Worktree Merge Self Merge Redo Merge](./fix-worktree-merge-self-merge-redo-merge.md)
+- [Guard Worktree And Phantom Inbox Doc](./guard-worktree-and-phantom-inbox-doc.md)
+- [Guard Worktree And Phantom Inbox](./guard-worktree-and-phantom-inbox.md)
+- [Investigate Per Agent Clean Marker Leak](./investigate-per-agent-clean-marker-leak.md)
+- [Investigate Reviewer Merger Guard](./investigate-reviewer-merger-guard.md)
+- [Investigate Worktree Race Review Fixes](./investigate-worktree-race-review-fixes.md)
+- [Investigate Worktree Race](./investigate-worktree-race.md)
+- [Issue Create Body And Test Name](./issue-create-body-and-test-name.md)
+- [Regression Test Auto Close 2](./regression-test-auto-close-2.md)
+- [Regression Test Auto Close](./regression-test-auto-close.md)
+- [Release Validation](./release-validation.md)
+- [Reviewer Verdict Routing](./reviewer-verdict-routing.md)
+- [Triage Audit](./triage-audit.md)
+- [Triage Guard Bash](./triage-guard-bash.md)
+- [Triage Misc](./triage-misc.md)
+- [Triage Roles Docs](./triage-roles-docs.md)
+- [Triage Worktree](./triage-worktree.md)
+- [Watchdog Lifecycle Fixes](./watchdog-lifecycle-fixes.md)
+- [Watchdog Lifecycle Review](./watchdog-lifecycle-review.md)
+- [Worktree Cleanup Hardening](./worktree-cleanup-hardening.md)
+- [Worktree Reliability](./worktree-reliability.md)

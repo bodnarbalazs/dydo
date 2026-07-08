@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -11,34 +11,34 @@ Index of 2026-04-29 documentation.
 
 ## Contents
 
-- [Task: fix-agent-tool-nudge-doc-update](./fix-agent-tool-nudge-doc-update.md) - (No description)
-- [Task: fix-agent-tool-nudge-doc](./fix-agent-tool-nudge-doc.md) - Documentation ready for review.
-- [Task: fix-agent-tool-nudge-merge](./fix-agent-tool-nudge-merge.md) - (No description)
-- [Task: fix-agent-tool-nudge-wording](./fix-agent-tool-nudge-wording.md) - Reviewing fix(guard) commit 20e7b10.
-- [Task: fix-dispatch-and-messaging-doc-update](./fix-dispatch-and-messaging-doc-update.md) - (No description)
-- [Task: fix-inbox-pollution-released-agents](./fix-inbox-pollution-released-agents.md) - Implement Adele's brief / Leo's plan.
-- [Task: fix-nowait-nudge-merge](./fix-nowait-nudge-merge.md) - Merge of worktree/fix-nowait-nudge into master is landed at 1b06e24 (merge commit) on top of 12f542a (chore: file agent-deaths inquisition output).
-- [Task: fix-nowait-nudge](./fix-nowait-nudge.md) - Review the --no-wait nudge implementation on branch worktree/fix-nowait-nudge (4 commits since 45fc6f1).
-- [Task: fix-orchestrator-wait-deadlock-v2-merge](./fix-orchestrator-wait-deadlock-v2-merge.md) - Merge review: worktree/fix-orchestrator-wait-deadlock-v2 merged into master.
-- [Task: fix-orchestrator-wait-deadlock-v2](./fix-orchestrator-wait-deadlock-v2.md) - Review fix-orchestrator-wait-deadlock-v2 (6 commits on worktree/fix-orchestrator-wait-deadlock-v2).
-- [Task: fix-release-autoclose-and-atomic-write](./fix-release-autoclose-and-atomic-write.md) - Review fix-release-autoclose-and-atomic-write (commit 8d3e3b1).
-- [Task: fix-watchdog-anchor-hardening](./fix-watchdog-anchor-hardening.md) - Review commit 762eeda for fix-watchdog-anchor-hardening (#0126/#0127/#0128/#0131/#0132).
-- [Task: fix-watchdog-deaths-critical](./fix-watchdog-deaths-critical.md) - Review commit 06512de (fix-watchdog-deaths-critical) against Emma's plan at dydo/agents/Emma/archive/20260428-204956/plan-watchdog-deaths-critical.
-- [Task: fix-watchdog-logging-followup](./fix-watchdog-logging-followup.md) - Review commit 4dd5d03 for fix-watchdog-logging-followup.
-- [Task: fix-watchdog-structured-logging](./fix-watchdog-structured-logging.md) - Recovery and completion of issue #0129 — adding structured JSON logging to the watchdog so kill-class events become diagnosable.
-- [Task: fix-windows-launcher-stayopen](./fix-windows-launcher-stayopen.md) - Review commit e1eac2e for fix-windows-launcher-stayopen (#0124).
-- [Task: merge-recovery-fix-agent-tool-nudge](./merge-recovery-fix-agent-tool-nudge.md) - (No description)
-- [Task: orchestrator-handoff](./orchestrator-handoff.md) - (No description)
-- [Task: plan-agent-tool-nudge](./plan-agent-tool-nudge.md) - Plan a Stage-2 soft-nudge for Claude Code's built-in 'Agent' tool.
-- [Task: plan-inbox-pollution-released-agents](./plan-inbox-pollution-released-agents.md) - (No description)
-- [Task: plan-orchestrator-nowait-nudge](./plan-orchestrator-nowait-nudge.md) - (No description)
-- [Task: plan-orchestrator-wait-deadlock](./plan-orchestrator-wait-deadlock.md) - (No description)
-- [Task: plan-release-autoclose-and-atomic-write](./plan-release-autoclose-and-atomic-write.md) - (No description)
-- [Task: plan-watchdog-anchor-hardening](./plan-watchdog-anchor-hardening.md) - (No description)
-- [Task: plan-watchdog-deaths-critical](./plan-watchdog-deaths-critical.md) - (No description)
-- [Task: plan-watchdog-structured-logging](./plan-watchdog-structured-logging.md) - (No description)
-- [Task: plan-windows-launcher-stayopen](./plan-windows-launcher-stayopen.md) - (No description)
-- [Task: recover-fix-agent-tool-nudge](./recover-fix-agent-tool-nudge.md) - (No description)
-- [Task: refine-worktree-direction](./refine-worktree-direction.md) - Review commit eeaf93f for refine-worktree-direction.
-- [Task: regression-orchestrator-nowait-nudge](./regression-orchestrator-nowait-nudge.md) - (No description)
-- [Task: regression-verify](./regression-verify.md) - (No description)
+- [Fix Agent Tool Nudge Doc Update](./fix-agent-tool-nudge-doc-update.md)
+- [Fix Agent Tool Nudge Doc](./fix-agent-tool-nudge-doc.md)
+- [Fix Agent Tool Nudge Merge](./fix-agent-tool-nudge-merge.md)
+- [Fix Agent Tool Nudge Wording](./fix-agent-tool-nudge-wording.md)
+- [Fix Dispatch And Messaging Doc Update](./fix-dispatch-and-messaging-doc-update.md)
+- [Fix Inbox Pollution Released Agents](./fix-inbox-pollution-released-agents.md)
+- [Fix Nowait Nudge Merge](./fix-nowait-nudge-merge.md)
+- [Fix Nowait Nudge](./fix-nowait-nudge.md)
+- [Fix Orchestrator Wait Deadlock V2 Merge](./fix-orchestrator-wait-deadlock-v2-merge.md)
+- [Fix Orchestrator Wait Deadlock V2](./fix-orchestrator-wait-deadlock-v2.md)
+- [Fix Release Autoclose And Atomic Write](./fix-release-autoclose-and-atomic-write.md)
+- [Fix Watchdog Anchor Hardening](./fix-watchdog-anchor-hardening.md)
+- [Fix Watchdog Deaths Critical](./fix-watchdog-deaths-critical.md)
+- [Fix Watchdog Logging Followup](./fix-watchdog-logging-followup.md)
+- [Fix Watchdog Structured Logging](./fix-watchdog-structured-logging.md)
+- [Fix Windows Launcher Stayopen](./fix-windows-launcher-stayopen.md)
+- [Merge Recovery Fix Agent Tool Nudge](./merge-recovery-fix-agent-tool-nudge.md)
+- [Orchestrator Handoff](./orchestrator-handoff.md)
+- [Plan Agent Tool Nudge](./plan-agent-tool-nudge.md)
+- [Plan Inbox Pollution Released Agents](./plan-inbox-pollution-released-agents.md)
+- [Plan Orchestrator Nowait Nudge](./plan-orchestrator-nowait-nudge.md)
+- [Plan Orchestrator Wait Deadlock](./plan-orchestrator-wait-deadlock.md)
+- [Plan Release Autoclose And Atomic Write](./plan-release-autoclose-and-atomic-write.md)
+- [Plan Watchdog Anchor Hardening](./plan-watchdog-anchor-hardening.md)
+- [Plan Watchdog Deaths Critical](./plan-watchdog-deaths-critical.md)
+- [Plan Watchdog Structured Logging](./plan-watchdog-structured-logging.md)
+- [Plan Windows Launcher Stayopen](./plan-windows-launcher-stayopen.md)
+- [Recover Fix Agent Tool Nudge](./recover-fix-agent-tool-nudge.md)
+- [Refine Worktree Direction](./refine-worktree-direction.md)
+- [Regression Orchestrator Nowait Nudge](./regression-orchestrator-nowait-nudge.md)
+- [Regression Verify](./regression-verify.md)

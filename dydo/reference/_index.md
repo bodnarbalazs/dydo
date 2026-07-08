@@ -11,12 +11,13 @@ Index of reference documentation.
 
 ## Contents
 
-- [DynaDocs (dydo)](./about-dynadocs.md) - Documentation-driven context and agent orchestration for AI coding assistants.
-- [Audit System](./audit-system.md) - Every agent action is recorded as a JSON audit trail.
+- [DynaDocs (dydo)](./about-dynadocs.md) - Own your project's knowledge — then put agents to work on it.
+- [Audit System (removed in 2.0)](./audit-system.md) - dydo's own audit trail — per-session JSON logs, baseline+delta compaction, and the HTML replay visualization — was **removed in 2.
 - [Configuration Reference](./configuration.md) - Complete reference for `dydo.
 - [Coverage Tools](./coverage-tools.md) - An in-house Python script for measuring and enforcing test coverage.
 - [CLI Commands Reference](./dydo-commands.md) - Complete reference for all `dydo` commands.
 - [Guardrails](./guardrails.md) - The three-tier system that shapes agent behavior.
+- [Notion Sync API Reference](./notion-sync.md) - Working notes for the Notion sync adapter (`Sync/Notion/**`): the API version and data-source model the adapter targets, the endpoints it uses, and...
 - [Writing Documentation](./writing-docs.md) - Reference for documentation conventions, structure, and validation rules.
 
 ## Subfolders

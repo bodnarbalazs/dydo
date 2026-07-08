@@ -36,7 +36,7 @@ help category). Beta, moving target — re-verify before designing.
 1. **Our Notion Task board becomes an assignment surface (cheap, near-term).** DR-034 lands a Task
    DB; the spine sync already detects external row edits. A human moving a Task row to a
    "ready" status in Notion → sync pulls the status change → dydo dispatches locally. That is
-   [[notion-agent-board-and-reverse-messaging]] Half B, implementable with machinery we already
+   [notion-agent-board-and-reverse-messaging](./notion-agent-board-and-reverse-messaging.md) Half B, implementable with machinery we already
    have — no webhooks, no Notion-side agent needed. Notion 3.6 just made this UX pattern the
    industry-standard one; our board matching it is now table stakes.
 2. **Hosted Claude as a light-work satellite (optional, evaluate).** A Notion-hosted agent with a
@@ -69,4 +69,4 @@ help category). Beta, moving target — re-verify before designing.
    Watch item only (External Agent registration opening up).
 
 No co-thinker round needed; the ruling replaces it. Design lands inside
-[[notion-agent-board-and-reverse-messaging]] Half B when that campaign runs.
+[notion-agent-board-and-reverse-messaging](./notion-agent-board-and-reverse-messaging.md) Half B when that campaign runs.

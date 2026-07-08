@@ -11,6 +11,7 @@ Index of guides documentation.
 
 ## Contents
 
+- [Adding a dydo Command: The Doc-Consistency Surfaces](./adding-a-command.md) - Adding a new top-level `dydo` command (or a new required flag) is never a one-file change: `DynaDocs.
 - [Agent General Wait](./agent-general-wait.md) - Every claimed agent runs a single always-active **general wait** in the background.
 - [Coding Standards](./coding-standards.md) - Rules and conventions for writing code in this project.
 - [Customizing Roles](./customizing-roles.md) - How to create custom roles, modify permission sets, and extend the role system.
@@ -18,6 +19,7 @@ Index of guides documentation.
 - [How to Merge Worktrees](./how-to-merge-worktrees.md) - You have a `.
 - [How to Review Worktree Merges](./how-to-review-worktree-merges.md) - You are reviewing a merge task.
 - [How to Use These Docs](./how-to-use-docs.md) - This documentation is designed to be navigated by AI agents.
+- [Orchestration Pitfalls](./orchestration-pitfalls.md) - Field-tested failure modes of multi-agent work on this repo — worktree isolation, workflow invocation, and the shared working tree.
 - [Testing Strategy — Three-Tier System](./testing-strategy.md) - A tiered testing philosophy that defines levels of rigor based on the criticality of the code being tested.
 - [Troubleshooting](./troubleshooting.md) - Common errors, guard blocks, and recovery patterns.
 - [Writing Good Briefs](./writing-good-briefs.md) - How to write dispatch briefs that give agents enough context to work independently.

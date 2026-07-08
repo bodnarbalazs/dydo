@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -11,5 +11,5 @@ Index of 2026-05-18 documentation.
 
 ## Contents
 
-- [Task: fix-issue-0108-self-dispatch-hijack](./fix-issue-0108-self-dispatch-hijack.md) - Fix for issue #0108 (self-dispatch identity hijack).
-- [Task: investigate-self-dispatch-identity-hijack-bug](./investigate-self-dispatch-identity-hijack-bug.md) - (No description)
+- [Fix Issue 0108 Self Dispatch Hijack](./fix-issue-0108-self-dispatch-hijack.md)
+- [Investigate Self Dispatch Identity Hijack Bug](./investigate-self-dispatch-identity-hijack-bug.md)

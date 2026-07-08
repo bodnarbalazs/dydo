@@ -1,5 +1,5 @@
 ---
-area: general
+area: project
 type: hub
 ---
 
@@ -50,3 +50,5 @@ Index of decisions documentation.
 - [034 — PM Record Taxonomy: `project/` = Records, the Two-Altitude Work Funnel, the Partition Convention](./034-pm-record-taxonomy.md) - `dydo/project/**` is the home of **PM records** — typed rows that live as `.
 - [035 — Docs Body Sync via Notion's Native Markdown API (supersedes DR 025 §6's custom block conversion)](./035-docs-body-sync-via-notion-native-markdown-api.md) - The docs-mirror ([DR 033](.
 - [036 — Task Approval Reform: Verifier Flips Done, the Done Window, and the Archive Sweep](./036-task-approval-reform.md) - The per-task **human approve gate is retired**.
+- [037 — Cross-Vendor Dispatch: Same-Vendor Default, Explicit Override at the Dispatch Boundary, No New Abstraction](./037-cross-vendor-dispatch-same-vendor-default.md) - Cross-vendor work (Claude + Codex in one flock) needs **no new dydo abstraction**.
+- [038 — Auto-Memory Policy: dydo-First Routing, Memory as Buffer, Chief-of-Staff Sweep](./038-auto-memory-policy.md) - Harness auto-memory (the per-user, per-project memory directory the agent runtime maintains **outside the repo**) is kept, but demoted from archive...

@@ -74,6 +74,23 @@ CRAP uses the **per-method max** cyclomatic complexity, not the class-level sum.
 
 Auto-generated code (e.g., source generators, `obj/` artifacts) is excluded.
 
+### Diagnosing a CRAP failure
+
+Because the gate is CRAP — not a plain line-% threshold — **adding a few guard branches to a T1 file can tip it red even when every test passes**. At CC = 30, full coverage puts CRAP at exactly 30 (pass); 93% coverage puts it at 30.3 (fail). Conversely, adding tests that only re-cover already-covered lines does nothing.
+
+Diagnose with:
+
+```bash
+python DynaDocs.Tests/coverage/gap_check.py --inspect <ModuleName>
+```
+
+It prints `lines: x/y`, `branches: %`, `CRAP`, `CC`, the uncovered line numbers, and partial branches.
+
+Two levers to get back under the threshold, best used together:
+
+1. **Cut complexity** — e.g. collapse a dead disjunct like `loaded == null || (models = loaded?.Models) == null` into `if (loaded?.Models is not { } models)`; that removes a branch *and* null-narrows `loaded`. Each −1 CC gives real headroom.
+2. **Cover the error paths** — not-in-project, corrupt-input, and missing-section branches are the usual uncovered culprits in a service.
+
 ---
 
 ## Tier Summary
@@ -116,8 +133,26 @@ Tier thresholds are enforced by agents during code review (via `gap_check.py`). 
 
 ---
 
+## Cross-Platform CI: Windows-Only Test Traps
+
+CI (`.github/workflows/ci.yml`) runs `dotnet test` on **ubuntu-latest as a non-root user**, while development happens on Windows — so Windows-only test assumptions pass locally and forever redden CI. When master CI is red but local Windows tests pass, suspect **platform-specific test bugs**, not whatever commit the timeline happens to blame: the same failures are usually red on the prior commit too, with product code correct and cross-platform.
+
+Two recurring traps:
+
+1. **File locking** — holding a `FileStream(..., FileShare.None)` handle to force `File.Delete` to throw only blocks deletion on Windows; POSIX lets you unlink an open file, so the test fails with "No exception was thrown" on Linux. On Unix, unlink permission is governed by the **parent directory** — induce a delete failure by making the parent dir non-writable (`File.SetUnixFileMode`), not by locking the file. Use the cross-platform helper `DynaDocs.Tests/UndeletableFile.cs`.
+2. **Hardcoded `C:\...` path literals** — on Linux `\` is an ordinary filename character, so `Path.GetFileName(@"C:\x\dir")` returns the whole string. Use forward-slash literals; they parse identically on both OSes.
+
+Also: guard Unix-only calls (`File.SetUnixFileMode`) with `OperatingSystem.IsWindows()`, not just a nullness check — the CA1416 analyzer can't correlate `_field != null` with platform, and `TreatWarningsAsErrors=true` (set in `Directory.Build.props`) turns that warning into a CI build break.
+
+### Verifying a Linux fix from Windows
+
+Without burning CI cycles: `git archive HEAD` → overlay your dirty files → run inside `mcr.microsoft.com/dotnet/sdk:10.0` as a **non-root** user (`useradd`, `chown`, `su`). Root would bypass the directory-permission check and mask the lock test. Run plain `dotnet test` (not `--warnaserror`) to avoid a false SourceLink "unable to locate repository" error from the missing `.git`.
+
+---
+
 ## Related
 
 - [Coverage Tools](../reference/coverage-tools.md) — Tool usage reference (gap_check.py)
 - [CRAP Per-Method Metric](../project/decisions/009-crap-per-method-metric.md) — Why per-method max CC, not class-level sum
 - [Coding Standards](./coding-standards.md) — Code conventions
+- [Orchestration Pitfalls](./orchestration-pitfalls.md) — How parallel agents collide through these global gates

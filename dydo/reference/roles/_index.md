@@ -11,11 +11,11 @@ Index of roles documentation.
 
 ## Contents
 
-- [Chief-of-Staff](./chief-of-staff.md) - The human's right hand — triages, routes, reports, and mediates.
+- [Chief-of-Staff](./chief-of-staff.md) - The human's right hand — a Tier-1 manager that triages the backlog and idea funnel, routes work to the right domain orchestrator or co-thinker, rep...
 - [Co-Thinker](./co-thinker.md) - Explores ideas collaboratively with the human.
 - [Code-Writer](./code-writer.md) - Implements features, fixes bugs, and writes tests.
 - [Docs-Writer](./docs-writer.md) - Writes and maintains project documentation.
-- [Inquisitor](./inquisitor.md) - The campaign-end QA sweeper a workflow spawns (not a claimable role).
+- [Inquisitor](./inquisitor.md) - The campaign-end QA sweeper — a read-only agent the `inquisition` workflow spawns to audit landed work.
 - [Orchestrator](./orchestrator.md) - Coordinates parallel agent workstreams.
 - [Planner](./planner.md) - Designs the implementation approach.
 - [Reviewer](./reviewer.md) - Reviews code for correctness, standards compliance, security, and unnecessary complexity.

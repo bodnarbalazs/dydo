@@ -4,7 +4,7 @@ id: 253
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -26,4 +26,13 @@ First live codex dispatch smoke (2026-07-09, v2.0.6): the launched codex session
 
 ## Resolution
 
-(Filled when resolved)
+Resolved by sprint c1-codex-adoption slice c1-3 (2026-07-09, two review rounds). Every codex
+launch AND resume line — Windows, Linux, Mac, dispatch, watchdog resume, and the manual-fallback
+printers — now carries the configured posture `--sandbox workspace-write --ask-for-approval
+on-request` (balazs's co-think decision: sandbox-bounded autonomy, NOT the classifier-`untrusted`
+policy which would escalate every dydo call, and never the bypass flag — it is not representable
+in config). Config-surfaced as `dispatch.codex { sandbox, approvalPolicy }`
+(`Models/CodexDispatchConfig.cs`), whitelist-validated with the accepted list on typo'd values,
+absent section = shipped defaults. Flag surface and posture-before-`resume` placement verified
+against the official codex CLI reference (0231 precedent honored). A dispatch-time preflight
+check fails fast on invalid posture before any reservation. Live confirmation rides c1-8's smoke.

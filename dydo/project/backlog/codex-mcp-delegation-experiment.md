@@ -104,11 +104,36 @@ agents is explicitly not wanted.
    from cleaning — human hand required (observed 2026-07-09, `codex/fix-codex-identity`). The
    experiment's setup step owns creation AND teardown of the slice worktree.
 
-### Still open (next probes)
+### Still open (next probes — resume after the smoke phase; ground truth as of 2026-07-09)
 
-- Native `codex mcp-server` registration ergonomics vs wrappers: what `--cd`/sandbox/trust
-  posture each passes to the inner exec; whether `-c` overrides at server registration can pin
-  hook/sandbox posture fleet-wide. (Registration is the human's hand.)
-- Sandbox path-virtualization × hook trust interplay.
-- Cost/limit surface: exec turns bill the signed-in account (per-turn token counts are printed;
-  probe runs were ~8.7k tokens each); visibility/limits for MCP-spawned turns unverified.
+- **Native `codex mcp-server` registration ergonomics vs wrappers**: what `--cd`/sandbox/trust
+  posture each passes to the inner exec; whether `-c key=value` overrides at server
+  registration (the subcommand accepts them) can pin hook/sandbox posture fleet-wide; whether
+  the `codex` tool exposes workdir per call and whether `codex-reply` continuation preserves
+  it. Registration is the human's hand; freshly registered MCP tools typically need a session
+  restart to appear.
+- **Approvals through MCP**: `codex exec` runs `approval: never` (observed), so
+  approval-surfacing only exists — if at all — on the native mcp-server path. Verify whether
+  MCP-spawned turns can run `workspace-write` without the dangerous bypass flags.
+- **Sandbox path-virtualization × hook trust**: the Windows sandbox remaps cwd to
+  `…\.codex\.sandbox\cwd\<hash>`, which breaks path-keyed hook trust even in a trusted repo
+  (`[windows] sandbox = "elevated"` makes this the default posture). Determine which sandbox
+  modes remap and whether trust can be keyed to survive it.
+- **Post-0250 behavior check**: after commit `7805e004`, an MCP-spawned codex descendant of a
+  claimed host resolves NULL ambient identity (nearest-host-wins). One probe should confirm
+  the inner agent's dydo CLI calls now fail identity cleanly (and that msg/dispatch refuse) —
+  the experiment's "keep dydo CLI out of the inner prompt" caveat then relaxes to "it's inert".
+- **Worker-lane marker design**: the codex hook payload has no `agent_id`/`agent_type`; decide
+  the marker that routes MCP-Codex into the guard's anonymous Tier-2 lane (env-injected field?
+  hooks.json argv? payload extension) so inner-agent calls are attributed rather than
+  stranger-blocked. This is the design half of the guard answer; the plumbing half (inject
+  hooks.json + resolve trust at worktree setup) is known.
+- **End-to-end guard probe**: one run with the real `dydo guard` as the worktree hook command
+  (not the marker capture) to observe stage-0 blocking from inside a codex turn — including
+  how codex surfaces the exit-2 block to its model and whether it retries or halts.
+- **Stop-hook parity**: only PreToolUse was probed; verify the codex `stop` hook payload shape
+  so needs-human derivation works for codex sessions (trust entry for the live repo is
+  `enabled = true` since 2026-07-08).
+- **Cost/limit surface**: exec turns bill the signed-in account (per-turn token counts are
+  printed; probe runs were ~8.7k tokens each); visibility/limits for MCP-spawned turns
+  unverified.

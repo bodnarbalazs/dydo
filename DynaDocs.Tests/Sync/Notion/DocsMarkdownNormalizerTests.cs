@@ -113,4 +113,48 @@ public class DocsMarkdownNormalizerTests
         Assert.Equal("", DocsMarkdownNormalizer.Normalize(""));
         Assert.Equal("", DocsMarkdownNormalizer.CleanForPersist(""));
     }
+
+    // A folder page's markdown export APPENDS its child pages as child-page reference tags after the prose body
+    // (issue 0235, DR 035 §3). Those tags are structure — already the repo filesystem tree — not the page body, so
+    // both operations must strip them: the compare form so a read-back registers no phantom external edit, the
+    // persist form so child-tag soup can never land on a canonical `_index.md`.
+    private const string ProseThenChildTags =
+        "prose\n\n<page url=\"https://app.notion.com/p/398798c3578a816d8bd1ec129898226f\">guides</page>\n"
+        + "<page url=\"https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\">understand</page>";
+
+    [Fact]
+    public void CleanForPersist_StripsChildPageTags_LeavingProseOnly()
+    {
+        // Two consecutive child-page tags after the prose strip to just the prose — no tag residue, no trailing blank.
+        Assert.Equal("prose", DocsMarkdownNormalizer.CleanForPersist(ProseThenChildTags));
+    }
+
+    [Fact]
+    public void Normalize_StripsChildPageTags_SoAReadBackComparesEqualToProse()
+    {
+        // The phantom-edit fix (issue 0235): a folder body that reads back as prose + child-tags normalizes to the
+        // SAME canonical form as the repo's prose-only `_index.md`, so change detection sees no external edit.
+        Assert.Equal(
+            DocsMarkdownNormalizer.Normalize("prose"),
+            DocsMarkdownNormalizer.Normalize(ProseThenChildTags));
+    }
+
+    [Fact]
+    public void CleanForPersist_AllChildTagsBody_CleansToEmpty()
+    {
+        // A folder page with an empty body and children exports as JUST the child-page tags (the real evidence:
+        // a folder with 6 child pages and an empty body exports as those 6 lines) — it must clean to "".
+        var allTags =
+            "<page url=\"https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\">a</page>\n"
+            + "<page url=\"https://app.notion.com/p/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\">b</page>";
+        Assert.Equal("", DocsMarkdownNormalizer.CleanForPersist(allTags));
+    }
+
+    [Fact]
+    public void CleanForPersist_ProseWithoutChildTags_IsUnchanged()
+    {
+        // Prose that carries no child-page tags survives verbatim — the strip must not over-match real content.
+        var prose = "# Guides\n\nThis folder collects the how-to guides.\n\n- one\n- two";
+        Assert.Equal(prose, DocsMarkdownNormalizer.CleanForPersist(prose));
+    }
 }

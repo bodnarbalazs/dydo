@@ -56,18 +56,37 @@ public static class DocsMarkdownNormalizer
             AmzLeadingParamThenMore.Replace(
                 AmzTrailingParam.Replace(s, ""), "?"), "");
 
+    // Notion's markdown export appends a page's child pages as child-page reference tags — one per line, after the
+    // prose body: `<page url="https://app.notion.com/p/{id}">title</page>` (a folder page with an empty body exports
+    // as just these lines). Child pages are STRUCTURE (DR 033 §2), already represented by the repo filesystem tree,
+    // and are created/archived one-way from the repo — they are NEVER a page's body. Left in place they read back as
+    // a phantom one-sided external edit that external-wins onto the canonical folder `_index.md` (issue 0235), so
+    // strip them on every read, exactly as the volatile signing params above are stripped. The tag sits alone on its
+    // line, so consume the whole line (and its newline) — one OR many consecutive tags — leaving no blank-line
+    // residue; the inner match is non-greedy and `.` does not cross newlines, since each tag is single-line.
+    private static readonly Regex ChildPageTag =
+        new(@"^[ \t]*<page\b[^>]*>.*?</page>[ \t]*\r?\n?", RegexOptions.Compiled | RegexOptions.Multiline);
+
+    private static string StripChildPageTags(string s) => ChildPageTag.Replace(s, "");
+
     /// <summary>Canonical form for COMPARISON only — see the type summary. Never write the result to a file.</summary>
     public static string Normalize(string markdown)
     {
         if (string.IsNullOrEmpty(markdown))
             return "";
-        var lf = StripSigningQuery(LineEndings(markdown));
+        // Strip the child-page reference tags FIRST — before Markdig ever sees the `<page>` HTML, and before the
+        // signing-query strip — so a folder page's read-back (prose + child-tags) normalizes to prose-only and
+        // compares EQUAL to the repo `_index.md`, registering no phantom external edit (issue 0235, DR 035 §3).
+        var lf = StripSigningQuery(StripChildPageTags(LineEndings(markdown)));
         return LineEndings(Markdown.Normalize(lf, pipeline: Pipeline)).TrimEnd('\n');
     }
 
     /// <summary>Structure-preserving clean for a Notion-read body that may be PERSISTED — see the type summary.</summary>
     public static string CleanForPersist(string markdown) =>
-        string.IsNullOrEmpty(markdown) ? "" : StripSigningQuery(LineEndings(markdown)).TrimEnd('\n');
+        // Strip child-page tags FIRST (before the signing-query strip) so a body persisted to a canonical file can
+        // NEVER contain child-page structure tags (issue 0235, DR 035 §3); the trailing TrimEnd then removes the
+        // blank lines a stripped tail tag block would otherwise leave.
+        string.IsNullOrEmpty(markdown) ? "" : StripSigningQuery(StripChildPageTags(LineEndings(markdown))).TrimEnd('\n');
 
     private static string LineEndings(string s) => s.Replace("\r\n", "\n").Replace("\r", "\n");
 }

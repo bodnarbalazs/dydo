@@ -155,7 +155,12 @@ public static class DocsTreeSync
                     : Path.Combine(dydoRoot, stem.Replace('/', Path.DirectorySeparatorChar) + ".md"));
 
             Directory.CreateDirectory(Path.GetDirectoryName(canonical)!);
-            File.WriteAllText(canonical, content);
+            // Promote through CleanForPersist, never verbatim: this is a write to a CANONICAL file, and the
+            // invariant is that EVERY canonical write is cleaned (strips child-page `<page url>` structure tags and
+            // expiring signing params, DR 035 §3 / issue 0235). A human resolving a shadow may keep a hunk that still
+            // carries the child-page tag soup the read-side strip removes elsewhere; this was the one ingress the
+            // read-side strip left open, so it is closed here — soup can never reach a canonical file by any path.
+            File.WriteAllText(canonical, DocsMarkdownNormalizer.CleanForPersist(content));
             File.Delete(shadowFile);
             promoted = true;
 

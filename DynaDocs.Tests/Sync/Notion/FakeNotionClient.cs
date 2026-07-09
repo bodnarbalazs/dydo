@@ -341,17 +341,34 @@ public sealed class FakeNotionClient : INotionClient
     public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) =>
         _blocks.TryGetValue(blockId, out var b) ? b : [];
 
+    /// <summary>The raw stored markdown body of a page, WITHOUT the child-page reference tags
+    /// <see cref="GetPageMarkdown"/> appends to model Notion's export — the exact body a write persisted. Lets a
+    /// docs-mirror test assert the persisted body independent of the read-modeling, which is orthogonal to it.</summary>
+    public string StoredMarkdown(string pageId) => _pageMarkdown.GetValueOrDefault(pageId, "");
+
     // An unwritten page reads back as the empty string, never null — matching the real markdown API's echo of
     // an empty body and INotionClient's contract. A page in FailMarkdownReadFor 404s (archived/trashed); a page in
     // TruncatedReadFor echoes its stored body with truncated:true, modelling the ~20k-block export ceiling.
+    //
+    // Real Notion's GET /pages/{id}/markdown APPENDS the page's child pages as child-page reference tags — one per
+    // line, after the prose body: `<page url="https://app.notion.com/p/{childId}">{title}</page>` (issue 0235, DR
+    // 035 §3). A folder page with an empty body and children thus reads back as JUST those tag lines. The fake models
+    // that here — using the SAME child enumeration and order as GetChildPages — so a test can catch the docs mirror
+    // treating this structure as body. A leaf page (no children) reads back its stored body verbatim.
     public NotionMarkdownResponse GetPageMarkdown(string pageId)
     {
         if (FailMarkdownReadFor.Contains(pageId))
             throw new NotionApiException(404, $"{{\"code\":\"object_not_found\",\"message\":\"page {pageId} not found\"}}");
+        var body = _pageMarkdown.GetValueOrDefault(pageId, "");
+        var childTags = string.Join("\n", GetChildPages(pageId)
+            .Select(c => $"<page url=\"https://app.notion.com/p/{c.Id}\">{c.Title}</page>"));
+        var markdown = childTags.Length == 0 ? body
+            : body.Length == 0 ? childTags
+            : body + "\n\n" + childTags;
         return new NotionMarkdownResponse
         {
             Object = "page_markdown",
-            Markdown = _pageMarkdown.GetValueOrDefault(pageId, ""),
+            Markdown = markdown,
             Truncated = TruncatedReadFor.Contains(pageId),
         };
     }

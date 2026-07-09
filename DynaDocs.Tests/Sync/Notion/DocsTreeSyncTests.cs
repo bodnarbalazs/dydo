@@ -94,7 +94,9 @@ public class DocsTreeSyncTests : IDisposable
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         var understand = Child(client, Root(client), "Understand");
-        Assert.Equal("The understand area.", client.GetPageMarkdown(understand).Markdown);
+        // StoredMarkdown reads the persisted body without the child-page tags GetPageMarkdown appends — this folder
+        // page has children, and the tags are structure, not the folder-index body this assertion checks.
+        Assert.Equal("The understand area.", client.StoredMarkdown(understand));
     }
 
     [Fact]
@@ -122,7 +124,7 @@ public class DocsTreeSyncTests : IDisposable
 
         // The bodies still landed, via the atomic create.
         var understand = Child(client, Root(client), "Understand");
-        Assert.Equal("The understand area.", client.GetPageMarkdown(understand).Markdown);
+        Assert.Equal("The understand area.", client.StoredMarkdown(understand)); // folder page: body without child tags
         var architecture = Child(client, understand, "Architecture");
         Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture).Markdown);
     }
@@ -151,7 +153,7 @@ public class DocsTreeSyncTests : IDisposable
         Assert.NotEmpty(client.MarkdownUpdates);
         var understand = Child(client, Root(client), "Understand");
         var architecture = Child(client, understand, "Architecture");
-        Assert.Equal("The understand area.", client.GetPageMarkdown(understand).Markdown);
+        Assert.Equal("The understand area.", client.StoredMarkdown(understand)); // folder page: body without child tags
         Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture).Markdown);
 
         // The folder-body PATCH was child-safe: the nested doc/sub-folder pages survived (allow_deleting_content:false).
@@ -184,7 +186,7 @@ public class DocsTreeSyncTests : IDisposable
         File.WriteAllText(DocPath("understand/_index.md"), "---\ntitle: Understand\n---\n\nThe understand area, revised.");
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
-        Assert.Equal("The understand area, revised.", client.GetPageMarkdown(understand).Markdown); // folder body updated
+        Assert.Equal("The understand area, revised.", client.StoredMarkdown(understand)); // folder body updated (no child tags)
         Assert.False(client.IsArchived(architecture));                                              // nested doc preserved
         Assert.False(client.IsArchived(guard));                                                     // nested folder preserved
         Assert.Contains(client.GetChildPages(understand), p => p.Id == architecture);
@@ -364,8 +366,9 @@ public class DocsTreeSyncTests : IDisposable
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         var root = Root(client);
-        // The off-limits root index was never uploaded — the "Docs" page is a bare container.
-        Assert.Equal("", client.GetPageMarkdown(root).Markdown);
+        // The off-limits root index was never uploaded — the "Docs" page is a bare container. Check the stored body
+        // (GetPageMarkdown would append the root's child-page tags, which are structure, not the uploaded index body).
+        Assert.Equal("", client.StoredMarkdown(root));
         // files-off-limits.md never became a root child page.
         Assert.DoesNotContain(client.GetChildPages(root), p => p.Title is "files-off-limits" or "Off-limits");
         // The off-limits secret doc minted no page under understand.
@@ -537,6 +540,67 @@ public class DocsTreeSyncTests : IDisposable
         Assert.NotEqual(pathA, pathB);
         Assert.True(File.Exists(pathA));
         Assert.True(File.Exists(pathB));
+    }
+
+    [Fact]
+    public void Run_FolderPageWithChildTagsInExport_SecondTick_NoPhantomEdit_NoChildTagSoupInIndex()
+    {
+        // Issue 0235 via the child-tag path (DR 035 §3): Notion's markdown export appends a page's child pages as
+        // <page url=...>title</page> tags after the prose body. A folder page with a synced _index body reads back
+        // prose + child-tags. Those tags are STRUCTURE (already the repo filesystem tree), never body — treating
+        // them as body makes a later tick see a phantom one-sided external edit that external-wins and writes the
+        // child-tag soup onto the canonical folder _index.md. Stripping child-page tags on read keeps the reconcile
+        // a no-op: no phantom edit, no shadow, and the canonical _index.md stays prose-only.
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var understand = Child(client, Root(client), "Understand");
+        // Precondition: the folder page genuinely exports its child pages as <page> tags after its prose body — so
+        // this test exercises the real corruption vector, not a straw man.
+        var export = client.GetPageMarkdown(understand).Markdown;
+        Assert.Contains("The understand area.", export);
+        Assert.Contains("<page url=", export);
+
+        var indexBefore = File.ReadAllText(DocPath("understand/_index.md"));
+
+        client.MarkdownUpdates.Clear();
+        var output = new StringWriter();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, output);
+
+        // No phantom external edit: the canonical _index.md is byte-unchanged and never carries child-tag soup.
+        Assert.Equal(indexBefore, File.ReadAllText(DocPath("understand/_index.md")));
+        Assert.DoesNotContain("<page url=", File.ReadAllText(DocPath("understand/_index.md")));
+        // No conflict diverted to a shadow file, and no body re-pushed — a clean no-op tick.
+        Assert.DoesNotContain("conflict", output.ToString());
+        Assert.False(Directory.Exists(Path.Combine(_dydoRoot, "_system", "notion_sync")));
+        Assert.Empty(client.MarkdownUpdates);
+    }
+
+    [Fact]
+    public void Run_TruncatedExternalRead_ReusesLastSyncedBody_NeverTruncatesCanonicalFile_EndToEnd()
+    {
+        // Sprint-auditor finding [3]: the DocsTreeSync → DocsPageAdapter truncation WIRING (LastSyncedBodyByPageId
+        // handed to the adapter ctor, keyed by page id) had no end-to-end coverage — only a hand-built map. A body
+        // past Notion's ~20k-block export ceiling reads back TRUNCATED (cut short). Treating it as external state
+        // would look like a Notion-side deletion and merge the cut-short body onto the canonical file, truncating it.
+        // Driving a real reconcile pins the wiring: a regression (keying by localId, dropping the ctor arg) reuses
+        // nothing, merges the cut-short body, and fails here.
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var architecture = Child(client, Child(client, Root(client), "Understand"), "Architecture");
+        var canonicalBefore = File.ReadAllText(DocPath("understand/architecture.md"));
+
+        // The page now exceeds the export ceiling: it reads back cut short AND flagged truncated.
+        client.SetPageMarkdown(architecture, "# Arch");
+        client.TruncatedReadFor.Add(architecture);
+
+        client.MarkdownUpdates.Clear();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        // The last-synced body was reused, so the canonical file is byte-unchanged — never truncated to the cut body.
+        Assert.Equal(canonicalBefore, File.ReadAllText(DocPath("understand/architecture.md")));
+        Assert.Empty(client.MarkdownUpdates); // nothing pushed either — a pure no-op
     }
 
     private static void AssertNoDuplicateChildTitles(FakeNotionClient client, string parentId)

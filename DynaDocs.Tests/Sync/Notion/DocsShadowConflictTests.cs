@@ -166,6 +166,42 @@ public class DocsShadowConflictTests : IDisposable
     }
 
     [Fact]
+    public void ResolvedShadow_CarryingChildPageTags_IsPromotedCLEAN_TagsStripped()
+    {
+        // Invariant (DR 035 §3 / issue 0235): EVERY write to a canonical file goes through CleanForPersist. Shadow
+        // promotion is a canonical write, so a human who resolves a shadow while keeping a hunk that still carries the
+        // Notion child-page `<page url>` structure tags must NOT land that soup on disk — it is stripped on promotion,
+        // exactly as the read side strips it. This closes the one canonical-write ingress the read-side strip left open.
+        Seed("understand/architecture.md", "---\ntitle: Architecture\n---\n\n# Arch\n\nbody one.");
+        WriteModel(SpineModel);
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        // Force a genuine two-sided conflict so the tick diverts to a shadow.
+        var arch = PageIdFor(client, "Architecture");
+        File.WriteAllText(DocPath("understand/architecture.md"), "---\ntitle: Architecture\n---\n\n# Arch\n\nbody REPO.");
+        client.SetPageMarkdown(arch, "# Arch\n\nbody NOTION.");
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var shadowPath = Path.Combine(_dydoRoot, "_system", "notion_sync", "understand", "architecture.md");
+        Assert.True(File.Exists(shadowPath));
+
+        // The human resolves the shadow but keeps the child-page tag soup in the chosen hunk.
+        File.WriteAllText(shadowPath,
+            "---\ntitle: Architecture\n---\n\n# Arch\n\nbody RESOLVED.\n<page url=\"https://app.notion.com/p/abc123\">nested</page>");
+
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        // Promoted, shadow removed — and the child-page tag was STRIPPED, prose preserved.
+        var canonical = File.ReadAllText(DocPath("understand/architecture.md"));
+        Assert.Contains("body RESOLVED.", canonical);
+        Assert.DoesNotContain("<page url=", canonical);
+        Assert.DoesNotContain("nested</page>", canonical);
+        Assert.False(File.Exists(shadowPath));
+    }
+
+    [Fact]
     public void ResolvedRootIndexShadow_IsPromotedToRootIndex_NotJunkDotDotMd_AndNextSyncDoesNotWedge()
     {
         // The root index (dydo/_index.md) is the "Docs" page body; its reserved "." local id shadows to _root.md.

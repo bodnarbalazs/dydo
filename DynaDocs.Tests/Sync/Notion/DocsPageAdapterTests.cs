@@ -129,7 +129,7 @@ public class DocsPageAdapterTests : IDisposable
         changes.Upserts.Add(new SyncUpsert { LocalId = ".", ExternalId = root, Fields = [], Body = "new body" });
         adapter.Apply(changes, new Dictionary<string, string>());
 
-        Assert.Equal("new body", client.GetPageMarkdown(root).Markdown);              // body replaced
+        Assert.Equal("new body", client.StoredMarkdown(root));                         // body replaced (no child tags)
         Assert.Contains(client.GetChildPages(root), p => p.Id == nested);              // nested sub-page preserved
         Assert.False(client.IsArchived(nested));
     }
@@ -426,7 +426,7 @@ public class DocsPageAdapterTests : IDisposable
         Assert.Contains((folder, false), client.MarkdownUpdateCalls);
         Assert.Contains(client.GetChildPages(folder), p => p.Id == nestedDoc);
         Assert.False(client.IsArchived(nestedDoc));
-        Assert.Equal("new folder index", client.GetPageMarkdown(folder).Markdown); // body still replaced
+        Assert.Equal("new folder index", client.StoredMarkdown(folder)); // body still replaced (child tags not part of body)
         // The leaf page (no children to protect) took the destructive full overwrite.
         Assert.Contains((nestedDoc, true), client.MarkdownUpdateCalls);
     }

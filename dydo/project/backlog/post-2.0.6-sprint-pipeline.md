@@ -22,11 +22,19 @@ each sprint gets its own planner → plan-review gate at execution time; nothing
 
 ## The sprint queue (proposed order)
 
-1. **Sprint C1 — Codex adoption batch** *(small, first after the smoke — produces the DR-037
-   step-4 measurement data that calibrates everything later)*: issue 0239 (vendor-override
-   fail-fast), 0240+0237 (dispatch role validation), exact-model-provenance-display, codex guard
-   adapter (payload shapes per Noah's probe findings), 0233 e2e regression tests. First measured
-   Codex-worker sprint.
+1. **Sprint C1 — Codex adoption batch** *(ELEVATED 2026-07-09: gates the v2.0.7 release, which
+   gates the fast-track — balazs: "when the core Codex fixes are in... we'll bump to 2.0.7 and
+   then fast-track the other sprints (because we'll actually be able to crush them fast)")*.
+   The v2.0.7 acceptance list, his words: good path usage, auto-approved permissions (NOT yolo
+   mode — classifier posture), working flow, can release, calls dydo commands correctly.
+   Contents: 0254 (stateful guard protocols — read-ack CLI, durable codex wait, THE lead
+   blocker), 0253 (approval/sandbox posture at launch), 0239 generalized (fail-fast on
+   unresolvable executable, with the 2026-07-09 bare-fallback evidence), 0240+0237 (dispatch
+   role validation), exact-model-provenance-display (codex side proven — gpt-5.5 arrived
+   tagged; Claude capture remains), codex guard adapter, 0233 e2e tests, whoami host/model
+   display (0223 fold). BOOTSTRAP EXCEPTION: C1 itself is implemented by Claude workers —
+   codex cannot yet operate under guard (0254), which is what C1 fixes. First measured
+   Codex-worker sprint becomes M0/M1 instead.
 2. **Sprint M0 — spine object-type completion** *(NEW, from the 2026-07-09 live docs smoke;
    Brian owns sync-model — balazs routing)*: the docs mirror correctly excludes what sync-model
    declares as DBs, and sync-model only has 7 types — so ~700 of ~831 mirrored pages are

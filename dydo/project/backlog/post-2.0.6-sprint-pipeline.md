@@ -35,7 +35,16 @@ each sprint gets its own planner → plan-review gate at execution time; nothing
    display (0223 fold). BOOTSTRAP EXCEPTION: C1 itself is implemented by Claude workers —
    codex cannot yet operate under guard (0254), which is what C1 fixes. First measured
    Codex-worker sprint becomes M0/M1 instead.
-2. **Sprint M0 — spine object-type completion** *(NEW, from the 2026-07-09 live docs smoke;
+2. **Wave W1 — first Codex workhorse batch** *(balazs 2026-07-09: "the goal is to be able to
+   use codex as the workhorse for the rest of the issues"; runs immediately after v2.0.7
+   installs, BEFORE M0 — it is also the DR-037 measured-speed shakedown)*: single-issue
+   task-boundary Codex dispatches, each with a Claude reviewer gate. Order: **0257 FIRST**
+   (reset --parent-page archives the real board — must die before M0's live smoke; until then
+   nobody uses --parent-page), then the 2026-07-09 inquisition batch (0258/0259/0261 notion
+   hardening, 0260/0262 doc drift, 0263 dead code, 0264 coverage, 0265 if Grace defers it),
+   then the older smalls (0238, 0242, 0243, 0244, 0248, 0223 remnants, 0255 dispatch-crash
+   retry). NOT in v2.0.7: only 0256 (C1 amendment) gates the tag.
+3. **Sprint M0 — spine object-type completion** *(NEW, from the 2026-07-09 live docs smoke;
    Brian owns sync-model — balazs routing)*: the docs mirror correctly excludes what sync-model
    declares as DBs, and sync-model only has 7 types — so ~700 of ~831 mirrored pages are
    PM-shaped records (decisions, changelog, backlog, pitfalls) still living as doc pages.

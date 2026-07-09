@@ -153,7 +153,7 @@ public static partial class GuardCommand
                     agentId = hookInput.AgentId;
                     agentType = hookInput.AgentType;
                     host = InferHost(hookInput, json);
-                    model = InferModel(json);
+                    model = InferModel(hookInput, json);
                     filePath = hookInput.GetFilePath();
                     action = hookInput.GetAction();
                     toolName = hookInput.ToolName?.ToLowerInvariant();
@@ -185,6 +185,31 @@ public static partial class GuardCommand
         return InferHostFromPath(hookInput.TranscriptPath);
     }
 
+    /// <summary>
+    /// Capture the concrete runtime model for a hook call (c1-6). The chain, in truth-order:
+    /// <list type="number">
+    ///   <item>An explicit <c>model</c>/<c>dydo_model</c> field on the payload — what a codex
+    ///     host already delivers (<c>gpt-5-codex</c>), and what a future Claude payload would
+    ///     carry.</item>
+    ///   <item>Otherwise, for a Claude session, the transcript: Claude Code writes the real
+    ///     runtime model id onto every assistant entry, so the most recent one is the concrete
+    ///     binding (truthful under <c>dydo model cap</c>, which rewrites what actually runs).</item>
+    ///   <item>Otherwise <c>unknown</c> — never guessed from a role default.</item>
+    /// </list>
+    /// This is the leg that lets a Tier-1 Claude claim persist a concrete model: the captured
+    /// value flows through <see cref="ParseInput"/> into the claim's
+    /// <c>StorePendingSessionId</c> / <c>StoreSessionContext</c> write.
+    /// </summary>
+    internal static string InferModel(HookInput hookInput, string? rawJson = null)
+    {
+        var explicitModel = InferModel(rawJson);
+        if (explicitModel != AgentSession.UnknownModel)
+            return explicitModel;
+
+        var transcriptModel = InferModelFromTranscript(hookInput?.TranscriptPath);
+        return transcriptModel ?? AgentSession.UnknownModel;
+    }
+
     internal static string InferModel(string? rawJson)
     {
         if (string.IsNullOrWhiteSpace(rawJson))
@@ -210,6 +235,87 @@ public static partial class GuardCommand
         }
 
         return AgentSession.UnknownModel;
+    }
+
+    // Read at most this many trailing bytes of the transcript. The most recent assistant entry
+    // (carrying the runtime model id) is always near the end of an append-only JSONL transcript,
+    // so a bounded tail read keeps the guard's hot path cheap regardless of transcript size.
+    private const int TranscriptTailBytes = 512 * 1024;
+
+    /// <summary>
+    /// Extract the runtime model id from a Claude Code transcript by scanning its tail for the
+    /// most recent assistant entry's <c>message.model</c>. Returns null when the file is absent,
+    /// unreadable, or carries no usable model — the guard then keeps <c>unknown</c>.
+    /// </summary>
+    internal static string? InferModelFromTranscript(string? transcriptPath)
+    {
+        if (string.IsNullOrWhiteSpace(transcriptPath) || !File.Exists(transcriptPath))
+            return null;
+
+        try
+        {
+            var lines = ReadTranscriptTailLines(transcriptPath);
+            for (var i = lines.Count - 1; i >= 0; i--)
+            {
+                var model = TryExtractAssistantModel(lines[i]);
+                if (model != null)
+                    return AgentSession.NormalizeModel(model);
+            }
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static List<string> ReadTranscriptTailLines(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        var start = stream.Length > TranscriptTailBytes ? stream.Length - TranscriptTailBytes : 0;
+        stream.Seek(start, SeekOrigin.Begin);
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+        var lines = reader.ReadToEnd().Split('\n').ToList();
+
+        // A tail read that started mid-file leaves the first element a partial line fragment.
+        if (start > 0 && lines.Count > 0)
+            lines.RemoveAt(0);
+
+        return lines;
+    }
+
+    private static string? TryExtractAssistantModel(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(line);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+                return null;
+
+            if (!root.TryGetProperty("type", out var typeEl) || typeEl.ValueKind != JsonValueKind.String
+                || !string.Equals(typeEl.GetString(), "assistant", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            if (!root.TryGetProperty("message", out var msgEl) || msgEl.ValueKind != JsonValueKind.Object
+                || !msgEl.TryGetProperty("model", out var modelEl) || modelEl.ValueKind != JsonValueKind.String)
+                return null;
+
+            var model = modelEl.GetString();
+            // Claude Code stamps "<synthetic>" on injected assistant turns — not a real binding.
+            if (string.IsNullOrWhiteSpace(model) || model == "<synthetic>")
+                return null;
+
+            return model;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static string? TryReadExplicitHost(string? rawJson)

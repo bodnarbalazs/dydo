@@ -146,6 +146,85 @@ public class GuardCommandTests : IDisposable
         Assert.Equal("unknown", model);
     }
 
+    // Capture fallback chain leg: explicit payload model wins even when a transcript is present.
+    [Fact]
+    public void InferModel_ExplicitPayloadModel_WinsOverTranscript()
+    {
+        var transcript = WriteTranscript(
+            """{"type":"assistant","message":{"model":"claude-opus-4-8"}}""");
+        var input = new HookInput { TranscriptPath = transcript };
+
+        var model = GuardCommand.InferModel(input, """{"dydo_model":"gpt-5"}""");
+
+        Assert.Equal("gpt-5", model);
+    }
+
+    // Capture fallback chain leg: no explicit model → the transcript's assistant model id.
+    [Fact]
+    public void InferModel_NoPayloadModel_FallsBackToTranscript()
+    {
+        var transcript = WriteTranscript(
+            """{"type":"user","message":{"role":"user"}}""",
+            """{"type":"assistant","message":{"model":"claude-opus-4-8"}}""");
+        var input = new HookInput { TranscriptPath = transcript };
+
+        var model = GuardCommand.InferModel(input, """{"session_id":"s"}""");
+
+        Assert.Equal("claude-opus-4-8", model);
+    }
+
+    // The most recent assistant entry is authoritative (scans the tail in reverse).
+    [Fact]
+    public void InferModelFromTranscript_UsesMostRecentAssistantModel()
+    {
+        var transcript = WriteTranscript(
+            """{"type":"assistant","message":{"model":"claude-haiku-4-5"}}""",
+            """{"type":"assistant","message":{"model":"claude-opus-4-8"}}""");
+
+        var model = GuardCommand.InferModelFromTranscript(transcript);
+
+        Assert.Equal("claude-opus-4-8", model);
+    }
+
+    // Synthetic assistant turns carry model "<synthetic>" — not a real binding, must be skipped.
+    [Fact]
+    public void InferModelFromTranscript_SkipsSyntheticModel()
+    {
+        var transcript = WriteTranscript(
+            """{"type":"assistant","message":{"model":"claude-opus-4-8"}}""",
+            """{"type":"assistant","message":{"model":"<synthetic>"}}""");
+
+        var model = GuardCommand.InferModelFromTranscript(transcript);
+
+        Assert.Equal("claude-opus-4-8", model);
+    }
+
+    // Capture fallback chain leg: neither payload nor transcript → unknown (never guessed).
+    [Fact]
+    public void InferModel_NoPayloadModel_NoTranscript_ReturnsUnknown()
+    {
+        var input = new HookInput { TranscriptPath = null };
+
+        var model = GuardCommand.InferModel(input, """{"session_id":"s"}""");
+
+        Assert.Equal("unknown", model);
+    }
+
+    [Fact]
+    public void InferModelFromTranscript_MissingFile_ReturnsNull()
+    {
+        var missing = Path.Combine(_testDir, "does-not-exist.jsonl");
+
+        Assert.Null(GuardCommand.InferModelFromTranscript(missing));
+    }
+
+    private string WriteTranscript(params string[] jsonlLines)
+    {
+        var path = Path.Combine(_testDir, "transcript-" + Guid.NewGuid().ToString("N")[..8] + ".jsonl");
+        File.WriteAllText(path, string.Join("\n", jsonlLines) + "\n");
+        return path;
+    }
+
     #endregion
 
     #region Off-Limits Integration Tests

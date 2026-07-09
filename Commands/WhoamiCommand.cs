@@ -1,6 +1,7 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -35,6 +36,9 @@ public static class WhoamiCommand
             // Agent is claimed
             Console.WriteLine($"Agent identity for this process: {agent.Name}");
             Console.WriteLine($"  Assigned human: {agent.AssignedHuman ?? registry.GetHumanForAgent(agent.Name) ?? "(unassigned)"}");
+
+            // Host + Model from the claimed session (guard-captured runtime provenance, c1-6).
+            PrintHostAndModel(registry, configService, agent.Name);
 
             if (!string.IsNullOrEmpty(agent.Role))
                 Console.WriteLine($"  Role: {agent.Role}");
@@ -101,4 +105,18 @@ public static class WhoamiCommand
         return ExitCodes.Success;
     }
 
+    /// <summary>
+    /// Prints the claimed session's Host and Model. Model renders via the shared resolver: the
+    /// display name when the runtime model is known, the vendor only as a fallback when it is
+    /// unknown. Branch-free — <see cref="AgentSession.NormalizeHost"/> and
+    /// <see cref="ModelDisplay.ResolveOrVendor"/> absorb the null/unknown handling.
+    /// </summary>
+    private static void PrintHostAndModel(AgentRegistry registry, ConfigService configService, string agentName)
+    {
+        var session = registry.GetSession(agentName);
+        var models = configService.LoadConfig()?.Models;
+        var host = AgentSession.NormalizeHost(session?.Host);
+        Console.WriteLine($"  Host: {host}");
+        Console.WriteLine($"  Model: {ModelDisplay.ResolveOrVendor(session?.Model, host, models)}");
+    }
 }

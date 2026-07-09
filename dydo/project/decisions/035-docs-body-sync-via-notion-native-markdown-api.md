@@ -45,9 +45,11 @@ field (zero reflection, AOT-clean). The honest fix is to **stop converting** and
 
 ### 2. Keep direct REST + source-gen JSON (DR 025 §6 stands)
 Only §6's *custom conversion* is superseded. The transport is still `HttpClient` + source-generated
-`System.Text.Json` DTOs — a request carrying one `markdown` string and a response returning one, so the
-AOT surface stays tiny. **No third-party Notion SDK** (still a reflection/AOT liability), and the
-dormant JS converters (martian, etc.) are not viable in-process.
+`System.Text.Json` DTOs. The read is one `markdown` string in an envelope; the write is a **discriminated
+command** — `{ "type": "replace_content", "replace_content": { "new_str": …, "allow_deleting_content": … } }`,
+NOT a flat markdown object (a bare `{ markdown }` is rejected `body.type should be defined`) — so the AOT
+surface stays tiny. **No third-party Notion SDK** (still a reflection/AOT liability), and the dormant JS
+converters (martian, etc.) are not viable in-process.
 
 ### 3. Thin dialect-normalization for the 3-way merge (Markdig)
 Notion returns **Notion-flavored** markdown (HTML tables, callout/toggle syntax, `<unknown/>` tags for
@@ -76,8 +78,20 @@ warn; never the canonical file. A pure refuse-on-markers guard, a no-op in norma
   not part of this sprint. Until then the converter stays for the spine only.
 - **Expiring URLs:** read-back image/file URLs are pre-signed and expire — never persist them as
   canonical.
-- **Limits:** ~20k-block truncation ceiling; destructive updates need `allow_deleting_content: true`;
-  newlines must be real `\n` in the JSON string.
+- **Limits:** ~20k-block truncation ceiling (the GET response carries a `truncated` flag — reuse the
+  last-synced body, never persist a truncated read); newlines must be real `\n` in the JSON string.
+- **`allow_deleting_content` is child-safe, not always-true (amended):** a body replace with
+  `allow_deleting_content: true` can trash a page's **child pages** (makenotion/notion-mcp-server#171),
+  and folder pages carry the nested docs as children. So the write sends `false` for any page that still
+  has child pages and `true` only for a leaf page; on a fresh sync bodies are written at create-time,
+  before children exist, so the destructive replace never runs against a page with children.
+- **Child-page export tags are stripped on read (amended, issue 0235):** Notion's markdown export emits
+  each child page as a `<page url="…">title</page>` tag. Child pages are STRUCTURE (repo-owned via the
+  filesystem tree, DR 033 §5 / DR 025) — never body — so those tags are stripped in BOTH normalize
+  (compare) and clean-for-persist (write) paths. Without this a folder read-back (prose + child tags)
+  reads as a one-sided external edit → external-wins → the tag soup lands on the canonical `_index.md`
+  (not shadow-diverted, since it is not a two-sided conflict). Every canonical write goes through
+  clean-for-persist, including shadow promotion, so no path can carry the tags to disk.
 - **Deletion of `NotionBlockConverter`** for bodies happens only once the spine also migrates.
 
 ## Status

@@ -52,7 +52,15 @@ each sprint gets its own planner → plan-review gate at execution time; nothing
 3. **Sprint A1 — DR-036 approval reform R1–R3** *(depends on M1's S2a vocab)*: `dydo task done`
    / `dydo task archive` + guards, approve/reject removal, acceptance checklist into dispatcher
    skills. Well-specified — Codex candidate.
-4. **Sprint P1 — DR-039 planner + subskills R1–R4** *(R1 role files are human-gated —
+4. **Sprint P1 — DR-039 planner + subskills R1–R4** — *plus a gate-ownership correction from
+   the first two live gate runs (M0, C1, 2026-07-09): the chief-of-staff operated the
+   plan-review both times because the dispatch BRIEFS said "message Adele for the gate" —
+   contradicting DR-039 §2 (reviewer runs inside the planner-manager's session) and the CoS
+   never-in-an-approval-path invariant, and bottlenecking the parallel spree. balazs confirmed
+   planner-runs-gate is the intended flow. P1's planner-skill rewrite must state it explicitly:
+   the planner dispatches its own fresh-eyes reviewer, hands it ONLY plan artifacts plus the
+   cross-sprint footprint register (this pipeline record + green-lit sprint footprints), and
+   messages the CoS the VERDICT, not the gate request.* *(R1 role files are human-gated —
    `_system/roles/` is off-limits to agents)*: planner role, reviewer skill-folder restructure
    (the merge/sprint target reference **absorbs the DR-031 sprint-auditor charter rewrite** from
    review-tiers-and-attention), run-sprint green-lit-rows contract (subsumes

@@ -1,6 +1,5 @@
 namespace DynaDocs.Models;
 
-using System.Linq;
 using System.Text.Json.Serialization;
 using DynaDocs.Services;
 
@@ -32,6 +31,16 @@ public class CodexDispatchConfig
 
     [JsonPropertyName("approvalPolicy")]
     public string ApprovalPolicy { get; set; } = ConfigFactory.DefaultCodexApprovalPolicy;
+
+    /// <summary>
+    /// True when the configured sandbox mode enforces the codex Windows OS-level sandbox, whose
+    /// per-machine provisioning (<c>codex-windows-sandbox-setup.exe</c>) is a dispatch prerequisite
+    /// on Windows. <c>workspace-write</c> — the shipped default — runs under that elevated sandbox;
+    /// <c>read-only</c> and <c>danger-full-access</c> do not require the provisioning, so the
+    /// dispatch preflight's sandbox check does not fire for them.
+    /// </summary>
+    [JsonIgnore]
+    public bool RequiresWindowsSandbox => Sandbox == "workspace-write";
 
     /// <summary>
     /// Returns one message per invalid posture value, each naming the accepted list. Empty when

@@ -12,7 +12,10 @@ public static class LinuxTerminalLauncher
         var executable = TerminalLauncher.GetLaunchExecutable(host);
         if (executable != "claude")
         {
-            var invocation = TerminalLauncher.ShellExecutableToken(executable) + " ";
+            // Codex launch posture (issue 0253) sits between the executable and the prompt; empty
+            // for claude, so a resolved claude path drops through with no flags.
+            var invocation = TerminalLauncher.ShellExecutableToken(executable) + " " +
+                             TerminalLauncher.CodexLaunchPosture(host);
             args = args.Replace("claude ", invocation);
         }
 
@@ -72,8 +75,9 @@ public static class LinuxTerminalLauncher
         // a descendant, so it cannot pass the F11 ownership gate and failed silently on
         // every resume. How a resumed agent arms its own wait is handled separately
         // (#0207 part 2).
+        // Codex launch posture (issue 0253) precedes the resume subcommand; empty for claude.
         var resumeBody = $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE; " +
-                         $"{executableToken} {TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'; " +
+                         $"{executableToken} {TerminalLauncher.CodexLaunchPosture(host)}{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'; " +
                          $"printf '\\e[?1004l'";
 
         if (worktreeId != null && mainProjectRoot != null)

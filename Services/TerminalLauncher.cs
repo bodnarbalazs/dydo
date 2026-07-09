@@ -154,10 +154,13 @@ public class TerminalLauncher
         return $"--sandbox {codex.Sandbox} --ask-for-approval {codex.ApprovalPolicy} ";
     }
 
-    private static string GetBareLaunchCommand(string agentName, string? host)
+    // Takes an already-resolved posture so the manual-command fallback printer never re-invokes
+    // ResolveCodexConfig — a second throw there (invalid dispatch.codex) would escape the catch
+    // block that called it and crash the dispatch (issue 0253 round-2 review).
+    private static string GetBareLaunchCommand(string agentName, string? host, string posture)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"{GetBareLaunchExecutable(host)} {CodexLaunchPosture(host)}\"{prompt}\"";
+        return $"{GetBareLaunchExecutable(host)} {posture}\"{prompt}\"";
     }
 
     /// <summary>
@@ -180,11 +183,13 @@ public class TerminalLauncher
     internal static string ResumeArgumentToken(string? host) =>
         NormalizeLaunchHost(host) == "codex" ? "resume" : "--resume";
 
-    private static string GetBareResumeCommand(string sessionId, string? host) =>
-        $"{GetBareLaunchExecutable(host)} {CodexLaunchPosture(host)}{ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
+    // See GetBareLaunchCommand: posture is pre-resolved so the manual-resume fallback printer is
+    // throw-free (issue 0253 round-2 review — the watchdog resume path has no preflight guard).
+    private static string GetBareResumeCommand(string sessionId, string? host, string posture) =>
+        $"{GetBareLaunchExecutable(host)} {posture}{ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
 
     public static string GetClaudeResumeCommand(string sessionId) =>
-        GetBareResumeCommand(sessionId, "claude");
+        GetBareResumeCommand(sessionId, "claude", CodexLaunchPosture("claude"));
 
     internal static string ShellExecutableToken(string executable)
     {
@@ -361,6 +366,23 @@ public class TerminalLauncher
     public int Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
     {
         var launchHost = NormalizeLaunchHost(host);
+
+        // Resolve+validate the codex posture ONCE, up front (issue 0253 round-2 review). An invalid
+        // dispatch.codex config must fail here — not deep in platform argument assembly, where the
+        // catch block's manual-command fallback would re-resolve and throw a second time, escaping
+        // the handler and crashing the dispatch. The dispatch preflight already rejects this before
+        // reservation; this guard also covers direct/watchdog callers that bypass preflight.
+        string posture;
+        try
+        {
+            posture = CodexLaunchPosture(launchHost);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"ERROR: {ex.Message}");
+            return 0;
+        }
+
         try
         {
             // A dispatch can outlive its working directory (e.g. a merger finalized
@@ -384,7 +406,7 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetBareLaunchCommand(agentName, launchHost)}");
+            Console.WriteLine($"  {GetBareLaunchCommand(agentName, launchHost, posture)}");
             return 0;
         }
     }
@@ -402,6 +424,22 @@ public class TerminalLauncher
         string host = "claude")
     {
         var launchHost = NormalizeLaunchHost(host);
+
+        // Resolve+validate the codex posture ONCE, up front (issue 0253 round-2 review). The
+        // watchdog resume path reaches here with no preflight guard, so an invalid dispatch.codex
+        // config edited mid-run must fail cleanly instead of throwing twice (once in argument
+        // assembly, again in the manual-command fallback) and burning a resume attempt every tick.
+        string posture;
+        try
+        {
+            posture = CodexLaunchPosture(launchHost);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"ERROR: {ex.Message}");
+            return 0;
+        }
+
         try
         {
             if (workingDirectory != null && !Directory.Exists(workingDirectory))
@@ -422,7 +460,7 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch resume terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetBareResumeCommand(sessionId, launchHost)}");
+            Console.WriteLine($"  {GetBareResumeCommand(sessionId, launchHost, posture)}");
             return 0;
         }
     }

@@ -97,20 +97,34 @@ restrictive launch. An unknown value fails validation, naming the accepted list.
 The dangerous-bypass flag (`--dangerously-bypass-approvals-and-sandbox`, alias `--yolo`) is
 **not a configuration value and is never emitted** under any posture.
 
+The same posture is carried on the watchdog's resume path. `codex resume` accepts the same global
+flags as `codex`, so the posture flags are emitted **before** the `resume` subcommand
+(`codex --sandbox … --ask-for-approval … resume <id>`) — the documented form.
+
 ### Windows sandbox prerequisite
 
-On Windows, `workspace-write` (and any mode stricter than `danger-full-access`) requires Codex's
-sandbox helper `codex-windows-sandbox-setup.exe`, installed once per machine. It ships with the
-Codex CLI; run it from an elevated PowerShell before dispatching Codex agents:
+On Windows the `workspace-write` posture runs under Codex's elevated sandbox, which must be
+provisioned per machine before the first dispatch. The provisioning tool
+`codex-windows-sandbox-setup.exe` ships with the Codex CLI, installed under
+`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`. It sets up the sandbox users, ACLs, and firewall
+rules the elevated sandbox needs, and its first run must be approved by an administrator. Run it
+once from an elevated PowerShell before dispatching Codex agents:
 
 ```powershell
-codex-windows-sandbox-setup.exe
+& "$env:LOCALAPPDATA\Programs\OpenAI\Codex\bin\codex-windows-sandbox-setup.exe"
 ```
 
-Without it, a `workspace-write` Codex launch cannot establish its sandbox. Do not work around a
-missing helper by lowering the posture to `danger-full-access` — install the helper instead. The
-dispatch-time preflight that surfaces this as an actionable error is documented under dispatch
-validation.
+If the helper reports "program not found" on a clean install, that matches a known upstream Codex
+bug in the bin-junction lookup ([openai/codex issue #30829](https://github.com/openai/codex/issues/30829)):
+re-run the sandbox setup, or verify the bin junction under
+`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin` exists and resolves. Do not work around a missing helper
+by lowering the posture to `danger-full-access` — provision the sandbox instead.
+
+The dispatch-time preflight (`Services/DispatchPreflight.cs`) surfaces an absent prerequisite as an
+actionable error before any agent is reserved: a `workspace-write` Codex dispatch on Windows fails
+fast naming `codex-windows-sandbox-setup.exe` and pointing back at this section, and the sandbox is
+never silently downgraded. Modes that do not use the elevated sandbox (`read-only`,
+`danger-full-access`) skip the check.
 
 ---
 

@@ -30,7 +30,8 @@ public static class MacTerminalLauncher
             wtCleanup = $"; cd '{TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot)}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
-        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executableToken} \\\"{agentName} --inbox\\\"{TerminalReset}";
+        // Codex launch posture (issue 0253) sits between the executable and the prompt; empty for claude.
+        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executableToken} {TerminalLauncher.CodexLaunchPosture(host)}\\\"{agentName} --inbox\\\"{TerminalReset}";
         var postCheck = wtCleanup + (autoClose ? $"; {TerminalLauncher.BashPostClaudeCheck(agentName)}" : "");
 
         return (shellCommand, postCheck);
@@ -69,8 +70,9 @@ public static class MacTerminalLauncher
         // a descendant, so it cannot pass the F11 ownership gate and failed silently on
         // every resume. How a resumed agent arms its own wait is handled separately
         // (#0207 part 2).
+        // Codex launch posture (issue 0253) precedes the resume subcommand; empty for claude.
         var shellCommand = $"{cdPrefix}{agentExport}{wtSetup}unset CLAUDECODE; " +
-                           $"{executableToken} {TerminalLauncher.ResumeArgumentToken(host)} \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
+                           $"{executableToken} {TerminalLauncher.CodexLaunchPosture(host)}{TerminalLauncher.ResumeArgumentToken(host)} \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
         return (shellCommand, wtCleanup);
     }
 

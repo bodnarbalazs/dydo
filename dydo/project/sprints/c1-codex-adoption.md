@@ -68,7 +68,7 @@ operate under guard until C1 lands; that is the point.
 | Row | What | Kind | Isolation |
 |---|---|---|---|
 | c1-1-read-verb | host-agnostic `dydo read` — print + register (0254 lead) | code | worktree-safe |
-| c1-2-durable-wait | marker-based wait registration for codex hosts (0254) | code | worktree-safe, after c1-1 |
+| c1-2-durable-wait | marker-based wait registration (0254) + env-path nearest-host gate (0256 fold, HIGH — v2.0.7 holds for it) | code | worktree-safe, after c1-1 |
 | c1-3-codex-posture | configured approval+sandbox launch posture (0253) | code | worktree-safe |
 | c1-4-dispatch-preflight | fail-fast vendor/executable/sandbox/hook-trust checks (0239 generalized) | code | worktree-safe |
 | c1-5-role-validation | dispatch `--role` validation + caller-role fix (0240+0237) | code | worktree-safe, after c1-2 |
@@ -136,8 +136,10 @@ Docs (6-surface rule, `dydo/guides/adding-a-command.md`):
   guidance (serialized). NOTE: these templates have uncommitted working-tree edits from another
   stream — workers rebase on current state, and flag to Adele if the edits look mid-flight.
 - Issue Resolution sections + `resolved/` moves on land: 0254 (c1-1+c1-2 jointly — resolve when
-  both landed), 0253 (c1-3), 0239 (c1-4), 0240+0237 (c1-5), 0233 (c1-7),
-  `backlog/exact-model-provenance-display.md` → resolved/absorbed (c1-6).
+  both landed), 0256 (c1-2, the fold), 0253 (c1-3), 0239 (c1-4), 0240+0237 (c1-5), 0233 (c1-7),
+  `backlog/exact-model-provenance-display.md` → resolved/absorbed (c1-6). 0256 doc corrections
+  (also c1-2's): issue 0250's Resolution text ("env path already ownership-checked" is false)
+  and `backlog/codex-mcp-delegation-experiment.md` post-0250 claim (:122-125).
 
 Cross-sprint seams (declared per the pipeline posture):
 - `Services/CompletionProvider.cs` — c1-1 here, m0-4 later: **resolved by the C1-first sprint
@@ -185,6 +187,9 @@ rollback hazard. No live-board or state-file mutations; c1-8 mutates nothing in 
 
 - MCP-codex worker-lane marker, mcp-server registration probes, approvals-through-MCP, stop-hook
   parity — all stay on `backlog/codex-mcp-delegation-experiment.md` (balazs, co-think §3).
+- Issue 0265 (low — node-ancestor vendor classification substring-matches anywhere in the
+  cmdline): adjacent to the 0256 fold but explicitly DEFERRED (planner call on Adele's routing,
+  2026-07-09) — post-C1 hardening.
 - Planner role, reviewer subskills, `requires-prior` vocabulary changes (P1 / DR 039 R1–R4) —
   c1-5 fixes constraint *evaluation*, not the constraint *set*.
 - M0/M1 files (see seams above); Notion sync surfaces.

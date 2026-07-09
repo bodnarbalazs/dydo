@@ -125,7 +125,7 @@ public class DocsFidelityTests : IDisposable
         foreach (var (rel, body) in Corpus)
         {
             var pageId = PageIdFor(client, rel);
-            var readBack = client.GetPageMarkdown(pageId);
+            var readBack = client.GetPageMarkdown(pageId).Markdown;
             Assert.Equal(DocsMarkdownNormalizer.Normalize(body), DocsMarkdownNormalizer.Normalize(readBack));
             if (rel.EndsWith("table.md"))
                 Assert.Contains("| Command | Effect |", readBack);

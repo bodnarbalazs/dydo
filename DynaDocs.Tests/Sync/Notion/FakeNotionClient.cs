@@ -60,6 +60,15 @@ public sealed class FakeNotionClient : INotionClient
     /// markdown write (the DR 035 replacement for the append-then-delete block dance).</summary>
     public List<string> MarkdownUpdates { get; } = [];
 
+    /// <summary>Every <see cref="UpdatePageMarkdown"/> call with the allow_deleting_content flag it carried — lets a
+    /// child-safety test assert a folder-page body update was issued NON-destructively (<c>false</c>) while a
+    /// leaf-page update took the destructive full overwrite (<c>true</c>), per DR 035 §3.</summary>
+    public List<(string PageId, bool AllowDeletingContent)> MarkdownUpdateCalls { get; } = [];
+
+    /// <summary>Page ids whose <see cref="GetPageMarkdown"/> reads back TRUNCATED — models a body past Notion's
+    /// ~20k-block export ceiling (DR 035 caveat), driving the truncation-guard test.</summary>
+    public HashSet<string> TruncatedReadFor { get; } = [];
+
     /// <summary>Page ids that received an engine-computed <c>last-activity</c> property write via
     /// <see cref="UpdatePage"/> — one entry per write, so a test can assert the value lands AND that a
     /// no-op tick issues no repeated write (DR 030 §3, finding 1).</summary>
@@ -100,8 +109,9 @@ public sealed class FakeNotionClient : INotionClient
 
     /// <summary>When true, a create-with-body DROPS the carried markdown field instead of storing it — modelling
     /// live Notion SILENTLY IGNORING the create's <c>markdown</c> field (DR 035 finding). The page is created
-    /// empty, so a read-back returns "": drives the read-back-guard test that the sync THROWS rather than record a
-    /// full-body base against an empty page (the issue 0235 wipe).</summary>
+    /// empty, so a read-back returns "". Drives the read-back guards that never let a full-body base be recorded
+    /// against an empty page (the issue 0235 wipe): the adapter's rare resurrect create THROWS, while the fresh-sync
+    /// structure phase records an EMPTY base and self-heals via a child-safe body-phase PATCH (graceful degradation).</summary>
     public bool SilentlyIgnoreCreateMarkdown { get; set; }
 
     /// <summary>Page ids whose <see cref="GetPageMarkdown"/> throws a 404 — models a page archived/trashed in
@@ -332,20 +342,33 @@ public sealed class FakeNotionClient : INotionClient
         _blocks.TryGetValue(blockId, out var b) ? b : [];
 
     // An unwritten page reads back as the empty string, never null — matching the real markdown API's echo of
-    // an empty body and INotionClient's contract. A page in FailMarkdownReadFor 404s (archived/trashed).
-    public string GetPageMarkdown(string pageId)
+    // an empty body and INotionClient's contract. A page in FailMarkdownReadFor 404s (archived/trashed); a page in
+    // TruncatedReadFor echoes its stored body with truncated:true, modelling the ~20k-block export ceiling.
+    public NotionMarkdownResponse GetPageMarkdown(string pageId)
     {
         if (FailMarkdownReadFor.Contains(pageId))
             throw new NotionApiException(404, $"{{\"code\":\"object_not_found\",\"message\":\"page {pageId} not found\"}}");
-        return _pageMarkdown.GetValueOrDefault(pageId, "");
+        return new NotionMarkdownResponse
+        {
+            Object = "page_markdown",
+            Markdown = _pageMarkdown.GetValueOrDefault(pageId, ""),
+            Truncated = TruncatedReadFor.Contains(pageId),
+        };
     }
 
-    public void UpdatePageMarkdown(string pageId, string markdown)
+    public void UpdatePageMarkdown(string pageId, string markdown, bool allowDeletingContent)
     {
         if (FailMarkdownUpdate)
             throw new NotionApiException(500, "simulated markdown update failure");
         MarkdownUpdates.Add(pageId);
+        MarkdownUpdateCalls.Add((pageId, allowDeletingContent));
         _pageMarkdown[pageId] = markdown;
+        // Model the Notion child-page-trash bug (makenotion/notion-mcp-server#171, DR 035 §3): a destructive
+        // replace_content (allow_deleting_content:true) TRASHES the page's child pages. A child-safe update
+        // (false) replaces the body and leaves the nested child pages intact — the behaviour the adapter relies on.
+        if (allowDeletingContent)
+            foreach (var child in _pages.Values.Where(p => _pageParent.GetValueOrDefault(p.Id) == pageId).ToList())
+                child.Archived = true;
     }
 
     public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request)

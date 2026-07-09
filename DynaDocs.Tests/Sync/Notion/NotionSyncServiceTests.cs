@@ -354,8 +354,8 @@ public class NotionSyncServiceTests : IDisposable
         public NotionPage CreatePage(NotionPageCreateRequest request) => new();
         public NotionPage UpdatePage(string pageId, NotionPageUpdateRequest request) => new();
         public IReadOnlyList<NotionBlock> GetBlockChildren(string blockId) => [];
-        public string GetPageMarkdown(string pageId) => "";
-        public void UpdatePageMarkdown(string pageId, string markdown) { }
+        public NotionMarkdownResponse GetPageMarkdown(string pageId) => new();
+        public void UpdatePageMarkdown(string pageId, string markdown, bool allowDeletingContent) { }
         public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) => [];
         public void AppendBlockChildren(string blockId, NotionAppendChildrenRequest request) { }
         public void DeleteBlock(string blockId) { }

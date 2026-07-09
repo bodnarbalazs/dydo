@@ -94,7 +94,7 @@ public class DocsTreeSyncTests : IDisposable
         DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
 
         var understand = Child(client, Root(client), "Understand");
-        Assert.Equal("The understand area.", client.GetPageMarkdown(understand));
+        Assert.Equal("The understand area.", client.GetPageMarkdown(understand).Markdown);
     }
 
     [Fact]
@@ -106,7 +106,88 @@ public class DocsTreeSyncTests : IDisposable
         var architecture = Child(client, Child(client, Root(client), "Understand"), "Architecture");
         // The body round-trips verbatim through the native markdown API — blank lines are preserved (DR 035),
         // unlike the retired lossy converter that collapsed them.
-        Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture));
+        Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture).Markdown);
+    }
+
+    [Fact]
+    public void Run_FreshSync_WritesEveryBodyAtCreate_IssuesNoPatch()
+    {
+        // DR 035 §2: a full fresh sync writes every page body atomically at page-create (POST create-with-body),
+        // so it issues NO PATCH — dodging the destructive replace_content entirely on fresh runs, and writing each
+        // folder body before that folder has any child pages (inherently child-safe).
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        Assert.Empty(client.MarkdownUpdates); // no body was ever PATCHed — every body rode its create
+
+        // The bodies still landed, via the atomic create.
+        var understand = Child(client, Root(client), "Understand");
+        Assert.Equal("The understand area.", client.GetPageMarkdown(understand).Markdown);
+        var architecture = Child(client, understand, "Architecture");
+        Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture).Markdown);
+    }
+
+    [Fact]
+    public void Run_FreshSync_SilentCreateWithBodyIgnore_NeverWipesCanonical_SelfHealsViaChildSafePatch()
+    {
+        // DR 035 review finding 1: making create-with-body the COMMON fresh-sync path reintroduces the issue 0235
+        // wipe class with full-tree blast radius. The create's markdown field is doc-sourced and create-with-body is
+        // unconfirmed against a page_id parent — if live Notion SILENTLY IGNORES it, every page is created EMPTY. The
+        // structure phase must NOT record the full body against those empty pages: the next-tick body phase would
+        // then read external "" vs base=body as a Notion-side clear (repo == base, so external wins) and WIPE every
+        // canonical repo doc. The read-back guard records an empty base instead, so the body phase pushes the repo
+        // body via a CHILD-SAFE PATCH (graceful degradation) rather than wiping.
+        var client = new FakeNotionClient { SilentlyIgnoreCreateMarkdown = true };
+        var ex = Record.Exception(() =>
+            DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter()));
+
+        Assert.Null(ex); // graceful — a systematic create-with-body ignore never aborts the fresh sync
+
+        // The canonical repo docs are UNTOUCHED — the wipe never fired.
+        Assert.Contains("body one.", File.ReadAllText(DocPath("understand/architecture.md")));
+        Assert.Contains("The understand area.", File.ReadAllText(DocPath("understand/_index.md")));
+
+        // The bodies still landed in Notion — via the body-phase PATCH fallback, not the ignored create.
+        Assert.NotEmpty(client.MarkdownUpdates);
+        var understand = Child(client, Root(client), "Understand");
+        var architecture = Child(client, understand, "Architecture");
+        Assert.Equal("The understand area.", client.GetPageMarkdown(understand).Markdown);
+        Assert.Equal("# Arch\n\nbody one.", client.GetPageMarkdown(architecture).Markdown);
+
+        // The folder-body PATCH was child-safe: the nested doc/sub-folder pages survived (allow_deleting_content:false).
+        var guard = Child(client, understand, "guard");
+        Assert.False(client.IsArchived(architecture));
+        Assert.False(client.IsArchived(guard));
+        Assert.All(client.MarkdownUpdateCalls.Where(c => c.PageId == understand),
+            c => Assert.False(c.AllowDeletingContent)); // a page WITH children is never a destructive overwrite
+
+        // And a second tick with the same ignore is a clean no-op — no re-wipe, no re-push (base now matches Notion).
+        client.MarkdownUpdates.Clear();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+        Assert.Empty(client.MarkdownUpdates);
+        Assert.Contains("body one.", File.ReadAllText(DocPath("understand/architecture.md")));
+    }
+
+    [Fact]
+    public void Run_FolderIndexEdit_UpdatesFolderBody_PreservingNestedDocPages()
+    {
+        // DR 035 §3 end-to-end: editing a folder's _index.md drives a folder-body update on a page that HAS child
+        // pages (the nested docs and sub-folders). The update must be child-safe — the nested pages survive, never
+        // trashed by a destructive replace_content (makenotion/notion-mcp-server#171).
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var understand = Child(client, Root(client), "Understand");
+        var architecture = Child(client, understand, "Architecture");
+        var guard = Child(client, understand, "guard");
+
+        File.WriteAllText(DocPath("understand/_index.md"), "---\ntitle: Understand\n---\n\nThe understand area, revised.");
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        Assert.Equal("The understand area, revised.", client.GetPageMarkdown(understand).Markdown); // folder body updated
+        Assert.False(client.IsArchived(architecture));                                              // nested doc preserved
+        Assert.False(client.IsArchived(guard));                                                     // nested folder preserved
+        Assert.Contains(client.GetChildPages(understand), p => p.Id == architecture);
     }
 
     [Fact]
@@ -284,7 +365,7 @@ public class DocsTreeSyncTests : IDisposable
 
         var root = Root(client);
         // The off-limits root index was never uploaded — the "Docs" page is a bare container.
-        Assert.Equal("", client.GetPageMarkdown(root));
+        Assert.Equal("", client.GetPageMarkdown(root).Markdown);
         // files-off-limits.md never became a root child page.
         Assert.DoesNotContain(client.GetChildPages(root), p => p.Title is "files-off-limits" or "Off-limits");
         // The off-limits secret doc minted no page under understand.

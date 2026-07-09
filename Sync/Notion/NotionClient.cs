@@ -122,14 +122,18 @@ public sealed class NotionClient : INotionClient
         return blocks;
     }
 
-    public string GetPageMarkdown(string pageId) =>
-        Get($"pages/{pageId}/markdown", NotionJsonContext.Default.NotionMarkdownResponse).Markdown;
+    public NotionMarkdownResponse GetPageMarkdown(string pageId) =>
+        Get($"pages/{pageId}/markdown", NotionJsonContext.Default.NotionMarkdownResponse);
 
-    // A body replace is destructive (it removes the page's existing blocks), so allow_deleting_content is
-    // always sent. The response echoes the stored markdown; the caller does not need it, so it is discarded.
-    public void UpdatePageMarkdown(string pageId, string markdown) =>
+    // PATCH /v1/pages/{id}/markdown is a discriminated command, not a flat markdown object: the replace_content
+    // variant carries the new body as new_str with allow_deleting_content nested inside it. The response echoes
+    // the stored markdown; the caller does not need it, so it is discarded.
+    public void UpdatePageMarkdown(string pageId, string markdown, bool allowDeletingContent) =>
         Send(HttpMethod.Patch, $"pages/{pageId}/markdown",
-            new NotionMarkdownUpdateRequest { Markdown = markdown, AllowDeletingContent = true },
+            new NotionMarkdownUpdateRequest
+            {
+                ReplaceContent = new NotionMarkdownReplaceContent { NewStr = markdown, AllowDeletingContent = allowDeletingContent },
+            },
             NotionJsonContext.Default.NotionMarkdownUpdateRequest, NotionJsonContext.Default.NotionMarkdownResponse);
 
     public IReadOnlyList<NotionChildPage> GetChildPages(string parentPageId) =>

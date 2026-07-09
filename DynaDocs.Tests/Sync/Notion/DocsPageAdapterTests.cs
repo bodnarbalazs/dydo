@@ -102,7 +102,7 @@ public class DocsPageAdapterTests : IDisposable
         Assert.Equal("Architecture", created.Title);
         // The body is written through the native markdown API verbatim — blank lines survive, unlike the
         // retired lossy converter (DR 035).
-        Assert.Equal("# Architecture\n\nbody", client.GetPageMarkdown(newId));
+        Assert.Equal("# Architecture\n\nbody", client.GetPageMarkdown(newId).Markdown);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class DocsPageAdapterTests : IDisposable
         changes.Upserts.Add(new SyncUpsert { LocalId = ".", ExternalId = root, Fields = [], Body = "new body" });
         adapter.Apply(changes, new Dictionary<string, string>());
 
-        Assert.Equal("new body", client.GetPageMarkdown(root));                        // body replaced
+        Assert.Equal("new body", client.GetPageMarkdown(root).Markdown);              // body replaced
         Assert.Contains(client.GetChildPages(root), p => p.Id == nested);              // nested sub-page preserved
         Assert.False(client.IsArchived(nested));
     }
@@ -169,7 +169,7 @@ public class DocsPageAdapterTests : IDisposable
         // Repo edits the body.
         File.WriteAllText(repoPath, "---\ntitle: Guide\narea: general\n---\n\nedited in repo");
         Runner().Run([Read()]);
-        Assert.Equal("edited in repo", client.GetPageMarkdown(child));
+        Assert.Equal("edited in repo", client.GetPageMarkdown(child).Markdown);
 
         // Unchanged tick: no create and no markdown body write.
         client.MarkdownUpdates.Clear();
@@ -264,7 +264,7 @@ public class DocsPageAdapterTests : IDisposable
 
         var resurrectedId = store.Get("guide")!.ExternalId!;
         Assert.NotEqual(child, resurrectedId);                          // a fresh page was minted
-        Assert.Equal("canonical body", client.GetPageMarkdown(resurrectedId)); // body landed IN the create
+        Assert.Equal("canonical body", client.GetPageMarkdown(resurrectedId).Markdown); // body landed IN the create
         Assert.Empty(client.MarkdownUpdates);                          // never a separate UpdatePageMarkdown
         Assert.Equal(repoContent, File.ReadAllText(repoPath));          // canonical file byte-unchanged
 
@@ -389,6 +389,79 @@ public class DocsPageAdapterTests : IDisposable
         Assert.NotNull(retained);                    // base entry kept for retry, not dropped
         Assert.Equal(child, retained!.ExternalId);
         Assert.False(client.IsArchived(child));       // the live page was never archived
+    }
+
+    [Fact]
+    public void Apply_Update_FolderPageWithChildren_IsChildSafe_LeafPageIsDestructive()
+    {
+        // DR 035 §3 child-safety: replace_content with allow_deleting_content:true can TRASH a page's child pages
+        // (makenotion/notion-mcp-server#171). A FOLDER page carries the nested docs as child pages, so its body
+        // update must be issued CHILD-SAFE (allow_deleting_content:false); a LEAF page (no children) takes the
+        // destructive full overwrite (true). The fake models the bug — a true replace archives the page's children,
+        // so a folder update issued destructively would wipe the nested doc.
+        var client = new FakeNotionClient();
+        var root = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page("workspace"),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Docs") } },
+        }).Id;
+        var folder = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page(root),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Folder") } },
+        }).Id;
+        var nestedDoc = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page(folder),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Nested") } },
+        }).Id;
+        var adapter = AdapterOver(client, root, root, folder, nestedDoc);
+
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert { LocalId = "folder", ExternalId = folder, Fields = [], Body = "new folder index" });
+        changes.Upserts.Add(new SyncUpsert { LocalId = "folder/nested", ExternalId = nestedDoc, Fields = [], Body = "new leaf body" });
+        adapter.Apply(changes, new Dictionary<string, string>());
+
+        // The folder update was issued NON-destructively, so its nested child page survives the structural wipe.
+        Assert.Contains((folder, false), client.MarkdownUpdateCalls);
+        Assert.Contains(client.GetChildPages(folder), p => p.Id == nestedDoc);
+        Assert.False(client.IsArchived(nestedDoc));
+        Assert.Equal("new folder index", client.GetPageMarkdown(folder).Markdown); // body still replaced
+        // The leaf page (no children to protect) took the destructive full overwrite.
+        Assert.Contains((nestedDoc, true), client.MarkdownUpdateCalls);
+    }
+
+    [Fact]
+    public void RunThroughEngine_TruncatedExternalRead_ReusesLastSyncedBody_NeverTruncatesCanonicalFile()
+    {
+        // DR 035 §4 / deferred finding 3 (20k ceiling): a body past Notion's ~20k-block export ceiling reads back
+        // TRUNCATED — cut short, hence shorter than the real body. Treating it as external state would look like a
+        // Notion-side deletion and merge the cut-short body onto the canonical repo file, truncating it. The adapter
+        // reuses the last-synced body so the reconcile is a no-op and the canonical file is left byte-unchanged.
+        var (client, root, child) = SeedTree("full body\n\nsecond paragraph");
+        var repoPath = Path.Combine(_dir, "guide.md");
+        var repoContent = "---\ntitle: Guide\narea: general\n---\n\nfull body\n\nsecond paragraph";
+        File.WriteAllText(repoPath, repoContent);
+
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+        store.Set(new SyncDoc { LocalId = "guide", ExternalId = child, Fields = [], Body = "full body\n\nsecond paragraph", SourcePath = "" });
+
+        var lastBody = new Dictionary<string, string> { [child] = "full body\n\nsecond paragraph" };
+        DocsPageAdapter Adapter() => new(
+            client, root, new Dictionary<string, string>(),
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store), null, lastBody);
+        SyncDoc Read() => SyncDocFile.Read(repoPath, "guide", repoPath);
+        SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
+
+        // Notion returns a truncated body (only the first paragraph survived the ceiling).
+        client.SetPageMarkdown(child, "full body");
+        client.TruncatedReadFor.Add(child);
+
+        var result = Runner().Run([Read()]);
+
+        Assert.All(result.Results, r => Assert.Equal(ReconcileAction.None, r.Action)); // no merge, no write-to-repo
+        Assert.Equal(repoContent, File.ReadAllText(repoPath));                          // canonical file byte-unchanged
+        Assert.Empty(client.MarkdownUpdates);                                           // nothing pushed either
     }
 
     private static HashSet<string> ManagedFrom(BaseSnapshotStore store)

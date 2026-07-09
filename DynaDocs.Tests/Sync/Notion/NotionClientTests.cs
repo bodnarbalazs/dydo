@@ -169,6 +169,57 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void UpdatePageMarkdown_PatchesMarkdownPath_WithReplaceContentCommandShape()
+    {
+        // The live 400 ('body.type should be defined'): PATCH /v1/pages/{id}/markdown is a DISCRIMINATED command,
+        // not a flat { markdown } object. The body must carry the replace_content variant — top-level type
+        // discriminator, the markdown under new_str (NOT "markdown"), and allow_deleting_content NESTED inside the
+        // replace_content object — or Notion rejects it (DR 035 §1).
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"object":"page_markdown","id":"p1","markdown":"body","truncated":false}""");
+
+        Client(handler).UpdatePageMarkdown("p1", "# Title\n\nbody", allowDeletingContent: true);
+
+        var req = handler.Requests.Single();
+        Assert.Equal("PATCH", req.Method);
+        Assert.Equal("/v1/pages/p1/markdown", req.Path);
+        Assert.Contains("\"type\":\"replace_content\"", req.Body);
+        Assert.Contains("\"replace_content\":{", req.Body);
+        Assert.Contains("\"new_str\":\"# Title\\n\\nbody\"", req.Body); // markdown is new_str, with real \n
+        Assert.Contains("\"allow_deleting_content\":true", req.Body);
+        Assert.DoesNotContain("\"markdown\":", req.Body);              // never the retired flat markdown field
+    }
+
+    [Fact]
+    public void UpdatePageMarkdown_ChildSafe_NestsAllowDeletingContentFalse()
+    {
+        // A folder-body update passes allow_deleting_content:false so the destructive replace never trashes the
+        // page's child pages (makenotion/notion-mcp-server#171) — the flag lives INSIDE replace_content, not top level.
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"object":"page_markdown","id":"p1","markdown":"x","truncated":false}""");
+
+        Client(handler).UpdatePageMarkdown("p1", "x", allowDeletingContent: false);
+
+        Assert.Contains("\"replace_content\":{\"new_str\":\"x\",\"allow_deleting_content\":false}", handler.Requests.Single().Body);
+    }
+
+    [Fact]
+    public void GetPageMarkdown_GetsMarkdownPath_AndSurfacesTruncatedFlag()
+    {
+        // The GET envelope is { object, id, markdown, truncated, unknown_block_ids }; the truncated flag must be
+        // surfaced so a body past Notion's ~20k-block export ceiling is never persisted as if whole (DR 035 §4).
+        var handler = new FakeHttpMessageHandler().Enqueue(
+            """{"object":"page_markdown","id":"p1","markdown":"partial","truncated":true,"unknown_block_ids":["b7"]}""");
+
+        var resp = Client(handler).GetPageMarkdown("p1");
+
+        var req = handler.Requests.Single();
+        Assert.Equal("GET", req.Method);
+        Assert.Equal("/v1/pages/p1/markdown", req.Path);
+        Assert.Equal("partial", resp.Markdown);
+        Assert.True(resp.Truncated);
+        Assert.Equal(["b7"], resp.UnknownBlockIds!);
+    }
+
+    [Fact]
     public void GetBlockChildren_GetsChildrenPath_AndPaginatesViaQueryString()
     {
         var handler = new FakeHttpMessageHandler()

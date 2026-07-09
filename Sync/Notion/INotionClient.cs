@@ -53,13 +53,17 @@ public interface INotionClient
     /// maps the page's blocks to markdown server-side, at higher fidelity than the block converter — the docs
     /// mirror reads bodies through this instead of <see cref="GetBlockChildren"/> + <c>NotionBlockConverter</c>.
     /// An empty page reads back as the empty string. Nested child pages are structure, not body, and do not
-    /// appear here.</summary>
-    string GetPageMarkdown(string pageId);
+    /// appear here. The full envelope is returned (not just the string) so the caller can honour
+    /// <see cref="Dtos.NotionMarkdownResponse.Truncated"/> — a body past Notion's ~20k-block export ceiling reads
+    /// back cut short, and must never be persisted as if it were the whole body.</summary>
+    NotionMarkdownResponse GetPageMarkdown(string pageId);
 
-    /// <summary>Replace a page's body from a markdown string (PATCH /v1/pages/{id}/markdown, DR 035). Notion
-    /// maps the markdown to blocks server-side. Sent with <c>allow_deleting_content</c> because replacing a body
-    /// is destructive. The docs mirror writes bodies through this instead of the append-then-delete block dance.</summary>
-    void UpdatePageMarkdown(string pageId, string markdown);
+    /// <summary>Replace a page's body from a markdown string via the <c>replace_content</c> command (PATCH
+    /// /v1/pages/{id}/markdown, DR 035). Notion maps the markdown to blocks server-side. <paramref name="allowDeletingContent"/>
+    /// gates the destructive full overwrite: the docs mirror passes <c>false</c> for a page that still carries
+    /// child pages so the replace never trashes the nested docs (makenotion/notion-mcp-server#171), <c>true</c>
+    /// only for a leaf page. Writes bodies through this instead of the append-then-delete block dance.</summary>
+    void UpdatePageMarkdown(string pageId, string markdown, bool allowDeletingContent);
 
     /// <summary>Enumerate the sub-pages nested directly under a page — its <c>child_page</c> blocks (DR 033
     /// §3). The docs mirror walks the page tree with this the way the spine queries a data source.</summary>

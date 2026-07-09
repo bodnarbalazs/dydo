@@ -26,6 +26,7 @@ using DynaDocs.Sync.Notion.Provisioning;
 [JsonSerializable(typeof(NotionPageUpdateRequest))]
 [JsonSerializable(typeof(NotionAppendChildrenRequest))]
 [JsonSerializable(typeof(NotionMarkdownUpdateRequest))]
+[JsonSerializable(typeof(NotionMarkdownReplaceContent))]
 [JsonSerializable(typeof(NotionMarkdownResponse))]
 [JsonSerializable(typeof(NotionSearchRequest))]
 [JsonSerializable(typeof(NotionSearchResponse))]

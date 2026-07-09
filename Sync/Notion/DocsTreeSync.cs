@@ -53,13 +53,23 @@ public static class DocsTreeSync
 
         // 1. Structure (repo-owned, one-way): ensure the root "Docs" page, then every folder page (top-down, so a
         //    child's parent id is always resolved first), then every file page (after all folders exist, so
-        //    sub-folders precede files in the sidebar — DR 033 §7). Each new page is persisted to the store the
-        //    instant it is created: a mid-phase CreatePage failure (a 429/500 under the ~3 req/s throttle, or a
-        //    process kill) must never leave a created page unrecorded and re-minted as a duplicate on retry.
-        var rootPageId = EnsureRootPage(client, store, parentPageId);
+        //    sub-folders precede files in the sidebar — DR 033 §7). Each page is created WITH its body in one
+        //    atomic POST (DR 035 §1/§2 create-with-body): a fresh sync writes every body at page-create, so the
+        //    body phase below is normally a pure no-op and issues NO destructive PATCH — and each folder body is
+        //    written before that folder has any child pages, so the write can never trash the nested docs (§3).
+        //    Each new page is persisted to the store the instant it is created (see CreatePageWithBodyAndRecord):
+        //    a mid-phase CreatePage failure (a 429/500 under the ~3 req/s throttle, or a process kill) must never
+        //    leave a created page unrecorded and re-minted as a duplicate on retry. The recorded base is GUARDED
+        //    against a silent create-with-body ignore (DR 035 review finding): the create's markdown field is
+        //    doc-sourced and create-with-body is unconfirmed against a page_id parent, so if live Notion drops it
+        //    the page is EMPTY — recording the full body against it would make the body phase read the empty page
+        //    as an external clear and WIPE every canonical doc (issue 0235, full-tree blast radius). The base is
+        //    recorded EMPTY first and only upgraded to the body once a read-back confirms Notion kept it, so a
+        //    silent ignore degrades gracefully to a child-safe body-phase PATCH instead of a wipe.
+        var rootPageId = EnsureRootPage(client, store, parentPageId, IndexBody(root), output);
         var folderPageId = new Dictionary<string, string> { [RootLocalId] = rootPageId };
-        EnsureFolderPages(client, store, root, rootPageId, folderPageId);
-        EnsureFilePages(client, store, root, folderPageId);
+        EnsureFolderPages(client, store, root, rootPageId, folderPageId, output);
+        EnsureFilePages(client, store, root, folderPageId, output);
 
         // 2. Body + frontmatter (bidirectional): reconcile every folder-index body and doc file through the engine.
         var docs = new List<SyncDoc>();
@@ -78,7 +88,8 @@ public static class DocsTreeSync
         }
 
         var managed = ManagedPageIds(store);
-        var adapter = new DocsPageAdapter(client, rootPageId, parentByLocalId, titleByLocalId, managed, output);
+        var adapter = new DocsPageAdapter(
+            client, rootPageId, parentByLocalId, titleByLocalId, managed, output, LastSyncedBodyByPageId(store));
         var runner = new SyncRunner(adapter, store,
             (localId, _, _) => pathByLocalId.TryGetValue(localId, out var path) ? path : Path.Combine(dydoRoot, localId + ".md"),
             // A genuine two-sided conflict is diverted here — never written to the canonical repo file (DR 035
@@ -157,7 +168,7 @@ public static class DocsTreeSync
                         LocalId = snap.LocalId,
                         ExternalId = snap.ExternalId,
                         Fields = snap.Fields,
-                        Body = DocsMarkdownNormalizer.CleanForPersist(client.GetPageMarkdown(pageId)),
+                        Body = DocsMarkdownNormalizer.CleanForPersist(client.GetPageMarkdown(pageId).Markdown),
                         SourcePath = "",
                     });
                 }
@@ -203,69 +214,114 @@ public static class DocsTreeSync
     private static bool IsOffLimits(IOffLimitsService offLimits, string path) =>
         offLimits.IsPathOffLimits(path) != null;
 
-    private static string EnsureRootPage(INotionClient client, BaseSnapshotStore store, string parentPageId)
+    private static string EnsureRootPage(
+        INotionClient client, BaseSnapshotStore store, string parentPageId, string rootBody, TextWriter output)
     {
         var existing = store.Get(RootLocalId)?.ExternalId;
         if (existing != null)
             return existing;
 
+        return CreatePageWithBodyAndRecord(client, store, parentPageId, RootLocalId, RootTitle, rootBody, output);
+    }
+
+    /// <summary>Create a page WITH its body atomically (DR 035 §1/§2) and record its base — CRASH-safe AND WIPE-safe
+    /// against a silent create-with-body ignore (DR 035 review finding). The create's <c>markdown</c> field is
+    /// doc-sourced and create-with-body is unconfirmed against a page_id parent (dydo/reference/notion-sync.md), so
+    /// it may be silently dropped, leaving the page EMPTY.
+    /// <para>The base is recorded EMPTY the instant the page exists (crash-safety, §1 — a mid-phase failure must
+    /// never orphan an unrecorded page and re-mint it as a duplicate). An empty base can never drive a wipe: if a
+    /// crash strikes before the read-back below, the body phase sees external == repo (both the body Notion actually
+    /// stored) and converges, never reading a full-body base against a possibly-empty page and emptying the canonical
+    /// doc (the issue 0235 full-tree wipe). Only AFTER a read-back confirms Notion kept a non-empty body is the base
+    /// upgraded to it, so the body phase is a no-op. If the read-back comes back EMPTY the field was ignored: the base
+    /// stays empty and we warn — the body phase then writes the body via a child-safe PATCH (graceful degradation, a
+    /// fresh sync self-heals instead of aborting or wiping). One read-back GET per created page, only on a full fresh
+    /// bootstrap.</para></summary>
+    private static string CreatePageWithBodyAndRecord(
+        INotionClient client, BaseSnapshotStore store, string parentPageId, string localId, string title, string body, TextWriter output)
+    {
         var page = client.CreatePage(new NotionPageCreateRequest
         {
             Parent = NotionParent.Page(parentPageId),
-            Properties = TitleProperty(RootTitle),
+            Properties = TitleProperty(title),
+            Markdown = body.Length > 0 ? body : null,
         });
-        store.Set(RootBase(RootLocalId, page.Id));
+        store.Set(CreatedBase(localId, page.Id, ""));
+        store.Save();
+        if (body.Length == 0)
+            return page.Id;
+
+        if (client.GetPageMarkdown(page.Id).Markdown.Length == 0)
+        {
+            output.WriteLine(
+                $"notion docs sync: page {page.Id} ({title}) sent a non-empty body but read back empty — Notion ignored "
+                + "the markdown field on create; leaving the base empty so the body phase writes it via a child-safe PATCH");
+            return page.Id;
+        }
+
+        store.Set(CreatedBase(localId, page.Id, body));
         store.Save();
         return page.Id;
     }
 
     /// <summary>Create each subfolder's page under its parent's page (top-down), reusing an existing page from the
-    /// store so a re-run never duplicates. A newly minted page is recorded with an empty body — the engine fills it
-    /// from the folder's index doc on the same tick — persisted immediately (crash-safety, §1) and its id published
-    /// so its own children resolve their parent.</summary>
+    /// store so a re-run never duplicates. A newly minted page is created WITH its index-doc body atomically via
+    /// <see cref="CreatePageWithBodyAndRecord"/> (DR 035 §1/§2) — before it has any child pages, so the body write
+    /// can never trash the nested docs (§3) — its base recorded read-back-guarded so the body phase is a no-op on a
+    /// faithful create and a child-safe PATCH on a silent ignore. Its id is published so its own children resolve
+    /// their parent.</summary>
     private static void EnsureFolderPages(
-        INotionClient client, BaseSnapshotStore store, DocsNode node, string nodePageId, Dictionary<string, string> folderPageId)
+        INotionClient client, BaseSnapshotStore store, DocsNode node, string nodePageId,
+        Dictionary<string, string> folderPageId, TextWriter output)
     {
         foreach (var child in OrderedFolders(node))
         {
-            var pageId = store.Get(child.LocalId)?.ExternalId;
-            if (pageId == null)
-            {
-                var page = client.CreatePage(new NotionPageCreateRequest
-                {
-                    Parent = NotionParent.Page(nodePageId),
-                    Properties = TitleProperty(child.Title),
-                });
-                pageId = page.Id;
-                store.Set(RootBase(child.LocalId, pageId));
-                store.Save();
-            }
+            var pageId = store.Get(child.LocalId)?.ExternalId
+                ?? CreatePageWithBodyAndRecord(client, store, nodePageId, child.LocalId, child.Title, IndexBody(child), output);
             folderPageId[child.LocalId] = pageId;
-            EnsureFolderPages(client, store, child, pageId, folderPageId);
+            EnsureFolderPages(client, store, child, pageId, folderPageId, output);
         }
     }
 
     /// <summary>Create each file's page under its folder's page, in nav-order then alphabetical (DR 033 §7), after
     /// every folder page already exists so a folder's sub-folders always precede its files in the Notion sidebar.
-    /// Reuses an existing page from the store so a re-run never duplicates; a newly minted page is recorded with an
-    /// empty body — the engine fills it from the file on the same tick — and persisted immediately (crash-safety, §1).</summary>
+    /// Reuses an existing page from the store so a re-run never duplicates; a newly minted page is created WITH its
+    /// file body atomically via <see cref="CreatePageWithBodyAndRecord"/> (DR 035 §1/§2), its base recorded
+    /// read-back-guarded so the body phase is a no-op on a faithful create and a PATCH on a silent ignore.</summary>
     private static void EnsureFilePages(
-        INotionClient client, BaseSnapshotStore store, DocsNode node, IReadOnlyDictionary<string, string> folderPageId)
+        INotionClient client, BaseSnapshotStore store, DocsNode node,
+        IReadOnlyDictionary<string, string> folderPageId, TextWriter output)
     {
         foreach (var file in OrderedFiles(node))
         {
             if (store.Get(file.LocalId)?.ExternalId != null)
                 continue;
-            var page = client.CreatePage(new NotionPageCreateRequest
-            {
-                Parent = NotionParent.Page(folderPageId[node.LocalId]),
-                Properties = TitleProperty(file.Title),
-            });
-            store.Set(RootBase(file.LocalId, page.Id));
-            store.Save();
+            CreatePageWithBodyAndRecord(
+                client, store, folderPageId[node.LocalId], file.LocalId, file.Title, FileBody(file), output);
         }
         foreach (var child in OrderedFolders(node))
-            EnsureFilePages(client, store, child, folderPageId);
+            EnsureFilePages(client, store, child, folderPageId, output);
+    }
+
+    /// <summary>A folder page's body is its index doc (DR 033), read the same way <see cref="Collect"/> reads it so
+    /// the base recorded at create-time equals the repo body the body phase computes — keeping the fresh sync a
+    /// no-op. An off-limits or absent index yields an empty body (a bare container page).</summary>
+    private static string IndexBody(DocsNode node) =>
+        node.IndexPath != null ? SyncDocFile.Read(node.IndexPath, node.LocalId, node.IndexPath).Body : "";
+
+    private static string FileBody(DocsFile file) =>
+        SyncDocFile.Read(file.Path, file.LocalId, file.Path).Body;
+
+    /// <summary>The base snapshot's last-synced body per page id — handed to <see cref="DocsPageAdapter"/> so a body
+    /// that reads back TRUNCATED (past Notion's ~20k-block export ceiling, DR 035 caveat) reuses its last-good body
+    /// instead of the cut-short read, never truncating the canonical file.</summary>
+    private static Dictionary<string, string> LastSyncedBodyByPageId(BaseSnapshotStore store)
+    {
+        var map = new Dictionary<string, string>();
+        foreach (var localId in store.LocalIds)
+            if (store.Get(localId) is { ExternalId: { } externalId } snap)
+                map[externalId] = snap.Body;
+        return map;
     }
 
     /// <summary>Flatten the tree into the engine's inputs: a <see cref="SyncDoc"/> per folder (its index body) and
@@ -409,12 +465,14 @@ public static class DocsTreeSync
         ["title"] = new NotionPropertyValue { Type = "title", Title = NotionRichText.Of(title) },
     };
 
-    private static SyncDoc RootBase(string localId, string externalId) => new()
+    /// <summary>The base snapshot entry for a just-created page, recording the body written atomically in its
+    /// create (DR 035 §1/§2) so the body phase reads base == repo == external and stays a no-op — no PATCH.</summary>
+    private static SyncDoc CreatedBase(string localId, string externalId, string body) => new()
     {
         LocalId = localId,
         ExternalId = externalId,
         Fields = [],
-        Body = "",
+        Body = body,
         SourcePath = "",
     };
 

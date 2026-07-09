@@ -35,6 +35,7 @@ public sealed class DocsPageAdapter : ISyncAdapter
     private readonly IReadOnlyDictionary<string, string> _titleByLocalId;
     private readonly IReadOnlySet<string> _managedPageIds;
     private readonly TextWriter? _log;
+    private readonly IReadOnlyDictionary<string, string>? _lastSyncedBodyByPageId;
 
     /// <summary>Structure is repo-owned (DR 033 §2): the engine must never delete a repo doc or archive its page
     /// because the page was merely missing from an eventual-consistency-lagged external read.</summary>
@@ -45,14 +46,21 @@ public sealed class DocsPageAdapter : ISyncAdapter
     /// <param name="titleByLocalId">The Notion page title to set when a doc's page is first created.</param>
     /// <param name="managedPageIds">Page ids the sync already tracks, so the tree walk ignores unmanaged pages.</param>
     /// <param name="log">Optional sink for the one tolerated archive skip — a page already trashed under an
-    /// archived ancestor (issue 0221). Every other archive failure propagates rather than being logged and swallowed.</param>
+    /// archived ancestor (issue 0221) — and the truncated-read warning (DR 035 caveat). Every other archive
+    /// failure propagates rather than being logged and swallowed.</param>
+    /// <param name="lastSyncedBodyByPageId">The base snapshot's last-synced body per page id, consulted only when
+    /// a body reads back TRUNCATED (past Notion's ~20k-block export ceiling, DR 035 caveat): a truncated read is
+    /// shorter than the real body, so the adapter substitutes the last-synced body here to keep the reconcile a
+    /// no-op rather than merging a cut-short body onto the canonical file. Null (tests, dry-run) falls back to the
+    /// truncated body, which no dydo corpus doc ever triggers.</param>
     public DocsPageAdapter(
         INotionClient client,
         string rootPageId,
         IReadOnlyDictionary<string, string> parentPageIdByLocalId,
         IReadOnlyDictionary<string, string> titleByLocalId,
         IReadOnlySet<string> managedPageIds,
-        TextWriter? log = null)
+        TextWriter? log = null,
+        IReadOnlyDictionary<string, string>? lastSyncedBodyByPageId = null)
     {
         _client = client;
         _rootPageId = rootPageId;
@@ -60,6 +68,7 @@ public sealed class DocsPageAdapter : ISyncAdapter
         _titleByLocalId = titleByLocalId;
         _managedPageIds = managedPageIds;
         _log = log;
+        _lastSyncedBodyByPageId = lastSyncedBodyByPageId;
     }
 
     public IReadOnlyList<SyncRecord> ReadExternalState()
@@ -78,12 +87,32 @@ public sealed class DocsPageAdapter : ISyncAdapter
     // CleanForPersist strips the expiring-URL signatures (never persist an expiring URL) and normalizes line
     // endings while leaving tables and every other construct intact. Dialect/whitespace drift is collapsed only
     // for the merge's change detection, via NormalizeBody — never in the content persisted to disk.
-    private SyncRecord ReadPage(string pageId) => new()
+    private SyncRecord ReadPage(string pageId)
     {
-        ExternalId = pageId,
-        Fields = [],
-        Body = DocsMarkdownNormalizer.CleanForPersist(_client.GetPageMarkdown(pageId)),
-    };
+        var read = _client.GetPageMarkdown(pageId);
+        // Notion caps markdown export at ~20k blocks and CUTS the body short past it (DR 035 caveat). A truncated
+        // read is shorter than the real body, so treating it as external state would read as a Notion-side deletion
+        // and merge a cut-short body back onto the canonical file, corrupting it. Substitute the last-synced body so
+        // the reconcile sees no external change and skips the merge — the canonical file is left intact — and warn.
+        if (read.Truncated)
+        {
+            _log?.WriteLine(
+                $"notion docs sync: page {pageId} exceeded Notion's ~20k-block export ceiling and read back truncated — "
+                + "reusing the last-synced body and skipping its merge this tick (canonical file untouched)");
+            return new SyncRecord
+            {
+                ExternalId = pageId,
+                Fields = [],
+                Body = _lastSyncedBodyByPageId?.GetValueOrDefault(pageId) ?? DocsMarkdownNormalizer.CleanForPersist(read.Markdown),
+            };
+        }
+        return new SyncRecord
+        {
+            ExternalId = pageId,
+            Fields = [],
+            Body = DocsMarkdownNormalizer.CleanForPersist(read.Markdown),
+        };
+    }
 
     /// <summary>Depth-first walk of the managed page tree from a parent via child_page enumeration (DR 033 §3).
     /// Only pages the sync created (the managed set) are yielded and descended into; a colleague's stray page is
@@ -131,16 +160,22 @@ public sealed class DocsPageAdapter : ISyncAdapter
                 // wipe). Read the body straight back: a non-empty body that comes back empty means the field was
                 // ignored, so throw BEFORE recording the assigned id — the base never advances against the empty
                 // page and the wipe cannot fire. The read-back is confined to this rare create-with-body path.
-                if (upsert.Body.Length > 0 && _client.GetPageMarkdown(page.Id).Length == 0)
+                if (upsert.Body.Length > 0 && _client.GetPageMarkdown(page.Id).Markdown.Length == 0)
                     throw new NotionApiException(500,
                         $"create-with-body page {page.Id} ({upsert.LocalId}) sent a non-empty body but read back empty — Notion ignored the markdown field on create");
                 assigned[upsert.LocalId] = page.Id;
             }
             else
             {
-                // Notion maps the markdown to blocks and replaces the body server-side (allow_deleting_content
-                // is set by the client). A page's nested sub-pages are structure, not body, so they are untouched.
-                _client.UpdatePageMarkdown(upsert.ExternalId, upsert.Body);
+                // Notion maps the markdown to blocks and replaces the body server-side. But replace_content with
+                // allow_deleting_content:true can TRASH a page's child pages (makenotion/notion-mcp-server#171): a
+                // FOLDER page carries the nested docs as child pages, so a destructive replace would structurally
+                // wipe them. Issue the body-replace CHILD-SAFE — allow_deleting_content:false — for any page that
+                // still has child pages; only a leaf page (no children) takes the destructive full overwrite. On a
+                // fresh sync the body is written at page-create (DocsTreeSync), before any children exist, so this
+                // update path is only ever a folder-index EDIT on a page whose children must be preserved.
+                var hasChildPages = _client.GetChildPages(upsert.ExternalId).Count > 0;
+                _client.UpdatePageMarkdown(upsert.ExternalId, upsert.Body, allowDeletingContent: !hasChildPages);
             }
         }
 

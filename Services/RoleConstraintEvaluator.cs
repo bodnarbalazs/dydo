@@ -1,5 +1,6 @@
 namespace DynaDocs.Services;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Models;
 
 public class RoleConstraintEvaluator
@@ -144,12 +145,15 @@ public class RoleConstraintEvaluator
     internal static string SubstituteConstraintVars(string message, string agentName, string task,
         string? currentRole, string? dispatcher = null)
     {
-        var role = currentRole ?? "unknown role";
+        var role = string.IsNullOrEmpty(currentRole) ? "unknown role" : currentRole;
         // The role value is unknown at authoring time, so the indefinite article in front of the
         // "{current_role}" placeholder can't be baked into the message text — agree it here.
         var article = "aeiou".IndexOf(char.ToLowerInvariant(role[0])) >= 0 ? "an" : "a";
-        return message
-            .Replace("a {current_role}", $"{article} {{current_role}}")
+        // Anchor the article fix-up to a standalone "a" word so we don't rewrite the tail of a
+        // word ending in 'a' (e.g. "extra {current_role}") — \b requires a word boundary
+        // immediately before the article.
+        var articled = Regex.Replace(message, @"\ba \{current_role\}", $"{article} {{current_role}}");
+        return articled
             .Replace("{agent}", agentName)
             .Replace("{task}", task)
             .Replace("{current_role}", role)

@@ -523,6 +523,33 @@ public class DispatchCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Dispatch_ChiefOfStaff_ToFreshOrchestrator_TargetTakesRole_EndToEnd()
+    {
+        // #0237 finding 1 (round 2): the CoS->orchestrator routing must succeed END TO END. It is
+        // not enough that the dispatch command exits 0 — the launched target then claims a FRESH
+        // session (no co-thinker history) and follows the documented workflow
+        // (`dydo agent role orchestrator --task <task>`). Before the fix that role-set re-ran the
+        // requires-prior gate with no dispatcher context and BLOCKED, wedging the reserved agent
+        // downstream where the dispatcher never saw the error.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("chief-of-staff");
+
+        var dispatch = await DispatchAsync("orchestrator", "route-task", "Run the sprint", to: "Brian");
+        dispatch.AssertSuccess();
+
+        // The dispatched target claims its own fresh session and takes the orchestrator role via
+        // the documented workflow (`dydo agent role orchestrator --task <task>`). SetRole resolves
+        // the dispatch provenance (from_role: chief-of-staff) and clears the requires-prior gate.
+        await ReleaseAgentAsync();
+        var claim = await ClaimAgentAsync("Brian");
+        claim.AssertSuccess();
+        var role = await SetRoleAsync("orchestrator", "route-task");
+
+        role.AssertSuccess();
+    }
+
+    [Fact]
     public async Task Dispatch_NonChiefOfStaff_ToFreshOrchestrator_StaysGated_RendersCallerRole()
     {
         // #0237(1): a non-chief-of-staff caller stays gated, and the message resolves the CALLER's

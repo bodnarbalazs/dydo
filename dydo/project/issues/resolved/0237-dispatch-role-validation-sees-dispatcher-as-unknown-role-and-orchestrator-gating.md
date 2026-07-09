@@ -58,7 +58,23 @@ per DR 039).
 
 2. **Orchestrator gating blocks chief-of-staff routing**: `EvaluateRequiresPriorConstraint` now
    treats a chief-of-staff dispatcher as satisfying the requires-prior gate — the documented
-   top-level dispatch of a fresh orchestrator. Non-chief-of-staff callers stay gated exactly as
-   before (the requires-prior constraint set is untouched). Regression tests in
-   `DynaDocs.Tests/Services/RoleConstraintEvaluatorTests.cs` and
-   `DynaDocs.Tests/Integration/DispatchCommandTests.cs`.
+   top-level dispatch of a fresh orchestrator. This is enforced at BOTH evaluation sites, not just
+   at dispatch:
+   - **Dispatch time** (`AgentSelector`): the dispatcher role is threaded into `CanTakeRole`, so a
+     chief-of-staff's `dispatch --role orchestrator` clears the gate and reserves/launches the
+     target.
+   - **Role-set time** (`AgentRegistry.SetRole`): the launched target then claims a fresh session
+     and runs `dydo agent role orchestrator --task <task>`. SetRole now resolves the dispatch
+     provenance (`from_role`, written by the dispatch into the target's inbox) BEFORE the
+     requires-prior gate and passes it as the caller identity, so a CoS-dispatched agent clears the
+     gate at role-set exactly as the dispatcher cleared it at dispatch. Without this second site the
+     dispatch "succeeded" but the reserved, launched agent wedged at role-set — a fail-downstream
+     regression where the dispatcher never saw the error (round-2 review finding). The two sites are
+     now consistent, so "chief-of-staff cannot dispatch orchestrators at all" is fully resolved
+     end-to-end, not just at the command boundary.
+
+   Non-chief-of-staff callers stay gated exactly as before at both sites (the requires-prior
+   constraint set is untouched). Regression tests: `DynaDocs.Tests/Services/RoleConstraintEvaluatorTests.cs`
+   (evaluator), `DynaDocs.Tests/Services/RoleBehaviorTests.cs` (SetRole role-set gate, positive +
+   negative), and `DynaDocs.Tests/Integration/DispatchCommandTests.cs` (dispatch command + the full
+   dispatch→claim→role-set end-to-end path).

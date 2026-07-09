@@ -117,10 +117,47 @@ public class TerminalLauncher
 
     private static string GetBareLaunchExecutable(string? host) => NormalizeLaunchHost(host);
 
+    /// <summary>
+    /// Test seam pinning the resolved codex posture, bypassing <c>dydo.json</c> discovery so
+    /// launch-argument assertions stay hermetic. Null in production — the posture is loaded
+    /// from config.
+    /// </summary>
+    internal static CodexDispatchConfig? CodexConfigOverride { get; set; }
+
+    private static CodexDispatchConfig ResolveCodexConfig()
+    {
+        var codex = CodexConfigOverride
+            ?? new ConfigService().LoadConfig()?.Dispatch.Codex
+            ?? new CodexDispatchConfig();
+
+        var errors = codex.Validate();
+        if (errors.Count > 0)
+            throw new InvalidOperationException(
+                "Invalid dispatch.codex configuration: " + string.Join("; ", errors));
+
+        return codex;
+    }
+
+    /// <summary>
+    /// The configured codex launch posture (issue 0253) — <c>--sandbox &lt;mode&gt;
+    /// --ask-for-approval &lt;policy&gt;</c> with a trailing space, empty for claude. Placed after
+    /// the executable and before the prompt/resume subcommand: both are global codex options
+    /// (developers.openai.com/codex/cli/reference, verified 2026-07-09). The dangerous-bypass flag
+    /// is never a config value and never appears here.
+    /// </summary>
+    internal static string CodexLaunchPosture(string? host)
+    {
+        if (NormalizeLaunchHost(host) != "codex")
+            return "";
+
+        var codex = ResolveCodexConfig();
+        return $"--sandbox {codex.Sandbox} --ask-for-approval {codex.ApprovalPolicy} ";
+    }
+
     private static string GetBareLaunchCommand(string agentName, string? host)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"{GetBareLaunchExecutable(host)} \"{prompt}\"";
+        return $"{GetBareLaunchExecutable(host)} {CodexLaunchPosture(host)}\"{prompt}\"";
     }
 
     /// <summary>
@@ -144,7 +181,7 @@ public class TerminalLauncher
         NormalizeLaunchHost(host) == "codex" ? "resume" : "--resume";
 
     private static string GetBareResumeCommand(string sessionId, string? host) =>
-        $"{GetBareLaunchExecutable(host)} {ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
+        $"{GetBareLaunchExecutable(host)} {CodexLaunchPosture(host)}{ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
 
     public static string GetClaudeResumeCommand(string sessionId) =>
         GetBareResumeCommand(sessionId, "claude");
@@ -166,7 +203,7 @@ public class TerminalLauncher
     public static string GetCodexCommand(string agentName)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"codex \"{prompt}\"";
+        return $"codex {CodexLaunchPosture("codex")}\"{prompt}\"";
     }
 
     public static string GetClaudeCommand(string agentName)

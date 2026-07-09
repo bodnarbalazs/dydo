@@ -5,7 +5,7 @@ due:
 needs-human: false
 priority: High
 sprint: c1-codex-adoption
-status: ready
+status: in-progress
 work-type: feature
 area: backend
 type: context

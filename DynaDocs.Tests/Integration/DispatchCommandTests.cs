@@ -119,7 +119,8 @@ public class DispatchCommandTests : IntegrationTestBase
 
             result.AssertSuccess();
             Assert.NotEmpty(recorder.Started);
-            Assert.Contains($"{host} 'Brian --inbox'", JoinedArguments(recorder));
+            // Codex carries the configured launch posture (issue 0253); claude launches bare.
+            Assert.Contains(ExpectedLaunchLine(host, "Brian"), JoinedArguments(recorder));
         }
         finally
         {
@@ -170,7 +171,7 @@ public class DispatchCommandTests : IntegrationTestBase
 
             result.AssertSuccess();
             Assert.NotEmpty(recorder.Started);
-            Assert.Contains($"{expectedHost} 'Brian --inbox'", JoinedArguments(recorder));
+            Assert.Contains(ExpectedLaunchLine(expectedHost, "Brian"), JoinedArguments(recorder));
         }
         finally
         {
@@ -1488,6 +1489,13 @@ public class DispatchCommandTests : IntegrationTestBase
 
     private static string JoinedArguments(RecordingProcessStarter recorder) =>
         string.Join("\n", recorder.Started.Select(p => p.Arguments));
+
+    // The exact launch invocation per host: codex carries the shipped posture (issue 0253),
+    // claude launches bare.
+    private static string ExpectedLaunchLine(string host, string agentName) =>
+        host == "codex"
+            ? $"codex --sandbox workspace-write --ask-for-approval on-request '{agentName} --inbox'"
+            : $"{host} '{agentName} --inbox'";
 
     private async Task<CommandResult> InboxShowAsync()
     {

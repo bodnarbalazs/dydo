@@ -7,6 +7,14 @@ public static class ConfigFactory
     public static readonly List<string> DefaultQueues = ["merge"];
 
     /// <summary>
+    /// Shipped Codex launch posture (issue 0253, co-think 2026-07-09): the sandbox is the
+    /// enforcement boundary; approval prompts only to exceed it. An absent <c>dispatch.codex</c>
+    /// section resolves to these values — never a bare launch, never the dangerous-bypass flag.
+    /// </summary>
+    public const string DefaultCodexSandbox = "workspace-write";
+    public const string DefaultCodexApprovalPolicy = "on-request";
+
+    /// <summary>
     /// Dydo-internal scan-exclude entries — invariant. The check/fix loop
     /// guarantees these are present in every project's dydo.json (preserving
     /// any user-added entries alongside).

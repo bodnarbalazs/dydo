@@ -9,4 +9,11 @@ public class DispatchConfig
 
     [JsonPropertyName("autoClose")]
     public bool AutoClose { get; set; } = false;
+
+    /// <summary>
+    /// Codex launch posture (issue 0253). Non-nullable so an absent <c>dispatch.codex</c> section
+    /// deserializes to the shipped defaults, never a bare launch.
+    /// </summary>
+    [JsonPropertyName("codex")]
+    public CodexDispatchConfig Codex { get; set; } = new();
 }

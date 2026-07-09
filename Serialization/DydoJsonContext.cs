@@ -17,6 +17,7 @@ using DynaDocs.Sync;
 [JsonSerializable(typeof(PathsConfig))]
 [JsonSerializable(typeof(AgentsConfig))]
 [JsonSerializable(typeof(DispatchConfig))]
+[JsonSerializable(typeof(CodexDispatchConfig))]
 [JsonSerializable(typeof(WorktreeConfig))]
 [JsonSerializable(typeof(NotionConfig))]
 [JsonSerializable(typeof(ModelsConfig))]

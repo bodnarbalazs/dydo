@@ -41,7 +41,11 @@ Located at the project root. Created by `dydo init`. This is the primary configu
   },
   "dispatch": {
     "launchInTab": true,
-    "autoClose": false
+    "autoClose": false,
+    "codex": {
+      "sandbox": "workspace-write",
+      "approvalPolicy": "on-request"
+    }
   },
   "frameworkHashes": { }
 }
@@ -64,7 +68,49 @@ Located at the project root. Created by `dydo init`. This is the primary configu
 | `integrations.codex` | bool | `false` | Whether Codex integration is active |
 | `dispatch.launchInTab` | bool | `true` | Open dispatched agents in a new tab (vs new window) |
 | `dispatch.autoClose` | bool | `false` | Auto-close terminal when agent releases |
+| `dispatch.codex.sandbox` | string | `"workspace-write"` | Codex sandbox mode — `read-only`, `workspace-write`, or `danger-full-access` |
+| `dispatch.codex.approvalPolicy` | string | `"on-request"` | Codex approval prompting — `untrusted`, `on-request`, or `never` |
 | `frameworkHashes` | dict | — | SHA256 hashes of framework-owned files for `dydo template update` |
+
+---
+
+## Codex Launch Posture
+
+Every dispatched Codex session launches with a configured approval-and-sandbox posture
+(issue 0253) so it can run shell commands and `dydo` CLI calls inside its workspace without a
+human hand-approving each action — the sandbox is the enforcement boundary, and Codex prompts
+only when an action would exceed it. The dydo guard hook remains the project-boundary
+defense-in-depth on top of this.
+
+The `dispatch.codex` section surfaces two keys, both validated against the Codex CLI's accepted
+values:
+
+| Key | Accepted values | Default | Emitted flag |
+|-----|-----------------|---------|--------------|
+| `sandbox` | `read-only`, `workspace-write`, `danger-full-access` | `workspace-write` | `--sandbox` |
+| `approvalPolicy` | `untrusted`, `on-request`, `never` | `on-request` | `--ask-for-approval` |
+
+An absent `dispatch.codex` section resolves to these shipped defaults — never a bare, maximally
+restrictive launch. An unknown value fails validation, naming the accepted list. The Codex
+`on-failure` approval value is deprecated and never emitted.
+
+The dangerous-bypass flag (`--dangerously-bypass-approvals-and-sandbox`, alias `--yolo`) is
+**not a configuration value and is never emitted** under any posture.
+
+### Windows sandbox prerequisite
+
+On Windows, `workspace-write` (and any mode stricter than `danger-full-access`) requires Codex's
+sandbox helper `codex-windows-sandbox-setup.exe`, installed once per machine. It ships with the
+Codex CLI; run it from an elevated PowerShell before dispatching Codex agents:
+
+```powershell
+codex-windows-sandbox-setup.exe
+```
+
+Without it, a `workspace-write` Codex launch cannot establish its sandbox. Do not work around a
+missing helper by lowering the posture to `danger-full-access` — install the helper instead. The
+dispatch-time preflight that surfaces this as an actionable error is documented under dispatch
+validation.
 
 ---
 

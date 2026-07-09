@@ -20,8 +20,8 @@ public class DispatchPreflightTests : IDisposable
         Directory.CreateDirectory(_dir);
 
         // Pin executable resolution to the bare name so check (1) never throws on the whims of
-        // the test host's PATH — the checks under test are (2)/(3)/(4), and the throw path is
-        // driven explicitly where it is the subject.
+        // the test host's PATH — the checks under test are (2)/(3)/(4)/(5), and the throw path
+        // is driven explicitly where it is the subject.
         _originalResolver = TerminalLauncher.ExecutableResolverOverride;
         TerminalLauncher.ExecutableResolverOverride = host => host;
     }
@@ -290,7 +290,7 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (4) Hook trust (codex) ---
+    // --- (5) Hook trust (codex) ---
 
     [Fact]
     public void CodexUntrustedHooks_FailsWithReTrustInstruction()
@@ -338,7 +338,7 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (4) Default trust resolver: real codex config.toml parse ---
+    // --- (5) Default trust resolver: real codex config.toml parse ---
 
     [Fact]
     public void DefaultTrust_EnabledEntryWithMatchingHash_Passes()

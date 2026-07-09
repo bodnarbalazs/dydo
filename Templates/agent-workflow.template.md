@@ -80,6 +80,18 @@ Follow it through to completion.
 
 ---
 
+## Codex-Hosted Sessions
+
+Running on a Codex host (no Claude Read tool)? Two differences:
+
+- **Claim is a manual onboarding step** — run the step-1 command yourself before anything else;
+  no hook performs it for you.
+- **Register reads with `dydo read <file-or-message-id>`** — it prints the content AND marks it
+  read. Plain shell reads (`Get-Content`, `cat`) do NOT register with the guard, and unread
+  items block `dydo inbox clear` and release.
+
+---
+
 ## Troubleshooting
 
 | Error | Cause | Fix |
@@ -104,6 +116,7 @@ dydo agent role <role> --task <name>     # Set role
 
 # Inbox
 dydo inbox show                          # Check dispatched work
+dydo read <file|msg-id>                  # Print content AND register the read (any host)
 dydo inbox clear --all                   # Archive processed items
 
 # Dispatch

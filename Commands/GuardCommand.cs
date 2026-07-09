@@ -643,27 +643,8 @@ public static partial class GuardCommand
         return ExitCodes.Success;
     }
 
-    private static void TrackReadCompletion(AgentState? agent, string? filePath, string? sessionId, AgentRegistry registry)
-    {
-        if (agent == null || string.IsNullOrEmpty(filePath))
-            return;
-
-        // Track must-read completion
-        if (agent.UnreadMustReads.Count > 0)
-        {
-            var relPath = NormalizeForMustReadComparison(filePath);
-            if (agent.UnreadMustReads.Any(p => p.Equals(relPath, StringComparison.OrdinalIgnoreCase)))
-                registry.MarkMustReadComplete(sessionId, relPath);
-        }
-
-        // Track message reads
-        if (agent.UnreadMessages.Count > 0)
-        {
-            var messageId = ExtractMessageIdFromPath(filePath);
-            if (messageId != null && agent.UnreadMessages.Contains(messageId))
-                registry.MarkMessageRead(sessionId, messageId);
-        }
-    }
+    private static void TrackReadCompletion(AgentState? agent, string? filePath, string? sessionId, AgentRegistry registry) =>
+        ReadTrackingService.TrackReadCompletion(agent, filePath, sessionId, registry);
 
     private static int HandleSearchTool(
         string? searchPath, string? toolName, string? sessionId,
@@ -1652,19 +1633,8 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+dispatch\b", RegexOptions.IgnoreCase)]
     private static partial Regex DydoDispatchCommandRegex();
 
-    [GeneratedRegex(@"/inbox/([a-f0-9]+)-msg-[^/]+\.md$", RegexOptions.IgnoreCase)]
-    private static partial Regex InboxMessageIdRegex();
-
-    /// <summary>
-    /// Normalizes a file path for must-read comparison by extracting the project-relative
-    /// portion starting from "dydo/".
-    /// </summary>
-    internal static string NormalizeForMustReadComparison(string filePath)
-    {
-        var normalized = PathUtils.NormalizeWorktreePath(filePath)?.Replace('\\', '/') ?? filePath.Replace('\\', '/');
-        var dydoIndex = normalized.IndexOf("dydo/", StringComparison.OrdinalIgnoreCase);
-        return dydoIndex >= 0 ? normalized[dydoIndex..] : normalized;
-    }
+    internal static string NormalizeForMustReadComparison(string filePath) =>
+        ReadTrackingService.NormalizeForMustReadComparison(filePath);
 
     /// <summary>
     /// Extracts from/subject from a message file in an agent's inbox.
@@ -1699,12 +1669,8 @@ public static partial class GuardCommand
     /// Extracts message ID from an inbox message file path.
     /// Matches paths like */inbox/{id}-msg-*.md and returns the {id} portion.
     /// </summary>
-    internal static string? ExtractMessageIdFromPath(string filePath)
-    {
-        var normalized = filePath.Replace('\\', '/');
-        var match = InboxMessageIdRegex().Match(normalized);
-        return match.Success ? match.Groups[1].Value : null;
-    }
+    internal static string? ExtractMessageIdFromPath(string filePath) =>
+        ReadTrackingService.ExtractMessageIdFromPath(filePath);
 
     /// <summary>
     /// Non-blocking daily validation. Runs on first guard call per 24h period.

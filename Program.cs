@@ -13,6 +13,7 @@ rootCommand.Subcommands.Add(AgentCommand.Create());
 rootCommand.Subcommands.Add(GuardCommand.Create());
 rootCommand.Subcommands.Add(DispatchCommand.Create());
 rootCommand.Subcommands.Add(InboxCommand.Create());
+rootCommand.Subcommands.Add(ReadCommand.Create());
 rootCommand.Subcommands.Add(MessageCommand.Create());
 rootCommand.Subcommands.Add(WaitCommand.Create());
 rootCommand.Subcommands.Add(TaskCommand.Create());

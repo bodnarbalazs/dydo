@@ -326,6 +326,15 @@ dydo inbox clear --id abc123  # Clear specific item
 - `--all` - Clear all items
 - `--id <id>` - Clear specific item by ID
 
+### dydo read
+
+Print a target's content and register the read in one step — display-equals-ack. On hosts where the guard cannot observe file Reads (shell-based, e.g. codex), this is how an agent registers its inbox items and must-reads. The content is always printed before the read is registered; there is no path that acks without printing.
+
+```bash
+dydo read <message-id>   # Print an inbox item and mark it read
+dydo read <file-path>    # Print a file; if it is an unread must-read, mark it complete
+```
+
 ---
 
 ## Messaging Commands

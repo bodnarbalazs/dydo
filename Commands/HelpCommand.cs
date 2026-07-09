@@ -52,6 +52,7 @@ public static class HelpCommand
         Console.WriteLine("  inbox list             List agents with inbox items");
         Console.WriteLine("  inbox show             Show current agent's inbox");
         Console.WriteLine("  inbox clear            Clear processed inbox items");
+        Console.WriteLine("  read <target>          Print an inbox item or file and register the read");
         Console.WriteLine();
         Console.WriteLine("Messaging Commands:");
         Console.WriteLine("  message --to <agent>   Send message to another agent (alias: msg)");

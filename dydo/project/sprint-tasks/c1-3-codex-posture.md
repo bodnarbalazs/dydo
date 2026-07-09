@@ -42,8 +42,11 @@ dangerous-bypass flag. The dydo guard hook remains project-boundary defense-in-d
 ## Files
 
 - `Services/TerminalLauncher.cs` — `GetCodexCommand` (166-170), `GetBareLaunchCommand` (120-124),
-  Linux table strings (217-234), resume path (`ResumeArgumentToken`, 143-144): posture flags from
-  config on every codex command line.
+  resume path (`ResumeArgumentToken`, 143-144): posture flags from config on every codex command
+  line. **Platform scope:** the Linux launcher table (217-234) contains NO codex command line
+  today — this slice adds posture flags wherever a codex line is emitted and enables no new
+  platform. Worker verifies whether the Mac/Linux paths would need the same argument-threading
+  as Windows and records the answer in the slice notes; enabling codex there is out of scope.
 - `Services/WindowsTerminalLauncher.cs` — argument assembly (GetArguments 22-89) carries the
   flags through quoting intact.
 - `Models/DispatchConfig.cs` — `codex { sandbox, approvalPolicy }` + validation.
@@ -63,7 +66,7 @@ dangerous-bypass flag. The dydo guard hook remains project-boundary defense-in-d
 
 ## Sequencing
 
-Parallel-safe with c1-1/c1-4/c1-5. **Blocks c1-6** (shared `Services/ConfigFactory.cs` and
+Parallel-safe with c1-1/c1-4. **Blocks c1-6** (shared `Services/ConfigFactory.cs` and
 `configuration.md`).
 
 ## Success criteria

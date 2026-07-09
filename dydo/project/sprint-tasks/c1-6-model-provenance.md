@@ -30,10 +30,15 @@ no host/model.
   (`Models/ModelsConfig.cs`; shipped defaults in `Services/ConfigFactory.cs`). Display names and
   id pairs come from the backlog record + the ids already in the tier config — not enumerated
   here (no model names in plan text, DR 039). Unknown ids pass through verbatim.
-- **One shared resolver:** a single display-resolution point (natural host:
-  `Services/ArtifactProvenance.cs`, which both message and issue provenance already flow
-  through) consumed by every provenance surface — issues, messages, agent list, whoami. Rule:
-  show display-model when known; vendor ONLY as fallback when model is unknown.
+- **One shared resolver, resolved AT THE SOURCE:** display-name resolution happens inside
+  `Services/ArtifactProvenance.cs` itself (`FromSession`), so every consumer that already flows
+  through it — issues, messages, reviews, task records — gets display names with ZERO consumer
+  edits. (Plan-review fix, 2026-07-09: `ReviewCommand.cs:174` and `TaskCreateHandler.cs:21` are
+  provenance consumers owned by M1-S2a — map-at-render would have collided with a live parallel
+  sprint.) Rule: display-model when known; unknown ids pass through verbatim; vendor ONLY as
+  fallback when model is unknown.
+- The two surfaces that do NOT flow through `ArtifactProvenance` render via the same resolver:
+  `Commands/AgentListHandler.cs` and `Commands/WhoamiCommand.cs`.
 - **whoami:** print Host and Model lines from the claimed session (`Commands/WhoamiCommand.cs`,
   Execute 22-102 — it already has registry access; `AgentSession.Host/Model` are populated).
 
@@ -43,10 +48,12 @@ no host/model.
 - `Commands/GuardCommand.cs` — `InferModel` fallback chain (file follows c1-2's edits).
 - `Models/ModelsConfig.cs` + `Services/ConfigFactory.cs` — display map (file follows c1-3's
   edits).
-- `Services/ArtifactProvenance.cs` — shared resolver.
-- `Services/MessageService.cs` (:56-59), `Commands/IssueCreateHandler.cs` (:134-139),
-  `Commands/WhoamiCommand.cs`, agent list rendering (follow `ArtifactProvenance` consumers) —
-  render through the resolver.
+- `Services/ArtifactProvenance.cs` — resolve display names at the source (`FromSession`).
+- `Commands/AgentListHandler.cs`, `Commands/WhoamiCommand.cs` — the two non-ArtifactProvenance
+  surfaces; render via the same resolver.
+- NOT touched (zero consumer edits by design): `Services/MessageService.cs`,
+  `Commands/IssueCreateHandler.cs`, `Commands/ReviewCommand.cs`, `Commands/TaskCreateHandler.cs`
+  — the latter two are M1-S2a's files.
 - Tests: capture fallback chain (payload model, agent_type→frontmatter, unknown); resolver
   (known id → display, unknown id verbatim, vendor-only fallback); whoami output; provenance
   surfaces render display names.

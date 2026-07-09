@@ -42,8 +42,8 @@ claimed session's host process, not to a live `dydo wait` process.
 - `Services/AgentRegistry.cs` — marker CRUD + liveness evaluation for the durable kind.
 - `Commands/GuardCommand.cs` — `MissingGeneralWait` recognizes live durable markers (file taken
   over from c1-1; rebase on its extraction).
-- Release cleanup: the release path (follow `dydo agent release` from `Commands/` into
-  `AgentRegistry`) removes the caller's durable marker.
+- `Commands/AgentCommand.cs` — release cleanup: the release subcommand (:47) and its wait-check
+  (:732-738) remove/accept the caller's durable marker.
 - Tests: extend `DynaDocs.Tests/` wait/guard coverage — durable marker satisfies the guard;
   dead-host marker goes stale; release removes it; Claude-host default behavior unchanged.
   Neighbor patterns: existing WaitCommand + `PendingStateGuardTests`.

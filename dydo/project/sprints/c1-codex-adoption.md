@@ -2,13 +2,19 @@
 title: C1 — Codex Adoption
 campaign:
 end:
-gate-result:
+gate-result: plan-review PASS (2026-07-09, fresh-eyes reviewer, 2 rounds)
 seq: 9
-start:
-status: plan-review
+start: 2026-07-09
+status: active
 area: project
 type: context
 ---
+
+> **Plan-review verdict: PASS** (2026-07-09, DR-039 §2 gate, two rounds: FAIL 3 seam blockers →
+> PASS with all fixes disk-verified incl. resolve-at-source achievability check). Status `active`:
+> implementation launched same day under Grace (planner-orchestrates per DR-039 §1); Claude
+> workers per the bootstrap exception; landings sequenced through the chief-of-staff. This sprint
+> gates the v2.0.7 release.
 
 # C1 — Codex Adoption
 
@@ -65,7 +71,7 @@ operate under guard until C1 lands; that is the point.
 | c1-2-durable-wait | marker-based wait registration for codex hosts (0254) | code | worktree-safe, after c1-1 |
 | c1-3-codex-posture | configured approval+sandbox launch posture (0253) | code | worktree-safe |
 | c1-4-dispatch-preflight | fail-fast vendor/executable/sandbox/hook-trust checks (0239 generalized) | code | worktree-safe |
-| c1-5-role-validation | dispatch `--role` validation + caller-role fix (0240+0237) | code | worktree-safe |
+| c1-5-role-validation | dispatch `--role` validation + caller-role fix (0240+0237) | code | worktree-safe, after c1-2 |
 | c1-6-model-provenance | exact-model capture + display map + whoami host/model | code | worktree-safe, after c1-2 & c1-3 |
 | c1-7-codex-e2e-coverage | 0233's open asks + C1-path regression tests | test | worktree-safe, after code slices |
 | c1-8-live-smoke | codex dispatch smoke re-run incl. resume + release | human-gated | n/a |
@@ -73,10 +79,13 @@ operate under guard until C1 lands; that is the point.
 ## Dependency order
 
 ```
-c1-1 ∥ c1-3 ∥ c1-4 ∥ c1-5        (disjoint by file)
-c1-2   (after c1-1 — both touch Commands/GuardCommand.cs and the wait/read doc surfaces)
+c1-1 ∥ c1-3 ∥ c1-4               (disjoint by file)
+c1-2   (after c1-1 — both touch Commands/GuardCommand.cs, Services/AgentRegistry.cs, and the wait/read doc surfaces)
+c1-5   (after c1-2 — Services/AgentRegistry.cs chain: the 0237 fix threads dispatcher identity
+        through AgentSelector/IAgentRegistry/AgentRegistry; plan-review resequence 2026-07-09)
 c1-6   (after c1-2 AND c1-3 — GuardCommand.cs chain via c1-2; Services/ConfigFactory.cs chain via c1-3)
-c1-7   (after all code slices — exercises landed seams; owns only NEW test files)
+        c1-5 ∥ c1-6 (file-disjoint)
+c1-7   (after all code slices — exercises landed seams; new test files by default, see row)
 c1-8   (last; human at the terminal; pairs naturally with the v2.0.7 release candidate)
 ```
 
@@ -92,16 +101,23 @@ Code (owner slice in parentheses; a file appears once unless chained above):
   c1-6 (`InferModel`/`ParseInput`); serialized by the chain above
 - `Services/InboxService.cs`, `Services/MustReadTracker.cs` (c1-1)
 - `Commands/HelpCommand.cs`, `Program.cs`, `Services/CompletionProvider.cs` (c1-1 — new verb registration)
-- `Commands/WaitCommand.cs`, `Models/WaitMarker.cs` (c1-2)
-- `Services/AgentRegistry.cs` — c1-1 (read marks) → c1-2 (durable marker CRUD); serialized
+- `Commands/WaitCommand.cs`, `Models/WaitMarker.cs`, `Commands/AgentCommand.cs` (release :47,
+  wait-check :732-738) (c1-2)
+- `Services/AgentRegistry.cs` — c1-1 (read marks) → c1-2 (durable marker CRUD) → c1-5
+  (`CanTakeRole` dispatcher threading, 988-992); serialized
 - `Services/TerminalLauncher.cs`, `Services/WindowsTerminalLauncher.cs`, `Models/DispatchConfig.cs` (c1-3)
 - `Services/ConfigFactory.cs` — c1-3 (posture defaults) → c1-6 (display-map defaults); serialized
 - `Services/DispatchService.cs` + NEW `Services/DispatchPreflight.cs` (c1-4)
-- `Commands/DispatchCommand.cs`, `Services/RoleDefinitionService.cs`, `Services/RoleConstraintEvaluator.cs` (c1-5)
-- `Models/HookInput.cs`, `Models/ModelsConfig.cs`, `Services/ArtifactProvenance.cs`,
-  `Services/MessageService.cs`, `Commands/IssueCreateHandler.cs`, `Commands/WhoamiCommand.cs` (c1-6)
+- `Commands/DispatchCommand.cs`, `Services/RoleDefinitionService.cs`,
+  `Services/RoleConstraintEvaluator.cs`, `Services/AgentSelector.cs`,
+  `Services/IAgentRegistry.cs` (c1-5)
+- `Models/HookInput.cs`, `Models/ModelsConfig.cs`, `Services/ArtifactProvenance.cs`
+  (display names resolved at the source — zero consumer edits), `Commands/AgentListHandler.cs`,
+  `Commands/WhoamiCommand.cs` (c1-6). NOT touched: `MessageService.cs`, `IssueCreateHandler.cs`,
+  `ReviewCommand.cs`, `TaskCreateHandler.cs` — the latter two are M1-S2a's.
 - `DynaDocs.Tests/**` — each code slice owns its neighboring test files (named per row); c1-7
-  creates only NEW files (`DynaDocs.Tests/Integration/Codex*` family) so it cannot collide.
+  defaults to NEW files (`DynaDocs.Tests/Integration/Codex*` family) and may add to an existing
+  home only where no C1 slice edited it (verify-before-touch — see the row).
 
 Docs (6-surface rule, `dydo/guides/adding-a-command.md`):
 - `dydo/reference/dydo-commands.md` + `Templates/dydo-commands.template.md`,
@@ -123,9 +139,16 @@ Docs (6-surface rule, `dydo/guides/adding-a-command.md`):
 Cross-sprint seams (declared per the pipeline posture):
 - `Services/CompletionProvider.cs` — c1-1 here, m0-4 later: **resolved by the C1-first sprint
   ordering**, exactly the seam Brian's M0 record already declares.
+- **The six command-doc surfaces are shared with m0-4** (a code slice adding its own new verb):
+  `Commands/HelpCommand.cs`, `DynaDocs.Tests/Commands/CommandSmokeTests.cs`,
+  `dydo/reference/dydo-commands.md` + `Templates/dydo-commands.template.md`,
+  `dydo/reference/about-dynadocs.md` + `Templates/about-dynadocs.template.md` — c1-1 touches all
+  six (c1-2 re-touches the dydo-commands pair). Ordering-safe under the same C1-first sprint
+  ordering; declared here per the pipeline posture (plan-review finding, 2026-07-09).
 - M1-S2a's files (`Commands/Task*Handler.cs`, `ReviewCommand.cs`, `WorkspaceCommand.cs`,
-  `WorktreeCommand.cs`) — untouched by every C1 slice. Fully disjoint.
-- M0 docs slices — no shared files with C1.
+  `WorktreeCommand.cs`) — untouched by every C1 slice (c1-6 deliberately resolves provenance at
+  the source so `ReviewCommand.cs`/`TaskCreateHandler.cs` need zero edits). Fully disjoint.
+- M0 docs-only slices (m0-2/3/5) — no shared files with C1.
 
 ## Gates (every code slice, exact commands)
 

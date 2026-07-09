@@ -62,7 +62,8 @@ All four produce distinct, testable error messages; no reservation is made on pr
 
 ## Sequencing
 
-Parallel-safe with c1-1/c1-3/c1-5 (file-disjoint by construction above).
+Parallel-safe with every other slice (file-disjoint by construction above; c1-5 owns
+`Commands/DispatchCommand.cs`, this row owns `Services/DispatchService.cs`).
 
 ## Success criteria
 

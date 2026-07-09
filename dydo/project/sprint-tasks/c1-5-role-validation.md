@@ -1,6 +1,6 @@
 ---
 title: c1-5 Dispatch Role Validation + Caller-Role Resolution
-blocked-by:
+blocked-by: c1-2-durable-wait
 due:
 needs-human: false
 priority: Medium
@@ -46,6 +46,10 @@ Issues 0240 + 0237 together (the issues themselves say to). Three defects, one v
 - `Services/RoleConstraintEvaluator.cs` — caller-role resolution + grammar fix (:134 area).
 - `Services/RoleDefinitionService.cs` — requires-prior evaluation honors the chief-of-staff
   routing path (184-191).
+- `Services/AgentSelector.cs` (:23), `Services/IAgentRegistry.cs`,
+  `Services/AgentRegistry.cs` (`CanTakeRole`, 988-992) — the actual constraint-evaluation call
+  chain has NO dispatcher parameter (that is WHY the caller renders as unknown); thread the
+  dispatcher identity through it. (Plan-review finding, 2026-07-09.)
 - Tests: `DynaDocs.Tests/Commands/` dispatch-validation tests (undefined role rejected + role
   list in message; defined custom role accepted) and role-constraint tests (CoS→orchestrator
   passes; the 0240 planner-string repro now fails fast; non-CoS caller still gated).
@@ -59,7 +63,9 @@ Issues 0240 + 0237 together (the issues themselves say to). Three defects, one v
 
 ## Sequencing
 
-Parallel-safe with c1-1/c1-3/c1-4 (file-disjoint).
+**After c1-2** — `Services/AgentRegistry.cs` is owned by the c1-1 → c1-2 chain first (plan-review
+resequence; this row was wrongly declared parallel-safe before the AgentSelector/AgentRegistry
+call chain was traced). Runs parallel with c1-6 (file-disjoint).
 
 ## Success criteria
 

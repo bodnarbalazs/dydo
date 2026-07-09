@@ -69,8 +69,8 @@ additive.
 
 ## Sequencing & ripple
 
-- Parallel-safe with c1-3/c1-4/c1-5. **Blocks c1-2** (GuardCommand.cs + wait/read doc surfaces)
-  — see the sprint record's dependency graph.
+- Parallel-safe with c1-3/c1-4. **Blocks c1-2** (GuardCommand.cs, AgentRegistry.cs + wait/read
+  doc surfaces) — see the sprint record's dependency graph.
 - `CompletionProvider.cs` is m0-4's file too — moot under C1-first sprint ordering.
 - README-family doc-test ripple → report to Adele, don't absorb.
 

@@ -4,7 +4,7 @@ id: 256
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: inquisition
 found-by-agent: Leo
 found-by-vendor: claude
@@ -42,4 +42,34 @@ Found by the v2.0.6 campaign inquisition (cross-campaign lens: 0250 ancestor cla
 
 ## Resolution
 
-(Filled when resolved)
+Resolved in sprint slice c1-2 (the planner fold onto the durable-wait row). The `DYDO_AGENT` env
+fast-path now applies the nearest-host-wins gate (`IsOwnedByNearestHostCaller`) in place of
+descendant-only `IsOwnedByCaller` at all four sites the issue named:
+
+- `GetSessionContext` env branch (`Services/AgentRegistry.cs`)
+- `GetAmbientSessionContext`
+- `TryResolveCurrentAgentFromEnvVar`
+- `VerifyCallerOwnsAgent` (the gate `dydo wait` calls, so the c1-2 durable-wait registration sits
+  on the fixed check)
+
+The code now matches the design comment on `IsOwnedByNearestHostCaller` (`AgentRegistry.cs`) that
+already promised this gate for `GetSessionContext`. An interposed foreign-vendor worker
+(codex-under-claude, or vice versa) that is a live descendant of the claimed host — so the raw
+descendant check passed — is now refused for every self-mutating command: `dydo agent role`,
+`dydo agent release`, `dydo whoami`, and wait-marker registration all resolve NULL ambient
+identity for it, while a legit dispatched terminal (nearest host == claimed host) still passes.
+
+**Tests:** `IdentityHijackMutatingCommandTests` gained env-path cases (its setup previously NULLED
+`DYDO_AGENT`, which is exactly why the surface was uncovered) asserting role/release/wait-register
+refuse an interposed foreign worker while a legit dispatched terminal passes; the cases NULL
+`FindAncestorProcessOverride` and build the interposed shape with the multi-ancestor
+`GetParentPidOverride` chain (a single injected ancestor short-circuits
+`NoForeignHostNearerThanClaimedHost`). `AgentRegistryTests` gained
+`GetSessionContext_DydoAgentEnvVar_NearestHostWins_InterposedForeignHostResolvesNull`.
+
+**Doc corrections landed alongside:** issue 0250's Resolution text (the "env path already
+ownership-checked" claim was false — corrected, referencing this issue) and
+`backlog/codex-mcp-delegation-experiment.md`'s post-0250 "resolves NULL ambient identity" claim
+(wrong for the env branch — corrected).
+
+Related 0265 (low, cmdline-substring vendor classification) remains explicitly DEFERRED.

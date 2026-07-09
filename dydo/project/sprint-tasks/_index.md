@@ -12,7 +12,7 @@ Index of sprint-tasks documentation.
 ## Contents
 
 - [c1-1 Host-Agnostic `dydo read` Verb](./c1-1-read-verb.md) - The lead 0254 fix: codex hosts read files via shell, so the guard's Read-tool-observed tracking never registers — unread state persists, `dydo inbo...
-- [c1-2 Durable Wait Registration for Codex Hosts](./c1-2-durable-wait.md) - 0254 item (3): `dydo wait` is unusable on a codex host — foreground dies to the codex tool timeout, `Start-Process` backgrounding creates no `.
+- [c1-2 Durable Wait Registration for Codex Hosts](./c1-2-durable-wait.md) - **SCOPE AMENDED 2026-07-09 (planner fold, routed by Adele from the v2.
 - [c1-3 Configured Codex Launch Posture](./c1-3-codex-posture.md) - Issue 0253: the launcher emits bare `codex "<prompt>"` (`TerminalLauncher.
 - [c1-4 Dispatch Preflight Fail-Fast Checks](./c1-4-dispatch-preflight.md) - Issue 0239 generalized: a dispatch that cannot succeed must fail at dispatch time with an actionable message — not a downstream child-terminal `Com...
 - [c1-5 Dispatch Role Validation + Caller-Role Resolution](./c1-5-role-validation.md) - Issues 0240 + 0237 together (the issues themselves say to).

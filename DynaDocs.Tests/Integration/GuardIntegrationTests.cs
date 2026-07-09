@@ -757,6 +757,40 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertSuccess();
     }
 
+    [Fact]
+    public async Task Guard_DydoWaitRegister_Foreground_Allows()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // dydo wait --register (c1-2, #0254) returns immediately and must be allowed without
+        // run_in_background — a codex host's hook input carries no run_in_background field, so
+        // the H20 backgrounding rule must not block the durable-wait registration form.
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo wait --register\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_DydoWait_Foreground_CodexHost_PointsToRegister()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+
+        // On a codex host a foreground 'dydo wait' cannot be backgrounded — the codex hook input
+        // carries no run_in_background field — so the H20 block must point at 'dydo wait --register'
+        // (the durable form) rather than the Claude-only run_in_background remedy (c1-2, #0254).
+        var json = "{\"session_id\":\"" + TestSessionId + "\",\"transcript_path\":\"/home/user/.codex/sessions/x.jsonl\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo wait\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED");
+        result.AssertStderrContains("dydo wait --register");
+    }
+
     #endregion
 
     #region Search Tools (Glob/Grep) - Staged Access

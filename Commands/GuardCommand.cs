@@ -944,7 +944,10 @@ public static partial class GuardCommand
 
         if (IsDydoWaitCommand(command) && runInBackground != true)
         {
-            Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work.");
+            if (AgentSession.NormalizeHost(host) == "codex")
+                Console.Error.WriteLine("BLOCKED: On a codex host, register the general wait with 'dydo wait --register' — it writes a durable marker and returns immediately. A foreground 'dydo wait' has no run_in_background field here and dies to the codex tool timeout.");
+            else
+                Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work (or 'dydo wait --register' to write a durable marker instead).");
             return ExitCodes.ToolError;
         }
 
@@ -1490,15 +1493,21 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a command is 'dydo wait' (not --cancel).
+    /// Check if a command is a foreground-blocking 'dydo wait' — i.e. one the H20 rule
+    /// requires to run in the background. Excludes the forms that return immediately:
+    /// '--cancel' (removes a marker) and '--register' (c1-2, #0254 — writes a durable
+    /// general-wait marker keyed to the host PID and returns at once, so there is nothing
+    /// to background; a codex host's hook input carries no run_in_background field and must
+    /// not be blocked by the Claude-only backgrounding rule).
     /// </summary>
     internal static bool IsDydoWaitCommand(string command)
     {
         if (!DydoWaitCommandRegex().IsMatch(command))
             return false;
 
-        // Allow 'dydo wait --cancel' and 'dydo wait --task foo --cancel'
-        return !CancelFlagRegex().IsMatch(command);
+        // Allow 'dydo wait --cancel'/'--register' (and their --task variants) — these return
+        // immediately and must not be forced into the background.
+        return !CancelFlagRegex().IsMatch(command) && !RegisterFlagRegex().IsMatch(command);
     }
 
     /// <summary>
@@ -1565,6 +1574,12 @@ public static partial class GuardCommand
     /// universalises the general-wait obligation: every claimed agent runs a single
     /// always-active general wait once their role lands, so reachability and message
     /// surfacing don't depend on role.
+    ///
+    /// A durable general-wait marker (c1-2, #0254 — `dydo wait --register`) satisfies this
+    /// check exactly like a live foreground wait: its Pid is the claimed session's host-liveness
+    /// PID, so the same Listening + IsProcessRunning(Pid) test passes while the host lives and
+    /// fails once it dies (the self-heal sweep then removes the stale marker). No special-casing
+    /// is needed here — liveness is encoded in the marker's Pid.
     /// </summary>
     private static bool MissingGeneralWait(AgentState agent, AgentRegistry registry)
     {
@@ -1592,7 +1607,7 @@ public static partial class GuardCommand
         if (missingGeneralWait)
         {
             Console.Error.WriteLine("BLOCKED: Agent must keep a general wait active.");
-            Console.Error.WriteLine("  Run: dydo wait (in background)");
+            Console.Error.WriteLine("  Run: dydo wait (in background), or 'dydo wait --register' for a durable marker (required on a codex host).");
         }
     }
 
@@ -1626,6 +1641,9 @@ public static partial class GuardCommand
 
     [GeneratedRegex(@"--cancel\b", RegexOptions.IgnoreCase)]
     private static partial Regex CancelFlagRegex();
+
+    [GeneratedRegex(@"--register\b", RegexOptions.IgnoreCase)]
+    private static partial Regex RegisterFlagRegex();
 
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s", RegexOptions.IgnoreCase)]
     private static partial Regex DydoCommandRegex();

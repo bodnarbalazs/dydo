@@ -120,9 +120,15 @@ agents is explicitly not wanted.
   (`[windows] sandbox = "elevated"` makes this the default posture). Determine which sandbox
   modes remap and whether trust can be keyed to survive it.
 - **Post-0250 behavior check**: after commit `7805e004`, an MCP-spawned codex descendant of a
-  claimed host resolves NULL ambient identity (nearest-host-wins). One probe should confirm
-  the inner agent's dydo CLI calls now fail identity cleanly (and that msg/dispatch refuse) —
-  the experiment's "keep dydo CLI out of the inner prompt" caveat then relaxes to "it's inert".
+  claimed host resolves NULL ambient identity ONLY on the `.session-context` file fallback and
+  the msg/dispatch attribution path (`TryGetCurrentOwnedAgent`) — nearest-host-wins. CORRECTION
+  (per #0256): 0250 did NOT close the `DYDO_AGENT` env fast-path, which every dispatched terminal
+  pins and children inherit; through it the inner worker resolved as the OUTER agent for
+  self-mutating commands (`role`/`release`/`whoami`/wait-registration). That gap is closed by the
+  c1-2 fold of #0256 (nearest-host-wins applied to all four env-path sites). One probe should
+  confirm the inner agent's dydo CLI calls now fail identity cleanly on BOTH paths (and that
+  msg/dispatch refuse) — the experiment's "keep dydo CLI out of the inner prompt" caveat then
+  relaxes to "it's inert".
 - **Worker-lane marker design**: the codex hook payload has no `agent_id`/`agent_type`; decide
   the marker that routes MCP-Codex into the guard's anonymous Tier-2 lane (env-injected field?
   hooks.json argv? payload extension) so inner-agent calls are attributed rather than

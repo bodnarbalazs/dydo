@@ -26,7 +26,10 @@ issue 0254).
    read AND a workspace write run without a human approval click; a boundary-exceeding action
    still prompts. [auto-approved permissions — classifier posture, not yolo]
 3. **Windows sandbox:** confirm the c1-3-documented setup on this box; record what
-   `workspace-write` actually required. [posture ground truth]
+   `workspace-write` actually required. NOTE from c1-3's review: the preflight's
+   `DefaultSandboxPrerequisite()` (DispatchPreflight.cs:142) returns `true` unconditionally —
+   this smoke must pin the REAL probe (what detects a provisioned sandbox) and file the
+   follow-up to wire it. [posture ground truth]
 4. **Onboarding + work:** claim (manual step, per the updated workflow template) → role →
    `dydo wait --register` → receive a message → `dydo read` it and the must-reads →
    `dydo whoami` shows host/model. [working flow; calls dydo commands correctly]

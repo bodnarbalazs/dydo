@@ -1319,6 +1319,188 @@ public class WaitCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Durable Wait Registration (#0254)
+
+    [Fact]
+    public async Task Wait_Register_WritesDurableGeneralWaitMarker_KeyedToHostPid()
+    {
+        // `dydo wait --register` writes a durable general-wait marker and returns immediately.
+        // Its Pid is the claimed session's host-liveness PID (ClaimedPid), NOT a live wait
+        // process — so the marker survives the host's tool timeouts.
+        await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 4242;  // stamps ClaimedPid at claim
+        try
+        {
+            await ClaimAgentAsync("Adele");
+
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command, "--register");
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Durable general wait registered");
+
+            var registry = new AgentRegistry(TestDir);
+            var general = registry.GetWaitMarkers("Adele").Single(m => m.Task == "_general-wait");
+            Assert.True(general.Durable);
+            Assert.True(general.Listening);
+            Assert.Equal(4242, general.Pid);
+        }
+        finally { ProcessUtils.FindAncestorProcessOverride = null; }
+    }
+
+    [Fact]
+    public async Task Wait_Register_Task_WritesDurableTaskMarker()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 4343;
+        try
+        {
+            await ClaimAgentAsync("Adele");
+
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command, "--task", "auth", "--register");
+
+            result.AssertSuccess();
+
+            var registry = new AgentRegistry(TestDir);
+            var marker = registry.GetWaitMarkers("Adele").Single(m => m.Task == "auth");
+            Assert.True(marker.Durable);
+            Assert.True(marker.Listening);
+            Assert.Equal(4343, marker.Pid);
+        }
+        finally { ProcessUtils.FindAncestorProcessOverride = null; }
+    }
+
+    [Fact]
+    public async Task Wait_CodexHost_AutoSelectsDurable_WithoutRegisterFlag()
+    {
+        // A codex host's runtime cannot hold a foreground wait, so a plain `dydo wait`
+        // auto-selects durable registration (resolved from AgentSession.Host) and returns
+        // immediately instead of blocking.
+        await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 5252;
+        try
+        {
+            await ClaimAgentWithRuntimeAsync("Adele", "codex", "gpt-5");
+
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);  // no --register — auto-selected
+
+            result.AssertSuccess();
+            result.AssertStdoutContains("Durable general wait registered");
+
+            var registry = new AgentRegistry(TestDir);
+            var general = registry.GetWaitMarkers("Adele").Single(m => m.Task == "_general-wait");
+            Assert.True(general.Durable);
+            Assert.Equal(5252, general.Pid);
+        }
+        finally { ProcessUtils.FindAncestorProcessOverride = null; }
+    }
+
+    [Fact]
+    public async Task Wait_ClaudeHost_PlainWait_StaysForeground_NoDurableMarker()
+    {
+        // Claude-host default behavior is unchanged: a plain `dydo wait` blocks in the
+        // foreground (no auto-durable). With the parent reported dead it exits via the
+        // parent-death path and leaves NO marker — proving the foreground path ran, not
+        // durable registration.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentWithRuntimeAsync("Adele", "claude", "sonnet");
+
+        ProcessUtils.IsProcessRunningOverride = _ => false;
+        try
+        {
+            StoreSessionContext();
+            var command = WaitCommand.Create();
+            var result = await RunAsync(command);
+
+            result.AssertExitCode(2);
+            Assert.DoesNotContain("Durable general wait registered", result.Stdout);
+
+            var registry = new AgentRegistry(TestDir);
+            Assert.Empty(registry.GetWaitMarkers("Adele"));
+        }
+        finally { ProcessUtils.IsProcessRunningOverride = null; }
+    }
+
+    [Fact]
+    public async Task Wait_Register_Cancel_RemovesDurableMarker()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 4242;
+        try
+        {
+            await ClaimAgentAsync("Adele");
+
+            StoreSessionContext();
+            var registerCmd = WaitCommand.Create();
+            (await RunAsync(registerCmd, "--register")).AssertSuccess();
+
+            StoreSessionContext();
+            var cancelCmd = WaitCommand.Create();
+            var result = await RunAsync(cancelCmd, "--cancel");
+
+            result.AssertSuccess();
+            var registry = new AgentRegistry(TestDir);
+            Assert.Empty(registry.GetWaitMarkers("Adele"));
+        }
+        finally { ProcessUtils.FindAncestorProcessOverride = null; }
+    }
+
+    [Fact]
+    public async Task Wait_Register_ReleaseClearsDurableMarker()
+    {
+        // release cleanup (co-think outcome 2): `dydo agent release` removes the agent's
+        // durable wait marker along with the rest of its wait state.
+        await InitProjectAsync("none", "testuser", 3);
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => 4242;
+        try
+        {
+            await ClaimAgentAsync("Adele");
+
+            StoreSessionContext();
+            var registerCmd = WaitCommand.Create();
+            (await RunAsync(registerCmd, "--register")).AssertSuccess();
+
+            var beforeRelease = new AgentRegistry(TestDir).GetWaitMarkers("Adele");
+            Assert.Single(beforeRelease);
+
+            var releaseResult = await ReleaseAgentAsync();
+            releaseResult.AssertSuccess();
+
+            var afterRelease = new AgentRegistry(TestDir).GetWaitMarkers("Adele");
+            Assert.Empty(afterRelease);
+        }
+        finally { ProcessUtils.FindAncestorProcessOverride = null; }
+    }
+
+    [Fact]
+    public async Task CreateDurableWaitMarker_WritesDurableListeningMarker_WithHostPid()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateDurableWaitMarker("Adele", "_general-wait", "Adele", 3131);
+
+        // Re-read from disk to confirm round-trip serialization of the durable flag.
+        registry = new AgentRegistry(TestDir);
+        var marker = registry.GetWaitMarkers("Adele").Single();
+        Assert.True(marker.Durable);
+        Assert.True(marker.Listening);
+        Assert.Equal(3131, marker.Pid);
+        Assert.Equal("_general-wait", marker.Task);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void CreateMessageFile(string agentName, string fromAgent, string subject, string body)

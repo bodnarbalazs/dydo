@@ -18,21 +18,28 @@ public static class WaitCommand
             Description = "Cancel an active wait (remove wait marker)"
         };
 
+        var registerOption = new Option<bool>("--register")
+        {
+            Description = "Register a durable wait marker and return immediately (for hosts that cannot hold a foreground wait, e.g. dispatched codex sessions)"
+        };
+
         var command = new Command("wait", "Wait for an incoming message");
         command.Options.Add(taskOption);
         command.Options.Add(cancelOption);
+        command.Options.Add(registerOption);
 
         command.SetAction(parseResult =>
         {
             var task = parseResult.GetValue(taskOption);
             var cancel = parseResult.GetValue(cancelOption);
-            return Execute(task, cancel);
+            var register = parseResult.GetValue(registerOption);
+            return Execute(task, cancel, register);
         });
 
         return command;
     }
 
-    private static int Execute(string? task, bool cancel)
+    private static int Execute(string? task, bool cancel, bool register)
     {
         var registry = new AgentRegistry();
         var sessionId = registry.GetSessionContext();
@@ -58,11 +65,52 @@ public static class WaitCommand
         if (cancel)
             return HandleCancel(registry, agent.Name, task);
 
+        // Durable registration (#0254): either requested explicitly with --register, or
+        // auto-selected when the caller's session host cannot hold a foreground wait (a
+        // dispatched codex session's runtime kills a blocking `dydo wait` at its tool timeout,
+        // leaving no marker). The durable marker keys its liveness to the claimed host PID, so
+        // it survives tool timeouts and satisfies the guard while the session lives.
+        if (register || HostCannotHoldForegroundWait(registry, agent.Name))
+            return RegisterDurableWait(registry, agent.Name, task);
+
         var inboxPath = Path.Combine(registry.GetAgentWorkspace(agent.Name), "inbox");
 
         return string.IsNullOrEmpty(task)
             ? WaitGeneral(registry, agent.Name, inboxPath)
             : WaitForTask(registry, agent.Name, inboxPath, task);
+    }
+
+    // A host whose runtime cannot hold a foreground wait — currently a dispatched codex session,
+    // resolved from the claimed session's Host. Claude hosts return false, keeping their default
+    // foreground-wait behavior unchanged.
+    private static bool HostCannotHoldForegroundWait(AgentRegistry registry, string agentName)
+    {
+        var session = registry.GetSession(agentName);
+        return session != null && session.Host == "codex";
+    }
+
+    // Write a durable general-wait (or task-wait) marker keyed to the claimed session's host
+    // liveness PID and return immediately. Message delivery on such hosts is poll-based
+    // (`dydo inbox show` / `dydo read`); this marker satisfies the guard's general-wait
+    // obligation without a live foreground wait process.
+    private static int RegisterDurableWait(AgentRegistry registry, string agentName, string? task)
+    {
+        var hostPid = ResolveHostLivenessPid(registry, agentName);
+        if (hostPid == null)
+        {
+            ConsoleOutput.WriteError(
+                $"Cannot register a durable wait for {agentName}: no host-liveness PID resolved for the claimed session.");
+            return ExitCodes.ToolError;
+        }
+
+        var markerTask = string.IsNullOrEmpty(task) ? GeneralWaitMarker : task;
+        registry.CreateDurableWaitMarker(agentName, markerTask, agentName, hostPid.Value);
+
+        Console.WriteLine(string.IsNullOrEmpty(task)
+            ? $"Durable general wait registered for {agentName} (host PID {hostPid.Value})."
+            : $"Durable wait registered for {agentName} on '{task}' (host PID {hostPid.Value}).");
+        Console.WriteLine("  It stays active while your session's host process lives; poll with 'dydo inbox show' / 'dydo read'.");
+        return ExitCodes.Success;
     }
 
     private static int HandleCancel(AgentRegistry registry, string agentName, string? task)

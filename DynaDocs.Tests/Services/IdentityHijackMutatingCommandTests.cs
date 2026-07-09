@@ -145,6 +145,92 @@ public class IdentityHijackMutatingCommandTests : IDisposable
         ProcessUtils.GetProcessNameOverride = pid => pid == claudeMidPid ? "claude" : "bash";
     }
 
+    // ── #0256: DYDO_AGENT env fast-path gets the nearest-host-wins gate ──────────────────────
+    // The base setup NULLS DYDO_AGENT (:35), leaving the env fast-path structurally uncovered —
+    // exactly why 0256 went unnoticed. These cases inherit DYDO_AGENT=Adele (as a dispatched
+    // terminal pins it) and build an INTERPOSED foreign host via the multi-ancestor
+    // GetParentPidOverride chain (FindAncestorProcessOverride must be NULL, or
+    // NoForeignHostNearerThanClaimedHost short-circuits). role / release / wait-registration must
+    // REFUSE the interposed foreign worker while a legit dispatched terminal still passes.
+
+    // this process → claude host → Adele's claimed codex host. Descendant ownership passes, but
+    // the nearest agent host is claude, not the claimed codex host — a foreign-vendor worker.
+    private void SetupEnvPathInterposedForeignWorker()
+    {
+        const int claudeMidPid = 606060;
+        Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+        ProcessUtils.FindAncestorProcessOverride = null;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? claudeMidPid :
+            pid == claudeMidPid ? AdeleOwnerPid : null;
+        ProcessUtils.GetProcessNameOverride = pid => pid == claudeMidPid ? "claude" : "bash";
+    }
+
+    // this process → Adele's claimed codex host directly, no foreign host interposed. The legit
+    // dispatched codex terminal owning Adele: nearest-host-wins passes.
+    private void SetupEnvPathLegitDispatchedTerminal()
+    {
+        Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+        ProcessUtils.FindAncestorProcessOverride = null;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? AdeleOwnerPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "bash";
+    }
+
+    [Fact]
+    public void Role_EnvPathInterposedForeignWorker_RefusesToRebindOuterAgent()
+    {
+        SetupEnvPathInterposedForeignWorker();
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            AgentLifecycleHandlers.ExecuteRole("code-writer", task: null));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("No agent identity", stderr);
+        Assert.Contains("role: orchestrator",
+            File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md")));
+    }
+
+    [Fact]
+    public void Release_EnvPathInterposedForeignWorker_RefusesToReleaseOuterAgent()
+    {
+        SetupEnvPathInterposedForeignWorker();
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(AgentLifecycleHandlers.ExecuteRelease);
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("No agent identity", stderr);
+        Assert.True(File.Exists(Path.Combine(_testDir, "dydo", "agents", "Adele", ".session")));
+    }
+
+    [Fact]
+    public void WaitRegister_EnvPathInterposedForeignWorker_RefusesToRegisterForOuterAgent()
+    {
+        SetupEnvPathInterposedForeignWorker();
+
+        var command = WaitCommand.Create();
+        var (exitCode, _, _) = ConsoleCapture.All(() => command.Parse(["--register"]).Invoke());
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Empty(new AgentRegistry().GetWaitMarkers("Adele"));
+    }
+
+    [Fact]
+    public void WaitRegister_EnvPathLegitDispatchedTerminal_RegistersDurableWaitForOwnAgent()
+    {
+        SetupEnvPathLegitDispatchedTerminal();
+
+        var command = WaitCommand.Create();
+        var (exitCode, _, _) = ConsoleCapture.All(() => command.Parse(["--register"]).Invoke());
+
+        Assert.Equal(ExitCodes.Success, exitCode);
+        var general = new AgentRegistry().GetWaitMarkers("Adele")
+            .SingleOrDefault(m => m.Task == "_general-wait");
+        Assert.NotNull(general);
+        Assert.True(general!.Durable);
+        Assert.Equal(AdeleOwnerPid, general.Pid);
+    }
+
     [Fact]
     public void TaskCreate_UnownedSharedSessionContext_DoesNotStampContextAgentProvenance()
     {

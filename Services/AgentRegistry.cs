@@ -1090,12 +1090,19 @@ public partial class AgentRegistry : IAgentRegistry
     /// Verifies the calling process actually owns the named agent — used at the wait-marker
     /// callsite (#0195/F11) so an attacker with stale DYDO_AGENT can't register a marker that
     /// holds another agent's general-wait slot. Returns false when no session exists for
-    /// the agent. Closes #0195.
+    /// the agent. Closes #0195; nearest-host-wins added by #0256 (see below).
+    ///
+    /// #0256: this uses <see cref="IsOwnedByNearestHostCaller"/>, not descendant-only
+    /// <see cref="IsOwnedByCaller"/>. A nested foreign-vendor worker (an MCP-spawned codex worker
+    /// under a claude-claimed session, or vice versa) IS a descendant of the claimed host, so the
+    /// raw descendant check passed and let the inner worker register/cancel wait markers as the
+    /// OUTER agent. Nearest-host-wins refuses it: the nearest agent-host ancestor must be the
+    /// claimed host.
     /// </summary>
     public bool VerifyCallerOwnsAgent(string agentName)
     {
         var session = GetSession(agentName);
-        return session != null && IsOwnedByCaller(session);
+        return session != null && IsOwnedByNearestHostCaller(session);
     }
 
     public AgentState? GetCurrentOwnedAgent(string? sessionId)
@@ -1130,7 +1137,9 @@ public partial class AgentRegistry : IAgentRegistry
 
     // Fastest path of GetCurrentAgent — extracted so the outer method's cyclomatic complexity
     // stays under tier T1's CRAP gate. The env fast-path returns the agent only when DYDO_AGENT
-    // names a valid claimed agent whose session matches AND IsOwnedByCaller (post-F1).
+    // names a valid claimed agent whose session matches AND the caller owns it with
+    // nearest-host-wins (#0256 — descendant-only IsOwnedByCaller let a nested foreign-vendor
+    // worker inheriting DYDO_AGENT resolve as the outer agent for self-mutating commands).
     private AgentState? TryResolveCurrentAgentFromEnvVar(string sessionId)
     {
         var envAgent = Environment.GetEnvironmentVariable("DYDO_AGENT");
@@ -1138,7 +1147,7 @@ public partial class AgentRegistry : IAgentRegistry
             return null;
 
         var envSession = GetSession(envAgent);
-        if (envSession?.SessionId == sessionId && IsOwnedByCaller(envSession))
+        if (envSession?.SessionId == sessionId && IsOwnedByNearestHostCaller(envSession))
             return GetAgentState(envAgent);
 
         return null;
@@ -1274,8 +1283,8 @@ public partial class AgentRegistry : IAgentRegistry
 
     /// <summary>
     /// Raw ambient session context: the DYDO_AGENT env path (the caller's own agent, verified
-    /// by <see cref="IsOwnedByCaller"/> per #0183/F1) or the shared .session-context file (with
-    /// the #0196 cross-check), WITHOUT the #0250 identity-ownership gate.
+    /// by <see cref="IsOwnedByNearestHostCaller"/> per #0256) or the shared .session-context file
+    /// (with the #0196 cross-check), WITHOUT the #0250 identity-ownership gate on the FILE path.
     ///
     /// Callers that act AS the resolved identity on OTHER agents (dydo msg, dydo dispatch)
     /// use this and decide ownership themselves via <see cref="TryGetCurrentOwnedAgent"/> —
@@ -1288,8 +1297,10 @@ public partial class AgentRegistry : IAgentRegistry
         var agentName = Environment.GetEnvironmentVariable("DYDO_AGENT");
         if (!string.IsNullOrEmpty(agentName) && IsValidAgentName(agentName))
         {
+            // #0256: nearest-host-wins on the env path too — a nested foreign-vendor worker
+            // inheriting DYDO_AGENT must not resolve as the outer agent.
             var session = GetSession(agentName);
-            if (session != null && IsOwnedByCaller(session)) return session.SessionId;
+            if (session != null && IsOwnedByNearestHostCaller(session)) return session.SessionId;
         }
 
         return _sessionManager.GetSessionContext();
@@ -1298,18 +1309,23 @@ public partial class AgentRegistry : IAgentRegistry
     /// <summary>
     /// Gets the current session ID for the caller, or null when the caller does not own it.
     /// Used by commands that resolve or mutate their own agent identity (whoami, agent
-    /// role/status/release, …). The DYDO_AGENT env path is verified per #0183/F1; the shared
-    /// .session-context file fallback is gated on caller ownership + nearest-host-wins (#0250)
-    /// so a foreign hookless process resolves to null (the truthful human/unknown-terminal
-    /// answer, DR-036) rather than impersonating the claiming agent.
+    /// role/status/release, …). Both the DYDO_AGENT env path (#0256) and the shared
+    /// .session-context file fallback (#0250) are gated on caller ownership + nearest-host-wins,
+    /// so a foreign hookless process — including a nested foreign-vendor worker inheriting
+    /// DYDO_AGENT from a dispatched terminal — resolves to null (the truthful human/unknown-
+    /// terminal answer, DR-036) rather than impersonating the claiming agent.
     /// </summary>
     public string? GetSessionContext()
     {
         var agentName = Environment.GetEnvironmentVariable("DYDO_AGENT");
         if (!string.IsNullOrEmpty(agentName) && IsValidAgentName(agentName))
         {
+            // #0256: nearest-host-wins, not descendant-only IsOwnedByCaller. This is the gate
+            // the design comment on IsOwnedByNearestHostCaller already promised for
+            // GetSessionContext; the env branch previously bypassed it, letting an inner
+            // foreign-vendor worker role/release the outer agent.
             var session = GetSession(agentName);
-            if (session != null && IsOwnedByCaller(session)) return session.SessionId;
+            if (session != null && IsOwnedByNearestHostCaller(session)) return session.SessionId;
         }
 
         // #0250: the shared .session-context fallback must prove caller ownership, not just
@@ -1379,6 +1395,21 @@ public partial class AgentRegistry : IAgentRegistry
     /// between those two writes, where guard checks could see Listening=false.
     /// </summary>
     public void CreateListeningWaitMarker(string agentName, string task, string targetAgent, int pid)
+        => WriteListeningWaitMarker(agentName, task, targetAgent, pid, durable: false);
+
+    /// <summary>
+    /// Atomically writes a DURABLE listening wait marker (c1-2, #0254). Identical to
+    /// <see cref="CreateListeningWaitMarker"/> but stamps <c>durable=true</c> and keys the
+    /// marker's <c>pid</c> to the claimed session's host-liveness PID rather than a live
+    /// `dydo wait` process. Used by `dydo wait --register` so a host whose runtime cannot hold
+    /// a foreground wait (a dispatched codex session) can satisfy the general-wait obligation:
+    /// the marker stays valid while the host process lives and goes stale on host death, cleaned
+    /// by the same self-heal sweep that removes a dead foreground wait.
+    /// </summary>
+    public void CreateDurableWaitMarker(string agentName, string task, string targetAgent, int hostPid)
+        => WriteListeningWaitMarker(agentName, task, targetAgent, hostPid, durable: true);
+
+    private void WriteListeningWaitMarker(string agentName, string task, string targetAgent, int pid, bool durable)
     {
         var dir = GetWaitingDir(agentName);
         Directory.CreateDirectory(dir);
@@ -1413,6 +1444,7 @@ public partial class AgentRegistry : IAgentRegistry
             Since = since,
             Listening = true,
             Pid = pid,
+            Durable = durable,
         };
 
         var json = JsonSerializer.Serialize(marker, DydoDefaultJsonContext.Default.WaitMarker);

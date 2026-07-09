@@ -899,6 +899,46 @@ public class PendingStateGuardTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Guard_AllowsAgent_WhenDurableGeneralWaitActive()
+    {
+        // c1-2 (#0254): a durable general-wait marker (dydo wait --register) whose Pid is a
+        // live host-liveness PID satisfies the general-wait obligation exactly like a live
+        // foreground wait — the guard must not block.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task", registerGeneralWait: false);
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateDurableWaitMarker("Adele", "_general-wait", "Adele", Environment.ProcessId);
+
+        var result = await GuardAsync("read", "Commands/SomeFile.cs");
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Guard_BlocksAgent_WhenDurableGeneralWaitHostDead_AndSelfHeals()
+    {
+        // Dead host → the durable marker is stale and is cleaned like a dead foreground wait:
+        // the self-heal sweep removes it and the missing-general-wait block fires.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer", "my-task", registerGeneralWait: false);
+        await ReadMustReadsAsync();
+
+        var registry = new AgentRegistry(TestDir);
+        registry.CreateDurableWaitMarker("Adele", "_general-wait", "Adele", 999999);  // dead host
+
+        var result = await GuardAsync("read", "Commands/SomeFile.cs");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Agent must keep a general wait active");
+
+        registry = new AgentRegistry(TestDir);
+        Assert.DoesNotContain(registry.GetWaitMarkers("Adele"), m => m.Task == "_general-wait");
+    }
+
+    [Fact]
     public async Task Guard_GeneralWaitMarker_NotIncluded_InPendingTaskList()
     {
         // The "_general-wait" sentinel should never appear in the task-list error message,

@@ -96,8 +96,11 @@ with nearest-host-wins semantics disambiguated by command line.
 
 Legitimate consumers: a claude session's own `dydo` subprocess is a descendant of the claimed
 host (ownership passes), including the Windows+npm shape where the launcher node sits between
-dydo and the claude host; dispatched terminals use the `DYDO_AGENT` env path (already
-ownership-checked); the #0207 resume refresh keys off the hook-delivered `session_id`, which
+dydo and the claude host; dispatched terminals use the `DYDO_AGENT` env path (CORRECTION per
+#0256: at the time of this fix the env fast-path was gated only on descendant-only
+`IsOwnedByCaller`, NOT nearest-host-wins — a nested foreign-vendor worker inheriting `DYDO_AGENT`
+could still role/release the outer agent through it. That gap is closed by #0256, which applies
+`IsOwnedByNearestHostCaller` to all four env-path sites); the #0207 resume refresh keys off the hook-delivered `session_id`, which
 precedes any CLI subprocess (a CLI call seen before that refresh, against a stale ClaimedPid,
 resolves to null rather than the wrong agent). Regression coverage added in `AgentRegistryTests`
 (session-context file-fallback ownership region), `ProcessUtilsTests`

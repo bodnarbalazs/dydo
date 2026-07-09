@@ -2905,6 +2905,50 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
+    public void GetSessionContext_DydoAgentEnvVar_NearestHostWins_InterposedForeignHostResolvesNull()
+    {
+        // #0256: the env fast-path must apply nearest-host-wins, not descendant-only ownership.
+        // DYDO_AGENT=Adele is inherited by an inner foreign-vendor worker that descends from
+        // Adele's claimed codex host but sits under a claude host of its own. Descendant
+        // ownership passes; nearest-host-wins must refuse → the env branch falls through, and the
+        // file fallback (also nearest-host) resolves null. The single-ancestor override the other
+        // env tests inject cannot express this interposed shape — hence the multi-ancestor chain.
+        const int adeleHostPid = 500010;
+        const int claudeMidPid = 500011;
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => adeleHostPid;  // stamps ClaimedPid at claim
+        try
+        {
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "session-adele", "codex");
+            registry.ClaimAgent("Adele", out _);
+            var adeleSession = registry.GetSession("Adele");
+            Assert.NotNull(adeleSession);
+            Assert.Equal(adeleHostPid, adeleSession.ClaimedPid);
+            registry.StoreSessionContext(adeleSession.SessionId, "Adele");
+
+            Environment.SetEnvironmentVariable("DYDO_AGENT", "Adele");
+
+            // Interposed foreign host: this process → claude host → Adele's claimed codex host.
+            // FindAncestorProcessOverride MUST be null or NoForeignHostNearerThanClaimedHost
+            // short-circuits on the injected single ancestor.
+            ProcessUtils.FindAncestorProcessOverride = null;
+            ProcessUtils.GetParentPidOverride = pid =>
+                pid == Environment.ProcessId ? claudeMidPid :
+                pid == claudeMidPid ? adeleHostPid : null;
+            ProcessUtils.GetProcessNameOverride = pid => pid == claudeMidPid ? "claude" : "bash";
+
+            Assert.Null(registry.GetSessionContext());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
+            Environment.SetEnvironmentVariable("DYDO_AGENT", null);
+        }
+    }
+
+    [Fact]
     public void GetCurrentAgent_DydoAgentEnvVar_OnlyTrustedWhenCallerOwnsAgent()
     {
         const int adelePid = 424242;

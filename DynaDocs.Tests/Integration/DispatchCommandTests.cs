@@ -565,6 +565,35 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertStderrContains("Orchestrator requires prior co-thinker experience");
     }
 
+    [Fact]
+    public async Task Dispatch_CaseVariantRole_CanonicalizesAndGatesIdenticallyToLowercase()
+    {
+        // #0240 round-3: `--role` is matched case-insensitively for UX, but every downstream role
+        // gate (requires-prior constraint eval, SetRole permission map) is case-SENSITIVE. A case
+        // variant like `--role Orchestrator` must be canonicalized to the defined role's exact
+        // casing BEFORE the service call, so it is constraint-evaluated identically to the
+        // lowercase form — not passed through verbatim, which would skip the requires-prior gate,
+        // reserve+launch the target, then wedge it on a role its own `dydo agent role` rejects.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("co-thinker");
+
+        var result = await DispatchAsync("Orchestrator", "route-task", "Run the sprint", to: "Brian");
+
+        // Same outcome as the lowercase non-CoS repro: gated by requires-prior, caller role rendered.
+        result.AssertExitCode(2);
+        result.AssertStderrContains("You are a co-thinker.");
+        result.AssertStderrContains("Orchestrator requires prior co-thinker experience");
+
+        // The gate fired BEFORE selection — the target must have no inbox item and no reservation.
+        var brianInbox = Path.Combine(TestDir, "dydo", "agents", "Brian", "inbox");
+        if (Directory.Exists(brianInbox))
+            Assert.Empty(Directory.GetFiles(brianInbox, "*.md"));
+        var brianState = Path.Combine(TestDir, "dydo", "agents", "Brian", "state.md");
+        if (File.Exists(brianState))
+            Assert.DoesNotContain("status: dispatched", File.ReadAllText(brianState));
+    }
+
     private void WriteCustomRoleFile(string name)
     {
         var custom = new DynaDocs.Models.RoleDefinition

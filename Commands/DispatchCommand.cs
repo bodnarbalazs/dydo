@@ -115,12 +115,20 @@ public static class DispatchCommand
             }
 
             var definedRoles = ResolveDefinedRoles();
-            if (!definedRoles.Any(r => r.Equals(role, StringComparison.OrdinalIgnoreCase)))
+            var matchedRole = definedRoles.FirstOrDefault(r => r.Equals(role, StringComparison.OrdinalIgnoreCase));
+            if (matchedRole == null)
             {
                 ConsoleOutput.WriteError(
                     $"Unknown role '{role}'. Defined roles: {string.Join(", ", definedRoles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase))}.");
                 return ExitCodes.ToolError;
             }
+
+            // Canonicalize to the defined role's exact casing (#0240 round-3): every downstream
+            // role gate (requires-prior constraint eval, SetRole permission map) is case-SENSITIVE,
+            // so a case variant like '--role Orchestrator' must not pass through verbatim — that
+            // would skip the dispatch-time constraint check and wedge the target on a role its
+            // own 'dydo agent role' rejects. Match ignore-case for UX, then use the canonical Name.
+            role = matchedRole;
 
             var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))

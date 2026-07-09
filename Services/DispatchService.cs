@@ -37,9 +37,14 @@ public static class DispatchService
         var senderName = sender?.Name ?? "Unknown";
         var origin = GetOriginForTask(registry, sender, opts.Task) ?? senderName;
         var launchHost = ResolveLaunchHost(registry, sender, opts.HostOverride);
-        if (!opts.NoLaunch && !CanResolveLaunchExecutable(launchHost, out var launchError))
+
+        // Fail fast before any reservation: an undispatchable target (missing binary,
+        // unconfigured vendor, missing codex sandbox, untrusted codex hooks) must surface here,
+        // not as a downstream child-terminal error or a stale Dispatched reservation (#0239).
+        var preflight = DispatchPreflight.Run(registry.Config, launchHost, opts, PathUtils.FindProjectRoot());
+        if (!preflight.Ok)
         {
-            ConsoleOutput.WriteError(launchError!);
+            ConsoleOutput.WriteError(preflight.Error!);
             return ExitCodes.ToolError;
         }
 
@@ -82,21 +87,6 @@ public static class DispatchService
             : AgentSession.UnknownHost;
 
         return currentHost is "claude" or "codex" ? currentHost : "claude";
-    }
-
-    private static bool CanResolveLaunchExecutable(string launchHost, out string? error)
-    {
-        error = null;
-        try
-        {
-            _ = TerminalLauncher.GetLaunchExecutable(launchHost);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            error = $"Cannot launch {launchHost}: {ex.Message}";
-            return false;
-        }
     }
 
     private static (string? agentName, string? error) SelectTargetAgent(

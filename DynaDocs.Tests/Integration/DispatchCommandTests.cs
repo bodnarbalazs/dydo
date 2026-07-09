@@ -217,6 +217,38 @@ public class DispatchCommandTests : IntegrationTestBase
             Assert.DoesNotContain("status: dispatched", File.ReadAllText(brianState));
     }
 
+    [Fact]
+    public async Task Dispatch_CodexUntrustedHooks_FailsBeforeMutatingTarget()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        var claim = await ClaimAgentWithHostAsync("Adele", "codex");
+        claim.AssertSuccess();
+
+        // The repo carries a .codex/hooks.json the user has not trust-enabled — codex would run
+        // the agent unguarded. Preflight must fail before Brian is reserved or given an inbox item.
+        var codexDir = Path.Combine(TestDir, ".codex");
+        Directory.CreateDirectory(codexDir);
+        File.WriteAllText(Path.Combine(codexDir, "hooks.json"), """{"PreToolUse":[{"command":"dydo guard"}]}""");
+        DispatchPreflight.HookTrustResolverOverride = _ => false;
+
+        try
+        {
+            var result = await DispatchLaunchedAsync("code-writer", "codex-untrusted-hooks", "Brief",
+                to: "Brian", autoClose: true);
+
+            result.AssertExitCode(2);
+            result.AssertStderrContains("UNGUARDED");
+            Assert.Empty(Directory.GetFiles(Path.Combine(TestDir, "dydo", "agents", "Brian", "inbox"), "*.md"));
+            var brianState = Path.Combine(TestDir, "dydo", "agents", "Brian", "state.md");
+            if (File.Exists(brianState))
+                Assert.DoesNotContain("status: dispatched", File.ReadAllText(brianState));
+        }
+        finally
+        {
+            DispatchPreflight.HookTrustResolverOverride = null;
+        }
+    }
+
     #endregion
 
     #region --to Error Cases

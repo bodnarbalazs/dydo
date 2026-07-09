@@ -45,7 +45,9 @@ public static class ReadCommand
             .FirstOrDefault(i => i.Id.Equals(target, StringComparison.OrdinalIgnoreCase));
         if (item != null)
         {
-            InboxService.PrintInboxItem(item);
+            // Display-equals-ack: emit the FULL body (not the truncated inbox-show preview) before
+            // registering the read, so no content is acked without being printed.
+            InboxService.PrintInboxItem(item, fullBody: true);
             registry.MarkMessageRead(sessionId, item.Id);
             return ExitCodes.Success;
         }

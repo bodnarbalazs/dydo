@@ -110,15 +110,24 @@ public class ReadCommandTests : IDisposable
     [Fact]
     public void Read_RegistersOnlyAfterEmittingContent_DisplayEqualsAck()
     {
+        // A body well over the 200-char inbox-show preview cutoff: display-equals-ack means the
+        // FULL body must be emitted, not the truncated preview, before the read is registered.
+        var longBody = "START_MARKER " + new string('x', 250) + " END_MARKER";
+        Assert.True(longBody.Length > 200);
+
         SeedAgent(unreadMustReads: [], unreadMessages: ["aaaa1111"]);
-        WriteInboxMessage("aaaa1111", from: "Adele", subject: "subj", body: "BODYTEXT");
+        WriteInboxMessage("aaaa1111", from: "Adele", subject: "subj", body: longBody);
 
         var (code, stdout, _) = RunRead("aaaa1111");
 
         Assert.Equal(ExitCodes.Success, code);
         // Display-equals-ack: the same call that registered the read also emitted the content.
         Assert.False(string.IsNullOrWhiteSpace(stdout));
-        Assert.Contains("BODYTEXT", stdout);
+        // The entire body — including content past the 200-char preview cutoff — must be printed,
+        // and the preview truncation ellipsis must not appear.
+        Assert.Contains(longBody, stdout);
+        Assert.Contains("END_MARKER", stdout);
+        Assert.DoesNotContain("...", stdout);
 
         var after = new AgentRegistry(_testDir).GetAgentState(AgentName)!;
         Assert.Empty(after.UnreadMessages);

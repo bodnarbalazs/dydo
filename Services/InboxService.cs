@@ -144,17 +144,23 @@ public static class InboxService
         return ExitCodes.Success;
     }
 
-    internal static void PrintInboxItem(InboxItem item)
+    /// <summary>
+    /// Renders a single inbox item. When <paramref name="fullBody"/> is true the message body is
+    /// emitted in full (no 200-char preview truncation) — required by <c>dydo read</c>'s
+    /// display-equals-ack invariant, where the same call that registers the read must emit the
+    /// entire content. The multi-item <c>inbox show</c> listing keeps the truncated preview.
+    /// </summary>
+    internal static void PrintInboxItem(InboxItem item, bool fullBody = false)
     {
         if (item.Type == "message")
         {
             Console.WriteLine($"[{item.Id}] MESSAGE: {item.Subject ?? "(no subject)"}");
             Console.WriteLine($"  From: {item.From}");
             Console.WriteLine($"  Received: {item.Received:yyyy-MM-dd HH:mm} UTC");
-            var bodyPreview = item.Body ?? "";
-            if (bodyPreview.Length > 200)
-                bodyPreview = bodyPreview[..200] + "...";
-            Console.WriteLine($"  Body: {bodyPreview}");
+            var body = item.Body ?? "";
+            if (!fullBody && body.Length > 200)
+                body = body[..200] + "...";
+            Console.WriteLine($"  Body: {body}");
         }
         else
         {

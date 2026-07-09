@@ -27,8 +27,17 @@ each sprint gets its own planner → plan-review gate at execution time; nothing
    fail-fast), 0240+0237 (dispatch role validation), exact-model-provenance-display, codex guard
    adapter (payload shapes per Noah's probe findings), 0233 e2e regression tests. First measured
    Codex-worker sprint.
-2. **Sprint M1 — DR-034 taxonomy migration** *(the load-bearing one; Olivia's plan + dry-run
-   exist — needs only the DR-039 plan-review gate, its first dogfood)*: S2a CLI vocab/archive
+2. **Sprint M0 — spine object-type completion** *(NEW, from the 2026-07-09 live docs smoke;
+   Brian owns sync-model — balazs routing)*: the docs mirror correctly excludes what sync-model
+   declares as DBs, and sync-model only has 7 types — so ~700 of ~831 mirrored pages are
+   PM-shaped records (decisions, changelog, backlog, pitfalls) still living as doc pages.
+   Complete DR-034's type work: Decision + changelog (own record types), backlog +
+   future-features as status/horizon PROPERTIES per balazs, plus the live-model regen story
+   (issue 0252). Shrinks the docs mirror to ~40 true docs and gives PM records their queryable
+   DB home. MUST reconcile with Olivia's M1 plan (S2b backlog partition, changelog-done-rows
+   deferral) — one planner round covers both.
+3. **Sprint M1 — DR-034 taxonomy migration** *(the load-bearing one; Olivia's plan + dry-run
+   exist — needs plan-review + M0 reconciliation)*: S2a CLI vocab/archive
    code (+ junction dead-code investigation) → S2b–S5 sequential in-branch (backlog partition,
    future-features, inquisitions yank, doc/link sweep) → S6 live smoke. Kills most of the 0249
    validator debt; absorbs the backlog-record dispositions listed below.

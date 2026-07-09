@@ -98,6 +98,11 @@ agents is explicitly not wanted.
    first.
 3. `codex exec` runs `approval: never`; the "approvals surfaced back through MCP" question only
    exists for the native `codex mcp-server` path — probe there.
+4. Worktree lifecycle must be dydo-side, not inner-agent-side: a codex session that creates its
+   own worktree leaves an untracked orphan (`git worktree` entry with no dydo marker) that
+   `dydo worktree prune` skips and the guard's raw-`git worktree remove` block prevents agents
+   from cleaning — human hand required (observed 2026-07-09, `codex/fix-codex-identity`). The
+   experiment's setup step owns creation AND teardown of the slice worktree.
 
 ### Still open (next probes)
 

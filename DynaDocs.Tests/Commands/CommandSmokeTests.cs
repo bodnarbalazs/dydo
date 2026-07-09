@@ -26,6 +26,7 @@ public class CommandSmokeTests
             GuardCommand.Create,
             HelpCommand.Create,
             InboxCommand.Create,
+            ReadCommand.Create,
             IndexCommand.Create,
             IssueCommand.Create,
             MessageCommand.Create,

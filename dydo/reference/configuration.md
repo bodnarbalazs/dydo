@@ -128,6 +128,46 @@ never silently downgraded. Modes that do not use the elevated sandbox (`read-onl
 
 ---
 
+## Model Display Names
+
+Provenance surfaces (issues, messages, reviews, task records, `dydo whoami`, `dydo agent list`)
+show the exact runtime model as a human display name — `Opus 4.8`, `Fable 5`, `Gpt-5.6 Sol` —
+rather than a bare vendor (`claude` / `codex`). The mapping lives in the DR 028 models config
+under `models.display-names`:
+
+```json
+{
+  "models": {
+    "tiers": { "...": {} },
+    "display-names": {
+      "claude-opus-4-8": "Opus 4.8",
+      "gpt-5-codex": "Gpt-5.6 Sol"
+    }
+  }
+}
+```
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `models.display-names` | dict | Runtime model id → human display name. |
+
+Rendering rules, applied by one shared resolver so no surface drifts:
+
+- A known id renders as its display name.
+- An unknown id passes through **verbatim** — never guessed, never replaced by a vendor name.
+- The vendor is used **only** as a fallback when the model itself is unknown.
+
+An **absent or empty** `display-names` map resolves to the shipped defaults (same
+absent-section-defaults contract as `dispatch.codex`), so the mapping takes effect even for a
+`dydo.json` written before this key existed. A configured non-empty map is authoritative — ids
+missing from it pass through verbatim rather than falling back to the defaults.
+
+The runtime model is captured by the guard hook: from an explicit model field on the hook payload
+when present (as Codex delivers), otherwise from the Claude session transcript's most recent
+assistant entry. It is never inferred from a role's default tier.
+
+---
+
 ## Environment Variables
 
 | Variable | Required | Description |

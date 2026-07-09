@@ -66,6 +66,43 @@ public class AgentListHandlerTests : IDisposable
     }
 
     [Fact]
+    public void ShowAllAgents_ShowsModelColumn_WithDisplayName()
+    {
+        WriteAgentSession("Adele", "claude", "claude-opus-4-8");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        Assert.Contains("Model", stdout);    // header column
+        Assert.Contains("Opus 4.8", stdout); // resolved display name (defaults apply)
+    }
+
+    [Fact]
+    public void ShowAllAgents_UnknownModel_ModelColumnFallsBackToVendor()
+    {
+        WriteAgentSession("Adele", "codex"); // no runtime model captured
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        var columns = SplitAgentLine(stdout, "Adele");
+        Assert.Equal("codex", columns[2]); // Host
+        Assert.Equal("codex", columns[3]); // Model — vendor fallback when model unknown
+    }
+
+    [Fact]
+    public void ShowAllAgents_NoSession_ShowsModelDash()
+    {
+        CreateAgentWorkspace("Adele");
+
+        var stdout = CaptureStdout(() =>
+            AgentListHandler.ShowAllAgents(_registry, false, "testuser"));
+
+        var columns = SplitAgentLine(stdout, "Adele");
+        Assert.Equal("-", columns[3]); // Model dash when no session
+    }
+
+    [Fact]
     public void ShowAllAgents_NoSession_ShowsHostDash()
     {
         CreateAgentWorkspace("Adele");
@@ -283,15 +320,16 @@ public class AgentListHandlerTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId));
     }
 
-    private void WriteAgentSession(string name, string host)
+    private void WriteAgentSession(string name, string host, string? model = null)
     {
         var workspace = _registry.GetAgentWorkspace(name);
         Directory.CreateDirectory(workspace);
+        var modelLine = model == null ? "" : $"\n  \"Model\": \"{model}\",";
         File.WriteAllText(Path.Combine(workspace, ".session"), $$"""
             {
               "Agent": "{{name}}",
               "SessionId": "session-{{name}}",
-              "Host": "{{host}}",
+              "Host": "{{host}}",{{modelLine}}
               "Claimed": "2026-01-01T00:00:00Z"
             }
             """);

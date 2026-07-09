@@ -38,7 +38,7 @@ Show current agent identity and status.
 dydo whoami
 ```
 
-**Output:** Agent name, assigned human, role, task, workspace path, permissions.
+**Output:** Agent name, assigned human, host, model (the exact runtime model as a display name), role, task, workspace path, permissions.
 
 ---
 

@@ -1,12 +1,43 @@
 ---
 area: general
 type: backlog
-status: open
+status: resolved
 created: 2026-07-08
 created-by: Adele
+resolved: 2026-07-09
+resolved-by: c1-6-model-provenance
 origin: balazs — "I would prefer to use the exact model at found-by-vendor on issues and other surfaces where it's listed so I don't want to see claude or chatgpt/openai, I want to see Opus 4.8 / Fable 5 / Gpt 5.5 / Gpt-5.6 Sol"
 related-decisions: [037]
 ---
+
+## Resolution (absorbed by c1-6, 2026-07-09)
+
+Delivered by sprint slice `c1-6-model-provenance`:
+
+- **Capture.** The guard captures a concrete runtime model in `GuardCommand.InferModel`: an
+  explicit `model`/`dydo_model` field on the hook payload (what Codex already delivers) wins;
+  otherwise, for a Claude session, the model id is read from the most recent assistant entry of
+  the session transcript (`transcript_path`). Neither present ⇒ `unknown`, never guessed from a
+  role default. The captured value flows through `ParseInput` into the claim's session-storage
+  write, so a Tier-1 Claude claim now persists a concrete model.
+  - The subagent `agent_type → frontmatter` leg from the original sketch was **dropped as
+    unreachable**: Tier-2 worker calls are anonymous and never persist session state (they route
+    through `HandleWorkerCall` before `ctx.Model` is used), so a frontmatter fallback would be
+    dead wiring. Tier-2 provenance is out of scope here — workers do not create issues/messages
+    under their own identity.
+- **Display map.** `models.display-names` (id → human name) in the DR 028 models config, shipped
+  defaults in `ConfigFactory.DefaultDisplayNames`. An absent or empty map resolves to the shipped
+  defaults (same absent-section-defaults contract as `dispatch.codex`), so the mapping is live
+  even for a `dydo.json` written before the key existed. Unknown ids pass through verbatim.
+- **One resolver, resolved at the source.** `Services/ModelDisplay` is the single resolver;
+  `Services/ArtifactProvenance.FromSession` applies it so issues, messages, reviews, and task
+  records all render display names with zero consumer edits. `whoami` and `agent list` render via
+  the same resolver. Rendering rule: display model when known; vendor only as a fallback when the
+  model is unknown.
+- **whoami** prints Host and Model lines from the claimed session.
+
+Docs: `dydo/reference/configuration.md` (Model Display Names section) and the `dydo whoami`
+output description in `dydo/reference/dydo-commands.md`.
 
 # Exact-model provenance on display surfaces (not vendor names)
 

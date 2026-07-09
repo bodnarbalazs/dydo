@@ -35,4 +35,17 @@ public class ModelsConfig
     /// </summary>
     [JsonPropertyName("fallback")]
     public string? Fallback { get; set; }
+
+    /// <summary>
+    /// Optional model-id → human display-name map (c1-6): provenance surfaces render the
+    /// exact model (<c>Opus 4.8</c>, <c>Fable 5</c>, <c>Gpt-5.6 Sol</c>) instead of a bare
+    /// vendor. An ABSENT or EMPTY map resolves to the shipped defaults
+    /// (<see cref="Services.ConfigFactory.DefaultDisplayNames"/>) via
+    /// <see cref="Services.ModelDisplay"/> — the same absent-section-defaults contract as
+    /// <see cref="CodexDispatchConfig"/> — so the defaults take effect even for a dydo.json
+    /// written before this key existed. A configured non-empty map is authoritative; ids not
+    /// in the effective map pass through verbatim.
+    /// </summary>
+    [JsonPropertyName("display-names")]
+    public Dictionary<string, string> DisplayNames { get; set; } = new();
 }

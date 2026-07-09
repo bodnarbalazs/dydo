@@ -105,7 +105,10 @@ Code (owner slice in parentheses; a file appears once unless chained above):
   wait-check :732-738) (c1-2)
 - `Services/AgentRegistry.cs` — c1-1 (read marks) → c1-2 (durable marker CRUD) → c1-5
   (`CanTakeRole` dispatcher threading, 988-992); serialized
-- `Services/TerminalLauncher.cs`, `Services/WindowsTerminalLauncher.cs`, `Models/DispatchConfig.cs` (c1-3)
+- `Services/TerminalLauncher.cs`, `Services/WindowsTerminalLauncher.cs`,
+  `Services/LinuxTerminalLauncher.cs`, `Services/MacTerminalLauncher.cs` (amended in — planner
+  ruling 2026-07-09, review finding: codex lines exist on those platforms too),
+  `Models/DispatchConfig.cs` (c1-3)
 - `Services/ConfigFactory.cs` — c1-3 (posture defaults) → c1-6 (display-map defaults); serialized
 - `Services/DispatchService.cs` + NEW `Services/DispatchPreflight.cs` (c1-4)
 - `Commands/DispatchCommand.cs`, `Services/RoleDefinitionService.cs`,

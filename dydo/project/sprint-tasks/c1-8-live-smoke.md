@@ -39,6 +39,13 @@ issue 0254).
 7. **Provenance:** a message and an issue filed from the codex session render exact display
    models on their surfaces. [c1-6 live check]
 
+8. **Pre-smoke human step:** refresh the project-local
+   `dydo/_system/templates/agent-workflow.template.md` (and regenerate agent workflow files if
+   applicable) from the c1-1-updated embedded `Templates/agent-workflow.template.md` — the
+   `_system` path is guard-off-limits to all agents, so only balazs (or `dydo template update`)
+   can apply it. Without this, the dispatched codex agent's onboarding text lacks the manual-
+   claim + `dydo read` guidance.
+
 ## Deliverables
 
 - Exit report in the driving agent's workspace; findings → issues (severity per finding).

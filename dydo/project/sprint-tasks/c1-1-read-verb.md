@@ -56,10 +56,12 @@ additive.
   (existing Guard tests stay green — extraction is invisible).
 - Doc surfaces per the 6-surface rule (`dydo/guides/adding-a-command.md`): help text, smoke
   factory, `dydo/reference/dydo-commands.md` + template, `dydo/reference/about-dynadocs.md` +
-  template. Plus `dydo/_system/templates/agent-workflow.template.md` codex-onboarding prose:
-  claim is a manual step; shell-based hosts register reads via `dydo read`. (Template has
-  uncommitted working-tree edits — rebase on current content; flag mid-flight-looking edits to
-  Adele.)
+  template. Plus codex-onboarding prose (claim is a manual step; shell-based hosts register
+  reads via `dydo read`) in **`Templates/agent-workflow.template.md`** — the embedded source,
+  worker-editable. AMENDED 2026-07-09: the original target
+  `dydo/_system/templates/agent-workflow.template.md` is hardcoded guard-off-limits to ALL
+  agents (OffLimitsService; cost three worker rounds) — the project-local `_system` copy refresh
+  is a HUMAN step (balazs / `dydo template update`), added to c1-8's checklist.
 
 ## Gates (exact commands)
 

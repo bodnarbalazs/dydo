@@ -34,21 +34,30 @@ dangerous-bypass flag. The dydo guard hook remains project-boundary defense-in-d
 - **The dangerous-bypass flag (`--dangerously-bypass-approvals-and-sandbox` / `--yolo`) is not a
   config value and is never emitted.** Unknown/invalid posture values fail config validation
   with the accepted list.
-- Windows sandbox prerequisite (the smoke's missing `codex-windows-sandbox-setup.exe`):
-  investigate what `workspace-write` requires on Windows, document the setup in
-  `dydo/reference/configuration.md` (and wherever codex init is documented). The dispatch-time
-  *check* is c1-4's; this slice supplies the documented setup instruction c1-4's error points at.
+- Windows sandbox prerequisite (the smoke's missing `codex-windows-sandbox-setup.exe`) —
+  **facts web-verified by the planner 2026-07-09** (round-1 review finding 3a); document THESE,
+  not guesses: the helper ships with the Codex CLI (installed under
+  `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`), performs the per-machine sandbox provisioning
+  (sandbox users, ACLs, firewall rules), and requires an administrator-approved first run for
+  the elevated sandbox. The smoke's "program not found" matches the known upstream clean-install
+  bin-junction lookup bug (openai/codex issue #30829); the doc should name the symptom and point
+  at re-running the sandbox setup / checking that junction. Resume flag placement is also
+  verified (finding 3b): `codex resume` accepts the same global flags as `codex`, so posture
+  flags BEFORE the `resume` subcommand is the documented form.
 
 ## Files
 
 - `Services/TerminalLauncher.cs` — `GetCodexCommand` (166-170), `GetBareLaunchCommand` (120-124),
   resume path (`ResumeArgumentToken`, 143-144): posture flags from config on every codex command
-  line. **Platform scope:** the Linux launcher table (217-234) contains NO codex command line
-  today — this slice adds posture flags wherever a codex line is emitted and enables no new
-  platform. Worker verifies whether the Mac/Linux paths would need the same argument-threading
-  as Windows and records the answer in the slice notes; enabling codex there is out of scope.
+  line.
 - `Services/WindowsTerminalLauncher.cs` — argument assembly (GetArguments 22-89) carries the
   flags through quoting intact.
+- `Services/LinuxTerminalLauncher.cs` (ApplyOverrides 12-17, BuildResumeBashCommand :76) and
+  `Services/MacTerminalLauncher.cs` (:18-19, :54-55) + their existing codex tests — **AMENDED
+  IN per planner ruling 2026-07-09 (round-1 review finding 2):** the original row's premise
+  ("no codex line on Linux today") was false — both platforms emit codex launch AND resume
+  lines and would have stayed bare, leaving the 0253 symptom live on two enabled platforms.
+  Same posture token, same tests-assert-exact-command-line bar.
 - `Models/DispatchConfig.cs` — `codex { sandbox, approvalPolicy }` + validation.
 - `Services/ConfigFactory.cs` — shipped defaults (file then handed to c1-6).
 - Tests: `DynaDocs.Tests/Services/TerminalLauncherTests.cs` (+ Windows launcher tests) — assert

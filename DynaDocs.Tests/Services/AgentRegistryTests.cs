@@ -23,6 +23,7 @@ public class AgentRegistryTests : IDisposable
         AgentRegistry.IsSessionPidAliveOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
         ProcessUtils.GetParentPidOverride = null;
+        ProcessUtils.GetProcessNameOverride = null;
         WatchdogLogger.LogPathOverride = null;
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
@@ -2349,9 +2350,14 @@ public class AgentRegistryTests : IDisposable
     // need *some* sessionId for the marker filename).
     private void SeedVerifiedSessionContext(string agentName, string sessionId, string human = "testuser")
     {
+        // #0250: the .session-context file fallback now requires caller ownership. Stamp a
+        // ClaimedPid and pin the host-ancestor lookup to it so the test caller owns the seeded
+        // session (as a live agent's own terminal would).
+        const int seedPid = 313131;
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => seedPid;
         var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
         Directory.CreateDirectory(workspace);
-        var session = new AgentSession { Agent = agentName, SessionId = sessionId, Claimed = DateTime.UtcNow };
+        var session = new AgentSession { Agent = agentName, SessionId = sessionId, Claimed = DateTime.UtcNow, ClaimedPid = seedPid };
         File.WriteAllText(Path.Combine(workspace, ".session"),
             JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
         var contextPath = Path.Combine(_testDir, "dydo", "agents", ".session-context");
@@ -3041,6 +3047,158 @@ public class AgentRegistryTests : IDisposable
         ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
         var session = new AgentSession { Agent = "Adele", SessionId = "s", ClaimedPid = 222 };
         Assert.False(AgentRegistry.IsOwnedByCaller(session));
+    }
+
+    #endregion
+
+    #region Session-Context File Fallback Ownership (#0250)
+
+    // Closes #0250: the shared .session-context fallback used to resolve ambient identity to
+    // the last active agent for ANY hookless caller (a foreign-vendor CLI session, an
+    // MCP-spawned agent, a script), letting it mutate that agent's state. GetSessionContext's
+    // file path now enforces caller ownership with nearest-host-wins; foreign processes get
+    // null ambient identity — the truthful "human/unknown terminal" answer.
+
+    private void WriteClaimedSession(string name, string sessionId, string host, int? claimedPid)
+    {
+        var workspace = Path.Combine(_testDir, "dydo", "agents", name);
+        Directory.CreateDirectory(workspace);
+        var session = new AgentSession
+        {
+            Agent = name,
+            SessionId = sessionId,
+            Host = host,
+            Claimed = DateTime.UtcNow,
+            ClaimedPid = claimedPid
+        };
+        File.WriteAllText(Path.Combine(workspace, ".session"),
+            JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $"""
+            ---
+            agent: {name}
+            role: null
+            task: null
+            status: working
+            assigned: testuser
+            ---
+            """);
+    }
+
+    [Fact]
+    public void GetSessionContext_FileFallback_RefusedWhenCallerNotDescendantOfClaimedPid()
+    {
+        // The 0250 repro: a foreign process (no agent-host ancestry, not a descendant of the
+        // claimed host) reads a valid context file. Ambient identity must resolve to null.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        WriteClaimedSession("Adele", "sid-adele", "claude", claimedPid: 500001);
+        _registry.StoreSessionContext("sid-adele", "Adele");
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;   // no claude/codex host above
+        ProcessUtils.GetParentPidOverride = _ => null;              // and not a descendant of 500001
+
+        Assert.Null(_registry.GetSessionContext());
+    }
+
+    [Fact]
+    public void GetSessionContext_FileFallback_AllowedForDescendantOfClaimedPid()
+    {
+        // The main legitimate consumer: a claude session's own `dydo` subprocess is a
+        // descendant of the claimed host PID → ownership passes, identity resolves.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        const int claudeHostPid = 500002;
+        WriteClaimedSession("Adele", "sid-adele", "claude", claimedPid: claudeHostPid);
+        _registry.StoreSessionContext("sid-adele", "Adele");
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        // Caller's direct parent IS the claimed host; the parent itself is a plain shell.
+        ProcessUtils.GetParentPidOverride = pid => pid == Environment.ProcessId ? claudeHostPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "bash";
+
+        Assert.Equal("sid-adele", _registry.GetSessionContext());
+    }
+
+    [Fact]
+    public void GetSessionContext_FileFallback_NearestHostWins_ForeignHostBetweenCallerAndClaimedHost()
+    {
+        // An inner codex host spawned under an outer claude-claimed session. The codex worker
+        // descends from the claude host (raw descendant ownership would pass), but the nearest
+        // agent host above it is codex, not the claimed claude host — it is a worker, not the
+        // agent. Ambient identity must resolve to null.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        const int claudeHostPid = 500003;
+        const int codexHostPid = 500004;
+        WriteClaimedSession("Adele", "sid-adele", "claude", claimedPid: claudeHostPid);
+        _registry.StoreSessionContext("sid-adele", "Adele");
+
+        // Ancestry: this process → codex host → claude host.
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? codexHostPid :
+            pid == codexHostPid ? claudeHostPid : null;
+        ProcessUtils.GetProcessNameOverride = pid =>
+            pid == codexHostPid ? "codex" :
+            pid == claudeHostPid ? "claude" : null;
+
+        Assert.Null(_registry.GetSessionContext());
+    }
+
+    [Fact]
+    public void GetSessionContext_FileFallback_StaleClaimedPid_ResolvesNull()
+    {
+        // Resumed-session guard (#0207) rewrites ClaimedPid on the first guarded call, but a
+        // CLI subprocess that runs before that refresh sees a dead pre-resume PID. It must get
+        // null (no identity) rather than a wrong agent.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        WriteClaimedSession("Adele", "sid-adele", "claude", claimedPid: 999999);
+        _registry.StoreSessionContext("sid-adele", "Adele");
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        ProcessUtils.GetParentPidOverride = pid => pid == Environment.ProcessId ? 424242 : null;
+        ProcessUtils.GetProcessNameOverride = _ => "pwsh";
+
+        Assert.Null(_registry.GetSessionContext());
+    }
+
+    [Fact]
+    public void SetRole_NoAmbientIdentityForForeignProcess_ErrorsCleanlyWithoutMutating()
+    {
+        // Mirrors AgentLifecycleHandlers.ExecuteRole: sessionId = GetSessionContext();
+        // SetRole(sessionId, ...). For a foreign process GetSessionContext is null, so SetRole
+        // refuses with an actionable message and Adele's state.md is untouched.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        WriteClaimedSession("Adele", "sid-adele", "claude", claimedPid: 500005);
+        _registry.StoreSessionContext("sid-adele", "Adele");
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        ProcessUtils.GetParentPidOverride = _ => null;
+
+        var sessionId = _registry.GetSessionContext();
+        Assert.Null(sessionId);
+        Assert.Null(_registry.GetCurrentAgent(sessionId));
+
+        var ok = _registry.SetRole(sessionId, "co-thinker", "some-task", out var error);
+        Assert.False(ok);
+        Assert.Contains("claim", error, StringComparison.OrdinalIgnoreCase);
+
+        var adeleState = File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Adele", "state.md"));
+        Assert.DoesNotContain("role: co-thinker", adeleState);
+    }
+
+    [Fact]
+    public void GetSessionContext_HumanTerminal_NullIdentityLeavesOwnedAgentUnclaimed()
+    {
+        // DR-036: a plain human terminal has no agent identity. Null resolution is the truthful
+        // answer, and GetCurrentOwnedAgent stays null so human-only commands are not attributed
+        // to (nor able to mutate) the claiming agent.
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        WriteClaimedSession("Adele", "sid-adele", "claude", claimedPid: 500006);
+        _registry.StoreSessionContext("sid-adele", "Adele");
+
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => null;
+        ProcessUtils.GetParentPidOverride = _ => null;
+
+        var sessionId = _registry.GetSessionContext();
+        Assert.Null(sessionId);
+        Assert.Null(_registry.GetCurrentOwnedAgent(sessionId));
     }
 
     #endregion

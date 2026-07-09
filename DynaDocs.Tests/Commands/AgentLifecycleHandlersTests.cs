@@ -44,8 +44,10 @@ public class AgentLifecycleHandlersTests : IDisposable
     {
         var workspace = Path.Combine(_testDir, "dydo", "agents", agentName);
         Directory.CreateDirectory(workspace);
+        // #0250: ClaimedPid = this process so the caller owns the session (the .session-context
+        // fallback now enforces caller ownership before resolving ambient identity).
         File.WriteAllText(Path.Combine(workspace, ".session"),
-            $$"""{"Agent":"{{agentName}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}","ClaimedPid":123}""");
+            $$"""{"Agent":"{{agentName}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}","ClaimedPid":{{Environment.ProcessId}}}""");
         File.WriteAllText(Path.Combine(workspace, "state.md"), $"""
             ---
             agent: {agentName}

@@ -8,7 +8,11 @@ public static class MessageService
     public static int Execute(string to, string body, string? subject, bool force)
     {
         var registry = new AgentRegistry();
-        var sessionId = registry.GetSessionContext();
+        // #0250: use the raw ambient context (not the ownership-gated GetSessionContext).
+        // TryGetCurrentOwnedAgent decides ownership: it refuses a context the caller does not
+        // own (blocking a hookless impersonator) while still allowing a genuine no-context
+        // human to act anonymously.
+        var sessionId = registry.GetAmbientSessionContext();
         var currentHuman = registry.GetCurrentHuman();
 
         if (!registry.TryGetCurrentOwnedAgent(sessionId, out var sender, out var ownershipError))

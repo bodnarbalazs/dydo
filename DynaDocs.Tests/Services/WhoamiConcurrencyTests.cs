@@ -14,6 +14,7 @@ public class WhoamiConcurrencyTests : IDisposable
 
     public void Dispose()
     {
+        ProcessUtils.FindAncestorProcessOverride = null;
         if (Directory.Exists(_testDir))
         {
             try { Directory.Delete(_testDir, true); } catch { }
@@ -39,13 +40,14 @@ public class WhoamiConcurrencyTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), config);
     }
 
-    private void CreateAgent(string name, string sessionId)
+    private void CreateAgent(string name, string sessionId, int? claimedPid = null)
     {
         var workspace = Path.Combine(AgentsPath, name);
         Directory.CreateDirectory(workspace);
 
+        var pidField = claimedPid.HasValue ? $",\"ClaimedPid\":{claimedPid.Value}" : "";
         var sessionJson = $$"""
-            {"Agent":"{{name}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}"}
+            {"Agent":"{{name}}","SessionId":"{{sessionId}}","Claimed":"{{DateTime.UtcNow:o}}"{{pidField}}}
             """;
         File.WriteAllText(Path.Combine(workspace, ".session"), sessionJson);
 
@@ -288,8 +290,12 @@ public class WhoamiConcurrencyTests : IDisposable
         var agents = new[] { "Adele", "Brian" };
         SetupConfig(agents);
 
-        // Adele is working with her session
-        CreateAgent("Adele", "session-adele");
+        // Adele is working with her session. #0250: the file fallback now requires caller
+        // ownership, so Adele's .session carries a ClaimedPid the test caller "owns" via the
+        // pinned host-ancestor override.
+        const int adelePid = 606060;
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => adelePid;
+        CreateAgent("Adele", "session-adele", adelePid);
         // Brian is free (not working)
 
         // Simulate: guard wrote verified context for Adele
@@ -337,8 +343,10 @@ public class WhoamiConcurrencyTests : IDisposable
         var agents = new[] { "Adele", "Brian" };
         SetupConfig(agents);
 
-        // Only Adele is working
-        CreateAgent("Adele", "session-adele");
+        // Only Adele is working. #0250: the file fallback now requires caller ownership.
+        const int adelePid = 707070;
+        ProcessUtils.FindAncestorProcessOverride = (_, _) => adelePid;
+        CreateAgent("Adele", "session-adele", adelePid);
         // Brian exists but is free (no session)
 
         // Simulate race: file has mismatched data

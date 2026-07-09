@@ -99,13 +99,26 @@ public class GuardResumeRefreshGuardLevelTests : IDisposable
     {
         // The refresh runs before Security Layer 1, so a resumed session's first guarded
         // call (including a *blocked* one) rewrites the dead ClaimedPid to the live ancestor.
-        // Exercises the CLI-args branch via `dydo guard --action read --path README.md`.
+        // Driven through the stdin hook branch (session_id delivered by the hook) — the real
+        // production resume path. #0250 closed the CLI-args→GetSessionContext fallback for a
+        // stale ClaimedPid (it resolves to null now), so the refresh must key off the
+        // hook-delivered session_id, which it does.
         SetUpResumedAdele();
         ProcessUtils.FindAncestorProcessOverride = (_, _) => LiveClaudePid;
         ProcessUtils.IsProcessRunningOverride = pid => pid != DeadPreResumePid;
 
-        var command = GuardCommand.Create();
-        command.Parse(new[] { "--action", "read", "--path", "README.md" }).Invoke();
+        var originalIn = Console.In;
+        Console.SetIn(new StringReader(
+            "{\"session_id\":\"" + ResumeSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"README.md\"}}"));
+        try
+        {
+            var command = GuardCommand.Create();
+            command.Parse(Array.Empty<string>()).Invoke();
+        }
+        finally
+        {
+            Console.SetIn(originalIn);
+        }
 
         var refreshedSession = JsonSerializer.Deserialize(
             File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Adele", ".session")),

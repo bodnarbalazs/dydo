@@ -111,13 +111,37 @@ public static partial class ProcessUtils
             var parentPid = GetParentPid(pid);
             if (parentPid == null || parentPid <= 1) return null;
 
-            var name = GetProcessName(parentPid.Value);
-            if (MatchesProcessName(name, "claude")) return parentPid.Value;
-            if (isWindows && MatchesProcessName(name, "node")) return parentPid.Value;
+            var kind = ClassifyAncestorHost(parentPid.Value, isWindows, isLauncherPosition: i == 0);
+            if (kind is AncestorHostKind.Claude or AncestorHostKind.AmbiguousNode) return parentPid.Value;
 
             pid = parentPid.Value;
         }
         return null;
+    }
+
+    // #0250/F1: classifies a walk ancestor as an agent host. claude/codex match by process name;
+    // a Windows `node` ancestor is classified by command line (ClassifyNodeAncestor) — the vendor
+    // CLIs are hosts, the npm launcher shim and unrelated node scripts are not. An unreadable node
+    // command line keeps the old name-based treatment (AmbiguousNode), EXCEPT at the launcher
+    // position (direct parent of the initial dydo process), which is the npm shim, not a host.
+    // AmbiguousNode resolves to the vendor the caller is looking for (claude for FindClaudeAncestor,
+    // codex for FindCodexAncestor) and counts as foreign in the nearest-host guard.
+    private enum AncestorHostKind { None, Claude, Codex, AmbiguousNode }
+
+    private static AncestorHostKind ClassifyAncestorHost(int pid, bool isWindows, bool isLauncherPosition)
+    {
+        var name = GetProcessName(pid);
+        if (MatchesProcessName(name, "claude")) return AncestorHostKind.Claude;
+        if (MatchesProcessName(name, "codex")) return AncestorHostKind.Codex;
+        if (isWindows && MatchesProcessName(name, "node"))
+            return ClassifyNodeAncestor(pid) switch
+            {
+                NodeAncestorKind.ClaudeHost => AncestorHostKind.Claude,
+                NodeAncestorKind.CodexHost => AncestorHostKind.Codex,
+                NodeAncestorKind.Unreadable when !isLauncherPosition => AncestorHostKind.AmbiguousNode,
+                _ => AncestorHostKind.None
+            };
+        return AncestorHostKind.None;
     }
 
     /// <summary>
@@ -156,13 +180,54 @@ public static partial class ProcessUtils
             var parentPid = GetParentPid(pid);
             if (parentPid == null || parentPid <= 1) return null;
 
-            var name = GetProcessName(parentPid.Value);
-            if (MatchesProcessName(name, "codex")) return parentPid.Value;
-            if (isWindows && MatchesProcessName(name, "node")) return parentPid.Value;
+            var kind = ClassifyAncestorHost(parentPid.Value, isWindows, isLauncherPosition: i == 0);
+            if (kind is AncestorHostKind.Codex or AncestorHostKind.AmbiguousNode) return parentPid.Value;
 
             pid = parentPid.Value;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Nearest-host-wins ownership guard (#0250). Walks up from the current process toward the
+    /// claimed host PID and returns false if a *different* agent-host process (claude/codex, or
+    /// node on Windows where both ship as Node scripts) sits nearer than the claimed host —
+    /// that inner host is a foreign-vendor worker spawned under an outer session, not the agent.
+    /// Returns true once the claimed host is reached, or if the walk ends without passing a
+    /// foreign host. Stops at the claimed PID, so it never wanders up to an unrelated host that
+    /// merely happens to sit above the whole tree.
+    /// </summary>
+    public static bool NoForeignHostNearerThanClaimedHost(int claimedPid, int maxDepth = 10)
+    {
+        // Caller is the claimed host itself — nothing can sit between it and itself.
+        if (Environment.ProcessId == claimedPid) return true;
+
+        // Tests inject a single stand-in host PID for the whole ancestry via
+        // FindAncestorProcessOverride. Treat that as the nearest host: nothing foreign is
+        // nearer unless the injected host is a different PID than the claimed host.
+        if (FindAncestorProcessOverride != null)
+        {
+            var injected = FindAncestorProcessOverride("claude", maxDepth) ?? FindAncestorProcessOverride("codex", maxDepth);
+            return !injected.HasValue || injected.Value == claimedPid;
+        }
+
+        var pid = Environment.ProcessId;
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        for (var i = 0; i < maxDepth; i++)
+        {
+            var parentPid = GetParentPid(pid);
+            if (parentPid == null || parentPid <= 1) return true;
+            if (parentPid.Value == claimedPid) return true;
+
+            // Any agent host nearer than the claimed host means the caller is an inner worker.
+            // The npm launcher shim and unrelated node scripts classify as None and keep walking.
+            if (ClassifyAncestorHost(parentPid.Value, isWindows, isLauncherPosition: i == 0) != AncestorHostKind.None)
+                return false;
+
+            pid = parentPid.Value;
+        }
+        return true;
     }
 
     // Anchored regex per known needle. Closes #0128 ("claudia.exe", "claude-dev.exe"
@@ -190,6 +255,38 @@ public static partial class ProcessUtils
         return Path.GetFileNameWithoutExtension(actualName)
             .Equals(needle, StringComparison.OrdinalIgnoreCase);
     }
+
+    // #0250/F1: a Windows `node` ancestor is classified by its command line, not its name.
+    // The npm-installed dydo runs dydo.exe as a child of a `node` launcher shim (npm/bin/dydo),
+    // so name-based matching flagged every legitimate npm CLI call as sitting under a foreign
+    // host. The command line is the truth: the launcher shim and unrelated node scripts are
+    // transparent (keep walking); only a command line that names the vendor CLI is a host.
+    internal enum NodeAncestorKind { Transparent, ClaudeHost, CodexHost, Unreadable }
+
+    // The launcher script is npm/bin/dydo, installed as .../node_modules/dydo/bin/dydo — a
+    // bin/dydo path segment identifies it regardless of dydo's own arguments (which may
+    // themselves contain "claude"/"codex"), so this check must precede the vendor matches.
+    private static readonly Regex DydoLauncherCmdlineRegex = new(
+        @"[\\/]bin[\\/]dydo(?![A-Za-z0-9])",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex ClaudeCmdlineRegex = new(
+        @"(?<![A-Za-z])claude(?![A-Za-z])",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex CodexCmdlineRegex = new(
+        @"(?<![A-Za-z])codex(?![A-Za-z])",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    internal static NodeAncestorKind ClassifyNodeCommandLine(string? commandLine)
+    {
+        if (string.IsNullOrWhiteSpace(commandLine)) return NodeAncestorKind.Unreadable;
+        if (DydoLauncherCmdlineRegex.IsMatch(commandLine)) return NodeAncestorKind.Transparent;
+        if (CodexCmdlineRegex.IsMatch(commandLine)) return NodeAncestorKind.CodexHost;
+        if (ClaudeCmdlineRegex.IsMatch(commandLine)) return NodeAncestorKind.ClaudeHost;
+        return NodeAncestorKind.Transparent;
+    }
+
+    private static NodeAncestorKind ClassifyNodeAncestor(int pid) =>
+        ClassifyNodeCommandLine(GetProcessCommandLine(pid));
 
     private static int? GetParentPidWindows(int pid)
     {

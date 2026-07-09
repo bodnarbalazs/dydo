@@ -180,8 +180,12 @@ public interface IAgentRegistry
     RoleDefinition? GetRoleDefinition(string roleName);
 
     /// <summary>
-    /// Gets the current session ID from context file.
-    /// Used by commands that run as subprocesses to identify the session.
+    /// Gets the current session ID for the caller, or null when the caller does not own it.
+    /// Used by commands that resolve or mutate their own agent identity (whoami, agent
+    /// role/status/release, …) and run as subprocesses. The DYDO_AGENT env path is verified
+    /// per #0183/F1; the shared .session-context file fallback is gated on caller ownership +
+    /// nearest-host-wins (#0250) so a foreign hookless process resolves to null (the truthful
+    /// human/unknown-terminal answer, DR-036) rather than impersonating the claiming agent.
     /// </summary>
     string? GetSessionContext();
 

@@ -88,7 +88,10 @@ public class AutoResumeRearmWaitGateTests : IDisposable
         var (exitCode, _, stderr) = ConsoleCapture.All(() => command.Parse(Array.Empty<string>()).Invoke());
 
         Assert.Equal(ExitCodes.ToolError, exitCode);
-        Assert.Contains("does not own", stderr);
+        // #0250: with a stale ClaimedPid and no claude ancestor, the caller does not own Adele's
+        // session, so ambient identity resolves to null before the F11 gate — the wait is refused
+        // at identity resolution ("No agent identity") rather than at VerifyCallerOwnsAgent.
+        Assert.Contains("No agent identity", stderr);
         var waitingDir = Path.Combine(_testDir, "dydo", "agents", "Adele", ".waiting");
         Assert.False(Directory.Exists(waitingDir),
             "F11 refused before the poll loop — no _general-wait marker should have been registered.");

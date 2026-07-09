@@ -736,9 +736,11 @@ public class WorktreeCommandTests : IDisposable
             ---
             """);
 
-        // Write session JSON file so GetCurrentAgent can match session ID to agent
+        // Write session JSON file so GetCurrentAgent can match session ID to agent.
+        // #0250: the .session-context fallback now requires caller ownership; ClaimedPid =
+        // this process makes the test caller own the session (IsOwnedByCaller current-process case).
         File.WriteAllText(Path.Combine(workspace, ".session"),
-            $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\"}}");
+            $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\",\"ClaimedPid\":{Environment.ProcessId}}}");
 
         // Write session context so GetSessionContext returns "test-session". Post-#0196
         // only the verified two-line format (sessionId\nagentName, cross-checked against

@@ -51,6 +51,9 @@ public class IdentityHijackMutatingCommandTests : IDisposable
         Environment.SetEnvironmentVariable("DYDO_HUMAN", _originalHuman);
         TerminalLauncher.ProcessStarterOverride = _originalStarter;
         ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
+        ProcessUtils.GetParentPidOverride = null;
+        ProcessUtils.GetProcessNameOverride = null;
+        ProcessUtils.GetProcessCommandLineOverride = null;
 
         try { Directory.Delete(_testDir, recursive: true); } catch { }
     }
@@ -64,6 +67,8 @@ public class IdentityHijackMutatingCommandTests : IDisposable
         var (exitCode, _, stderr) = ConsoleCapture.All(() =>
             MessageService.Execute("Brian", "stolen context body", subject: "hijack", force: false));
 
+        // #0250: the attacker's process does not own Adele's session; TryGetCurrentOwnedAgent
+        // refuses the send (no anonymous "Unknown" sender leaks through).
         Assert.Equal(ExitCodes.ToolError, exitCode);
         Assert.Contains("does not own", stderr);
         Assert.Empty(Directory.GetFiles(Path.Combine(_testDir, "dydo", "agents", "Brian", "inbox"), "*-msg-*.md"));
@@ -81,10 +86,63 @@ public class IdentityHijackMutatingCommandTests : IDisposable
 
         var (exitCode, _, stderr) = ConsoleCapture.All(() => DispatchService.Execute(options));
 
+        // #0250: the attacker does not own Adele's session → TryGetCurrentOwnedAgent refuses,
+        // and Brian is neither reserved nor sent an assignment.
         Assert.Equal(ExitCodes.ToolError, exitCode);
         Assert.Contains("does not own", stderr);
         Assert.Empty(Directory.GetFiles(Path.Combine(_testDir, "dydo", "agents", "Brian", "inbox"), "*.md"));
         Assert.Contains("status: free", File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Brian", "state.md")));
+    }
+
+    [Fact]
+    public void Message_NestedForeignWorkerUnderClaimedHost_DoesNotSendAsOuterAgent()
+    {
+        // #0250/F2: an MCP-spawned inner worker IS a descendant of Adele's claimed host, so a
+        // raw descendant check would let it send as Adele. But a foreign-vendor host (claude)
+        // sits nearer than the claimed codex host — the worker is not the agent. Nearest-host-
+        // wins refuses the send.
+        SetupNestedForeignWorkerAncestry();
+        WriteClaimedAgent("Brian", "session-brian", AgentStatus.Working, 909090,
+            role: "code-writer", task: "target-task");
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() =>
+            MessageService.Execute("Brian", "nested worker body", subject: "nested", force: false));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("does not own", stderr);
+        Assert.Empty(Directory.GetFiles(Path.Combine(_testDir, "dydo", "agents", "Brian", "inbox"), "*-msg-*.md"));
+    }
+
+    [Fact]
+    public void Dispatch_NestedForeignWorkerUnderClaimedHost_DoesNotDispatchAsOuterAgent()
+    {
+        SetupNestedForeignWorkerAncestry();
+
+        var options = new DispatchOptions(
+            Role: "code-writer",
+            Task: "nested-dispatch",
+            Brief: "Implement the nested-worker regression test.",
+            To: "Brian",
+            AutoClose: true);
+
+        var (exitCode, _, stderr) = ConsoleCapture.All(() => DispatchService.Execute(options));
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("does not own", stderr);
+        Assert.Empty(Directory.GetFiles(Path.Combine(_testDir, "dydo", "agents", "Brian", "inbox"), "*.md"));
+        Assert.Contains("status: free", File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Brian", "state.md")));
+    }
+
+    // Ancestry: this process → claude host → Adele's claimed codex host. Descendant ownership
+    // would pass; nearest-host-wins must not, because the nearest host is claude, not codex.
+    private void SetupNestedForeignWorkerAncestry()
+    {
+        const int claudeMidPid = 606060;
+        ProcessUtils.FindAncestorProcessOverride = null;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? claudeMidPid :
+            pid == claudeMidPid ? AdeleOwnerPid : null;
+        ProcessUtils.GetProcessNameOverride = pid => pid == claudeMidPid ? "claude" : "bash";
     }
 
     [Fact]

@@ -1061,6 +1061,31 @@ public partial class AgentRegistry : IAgentRegistry
         return ancestor.HasValue && ancestor.Value == claimedPid;
     }
 
+    // Closes #0250. IsOwnedByCaller proves the caller is the claimed host or a descendant of it,
+    // but a descendant may itself be an inner foreign-vendor worker spawned under the outer
+    // session (an MCP-launched codex agent under a claude-claimed session, or vice versa). This
+    // adds nearest-host-wins: the nearest agent-host ancestor of the caller must be the claimed
+    // host, so a *different*-vendor host sitting between the caller and the claimed host fails.
+    // Gates both the shared .session-context resolution (GetSessionContext, which otherwise
+    // trusted any hookless caller after only the #0196 context cross-check) and the agent-to-
+    // agent attribution path (TryGetCurrentOwnedAgent, backing dydo msg / dydo dispatch).
+    internal static bool IsOwnedByNearestHostCaller(AgentSession session)
+    {
+        if (!IsOwnedByCaller(session)) return false;
+        return session.ClaimedPid is int claimedPid
+            && ProcessUtils.NoForeignHostNearerThanClaimedHost(claimedPid);
+    }
+
+    private AgentSession? FindSessionBySessionId(string sessionId)
+    {
+        foreach (var name in AgentNames)
+        {
+            var session = GetSession(name);
+            if (session?.SessionId == sessionId) return session;
+        }
+        return null;
+    }
+
     /// <summary>
     /// Verifies the calling process actually owns the named agent — used at the wait-marker
     /// callsite (#0195/F11) so an attacker with stale DYDO_AGENT can't register a marker that
@@ -1088,7 +1113,14 @@ public partial class AgentRegistry : IAgentRegistry
         if (agent == null)
             return true;
 
-        if (VerifyCallerOwnsAgent(agent.Name))
+        // #0250/F2: nearest-host-wins, not just descendant ownership. A raw descendant check
+        // let an MCP-spawned inner worker (descendant of the claimed host, but sitting under a
+        // foreign-vendor host of its own) send dydo msg / dydo dispatch attributed as the outer
+        // agent. The #0195 "does not own" refusal is preserved for both non-descendant callers
+        // and these inner workers; a genuine no-context human still resolves to null and acts
+        // anonymously.
+        var session = GetSession(agent.Name);
+        if (session != null && IsOwnedByNearestHostCaller(session))
             return true;
 
         error = $"Session context belongs to agent {agent.Name}, but this process does not own that agent.";
@@ -1241,9 +1273,35 @@ public partial class AgentRegistry : IAgentRegistry
     }
 
     /// <summary>
-    /// Gets the current session ID from context file.
-    /// Used by commands that run as subprocesses to identify the session.
-    /// DYDO_AGENT env var bypasses the shared file entirely (set in dispatched terminals).
+    /// Raw ambient session context: the DYDO_AGENT env path (the caller's own agent, verified
+    /// by <see cref="IsOwnedByCaller"/> per #0183/F1) or the shared .session-context file (with
+    /// the #0196 cross-check), WITHOUT the #0250 identity-ownership gate.
+    ///
+    /// Callers that act AS the resolved identity on OTHER agents (dydo msg, dydo dispatch)
+    /// use this and decide ownership themselves via <see cref="TryGetCurrentOwnedAgent"/> —
+    /// that gate refuses a context the caller does not own (blocking a hookless impersonator)
+    /// while still allowing a genuine no-context human to act anonymously. Identity-resolving
+    /// or self-mutating callers use <see cref="GetSessionContext"/> instead.
+    /// </summary>
+    public string? GetAmbientSessionContext()
+    {
+        var agentName = Environment.GetEnvironmentVariable("DYDO_AGENT");
+        if (!string.IsNullOrEmpty(agentName) && IsValidAgentName(agentName))
+        {
+            var session = GetSession(agentName);
+            if (session != null && IsOwnedByCaller(session)) return session.SessionId;
+        }
+
+        return _sessionManager.GetSessionContext();
+    }
+
+    /// <summary>
+    /// Gets the current session ID for the caller, or null when the caller does not own it.
+    /// Used by commands that resolve or mutate their own agent identity (whoami, agent
+    /// role/status/release, …). The DYDO_AGENT env path is verified per #0183/F1; the shared
+    /// .session-context file fallback is gated on caller ownership + nearest-host-wins (#0250)
+    /// so a foreign hookless process resolves to null (the truthful human/unknown-terminal
+    /// answer, DR-036) rather than impersonating the claiming agent.
     /// </summary>
     public string? GetSessionContext()
     {
@@ -1254,7 +1312,15 @@ public partial class AgentRegistry : IAgentRegistry
             if (session != null && IsOwnedByCaller(session)) return session.SessionId;
         }
 
-        return _sessionManager.GetSessionContext();
+        // #0250: the shared .session-context fallback must prove caller ownership, not just
+        // context validity (#0196). Resolve the agent that owns the stored session and verify
+        // the caller owns it (nearest-host-wins). A foreign hookless process reading a valid
+        // context file gets null ambient identity rather than impersonating the claiming agent.
+        var fileSessionId = _sessionManager.GetSessionContext();
+        if (string.IsNullOrEmpty(fileSessionId)) return null;
+
+        var owner = FindSessionBySessionId(fileSessionId);
+        return owner != null && IsOwnedByNearestHostCaller(owner) ? fileSessionId : null;
     }
 
     /// <summary>

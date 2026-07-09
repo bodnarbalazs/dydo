@@ -6,6 +6,92 @@ using System.Runtime.InteropServices;
 public static partial class ProcessUtils
 {
     /// <summary>
+    /// When set, GetProcessCommandLine uses this instead of probing the system.
+    /// </summary>
+    public static Func<int, string?>? GetProcessCommandLineOverride { get; set; }
+
+    /// <summary>
+    /// Reads the full command line of a single process, or null when unreadable.
+    /// Windows: wmic, falling back to a Get-CimInstance query; Linux: /proc/PID/cmdline;
+    /// macOS: ps. Backs the #0250/F1 node-ancestor disambiguation — a Windows `node`
+    /// ancestor is only an agent host when its command line names the vendor CLI; the
+    /// npm-installed dydo launcher shim and unrelated node scripts are transparent.
+    /// </summary>
+    public static string? GetProcessCommandLine(int pid)
+    {
+        if (GetProcessCommandLineOverride != null) return GetProcessCommandLineOverride(pid);
+        if (pid <= 0) return null;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return GetProcessCommandLineWindows(pid);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            return GetProcessCommandLineLinux(pid);
+        return GetProcessCommandLineMac(pid);
+    }
+
+    private static string? GetProcessCommandLineWindows(int pid) =>
+        GetCommandLineByWmic(pid) ?? GetCommandLineByPowerShell(pid);
+
+    internal static string? GetCommandLineByWmic(int pid)
+    {
+        try
+        {
+            return ParseWmicCommandLineList(
+                RunProcess("wmic", $"process where \"ProcessId={pid}\" get CommandLine /format:list"));
+        }
+        catch { return null; }
+    }
+
+    internal static string? GetCommandLineByPowerShell(int pid)
+    {
+        try
+        {
+            var shell = ResolvePowerShell();
+            var value = RunProcess(shell,
+                $"-NoProfile -Command \"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}').CommandLine\"",
+                10000)?.Trim();
+            return string.IsNullOrEmpty(value) ? null : value;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Extracts the value from wmic `get CommandLine /format:list` output (a `CommandLine=…` line).
+    /// </summary>
+    internal static string? ParseWmicCommandLineList(string? output)
+    {
+        if (string.IsNullOrEmpty(output)) return null;
+        foreach (var line in output.Split('\n'))
+        {
+            var trimmed = line.TrimEnd('\r');
+            if (trimmed.StartsWith("CommandLine=", StringComparison.Ordinal))
+            {
+                var value = trimmed["CommandLine=".Length..].Trim();
+                return value.Length > 0 ? value : null;
+            }
+        }
+        return null;
+    }
+
+    internal static string? GetProcessCommandLineLinux(int pid)
+    {
+        try
+        {
+            var path = $"/proc/{pid}/cmdline";
+            if (!File.Exists(path)) return null;
+            var raw = File.ReadAllText(path).Replace('\0', ' ').Trim();
+            return raw.Length > 0 ? raw : null;
+        }
+        catch { return null; }
+    }
+
+    internal static string? GetProcessCommandLineMac(int pid)
+    {
+        var value = RunProcess("ps", $"-o command= -p {pid}")?.Trim();
+        return string.IsNullOrEmpty(value) ? null : value;
+    }
+
+    /// <summary>
     /// Finds processes whose command line contains the given pattern.
     /// Used by the watchdog to find claude processes for specific agents.
     /// </summary>

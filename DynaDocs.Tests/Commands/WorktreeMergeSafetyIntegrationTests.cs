@@ -263,8 +263,10 @@ public class WorktreeMergeSafetyIntegrationTests : IDisposable
             ---
             """);
 
+        // #0250: ClaimedPid = this process so the test caller owns the seeded session
+        // (the .session-context fallback now enforces caller ownership).
         File.WriteAllText(Path.Combine(workspace, ".session"),
-            $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\"}}");
+            $"{{\"Agent\":\"{agentName}\",\"SessionId\":\"test-session\",\"ClaimedPid\":{Environment.ProcessId}}}");
         var agentsDir = Path.Combine(_testDir, "dydo", "agents");
         Directory.CreateDirectory(agentsDir);
         // Verified two-line format required post-#0196.

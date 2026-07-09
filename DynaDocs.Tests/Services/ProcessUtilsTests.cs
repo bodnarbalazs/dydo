@@ -288,6 +288,334 @@ public class ProcessUtilsTests
         }
     }
 
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_ForeignHostBetween_ReturnsFalse()
+    {
+        // #0250 nearest-host-wins: a codex host sits nearer than the claimed claude host, so an
+        // inner codex worker cannot inherit the outer claude session's identity.
+        const int codexPid = 700001;
+        const int claudePid = 700002;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? codexPid :
+            pid == codexPid ? claudePid : null;
+        ProcessUtils.GetProcessNameOverride = pid =>
+            pid == codexPid ? "codex" :
+            pid == claudePid ? "claude" : null;
+        try
+        {
+            Assert.False(ProcessUtils.NoForeignHostNearerThanClaimedHost(claudePid));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+        }
+    }
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_ReachesClaimedHostFirst_ReturnsTrue()
+    {
+        // The legitimate consumer: the caller reaches the claimed host with only plain shells
+        // in between — no foreign agent host is nearer.
+        const int claudePid = 700004;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? 700005 :
+            pid == 700005 ? claudePid : null;
+        ProcessUtils.GetProcessNameOverride = pid => pid == claudePid ? "claude" : "bash";
+        try
+        {
+            Assert.True(ProcessUtils.NoForeignHostNearerThanClaimedHost(claudePid));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+        }
+    }
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_NoHostAncestor_ReturnsTrue()
+    {
+        ProcessUtils.GetParentPidOverride = pid => pid == Environment.ProcessId ? 700003 : null;
+        ProcessUtils.GetProcessNameOverride = _ => "bash";
+        try
+        {
+            Assert.True(ProcessUtils.NoForeignHostNearerThanClaimedHost(999999));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+        }
+    }
+
+    // --- #0250/F1: node ancestors disambiguated by command line ---
+
+    [Theory]
+    [InlineData(null, "Unreadable")]
+    [InlineData("", "Unreadable")]
+    [InlineData("   ", "Unreadable")]
+    // The npm dydo launcher shim is transparent even when dydo's own args name a vendor.
+    [InlineData(@"node C:\Users\u\AppData\Roaming\npm\node_modules\dydo\bin\dydo agent role co-thinker", "Transparent")]
+    [InlineData("node /usr/lib/node_modules/dydo/bin/dydo claim --host codex", "Transparent")]
+    [InlineData("node ./npm/bin/dydo whoami", "Transparent")]
+    // Real vendor CLIs running under node.
+    [InlineData(@"node C:\Users\u\.claude\local\node_modules\@anthropic-ai\claude-code\cli.js", "ClaudeHost")]
+    [InlineData("node /opt/codex/bin/codex.js", "CodexHost")]
+    // Unrelated node scripts are not agent hosts.
+    [InlineData("node /home/u/project/server.js", "Transparent")]
+    [InlineData("node node-gyp build", "Transparent")]
+    // "claudia" must not read as claude (token boundary).
+    [InlineData("node /apps/claudia/index.js", "Transparent")]
+    public void ClassifyNodeCommandLine_MapsToExpectedKind(string? cmdline, string expected)
+        => Assert.Equal(expected, ProcessUtils.ClassifyNodeCommandLine(cmdline).ToString());
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_NpmLauncherNode_NotForeign()
+    {
+        // Windows+npm shape: dydo.exe → npm launcher node (transparent) → claude host (claimed).
+        // The launcher node must not be treated as a foreign host — the legitimate CLI call passes.
+        if (!OperatingSystem.IsWindows()) return;
+        const int launcherPid = 710001;
+        const int claudeHostPid = 710002;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? launcherPid :
+            pid == launcherPid ? claudeHostPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "node";
+        ProcessUtils.GetProcessCommandLineOverride = pid =>
+            pid == launcherPid ? @"node C:\npm\node_modules\dydo\bin\dydo whoami" :
+            @"node C:\claude\cli.js";
+        try
+        {
+            Assert.True(ProcessUtils.NoForeignHostNearerThanClaimedHost(claudeHostPid));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_UnknownNodeScript_Transparent()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        const int scriptPid = 710010;
+        const int claudeHostPid = 710011;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? scriptPid :
+            pid == scriptPid ? claudeHostPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "node";
+        ProcessUtils.GetProcessCommandLineOverride = pid =>
+            pid == scriptPid ? "node C:\\tools\\watcher.js" : "node C:\\claude\\cli.js";
+        try
+        {
+            Assert.True(ProcessUtils.NoForeignHostNearerThanClaimedHost(claudeHostPid));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_CodexByCmdlineNearerThanClaimedClaude_ReturnsFalse()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // An inner codex host (a node whose command line names codex) sits nearer than the
+        // claimed claude host — the caller is a codex worker, not the claude agent.
+        const int codexNodePid = 710020;
+        const int claudeHostPid = 710021;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? codexNodePid :
+            pid == codexNodePid ? claudeHostPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "node";
+        ProcessUtils.GetProcessCommandLineOverride = pid =>
+            pid == codexNodePid ? "node C:\\codex\\codex.js" : "node C:\\claude\\cli.js";
+        try
+        {
+            Assert.False(ProcessUtils.NoForeignHostNearerThanClaimedHost(claudeHostPid));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_UnreadableNodeAtLauncherPosition_Transparent()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // Conservative fallback: an unreadable command line at the launcher position (direct
+        // parent of the initial dydo process) is treated as the npm shim → transparent.
+        const int launcherPid = 710030;
+        const int claimedPid = 710031;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? launcherPid :
+            pid == launcherPid ? claimedPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "node";
+        ProcessUtils.GetProcessCommandLineOverride = _ => null;
+        try
+        {
+            Assert.True(ProcessUtils.NoForeignHostNearerThanClaimedHost(claimedPid));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void NoForeignHostNearerThanClaimedHost_UnreadableNodeAboveLauncher_TreatedAsForeign()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // A node with an unreadable command line that is NOT at the launcher position keeps the
+        // old name-based treatment: it counts as a foreign host.
+        const int shellPid = 710040;
+        const int nodePid = 710041;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? shellPid :
+            pid == shellPid ? nodePid : null;
+        ProcessUtils.GetProcessNameOverride = pid => pid == shellPid ? "pwsh" : "node";
+        ProcessUtils.GetProcessCommandLineOverride = _ => null;
+        try
+        {
+            Assert.False(ProcessUtils.NoForeignHostNearerThanClaimedHost(999999));
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindClaudeAncestor_SkipsNpmLauncherShim_ReturnsClaudeHost()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // Amplifier fix: claim-time ClaimedPid capture must skip the transient npm launcher node
+        // and land on the real claude host node above it.
+        const int launcherPid = 710050;
+        const int claudeHostPid = 710051;
+        ProcessUtils.FindAncestorProcessOverride = null;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? launcherPid :
+            pid == launcherPid ? claudeHostPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "node";
+        ProcessUtils.GetProcessCommandLineOverride = pid =>
+            pid == launcherPid ? @"node C:\npm\node_modules\dydo\bin\dydo claim auto" :
+            @"node C:\Users\u\.claude\cli.js";
+        try
+        {
+            Assert.Equal(claudeHostPid, ProcessUtils.FindClaudeAncestor());
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void FindCodexAncestor_SkipsNpmLauncherShim_ReturnsCodexHost()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        const int launcherPid = 710060;
+        const int codexHostPid = 710061;
+        ProcessUtils.FindAncestorProcessOverride = null;
+        ProcessUtils.GetParentPidOverride = pid =>
+            pid == Environment.ProcessId ? launcherPid :
+            pid == launcherPid ? codexHostPid : null;
+        ProcessUtils.GetProcessNameOverride = _ => "node";
+        ProcessUtils.GetProcessCommandLineOverride = pid =>
+            pid == launcherPid ? @"node C:\npm\node_modules\dydo\bin\dydo whoami" :
+            @"node C:\codex\codex.js";
+        try
+        {
+            Assert.Equal(codexHostPid, ProcessUtils.FindCodexAncestor());
+        }
+        finally
+        {
+            ProcessUtils.GetParentPidOverride = null;
+            ProcessUtils.GetProcessNameOverride = null;
+            ProcessUtils.GetProcessCommandLineOverride = null;
+        }
+    }
+
+    [Fact]
+    public void GetProcessCommandLine_CurrentProcess_ReturnsNonEmpty()
+    {
+        // Exercises the real per-PID reader (Windows wmic → CIM, Linux /proc, macOS ps).
+        var cmdline = ProcessUtils.GetProcessCommandLine(Environment.ProcessId);
+
+        Assert.False(string.IsNullOrWhiteSpace(cmdline));
+    }
+
+    [Fact]
+    public void GetProcessCommandLine_InvalidPid_ReturnsNull()
+    {
+        Assert.Null(ProcessUtils.GetProcessCommandLine(0));
+        Assert.Null(ProcessUtils.GetProcessCommandLine(-1));
+    }
+
+    [Fact]
+    public void GetCommandLineByPowerShell_CurrentProcess_ReturnsCommandLine()
+    {
+        // The Windows PowerShell/CIM fallback path (used when wmic is absent, as on newer
+        // Windows). Exercised directly so it is covered regardless of whether wmic works here.
+        if (!OperatingSystem.IsWindows()) return;
+
+        var cmdline = ProcessUtils.GetCommandLineByPowerShell(Environment.ProcessId);
+
+        Assert.False(string.IsNullOrWhiteSpace(cmdline));
+    }
+
+    [Fact]
+    public void GetCommandLineByWmic_BogusPid_ReturnsNull()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        Assert.Null(ProcessUtils.GetCommandLineByWmic(int.MaxValue));
+    }
+
+    [Fact]
+    public void GetProcessCommandLineLinux_OnWindows_ReturnsNull()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Assert.Null(ProcessUtils.GetProcessCommandLineLinux(1));
+    }
+
+    [Fact]
+    public void GetProcessCommandLineMac_OnWindows_ReturnsNull()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Assert.Null(ProcessUtils.GetProcessCommandLineMac(1));
+    }
+
+    [Fact]
+    public void ParseWmicCommandLineList_ExtractsValue()
+    {
+        var output = "\r\nCommandLine=node C:\\npm\\bin\\dydo whoami\r\n\r\n";
+        Assert.Equal("node C:\\npm\\bin\\dydo whoami", ProcessUtils.ParseWmicCommandLineList(output));
+    }
+
+    [Fact]
+    public void ParseWmicCommandLineList_EmptyValue_ReturnsNull()
+    {
+        Assert.Null(ProcessUtils.ParseWmicCommandLineList("CommandLine=\r\n"));
+        Assert.Null(ProcessUtils.ParseWmicCommandLineList(""));
+        Assert.Null(ProcessUtils.ParseWmicCommandLineList("NoCommandLineHere\r\n"));
+    }
+
     [Theory]
     [InlineData("claude", "claude", true)]
     [InlineData("claude.exe", "claude", true)]

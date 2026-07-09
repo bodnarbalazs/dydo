@@ -81,6 +81,7 @@ Index of issues documentation.
 - [Cross-rewrite dead code / dead-in-effect surfaces in TerminalLauncher, AgentRegistry, NotionMarkdownResponse, WatchdogService](./0263-cross-rewrite-dead-code-dead-in-effect-surfaces-in-terminallauncher-agentregistr.md) - The codex-hardening launch/resume rewrite and DR-035 chain left five dead-in-effect API surfaces that read as load-bearing: GetClaudeResumeCommand ...
 - [Test-coverage gaps on the campaign identity/launch/sync seams (provenance surfaces, reset wiring, vanished-doc fallback, watchdog resume resolver, ancestry real-walk)](./0264-test-coverage-gaps-on-the-campaign-identity-launch-sync-seams-provenance-surface.md) - Five confirmed low-severity coverage gaps where a regression passes the suite: issue-create/review provenance hijack (only task-create pinned), not...
 - [Node-ancestor vendor classification matches 'claude'/'codex' anywhere in the command line - misclassifies unrelated node ancestors, fail-closed ownership refusal](./0265-node-ancestor-vendor-classification-matches-claude-codex-anywhere-in-the-command.md) - ClassifyNodeCommandLine's unanchored token regexes match the bare vendor name in any path segment or argument (e.
+- [Workflow worktrees cut from last-pushed commit, not local master - stale base under hold-commit accumulation](./0266-workflow-worktrees-cut-from-last-pushed-commit-not-local-master-stale-base-under.md) - Every worktree cut during the C1 sprint (run-sprint workflow slices AND a direct worktree-isolated subagent) was based at `d88102b3` ("2.
 
 ## Subfolders
 

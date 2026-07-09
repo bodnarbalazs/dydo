@@ -1,13 +1,12 @@
 ---
 area: general
-name: codex-mcp-exploration
+name: spine-types-completion
 status: pending
-created: 2026-07-08T19:14:04.6968127Z
-assigned: Noah
-needs-human: false
+created: 2026-07-09T10:44:07.5310675Z
+assigned: Brian
 ---
 
-# Task: codex-mcp-exploration
+# Task: spine-types-completion
 
 (No description)
 

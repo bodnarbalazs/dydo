@@ -69,6 +69,9 @@ Index of issues documentation.
 - [dydo fix has no directory-scoped mode - repo-wide side effects on shared dirty trees](./0248-dydo-fix-has-no-directory-scoped-mode-repo-wide-side-effects-on-shared-dirty-tre.md) - dydo fix always runs repo-wide: an agent needing one _index regen (e.
 - [dydo check reports 44 pre-existing errors - validator/taxonomy debt inventory](./0249-dydo-check-reports-44-pre-existing-errors-validator-taxonomy-debt-inventory.md) - Repo-wide dydo check currently reports 44 errors: invalid type backlog frontmatter (the validator predates DR-034 taxonomy - likely resolves or re-...
 - [session-context fallback lets hookless processes impersonate the active agent](./0250-session-context-fallback-lets-hookless-processes-impersonate-the-active-agent.md) - Observed live during the codex-mcp-exploration round (2026-07-08): an interactive Codex session in the live repo ran `dydo agent claim auto` (tripp...
+- [non-dydo worktrees are uncleanable by agents - prune skips them, guard blocks raw removal](./0251-non-dydo-worktrees-are-uncleanable-by-agents-prune-skips-them-guard-blocks-raw-r.md) - A git worktree created outside dydo (no dydo marker) falls into a cleanup gap: `dydo worktree prune` only sweeps marker-tracked worktrees, `dydo wo...
+- [No command regenerates the live _system/sync-model.json - template updates never reach a provisioned board](./0252-no-command-regenerates-the-live-system-sync-model-json-template-updates-never-re.md) - Live 2.
+- [Codex dispatch launches with maximally-restrictive approvals - should pass a configured auto-approval posture (not yolo)](./0253-codex-dispatch-launches-with-maximally-restrictive-approvals-should-pass-a-confi.md) - First live codex dispatch smoke (2026-07-09, v2.
 
 ## Subfolders
 

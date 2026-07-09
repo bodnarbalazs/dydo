@@ -1,13 +1,13 @@
 ---
 area: general
-name: codex-mcp-exploration
+name: codex-dispatch-smoke
 status: pending
-created: 2026-07-08T19:14:04.6968127Z
-assigned: Noah
-needs-human: false
+created: 2026-07-09T11:12:38.8798843Z
+assigned: Iris
+needs-human: true
 ---
 
-# Task: codex-mcp-exploration
+# Task: codex-dispatch-smoke
 
 (No description)
 

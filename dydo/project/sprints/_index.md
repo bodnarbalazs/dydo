@@ -11,5 +11,6 @@ Index of sprints documentation.
 
 ## Contents
 
+- [M0 — Spine Object-Type Completion](./m0-spine-types-completion.md) - Complete the DR-034 spine so `sync-model` declares every `project/` dir, per the shapes fixed in [DR 040](.
 - [Notion Sync](./notion-sync.md) - Build the Notion-agnostic sync engine (3-way reconcile + base snapshot), the real Notion adapter, and the PM spine provisioning that creates and ow...
 - [Runtime Slim](./runtime-slim.md) - Strip the queue, baton, dispatch-wait, and worktree-orchestration machinery from the worker-tier runtime (Sprint 6, Decision 024).

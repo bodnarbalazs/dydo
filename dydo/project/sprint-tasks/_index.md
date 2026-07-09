@@ -11,5 +11,11 @@ Index of sprint-tasks documentation.
 
 ## Contents
 
+- [m0-1 Template Model Completion](./m0-1-template-model-completion.md) - Add the three missing object types to `Templates/sync-model.
+- [m0-2 Decision Title Backfill](./m0-2-decision-title-backfill.md) - Give every decision record a `title:` frontmatter key so the Decision DB's Notion titles are not blank (live constraint #4 in reference/notion-sync.
+- [m0-3 Changelog Conformance (Stems + Titles)](./m0-3-changelog-conformance.md) - Make the 670-record `project/changelog/` tree poolable as the `Changelog` type: the spine loader keys rows by filename stem and crashes on duplicat...
+- [m0-4 `dydo notion model-update` Command](./m0-4-notion-model-update-command.md) - Sanctioned regen path for the live sync model — resolves issue 0252 (today only a human hand-copy bridges `Templates/sync-model.
+- [m0-5 Docs Reconciliation](./m0-5-docs-reconciliation.md) - Bring the prose in line with the completed model.
+- [m0-6 Live Smoke (Model Regen + Provision)](./m0-6-live-smoke.md) - Human-gated (needs balazs's token; `FakeNotionClient` cannot catch the live-only constraints — reference/notion-sync.
 - [Notion PM Spine Provisioning](./notion-pm-spine-provisioning.md) - Provision and own the Campaign → Sprint → Task spine in Notion (three databases with relations under a parent page), then sync canonical repo files...
 - [Slim the Worker-Tier Runtime](./runtime-slim-worker-tier.md) - Remove queue/baton/dispatch-wait/worktree orchestration from the worker runtime, leaving a lean native-AOT binary (Decision 024).

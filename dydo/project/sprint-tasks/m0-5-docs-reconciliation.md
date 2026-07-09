@@ -1,6 +1,6 @@
 ---
 title: m0-5 Docs Reconciliation
-blocked-by: m0-1-template-model-completion
+blocked-by: m0-1-template-model-completion, m0-2-decision-title-backfill
 due:
 needs-human: false
 priority: Normal
@@ -13,8 +13,13 @@ type: context
 
 # m0-5 Docs Reconciliation
 
-Bring the prose in line with the completed model. Small, surgical; runs after m0-1 so the prose
-describes the final shape.
+Bring the prose in line with the completed model. Small, surgical; runs after m0-1 (prose
+describes the final model) and after m0-2 (both touch DRs 033/034 — frontmatter insert lands
+first, declared in the sprint record).
+
+**CROSS-SPRINT OVERLAP (declared):** the `understand/work-model.md` + `understand/architecture.md`
+edits collide with Olivia's M1-S5 (her plan lines 152/158). NOT parallel-safe with M1-S5 — the
+landing order between the two is Adele's call; land serially.
 
 ## Work
 
@@ -34,9 +39,10 @@ describes the final shape.
 - Command-reference docs for `model-update` are m0-4's own surface — NOT this slice (no shared
   files between m0-4 and m0-5).
 
-## Gates
+## Gates (exact commands)
 
-- `dydo check` baseline not worsened; link integrity on every touched file.
+- `dydo check` → error count not above the 33-error baseline (issue 0249); zero broken-link or
+  relative-link findings on any file this slice touched.
 
 ## Success criteria
 

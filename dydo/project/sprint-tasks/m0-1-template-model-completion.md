@@ -58,12 +58,13 @@ existing sprint records + this sprint's own record if needed: `planned → plann
 - Do not touch the live `dydo/_system/sync-model.json` (guard-off-limits; bridged later by m0-4's
   command at smoke time).
 
-## Tests / gates
+## Tests / gates (exact commands)
 
 - Update whatever asserts on the template's type set: `DynaDocs.Tests/Sync/Model/SyncModelLoaderTests.cs`,
   `DynaDocs.Tests/Sync/Notion/NotionSchemaDriftTests.cs`, `NotionProvisionerTests.cs` (grep for
   hardcoded type lists/counts before assuming).
-- Full test suite green; `gap_check --force-run` (Sync/ touched).
+- `python DynaDocs.Tests/coverage/run_tests.py` — green.
+- `gap_check --force-run` (Sync/ touched).
 
 ## Success criteria
 

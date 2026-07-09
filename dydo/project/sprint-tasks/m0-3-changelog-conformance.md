@@ -20,7 +20,9 @@ history files (git history is the archive).
 
 ## Work
 
-**1. Stem-collision renames (~16 files).** The 13 colliding stems (verified 2026-07-09):
+**1. Stem-collision renames (15 files by the verified multiplicities — 12 stems ×2 → 12 older
+files, plus `firefighting-sitrep-triage` ×4 → 3 older files).** The 13 colliding stems (verified
+2026-07-09):
 `auto-close-fix`, `auto-close-test`, `dispatch-commit-gap-fix`, `firefighting-sitrep-triage` (×4),
 `fix-ide-analyzer-errors`, `fix-inquisition-state-isolation`, `guard-lift-command`,
 `help-meta-audit`, `investigate-autoclose-escape-bug`, `orchestrator-handoff`,
@@ -39,11 +41,21 @@ the loader skips them; they are not rows.
 gitignored agent workspaces (`dydo/agents/**`) — re-grep `dydo/project/**` + `understand/ guides/
 reference/` for links to each renamed path as the slice gate; fix any hit (none expected).
 
-## Gates
+## Gates (exact commands)
 
-- Stem-collision script clean over `changelog/**` (and `tasks/**` unchanged).
+- **The stem-collision check — this sprint's safety-critical gate.** Collisions are per-type
+  pool (a stem may repeat across different type dirs; never within one). Canonical invocation:
+  ```bash
+  for d in changelog tasks future-features decisions pitfalls; do
+    find "dydo/project/$d" -name '*.md' ! -name '_*' | sed 's|.*/||' | sort | uniq -d
+  done
+  ```
+  → must print nothing. M1's S2b gate reuses this exact invocation (declared in the sprint
+  record's M1 amendments).
 - `dydo check` baseline (33) not worsened.
 - `git log --follow` sanity on 2 renamed files (history intact).
+- Title completeness: `grep -rL '^title:' dydo/project/changelog --include='*.md' | grep -v '/_'`
+  → must print nothing; re-running the backfill script must produce zero diff.
 - Spot-check 3 files: YAML parses, title correct.
 
 ## Success criteria

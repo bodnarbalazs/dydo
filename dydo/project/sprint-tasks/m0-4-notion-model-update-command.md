@@ -48,10 +48,18 @@ of truth a project edits") stands, so the command shows what would change and as
   drive the list; includes `reference/dydo-commands.md` and help text). Mention the command in
   issue 0252's Resolution section and mark it resolved on land.
 
-## Gates
+## Gates (exact commands)
 
-- Full test suite + `CommandDocConsistencyTests` green; `gap_check --force-run` (Commands/ and
-  Sync/ touched).
+- `python DynaDocs.Tests/coverage/run_tests.py` — green, `CommandDocConsistencyTests` included.
+- `gap_check --force-run` (Commands/ and Sync/ touched).
+
+## Sequencing & ripple
+
+- **Post-C1 by construction** (balazs 2026-07-09: C1 implements first and gates v2.0.7) — this
+  slice's `NotionCommand.cs`/`CompletionProvider.cs` edits start only after C1 lands.
+- If `CommandDocConsistencyTests` drags in README-family / `about-dynadocs` template-sourced
+  surfaces (`Templates/**` clone-sync), report the ripple to Adele before landing — do not
+  absorb it silently.
 
 ## Success criteria
 

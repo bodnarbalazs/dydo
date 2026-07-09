@@ -19,20 +19,29 @@ same way: backfill from each H1).
 
 ## Work
 
-- For each of the 42 non-`_` files in `dydo/project/decisions/` (including `resolved`-style
-  subfolders if any — there are none today): insert `title: <full H1 text>` as the first
-  frontmatter key. Keep the `NNN — ` number prefix in the title (it sorts and identifies).
+- For **every non-`_` file in `dydo/project/decisions/` that does not already carry `title:`**
+  (42 of the 43 at plan time — DR-040 already has one; the script MUST skip files that have the
+  key, never double-insert): insert `title: <full H1 text>` as the first frontmatter key. Keep
+  the `NNN — ` number prefix in the title (it sorts and identifies).
 - Escape/quote YAML as needed (H1s contain `—`, `:`, quotes — a colon inside the value requires
   quoting; script it, don't hand-edit 42 files).
 - Do not touch `_index.md` / `_decisions.md`.
 - Do not change any other frontmatter key, the H1, or body content.
+- **Ordering:** this slice lands BEFORE m0-5 (both touch DRs 033/034; declared in the sprint
+  record's dependency order).
 
-## Gates
+## Gates (exact commands)
 
 - `dydo check` — decisions must contribute zero NEW errors (tree baseline is 33, issue 0249).
-- Stem-uniqueness check over `decisions/**` (flat dir — trivially green, run it anyway).
+- Stem-uniqueness (flat dir — trivially green, run it anyway):
+  `find dydo/project/decisions -name '*.md' ! -name '_*' | sed 's|.*/||' | sort | uniq -d`
+  → must print nothing.
+- Idempotence proof: `grep -L '^title:' dydo/project/decisions/[0-9]*.md` → must print nothing
+  after the run (the numeric glob excludes the `_index.md`/`_decisions.md` meta files, which
+  never carry `title:` and are out of scope); re-running the script must produce zero diff.
 - Spot-check 3 files by eye: YAML parses, title matches H1.
 
 ## Success criteria
 
-42 files carry `title:` matching their H1; no other diff lines; check baseline not worsened.
+Every non-`_` decision record carries exactly one `title:` matching its H1; no other diff lines;
+check baseline not worsened.

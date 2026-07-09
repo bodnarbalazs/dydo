@@ -2,6 +2,7 @@ namespace DynaDocs.Tests.Services;
 
 using System.ComponentModel;
 using System.Diagnostics;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using Xunit;
 
@@ -11,9 +12,19 @@ public class TerminalLauncherTests : IDisposable
     // Pin launch-host resolution to the bare name so argument-format assertions are deterministic
     // regardless of whether claude/codex are installed on the test host (#227). Resolution tests
     // that exercise the real PATH search clear this override explicitly.
-    public TerminalLauncherTests() => TerminalLauncher.ExecutableResolverOverride = host => host;
+    // Pin the codex posture to the shipped defaults so codex launch-line assertions do not depend
+    // on the repo's own dydo.json (issue 0253); override tests set their own posture.
+    public TerminalLauncherTests()
+    {
+        TerminalLauncher.ExecutableResolverOverride = host => host;
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig();
+    }
 
-    public void Dispose() => TerminalLauncher.ExecutableResolverOverride = null;
+    public void Dispose()
+    {
+        TerminalLauncher.ExecutableResolverOverride = null;
+        TerminalLauncher.CodexConfigOverride = null;
+    }
 
     #region Argument Generation Tests
 
@@ -118,7 +129,8 @@ public class TerminalLauncherTests : IDisposable
     {
         var command = TerminalLauncher.GetCodexCommand("Adele");
 
-        Assert.Equal("codex \"Adele --inbox\"", command);
+        // Configured posture (issue 0253): sandbox enforcement + on-request approval, never yolo.
+        Assert.Equal("codex --sandbox workspace-write --ask-for-approval on-request \"Adele --inbox\"", command);
     }
 
     [Fact]
@@ -126,7 +138,7 @@ public class TerminalLauncherTests : IDisposable
     {
         var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
 
-        Assert.Contains("codex 'Adele --inbox'", args);
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request 'Adele --inbox'", args);
         Assert.DoesNotContain("claude 'Adele --inbox'", args);
     }
 
@@ -135,8 +147,43 @@ public class TerminalLauncherTests : IDisposable
     {
         var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "codex");
 
-        Assert.Contains("codex 'Adele --inbox'", args);
+        // Posture (issue 0253) sits between the codex executable and the prompt on Linux too.
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request 'Adele --inbox'", args);
         Assert.DoesNotContain("claude 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_Codex_ConfigOverride_EmitsConfiguredPosture()
+    {
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig
+        {
+            Sandbox = "read-only",
+            ApprovalPolicy = "untrusted"
+        };
+
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "codex");
+
+        Assert.Contains("codex --sandbox read-only --ask-for-approval untrusted 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetLinuxArguments_Claude_HasNoPostureFlags()
+    {
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "claude");
+
+        Assert.Contains("claude 'Adele --inbox'", args);
+        Assert.DoesNotContain("--sandbox", args);
+        Assert.DoesNotContain("--ask-for-approval", args);
+    }
+
+    [Theory]
+    [InlineData("--dangerously-bypass-approvals-and-sandbox")]
+    [InlineData("--yolo")]
+    public void GetLinuxArguments_Codex_NeverEmitsBypassFlag(string bypassFlag)
+    {
+        var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "codex");
+
+        Assert.DoesNotContain(bypassFlag, args);
     }
 
     [Fact]
@@ -144,8 +191,126 @@ public class TerminalLauncherTests : IDisposable
     {
         var args = TerminalLauncher.GetMacArguments("Adele", host: "codex");
 
-        Assert.Contains("codex \\\"Adele --inbox\\\"", args);
+        // Posture (issue 0253) sits between the codex executable and the prompt on macOS too.
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request \\\"Adele --inbox\\\"", args);
         Assert.DoesNotContain("claude \\\"Adele --inbox\\\"", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Codex_ConfigOverride_EmitsConfiguredPosture()
+    {
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig
+        {
+            Sandbox = "read-only",
+            ApprovalPolicy = "untrusted"
+        };
+
+        var args = TerminalLauncher.GetMacArguments("Adele", host: "codex");
+
+        Assert.Contains("codex --sandbox read-only --ask-for-approval untrusted \\\"Adele --inbox\\\"", args);
+    }
+
+    [Fact]
+    public void GetMacArguments_Claude_HasNoPostureFlags()
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", host: "claude");
+
+        Assert.Contains("claude \\\"Adele --inbox\\\"", args);
+        Assert.DoesNotContain("--sandbox", args);
+        Assert.DoesNotContain("--ask-for-approval", args);
+    }
+
+    [Theory]
+    [InlineData("--dangerously-bypass-approvals-and-sandbox")]
+    [InlineData("--yolo")]
+    public void GetMacArguments_Codex_NeverEmitsBypassFlag(string bypassFlag)
+    {
+        var args = TerminalLauncher.GetMacArguments("Adele", host: "codex");
+
+        Assert.DoesNotContain(bypassFlag, args);
+    }
+
+    #endregion
+
+    #region Codex Launch Posture Tests (issue 0253)
+
+    [Fact]
+    public void GetWindowsArguments_Claude_HasNoPostureFlags()
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", host: "claude");
+
+        // Posture is codex-only — claude launches exactly as before, no sandbox/approval flags.
+        Assert.Contains("claude 'Adele --inbox'", args);
+        Assert.DoesNotContain("--sandbox", args);
+        Assert.DoesNotContain("--ask-for-approval", args);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Codex_ConfigOverride_EmitsConfiguredPosture()
+    {
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig
+        {
+            Sandbox = "read-only",
+            ApprovalPolicy = "untrusted"
+        };
+
+        var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
+
+        Assert.Contains("codex --sandbox read-only --ask-for-approval untrusted 'Adele --inbox'", args);
+    }
+
+    [Fact]
+    public void GetWindowsResumeArguments_Codex_ConfigOverride_EmitsConfiguredPosture()
+    {
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig
+        {
+            Sandbox = "danger-full-access",
+            ApprovalPolicy = "never"
+        };
+
+        var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc", host: "codex");
+
+        Assert.Contains("codex --sandbox danger-full-access --ask-for-approval never resume 'sess-abc'", args);
+    }
+
+    [Theory]
+    [InlineData("--dangerously-bypass-approvals-and-sandbox")]
+    [InlineData("--yolo")]
+    public void GetWindowsArguments_Codex_NeverEmitsBypassFlag(string bypassFlag)
+    {
+        var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
+
+        Assert.DoesNotContain(bypassFlag, args);
+    }
+
+    [Theory]
+    [InlineData("--dangerously-bypass-approvals-and-sandbox")]
+    [InlineData("--yolo")]
+    public void GetWindowsResumeArguments_Codex_NeverEmitsBypassFlag(string bypassFlag)
+    {
+        var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc", host: "codex");
+
+        Assert.DoesNotContain(bypassFlag, args);
+    }
+
+    [Fact]
+    public void GetCodexCommand_NeverEmitsDeprecatedOnFailureApproval()
+    {
+        var command = TerminalLauncher.GetCodexCommand("Adele");
+
+        // on-failure is DEPRECATED in the codex CLI — never emitted.
+        Assert.DoesNotContain("on-failure", command);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Codex_InvalidConfig_Throws()
+    {
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig { Sandbox = "loose" };
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            TerminalLauncher.GetWindowsArguments("Adele", host: "codex"));
+
+        Assert.Contains("workspace-write", ex.Message);
     }
 
     #endregion
@@ -311,7 +476,7 @@ public class TerminalLauncherTests : IDisposable
 
         var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
 
-        Assert.Contains($"& '{ResolvedHostPath}' 'Adele --inbox'", args);
+        Assert.Contains($"& '{ResolvedHostPath}' --sandbox workspace-write --ask-for-approval on-request 'Adele --inbox'", args);
     }
 
     [Fact]
@@ -320,7 +485,7 @@ public class TerminalLauncherTests : IDisposable
         // Bare fallback (identity resolver) — invoked directly, no call operator needed.
         var args = TerminalLauncher.GetWindowsArguments("Adele", host: "codex");
 
-        Assert.Contains("codex 'Adele --inbox'", args);
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request 'Adele --inbox'", args);
         Assert.DoesNotContain("& 'codex'", args);
     }
 
@@ -331,7 +496,8 @@ public class TerminalLauncherTests : IDisposable
 
         var args = TerminalLauncher.GetLinuxArguments("gnome-terminal", "Adele", host: "codex");
 
-        Assert.Contains($"'{ResolvedHostPath}' 'Adele --inbox'", args);
+        // Resolved path is single-quoted; the codex posture (0253) follows it, then the prompt.
+        Assert.Contains($"'{ResolvedHostPath}' --sandbox workspace-write --ask-for-approval on-request 'Adele --inbox'", args);
     }
 
     [Fact]
@@ -341,7 +507,8 @@ public class TerminalLauncherTests : IDisposable
 
         var args = TerminalLauncher.GetMacArguments("Adele", host: "codex");
 
-        Assert.Contains($"'{ResolvedHostPath}' \\\"Adele --inbox\\\"", args);
+        // Resolved path is single-quoted; the codex posture (0253) follows it, then the prompt.
+        Assert.Contains($"'{ResolvedHostPath}' --sandbox workspace-write --ask-for-approval on-request \\\"Adele --inbox\\\"", args);
     }
 
     #endregion
@@ -615,6 +782,60 @@ public class TerminalLauncherTests : IDisposable
 
             Assert.Empty(recorder.Started);
             Assert.Contains("--resume", output);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = original;
+        }
+    }
+
+    // Issue 0253 round-2 review (finding 1): an invalid dispatch.codex posture must fail cleanly at
+    // the launcher, never crash it. Before the fix the catch handler re-resolved the config and
+    // threw a SECOND InvalidOperationException, escaping unhandled — on the watchdog resume path
+    // that burned a resume attempt every tick over a config typo.
+    [Fact]
+    public void LaunchNewTerminal_InvalidCodexConfig_PrintsErrorAndReturnsZero_DoesNotThrow()
+    {
+        var recorder = new RecordingProcessStarter();
+        var original = TerminalLauncher.ProcessStarterOverride;
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig { Sandbox = "loose" };
+        try
+        {
+            var output = ConsoleCapture.Stdout(() =>
+            {
+                var pid = TerminalLauncher.LaunchNewTerminal("Adele", host: "codex");
+                Assert.Equal(0, pid);
+            });
+
+            Assert.Empty(recorder.Started);
+            Assert.Contains("ERROR", output);
+            Assert.Contains("loose", output);
+        }
+        finally
+        {
+            TerminalLauncher.ProcessStarterOverride = original;
+        }
+    }
+
+    [Fact]
+    public void LaunchResumeTerminal_InvalidCodexConfig_PrintsErrorAndReturnsZero_DoesNotThrow()
+    {
+        var recorder = new RecordingProcessStarter();
+        var original = TerminalLauncher.ProcessStarterOverride;
+        TerminalLauncher.ProcessStarterOverride = recorder;
+        TerminalLauncher.CodexConfigOverride = new CodexDispatchConfig { Sandbox = "loose" };
+        try
+        {
+            var output = ConsoleCapture.Stdout(() =>
+            {
+                var pid = TerminalLauncher.LaunchResumeTerminal("Adele", "sess-123", host: "codex");
+                Assert.Equal(0, pid);
+            });
+
+            Assert.Empty(recorder.Started);
+            Assert.Contains("ERROR", output);
+            Assert.Contains("loose", output);
         }
         finally
         {
@@ -2932,8 +3153,8 @@ public class TerminalLauncherTests : IDisposable
         var args = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc", host: "codex");
 
         // Codex CLI has no root --resume flag; resuming is the `codex resume <id> [prompt]`
-        // subcommand (developers.openai.com/codex/cli/reference). #0231.
-        Assert.Contains("codex resume 'sess-abc'", args);
+        // subcommand (developers.openai.com/codex/cli/reference). #0231. Posture (0253) precedes it.
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request resume 'sess-abc'", args);
         Assert.DoesNotContain("--resume", args);
     }
 
@@ -2952,9 +3173,19 @@ public class TerminalLauncherTests : IDisposable
         var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc", host: "codex");
 
         // Codex CLI has no root --resume flag; resuming is the `codex resume <id> [prompt]`
-        // subcommand (developers.openai.com/codex/cli/reference). #0231.
-        Assert.Contains("codex resume 'sess-abc'", args);
+        // subcommand (developers.openai.com/codex/cli/reference). #0231. Posture (0253) precedes it.
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request resume 'sess-abc'", args);
         Assert.DoesNotContain("--resume", args);
+    }
+
+    [Theory]
+    [InlineData("--dangerously-bypass-approvals-and-sandbox")]
+    [InlineData("--yolo")]
+    public void GetLinuxResumeArguments_Codex_NeverEmitsBypassFlag(string bypassFlag)
+    {
+        var args = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc", host: "codex");
+
+        Assert.DoesNotContain(bypassFlag, args);
     }
 
     [Fact]
@@ -2972,9 +3203,19 @@ public class TerminalLauncherTests : IDisposable
         var args = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc", host: "codex");
 
         // Codex CLI has no root --resume flag; resuming is the `codex resume <id> [prompt]`
-        // subcommand (developers.openai.com/codex/cli/reference). #0231.
-        Assert.Contains("codex resume", args);
+        // subcommand (developers.openai.com/codex/cli/reference). #0231. Posture (0253) precedes it.
+        Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request resume", args);
         Assert.DoesNotContain("--resume", args);
+    }
+
+    [Theory]
+    [InlineData("--dangerously-bypass-approvals-and-sandbox")]
+    [InlineData("--yolo")]
+    public void GetMacResumeArguments_Codex_NeverEmitsBypassFlag(string bypassFlag)
+    {
+        var args = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc", host: "codex");
+
+        Assert.DoesNotContain(bypassFlag, args);
     }
 
     [Fact]

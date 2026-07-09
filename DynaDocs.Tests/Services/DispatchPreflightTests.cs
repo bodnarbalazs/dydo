@@ -5,9 +5,9 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 
 /// <summary>
-/// Unit tests for the dispatch preflight (issue 0239). Each of the four fail-fast checks is
-/// exercised for both its pass and fail path, and the failure message is asserted to name the
-/// missing prerequisite and the fix.
+/// Unit tests for the dispatch preflight (issue 0239, plus the issue 0253 posture checks). Each
+/// fail-fast check is exercised for both its pass and fail path, and the failure message is
+/// asserted to name the missing prerequisite and the fix.
 /// </summary>
 public class DispatchPreflightTests : IDisposable
 {
@@ -20,8 +20,8 @@ public class DispatchPreflightTests : IDisposable
         Directory.CreateDirectory(_dir);
 
         // Pin executable resolution to the bare name so check (1) never throws on the whims of
-        // the test host's PATH — the checks under test are (2)/(3)/(4), and the throw path is
-        // driven explicitly where it is the subject.
+        // the test host's PATH — the checks under test are (2)/(3)/(4)/(5), and the throw path
+        // is driven explicitly where it is the subject.
         _originalResolver = TerminalLauncher.ExecutableResolverOverride;
         TerminalLauncher.ExecutableResolverOverride = host => host;
     }
@@ -46,6 +46,16 @@ public class DispatchPreflightTests : IDisposable
         {
             Integrations = integrations ?? new Dictionary<string, bool>(),
             Models = models
+        };
+
+    private static DydoConfig ConfigWithCodex(string sandbox, string approvalPolicy = "on-request") =>
+        new()
+        {
+            Integrations = new Dictionary<string, bool>(),
+            Dispatch = new DispatchConfig
+            {
+                Codex = new CodexDispatchConfig { Sandbox = sandbox, ApprovalPolicy = approvalPolicy }
+            }
         };
 
     private static ModelsConfig BothVendors() => new()
@@ -153,7 +163,48 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (3) Windows sandbox prerequisite (codex) ---
+    // --- (3) Codex posture valid (issue 0253) ---
+
+    [Fact]
+    public void CodexInvalidSandboxPosture_FailsNamingAcceptedValues()
+    {
+        var result = DispatchPreflight.Run(ConfigWithCodex("loose"), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("dispatch.codex", result.Error);
+        Assert.Contains("loose", result.Error);
+        Assert.Contains("workspace-write", result.Error);
+        Assert.Contains("re-dispatch", result.Error!);
+    }
+
+    [Fact]
+    public void CodexInvalidApprovalPosture_Fails()
+    {
+        // on-failure is DEPRECATED in the codex CLI — not an accepted value.
+        var result = DispatchPreflight.Run(
+            ConfigWithCodex("workspace-write", approvalPolicy: "on-failure"), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("on-failure", result.Error);
+    }
+
+    [Fact]
+    public void CodexValidPosture_Passes()
+    {
+        var result = DispatchPreflight.Run(ConfigWithCodex("read-only", "never"), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public void ClaudeHost_SkipsPostureCheck_EvenWhenCodexPostureInvalid()
+    {
+        var result = DispatchPreflight.Run(ConfigWithCodex("loose"), "claude", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    // --- (4) Windows sandbox prerequisite (codex) ---
 
     [Fact]
     public void CodexSandboxPrerequisiteMissing_FailsOnWindows_InertElsewhere()
@@ -204,7 +255,42 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (4) Hook trust (codex) ---
+    // Wiring (issue 0253): the sandbox prerequisite is only required by the workspace-write posture
+    // — the mode that runs under the elevated Windows sandbox. Modes that do not use it skip the
+    // check even when the prerequisite is absent.
+    [Fact]
+    public void WorkspaceWritePosture_MissingPrerequisite_FailsOnWindows()
+    {
+        DispatchPreflight.SandboxPrerequisiteProbeOverride = () => false;
+
+        var result = DispatchPreflight.Run(ConfigWithCodex("workspace-write"), "codex", Opts(), _dir);
+
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.False(result.Ok);
+            Assert.Contains("codex-windows-sandbox-setup.exe", result.Error);
+        }
+        else
+        {
+            Assert.True(result.Ok);
+        }
+    }
+
+    [Theory]
+    [InlineData("read-only")]
+    [InlineData("danger-full-access")]
+    public void NonWorkspaceWritePosture_SkipsSandboxCheck_EvenWhenPrerequisiteMissing(string sandbox)
+    {
+        // read-only and danger-full-access do not run under the elevated Windows sandbox, so a
+        // missing codex-windows-sandbox-setup.exe must not block them.
+        DispatchPreflight.SandboxPrerequisiteProbeOverride = () => false;
+
+        var result = DispatchPreflight.Run(ConfigWithCodex(sandbox), "codex", Opts(), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    // --- (5) Hook trust (codex) ---
 
     [Fact]
     public void CodexUntrustedHooks_FailsWithReTrustInstruction()
@@ -252,7 +338,7 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (4) Default trust resolver: real codex config.toml parse ---
+    // --- (5) Default trust resolver: real codex config.toml parse ---
 
     [Fact]
     public void DefaultTrust_EnabledEntryWithMatchingHash_Passes()

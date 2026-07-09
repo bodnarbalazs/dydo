@@ -31,7 +31,10 @@ public static class DispatchPreflight
         var vendor = CheckVendorConfigured(config, opts.HostOverride);
         if (!vendor.Ok) return vendor;
 
-        var sandbox = CheckWindowsSandboxPrerequisite(launchHost, opts.NoLaunch);
+        var posture = CheckCodexPostureValid(config, launchHost);
+        if (!posture.Ok) return posture;
+
+        var sandbox = CheckWindowsSandboxPrerequisite(config, launchHost, opts.NoLaunch);
         if (!sandbox.Ok) return sandbox;
 
         var trust = CheckHookTrust(launchHost, projectRoot);
@@ -90,13 +93,36 @@ public static class DispatchPreflight
         return PreflightResult.Pass;
     }
 
-    // (3) The codex posture (co-think outcome 1: --sandbox workspace-write) needs the codex
-    // Windows sandbox. When its prerequisite is absent (the smoke's missing
-    // codex-windows-sandbox-setup.exe), fail fast pointing at the documented setup — the sandbox
-    // is the enforcement boundary and is NEVER silently downgraded (co-think outcome 4).
-    private static PreflightResult CheckWindowsSandboxPrerequisite(string launchHost, bool noLaunch)
+    // (3) The codex launch posture (dispatch.codex) is emitted on every codex command line. An
+    // invalid sandbox/approval value would otherwise fail deep in argument assembly — after the
+    // agent is reserved — and be re-thrown by the launcher's manual-command fallback, crashing the
+    // dispatch (issue 0253 round-2 review). Validate it here so a config typo fails fast with the
+    // accepted values, before any reservation.
+    private static PreflightResult CheckCodexPostureValid(DydoConfig? config, string launchHost)
+    {
+        if (launchHost != "codex")
+            return PreflightResult.Pass;
+
+        var errors = (config?.Dispatch.Codex ?? new CodexDispatchConfig()).Validate();
+        if (errors.Count == 0)
+            return PreflightResult.Pass;
+
+        return PreflightResult.Fail(
+            "Invalid dispatch.codex configuration: " + string.Join("; ", errors) +
+            ". Fix dydo.json, then re-dispatch.");
+    }
+
+    // (4) The codex posture needs the codex Windows sandbox only when the configured sandbox mode
+    // enforces it (workspace-write — co-think outcome 1). When that prerequisite is absent (the
+    // smoke's missing codex-windows-sandbox-setup.exe), fail fast pointing at the documented setup —
+    // the sandbox is the enforcement boundary and is NEVER silently downgraded (co-think outcome 4).
+    // Modes that do not require the OS sandbox (read-only, danger-full-access) skip the check.
+    private static PreflightResult CheckWindowsSandboxPrerequisite(DydoConfig? config, string launchHost, bool noLaunch)
     {
         if (noLaunch || launchHost != "codex" || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return PreflightResult.Pass;
+
+        if (!(config?.Dispatch.Codex ?? new CodexDispatchConfig()).RequiresWindowsSandbox)
             return PreflightResult.Pass;
 
         var available = (SandboxPrerequisiteProbeOverride ?? DefaultSandboxPrerequisite)();
@@ -109,7 +135,7 @@ public static class DispatchPreflight
             "(dydo/reference/configuration.md), then re-dispatch. The sandbox is never silently downgraded.");
     }
 
-    // (4) A repo .codex/hooks.json is SILENTLY skipped unless it is trust-enabled in the
+    // (5) A repo .codex/hooks.json is SILENTLY skipped unless it is trust-enabled in the
     // user-level codex config ([hooks.state] in ~/.codex/config.toml, path-keyed and
     // SHA256-pinned). An untrusted hook means an UNGUARDED agent, so fail fast with the re-trust
     // instruction. When the repo carries no hooks.json there is nothing to trust-check.
@@ -136,9 +162,10 @@ public static class DispatchPreflight
     private static string ModelVendorFor(string host) =>
         host == "codex" ? "openai" : "anthropic";
 
-    // Production default until c1-3 wires the posture-config trigger and c1-8 verifies the live
-    // probe: treat the prerequisite as present so a correctly-set-up host is never falsely
-    // blocked. Tests drive the missing branch through SandboxPrerequisiteProbeOverride.
+    // The posture-config trigger (workspace-write requires the sandbox) is wired in
+    // CheckWindowsSandboxPrerequisite; this default probe returns present until c1-8 verifies the
+    // live check, so a correctly-set-up host is never falsely blocked. Tests drive the missing
+    // branch through SandboxPrerequisiteProbeOverride.
     private static bool DefaultSandboxPrerequisite() => true;
 
     // Best-effort read of the codex trust ledger. The exact [hooks.state] schema is pinned live

@@ -24,7 +24,9 @@ public static class WindowsTerminalLauncher
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
         var escapedPrompt = prompt.Replace("'", "''");
         var executable = TerminalLauncher.GetLaunchExecutable(host);
-        var launchInvocation = TerminalLauncher.PowerShellExecutableInvocation(executable, $"'{escapedPrompt}'");
+        // Codex launch posture (issue 0253) sits between the executable and the prompt; empty for claude.
+        var codexPosture = TerminalLauncher.CodexLaunchPosture(host);
+        var launchInvocation = TerminalLauncher.PowerShellExecutableInvocation(executable, $"{codexPosture}'{escapedPrompt}'");
         var postClaudeCheck = autoClose
             ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
             : "";
@@ -94,8 +96,10 @@ public static class WindowsTerminalLauncher
         var escapedSession = sessionId.Replace("'", "''");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
         var executable = TerminalLauncher.GetLaunchExecutable(host);
+        // Codex launch posture (issue 0253) precedes the resume subcommand; empty for claude.
+        var codexPosture = TerminalLauncher.CodexLaunchPosture(host);
         var resumeInvocation = TerminalLauncher.PowerShellExecutableInvocation(
-            executable, $"{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'");
+            executable, $"{codexPosture}{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'");
         // #0197 (F13): pin DYDO_AGENT first, then re-source profiles — same as GetArguments.
         var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; " + ProfileReSource;
         // #0207: no shell-spawned `dydo wait` re-arm here. Such a wait is a sibling of

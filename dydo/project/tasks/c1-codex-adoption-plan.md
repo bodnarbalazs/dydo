@@ -1,13 +1,12 @@
 ---
 area: general
-name: spine-types-completion
+name: c1-codex-adoption-plan
 status: pending
-created: 2026-07-09T10:44:07.5310675Z
-assigned: Brian
-needs-human: false
+created: 2026-07-09T11:32:44.8341687Z
+assigned: Grace
 ---
 
-# Task: spine-types-completion
+# Task: c1-codex-adoption-plan
 
 (No description)
 

@@ -72,6 +72,7 @@ Index of issues documentation.
 - [non-dydo worktrees are uncleanable by agents - prune skips them, guard blocks raw removal](./0251-non-dydo-worktrees-are-uncleanable-by-agents-prune-skips-them-guard-blocks-raw-r.md) - A git worktree created outside dydo (no dydo marker) falls into a cleanup gap: `dydo worktree prune` only sweeps marker-tracked worktrees, `dydo wo...
 - [No command regenerates the live _system/sync-model.json - template updates never reach a provisioned board](./0252-no-command-regenerates-the-live-system-sync-model-json-template-updates-never-re.md) - Live 2.
 - [Codex dispatch launches with maximally-restrictive approvals - should pass a configured auto-approval posture (not yolo)](./0253-codex-dispatch-launches-with-maximally-restrictive-approvals-should-pass-a-confi.md) - First live codex dispatch smoke (2026-07-09, v2.
+- [Codex-hosted agents cannot satisfy the guard's stateful protocols - read-tracking, general wait, and release are Claude-tool-coupled](./0254-codex-hosted-agents-cannot-satisfy-the-guard-s-stateful-protocols-read-tracking.md) - Codex dispatch smoke exit report (Iris, 2026-07-09): the simple path works (claim via codex hook, role, msg with vendor/model tags) but every STATE...
 
 ## Subfolders
 

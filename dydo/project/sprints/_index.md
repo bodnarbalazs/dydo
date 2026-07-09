@@ -11,6 +11,7 @@ Index of sprints documentation.
 
 ## Contents
 
-- [M0 — Spine Object-Type Completion](./m0-spine-types-completion.md) - Complete the DR-034 spine so `sync-model` declares every `project/` dir, per the shapes fixed in [DR 040](.
+- [C1 — Codex Adoption](./c1-codex-adoption.md) - Make dispatched Codex sessions first-class citizens under the dydo guard.
+- [M0 — Spine Object-Type Completion](./m0-spine-types-completion.md) - > **Plan-review verdict: PASS** (2026-07-09, DR-039 §2 fresh-eyes gate, three rounds: > FAIL blocker+5sf → FAIL 1-line gate defect → PASS with live...
 - [Notion Sync](./notion-sync.md) - Build the Notion-agnostic sync engine (3-way reconcile + base snapshot), the real Notion adapter, and the PM spine provisioning that creates and ow...
 - [Runtime Slim](./runtime-slim.md) - Strip the queue, baton, dispatch-wait, and worktree-orchestration machinery from the worker-tier runtime (Sprint 6, Decision 024).

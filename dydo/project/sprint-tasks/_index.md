@@ -11,6 +11,14 @@ Index of sprint-tasks documentation.
 
 ## Contents
 
+- [c1-1 Host-Agnostic `dydo read` Verb](./c1-1-read-verb.md) - The lead 0254 fix: codex hosts read files via shell, so the guard's Read-tool-observed tracking never registers — unread state persists, `dydo inbo...
+- [c1-2 Durable Wait Registration for Codex Hosts](./c1-2-durable-wait.md) - 0254 item (3): `dydo wait` is unusable on a codex host — foreground dies to the codex tool timeout, `Start-Process` backgrounding creates no `.
+- [c1-3 Configured Codex Launch Posture](./c1-3-codex-posture.md) - Issue 0253: the launcher emits bare `codex "<prompt>"` (`TerminalLauncher.
+- [c1-4 Dispatch Preflight Fail-Fast Checks](./c1-4-dispatch-preflight.md) - Issue 0239 generalized: a dispatch that cannot succeed must fail at dispatch time with an actionable message — not a downstream child-terminal `Com...
+- [c1-5 Dispatch Role Validation + Caller-Role Resolution](./c1-5-role-validation.md) - Issues 0240 + 0237 together (the issues themselves say to).
+- [c1-6 Exact-Model Provenance + whoami Host/Model](./c1-6-model-provenance.md) - `backlog/exact-model-provenance-display.
+- [c1-7 Codex Paths E2E Regression Coverage](./c1-7-codex-e2e-coverage.md) - Issue 0233 (in-flight): green tests currently miss codex host/model regressions and workflow artifact drift.
+- [c1-8 Codex Dispatch Live Smoke Re-Run](./c1-8-live-smoke.md) - Human-gated ground truth before v2.
 - [m0-1 Template Model Completion](./m0-1-template-model-completion.md) - Add the three missing object types to `Templates/sync-model.
 - [m0-2 Decision Title Backfill](./m0-2-decision-title-backfill.md) - Give every decision record a `title:` frontmatter key so the Decision DB's Notion titles are not blank (live constraint #4 in reference/notion-sync.
 - [m0-3 Changelog Conformance (Stems + Titles)](./m0-3-changelog-conformance.md) - Make the 670-record `project/changelog/` tree poolable as the `Changelog` type: the spine loader keys rows by filename stem and crashes on duplicat...

@@ -114,6 +114,22 @@ public static class DispatchCommand
                 return ExitCodes.ToolError;
             }
 
+            var definedRoles = ResolveDefinedRoles();
+            var matchedRole = definedRoles.FirstOrDefault(r => r.Equals(role, StringComparison.OrdinalIgnoreCase));
+            if (matchedRole == null)
+            {
+                ConsoleOutput.WriteError(
+                    $"Unknown role '{role}'. Defined roles: {string.Join(", ", definedRoles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase))}.");
+                return ExitCodes.ToolError;
+            }
+
+            // Canonicalize to the defined role's exact casing (#0240 round-3): every downstream
+            // role gate (requires-prior constraint eval, SetRole permission map) is case-SENSITIVE,
+            // so a case variant like '--role Orchestrator' must not pass through verbatim — that
+            // would skip the dispatch-time constraint check and wedge the target on a role its
+            // own 'dydo agent role' rejects. Match ignore-case for UX, then use the canonical Name.
+            role = matchedRole;
+
             var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))
             {
@@ -147,6 +163,25 @@ public static class DispatchCommand
         });
 
         return command;
+    }
+
+    /// <summary>
+    /// Resolves the role names a dispatch may target — the custom + base role files on disk, or
+    /// the built-in claimable base roles when no files exist (mirrors AgentRegistry's own
+    /// resolution). Used to fail an undefined <c>--role</c> fast rather than letting the target
+    /// land on a stale/fallback role (#0240). The list is never hardcoded.
+    /// </summary>
+    private static List<string> ResolveDefinedRoles()
+    {
+        var basePath = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
+        var roles = new RoleDefinitionService().LoadRoleDefinitions(basePath);
+        if (roles.Count > 0)
+            return roles.Select(r => r.Name).ToList();
+
+        return RoleDefinitionService.GetBaseRoleDefinitions()
+            .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
+            .Select(r => r.Name)
+            .ToList();
     }
 
     /// <summary>

@@ -99,6 +99,23 @@ public class RoleBehaviorTests : IDisposable
             $"---\nagent: {agentName}\nstatus: {statusStr}\nassigned: testuser{roleLine}{taskLine}\ntask-role-history: {historyJson}\n---\n# {agentName} — Session State\n");
     }
 
+    /// <summary>
+    /// Seed a dispatch inbox item for <paramref name="agentName"/> on <paramref name="task"/>,
+    /// mirroring what a real dispatch writes (see DispatchService.WriteInboxItem): a frontmatter
+    /// file whose name ends in "-{sanitized-task}.md" carrying the dispatched-to role and the
+    /// dispatcher's own role (from_role). SetRole reads from_role via InboxMetadataReader to
+    /// resolve the caller identity for constraint evaluation.
+    /// </summary>
+    private void WriteInboxItem(string agentName, string task, string dispatchedRole, string fromRole)
+    {
+        var inboxDir = Path.Combine(_testDir, "dydo", "agents", agentName, "inbox");
+        Directory.CreateDirectory(inboxDir);
+        var sanitized = DynaDocs.Utils.PathUtils.SanitizeForFilename(task);
+        var path = Path.Combine(inboxDir, $"0001-{sanitized}.md");
+        File.WriteAllText(path,
+            $"---\nid: 0001\nfrom: testuser\nfrom_role: {fromRole}\nrole: {dispatchedRole}\ntask: {task}\nreceived: {DateTime.UtcNow:o}\n---\n\n# Request\n");
+    }
+
     private static string FormatHistory(Dictionary<string, List<string>>? taskRoleHistory)
     {
         if (taskRoleHistory == null || taskRoleHistory.Count == 0)
@@ -449,6 +466,41 @@ public class RoleBehaviorTests : IDisposable
         var result = registry.SetRole("test-orch-ok", "orchestrator", "my-task", out var error);
 
         Assert.True(result, $"SetRole('orchestrator') failed: {error}");
+    }
+
+    [Fact]
+    public void SetRole_Orchestrator_DispatchedByChiefOfStaff_FreshSession_Succeeds()
+    {
+        // #0237 finding 1 (round 2): the CoS routing path must clear the orchestrator
+        // requires-prior gate at ROLE-SET time, not only at dispatch time. A launched target
+        // claims a fresh session (no co-thinker history) and runs `agent role orchestrator`;
+        // SetRole must resolve the dispatch provenance (from_role: chief-of-staff) BEFORE the
+        // gate so the agent is not wedged downstream where the dispatcher never sees the error.
+        SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] });
+        CreateSessionFile("Adele", "test-cos-dispatch");
+        WriteInboxItem("Adele", "route-task", dispatchedRole: "orchestrator", fromRole: "chief-of-staff");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-cos-dispatch", "orchestrator", "route-task", out var error);
+
+        Assert.True(result, $"CoS-dispatched fresh orchestrator SetRole should succeed: {error}");
+    }
+
+    [Fact]
+    public void SetRole_Orchestrator_DispatchedByNonChiefOfStaff_FreshSession_StaysBlocked()
+    {
+        // #0237 finding 1 (round 2, negative): only the chief-of-staff routing path bypasses.
+        // A fresh agent dispatched by any other role still needs prior co-thinker experience,
+        // so the requires-prior gate holds at role-set time.
+        SetupConfig(["Adele"], new() { ["testuser"] = ["Adele"] });
+        CreateSessionFile("Adele", "test-noncos-dispatch");
+        WriteInboxItem("Adele", "route-task", dispatchedRole: "orchestrator", fromRole: "orchestrator");
+
+        var registry = new AgentRegistry(_testDir);
+        var result = registry.SetRole("test-noncos-dispatch", "orchestrator", "route-task", out var error);
+
+        Assert.False(result);
+        Assert.Contains("Orchestrator requires prior co-thinker experience", error);
     }
 
     [Fact]

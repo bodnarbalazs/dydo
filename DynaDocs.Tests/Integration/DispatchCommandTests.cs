@@ -470,6 +470,153 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
+    #region Role Validation (#0240) and Chief-of-Staff Routing (#0237)
+
+    [Fact]
+    public async Task Dispatch_UndefinedRole_FailsFastWithDefinedRoleList()
+    {
+        // #0240: `dydo dispatch --role planner` was silently accepted though no such role is a
+        // valid dispatch target; it must now fail fast listing the defined roles.
+        await InitProjectAsync("none", "testuser", 3);
+
+        var result = await DispatchAsync("planner", "some-task", "Plan the work", to: "Brian");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Unknown role 'planner'");
+        result.AssertStderrContains("Defined roles:");
+        result.AssertStderrContains("orchestrator");
+
+        // The target must NOT have received an inbox item — the dispatch failed before selection.
+        var brianInbox = Path.Combine(TestDir, "dydo", "agents", "Brian", "inbox");
+        if (Directory.Exists(brianInbox))
+            Assert.Empty(Directory.GetFiles(brianInbox, "*.md"));
+    }
+
+    [Fact]
+    public async Task Dispatch_DefinedCustomRole_Passes()
+    {
+        // #0240: a custom `.role.json` defines a legitimate dispatch target — validation resolves
+        // it via RoleDefinitionService, not a hardcoded list.
+        await InitProjectAsync("none", "testuser", 3);
+        WriteCustomRoleFile("analyst");
+
+        var result = await DispatchAsync("analyst", "analysis-task", "Do analysis", to: "Brian");
+
+        result.AssertSuccess();
+        var inboxFiles = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*.md");
+        Assert.True(inboxFiles.Length > 0, "Inbox item should be created for Brian");
+    }
+
+    [Fact]
+    public async Task Dispatch_ChiefOfStaff_ToFreshOrchestrator_Succeeds()
+    {
+        // #0237(2): a claimed chief-of-staff routing an orchestrator to a fresh session is the
+        // documented path and must satisfy the requires-prior gate.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("chief-of-staff");
+
+        var result = await DispatchAsync("orchestrator", "route-task", "Run the sprint", to: "Brian");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Brian");
+    }
+
+    [Fact]
+    public async Task Dispatch_ChiefOfStaff_ToFreshOrchestrator_TargetTakesRole_EndToEnd()
+    {
+        // #0237 finding 1 (round 2): the CoS->orchestrator routing must succeed END TO END. It is
+        // not enough that the dispatch command exits 0 — the launched target then claims a FRESH
+        // session (no co-thinker history) and follows the documented workflow
+        // (`dydo agent role orchestrator --task <task>`). Before the fix that role-set re-ran the
+        // requires-prior gate with no dispatcher context and BLOCKED, wedging the reserved agent
+        // downstream where the dispatcher never saw the error.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("chief-of-staff");
+
+        var dispatch = await DispatchAsync("orchestrator", "route-task", "Run the sprint", to: "Brian");
+        dispatch.AssertSuccess();
+
+        // The dispatched target claims its own fresh session and takes the orchestrator role via
+        // the documented workflow (`dydo agent role orchestrator --task <task>`). SetRole resolves
+        // the dispatch provenance (from_role: chief-of-staff) and clears the requires-prior gate.
+        await ReleaseAgentAsync();
+        var claim = await ClaimAgentAsync("Brian");
+        claim.AssertSuccess();
+        var role = await SetRoleAsync("orchestrator", "route-task");
+
+        role.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Dispatch_NonChiefOfStaff_ToFreshOrchestrator_StaysGated_RendersCallerRole()
+    {
+        // #0237(1): a non-chief-of-staff caller stays gated, and the message resolves the CALLER's
+        // real role (co-thinker) rather than the target's unset role ("unknown").
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("co-thinker");
+
+        var result = await DispatchAsync("orchestrator", "route-task", "Run the sprint", to: "Brian");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("You are a co-thinker.");
+        result.AssertStderrContains("Orchestrator requires prior co-thinker experience");
+    }
+
+    [Fact]
+    public async Task Dispatch_CaseVariantRole_CanonicalizesAndGatesIdenticallyToLowercase()
+    {
+        // #0240 round-3: `--role` is matched case-insensitively for UX, but every downstream role
+        // gate (requires-prior constraint eval, SetRole permission map) is case-SENSITIVE. A case
+        // variant like `--role Orchestrator` must be canonicalized to the defined role's exact
+        // casing BEFORE the service call, so it is constraint-evaluated identically to the
+        // lowercase form — not passed through verbatim, which would skip the requires-prior gate,
+        // reserve+launch the target, then wedge it on a role its own `dydo agent role` rejects.
+        await InitProjectAsync("none", "testuser", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("co-thinker");
+
+        var result = await DispatchAsync("Orchestrator", "route-task", "Run the sprint", to: "Brian");
+
+        // Same outcome as the lowercase non-CoS repro: gated by requires-prior, caller role rendered.
+        result.AssertExitCode(2);
+        result.AssertStderrContains("You are a co-thinker.");
+        result.AssertStderrContains("Orchestrator requires prior co-thinker experience");
+
+        // The gate fired BEFORE selection — the target must have no inbox item and no reservation.
+        var brianInbox = Path.Combine(TestDir, "dydo", "agents", "Brian", "inbox");
+        if (Directory.Exists(brianInbox))
+            Assert.Empty(Directory.GetFiles(brianInbox, "*.md"));
+        var brianState = Path.Combine(TestDir, "dydo", "agents", "Brian", "state.md");
+        if (File.Exists(brianState))
+            Assert.DoesNotContain("status: dispatched", File.ReadAllText(brianState));
+    }
+
+    private void WriteCustomRoleFile(string name)
+    {
+        var custom = new DynaDocs.Models.RoleDefinition
+        {
+            Name = name,
+            Description = $"Custom {name} role",
+            Base = false,
+            WritablePaths = ["dydo/agents/{self}/**"],
+            ReadOnlyPaths = ["**"],
+            TemplateFile = $"mode-{name}.template.md",
+            Constraints = []
+        };
+
+        var rolesDir = Path.Combine(TestDir, "dydo", "_system", "roles");
+        Directory.CreateDirectory(rolesDir);
+        File.WriteAllText(
+            Path.Combine(rolesDir, $"{name}.role.json"),
+            System.Text.Json.JsonSerializer.Serialize(
+                custom, DynaDocs.Serialization.DydoConfigJsonContext.Default.RoleDefinition));
+    }
+
+    #endregion
+
     #region Auto-Return Routing
 
     [Fact]

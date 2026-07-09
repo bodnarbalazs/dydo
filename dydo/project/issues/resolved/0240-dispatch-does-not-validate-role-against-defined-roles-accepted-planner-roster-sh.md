@@ -4,7 +4,7 @@ id: 240
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Mia
 found-by-vendor: claude
@@ -40,4 +40,12 @@ Dispatch with an undefined `--role` should fail fast with an actionable message 
 
 ## Resolution
 
-(Filled when resolved)
+Resolved by sprint c1-codex-adoption slice c1-5 (2026-07-09). `dydo dispatch` now validates
+`--role` against the defined roles at the handler level in `Commands/DispatchCommand.cs`, before
+the service call. The defined-role set is resolved via `RoleDefinitionService` (custom + base
+`.role.json` on disk, or the built-in claimable base roles when no files exist) — never a
+hardcoded list. An undefined role fails fast with exit 2 and an actionable message listing the
+defined roles (`Unknown role '<role>'. Defined roles: ...`), and no reservation/inbox write
+happens. `--role planner` (the 0240 repro) now fails fast because planner is a non-claimable
+skill-only role; a defined custom role passes. Regression tests in
+`DynaDocs.Tests/Integration/DispatchCommandTests.cs`.

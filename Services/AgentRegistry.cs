@@ -819,7 +819,17 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
-        if (!string.IsNullOrEmpty(task) && !CanTakeRole(agent.Name, role, task, out var reason))
+        // Resolve the dispatch provenance BEFORE the constraint gate (#0237, finding 1): an agent
+        // dispatched by a chief-of-staff must clear the orchestrator requires-prior gate at role-set
+        // time exactly as the dispatcher cleared it at dispatch time. Passing the dispatcher role as
+        // the caller identity keeps the two evaluation sites consistent — otherwise a CoS dispatch
+        // "succeeds" and the reserved, launched agent then wedges here on the same gate with no
+        // dispatcher context, moving the failure downstream where the dispatcher never sees it.
+        var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
+        var dispatchedFromRole = !string.IsNullOrEmpty(task) ? GetDispatchedFromRole(agent.Name, task) : null;
+
+        if (!string.IsNullOrEmpty(task) &&
+            !CanTakeRole(agent.Name, role, task, out var reason, dispatchedFromRole))
         {
             error = reason;
             return false;
@@ -833,8 +843,6 @@ public partial class AgentRegistry : IAgentRegistry
         readOnly = readOnly.Select(p => p.Replace("{self}", agent.Name)).ToList();
 
         var mustReads = ComputeUnreadMustReads(agent.Name, role, task);
-        var dispatchedFrom = !string.IsNullOrEmpty(task) ? GetDispatchedFrom(agent.Name, task) : null;
-        var dispatchedFromRole = !string.IsNullOrEmpty(task) ? GetDispatchedFromRole(agent.Name, task) : null;
 
         // The read-modify-write runs under the per-agent lock (finding 5): UpdateAgentState preserves
         // needs-human, but a concurrent explicit `dydo hand raise` committing between an unlocked read and write
@@ -985,10 +993,10 @@ public partial class AgentRegistry : IAgentRegistry
     /// Checks if an agent can take a specific role on a task.
     /// Delegates to RoleConstraintEvaluator for data-driven constraint evaluation.
     /// </summary>
-    public bool CanTakeRole(string agentName, string role, string task, out string reason)
+    public bool CanTakeRole(string agentName, string role, string task, out string reason, string? dispatcherRole = null)
     {
         var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
-        return evaluator.CanTakeRole(agentName, role, task, out reason);
+        return evaluator.CanTakeRole(agentName, role, task, out reason, dispatcherRole);
     }
 
 

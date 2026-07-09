@@ -54,8 +54,10 @@ public interface IAgentRegistry
     /// <summary>
     /// Checks if an agent can take a specific role on a task.
     /// Returns false if the agent was code-writer and is trying to become reviewer (no self-review).
+    /// <paramref name="dispatcherRole"/> is the dispatching caller's role, threaded through so
+    /// constraint evaluation resolves the real caller instead of the target's role (#0237).
     /// </summary>
-    bool CanTakeRole(string agentName, string role, string task, out string reason);
+    bool CanTakeRole(string agentName, string role, string task, out string reason, string? dispatcherRole = null);
 
     /// <summary>
     /// Gets the agent state for a specific agent.

@@ -985,10 +985,10 @@ public partial class AgentRegistry : IAgentRegistry
     /// Checks if an agent can take a specific role on a task.
     /// Delegates to RoleConstraintEvaluator for data-driven constraint evaluation.
     /// </summary>
-    public bool CanTakeRole(string agentName, string role, string task, out string reason)
+    public bool CanTakeRole(string agentName, string role, string task, out string reason, string? dispatcherRole = null)
     {
         var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
-        return evaluator.CanTakeRole(agentName, role, task, out reason);
+        return evaluator.CanTakeRole(agentName, role, task, out reason, dispatcherRole);
     }
 
 

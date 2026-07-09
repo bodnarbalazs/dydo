@@ -20,7 +20,8 @@ public static class AgentSelector
         if (!string.IsNullOrEmpty(currentHuman) && assignedHuman != currentHuman)
             return (null, $"Agent '{to}' is not assigned to you (assigned to: {assignedHuman ?? "nobody"}).");
 
-        if (!registry.CanTakeRole(to, role, task, out var roleError))
+        var dispatcherRole = registry.GetAgentState(senderName)?.Role;
+        if (!registry.CanTakeRole(to, role, task, out var roleError, dispatcherRole))
             return (null, roleError);
 
         if (!registry.ReserveAgent(to, out var reserveError))
@@ -57,7 +58,8 @@ public static class AgentSelector
         if (!registry.IsValidAgentName(origin))
             return null;
 
-        if (!registry.CanTakeRole(origin, role, task, out _))
+        var dispatcherRole = registry.GetAgentState(senderName)?.Role;
+        if (!registry.CanTakeRole(origin, role, task, out _, dispatcherRole))
             return null;
 
         var originHuman = registry.GetHumanForAgent(origin);
@@ -74,9 +76,10 @@ public static class AgentSelector
             ? registry.GetFreeAgents()
             : registry.GetFreeAgentsForHuman(currentHuman);
 
+        var dispatcherRole = registry.GetAgentState(senderName)?.Role;
         var eligible = freeAgents
             .Where(a => !string.Equals(a.Name, senderName, StringComparison.OrdinalIgnoreCase))
-            .Where(a => registry.CanTakeRole(a.Name, role, task, out _))
+            .Where(a => registry.CanTakeRole(a.Name, role, task, out _, dispatcherRole))
             .OrderBy(a => registry.HasPendingInbox(a.Name) ? 1 : 0)
             .ThenBy(a => a.Name)
             .ToList();

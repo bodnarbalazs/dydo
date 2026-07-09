@@ -114,6 +114,14 @@ public static class DispatchCommand
                 return ExitCodes.ToolError;
             }
 
+            var definedRoles = ResolveDefinedRoles();
+            if (!definedRoles.Any(r => r.Equals(role, StringComparison.OrdinalIgnoreCase)))
+            {
+                ConsoleOutput.WriteError(
+                    $"Unknown role '{role}'. Defined roles: {string.Join(", ", definedRoles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase))}.");
+                return ExitCodes.ToolError;
+            }
+
             var briefFromFile = false;
             if (!string.IsNullOrEmpty(briefFile))
             {
@@ -147,6 +155,25 @@ public static class DispatchCommand
         });
 
         return command;
+    }
+
+    /// <summary>
+    /// Resolves the role names a dispatch may target — the custom + base role files on disk, or
+    /// the built-in claimable base roles when no files exist (mirrors AgentRegistry's own
+    /// resolution). Used to fail an undefined <c>--role</c> fast rather than letting the target
+    /// land on a stale/fallback role (#0240). The list is never hardcoded.
+    /// </summary>
+    private static List<string> ResolveDefinedRoles()
+    {
+        var basePath = PathUtils.FindProjectRoot() ?? Environment.CurrentDirectory;
+        var roles = new RoleDefinitionService().LoadRoleDefinitions(basePath);
+        if (roles.Count > 0)
+            return roles.Select(r => r.Name).ToList();
+
+        return RoleDefinitionService.GetBaseRoleDefinitions()
+            .Where(r => !RoleDefinitionService.NonClaimableRoles.Contains(r.Name))
+            .Select(r => r.Name)
+            .ToList();
     }
 
     /// <summary>

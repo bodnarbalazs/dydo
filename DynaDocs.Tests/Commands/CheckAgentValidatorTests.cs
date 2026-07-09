@@ -220,7 +220,7 @@ public class CheckAgentValidatorTests : IDisposable
         public bool ClaimAuto(out string claimedAgent, out string error) { claimedAgent = ""; error = ""; return false; }
         public bool ReleaseAgent(string? sessionId, out string error) { error = ""; return false; }
         public bool SetRole(string? sessionId, string role, string? task, out string error) { error = ""; return false; }
-        public bool CanTakeRole(string agentName, string role, string task, out string reason) { reason = ""; return true; }
+        public bool CanTakeRole(string agentName, string role, string task, out string reason, string? dispatcherRole = null) { reason = ""; return true; }
         public List<AgentState> GetAllAgentStates() => States.Values.ToList();
         public List<AgentState> GetFreeAgents() => [];
         public List<AgentState> GetFreeAgentsForHuman(string human) => [];

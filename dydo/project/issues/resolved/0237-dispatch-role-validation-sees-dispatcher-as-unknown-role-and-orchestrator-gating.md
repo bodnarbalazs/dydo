@@ -4,7 +4,7 @@ id: 237
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -44,4 +44,21 @@ Chief-of-staff cannot dispatch orchestrators at all; routing doctrine and enforc
 
 ## Resolution
 
-(Filled when resolved)
+Resolved by sprint c1-codex-adoption slice c1-5 (2026-07-09). Both defects fixed at the
+constraint-evaluation layer (the constraint SET is unchanged — planner joins requires-prior in P1
+per DR 039).
+
+1. **Dispatcher role resolves to "unknown"**: the dispatcher's identity is now threaded from
+   `AgentSelector` (resolved from the sender's state) through `IAgentRegistry.CanTakeRole` /
+   `AgentRegistry.CanTakeRole` into `RoleConstraintEvaluator`. Constraint messages render the
+   real caller role (`{current_role}` = dispatcher's role, falling back to the target's own role
+   on the self-conversion path) instead of the target's unset role. The
+   `a unknown role` → `an unknown role` grammar nit is fixed by agreeing the indefinite article
+   with the resolved role at substitution time.
+
+2. **Orchestrator gating blocks chief-of-staff routing**: `EvaluateRequiresPriorConstraint` now
+   treats a chief-of-staff dispatcher as satisfying the requires-prior gate — the documented
+   top-level dispatch of a fresh orchestrator. Non-chief-of-staff callers stay gated exactly as
+   before (the requires-prior constraint set is untouched). Regression tests in
+   `DynaDocs.Tests/Services/RoleConstraintEvaluatorTests.cs` and
+   `DynaDocs.Tests/Integration/DispatchCommandTests.cs`.

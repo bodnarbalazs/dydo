@@ -214,6 +214,84 @@ public class RoleConstraintEvaluatorTests
         Assert.True(evaluator.CanTakeRole("Alice", "test-writer", "task1", out _));
     }
 
+    [Fact]
+    public void CanTakeRole_RequiresPrior_ChiefOfStaffDispatcher_Bypasses()
+    {
+        // #0237(2): a chief-of-staff caller performs the documented top-level dispatch of a fresh
+        // orchestrator, so the prior-experience gate is satisfied even though the target agent has
+        // no history on the task.
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["orchestrator"] = MakeRole("orchestrator", [
+                new RoleConstraint
+                {
+                    Type = "requires-prior",
+                    RequiredRoles = ["co-thinker"],
+                    Message = "You are a {current_role}. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Grace"],
+            name => MakeState(name));
+
+        var result = evaluator.CanTakeRole("Grace", "orchestrator", "task1", out var reason,
+            dispatcherRole: "chief-of-staff");
+
+        Assert.True(result);
+        Assert.Empty(reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_RequiresPrior_NonChiefDispatcher_StaysGated_MessageShowsDispatcherRole()
+    {
+        // #0237(1): the message resolves the CALLER's role (the dispatcher), not the target's.
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["orchestrator"] = MakeRole("orchestrator", [
+                new RoleConstraint
+                {
+                    Type = "requires-prior",
+                    RequiredRoles = ["co-thinker"],
+                    Message = "You are a {current_role}. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Grace"],
+            name => MakeState(name));
+
+        var result = evaluator.CanTakeRole("Grace", "orchestrator", "task1", out var reason,
+            dispatcherRole: "co-thinker");
+
+        Assert.False(result);
+        Assert.Equal(
+            "You are a co-thinker. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification.",
+            reason);
+    }
+
+    [Fact]
+    public void CanTakeRole_RequiresPrior_NoDispatcher_RendersAnUnknownRole()
+    {
+        // #0237 grammar nit: the unknown-role fallback must read "an unknown role", not "a unknown role".
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["orchestrator"] = MakeRole("orchestrator", [
+                new RoleConstraint
+                {
+                    Type = "requires-prior",
+                    RequiredRoles = ["co-thinker"],
+                    Message = "You are a {current_role}. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Grace"],
+            name => MakeState(name)); // no role, no dispatcher
+
+        var result = evaluator.CanTakeRole("Grace", "orchestrator", "task1", out var reason);
+
+        Assert.False(result);
+        Assert.StartsWith("You are an unknown role.", reason);
+    }
+
     #endregion
 
     #region panel-limit constraint

@@ -130,7 +130,7 @@ public class CodexDispatchPostureE2ETests : IntegrationTestBase
         TerminalLauncher.ProcessStarterOverride = recorder;
         WatchdogService.StartProcessOverride = _ => null;
         DispatchPreflight.SandboxPrerequisiteProbeOverride = () => false;
-        DispatchPreflight.HookTrustResolverOverride = _ => true;   // isolate the sandbox check
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Trusted;   // isolate the sandbox check
         try
         {
             var result = await RunAsync(DispatchCommand.Create(),

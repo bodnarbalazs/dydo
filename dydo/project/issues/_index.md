@@ -80,6 +80,7 @@ Index of issues documentation.
 - [Workflow worktrees cut from last-pushed commit, not local master - stale base under hold-commit accumulation](./0266-workflow-worktrees-cut-from-last-pushed-commit-not-local-master-stale-base-under.md) - Every worktree cut during the C1 sprint (run-sprint workflow slices AND a direct worktree-isolated subagent) was based at `d88102b3` ("2.
 - [Watchdog EnsureRunning anchor registration hardcoded claude-only - codex dispatcher registers no codex anchor on the dispatch path](./0267-watchdog-ensurerunning-anchor-registration-hardcoded-claude-only-codex-dispatche.md) - `WatchdogService.
 - [Active orchestrator session released mid-sprint - found in free pool with CWD drifted into a worktree](./0268-active-orchestrator-session-released-mid-sprint-found-in-free-pool-with-cwd-drif.md) - During C1's audit-fix wave (2026-07-10), Grace's live orchestrator session was silently released mid-orchestration: the agent found itself in the f...
+- [Codex guard hook (pre_tool_use) left trusted-but-not-enabled after setup - guard silently would not fire; only the stop hook gets enabled](./0269-codex-guard-hook-pre-tool-use-left-trusted-but-not-enabled-after-setup-guard-sil.md) - v2.
 
 ## Subfolders
 

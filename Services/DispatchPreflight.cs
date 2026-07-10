@@ -17,7 +17,18 @@ public static class DispatchPreflight
     // Test seams. The codex-specific checks (#3 sandbox, #4 hook trust) resolve their live
     // prerequisite off-machine; these Funcs let tests drive both branches deterministically.
     internal static Func<bool>? SandboxPrerequisiteProbeOverride { get; set; }
-    internal static Func<string, bool>? HookTrustResolverOverride { get; set; }
+    internal static Func<string, HookTrust>? HookTrustResolverOverride { get; set; }
+
+    /// <summary>Tri-state result of resolving a repo hooks.json against the codex trust ledger.
+    /// The two block states drive distinct fix messages (issue 0270 / 0269 interaction):
+    /// <see cref="Untrusted"/> means re-approve the hook; <see cref="HashMismatch"/> means the
+    /// file changed and its pinned hash must be re-approved.</summary>
+    internal enum HookTrust
+    {
+        Trusted,
+        Untrusted,
+        HashMismatch
+    }
 
     /// <summary>User-level codex home (<c>~/.codex</c>). Overridable so tests never read or
     /// write the real user's codex config.</summary>
@@ -173,10 +184,13 @@ public static class DispatchPreflight
             "(dydo/reference/configuration.md), then re-dispatch. The sandbox is never silently downgraded.");
     }
 
-    // (5) A repo .codex/hooks.json is SILENTLY skipped unless it is trust-enabled in the
-    // user-level codex config ([hooks.state] in ~/.codex/config.toml, path-keyed and
-    // SHA256-pinned). An untrusted hook means an UNGUARDED agent, so fail fast with the re-trust
-    // instruction. When the repo carries no hooks.json there is nothing to trust-check.
+    // (5) A repo .codex/hooks.json is SILENTLY skipped unless its pre_tool_use guard hook is
+    // trusted AND enabled in the user-level codex config ([hooks.state] in ~/.codex/config.toml,
+    // per-event sub-tables keyed by path and SHA256-pinned). An untrusted hook means an UNGUARDED
+    // agent, so fail fast with the fix. The two block paths are distinguished (issue 0269): an
+    // entry that is missing/disabled needs a fresh approval; an entry whose pinned hash no longer
+    // matches (a dydo upgrade regenerated hooks.json) needs the new hash re-approved. When the repo
+    // carries no hooks.json there is nothing to trust-check.
     private static PreflightResult CheckHookTrust(string launchHost, string? projectRoot)
     {
         if (launchHost != "codex" || projectRoot == null)
@@ -186,15 +200,20 @@ public static class DispatchPreflight
         if (!File.Exists(hooksPath))
             return PreflightResult.Pass;
 
-        var trusted = (HookTrustResolverOverride ?? DefaultHookTrust)(hooksPath);
-        if (trusted)
-            return PreflightResult.Pass;
-
-        return PreflightResult.Fail(
-            $"Codex dispatch would run UNGUARDED: {hooksPath} is not trust-enabled in your codex config " +
-            "([hooks.state] in ~/.codex/config.toml). Codex silently skips untrusted hooks, so the dydo guard " +
-            "never fires. Trust it — run codex once in this repo and approve the hook (or add the trust entry) — " +
-            "then re-dispatch.");
+        return (HookTrustResolverOverride ?? DefaultHookTrust)(hooksPath) switch
+        {
+            HookTrust.Trusted => PreflightResult.Pass,
+            HookTrust.HashMismatch => PreflightResult.Fail(
+                $"Codex dispatch would run UNGUARDED: {hooksPath} changed, so its pinned trust hash in your codex " +
+                "config ([hooks.state] in ~/.codex/config.toml) no longer matches — a dydo upgrade likely regenerated " +
+                "it. Codex silently skips a hook whose hash changed, so the dydo guard never fires. Re-approve the new " +
+                "hash in codex — run codex once in this repo and re-approve the pre_tool_use hook — then re-dispatch."),
+            _ => PreflightResult.Fail(
+                $"Codex dispatch would run UNGUARDED: the pre_tool_use guard hook for {hooksPath} is not " +
+                "trusted+enabled in your codex config ([hooks.state] in ~/.codex/config.toml). Codex silently skips " +
+                "untrusted hooks, so the dydo guard never fires. Re-approve it in codex — run codex once in this repo " +
+                "and approve the pre_tool_use hook — then re-dispatch.")
+        };
     }
 
     private static string ModelVendorFor(string host) =>
@@ -225,71 +244,101 @@ public static class DispatchPreflight
     // branch through SandboxPrerequisiteProbeOverride.
     private static bool DefaultSandboxPrerequisite() => true;
 
-    // Best-effort read of the codex trust ledger. The exact [hooks.state] schema is pinned live
-    // in c1-8; the shape assumed here is a path-keyed inline table carrying per-hook enable/
-    // disable and a SHA256 of the trusted hooks.json content. A present entry is trusted unless
-    // it is explicitly disabled or its pinned hash no longer matches the on-disk file. No config
-    // (or no matching entry) means untrusted — the safe, fail-fast default.
-    private static bool DefaultHookTrust(string hooksPath)
+    // Reads the codex trust ledger for the pre_tool_use guard hook. Codex records trust as
+    // per-event dotted sub-tables — [hooks.state.'<abs-path>:<event>:0:0'] with `trusted_hash`
+    // (value form sha256:<lowercase-hex>) and `enabled` child keys. The guard is the pre_tool_use
+    // hook, so we key on that event specifically: a sibling `stop` entry being enabled does not
+    // trust the guard. A matching entry is trusted when enabled (default true unless enabled=false)
+    // and its pinned hash equals the SHA256 of the on-disk hooks.json; a present-but-stale hash is
+    // HashMismatch (a regen re-trust is needed). No config, no matching entry, or a disabled entry
+    // is Untrusted — the safe, fail-fast default.
+    private static HookTrust DefaultHookTrust(string hooksPath)
     {
         var codexHome = CodexHomeOverride
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
         var configPath = Path.Combine(codexHome, "config.toml");
         if (!File.Exists(configPath))
-            return false;
+            return HookTrust.Untrusted;
 
-        var entry = FindHookStateEntry(File.ReadAllText(configPath), hooksPath);
-        if (entry == null)
-            return false;
+        if (FindPreToolUseTrustEntry(File.ReadAllText(configPath), hooksPath) is not { Enabled: true, TrustedHash: { } pinned })
+            return HookTrust.Untrusted;
 
-        if (entry.Contains("enabled = false") || entry.Contains("enabled=false"))
-            return false;
-
-        var pinned = ExtractTomlString(entry, "sha256");
-        return pinned == null || string.Equals(pinned, HashFile(hooksPath), StringComparison.OrdinalIgnoreCase);
+        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(hooksPath))).ToLowerInvariant();
+        return string.Equals(pinned, actual, StringComparison.Ordinal) ? HookTrust.Trusted : HookTrust.HashMismatch;
     }
 
-    // Returns the inline-table value for the [hooks.state] key matching hooksPath, or null.
-    // Matches the key by its resolved absolute path, tolerating TOML backslash-escaping so a
-    // Windows path stored as "C:\\repo\\.codex\\hooks.json" resolves against C:\repo\....
-    private static string? FindHookStateEntry(string toml, string hooksPath)
+    // Scans the [hooks.state.'<abs-path>:pre_tool_use:0:0'] sub-table matching hooksPath and reads
+    // its child trusted_hash/enabled lines until the next header, or null if no such sub-table.
+    private static (bool Enabled, string? TrustedHash)? FindPreToolUseTrustEntry(string toml, string hooksPath)
     {
-        var normalizedTarget = Path.GetFullPath(hooksPath);
-        var inSection = false;
+        var target = Path.GetFullPath(hooksPath);
+        var inTarget = false;
+        var enabled = true;
+        string? trustedHash = null;
+
         foreach (var raw in toml.Split('\n'))
         {
             var line = raw.Trim();
             if (line.StartsWith('['))
             {
-                inSection = line is "[hooks.state]";
+                if (inTarget)
+                    return (enabled, trustedHash);
+                inTarget = IsPreToolUseHeader(line, target);
+                enabled = true;
+                trustedHash = null;
                 continue;
             }
-            if (!inSection || line.Length == 0 || line.StartsWith('#'))
+            if (!inTarget || line.Length == 0 || line.StartsWith('#'))
                 continue;
 
             var eq = line.IndexOf('=');
             if (eq < 0)
                 continue;
-
-            var key = line[..eq].Trim().Trim('"').Replace("\\\\", "\\");
-            if (string.Equals(Path.GetFullPath(key), normalizedTarget, StringComparison.OrdinalIgnoreCase))
-                return line[(eq + 1)..];
+            var key = line[..eq].Trim();
+            var value = line[(eq + 1)..].Trim();
+            if (key == "enabled")
+                enabled = !value.StartsWith("false", StringComparison.Ordinal);
+            else if (key == "trusted_hash")
+                trustedHash = NormalizeHash(TomlUnquote(value));
         }
-        return null;
+        return inTarget ? (enabled, trustedHash) : null;
     }
 
-    private static string? ExtractTomlString(string fragment, string key)
+    // Matches a [hooks.state.'<key>'] sub-table header whose key begins with the resolved hooks.json
+    // path AND names the pre_tool_use event: key form is <abs-path>:<event>:0:0.
+    private static bool IsPreToolUseHeader(string header, string target)
     {
-        var idx = fragment.IndexOf(key, StringComparison.Ordinal);
-        if (idx < 0)
-            return null;
-        var open = fragment.IndexOf('"', idx);
-        if (open < 0)
-            return null;
-        var close = fragment.IndexOf('"', open + 1);
-        return close < 0 ? null : fragment[(open + 1)..close];
+        const string prefix = "[hooks.state.";
+        if (!header.StartsWith(prefix, StringComparison.Ordinal) || !header.EndsWith(']'))
+            return false;
+        var key = TomlUnquote(header[prefix.Length..^1]);
+        if (key == null || !key.StartsWith(target, StringComparison.OrdinalIgnoreCase))
+            return false;
+        var rest = key[target.Length..];
+        return rest.StartsWith(':') &&
+               rest[1..].Split(':')[0].Equals("pre_tool_use", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string HashFile(string path) =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+    // Strips TOML single- (literal) or double- (basic) quotes; basic strings un-escape \\ so a
+    // Windows path stored as "C:\\repo\\..." resolves. Codex writes single-quoted literal keys.
+    private static string? TomlUnquote(string s)
+    {
+        s = s.Trim();
+        if (s.Length < 2 || s[0] != s[^1] || s[0] is not ('\'' or '"'))
+            return s.Length == 0 ? null : s;
+        var inner = s[1..^1];
+        return s[0] == '"' ? inner.Replace("\\\\", "\\") : inner;
+    }
+
+    // Codex stores the trust hash as sha256:<lowercase-hex>; strip the prefix and lowercase so the
+    // comparison against Convert.ToHexString (uppercase) output is form-agnostic.
+    private static string? NormalizeHash(string? raw)
+    {
+        if (raw == null)
+            return null;
+        const string prefix = "sha256:";
+        if (raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            raw = raw[prefix.Length..];
+        return raw.ToLowerInvariant();
+    }
 }

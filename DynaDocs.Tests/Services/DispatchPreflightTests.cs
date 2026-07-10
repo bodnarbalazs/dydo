@@ -391,21 +391,36 @@ public class DispatchPreflightTests : IDisposable
     public void CodexUntrustedHooks_FailsWithReTrustInstruction()
     {
         WriteHooksJson();
-        DispatchPreflight.HookTrustResolverOverride = _ => false;
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Untrusted;
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
         Assert.Contains("UNGUARDED", result.Error);
         Assert.Contains("hooks.state", result.Error);
+        Assert.Contains("pre_tool_use", result.Error);
         Assert.Contains(".codex", result.Error!);
+    }
+
+    [Fact]
+    public void CodexHashMismatch_FailsWithReApproveNewHashInstruction()
+    {
+        WriteHooksJson();
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.HashMismatch;
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("UNGUARDED", result.Error);
+        Assert.Contains("changed", result.Error);
+        Assert.Contains("Re-approve the new hash", result.Error!);
     }
 
     [Fact]
     public void CodexTrustedHooks_Passes()
     {
         WriteHooksJson();
-        DispatchPreflight.HookTrustResolverOverride = _ => true;
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Trusted;
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
@@ -415,7 +430,7 @@ public class DispatchPreflightTests : IDisposable
     [Fact]
     public void CodexNoHooksJson_SkipsTrustCheck()
     {
-        DispatchPreflight.HookTrustResolverOverride = _ => false;
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Untrusted;
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
@@ -426,22 +441,32 @@ public class DispatchPreflightTests : IDisposable
     public void ClaudeHost_SkipsTrustCheck()
     {
         WriteHooksJson();
-        DispatchPreflight.HookTrustResolverOverride = _ => false;
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Untrusted;
 
         var result = DispatchPreflight.Run(ConfigWith(), "claude", Opts(noLaunch: true), _dir);
 
         Assert.True(result.Ok);
     }
 
-    // --- (5) Default trust resolver: real codex config.toml parse ---
+    // --- (5) Default trust resolver: REAL codex config.toml schema parse (issue 0270) ---
+    // Codex records trust as per-event dotted sub-tables:
+    //   [hooks.state.'<abs-path>:<event>:0:0']
+    //   trusted_hash = 'sha256:<lowercase-hex>'
+    //   enabled = true
+    // The guard is the pre_tool_use hook; the parser must key on that event specifically.
 
     [Fact]
-    public void DefaultTrust_EnabledEntryWithMatchingHash_Passes()
+    public void DefaultTrust_PreToolUseEnabledMatchingHash_Passes()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
-            [hooks.state]
-            "{{Escape(hooksPath)}}" = { enabled = true, sha256 = "{{Sha256(hooksPath)}}" }
+            [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
+            trusted_hash = 'sha256:{{Sha256Lower(hooksPath)}}'
+            enabled = true
+
+            [hooks.state.'{{hooksPath}}:stop:0:0']
+            trusted_hash = 'sha256:{{Sha256Lower(hooksPath)}}'
+            enabled = true
             """);
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
@@ -449,32 +474,73 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
+    // enabled DEFAULTS TRUE unless an explicit `enabled = false` is present (issue 0270).
     [Fact]
-    public void DefaultTrust_DisabledEntry_Fails()
+    public void DefaultTrust_PreToolUseMatchingHashNoEnabledLine_Passes()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
-            [hooks.state]
-            "{{Escape(hooksPath)}}" = { enabled = false, sha256 = "{{Sha256(hooksPath)}}" }
+            [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
+            trusted_hash = 'sha256:{{Sha256Lower(hooksPath)}}'
+            """);
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    // The real c1-8 smoke case (0269): a matching entry whose pinned hash is stale after a regen —
+    // BLOCK with the "hash changed / re-approve the new hash" message, distinct from a missing entry.
+    [Fact]
+    public void DefaultTrust_PreToolUseStaleHash_FailsWithHashChangedMessage()
+    {
+        var hooksPath = WriteHooksJson();
+        WriteCodexConfig($$"""
+            [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
+            trusted_hash = 'sha256:581b21e8c4248575822b243e3470d04a1fab9dbdd242d0da869a240782db84d7'
+            enabled = true
             """);
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
+        Assert.Contains("changed", result.Error);
+        Assert.Contains("Re-approve the new hash", result.Error!);
     }
 
     [Fact]
-    public void DefaultTrust_StaleHash_Fails()
+    public void DefaultTrust_PreToolUseDisabled_FailsWithNotTrustedMessage()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
-            [hooks.state]
-            "{{Escape(hooksPath)}}" = { enabled = true, sha256 = "DEADBEEF" }
+            [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
+            trusted_hash = 'sha256:{{Sha256Lower(hooksPath)}}'
+            enabled = false
             """);
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
+        Assert.Contains("not trusted+enabled", result.Error);
+        Assert.Contains("Re-approve it in codex", result.Error!);
+    }
+
+    // A sibling `stop` entry being trusted+enabled must NOT satisfy the pre_tool_use requirement
+    // (the c1-8 smoke found exactly this — stop enabled, pre_tool_use not).
+    [Fact]
+    public void DefaultTrust_OnlyStopEntryEnabled_FailsAsPreToolUseUntrusted()
+    {
+        var hooksPath = WriteHooksJson();
+        WriteCodexConfig($$"""
+            [hooks.state.'{{hooksPath}}:stop:0:0']
+            trusted_hash = 'sha256:{{Sha256Lower(hooksPath)}}'
+            enabled = true
+            """);
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("not trusted+enabled", result.Error);
     }
 
     [Fact]
@@ -486,6 +552,7 @@ public class DispatchPreflightTests : IDisposable
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
+        Assert.Contains("not trusted+enabled", result.Error);
     }
 
     [Fact]
@@ -493,13 +560,15 @@ public class DispatchPreflightTests : IDisposable
     {
         WriteHooksJson();
         WriteCodexConfig("""
-            [hooks.state]
-            "C:\\some\\other\\hooks.json" = { enabled = true }
+            [hooks.state.'C:\some\other\hooks.json:pre_tool_use:0:0']
+            trusted_hash = 'sha256:abcdef'
+            enabled = true
             """);
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
+        Assert.Contains("not trusted+enabled", result.Error);
     }
 
     // Lays down the vendor's compiled agent surface as `dydo sync` would: a worker-role body
@@ -530,8 +599,6 @@ public class DispatchPreflightTests : IDisposable
         DispatchPreflight.CodexHomeOverride = home;
     }
 
-    private static string Escape(string path) => path.Replace("\\", "\\\\");
-
-    private static string Sha256(string path) =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+    private static string Sha256Lower(string path) =>
+        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
 }

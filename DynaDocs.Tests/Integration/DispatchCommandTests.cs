@@ -230,7 +230,7 @@ public class DispatchCommandTests : IntegrationTestBase
         var codexDir = Path.Combine(TestDir, ".codex");
         Directory.CreateDirectory(codexDir);
         File.WriteAllText(Path.Combine(codexDir, "hooks.json"), """{"PreToolUse":[{"command":"dydo guard"}]}""");
-        DispatchPreflight.HookTrustResolverOverride = _ => false;
+        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Untrusted;
 
         try
         {

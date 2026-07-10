@@ -63,6 +63,30 @@ public class SyncCommandTests : IDisposable
         Assert.DoesNotContain(agent.Split('\n'), line => line.StartsWith("instructions = \"\"\""));
     }
 
+    // Issue 0271 (wire-shape guard, same class as 0261): codex's agent `tools` field is a
+    // ToolsToml struct of codex toggles (view_image, web_search), NOT file/shell tool names.
+    // The old emitter wrote `tools = "read, grep, glob, bash, ..."` — a bare string codex
+    // rejects with 'invalid type: string ... expected struct ToolsToml', silently ignoring
+    // every worker role. The fix drops the field; these pin that no worker role emits it,
+    // for either the read-only or the read-write branch.
+    [Theory]
+    [InlineData("reviewer")]
+    [InlineData("code-writer")]
+    public void SyncCodexRole_OmitsToolsField(string roleName)
+    {
+        var role = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == roleName);
+
+        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
+        Assert.DoesNotContain(agent.Split('\n'), line => line.TrimStart().StartsWith("tools"));
+        // Fields codex does accept remain intact — the drop is surgical, not structural.
+        Assert.Contains($"name = \"{roleName}\"", agent);
+        Assert.Contains("description = \"", agent);
+        Assert.Contains("model = \"", agent);
+        Assert.Contains("developer_instructions = \"\"\"", agent);
+    }
+
     [Fact]
     public void SyncRole_Agent_HasReadOnlyToolProfileAndFrontmatter()
     {

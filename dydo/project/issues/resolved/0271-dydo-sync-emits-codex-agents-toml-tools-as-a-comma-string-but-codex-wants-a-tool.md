@@ -4,7 +4,7 @@ id: 271
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -26,4 +26,23 @@ Live 2026-07-10 (codex run in repo during c1-8 setup): OpenAI Codex rejects ALL 
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in 2.0.8 (c1-fix-0271-codex-tools-toml). Root fact (verified against the codex config
+reference, learn.chatgpt.com/docs/config-file/config-reference): a codex agent's `tools` field
+is a `ToolsToml` STRUCT of codex-defined toggles ONLY — `view_image` (bool) and `web_search`
+(bool|object). It does NOT accept file/shell tool names; codex agents get apply_patch/shell/read
+intrinsically. The Claude tool-name list dydo was emitting (`read, grep, glob, bash, edit, write`)
+is category-wrong and has no valid codex representation — hence 'invalid type: string ... expected
+struct ToolsToml' and codex silently dropping all six compiled worker roles.
+
+Fix: dropped the `tools = "..."` line from `BuildCodexAgent` (Commands/SyncCommand.cs) entirely.
+dydo sets none of codex's tool toggles, and omitting the field is valid — codex inherits from the
+parent. The `IsReadOnlyRole` check now feeds only the `stance` prose (no dead `tools` computation).
+Added a wire-shape guard (the fake-vs-wire gap that let this ship, same class as 0261): a unit
+Theory in `DynaDocs.Tests/Commands/SyncCommandTests.cs` and an E2E in
+`DynaDocs.Tests/Integration/CodexSyncArtifactsE2ETests.cs` assert every emitted
+`.codex/agents/<role>.toml` has NO `tools` field and keeps the fields codex accepts
+(name/description/model/developer_instructions).
+
+Split: expressing read-only capability for codex (via `sandbox_mode`, replacing the dropped
+read/write signal) is deferred to issue 0272 — it needs a live codex behavior check first and is
+not a 2.0.8 blocker.

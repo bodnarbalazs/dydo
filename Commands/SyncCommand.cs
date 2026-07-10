@@ -213,11 +213,13 @@ public static partial class SyncCommand
 
     private static string BuildCodexAgent(RoleDefinition role, List<string> mustReads, ModelsConfig? models)
     {
-        var readOnly = IsReadOnlyRole(role);
-        var tools = readOnly
-            ? "read, grep, glob, bash"
-            : "read, grep, glob, bash, edit, write";
-        var stance = readOnly
+        // No `tools` field: codex's agent `tools` is a ToolsToml struct of codex-defined
+        // toggles (view_image, web_search) — NOT file/shell tool names. Claude's tool names
+        // are category-wrong here and have no valid codex representation; codex grants
+        // apply_patch/shell/read intrinsically and inherits toggles from the parent when the
+        // field is omitted. Read-only capability is a separate concern (issue 0272,
+        // sandbox_mode). See issue 0271.
+        var stance = IsReadOnlyRole(role)
             ? "You are read-only: assess and report without modifying project files."
             : "You produce and modify the project's files as your task requires.";
         var contextBlock = mustReads.Count == 0 ? "" :
@@ -229,7 +231,6 @@ public static partial class SyncCommand
             name = "{EscapeToml(role.Name)}"
             description = "{EscapeToml(role.Description)}"
             model = "{EscapeToml(model ?? "gpt-5.5")}"
-            tools = "{tools}"
 
             developer_instructions = """
             You are a **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}

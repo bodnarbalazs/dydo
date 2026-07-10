@@ -5,7 +5,7 @@ due:
 needs-human: false
 priority: Medium
 sprint: c1-codex-adoption
-status: ready
+status: done
 work-type: test
 area: backend
 type: context

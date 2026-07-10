@@ -163,15 +163,109 @@ public class ReadCommandTests : IDisposable
         Assert.DoesNotContain("Hello.", stdout);
     }
 
+    [Fact]
+    public void Read_OffLimitsFilePath_BlockedWithoutContentOrRead()
+    {
+        // The verb must honour the universal off-limits tier the guard applies to Read-tool and
+        // shell reads — an off-limits file is refused with the same BLOCKED shape, no content, no
+        // read registered, non-zero exit.
+        WriteOffLimits("**/*.secret");
+        var secret = Path.Combine(_testDir, "config", "prod.secret");
+        Directory.CreateDirectory(Path.GetDirectoryName(secret)!);
+        File.WriteAllText(secret, "SECRET_MARKER_do_not_leak");
+        // Seed it as a must-read too, so we can prove the read is NOT registered on a block.
+        SeedAgent(unreadMustReads: ["config/prod.secret"], unreadMessages: []);
+
+        var (code, stdout, stderr) = RunRead("config/prod.secret");
+
+        Assert.Equal(ExitCodes.ToolError, code);
+        Assert.DoesNotContain("SECRET_MARKER_do_not_leak", stdout);
+        Assert.Contains("BLOCKED", stderr);
+        Assert.Contains("off-limits", stderr);
+        Assert.Contains("**/*.secret", stderr);
+        Assert.Contains("files-off-limits.md", stderr);
+
+        // No read registered: the off-limits path stays on the unread must-read list.
+        var after = new AgentRegistry(_testDir).GetAgentState(AgentName)!;
+        Assert.Contains("config/prod.secret", after.UnreadMustReads);
+    }
+
+    [Fact]
+    public void Read_ExemptBootstrapFile_StillReadableDespiteOffLimitsPattern()
+    {
+        // Bootstrap/mode files carry the guard's read-tier exemption (ShouldBypassOffLimits), so a
+        // broad off-limits pattern that would otherwise cover them must not block the read.
+        WriteOffLimits("**/*.md");
+        var bootstrap = Path.Combine(_dydoDir, "index.md");
+        Directory.CreateDirectory(_dydoDir);
+        File.WriteAllText(bootstrap, "# Index\nBOOTSTRAP_MARKER");
+        SeedAgent(unreadMustReads: [], unreadMessages: []);
+
+        var (code, stdout, _) = RunRead("dydo/index.md");
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("BOOTSTRAP_MARKER", stdout);
+    }
+
+    [Fact]
+    public void Read_FromWorktreeCwd_NormalFileReadableAndMustReadCompletes()
+    {
+        // Guard parity for the verb's primary deployment: a dispatched shell-host agent runs from a
+        // dydo worktree CWD. ResolveWorktreePath must remap the target back to the main-project path
+        // BEFORE the off-limits check, so a normal file is not misfired against dydo/_system/**.
+        var (worktreeRoot, _) = SeedWorktreeAgent(
+            offLimits: "**/*.secret", unreadMustReads: ["dydo/understand/about.md"]);
+        var about = Path.Combine(worktreeRoot, "dydo", "understand", "about.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(about)!);
+        File.WriteAllText(about, "# About\nWORKTREE_ABOUT_MARKER");
+        Environment.CurrentDirectory = worktreeRoot;
+
+        var (code, stdout, _) = RunRead("dydo/understand/about.md");
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("WORKTREE_ABOUT_MARKER", stdout);
+
+        var after = new AgentRegistry(worktreeRoot).GetAgentState(AgentName)!;
+        Assert.Empty(after.UnreadMustReads);
+    }
+
+    [Fact]
+    public void Read_FromWorktreeCwd_OffLimitsFileBlockedNamingUserPattern()
+    {
+        // The off-limits verdict from a worktree CWD must name the USER pattern (**/*.secret), not
+        // the hardcoded dydo/_system/** pattern that an un-normalized worktree path would falsely
+        // trip on the worktree-marker segment.
+        var (worktreeRoot, _) = SeedWorktreeAgent(
+            offLimits: "**/*.secret", unreadMustReads: []);
+        var secret = Path.Combine(worktreeRoot, "dydo", "config", "prod.secret");
+        Directory.CreateDirectory(Path.GetDirectoryName(secret)!);
+        File.WriteAllText(secret, "WORKTREE_SECRET_MARKER");
+        Environment.CurrentDirectory = worktreeRoot;
+
+        var (code, stdout, stderr) = RunRead("dydo/config/prod.secret");
+
+        Assert.Equal(ExitCodes.ToolError, code);
+        Assert.DoesNotContain("WORKTREE_SECRET_MARKER", stdout);
+        Assert.Contains("BLOCKED", stderr);
+        Assert.Contains("**/*.secret", stderr);
+        Assert.DoesNotContain("dydo/_system/**", stderr);
+    }
+
     private static (int exitCode, string stdout, string stderr) RunRead(string target) =>
         ConsoleCapture.All(() => ReadCommand.Create().Parse(target).Invoke());
 
-    private void SeedAgent(IReadOnlyList<string> unreadMustReads, IReadOnlyList<string> unreadMessages)
+    private void SeedAgent(IReadOnlyList<string> unreadMustReads, IReadOnlyList<string> unreadMessages) =>
+        WriteAgentState(_workspace, _agentsDir, unreadMustReads, unreadMessages);
+
+    private static void WriteAgentState(
+        string workspace, string agentsDir,
+        IReadOnlyList<string> unreadMustReads, IReadOnlyList<string> unreadMessages)
     {
+        Directory.CreateDirectory(workspace);
         var mustReadsYaml = string.Join(", ", unreadMustReads.Select(p => $"\"{p}\""));
         var messagesYaml = string.Join(", ", unreadMessages.Select(id => $"\"{id}\""));
 
-        File.WriteAllText(Path.Combine(_workspace, "state.md"), $$"""
+        File.WriteAllText(Path.Combine(workspace, "state.md"), $$"""
             ---
             agent: {{AgentName}}
             role: co-thinker
@@ -200,11 +294,55 @@ public class ReadCommandTests : IDisposable
             Claimed = DateTime.UtcNow,
             ClaimedPid = Environment.ProcessId
         };
-        File.WriteAllText(Path.Combine(_workspace, ".session"),
+        File.WriteAllText(Path.Combine(workspace, ".session"),
             JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
-        File.WriteAllText(Path.Combine(_agentsDir, ".session-agent"), AgentName);
+        File.WriteAllText(Path.Combine(agentsDir, ".session-agent"), AgentName);
 
         Environment.SetEnvironmentVariable("DYDO_AGENT", AgentName);
+    }
+
+    private void WriteOffLimits(string pattern)
+    {
+        Directory.CreateDirectory(_dydoDir);
+        File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), OffLimitsMarkdown(pattern));
+    }
+
+    // Wildcard patterns (**/, *) must be declared in a fenced code block, not a "- " list item:
+    // the list parser TrimStart('-','*',' ')s leading '*' chars and would corrupt "**/*.secret".
+    private static string OffLimitsMarkdown(string pattern) =>
+        "# Off-Limits Files\n\n```\n" + pattern + "\n```\n";
+
+    /// <summary>
+    /// Builds a dydo-worktree layout under the main project (dydo/_system/.local/worktrees/&lt;id&gt;/
+    /// with its own dydo.json + off-limits + seeded agent) so tests can exercise the verb from the
+    /// worktree CWD a dispatched shell-host agent runs in. Returns the worktree root and workspace.
+    /// </summary>
+    private (string worktreeRoot, string workspace) SeedWorktreeAgent(
+        string offLimits, IReadOnlyList<string> unreadMustReads)
+    {
+        var worktreeRoot = Path.Combine(
+            _dydoDir, "_system", ".local", "worktrees", "wt" + Guid.NewGuid().ToString("N")[..6]);
+        var wtDydo = Path.Combine(worktreeRoot, "dydo");
+        var wtAgents = Path.Combine(wtDydo, "agents");
+        var wtWorkspace = Path.Combine(wtAgents, AgentName);
+        Directory.CreateDirectory(Path.Combine(wtWorkspace, "inbox"));
+
+        File.WriteAllText(Path.Combine(worktreeRoot, "dydo.json"), """
+            {
+                "version": 1,
+                "structure": { "root": "dydo" },
+                "agents": {
+                    "pool": ["Adele", "Brian"],
+                    "assignments": { "testuser": ["Adele", "Brian"] }
+                }
+            }
+            """);
+
+        Directory.CreateDirectory(wtDydo);
+        File.WriteAllText(Path.Combine(wtDydo, "files-off-limits.md"), OffLimitsMarkdown(offLimits));
+
+        WriteAgentState(wtWorkspace, wtAgents, unreadMustReads, unreadMessages: []);
+        return (worktreeRoot, wtWorkspace);
     }
 
     private void WriteInboxMessage(string id, string from, string subject, string body)

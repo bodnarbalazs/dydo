@@ -23,6 +23,11 @@ public static class DispatchPreflight
     /// write the real user's codex config.</summary>
     internal static string? CodexHomeOverride { get; set; }
 
+    /// <summary>Probes whether the override target vendor's compiled agent bodies are present
+    /// (host, projectRoot) — the "was <c>dydo sync</c> run for this vendor" signal. Overridable
+    /// so tests drive both branches without laying down real <c>.claude</c>/<c>.codex</c> trees.</summary>
+    internal static Func<string, string?, bool>? SyncedBodiesProbeOverride { get; set; }
+
     public static PreflightResult Run(DydoConfig? config, string launchHost, DispatchOptions opts, string? projectRoot)
     {
         var executable = CheckExecutableResolvable(launchHost, opts.NoLaunch);
@@ -30,6 +35,9 @@ public static class DispatchPreflight
 
         var vendor = CheckVendorConfigured(config, opts.HostOverride);
         if (!vendor.Ok) return vendor;
+
+        var bodies = CheckSyncedBodies(config, opts.HostOverride, projectRoot);
+        if (!bodies.Ok) return bodies;
 
         var posture = CheckCodexPostureValid(config, launchHost);
         if (!posture.Ok) return posture;
@@ -91,6 +99,36 @@ public static class DispatchPreflight
                 $"Add the {vendor} tier bindings and run `dydo sync`, then re-dispatch.");
 
         return PreflightResult.Pass;
+    }
+
+    // (2b) A vendor named by an explicit --claude/--codex override that is ON but never synced must
+    // still be caught: `dydo sync` emits the vendor's spawnable agent bodies (claude:
+    // .claude/agents/<role>.md, codex: .codex/agents/<role>.toml). An integration that is enabled
+    // yet never compiled passes the config checks yet launches an agent with NO role definition —
+    // the fail-downstream class issue 0239 targets (a child terminal running the host CLI against
+    // an empty agents surface). Probe the artifacts and fail fast naming the fix (`dydo sync`).
+    // Fires only on an explicit override AND only when that vendor's integration is explicitly
+    // enabled (integrations.<host> == true): the default/inherited host is the caller's own live
+    // host already running against its bodies, and an absent/disabled integration is the
+    // vendor-configured check's concern, not a sync obligation.
+    private static PreflightResult CheckSyncedBodies(DydoConfig? config, string? hostOverride, string? projectRoot)
+    {
+        var host = AgentSession.NormalizeHost(hostOverride);
+        if (host is not ("claude" or "codex") || projectRoot == null)
+            return PreflightResult.Pass;
+
+        if (config?.Integrations is not { } integrations
+            || !integrations.TryGetValue(host, out var enabled) || !enabled)
+            return PreflightResult.Pass;
+
+        var present = (SyncedBodiesProbeOverride ?? DefaultSyncedBodies)(host, projectRoot);
+        if (present)
+            return PreflightResult.Pass;
+
+        return PreflightResult.Fail(
+            $"The --{host} launch target has no compiled agent bodies: {AgentArtifactLabel(host)} " +
+            "is empty — `dydo sync` was never run for this vendor, so the launched agent would have " +
+            "no compiled role definition. Run `dydo sync`, then re-dispatch.");
     }
 
     // (3) The codex launch posture (dispatch.codex) is emitted on every codex command line. An
@@ -161,6 +199,25 @@ public static class DispatchPreflight
 
     private static string ModelVendorFor(string host) =>
         host == "codex" ? "openai" : "anthropic";
+
+    // The vendor's compiled-agent surface (SyncCommand): worker roles emit .md (claude) / .toml
+    // (codex) under the host's agents directory. A directory that exists and holds at least one
+    // artifact of the expected shape is the "sync ran for this vendor" signal.
+    private static (string Dir, string Pattern) AgentArtifactSurface(string host, string projectRoot) =>
+        host == "codex"
+            ? (Path.Combine(projectRoot, ".codex", "agents"), "*.toml")
+            : (Path.Combine(projectRoot, ".claude", "agents"), "*.md");
+
+    private static string AgentArtifactLabel(string host) =>
+        host == "codex" ? ".codex/agents/*.toml" : ".claude/agents/*.md";
+
+    private static bool DefaultSyncedBodies(string host, string? projectRoot)
+    {
+        if (projectRoot == null)
+            return true;
+        var (dir, pattern) = AgentArtifactSurface(host, projectRoot);
+        return Directory.Exists(dir) && Directory.EnumerateFiles(dir, pattern).Any();
+    }
 
     // The posture-config trigger (workspace-write requires the sandbox) is wired in
     // CheckWindowsSandboxPrerequisite; this default probe returns present until c1-8 verifies the

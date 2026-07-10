@@ -32,6 +32,7 @@ public class DispatchPreflightTests : IDisposable
         DispatchPreflight.SandboxPrerequisiteProbeOverride = null;
         DispatchPreflight.HookTrustResolverOverride = null;
         DispatchPreflight.CodexHomeOverride = null;
+        DispatchPreflight.SyncedBodiesProbeOverride = null;
         if (Directory.Exists(_dir))
             try { Directory.Delete(_dir, true); } catch { /* best effort */ }
         GC.SuppressFinalize(this);
@@ -135,6 +136,9 @@ public class DispatchPreflightTests : IDisposable
     public void ConfiguredVendorOverride_Passes()
     {
         var config = ConfigWith(integrations: new() { ["codex"] = true }, models: BothVendors());
+        // Vendor config is the subject here; pin bodies present so the synced-bodies leg (2b)
+        // does not stand in for a config failure.
+        DispatchPreflight.SyncedBodiesProbeOverride = (_, _) => true;
 
         var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true, hostOverride: "codex"), _dir);
 
@@ -157,10 +161,101 @@ public class DispatchPreflightTests : IDisposable
     public void AbsentModelsSection_SkipsTierCheck()
     {
         var config = ConfigWith(models: null);
+        // Tier check is the subject; pin bodies present so leg (2b) does not gate this pass path.
+        DispatchPreflight.SyncedBodiesProbeOverride = (_, _) => true;
 
         var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true, hostOverride: "codex"), _dir);
 
         Assert.True(result.Ok);
+    }
+
+    // --- (2b) Synced agent bodies (issue 0239 — the vendor is compiled, not just enabled) ---
+
+    [Fact]
+    public void CodexOverride_SyncedBodiesPresent_Passes()
+    {
+        var config = ConfigWith(integrations: new() { ["codex"] = true }, models: BothVendors());
+        WriteAgentBodies("codex"); // real default probe sees .codex/agents/code-writer.toml
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true, hostOverride: "codex"), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public void CodexOverride_SyncedBodiesAbsent_FailsNamingArtifactsAndSync()
+    {
+        // Integration on and tiers mapped (config checks pass), but `dydo sync` was never run —
+        // no .codex/agents/*.toml. The launched agent would have no compiled role definition.
+        var config = ConfigWith(integrations: new() { ["codex"] = true }, models: BothVendors());
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true, hostOverride: "codex"), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("no compiled agent bodies", result.Error);
+        Assert.Contains(".codex/agents/*.toml", result.Error);
+        Assert.Contains("dydo sync", result.Error!);
+    }
+
+    [Fact]
+    public void ClaudeOverride_SyncedBodiesPresent_Passes()
+    {
+        var config = ConfigWith(integrations: new() { ["claude"] = true }, models: BothVendors());
+        WriteAgentBodies("claude"); // real default probe sees .claude/agents/code-writer.md
+
+        var result = DispatchPreflight.Run(config, "claude", Opts(noLaunch: true, hostOverride: "claude"), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public void ClaudeOverride_SyncedBodiesAbsent_FailsNamingClaudeSurface()
+    {
+        // The probe targets the OVERRIDE vendor's surface: a claude override checks .claude/agents.
+        var config = ConfigWith(integrations: new() { ["claude"] = true }, models: BothVendors());
+
+        var result = DispatchPreflight.Run(config, "claude", Opts(noLaunch: true, hostOverride: "claude"), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains(".claude/agents/*.md", result.Error);
+        Assert.Contains("dydo sync", result.Error!);
+    }
+
+    [Fact]
+    public void NoOverride_SkipsSyncedBodiesCheck_EvenWhenAbsent()
+    {
+        // No explicit --claude/--codex override: the launch host is the caller's own live host,
+        // already running against its own bodies. The synced-bodies leg must not fire.
+        var config = ConfigWith();
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public void OverrideVendorIntegrationNotEnabled_SkipsSyncedBodiesCheck_EvenWhenAbsent()
+    {
+        // The vendor is not explicitly integrated (absent from integrations), so there is no sync
+        // obligation — the bodies leg only guards the "integration is on but never synced" gap.
+        var config = ConfigWith(models: BothVendors());
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true, hostOverride: "codex"), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public void SyncedBodiesProbeOverride_DrivesFailBranch()
+    {
+        // The injectable seam lets the check fail without laying down a real vendor tree.
+        var config = ConfigWith(integrations: new() { ["codex"] = true }, models: BothVendors());
+        DispatchPreflight.SyncedBodiesProbeOverride = (_, _) => false;
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true, hostOverride: "codex"), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("no compiled agent bodies", result.Error);
     }
 
     // --- (3) Codex posture valid (issue 0253) ---
@@ -405,6 +500,17 @@ public class DispatchPreflightTests : IDisposable
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
+    }
+
+    // Lays down the vendor's compiled agent surface as `dydo sync` would: a worker-role body
+    // under .claude/agents (claude) or .codex/agents (codex).
+    private void WriteAgentBodies(string host)
+    {
+        var (dir, ext) = host == "codex"
+            ? (Path.Combine(_dir, ".codex", "agents"), "toml")
+            : (Path.Combine(_dir, ".claude", "agents"), "md");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, $"code-writer.{ext}"), "compiled body");
     }
 
     private string WriteHooksJson()

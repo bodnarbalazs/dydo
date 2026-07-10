@@ -22,6 +22,19 @@ issue 0254).
 
 1. **Preflight:** `dydo dispatch --codex` with a deliberately broken prerequisite (e.g. hook
    trust disabled) fails fast with the actionable message; restore, proceed. [good path usage]
+   UPDATE 2026-07-10: the first c1-8 run found the preflight parsed the WRONG codex `[hooks.state]`
+   schema and false-BLOCKED every dispatch (issue 0270, fixed). The re-run must confirm the fixed
+   parser reads balazs's REAL config: trusted+enabled+matching-hash → PASS; a regen-stale hash →
+   BLOCK with the *hash-mismatch* message (distinct from the not-enabled message).
+1b. **Guard-fires under externally-written trust (0269 acceptance assertion — Adele, 2026-07-10):**
+   after 0269 self-repair writes the `[hooks.state]` entry (correct `trusted_hash` + `enabled=true`)
+   WITHOUT any human codex re-approval, dispatch codex and confirm the guard hook actually **FIRES**
+   — not merely that dispatch proceeds. Observe a real guard event from INSIDE the codex session
+   (e.g. a blocked off-limits read, or a stage-0 block). If codex re-validates/overwrites the
+   externally-written entry so it does not take, that is the 0269 direction-2 fallback (dydo repairs
+   what it can + docs state a one-time manual re-approval) — **report it as a FINDING, not a
+   failure.** This is the live proof of 0269's load-bearing premise (does codex honor an
+   externally-written trust entry).
 2. **Launch posture:** the codex session starts with the configured sandbox+approval posture; a
    read AND a workspace write run without a human approval click; a boundary-exceeding action
    still prompts. [auto-approved permissions — classifier posture, not yolo]

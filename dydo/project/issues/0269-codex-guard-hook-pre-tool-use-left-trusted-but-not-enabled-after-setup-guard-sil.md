@@ -18,7 +18,31 @@ v2.0.7 acceptance smoke (2026-07-10): the c1-4 dispatch preflight correctly BLOC
 
 ## Description
 
-(Describe the issue)
+**Root cause CONFIRMED (2026-07-10, deeper than the title):** the `.codex/hooks.json` file was
+**regenerated** (v2.0.7 install/sync) *after* the human trusted it, so the recorded `trusted_hash`
+is stale. Live hash of `.codex/hooks.json` = `55af5ed514e3d93e787309182c9a1837c3023a616508b8f441ae5cc0dd997382`;
+recorded `trusted_hash` in `[hooks.state]` = `sha256:581b21e8c4248575822b243e3470d04a1fab9dbdd242d0da869a240782db84d7`
+— **mismatch**. Codex SHA256-pins hook trust (Noah's probe finding), so a regenerated hooks.json
+silently invalidates the existing trust and the guard stops firing. The missing `enabled = true`
+on pre_tool_use was a *second*, independent defect on top of the stale hash.
+
+**The upgrade-path severity:** any existing codex user who upgrades dydo has their `.codex/hooks.json`
+regenerated, which silently un-trusts their guard hook — on a release whose headline is
+"codex under the guard." Without the c1-4 preflight (which caught it and fails safe), they would
+dispatch codex sessions the guard never watches, with no signal. The manual fix is re-running
+`codex` in the repo to re-approve the new hash.
+
+**Fix directions (sharpened):**
+1. `dydo init`/`sync` (or a dedicated `dydo codex trust` step) should write/repair the
+   `[hooks.state]` entry for BOTH the current hash AND `enabled = true` directly, so a dydo upgrade
+   re-establishes its own guard trust rather than depending on a manual codex re-approval. This is
+   the DR-037 Codex-guard-adapter follow-up, now with a proven upgrade-invalidation case.
+2. Until (1) lands: codex-host setup/upgrade docs must state that any dydo upgrade requires
+   re-approving the `.codex/hooks.json` hook in codex.
+3. Consider making `.codex/hooks.json` generation deterministic/stable so a no-op sync does not
+   change its hash and needlessly invalidate trust.
+
+Adjacent to 0254's codex-guard-adapter scope; route to sprint C1 follow-on or the guard-adapter work.
 
 ## Reproduction
 

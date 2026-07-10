@@ -81,6 +81,8 @@ Index of issues documentation.
 - [Watchdog EnsureRunning anchor registration hardcoded claude-only - codex dispatcher registers no codex anchor on the dispatch path](./0267-watchdog-ensurerunning-anchor-registration-hardcoded-claude-only-codex-dispatche.md) - `WatchdogService.
 - [Active orchestrator session released mid-sprint - found in free pool with CWD drifted into a worktree](./0268-active-orchestrator-session-released-mid-sprint-found-in-free-pool-with-cwd-drif.md) - During C1's audit-fix wave (2026-07-10), Grace's live orchestrator session was silently released mid-orchestration: the agent found itself in the f...
 - [Codex guard hook (pre_tool_use) left trusted-but-not-enabled after setup - guard silently would not fire; only the stop hook gets enabled](./0269-codex-guard-hook-pre-tool-use-left-trusted-but-not-enabled-after-setup-guard-sil.md) - v2.
+- [dydo sync emits .codex/agents/*.toml tools as a comma-string, but codex wants a ToolsToml struct - codex ignores every compiled agent role](./0271-dydo-sync-emits-codex-agents-toml-tools-as-a-comma-string-but-codex-wants-a-tool.md) - Live 2026-07-10 (codex run in repo during c1-8 setup): OpenAI Codex rejects ALL SIX dydo-compiled codex agent role files with 'Ignoring malformed a...
+- [Codex worker-role read-only capability not expressed - tools field is Claude-only; codex read-only roles need sandbox_mode mapping](./0272-codex-worker-role-read-only-capability-not-expressed-tools-field-is-claude-only-us.md) - Split off from 0271 (the parse-unblock).
 
 ## Subfolders
 

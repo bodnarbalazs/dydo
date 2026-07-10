@@ -52,7 +52,7 @@ A stuck agent — any vendor — escalates via `dydo msg` to the chief-of-staff,
 
 ### 6. One hardening item
 
-A vendor override targeting an unconfigured/unavailable vendor must fail fast with an actionable message — [issue 0239](../issues/0239-dispatch-vendor-override-needs-a-friendly-error-when-the-target-vendor-is-not-co.md). With tri-modal support (claude-only, codex-only, both), that mistake is routine, not exotic.
+A vendor override targeting an unconfigured/unavailable vendor must fail fast with an actionable message — [issue 0239](../issues/resolved/0239-dispatch-vendor-override-needs-a-friendly-error-when-the-target-vendor-is-not-co.md). With tri-modal support (claude-only, codex-only, both), that mistake is routine, not exotic.
 
 ## Consequences
 

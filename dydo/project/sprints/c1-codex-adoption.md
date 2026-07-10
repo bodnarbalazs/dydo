@@ -5,7 +5,7 @@ end:
 gate-result: plan-review PASS (2026-07-09, fresh-eyes reviewer, 2 rounds)
 seq: 9
 start: 2026-07-09
-status: active
+status: audit
 area: project
 type: context
 ---

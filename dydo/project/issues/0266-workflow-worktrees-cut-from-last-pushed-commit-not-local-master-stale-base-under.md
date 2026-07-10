@@ -88,6 +88,23 @@ neither.
 - Until then, the STEP-0 mitigation (A) and the serialize + verify-landing rules (B) belong in the
   run-sprint skill/brief template so every orchestrator inherits them.
 
+## balazs directive (2026-07-10): this is a SYSTEM shortcoming, fix it at the source
+
+balazs, on being shown the merge/commit workaround: "if this merge/commit detail comes from the
+workflow/docs it has to be patched, it's a shortcoming of the system." The verify-the-landing +
+commit-if-needed rule and the STEP-0 base merge must NOT stay as per-brief tribal knowledge that
+each orchestrator re-discovers (Grace hit manifestation B twice before pinning it). Required
+systemic fixes, elevated from the "until then" note:
+1. **run-sprint skill**: encode STEP-0 base-merge into the slice-brief template it emits, and make
+   the workflow's own post-merge contract verify-the-landing (assert the slice signature is on the
+   invoking branch HEAD, commit-if-in-branch, fail loudly if the tree is left dirty) — so
+   `merged: true` cannot mean "uncommitted tree."
+2. **orchestrator methodology / skill**: state verify-the-landing + audits-read-HEAD-not-tree as
+   doctrine, so it compiles into every project's orchestrator artifacts via `dydo sync`.
+3. **guides/orchestration-pitfalls.md**: document the base-selection rule and the single-slice
+   in-branch non-commit behavior (both were invisible until they bit).
+This is a required fix (not optional hardening) and a natural 2.0.8 / P1 companion.
+
 ## Reproduction
 
 With local master N commits ahead of origin, launch any run-sprint slice; inspect the worktree

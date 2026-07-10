@@ -77,7 +77,7 @@ For each workflow return:
 - Which slices passed and merged? Which escalated, and at what stage?
 - Did the sprint audit pass? If it failed, route the findings — a failed audit does not loop by itself.
 - Escalated or merge-conflicted slices stay intact on their worktree branches — nothing is lost, but they need hands. Verify merged work landed with `git log --oneline -5`.
-- If the work fixed a tracked issue, propose resolving it to the user: "Sprint X fixed issue #NNNN — should I resolve it?"
+- If the work fixed a tracked issue, propose resolving it to the user ("Sprint X fixed issue #NNNN — should I resolve it?"), then on their go-ahead close it with `dydo issue resolve <id> --summary "..."`
 
 ### 5. Resolve Conflicts
 

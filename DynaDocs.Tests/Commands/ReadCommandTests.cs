@@ -191,6 +191,50 @@ public class ReadCommandTests : IDisposable
     }
 
     [Fact]
+    public void Read_OffLimitsRootFileByBareName_BlockedNoContentNoRead()
+    {
+        // Regression (c1-audit-f1b): a ROOT-LEVEL off-limits file addressed by BARE filename must be
+        // blocked. A bare name has no separator, so GuardCommand.IsBootstrapFile treated it as a
+        // "root-level bootstrap file" and ShouldBypassOffLimits skipped the whole off-limits check —
+        // leaking the secret. Absolutizing the resolved path before the checks closes that hole.
+        WriteOffLimits(".env");
+        var secret = Path.Combine(_testDir, ".env");
+        File.WriteAllText(secret, "API_SECRET=leak_me");
+        // Seed it as a must-read too, so we can prove the read is NOT registered on a block.
+        SeedAgent(unreadMustReads: [".env"], unreadMessages: []);
+
+        var (code, stdout, stderr) = RunRead(".env");
+
+        Assert.NotEqual(ExitCodes.Success, code);
+        Assert.DoesNotContain("leak_me", stdout);
+        Assert.Contains("BLOCKED", stderr);
+        Assert.Contains("off-limits", stderr);
+        Assert.Contains(".env", stderr);
+        Assert.Contains("files-off-limits.md", stderr);
+
+        var after = new AgentRegistry(_testDir).GetAgentState(AgentName)!;
+        Assert.Contains(".env", after.UnreadMustReads);
+    }
+
+    [Fact]
+    public void Read_HardcodedSystemOffLimitsByBareName_Blocked()
+    {
+        // The hardcoded SystemOffLimits pattern "dydo.json" must also be enforced when addressed by
+        // bare filename from the project root (no separator → previously mis-classified as a
+        // bootstrap root file that bypassed off-limits). dydo.json already exists at the test root.
+        SeedAgent(unreadMustReads: [], unreadMessages: []);
+
+        var (code, stdout, stderr) = RunRead("dydo.json");
+
+        Assert.NotEqual(ExitCodes.Success, code);
+        // dydo.json's contents (agent pool config) must not be emitted on a block.
+        Assert.DoesNotContain("\"pool\"", stdout);
+        Assert.Contains("BLOCKED", stderr);
+        Assert.Contains("off-limits", stderr);
+        Assert.Contains("dydo.json", stderr);
+    }
+
+    [Fact]
     public void Read_ExemptBootstrapFile_StillReadableDespiteOffLimitsPattern()
     {
         // Bootstrap/mode files carry the guard's read-tier exemption (ShouldBypassOffLimits), so a

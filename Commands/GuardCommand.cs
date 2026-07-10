@@ -687,7 +687,7 @@ public static partial class GuardCommand
     /// code if the path is off-limits, null otherwise. One copy for every lane so the
     /// block message and audit shape cannot drift.
     /// </summary>
-    private static int? BlockIfPathOffLimits(
+    internal static int? BlockIfPathOffLimits(
         string path, string? toolName, string? sessionId,
         IOffLimitsService offLimitsService, AgentRegistry registry)
     {

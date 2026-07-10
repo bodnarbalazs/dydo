@@ -70,27 +70,31 @@ public static class ReadCommand
             // this keeps both halves on the same resolved footing.
             var resolved = GuardCommand.ResolveWorktreePath(target) ?? target;
 
+            // Absolutize a still-relative resolved path BEFORE the exemption + off-limits checks, so
+            // this lane sees the SAME absolute path shape the guard's Read tool lane sees (Claude Code
+            // delivers absolute paths). Without this, a bare filename like ".env" or "dydo.json"
+            // (no separator) falls through GuardCommand.IsBootstrapFile as a "root-level bootstrap
+            // file", trips ShouldBypassOffLimits, and skips the whole off-limits check — leaking the
+            // secret. OffLimitsService.RelativizeToProjectRoot handles the absolute form, so both the
+            // exemption and off-limits verdicts stay correct. Print/registration below stay on the
+            // ORIGINAL target (the worktree copy under the agent CWD).
+            if (!Path.IsPathRooted(resolved))
+                resolved = Path.GetFullPath(resolved);
+
             // Apply the guard's read-tier exemptions verbatim (bootstrap + mode files stay readable
             // even when a broad off-limits pattern would otherwise cover them).
             if (!GuardCommand.ShouldBypassOffLimits(resolved, agent))
             {
                 var offLimitsService = new OffLimitsService();
                 offLimitsService.LoadPatterns();
-                var offLimitsPattern = offLimitsService.IsPathOffLimits(resolved);
-                if (offLimitsPattern != null)
-                {
-                    // Message + exit-code parity with GuardCommand.BlockIfPathOffLimits
-                    // (GuardCommand.cs ~690-703). That emitter is private and this slice's scope
-                    // fence forbids editing GuardCommand.cs, so the 4-line BLOCKED literal is
-                    // duplicated here rather than extracted into a shared seam. Tradeoff accepted:
-                    // if the fence is lifted, collapse both copies into one emitter so the block
-                    // message cannot drift (its doc-comment intends one copy for every lane).
-                    Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
-                    Console.Error.WriteLine($"  Path: {resolved}");
-                    Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
-                    Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
-                    return ExitCodes.ToolError;
-                }
+                // Reuse the guard's single BLOCKED emitter (GuardCommand.BlockIfPathOffLimits) rather
+                // than duplicating the 4-line literal, so the block message + exit code cannot drift
+                // between lanes. The emitter re-checks IsPathOffLimits and returns the exit code (or
+                // null when the path is clear).
+                var block = GuardCommand.BlockIfPathOffLimits(
+                    resolved, toolName: "read", sessionId, offLimitsService, registry);
+                if (block != null)
+                    return block.Value;
             }
 
             // Read/print/register on the ORIGINAL target so the worktree COPY under the agent's CWD

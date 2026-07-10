@@ -84,7 +84,7 @@ Follow it through to completion.
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| "DYDO_HUMAN not set" | Environment not configured | Human runs `dydo init claude` |
+| "DYDO_HUMAN not set" | Environment not configured | Human runs `dydo init codex` or `dydo init claude` |
 | "Assigned to X, not Y" | Agent belongs to different human | Try `dydo agent claim auto` |
 | "Already claimed" | Another session has this agent | Try `dydo agent claim auto` |
 | "Cannot edit path" | Role doesn't permit this file | Check role with `dydo agent status` |

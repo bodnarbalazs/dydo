@@ -118,7 +118,8 @@
       "judge": "strong",
       "planner": "strong"
     },
-    "efforts": {}
+    "efforts": {},
+    "fallback": null
   },
   "queues": [
     "merge"
@@ -195,23 +196,22 @@
     }
   ],
   "frameworkHashes": {
-    "_system/templates/agent-workflow.template.md": "fa7a9fc2d3499ccb80b67d156462a947fdad1dbea10610e82728bdb4081c2ee7",
-    "_system/templates/mode-code-writer.template.md": "91b0d65f74d9eab4bfd06e6fa13631dda50e4be0113724a2ce3bb5d0ea1c3ec7",
-    "_system/templates/mode-reviewer.template.md": "13f8c34b49200cceb0e6de1436881a5d9facea9f88d407aba6f482d7cd121b21",
-    "_system/templates/mode-co-thinker.template.md": "7f486d165802adbf1c23fd310483c51df48484443828485a48d98fec91d59cad",
-    "_system/templates/mode-chief-of-staff.template.md": "a28deb44a9216e7ffa432d220d09c2bc6519a12375a45aee94f88a6e52d8aaa6",
-    "_system/templates/mode-planner.template.md": "b5acd3039a54f9e9365fd1f59b04cc412864abf9798b0696afbe05b34e1e3d41",
-    "_system/templates/mode-docs-writer.template.md": "bf7350c5a9cbff027a4e916e6153ed99455edfb7bad288e3bc73fd6ee0214d93",
-    "reference/about-dynadocs.md": "e3582a4f628ce8f6ee9315dbf549dceb1d7b630f5550aca06b4149e92ca8a434",
+    "_system/templates/agent-workflow.template.md": "ed1d17e5f765b33106ac5c0160d83e5aa51ae2c4186abadf682c93cd4a178309",
+    "_system/templates/mode-code-writer.template.md": "05035118345b4c33514cb6b5dc03f10d4d5c4d6ab1a37ceb1ac4480d7910156f",
+    "_system/templates/mode-reviewer.template.md": "cb093797a7704e6ab569dfc52522b5053d4a34ef0476b089e3e6102f28cb4a52",
+    "_system/templates/mode-co-thinker.template.md": "158fd59a08f639d01c2f7e56dff7c54113e3c47aa0590c0bc29da66973d902a0",
+    "_system/templates/mode-chief-of-staff.template.md": "cd0e720e94629a1235ccaf10da19210c98c5c999e553152f89e725da07f3bcac",
+    "_system/templates/mode-planner.template.md": "79968ef82e9e6180a9a4f68780c7fbf82bf475dadb3cf3ea8ebfb80345f25102",
+    "_system/templates/mode-docs-writer.template.md": "31ab5323ffbab7eb4097744c29d417803513e7f6f45d7d397d6dc417612c9775",
+    "reference/about-dynadocs.md": "0833a88e6e705c838dc3084589ba52e531c2be09faecb0e78fc093ece4ff5a36",
     "reference/dydo-commands.md": "cb862bd8b07ff2686d205887b74236570c1a1bcb6015bb42d8d3557f779da039",
     "reference/writing-docs.md": "80c23dd9d7d84803dcca60aa9195a4ca0fa86a408220babdba3df3fe5a30bc92",
     "guides/how-to-use-docs.md": "74a4c439dc181ef2edfe4db227ccd537e945bf33f8761dc68b86e1c461a2633f",
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",
-    "_system/templates/mode-test-writer.template.md": "e44e4f607ad8d5065f7dd08ebdf836fab9173fb4bab7df8ee1928ddb0a6d4b37",
-    "_system/templates/mode-orchestrator.template.md": "913f7eb001c1443b82df887c8ac4f4861913156dcb5af298073e7f3f0a467527",
-    "_system/templates/mode-inquisitor.template.md": "3961b188013dc301ae4a0211caf4eeddd6d8d8af82fede699cfbd482a9ab8520",
-    "_system/templates/mode-judge.template.md": "7958f6c1c5d9d84dcdb8855760426a749b3e85cf5976995d1b08f9a8da348db3",
+    "_system/templates/mode-test-writer.template.md": "32582aa1df41766ec9a235b21fa880a4dd65338032596b2f73eee20dacb18075",
+    "_system/templates/mode-orchestrator.template.md": "554ea51e228b5efeb1220a32f99bca83ef99c3b02eaae713808157802cc5c3a5",
     "guides/how-to-merge-worktrees.md": "a01edead0a9e0751b4768fedf7941e460eabdc1317d76c33041f60a24da38e5c",
-    "guides/how-to-review-worktree-merges.md": "6aa310868e0ce37f7f783d9bb6ba2f88fc273dfe697ad1c9b5107218ec40ea3a"
+    "guides/how-to-review-worktree-merges.md": "6aa310868e0ce37f7f783d9bb6ba2f88fc273dfe697ad1c9b5107218ec40ea3a",
+    "_system/templates/mode-sprint-auditor.template.md": "4903ed2f990da08226a80729d74046baa7cffc1b94d40832adb1c07cccad2272"
   }
 }

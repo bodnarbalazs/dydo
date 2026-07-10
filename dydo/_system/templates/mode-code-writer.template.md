@@ -90,6 +90,8 @@ If you encounter a bug or problem outside your current task scope, propose it to
 
 If approved: `dydo issue create --title "..." --area <a> --severity <s> --summary "one-line summary" --found-by manual` — always pass `--summary` so the issue file lands `dydo check`-clean.
 
+Non-blocking follow-ups (not bugs) skip approval — file directly to `dydo/project/backlog/<slug>.md` (`type: context`).
+
 **If guard blocks you:**
 - Check your role: `dydo agent status`
 - Need to edit docs? Dispatch to docs-writer
@@ -112,6 +114,7 @@ The brief should include:
 - What you implemented (1-2 sentences)
 - Plan deviations and why (if any)
 - Key decisions made
+- The id of any tracked issue this work resolves — flag it so your supervisor can close it; closing issues is the dispatching manager's call, not the worker's
 
 After dispatching the reviewer, your work is handed off. The reviewer reports its verdict back to the origin, so you do not need to message your origin separately.
 

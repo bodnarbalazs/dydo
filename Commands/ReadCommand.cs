@@ -54,6 +54,47 @@ public static class ReadCommand
 
         if (File.Exists(target))
         {
+            // Guard parity: `dydo read` is a host-agnostic file reader, so it must honour the SAME
+            // universal off-limits tier (secrets/credentials) the guard enforces for the Read tool
+            // (GuardCommand.CheckDirectFileOffLimits -> BlockIfPathOffLimits) and for shell readers
+            // (BashCommandAnalyzer.ReadCommands). Without this, a claimed agent on any host could
+            // `dydo read .env` where `cat .env` is blocked.
+            //
+            // Resolve the target EXACTLY as the guard does (ResolveWorktreePath): it remaps a
+            // dydo-worktree CWD (dydo/_system/.local/worktrees/<id>/...) back to the main-project
+            // equivalent BEFORE the off-limits/exemption checks. That matters because dispatched
+            // shell-host agents run from inside a worktree (TerminalLauncher cd's there); a plain
+            // Path.GetFullPath would leave the worktree-marker segment in the path and misfire the
+            // hardcoded dydo/_system/** pattern on EVERY file. The read-registration half below
+            // already worktree-normalizes (ReadTrackingService.NormalizeForMustReadComparison), so
+            // this keeps both halves on the same resolved footing.
+            var resolved = GuardCommand.ResolveWorktreePath(target) ?? target;
+
+            // Apply the guard's read-tier exemptions verbatim (bootstrap + mode files stay readable
+            // even when a broad off-limits pattern would otherwise cover them).
+            if (!GuardCommand.ShouldBypassOffLimits(resolved, agent))
+            {
+                var offLimitsService = new OffLimitsService();
+                offLimitsService.LoadPatterns();
+                var offLimitsPattern = offLimitsService.IsPathOffLimits(resolved);
+                if (offLimitsPattern != null)
+                {
+                    // Message + exit-code parity with GuardCommand.BlockIfPathOffLimits
+                    // (GuardCommand.cs ~690-703). That emitter is private and this slice's scope
+                    // fence forbids editing GuardCommand.cs, so the 4-line BLOCKED literal is
+                    // duplicated here rather than extracted into a shared seam. Tradeoff accepted:
+                    // if the fence is lifted, collapse both copies into one emitter so the block
+                    // message cannot drift (its doc-comment intends one copy for every lane).
+                    Console.Error.WriteLine("BLOCKED: Path is off-limits to all agents.");
+                    Console.Error.WriteLine($"  Path: {resolved}");
+                    Console.Error.WriteLine($"  Pattern: {offLimitsPattern}");
+                    Console.Error.WriteLine("  Configure exceptions in dydo/files-off-limits.md");
+                    return ExitCodes.ToolError;
+                }
+            }
+
+            // Read/print/register on the ORIGINAL target so the worktree COPY under the agent's CWD
+            // is what gets emitted and acked, not the normalized main-project path.
             Console.WriteLine(File.ReadAllText(target));
             ReadTrackingService.TrackReadCompletion(agent, target, sessionId, registry);
             return ExitCodes.Success;

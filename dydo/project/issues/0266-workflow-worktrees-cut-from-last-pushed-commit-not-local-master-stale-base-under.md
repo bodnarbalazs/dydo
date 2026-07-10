@@ -31,16 +31,27 @@ hold-commits-until-release posture.
 (`d88102b3` "2.0.6"), not local HEAD, so slices start missing the unpushed accumulation
 (sibling seams, the sprint's own plan files). Cost: wave-1 blind seams, a wasted wave-3 round.
 
-**B. Lost merge-back WRITE (new, and worse).** The f1b corrected security fix ran through
-run-sprint, which reported `merged: true` and a wave-audit PASS — but the merge-back commit
-**never landed on master HEAD**. The slice content was left as **uncommitted working-tree diffs**
-in the main tree (`Commands/ReadCommand.cs`, `GuardCommand.cs`, `ReadCommandTests.cs` all dirty;
-HEAD still carried the first-generation fix with the live bypass). Timeline: f1b was launched
-concurrently with a manual f2f3 merge + reconcile commits on master; when f1b reached its
-merge-back phase the main tree's HEAD had moved, and the merge applied to the working tree/index
-without a persisted commit to master. A downstream re-audit that read the **working tree** (which
-had the fix) reported PASS, so the loss was invisible until a release-candidate check compared
-`git show HEAD:` against the tree. Caught by Adele's RC check, not by any gate.
+**B. `merged: true` ≠ committed to HEAD for SINGLE-slice runs (observed twice).** A single-slice
+run-sprint runs the slice **in-branch in the main working tree** (no isolated worktree branch to
+merge), so it leaves the result as **uncommitted working-tree diffs** and reports `merged: true`
+meaning "applied to the tree" — the orchestrator must commit it. Multi-slice parallel runs, by
+contrast, create real per-slice branches and DO land actual merge commits (wave 3's c1-5/c1-6
+merge commits are on HEAD). Two single-slice losses this sprint:
+- **f1b** (corrected security fix): reported `merged: true` + wave-audit PASS, but HEAD still
+  carried the first-generation fix with the live bypass; the fix sat as working-tree diffs. A
+  re-audit that read the **working tree** reported PASS, so it was invisible until a
+  release-candidate `git show HEAD:` check.
+- **0270** (hook-trust schema fix): same shape — `merged: true`, but HEAD unchanged, fix
+  working-tree-only. **Caught by my own verify-the-landing step this time**, BEFORE any re-audit
+  or report.
+
+**Corrected root cause (supersedes the earlier concurrent-race hypothesis).** The f1b loss was
+first blamed on a race with concurrent manual master commits. The 0270 loss happened with the
+orchestrator **fully hands-off master — zero concurrent commits** — and was lost identically. So
+the race was a red herring: the real invariant is that **single-slice / in-branch run-sprint
+runs do not commit; they hand an uncommitted tree back to the orchestrator, and `merged: true`
+does not mean "on HEAD."** (c1-2 and c1-7, also single-slice, were committed by the orchestrator
+by hand — which is why they landed; f1b was the one I trusted without committing.)
 
 ## Working hypothesis
 
@@ -56,12 +67,15 @@ neither.
 - **For A (stale base):** slice briefs carry STEP 0 — `git merge master --no-edit` in the worktree
   (fast-forwards the stale base onto local master), then a BASE CHECK naming concrete predecessor
   artifacts, with a STOP-and-raise-hand instruction if the check still fails.
-- **For B (lost merge-back):** two rules, both now mandatory for the orchestrator. (1) **Do not
-  manually commit to master while a run-sprint is in flight** — serialize: let each workflow fully
-  complete before hand-committing. (2) **After every `merged: true`, verify the merge actually
-  landed on HEAD** (`git show HEAD:<a-changed-file>` / `git log` for the slice's signature) BEFORE
-  trusting it or running any audit — a re-audit must read committed HEAD, never the working tree.
-  This verify-the-landing step is the process gap that let B reach the RC check.
+- **For B (`merged: true` ≠ committed):** the always-applicable rule is **verify-the-landing +
+  commit-if-needed**. After every `merged: true`: (1) `git show HEAD:<a-changed-file>` / `git log`
+  for the slice's signature — if it is NOT on HEAD (single-slice in-branch case), the tree holds
+  the result and **the orchestrator must commit it explicitly** (git add the fix files by path +
+  commit + `dydo fix` for any issue moves). (2) Any audit/re-audit MUST read committed HEAD, never
+  the working tree — a working-tree read hides an uncommitted loss. (3) Still avoid manual master
+  commits *during* a multi-slice run (that race can corrupt real merge commits), but do NOT rely
+  on serialize alone — the single-slice non-commit happens with zero concurrency. The verify step
+  is the load-bearing one; it caught the 0270 loss before it could reach a report.
 
 ## Fix directions
 

@@ -2,7 +2,7 @@
 title: C1 — Codex Adoption
 campaign:
 end:
-gate-result: plan-review PASS (2026-07-09, fresh-eyes reviewer, 2 rounds)
+gate-result: plan-review PASS (2026-07-09, 2 rounds) + sprint-audit PASS (2026-07-10, re-audit clean after 3 findings fixed)
 seq: 9
 start: 2026-07-09
 status: audit
@@ -15,6 +15,15 @@ type: context
 > implementation launched same day under Grace (planner-orchestrates per DR-039 §1); Claude
 > workers per the bootstrap exception; landings sequenced through the chief-of-staff. This sprint
 > gates the v2.0.7 release.
+>
+> **Sprint-audit verdict: PASS** (2026-07-10). All 7 automated slices (c1-1…c1-7) landed on local
+> master; every C1 issue resolved (0237, 0239, 0240, 0253, 0254, 0256). First full audit FAILed on
+> 3 findings — a HIGH `dydo read` off-limits bypass (+ an incomplete first fix that the audit gate
+> re-caught), 0239 bookkeeping, and an undelivered synced-bodies preflight leg; all three fixed and
+> re-audit clean (4741 tests, 175/175 coverage). Findings spun out: 0265/0266/0267/0268 (deferred/
+> filed). **The sprint holds at the audit→done boundary pending its last row — c1-8, the
+> human-gated live smoke = the v2.0.7 acceptance run.** Nothing is pushed; the tag is balazs's
+> button. Status advances to `done` on c1-8's live pass.
 
 # C1 — Codex Adoption
 

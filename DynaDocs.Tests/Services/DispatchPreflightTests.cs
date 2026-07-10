@@ -31,6 +31,7 @@ public class DispatchPreflightTests : IDisposable
         TerminalLauncher.ExecutableResolverOverride = _originalResolver;
         DispatchPreflight.SandboxPrerequisiteProbeOverride = null;
         DispatchPreflight.HookTrustResolverOverride = null;
+        DispatchPreflight.HookTrustRepairOverride = null;
         DispatchPreflight.CodexHomeOverride = null;
         DispatchPreflight.SyncedBodiesProbeOverride = null;
         if (Directory.Exists(_dir))
@@ -385,42 +386,48 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (5) Hook trust (codex) ---
+    // --- (5) Hook trust (codex, issue 0269 self-repair) ---
+    // An untrusted/stale/disabled guard entry is REPAIRED in-place, not blocked. The only remaining
+    // BLOCK is a repair that could not be written (unwritable config).
 
     [Fact]
-    public void CodexUntrustedHooks_FailsWithReTrustInstruction()
+    public void CodexUntrustedHooks_RepairFails_BlocksWithManualReApprove()
     {
         WriteHooksJson();
         DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Untrusted;
+        DispatchPreflight.HookTrustRepairOverride = _ => false; // config unwritable
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
         Assert.False(result.Ok);
         Assert.Contains("UNGUARDED", result.Error);
-        Assert.Contains("hooks.state", result.Error);
+        Assert.Contains("could not self-repair", result.Error);
         Assert.Contains("pre_tool_use", result.Error);
-        Assert.Contains(".codex", result.Error!);
+        Assert.Contains("Re-approve it in codex", result.Error!);
     }
 
     [Fact]
-    public void CodexHashMismatch_FailsWithReApproveNewHashInstruction()
+    public void CodexUntrustedHooks_RepairSucceedsAndReEvaluatesTrusted_Passes()
     {
         WriteHooksJson();
-        DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.HashMismatch;
+        // The seam contract: repair writes a correct entry, and the post-repair re-evaluation reads
+        // it back as trusted — dispatch proceeds without a manual codex re-approval.
+        var calls = 0;
+        DispatchPreflight.HookTrustResolverOverride = _ =>
+            calls++ == 0 ? DispatchPreflight.HookTrust.Untrusted : DispatchPreflight.HookTrust.Trusted;
+        DispatchPreflight.HookTrustRepairOverride = _ => true;
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
-        Assert.False(result.Ok);
-        Assert.Contains("UNGUARDED", result.Error);
-        Assert.Contains("changed", result.Error);
-        Assert.Contains("Re-approve the new hash", result.Error!);
+        Assert.True(result.Ok);
     }
 
     [Fact]
-    public void CodexTrustedHooks_Passes()
+    public void CodexTrustedHooks_Passes_WithoutAttemptingRepair()
     {
         WriteHooksJson();
         DispatchPreflight.HookTrustResolverOverride = _ => DispatchPreflight.HookTrust.Trusted;
+        DispatchPreflight.HookTrustRepairOverride = _ => throw new InvalidOperationException("must not repair a trusted entry");
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
@@ -489,10 +496,12 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // The real c1-8 smoke case (0269): a matching entry whose pinned hash is stale after a regen —
-    // BLOCK with the "hash changed / re-approve the new hash" message, distinct from a missing entry.
+    // --- (5) Self-repair against the REAL codex config.toml schema (issue 0269) ---
+
+    // The real c1-8 smoke case: a matching entry whose pinned hash is stale after a regen. The
+    // repair rewrites it to the live hash + enabled, and dispatch proceeds.
     [Fact]
-    public void DefaultTrust_PreToolUseStaleHash_FailsWithHashChangedMessage()
+    public void DefaultTrust_PreToolUseStaleHash_RepairedToLiveHashAndEnabled_Passes()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
@@ -503,13 +512,15 @@ public class DispatchPreflightTests : IDisposable
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
-        Assert.False(result.Ok);
-        Assert.Contains("changed", result.Error);
-        Assert.Contains("Re-approve the new hash", result.Error!);
+        Assert.True(result.Ok);
+        var written = ReadCodexConfig();
+        Assert.Contains($"trusted_hash = 'sha256:{Sha256Lower(hooksPath)}'", written);
+        Assert.DoesNotContain("581b21e8", written);
+        Assert.Contains("enabled = true", written);
     }
 
     [Fact]
-    public void DefaultTrust_PreToolUseDisabled_FailsWithNotTrustedMessage()
+    public void DefaultTrust_PreToolUseDisabled_RepairedToEnabled_Passes()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
@@ -520,15 +531,16 @@ public class DispatchPreflightTests : IDisposable
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
-        Assert.False(result.Ok);
-        Assert.Contains("not trusted+enabled", result.Error);
-        Assert.Contains("Re-approve it in codex", result.Error!);
+        Assert.True(result.Ok);
+        var written = ReadCodexConfig();
+        Assert.Contains("enabled = true", written);
+        Assert.DoesNotContain("enabled = false", written);
     }
 
-    // A sibling `stop` entry being trusted+enabled must NOT satisfy the pre_tool_use requirement
-    // (the c1-8 smoke found exactly this — stop enabled, pre_tool_use not).
+    // The c1-8 smoke found a sibling `stop` entry enabled while pre_tool_use was not. The repair
+    // must ADD the pre_tool_use trust WITHOUT clobbering the unrelated stop sub-table.
     [Fact]
-    public void DefaultTrust_OnlyStopEntryEnabled_FailsAsPreToolUseUntrusted()
+    public void DefaultTrust_OnlyStopEntry_RepairAddsPreToolUseAndPreservesStop_Passes()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
@@ -539,26 +551,17 @@ public class DispatchPreflightTests : IDisposable
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
-        Assert.False(result.Ok);
-        Assert.Contains("not trusted+enabled", result.Error);
+        Assert.True(result.Ok);
+        var written = ReadCodexConfig();
+        Assert.Contains($"'{hooksPath}:stop:0:0'", written);        // stop entry preserved
+        Assert.Contains($"'{hooksPath}:pre_tool_use:0:0'", written); // guard entry added
     }
 
+    // A wholly unrelated [hooks.state.*] sub-table (different repo's hooks.json) must survive.
     [Fact]
-    public void DefaultTrust_NoConfigFile_Fails()
+    public void DefaultTrust_ForeignEntry_RepairAppendsAndPreservesForeign_Passes()
     {
-        WriteHooksJson();
-        DispatchPreflight.CodexHomeOverride = Path.Combine(_dir, "empty-codex-home");
-
-        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
-
-        Assert.False(result.Ok);
-        Assert.Contains("not trusted+enabled", result.Error);
-    }
-
-    [Fact]
-    public void DefaultTrust_NoMatchingEntry_Fails()
-    {
-        WriteHooksJson();
+        var hooksPath = WriteHooksJson();
         WriteCodexConfig("""
             [hooks.state.'C:\some\other\hooks.json:pre_tool_use:0:0']
             trusted_hash = 'sha256:abcdef'
@@ -567,8 +570,45 @@ public class DispatchPreflightTests : IDisposable
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
 
+        Assert.True(result.Ok);
+        var written = ReadCodexConfig();
+        Assert.Contains(@"'C:\some\other\hooks.json:pre_tool_use:0:0'", written); // foreign entry kept
+        Assert.Contains("trusted_hash = 'sha256:abcdef'", written);
+        Assert.Contains($"'{hooksPath}:pre_tool_use:0:0'", written);              // our entry added
+    }
+
+    [Fact]
+    public void DefaultTrust_NoConfigFile_RepairWritesFreshConfig_Passes()
+    {
+        var hooksPath = WriteHooksJson();
+        DispatchPreflight.CodexHomeOverride = Path.Combine(_dir, "fresh-codex-home");
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+        var written = File.ReadAllText(Path.Combine(_dir, "fresh-codex-home", "config.toml"));
+        Assert.Contains($"[hooks.state.'{hooksPath}:pre_tool_use:0:0']", written);
+        Assert.Contains($"trusted_hash = 'sha256:{Sha256Lower(hooksPath)}'", written);
+        Assert.Contains("enabled = true", written);
+    }
+
+    // Repair cannot be performed (config path is a directory ⇒ unwritable) ⇒ BLOCK with the manual
+    // re-approval fix — the sole remaining block path.
+    [Fact]
+    public void DefaultTrust_UnwritableConfig_BlocksWithManualReApprove()
+    {
+        WriteHooksJson();
+        var home = Path.Combine(_dir, "unwritable-codex-home");
+        Directory.CreateDirectory(Path.Combine(home, "config.toml")); // config.toml is a directory
+        DispatchPreflight.CodexHomeOverride = home;
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
         Assert.False(result.Ok);
-        Assert.Contains("not trusted+enabled", result.Error);
+        Assert.Contains("UNGUARDED", result.Error);
+        Assert.Contains("could not self-repair", result.Error);
+        Assert.Contains("unwritable", result.Error);
+        Assert.Contains("Re-approve it in codex", result.Error!);
     }
 
     // Lays down the vendor's compiled agent surface as `dydo sync` would: a worker-role body
@@ -598,6 +638,9 @@ public class DispatchPreflightTests : IDisposable
         File.WriteAllText(Path.Combine(home, "config.toml"), toml);
         DispatchPreflight.CodexHomeOverride = home;
     }
+
+    private string ReadCodexConfig() =>
+        File.ReadAllText(Path.Combine(_dir, "codex-home", "config.toml"));
 
     private static string Sha256Lower(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();

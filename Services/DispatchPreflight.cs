@@ -19,6 +19,12 @@ public static class DispatchPreflight
     internal static Func<bool>? SandboxPrerequisiteProbeOverride { get; set; }
     internal static Func<string, HookTrust>? HookTrustResolverOverride { get; set; }
 
+    /// <summary>Writes/repairs the pre_tool_use trust entry in the user-level codex config
+    /// (issue 0269 self-repair). Returns <c>true</c> when a well-formed entry was written,
+    /// <c>false</c> only when the config is unwritable — the sole remaining BLOCK path.
+    /// Overridable so tests never write a real <c>~/.codex</c>.</summary>
+    internal static Func<string, bool>? HookTrustRepairOverride { get; set; }
+
     /// <summary>Tri-state result of resolving a repo hooks.json against the codex trust ledger.
     /// The two block states drive distinct fix messages (issue 0270 / 0269 interaction):
     /// <see cref="Untrusted"/> means re-approve the hook; <see cref="HashMismatch"/> means the
@@ -186,11 +192,15 @@ public static class DispatchPreflight
 
     // (5) A repo .codex/hooks.json is SILENTLY skipped unless its pre_tool_use guard hook is
     // trusted AND enabled in the user-level codex config ([hooks.state] in ~/.codex/config.toml,
-    // per-event sub-tables keyed by path and SHA256-pinned). An untrusted hook means an UNGUARDED
-    // agent, so fail fast with the fix. The two block paths are distinguished (issue 0269): an
-    // entry that is missing/disabled needs a fresh approval; an entry whose pinned hash no longer
-    // matches (a dydo upgrade regenerated hooks.json) needs the new hash re-approved. When the repo
-    // carries no hooks.json there is nothing to trust-check.
+    // per-event sub-tables keyed by path and SHA256-pinned). A dydo upgrade regenerates hooks.json,
+    // which staleness-invalidates the pinned hash (and the entry may lack enabled=true), silently
+    // un-guarding the agent (issue 0269). Rather than demand a manual codex re-approval, dydo
+    // SELF-REPAIRS the trust entry: it rewrites [hooks.state.'<abs-hooks.json>:pre_tool_use:0:0']
+    // with the live hash + enabled=true (the exact schema issue 0270 reads), preserving every other
+    // entry, then proceeds. Whether codex HONORS an externally-written trust entry (vs re-validating
+    // it) is verified live in c1-8 — our job here is to WRITE a correct entry. Only when the config
+    // is unwritable can the repair fail; then, and only then, we BLOCK with the manual-re-approval
+    // fix. When the repo carries no hooks.json there is nothing to trust-check.
     private static PreflightResult CheckHookTrust(string launchHost, string? projectRoot)
     {
         if (launchHost != "codex" || projectRoot == null)
@@ -200,20 +210,21 @@ public static class DispatchPreflight
         if (!File.Exists(hooksPath))
             return PreflightResult.Pass;
 
-        return (HookTrustResolverOverride ?? DefaultHookTrust)(hooksPath) switch
-        {
-            HookTrust.Trusted => PreflightResult.Pass,
-            HookTrust.HashMismatch => PreflightResult.Fail(
-                $"Codex dispatch would run UNGUARDED: {hooksPath} changed, so its pinned trust hash in your codex " +
-                "config ([hooks.state] in ~/.codex/config.toml) no longer matches — a dydo upgrade likely regenerated " +
-                "it. Codex silently skips a hook whose hash changed, so the dydo guard never fires. Re-approve the new " +
-                "hash in codex — run codex once in this repo and re-approve the pre_tool_use hook — then re-dispatch."),
-            _ => PreflightResult.Fail(
-                $"Codex dispatch would run UNGUARDED: the pre_tool_use guard hook for {hooksPath} is not " +
-                "trusted+enabled in your codex config ([hooks.state] in ~/.codex/config.toml). Codex silently skips " +
-                "untrusted hooks, so the dydo guard never fires. Re-approve it in codex — run codex once in this repo " +
-                "and approve the pre_tool_use hook — then re-dispatch.")
-        };
+        var resolve = HookTrustResolverOverride ?? DefaultHookTrust;
+        if (resolve(hooksPath) == HookTrust.Trusted)
+            return PreflightResult.Pass;
+
+        // Missing, stale-hash, or disabled: repair the entry ourselves, then re-evaluate against the
+        // 0270 schema to confirm the write is well-formed and proceed.
+        if ((HookTrustRepairOverride ?? DefaultHookTrustRepair)(hooksPath)
+            && resolve(hooksPath) == HookTrust.Trusted)
+            return PreflightResult.Pass;
+
+        return PreflightResult.Fail(
+            $"Codex dispatch would run UNGUARDED and dydo could not self-repair the trust entry: writing the " +
+            $"pre_tool_use guard trust for {hooksPath} to your codex config ([hooks.state] in ~/.codex/config.toml) " +
+            "failed — the config is unwritable. Codex silently skips an untrusted hook, so the dydo guard never fires. " +
+            "Re-approve it in codex — run codex once in this repo and approve the pre_tool_use hook — then re-dispatch.");
     }
 
     private static string ModelVendorFor(string host) =>
@@ -265,6 +276,58 @@ public static class DispatchPreflight
 
         var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(hooksPath))).ToLowerInvariant();
         return string.Equals(pinned, actual, StringComparison.Ordinal) ? HookTrust.Trusted : HookTrust.HashMismatch;
+    }
+
+    // Self-repairs the pre_tool_use trust entry (issue 0269): rewrites (or adds) the dotted
+    // sub-table [hooks.state.'<abs-hooks.json>:pre_tool_use:0:0'] with the live SHA256 of hooks.json
+    // and enabled=true, preserving every other entry/sub-table (the stop hook, unrelated state).
+    // Returns false only when the config is unwritable — the single BLOCK path left to the caller.
+    private static bool DefaultHookTrustRepair(string hooksPath)
+    {
+        var codexHome = CodexHomeOverride
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
+        var configPath = Path.Combine(codexHome, "config.toml");
+        var target = Path.GetFullPath(hooksPath);
+        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(hooksPath))).ToLowerInvariant();
+
+        try
+        {
+            var existing = File.Exists(configPath) ? File.ReadAllText(configPath) : "";
+            Directory.CreateDirectory(codexHome);
+            File.WriteAllText(configPath, UpsertPreToolUseEntry(existing, target, hash));
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    // Drops any existing pre_tool_use sub-table for target (header + its child lines up to the next
+    // header) and appends a fresh one; all other lines are preserved verbatim so sibling sub-tables
+    // survive. Codex keys are single-quoted TOML literals, so the target path's backslashes need no
+    // escaping.
+    private static string UpsertPreToolUseEntry(string toml, string target, string hash)
+    {
+        var kept = new List<string>();
+        var skipping = false;
+        foreach (var raw in toml.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.StartsWith('['))
+                skipping = IsPreToolUseHeader(line, target);
+            if (!skipping)
+                kept.Add(raw);
+        }
+        while (kept.Count > 0 && kept[^1].Trim().Length == 0)
+            kept.RemoveAt(kept.Count - 1);
+
+        if (kept.Count > 0)
+            kept.Add("");
+        kept.Add($"[hooks.state.'{target}:pre_tool_use:0:0']");
+        kept.Add($"trusted_hash = 'sha256:{hash}'");
+        kept.Add("enabled = true");
+        return string.Join("\n", kept) + "\n";
     }
 
     // Scans the [hooks.state.'<abs-path>:pre_tool_use:0:0'] sub-table matching hooksPath and reads

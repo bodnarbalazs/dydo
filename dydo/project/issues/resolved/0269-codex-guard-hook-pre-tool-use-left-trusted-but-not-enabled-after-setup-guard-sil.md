@@ -4,7 +4,7 @@ id: 269
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
@@ -50,4 +50,37 @@ Adjacent to 0254's codex-guard-adapter scope; route to sprint C1 follow-on or th
 
 ## Resolution
 
-(Filled when resolved)
+Fixed in `Services/DispatchPreflight.cs` (c1 slice `c1-fix-0269-hooktrust-selfrepair`) as a
+DISPATCH-PATH SELF-REPAIR, building on the 0270 schema parser. When the preflight's hook-trust check
+finds the `pre_tool_use` guard entry MISSING, STALE-HASH, or not-enabled, dydo now repairs the
+`[hooks.state]` entry itself instead of blocking on a manual codex re-approval:
+
+- `CheckHookTrust` resolves trust; if not `Trusted`, it calls the repair seam, then re-evaluates
+  against the 0270 schema and PROCEEDS. It only BLOCKS if the repair itself cannot be written.
+- `DefaultHookTrustRepair` writes the dotted sub-table
+  `[hooks.state.'<resolved-abs-hooks.json>:pre_tool_use:0:0']` with
+  `trusted_hash = 'sha256:<lowercase-hex-of-current-hooks.json-bytes>'` and `enabled = true` — the
+  EXACT schema 0270 reads. `UpsertPreToolUseEntry` drops only the existing `pre_tool_use` sub-table
+  for that path and appends a fresh one, preserving every other entry/sub-table (the sibling `stop`
+  hook and any foreign-repo state survive verbatim).
+- The write sits behind an injectable seam `HookTrustRepairOverride` (mirroring
+  `HookTrustResolverOverride`/`CodexHomeOverride`), so tests never touch a real `~/.codex`.
+
+**Premise not resolved here (c1-8 live check):** whether codex HONORS an externally-written trust
+entry (vs re-validating/overwriting it on next run) is verified LIVE in c1-8 — this slice only WRITES
+a correct entry; it does not assume codex accepts it. If c1-8 finds codex re-validates, the 0269
+direction-2 doc fallback applies: codex-host upgrade docs must state that a dydo upgrade requires
+re-approving the `.codex/hooks.json` hook in codex (the self-repair still leaves the config in the
+correct end-state either way).
+
+Tests (`DynaDocs.Tests/Services/DispatchPreflightTests.cs`, real-schema TOML fixture): stale-hash
+entry → repaired to live hash + `enabled = true` → PASS; missing entry (no config file / foreign
+entry only) → written → PASS; `enabled = false` → set true → PASS; a sibling `stop` sub-table and an
+unrelated foreign-repo `[hooks.state.*]` entry PRESERVED across the repair; unwritable config
+(config.toml path is a directory) → BLOCK with the actionable manual-re-approval message. Seam-level:
+untrusted + repair fails → BLOCK; untrusted + repair succeeds + re-eval trusted → PASS; a trusted
+entry never triggers a repair. Gates green (`run_tests.py` 4745 pass; `gap_check.py --force-run` tier
+100%).
+
+Scope was fenced to `Services/DispatchPreflight.cs`, `DispatchPreflightTests.cs`, and this issue
+file — nothing in `SyncCommand.cs` (0271 owns the deterministic-generation angle).

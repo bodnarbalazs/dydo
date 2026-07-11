@@ -4,12 +4,13 @@ id: 281
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: claude
 date: 2026-07-11
+resolved-date: 2026-07-11
 ---
 
 # Codex re-prompts 'Hooks need review' on every dispatch - 0269 self-repair hash likely conflicts with codex trust hash (swarm-blocker)
@@ -26,4 +27,4 @@ Observed 2026-07-11 (2x): every dispatched codex session shows codex's interacti
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-11: fix landed 3524d57e. DispatchPreflight now treats an enabled, well-formed codex pre_tool_use trusted_hash as codex-authoritative and PRESERVES it (does not overwrite); missing/malformed/disabled still self-repair; unwritable/apostrophe still BLOCK. Stops the 0269/0281 trust-thrash: dydo's raw-file SHA256 differs from codex's own hash, and the old overwrite-on-mismatch made codex restore its hash after each human Trust and re-prompt every dispatch. Implemented by CODEX (Quinn), cross-vendor Claude-reviewed (security-verified: fail-closed intact, no 0270 regression, 4752/4752 + gap_check green; the review's comments-only findings - stale trust-model narrative in this thrice-burned path - applied by CoS per exact reviewer prescription, no logic change). Live-verify on next dispatch after install: after one clean codex Trust, subsequent dispatches should NOT re-prompt 'Hooks need review'.

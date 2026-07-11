@@ -5,7 +5,7 @@ due:
 needs-human: true
 priority: High
 sprint: c1-codex-adoption
-status: ready
+status: done
 work-type: chore
 area: backend
 type: context

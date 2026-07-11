@@ -1,11 +1,11 @@
 ---
 title: C1 — Codex Adoption
 campaign:
-end:
-gate-result: plan-review PASS (2026-07-09, 2 rounds) + sprint-audit PASS (2026-07-10, re-audit clean after 3 findings fixed)
+end: 2026-07-11
+gate-result: plan-review PASS (2026-07-09, 2 rounds) + sprint-audit PASS (2026-07-10, re-audit clean) + c1-8 LIVE ACCEPTANCE PASS (2026-07-11)
 seq: 9
 start: 2026-07-09
-status: audit
+status: done
 area: project
 type: context
 ---
@@ -24,6 +24,21 @@ type: context
 > filed). **The sprint holds at the audit→done boundary pending its last row — c1-8, the
 > human-gated live smoke = the v2.0.7 acceptance run.** Nothing is pushed; the tag is balazs's
 > button. Status advances to `done` on c1-8's live pass.
+>
+> **c1-8 LIVE ACCEPTANCE: PASS — status DONE (2026-07-11).** Run by Sam (codex host, Gpt 5.5)
+> against a HEAD build. Every acceptance criterion observed live: the dydo guard hook **FIRED
+> inside the codex session and BLOCKED an off-limits read** (`dydo read dydo.json` → BLOCKED, no
+> leak) — proving codex honors dydo's externally-written trust entry (0269 premise PROVEN);
+> `dydo wait --register` works on codex (0254 durable wait); `dydo read` printed content AND
+> registered the read, `inbox clear` refused before / succeeded after (0254 unwedge, can-release);
+> ZERO permission clicks (0253 posture); a codex message rendered `from_model: Gpt 5.5` end-to-end
+> (c1-6 provenance). The v2.0.7 headline shipped non-functional (0270 false-BLOCK); the 2.0.8
+> codex-enablement wave (0269 self-repair, 0270 schema parser, 0271 codex-tools) makes
+> codex-under-the-guard real. Version bump to 2.0.8 is balazs's hand (commit 4fe5e408).
+> **Carry-forward (NOT tag-blockers, acceptance passed with them):** 0273 (codex-host sandbox exe,
+> codex-side, balazs), 0274 (low, off-limits-before-existence order), 0275 (cosmetic, closed),
+> 0276 (MEDIUM, sync-coverage gap — mine to root-cause post-tag), 0272 (read-only→sandbox_mode
+> fidelity, codex dogfood).
 
 # C1 — Codex Adoption
 

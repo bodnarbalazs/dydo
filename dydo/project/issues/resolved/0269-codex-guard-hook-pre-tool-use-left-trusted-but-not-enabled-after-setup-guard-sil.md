@@ -84,3 +84,13 @@ entry never triggers a repair. Gates green (`run_tests.py` 4745 pass; `gap_check
 
 Scope was fenced to `Services/DispatchPreflight.cs`, `DispatchPreflightTests.cs`, and this issue
 file — nothing in `SyncCommand.cs` (0271 owns the deterministic-generation angle).
+
+**PREMISE PROVEN — live c1-8 acceptance (2026-07-11, Sam @ codex/Gpt 5.5, HEAD build):** the first
+`dydo dispatch --codex` triggered the self-repair (no manual codex re-approval), and inside the
+launched codex session the dydo guard hook **FIRED and BLOCKED an off-limits read**
+(`dydo read dydo.json` → `BLOCKED: off-limits`, no leak). Codex therefore HONORS dydo's
+externally-written `[hooks.state]` trust entry — the direction-2 doc fallback is NOT needed.
+Self-repair closes the upgrade-invalidation footgun end-to-end with zero human steps. Follow-on
+hardening (apostrophe-path repair refusal + per-cause diagnostics) landed in
+`c1-fix-0269-audit-followups`. Later hardening (0269 §3 idea): make `.codex/hooks.json` generation
+deterministic so a no-op sync does not needlessly change the hash — tracked separately.

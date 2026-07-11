@@ -46,3 +46,13 @@ Theory in `DynaDocs.Tests/Commands/SyncCommandTests.cs` and an E2E in
 Split: expressing read-only capability for codex (via `sandbox_mode`, replacing the dropped
 read/write signal) is deferred to issue 0272 — it needs a live codex behavior check first and is
 not a 2.0.8 blocker.
+
+**Verified live — c1-8 acceptance (2026-07-11):** the codex session ran dydo worker paths without
+the malformed-role rejection; a codex-hosted message arrived rendering `from_vendor: codex` /
+`from_model: Gpt 5.5` end-to-end (c1-6 provenance). CARRY-FORWARD (issue 0276, MEDIUM, not a
+tag-blocker): the emitter fix is correct, but `dydo sync` did not REGENERATE every live
+`.codex/agents/*.toml` (notably `inquisitor.toml` retained the old malformed shape and a stale
+`model = gpt-5.5` that was not tier-resolved). Adele hand-regenerated + committed clean worker tomls
+at `27d1712d` (now `model = gpt-5.6-terra`, the openai tier flowing through) as a stopgap; the
+root-cause **sync-coverage gap** (why the regen did not reach all role files) is mine to fix
+post-tag under 0276.

@@ -58,3 +58,12 @@ The seam signatures `HookTrustResolverOverride` (now `Func<string, HookTrust>`) 
 are retained. Two out-of-scope integration test files (`CodexDispatchPostureE2ETests.cs`,
 `DispatchCommandTests.cs`) had their one-line seam-set updated to the enum as a mechanical
 consequence of the richer return type (the build/gate cannot run otherwise).
+
+**Verified live — c1-8 acceptance (2026-07-11, Sam @ codex/Gpt 5.5, HEAD build):** the fixed parser
+read balazs's real config correctly and the codex dispatch proceeded guarded (the guard hook fired
+in-session, blocking an off-limits read). The false-BLOCK-every-dispatch symptom is gone; v2.0.7's
+non-functional headline is functional on HEAD. NOTE: after 0269's self-repair landed, the tri-state
+block-message distinction this issue introduced is now largely superseded — the stale-hash/disabled
+cases self-repair rather than surfacing the (b) message; the single remaining BLOCK path is
+repair-refusal (unwritable config or apostrophe path), reworded per the 0269 audit-followup. The
+enum is retained (honest classification), not collapsed.

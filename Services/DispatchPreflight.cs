@@ -9,8 +9,9 @@ using DynaDocs.Models;
 /// launch (issue 0239 generalized, DR 037 §6). Each check names the missing prerequisite
 /// AND the fix, so a dispatch that cannot succeed fails in the dispatcher's terminal —
 /// never as a downstream child-terminal CommandNotFoundException or a stale <c>Dispatched</c>
-/// reservation the watchdog has to reclaim. The first failing check short-circuits; a passing
-/// preflight makes no state change.
+/// reservation the watchdog has to reclaim. The first failing check short-circuits. A passing
+/// preflight is side-effect-free EXCEPT the hook-trust check (5), which may self-repair the codex
+/// trust entry in <c>~/.codex/config.toml</c> on the pass path (issue 0269 self-repair).
 /// </summary>
 public static class DispatchPreflight
 {
@@ -21,14 +22,17 @@ public static class DispatchPreflight
 
     /// <summary>Writes/repairs the pre_tool_use trust entry in the user-level codex config
     /// (issue 0269 self-repair). Returns <c>true</c> when a well-formed entry was written,
-    /// <c>false</c> only when the config is unwritable — the sole remaining BLOCK path.
+    /// <c>false</c> when the config is unwritable OR the repo path contains an apostrophe (which
+    /// cannot be written as a TOML single-quoted literal key) — both fall through to the BLOCK path.
     /// Overridable so tests never write a real <c>~/.codex</c>.</summary>
     internal static Func<string, bool>? HookTrustRepairOverride { get; set; }
 
-    /// <summary>Tri-state result of resolving a repo hooks.json against the codex trust ledger.
-    /// The two block states drive distinct fix messages (issue 0270 / 0269 interaction):
-    /// <see cref="Untrusted"/> means re-approve the hook; <see cref="HashMismatch"/> means the
-    /// file changed and its pinned hash must be re-approved.</summary>
+    /// <summary>Tri-state classification of a repo hooks.json against the codex trust ledger.
+    /// Since the 0269 self-repair, BOTH non-Trusted states (<see cref="Untrusted"/>,
+    /// <see cref="HashMismatch"/>) flow into the same repair path behind a single BLOCK message —
+    /// the Untrusted/HashMismatch distinction is not currently consumed for messaging (superseded by
+    /// self-repair). It is retained as the resolver's honest classification, and for a future
+    /// distinct fix-path; it is deliberately not collapsed to a bool.</summary>
     internal enum HookTrust
     {
         Trusted,
@@ -198,9 +202,11 @@ public static class DispatchPreflight
     // SELF-REPAIRS the trust entry: it rewrites [hooks.state.'<abs-hooks.json>:pre_tool_use:0:0']
     // with the live hash + enabled=true (the exact schema issue 0270 reads), preserving every other
     // entry, then proceeds. Whether codex HONORS an externally-written trust entry (vs re-validating
-    // it) is verified live in c1-8 — our job here is to WRITE a correct entry. Only when the config
-    // is unwritable can the repair fail; then, and only then, we BLOCK with the manual-re-approval
-    // fix. When the repo carries no hooks.json there is nothing to trust-check.
+    // it) is verified live in c1-8 — our job here is to WRITE a correct entry. The repair can fail on
+    // two paths: the config is unwritable, OR the resolved target path contains an apostrophe (which
+    // cannot be represented in the single-quoted TOML literal key, so DefaultHookTrustRepair refuses
+    // rather than write invalid TOML to the global config); on either we BLOCK with the manual-re-
+    // approval fix. When the repo carries no hooks.json there is nothing to trust-check.
     private static PreflightResult CheckHookTrust(string launchHost, string? projectRoot)
     {
         if (launchHost != "codex" || projectRoot == null)
@@ -220,10 +226,16 @@ public static class DispatchPreflight
             && resolve(hooksPath) == HookTrust.Trusted)
             return PreflightResult.Pass;
 
+        // Name the actual refusal cause: an apostrophe in the path cannot be represented in codex's
+        // single-quoted TOML literal trust key (DefaultHookTrustRepair refuses it rather than writing
+        // invalid global config), which is a different problem from an unwritable config.
+        var cause = hooksPath.Contains('\'')
+            ? "the repo path contains an apostrophe, which cannot be represented in codex's TOML trust key"
+            : "the config is unwritable";
         return PreflightResult.Fail(
             $"Codex dispatch would run UNGUARDED and dydo could not self-repair the trust entry: writing the " +
             $"pre_tool_use guard trust for {hooksPath} to your codex config ([hooks.state] in ~/.codex/config.toml) " +
-            "failed — the config is unwritable. Codex silently skips an untrusted hook, so the dydo guard never fires. " +
+            $"failed — {cause}. Codex silently skips an untrusted hook, so the dydo guard never fires. " +
             "Re-approve it in codex — run codex once in this repo and approve the pre_tool_use hook — then re-dispatch.");
     }
 
@@ -281,13 +293,23 @@ public static class DispatchPreflight
     // Self-repairs the pre_tool_use trust entry (issue 0269): rewrites (or adds) the dotted
     // sub-table [hooks.state.'<abs-hooks.json>:pre_tool_use:0:0'] with the live SHA256 of hooks.json
     // and enabled=true, preserving every other entry/sub-table (the stop hook, unrelated state).
-    // Returns false only when the config is unwritable — the single BLOCK path left to the caller.
+    // Returns false when the config is unwritable, or when the target path contains an apostrophe —
+    // both fall through to the caller's BLOCK path.
     private static bool DefaultHookTrustRepair(string hooksPath)
     {
         var codexHome = CodexHomeOverride
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
         var configPath = Path.Combine(codexHome, "config.toml");
         var target = Path.GetFullPath(hooksPath);
+
+        // The codex trust key is a TOML single-quoted literal, which admits NO escapes — an
+        // apostrophe in the repo path (e.g. C:\Users\O'Brien\repo) cannot be represented and would
+        // write invalid TOML into the user's GLOBAL config, breaking every codex invocation while the
+        // lenient reader still matches it back as Trusted (preflight would falsely PASS). Refuse the
+        // automated repair for such paths and let the caller BLOCK with the manual re-approval fix.
+        if (target.Contains('\''))
+            return false;
+
         var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(hooksPath))).ToLowerInvariant();
 
         try
@@ -305,8 +327,9 @@ public static class DispatchPreflight
 
     // Drops any existing pre_tool_use sub-table for target (header + its child lines up to the next
     // header) and appends a fresh one; all other lines are preserved verbatim so sibling sub-tables
-    // survive. Codex keys are single-quoted TOML literals, so the target path's backslashes need no
-    // escaping.
+    // survive. Codex keys are single-quoted TOML literals: backslashes need no escaping, but an
+    // apostrophe cannot be represented at all — DefaultHookTrustRepair refuses such target paths
+    // (returns false) before reaching here, so this writer never has to escape one.
     private static string UpsertPreToolUseEntry(string toml, string target, string hash)
     {
         var kept = new List<string>();

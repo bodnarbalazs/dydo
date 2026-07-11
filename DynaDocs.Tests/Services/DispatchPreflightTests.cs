@@ -387,8 +387,9 @@ public class DispatchPreflightTests : IDisposable
     }
 
     // --- (5) Hook trust (codex, issue 0269 self-repair) ---
-    // An untrusted/stale/disabled guard entry is REPAIRED in-place, not blocked. The only remaining
-    // BLOCK is a repair that could not be written (unwritable config).
+    // An untrusted/stale/disabled guard entry is REPAIRED in-place, not blocked. A repair can still
+    // fail — and BLOCK — on two paths: an unwritable config, OR an apostrophe-bearing target path that
+    // DefaultHookTrustRepair refuses (cannot be represented in the single-quoted TOML literal key).
 
     [Fact]
     public void CodexUntrustedHooks_RepairFails_BlocksWithManualReApprove()
@@ -593,7 +594,8 @@ public class DispatchPreflightTests : IDisposable
     }
 
     // Repair cannot be performed (config path is a directory ⇒ unwritable) ⇒ BLOCK with the manual
-    // re-approval fix — the sole remaining block path.
+    // re-approval fix — one of the two repair-refusal block paths (the other is an apostrophe-bearing
+    // target path).
     [Fact]
     public void DefaultTrust_UnwritableConfig_BlocksWithManualReApprove()
     {
@@ -609,6 +611,32 @@ public class DispatchPreflightTests : IDisposable
         Assert.Contains("could not self-repair", result.Error);
         Assert.Contains("unwritable", result.Error);
         Assert.Contains("Re-approve it in codex", result.Error!);
+    }
+
+    // A repo path containing an apostrophe cannot be written as a TOML single-quoted literal key
+    // (codex's trust-key form admits no escapes). Rather than corrupt the user's GLOBAL config with
+    // invalid TOML, the repair REFUSES the path — falling through to the manual re-approval BLOCK —
+    // and writes NOTHING to the config (issue 0269 wave-audit finding 4).
+    [Fact]
+    public void DefaultTrust_ApostropheInPath_RefusesRepair_BlocksAndWritesNothing()
+    {
+        var projectRoot = Path.Combine(_dir, "O'Brien-repo");
+        Directory.CreateDirectory(Path.Combine(projectRoot, ".codex"));
+        File.WriteAllText(
+            Path.Combine(projectRoot, ".codex", "hooks.json"),
+            """{"PreToolUse":[{"command":"dydo guard"}]}""");
+        var home = Path.Combine(_dir, "apostrophe-codex-home");
+        DispatchPreflight.CodexHomeOverride = home;
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), projectRoot);
+
+        Assert.False(result.Ok);
+        Assert.Contains("UNGUARDED", result.Error);
+        Assert.Contains("could not self-repair", result.Error);
+        Assert.Contains("apostrophe", result.Error!);            // names the real cause, not a phantom permissions problem
+        Assert.DoesNotContain("unwritable", result.Error!);      // the config is writable; the path is the problem
+        Assert.Contains("Re-approve it in codex", result.Error!);
+        Assert.False(File.Exists(Path.Combine(home, "config.toml"))); // global config untouched
     }
 
     // Lays down the vendor's compiled agent surface as `dydo sync` would: a worker-role body

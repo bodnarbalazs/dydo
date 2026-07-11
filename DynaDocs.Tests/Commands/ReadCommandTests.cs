@@ -191,6 +191,27 @@ public class ReadCommandTests : IDisposable
     }
 
     [Fact]
+    public void Read_MissingOffLimitsPath_BlockedBeforeExistenceCheck()
+    {
+        WriteOffLimits(".env");
+        SeedAgent(unreadMustReads: [".env"], unreadMessages: []);
+        Assert.False(File.Exists(Path.Combine(_testDir, ".env")));
+
+        var (code, stdout, stderr) = RunRead(".env");
+
+        Assert.Equal(ExitCodes.ToolError, code);
+        Assert.Empty(stdout);
+        Assert.Contains("BLOCKED", stderr);
+        Assert.Contains("off-limits", stderr);
+        Assert.Contains(".env", stderr);
+        Assert.Contains("files-off-limits.md", stderr);
+        Assert.DoesNotContain("neither an inbox message id nor an existing file path", stderr);
+
+        var after = new AgentRegistry(_testDir).GetAgentState(AgentName)!;
+        Assert.Contains(".env", after.UnreadMustReads);
+    }
+
+    [Fact]
     public void Read_OffLimitsRootFileByBareName_BlockedNoContentNoRead()
     {
         // Regression (c1-audit-f1b): a ROOT-LEVEL off-limits file addressed by BARE filename must be

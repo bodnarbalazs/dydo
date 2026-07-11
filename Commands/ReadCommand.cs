@@ -52,51 +52,51 @@ public static class ReadCommand
             return ExitCodes.Success;
         }
 
+        // Guard parity: `dydo read` is a host-agnostic file reader, so it must honour the SAME
+        // universal off-limits tier (secrets/credentials) the guard enforces for the Read tool
+        // (GuardCommand.CheckDirectFileOffLimits -> BlockIfPathOffLimits) and for shell readers
+        // (BashCommandAnalyzer.ReadCommands). This must run before File.Exists so off-limits
+        // verdicts do not leak whether a matching secret path exists.
+        //
+        // Resolve the target EXACTLY as the guard does (ResolveWorktreePath): it remaps a
+        // dydo-worktree CWD (dydo/_system/.local/worktrees/<id>/...) back to the main-project
+        // equivalent BEFORE the off-limits/exemption checks. That matters because dispatched
+        // shell-host agents run from inside a worktree (TerminalLauncher cd's there); a plain
+        // Path.GetFullPath would leave the worktree-marker segment in the path and misfire the
+        // hardcoded dydo/_system/** pattern on EVERY file. The read-registration half below
+        // already worktree-normalizes (ReadTrackingService.NormalizeForMustReadComparison), so
+        // this keeps both halves on the same resolved footing.
+        var resolved = GuardCommand.ResolveWorktreePath(target) ?? target;
+
+        // Absolutize a still-relative resolved path BEFORE the exemption + off-limits checks, so
+        // this lane sees the SAME absolute path shape the guard's Read tool lane sees (Claude Code
+        // delivers absolute paths). Without this, a bare filename like ".env" or "dydo.json"
+        // (no separator) falls through GuardCommand.IsBootstrapFile as a "root-level bootstrap
+        // file", trips ShouldBypassOffLimits, and skips the whole off-limits check — leaking the
+        // secret. OffLimitsService.RelativizeToProjectRoot handles the absolute form, so both the
+        // exemption and off-limits verdicts stay correct. Print/registration below stay on the
+        // ORIGINAL target (the worktree copy under the agent CWD).
+        if (!Path.IsPathRooted(resolved))
+            resolved = Path.GetFullPath(resolved);
+
+        // Apply the guard's read-tier exemptions verbatim (bootstrap + mode files stay readable
+        // even when a broad off-limits pattern would otherwise cover them).
+        if (!GuardCommand.ShouldBypassOffLimits(resolved, agent))
+        {
+            var offLimitsService = new OffLimitsService();
+            offLimitsService.LoadPatterns();
+            // Reuse the guard's single BLOCKED emitter (GuardCommand.BlockIfPathOffLimits) rather
+            // than duplicating the 4-line literal, so the block message + exit code cannot drift
+            // between lanes. The emitter re-checks IsPathOffLimits and returns the exit code (or
+            // null when the path is clear).
+            var block = GuardCommand.BlockIfPathOffLimits(
+                resolved, toolName: "read", sessionId, offLimitsService, registry);
+            if (block != null)
+                return block.Value;
+        }
+
         if (File.Exists(target))
         {
-            // Guard parity: `dydo read` is a host-agnostic file reader, so it must honour the SAME
-            // universal off-limits tier (secrets/credentials) the guard enforces for the Read tool
-            // (GuardCommand.CheckDirectFileOffLimits -> BlockIfPathOffLimits) and for shell readers
-            // (BashCommandAnalyzer.ReadCommands). Without this, a claimed agent on any host could
-            // `dydo read .env` where `cat .env` is blocked.
-            //
-            // Resolve the target EXACTLY as the guard does (ResolveWorktreePath): it remaps a
-            // dydo-worktree CWD (dydo/_system/.local/worktrees/<id>/...) back to the main-project
-            // equivalent BEFORE the off-limits/exemption checks. That matters because dispatched
-            // shell-host agents run from inside a worktree (TerminalLauncher cd's there); a plain
-            // Path.GetFullPath would leave the worktree-marker segment in the path and misfire the
-            // hardcoded dydo/_system/** pattern on EVERY file. The read-registration half below
-            // already worktree-normalizes (ReadTrackingService.NormalizeForMustReadComparison), so
-            // this keeps both halves on the same resolved footing.
-            var resolved = GuardCommand.ResolveWorktreePath(target) ?? target;
-
-            // Absolutize a still-relative resolved path BEFORE the exemption + off-limits checks, so
-            // this lane sees the SAME absolute path shape the guard's Read tool lane sees (Claude Code
-            // delivers absolute paths). Without this, a bare filename like ".env" or "dydo.json"
-            // (no separator) falls through GuardCommand.IsBootstrapFile as a "root-level bootstrap
-            // file", trips ShouldBypassOffLimits, and skips the whole off-limits check — leaking the
-            // secret. OffLimitsService.RelativizeToProjectRoot handles the absolute form, so both the
-            // exemption and off-limits verdicts stay correct. Print/registration below stay on the
-            // ORIGINAL target (the worktree copy under the agent CWD).
-            if (!Path.IsPathRooted(resolved))
-                resolved = Path.GetFullPath(resolved);
-
-            // Apply the guard's read-tier exemptions verbatim (bootstrap + mode files stay readable
-            // even when a broad off-limits pattern would otherwise cover them).
-            if (!GuardCommand.ShouldBypassOffLimits(resolved, agent))
-            {
-                var offLimitsService = new OffLimitsService();
-                offLimitsService.LoadPatterns();
-                // Reuse the guard's single BLOCKED emitter (GuardCommand.BlockIfPathOffLimits) rather
-                // than duplicating the 4-line literal, so the block message + exit code cannot drift
-                // between lanes. The emitter re-checks IsPathOffLimits and returns the exit code (or
-                // null when the path is clear).
-                var block = GuardCommand.BlockIfPathOffLimits(
-                    resolved, toolName: "read", sessionId, offLimitsService, registry);
-                if (block != null)
-                    return block.Value;
-            }
-
             // Read/print/register on the ORIGINAL target so the worktree COPY under the agent's CWD
             // is what gets emitted and acked, not the normalized main-project path.
             Console.WriteLine(File.ReadAllText(target));

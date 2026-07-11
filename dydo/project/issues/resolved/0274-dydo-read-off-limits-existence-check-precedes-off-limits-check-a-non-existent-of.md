@@ -4,12 +4,13 @@ id: 274
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: claude
 date: 2026-07-11
+resolved-date: 2026-07-11
 ---
 
 # dydo read/off-limits: existence check precedes off-limits check - a non-existent off-limits path reports 'not found' instead of 'off-limits' (existence oracle)
@@ -26,4 +27,4 @@ c1-8 smoke (2026-07-11): 'dydo read .env' returned 'neither an inbox id nor an e
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-11: fix landed 7d21f85c. Off-limits check now runs BEFORE existence in dydo read, so a non-existent off-limits-pattern path returns BLOCKED (no existence oracle). Implemented by CODEX (Henry, ~7min auto mode), cross-vendor Claude-reviewed PASS (traced control flow, re-ran 30 tests, confirmed no enforcement weakening, no new leak). First codex->Claude-review->land loop, clean. Follow-up 0281 (low): empty-target now throws instead of friendly not-found (fails closed, no security impact).

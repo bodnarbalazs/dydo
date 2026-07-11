@@ -4,12 +4,13 @@ id: 241
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-08
+resolved-date: 2026-07-11
 ---
 
 # gap_check auto-skip watches only 6 source dirs - edits elsewhere (Sync/) silently reuse stale coverage
@@ -26,4 +27,4 @@ The gap_check staleness auto-skip only watches 6 source directories and does not
 
 ## Resolution
 
-(Filled when resolved)
+DUPLICATE of #0217 (identical gap_check.py SOURCE_DIRS staleness blind spot; 0241 body itself said 'dedup on triage'). Fix tracked under 0217 (Wave-1 Batch 1).

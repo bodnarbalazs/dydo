@@ -4,12 +4,13 @@ id: 273
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: claude
 date: 2026-07-11
+resolved-date: 2026-07-11
 ---
 
 # codex-windows-sandbox-setup.exe not found - codex sandbox helper missing blocks Start-Process/rg/sandbox-mode commands in dispatched codex sessions
@@ -51,4 +52,4 @@ Refs: developers.openai.com/codex/windows (elevated vs unelevated), openai/codex
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-11 by a dispatched CODEX agent (Leo) fixing its own sandbox - the first real codex work task, done in auto mode under the guard. Root cause on this machine: bin-junction layout bug - codex 0.144.1 standalone launched from the Programs\OpenAI\Codex\bin junction, but the version-matched helpers (codex-windows-sandbox-setup.exe, codex-command-runner.exe) existed ONLY under ~/.codex/packages/standalone/releases/0.144.1-.../codex-resources and the desktop-app bin, NOT next to the standalone codex.exe, and PATH lacked codex-resources -> bare-filename helper lookup failed 'program not found' (then command-runner failed CreateProcessWithLogonW=2). Fix (host-level, no repo/dydo edits): hardlinked both 0.144.1 helpers into the active release bin (releases/0.144.1-.../bin) AND codex-path dir (already on session PATH); added .../current/codex-resources to User PATH for future launches. Kept [windows] sandbox=elevated; elevated setup then processed workspace+temp write roots with errors=[]. VERIFIED: rg, Start-Process, and a workspace Set-Content write all run WITHOUT per-action approval (auto mode); an outside-workspace write was DENIED by the sandbox (real isolation, not bypass) and only succeeded with an explicit escalated+approved probe. balazs approvals were only for the one-time host-repair diagnosis + the intentional boundary probe. This is the documented codex-host setup fix. Upstream bug refs remain openai/codex #30829/#28457. Follow-up: c1-4 DefaultSandboxPrerequisite should probe helper readiness + fail-fast at dispatch (tracked in the issue body).

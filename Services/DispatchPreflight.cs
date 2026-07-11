@@ -27,12 +27,14 @@ public static class DispatchPreflight
     /// Overridable so tests never write a real <c>~/.codex</c>.</summary>
     internal static Func<string, bool>? HookTrustRepairOverride { get; set; }
 
-    /// <summary>Tri-state classification of a repo hooks.json against the codex trust ledger.
-    /// Since the 0269 self-repair, BOTH non-Trusted states (<see cref="Untrusted"/>,
-    /// <see cref="HashMismatch"/>) flow into the same repair path behind a single BLOCK message —
-    /// the Untrusted/HashMismatch distinction is not currently consumed for messaging (superseded by
-    /// self-repair). It is retained as the resolver's honest classification, and for a future
-    /// distinct fix-path; it is deliberately not collapsed to a bool.</summary>
+    /// <summary>Classification of a repo hooks.json against the codex trust ledger. Since 0281 the
+    /// production resolver (<see cref="DefaultHookTrust"/>) returns only <see cref="Trusted"/> (an
+    /// enabled, well-formed codex trusted_hash — preserved, codex-authoritative) or
+    /// <see cref="Untrusted"/> (missing / malformed / disabled — self-repaired, else BLOCK). It no
+    /// longer compares dydo's raw-file SHA256 against codex's pinned hash (codex uses a different
+    /// hash), so <see cref="HashMismatch"/> is now VESTIGIAL — unreachable from the production
+    /// resolver, retained only as a test-seam value; do not reintroduce a hash-compare in
+    /// DefaultHookTrust (that was the 0269/0281 thrash).</summary>
     internal enum HookTrust
     {
         Trusted,
@@ -194,19 +196,20 @@ public static class DispatchPreflight
             "(dydo/reference/configuration.md), then re-dispatch. The sandbox is never silently downgraded.");
     }
 
-    // (5) A repo .codex/hooks.json is SILENTLY skipped unless its pre_tool_use guard hook is
+    // (5) A repo .codex/hooks.json is SILENTLY skipped by codex unless its pre_tool_use guard hook is
     // trusted AND enabled in the user-level codex config ([hooks.state] in ~/.codex/config.toml,
-    // per-event sub-tables keyed by path and SHA256-pinned). A dydo upgrade regenerates hooks.json,
-    // which staleness-invalidates the pinned hash (and the entry may lack enabled=true), silently
-    // un-guarding the agent (issue 0269). Rather than demand a manual codex re-approval, dydo
-    // SELF-REPAIRS the trust entry: it rewrites [hooks.state.'<abs-hooks.json>:pre_tool_use:0:0']
-    // with the live hash + enabled=true (the exact schema issue 0270 reads), preserving every other
-    // entry, then proceeds. Whether codex HONORS an externally-written trust entry (vs re-validating
-    // it) is verified live in c1-8 — our job here is to WRITE a correct entry. The repair can fail on
-    // two paths: the config is unwritable, OR the resolved target path contains an apostrophe (which
-    // cannot be represented in the single-quoted TOML literal key, so DefaultHookTrustRepair refuses
-    // rather than write invalid TOML to the global config); on either we BLOCK with the manual-re-
-    // approval fix. When the repo carries no hooks.json there is nothing to trust-check.
+    // per-event sub-tables keyed by path). Codex computes and pins its OWN hash of hooks.json (NOT
+    // dydo's raw-file SHA256 — issue 0281), so an ENABLED, well-formed pre_tool_use trusted_hash is
+    // treated as codex-authoritative and PRESERVED here — dydo does NOT overwrite it. (Overwriting an
+    // enabled entry with dydo's differing hash was the 0269/0281 trust-thrash: codex restored its own
+    // hash after each human Trust and re-prompted every dispatch.) Only a MISSING, malformed, or
+    // disabled entry is self-repaired: dydo writes [hooks.state.'<abs-hooks.json>:pre_tool_use:0:0']
+    // with enabled=true (the exact schema issue 0270 reads), preserving every other entry, then
+    // proceeds. The repair can fail on two paths: the config is unwritable, OR the resolved target path
+    // contains an apostrophe (which cannot be represented in the single-quoted TOML literal key, so
+    // DefaultHookTrustRepair refuses rather than write invalid TOML to the global config); on either we
+    // BLOCK with the manual-re-approval fix. When the repo carries no hooks.json there is nothing to
+    // trust-check.
     private static PreflightResult CheckHookTrust(string launchHost, string? projectRoot)
     {
         if (launchHost != "codex" || projectRoot == null)
@@ -220,8 +223,9 @@ public static class DispatchPreflight
         if (resolve(hooksPath) == HookTrust.Trusted)
             return PreflightResult.Pass;
 
-        // Missing, stale-hash, or disabled: repair the entry ourselves, then re-evaluate against the
-        // 0270 schema to confirm the write is well-formed and proceed.
+        // Missing, malformed, or disabled entry (an enabled well-formed entry is preserved as
+        // codex-authoritative above, per 0281): repair the entry ourselves, then re-evaluate against
+        // the 0270 schema to confirm the write is well-formed and proceed.
         if ((HookTrustRepairOverride ?? DefaultHookTrustRepair)(hooksPath)
             && resolve(hooksPath) == HookTrust.Trusted)
             return PreflightResult.Pass;
@@ -271,10 +275,10 @@ public static class DispatchPreflight
     // per-event dotted sub-tables — [hooks.state.'<abs-path>:<event>:0:0'] with `trusted_hash`
     // (value form sha256:<lowercase-hex>) and `enabled` child keys. The guard is the pre_tool_use
     // hook, so we key on that event specifically: a sibling `stop` entry being enabled does not
-    // trust the guard. A matching entry is trusted when enabled (default true unless enabled=false)
-    // and its pinned hash equals the SHA256 of the on-disk hooks.json; a present-but-stale hash is
-    // HashMismatch (a regen re-trust is needed). No config, no matching entry, or a disabled entry
-    // is Untrusted — the safe, fail-fast default.
+    // trust the guard. Codex's interactive trust review is the authority for the pinned hash; it
+    // does not hash the whole hooks.json file. An enabled, well-formed pinned hash means Codex has
+    // trusted that hook, and dydo must not overwrite it with its own file hash or every dispatch
+    // re-prompts. No config, no matching entry, malformed hash, or disabled entry is Untrusted.
     private static HookTrust DefaultHookTrust(string hooksPath)
     {
         var codexHome = CodexHomeOverride
@@ -286,8 +290,7 @@ public static class DispatchPreflight
         if (FindPreToolUseTrustEntry(File.ReadAllText(configPath), hooksPath) is not { Enabled: true, TrustedHash: { } pinned })
             return HookTrust.Untrusted;
 
-        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(hooksPath))).ToLowerInvariant();
-        return string.Equals(pinned, actual, StringComparison.Ordinal) ? HookTrust.Trusted : HookTrust.HashMismatch;
+        return IsSha256Hex(pinned) ? HookTrust.Trusted : HookTrust.Untrusted;
     }
 
     // Self-repairs the pre_tool_use trust entry (issue 0269): rewrites (or adds) the dotted
@@ -427,4 +430,7 @@ public static class DispatchPreflight
             raw = raw[prefix.Length..];
         return raw.ToLowerInvariant();
     }
+
+    private static bool IsSha256Hex(string value) =>
+        value.Length == 64 && value.All(Uri.IsHexDigit);
 }

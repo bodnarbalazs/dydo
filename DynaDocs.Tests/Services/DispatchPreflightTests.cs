@@ -386,8 +386,9 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (5) Hook trust (codex, issue 0269 self-repair) ---
-    // An untrusted/stale/disabled guard entry is REPAIRED in-place, not blocked. A repair can still
+    // --- (5) Hook trust (codex, issue 0269 self-repair; 0281 preserve-enabled) ---
+    // An enabled, well-formed codex trusted_hash is PRESERVED (codex-authoritative, 0281) — never
+    // overwritten. Only a missing/malformed/disabled entry is REPAIRED in-place. A repair can still
     // fail — and BLOCK — on two paths: an unwritable config, OR an apostrophe-bearing target path that
     // DefaultHookTrustRepair refuses (cannot be represented in the single-quoted TOML literal key).
 
@@ -462,6 +463,8 @@ public class DispatchPreflightTests : IDisposable
     //   trusted_hash = 'sha256:<lowercase-hex>'
     //   enabled = true
     // The guard is the pre_tool_use hook; the parser must key on that event specifically.
+    // Codex owns the trusted_hash value; dydo must not overwrite a well-formed enabled entry just
+    // because it does not equal dydo's whole-file SHA256.
 
     [Fact]
     public void DefaultTrust_PreToolUseEnabledMatchingHash_Passes()
@@ -497,18 +500,55 @@ public class DispatchPreflightTests : IDisposable
         Assert.True(result.Ok);
     }
 
-    // --- (5) Self-repair against the REAL codex config.toml schema (issue 0269) ---
-
-    // The real c1-8 smoke case: a matching entry whose pinned hash is stale after a regen. The
-    // repair rewrites it to the live hash + enabled, and dispatch proceeds.
     [Fact]
-    public void DefaultTrust_PreToolUseStaleHash_RepairedToLiveHashAndEnabled_Passes()
+    public void DefaultTrust_PreToolUseEnabledCodexHashDifferentFromFileHash_PassesWithoutRepair()
     {
         var hooksPath = WriteHooksJson();
         WriteCodexConfig($$"""
             [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
             trusted_hash = 'sha256:581b21e8c4248575822b243e3470d04a1fab9dbdd242d0da869a240782db84d7'
             enabled = true
+            """);
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+        var written = ReadCodexConfig();
+        Assert.Contains("581b21e8", written);
+        Assert.DoesNotContain(Sha256Lower(hooksPath), written);
+    }
+
+    [Fact]
+    public void DefaultTrust_PreToolUseEnabledMalformedHash_RepairedToLiveHashAndEnabled_Passes()
+    {
+        var hooksPath = WriteHooksJson();
+        WriteCodexConfig($$"""
+            [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
+            trusted_hash = 'sha256:not-a-real-hash'
+            enabled = true
+            """);
+
+        var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+        var written = ReadCodexConfig();
+        Assert.Contains($"trusted_hash = 'sha256:{Sha256Lower(hooksPath)}'", written);
+        Assert.DoesNotContain("not-a-real-hash", written);
+        Assert.Contains("enabled = true", written);
+    }
+
+    // --- (5) Self-repair against the REAL codex config.toml schema (issue 0269) ---
+
+    // A disabled entry is not active trust. The repair rewrites it to the live hash + enabled, and
+    // dispatch proceeds.
+    [Fact]
+    public void DefaultTrust_PreToolUseDisabledStaleHash_RepairedToLiveHashAndEnabled_Passes()
+    {
+        var hooksPath = WriteHooksJson();
+        WriteCodexConfig($$"""
+            [hooks.state.'{{hooksPath}}:pre_tool_use:0:0']
+            trusted_hash = 'sha256:581b21e8c4248575822b243e3470d04a1fab9dbdd242d0da869a240782db84d7'
+            enabled = false
             """);
 
         var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(noLaunch: true), _dir);

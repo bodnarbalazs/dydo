@@ -13,6 +13,8 @@ public class DispatchPreflightTests : IDisposable
 {
     private readonly string _dir;
     private readonly Func<string, string>? _originalResolver;
+    private readonly Func<EnvironmentVariableTarget, string?>? _originalPersistedPathProvider;
+    private readonly Func<string, bool>? _originalInstallDirProbe;
 
     public DispatchPreflightTests()
     {
@@ -23,12 +25,16 @@ public class DispatchPreflightTests : IDisposable
         // the test host's PATH — the checks under test are (2)/(3)/(4)/(5), and the throw path
         // is driven explicitly where it is the subject.
         _originalResolver = TerminalLauncher.ExecutableResolverOverride;
+        _originalPersistedPathProvider = TerminalLauncher.PersistedPathProviderOverride;
+        _originalInstallDirProbe = TerminalLauncher.InstallDirProbeOverride;
         TerminalLauncher.ExecutableResolverOverride = host => host;
     }
 
     public void Dispose()
     {
         TerminalLauncher.ExecutableResolverOverride = _originalResolver;
+        TerminalLauncher.PersistedPathProviderOverride = _originalPersistedPathProvider;
+        TerminalLauncher.InstallDirProbeOverride = _originalInstallDirProbe;
         DispatchPreflight.SandboxPrerequisiteProbeOverride = null;
         DispatchPreflight.HookTrustResolverOverride = null;
         DispatchPreflight.HookTrustRepairOverride = null;
@@ -88,6 +94,31 @@ public class DispatchPreflightTests : IDisposable
         Assert.False(result.Ok);
         Assert.Contains("Cannot launch codex", result.Error);
         Assert.Contains("Install a launchable codex CLI", result.Error);
+    }
+
+    [Fact]
+    public void MissingCodexExecutable_FailsPreflightWithoutThrowing()
+    {
+        TerminalLauncher.ExecutableResolverOverride = null;
+        TerminalLauncher.PersistedPathProviderOverride = _ => null;
+        TerminalLauncher.InstallDirProbeOverride = _ => false;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var emptyPath = Path.Combine(_dir, "empty-path");
+        Directory.CreateDirectory(emptyPath);
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", emptyPath);
+
+            var result = DispatchPreflight.Run(ConfigWith(), "codex", Opts(), _dir);
+
+            Assert.False(result.Ok);
+            Assert.Contains("Cannot launch codex", result.Error);
+            Assert.Contains("Codex CLI not found", result.Error);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+        }
     }
 
     [Fact]

@@ -36,64 +36,133 @@ public class TerminalLauncher
     /// dispatcher's PATH. Test hook for deterministic resolution.
     /// </summary>
     internal static Func<string, string>? ExecutableResolverOverride { get; set; }
+    internal static Func<EnvironmentVariableTarget, string?>? PersistedPathProviderOverride { get; set; }
+    internal static Func<string, bool>? InstallDirProbeOverride { get; set; }
 
     /// <summary>
     /// Resolves the launch host (claude/codex) to the absolute path of its executable on the
     /// <em>dispatcher's</em> PATH. dydo inherits the user's interactive PATH, but the terminal it
     /// spawns does not — so a bare 'codex' that resolves here fails with 'not recognized' in the
-    /// child (#227). Falls back to the bare name when the executable is not found, which keeps a
-    /// globally-installed host (e.g. claude) working.
+    /// child (#227). On Windows, Codex also checks the persisted PATH and standard install location
+    /// before failing; Claude retains its bare-name fallback.
     /// </summary>
     internal static string GetLaunchExecutable(string? host) =>
         (ExecutableResolverOverride ?? ResolveOnPath)(NormalizeLaunchHost(host));
 
     private static string ResolveOnPath(string command)
     {
-        var pathVar = Environment.GetEnvironmentVariable("PATH");
-        if (string.IsNullOrEmpty(pathVar))
-            return command;
-
-        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        var isWindows = OperatingSystem.IsWindows();
+        // PATHEXT extensions exclusively (Windows) — an extensionless file (e.g. npm's
+        // `claude`/`codex` sh shim shipped alongside `.cmd`/`.ps1`) is not launchable and
+        // PowerShell's call operator silently no-ops on it, so returning it breaks every
+        // launch/resume. Off-Windows there are no extensions and the bare name is launchable.
         string[] extensions = isWindows
             ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".COM;.EXE;.BAT;.CMD")
                 .Split(';', StringSplitOptions.RemoveEmptyEntries)
             : [];
 
+        // Scan the live (dispatcher-inherited) PATH first, then the Windows-only fallbacks.
+        // The first launchable absolute path wins; fallbacks are not consulted once a source resolves.
         var rejectedWindowsAppsCodex = false;
-        foreach (var dir in pathVar.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
-        {
-            // Only probe the extensionless name on Unix. On Windows CreateProcess/where.exe match
-            // PATHEXT extensions exclusively — an extensionless file (e.g. npm's `claude`/`codex` sh
-            // shim shipped alongside `.cmd`/`.ps1`) is not launchable and PowerShell's call operator
-            // silently no-ops on it, so returning it breaks every launch/resume.
-            if (!isWindows)
-            {
-                var directCandidate = Path.Combine(dir, command);
-                if (File.Exists(directCandidate))
-                    return directCandidate;
-            }
+        var resolved = FindOnPath(command, Environment.GetEnvironmentVariable("PATH"), extensions,
+            !isWindows, ref rejectedWindowsAppsCodex);
+        if (resolved is null && isWindows)
+            resolved = ResolveOnWindowsFallbacks(command, extensions, ref rejectedWindowsAppsCodex);
+        if (resolved is not null)
+            return resolved;
 
-            foreach (var ext in extensions)
-            {
-                var candidate = Path.Combine(dir, command + ext);
-                if (!File.Exists(candidate))
-                    continue;
-                if (IsRejectedWindowsCodexAlias(command, candidate))
-                {
-                    rejectedWindowsAppsCodex = true;
-                    continue;
-                }
+        return ResolveMissOutcome(command, rejectedWindowsAppsCodex);
+    }
 
-                return candidate;
-            }
-        }
+    // Windows-only resolution fallbacks, in order: persisted User PATH, persisted Machine PATH,
+    // then the codex-only standard install-dir probe. Kept Windows-only so every scan uses
+    // PATHEXT matching (allowExtensionless: false).
+    private static string? ResolveOnWindowsFallbacks(string command, string[] extensions,
+        ref bool rejectedWindowsAppsCodex)
+    {
+        var persistedPathProvider = PersistedPathProviderOverride ??
+            (target => Environment.GetEnvironmentVariable("PATH", target));
+        var resolved = FindOnPath(command, persistedPathProvider(EnvironmentVariableTarget.User), extensions,
+            false, ref rejectedWindowsAppsCodex)
+            ?? FindOnPath(command, persistedPathProvider(EnvironmentVariableTarget.Machine), extensions,
+                false, ref rejectedWindowsAppsCodex);
 
+        return resolved ?? ProbeCodexInstallDir(command);
+    }
+
+    // Codex-only probe of the standard Windows install location. A WindowsApps-alias hit here is
+    // rejected (but does not set the rejected flag — the install path is never that alias).
+    private static string? ProbeCodexInstallDir(string command)
+    {
+        if (command != "codex")
+            return null;
+
+        var installPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Programs", "OpenAI", "Codex", "bin", "codex.exe");
+        return (InstallDirProbeOverride ?? File.Exists)(installPath) &&
+            !IsRejectedWindowsCodexAlias(command, installPath)
+            ? installPath
+            : null;
+    }
+
+    // Decides the outcome when no source resolved: codex throws (alias-specific message when the
+    // only hits were WindowsApps aliases, else not-found); every other command returns bare.
+    private static string ResolveMissOutcome(string command, bool rejectedWindowsAppsCodex)
+    {
         if (rejectedWindowsAppsCodex)
             throw new InvalidOperationException(
                 "Codex resolves only to the packaged WindowsApps alias, which cannot be launched from dydo terminals. " +
                 "Install a launchable Codex CLI on PATH or launch the agent manually.");
 
+        if (command == "codex")
+            throw new InvalidOperationException(
+                "Codex CLI not found on PATH or in the standard install location. " +
+                "Install it or add its bin dir to PATH.");
+
         return command;
+    }
+
+    private static string? FindOnPath(string command, string? pathVar, string[] extensions,
+        bool allowExtensionless, ref bool rejectedWindowsAppsCodex)
+    {
+        if (string.IsNullOrEmpty(pathVar))
+            return null;
+
+        foreach (var dir in pathVar.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var candidate = FindInDirectory(command, dir, extensions, allowExtensionless);
+            if (candidate is null)
+                continue;
+            if (IsRejectedWindowsCodexAlias(command, candidate))
+            {
+                rejectedWindowsAppsCodex = true;
+                continue;
+            }
+
+            return candidate;
+        }
+
+        return null;
+    }
+
+    private static string? FindInDirectory(string command, string directory, string[] extensions,
+        bool allowExtensionless)
+    {
+        if (allowExtensionless)
+        {
+            var directCandidate = Path.Combine(directory, command);
+            return File.Exists(directCandidate) ? directCandidate : null;
+        }
+
+        foreach (var ext in extensions)
+        {
+            var candidate = Path.Combine(directory, command + ext);
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
     }
 
     private static bool IsRejectedWindowsCodexAlias(string command, string candidate)

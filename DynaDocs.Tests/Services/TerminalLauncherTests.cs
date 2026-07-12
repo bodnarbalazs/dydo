@@ -23,6 +23,8 @@ public class TerminalLauncherTests : IDisposable
     public void Dispose()
     {
         TerminalLauncher.ExecutableResolverOverride = null;
+        TerminalLauncher.PersistedPathProviderOverride = null;
+        TerminalLauncher.InstallDirProbeOverride = null;
         TerminalLauncher.CodexConfigOverride = null;
         TerminalLauncher.ModelsConfigOverride = null;
     }
@@ -382,6 +384,10 @@ public class TerminalLauncherTests : IDisposable
     public void GetLaunchExecutable_ResolvesToAbsolutePath_WhenHostOnPath()
     {
         TerminalLauncher.ExecutableResolverOverride = null; // exercise the real PATH search
+        TerminalLauncher.PersistedPathProviderOverride = _ =>
+            throw new InvalidOperationException("Persisted PATH should not be consulted");
+        TerminalLauncher.InstallDirProbeOverride = _ =>
+            throw new InvalidOperationException("Install location should not be consulted");
         var originalPath = Environment.GetEnvironmentVariable("PATH");
         var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
         var dir = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
@@ -443,7 +449,7 @@ public class TerminalLauncherTests : IDisposable
     }
 
     [Fact]
-    public void GetLaunchExecutable_FallsBackToBareName_WhenHostNotOnPath()
+    public void GetLaunchExecutable_ClaudeFallsBackToBareName_WhenHostNotOnPath()
     {
         TerminalLauncher.ExecutableResolverOverride = null; // exercise the real PATH search
         var originalPath = Environment.GetEnvironmentVariable("PATH");
@@ -453,7 +459,135 @@ public class TerminalLauncherTests : IDisposable
         {
             Environment.SetEnvironmentVariable("PATH", dir);
 
-            Assert.Equal("codex", TerminalLauncher.GetLaunchExecutable("codex"));
+            TerminalLauncher.PersistedPathProviderOverride = _ => null;
+            TerminalLauncher.InstallDirProbeOverride = _ => false;
+
+            Assert.Equal("claude", TerminalLauncher.GetLaunchExecutable("claude"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_ResolvesFromPersistedUserPath_WhenAbsentFromLivePath()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        TerminalLauncher.ExecutableResolverOverride = null;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
+        var root = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        var liveDir = Path.Combine(root, "live");
+        var userDir = Path.Combine(root, "user");
+        Directory.CreateDirectory(liveDir);
+        Directory.CreateDirectory(userDir);
+        try
+        {
+            var expected = Path.Combine(userDir, "codex.cmd");
+            File.WriteAllText(expected, "");
+            Environment.SetEnvironmentVariable("PATH", liveDir);
+            Environment.SetEnvironmentVariable("PATHEXT", ".CMD");
+            TerminalLauncher.PersistedPathProviderOverride = target =>
+                target == EnvironmentVariableTarget.User ? userDir : null;
+            TerminalLauncher.InstallDirProbeOverride = _ => false;
+
+            Assert.Equal(expected, TerminalLauncher.GetLaunchExecutable("codex"),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Environment.SetEnvironmentVariable("PATHEXT", originalPathExt);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_ResolvesFromPersistedMachinePath_WhenAbsentFromLiveAndUserPaths()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        TerminalLauncher.ExecutableResolverOverride = null;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
+        var root = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        var liveDir = Path.Combine(root, "live");
+        var machineDir = Path.Combine(root, "machine");
+        Directory.CreateDirectory(liveDir);
+        Directory.CreateDirectory(machineDir);
+        try
+        {
+            var expected = Path.Combine(machineDir, "codex.cmd");
+            File.WriteAllText(expected, "");
+            Environment.SetEnvironmentVariable("PATH", liveDir);
+            Environment.SetEnvironmentVariable("PATHEXT", ".CMD");
+            TerminalLauncher.PersistedPathProviderOverride = target =>
+                target == EnvironmentVariableTarget.Machine ? machineDir : null;
+            TerminalLauncher.InstallDirProbeOverride = _ => false;
+
+            Assert.Equal(expected, TerminalLauncher.GetLaunchExecutable("codex"),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Environment.SetEnvironmentVariable("PATHEXT", originalPathExt);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_ResolvesFromStandardInstallLocation_WhenAbsentFromPaths()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        TerminalLauncher.ExecutableResolverOverride = null;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Programs", "OpenAI", "Codex", "bin", "codex.exe");
+            string? probed = null;
+            Environment.SetEnvironmentVariable("PATH", dir);
+            TerminalLauncher.PersistedPathProviderOverride = _ => null;
+            TerminalLauncher.InstallDirProbeOverride = path =>
+            {
+                probed = path;
+                return true;
+            };
+
+            Assert.Equal(expected, TerminalLauncher.GetLaunchExecutable("codex"),
+                StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expected, probed, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetLaunchExecutable_CodexThrows_WhenAbsentFromEverySource()
+    {
+        TerminalLauncher.ExecutableResolverOverride = null;
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", dir);
+            TerminalLauncher.PersistedPathProviderOverride = _ => null;
+            TerminalLauncher.InstallDirProbeOverride = _ => false;
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                TerminalLauncher.GetLaunchExecutable("codex"));
+            Assert.Contains("Codex CLI not found", ex.Message);
         }
         finally
         {
@@ -501,6 +635,8 @@ public class TerminalLauncherTests : IDisposable
         if (!OperatingSystem.IsWindows()) return;
 
         TerminalLauncher.ExecutableResolverOverride = null;
+        TerminalLauncher.PersistedPathProviderOverride = _ => null;
+        TerminalLauncher.InstallDirProbeOverride = _ => false;
         var originalPath = Environment.GetEnvironmentVariable("PATH");
         var originalPathExt = Environment.GetEnvironmentVariable("PATHEXT");
         var root = Path.Combine(Path.GetTempPath(), "dydo-path-" + Guid.NewGuid().ToString("N")[..8]);

@@ -75,6 +75,16 @@ public class TemplateGeneratorTests
         var workflowTemplate = TemplateGenerator.ReadBuiltInTemplate("agent-workflow.template.md");
         Assert.Contains("{{AGENT_NAME}}", workflowTemplate);
         Assert.Contains("dydo agent claim", workflowTemplate);
+        Assert.Contains("Bash tool", workflowTemplate);
+        Assert.Contains("dydo wait", workflowTemplate);
+        Assert.Contains("must-reads", workflowTemplate);
+        Assert.True(
+            workflowTemplate.IndexOf("Bash tool", StringComparison.Ordinal) <
+            workflowTemplate.IndexOf("Set your role", StringComparison.Ordinal) &&
+            workflowTemplate.IndexOf("Set your role", StringComparison.Ordinal) <
+            workflowTemplate.IndexOf("dydo wait", StringComparison.Ordinal) &&
+            workflowTemplate.IndexOf("dydo wait", StringComparison.Ordinal) <
+            workflowTemplate.IndexOf("must-reads", StringComparison.Ordinal));
 
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
         Assert.Contains("{{AGENT_NAME}}", codeWriterTemplate);
@@ -486,7 +496,7 @@ public class TemplateGeneratorTests
 
         // The diagram was replaced by a deliberate placeholder pointing at the _assets folder.
         Assert.Contains("<!-- VISUAL:", content);
-        Assert.Contains("_assets", content);
+        Assert.Contains("dydo/_assets/", content);
     }
 
     [Fact]

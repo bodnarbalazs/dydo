@@ -995,9 +995,51 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     public bool CanTakeRole(string agentName, string role, string task, out string reason, string? dispatcherRole = null)
     {
-        var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, GetAgentState);
+        var evaluator = new RoleConstraintEvaluator(_roleDefinitions, AgentNames, name =>
+        {
+            var state = GetAgentState(name);
+            if (string.Equals(name, agentName, StringComparison.OrdinalIgnoreCase))
+                AddTaskFamilyRoleHistoryForRoleTransition(state, role, task);
+            return state;
+        });
         return evaluator.CanTakeRole(agentName, role, task, out reason, dispatcherRole);
     }
+
+    private void AddTaskFamilyRoleHistoryForRoleTransition(AgentState? state, string role, string task)
+    {
+        if (state == null || !_roleDefinitions.TryGetValue(role, out var roleDefinition))
+            return;
+
+        var transitionRoles = roleDefinition.Constraints
+            .Where(c => c.Type == "role-transition" && c.FromRole != null)
+            .Select(c => c.FromRole!)
+            .ToList();
+        if (transitionRoles.Count == 0)
+            return;
+
+        var familyRoles = state.TaskRoleHistory
+            .Where(entry => AreTaskNamesInSameFamily(entry.Key, task))
+            .SelectMany(entry => entry.Value)
+            .Where(historyRole => transitionRoles.Contains(historyRole, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (familyRoles.Count == 0)
+            return;
+
+        if (!state.TaskRoleHistory.TryGetValue(task, out var taskRoles))
+            state.TaskRoleHistory[task] = taskRoles = [];
+
+        foreach (var familyRole in familyRoles)
+        {
+            if (!taskRoles.Contains(familyRole, StringComparer.OrdinalIgnoreCase))
+                taskRoles.Add(familyRole);
+        }
+    }
+
+    private static bool AreTaskNamesInSameFamily(string first, string second) =>
+        string.Equals(first, second, StringComparison.OrdinalIgnoreCase) ||
+        first.StartsWith(second + "-", StringComparison.OrdinalIgnoreCase) ||
+        second.StartsWith(first + "-", StringComparison.OrdinalIgnoreCase);
 
 
     public AgentState? GetAgentState(string agentName)

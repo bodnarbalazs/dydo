@@ -106,6 +106,33 @@ public class ConstraintEvaluationTests : IDisposable
     }
 
     [Fact]
+    public void DataDriven_RoleTransition_BlocksReviewerOnSuffixedTaskFamily()
+    {
+        SetupWithRoleFiles(["Adele"], new() { ["testuser"] = ["Adele"] });
+        CreateStateFile("Adele", taskRoleHistory: new() { ["my-task"] = ["code-writer"] });
+
+        var registry = new AgentRegistry(_testDir);
+        var canTake = registry.CanTakeRole("Adele", "reviewer", "my-task-slice1", out var reason);
+
+        Assert.False(canTake);
+        Assert.Contains("code-writer", reason);
+    }
+
+    [Fact]
+    public void DataDriven_RoleTransition_AllowsDifferentAgentOnSameTask()
+    {
+        SetupWithRoleFiles(["Adele", "Brian"], new() { ["testuser"] = ["Adele", "Brian"] });
+        CreateStateFile("Adele", taskRoleHistory: new() { ["my-task"] = ["code-writer"] });
+        CreateStateFile("Brian");
+
+        var registry = new AgentRegistry(_testDir);
+        var canTake = registry.CanTakeRole("Brian", "reviewer", "my-task", out var reason);
+
+        Assert.True(canTake);
+        Assert.Empty(reason);
+    }
+
+    [Fact]
     public void DataDriven_RoleTransition_AllowedWithNoHistory()
     {
         SetupWithRoleFiles(["Adele"], new() { ["testuser"] = ["Adele"] });

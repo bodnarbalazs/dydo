@@ -95,6 +95,117 @@ public class WorktreeCommandTests : IDisposable
         Assert.Equal(0, exitCode);
     }
 
+    [Fact]
+    public void Cleanup_WithPendingChanges_RefusesUnlessForced()
+    {
+        var worktreeId = "Adele-20260712120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+        Directory.CreateDirectory(worktreePath);
+
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), _testDir);
+
+        WorktreeCommand.RunProcessCaptureOverride = (_, arguments) =>
+            arguments.Contains("status --porcelain") ? (0, " M Services/AgentRegistry.cs\n") : (0, "0\n");
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("pending changes", stderr, StringComparison.OrdinalIgnoreCase);
+            Assert.True(Directory.Exists(worktreePath));
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree")));
+
+            Assert.Equal(0, WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry, force: true));
+            Assert.False(File.Exists(Path.Combine(workspace, ".worktree")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_WithUnmergedCommits_RefusesUnlessForced()
+    {
+        var worktreeId = "Adele-20260712120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+        Directory.CreateDirectory(worktreePath);
+
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), _testDir);
+
+        WorktreeCommand.RunProcessCaptureOverride = (_, arguments) =>
+            arguments.Contains("status --porcelain") ? (0, string.Empty) : (0, "2\n");
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("not merged", stderr, StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree")));
+
+            Assert.Equal(0, WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry, force: true));
+            Assert.False(File.Exists(Path.Combine(workspace, ".worktree")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_WhenStatusCheckFails_RefusesUnlessForced()
+    {
+        var worktreeId = "Adele-20260712120000";
+        var worktreePath = Path.Combine(_testDir, "dydo", "_system", ".local", "worktrees", worktreeId);
+        SetupLastAgentScenario("Adele", worktreeId, worktreePath);
+        Directory.CreateDirectory(worktreePath);
+
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+        File.WriteAllText(Path.Combine(workspace, ".worktree-root"), _testDir);
+
+        WorktreeCommand.RunProcessCaptureOverride = (_, _) => (1, "fatal: bad worktree");
+        WorktreeCommand.RunProcessOverride = (_, _) => { };
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("could not check for pending changes", stderr, StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(Path.Combine(workspace, ".worktree")));
+
+            Assert.Equal(0, WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry, force: true));
+            Assert.False(File.Exists(Path.Combine(workspace, ".worktree")));
+        }
+        finally
+        {
+            WorktreeCommand.RunProcessCaptureOverride = null;
+            WorktreeCommand.RunProcessOverride = null;
+        }
+    }
+
+    [Fact]
+    public void Cleanup_AfterWorktreeAlreadyRemoved_IsANoOp()
+    {
+        var worktreeId = "Adele-20260712120000";
+        var workspace = _registry.GetAgentWorkspace("Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, ".worktree"), worktreeId);
+
+        Assert.Equal(0, WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+        Assert.Equal(0, WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry));
+    }
+
     [Theory]
     [InlineData("../..")]
     [InlineData("..")]
@@ -2938,6 +3049,8 @@ public class WorktreeCommandTests : IDisposable
         using var lockStream = File.Open(lockedFile, FileMode.Open, FileAccess.Read, FileShare.None);
 
         WorktreeCommand.RunProcessOverride = (_, _) => { };
+        WorktreeCommand.RunProcessCaptureOverride = (_, arguments) =>
+            arguments.Contains("status --porcelain") ? (0, string.Empty) : (0, "0\n");
         try
         {
             var exitCode = WorktreeCommand.ExecuteCleanup(worktreeId, "Adele", _registry);
@@ -2951,6 +3064,7 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             WorktreeCommand.RunProcessOverride = null;
+            WorktreeCommand.RunProcessCaptureOverride = null;
         }
     }
 

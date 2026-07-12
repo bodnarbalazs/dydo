@@ -18,7 +18,7 @@ BrokenLinksRule, LinkResolver, DocLinkResolver, PathUtils.ResolvePath, and Check
 
 **Concrete gaps observed:**
 
-1. DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs — every test that uses a valid target adds it to allDocs. **No test passes an allDocs list that omits a real on-disk target file**, so the rule's failure mode for issue #0184 is uncovered. No ../../ (two-up) coverage. No anchor-only [label](#section) test.
+1. DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs — every test that uses a valid target adds it to allDocs. **No test passes an allDocs list that omits a real on-disk target file**, so the rule's failure mode for issue #0184 is uncovered. No ../../ (two-up) coverage. No anchor-only `[label](#section)` test.
 2. DynaDocs.Tests/Services/LinkResolverTests.cs covers ValidateAnchor directly but never exercises ResolveLink with an empty link.Target.
 3. **No DocLinkResolverTests.cs exists** (verified by glob DynaDocs.Tests/**/*LinkResolver*). DocLinkResolver is only exercised transitively through DocGraphTests. Behavioural drift between the two resolvers (issue #187) cannot be detected.
 4. PathUtilsDiscoveryTests.cs:40-54 has 3 ResolvePath tests but they only assert "contains no backslash, contains no .." — they do not verify the resolved path is correct. (The inquisitor's claim of *zero* direct tests is mistaken on the count; the substantive point about under-testing holds.)

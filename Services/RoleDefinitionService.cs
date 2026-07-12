@@ -50,6 +50,11 @@ public class RoleDefinitionService : IRoleDefinitionService
                         RequiredRoles = ["reviewer"],
                         OnlyWhenDispatched = true,
                         Message = "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --auto-close --role reviewer --task {task} --brief \"Review changes for {task}\""
+                    },
+                    new RoleConstraint
+                    {
+                        Type = "requires-commit",
+                        Message = "Code-writers in worktrees must commit before releasing."
                     }
                 ],
                 ConditionalMustReads =
@@ -283,6 +288,8 @@ public class RoleDefinitionService : IRoleDefinitionService
             case "requires-dispatch":
                 if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
                     errors.Add("Constraint 'requires-dispatch' requires 'requiredRoles'.");
+                break;
+            case "requires-commit":
                 break;
             case "dispatch-restriction":
                 if (string.IsNullOrWhiteSpace(constraint.TargetRole))

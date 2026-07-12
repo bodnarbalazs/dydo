@@ -24,6 +24,7 @@ public class AgentRegistryTests : IDisposable
         ProcessUtils.FindAncestorProcessOverride = null;
         ProcessUtils.GetParentPidOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
+        AgentRegistry.ReleaseGitCaptureOverride = null;
         WatchdogLogger.LogPathOverride = null;
         if (Directory.Exists(_testDir))
             Directory.Delete(_testDir, true);
@@ -548,6 +549,24 @@ public class AgentRegistryTests : IDisposable
 
         Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
         File.WriteAllText(configPath, config);
+    }
+
+    private void WriteCommitRequiredCodeWriterRole(string? message = null)
+    {
+        var rolesDir = Path.Combine(_testDir, "dydo", "_system", "roles");
+        Directory.CreateDirectory(rolesDir);
+        var role = new RoleDefinition
+        {
+            Name = "code-writer",
+            Description = "Test code writer",
+            Base = true,
+            WritablePaths = ["Services/**"],
+            ReadOnlyPaths = [],
+            TemplateFile = "mode-code-writer.template.md",
+            Constraints = [new RoleConstraint { Type = "requires-commit", Message = message ?? string.Empty }]
+        };
+        var json = JsonSerializer.Serialize(role, DydoConfigJsonContext.Default.RoleDefinition);
+        File.WriteAllText(Path.Combine(rolesDir, "code-writer.role.json"), json);
     }
 
     [Fact]
@@ -2738,6 +2757,117 @@ public class AgentRegistryTests : IDisposable
             var result = registry.ReleaseAgent("sess-merge", out var error);
             Assert.False(result);
             Assert.Contains("merge not dispatched", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ReleaseAgent_WorktreeBranchNotAheadOfBase_Fails()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+            WriteCommitRequiredCodeWriterRole("Commit the worktree changes before releasing.");
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-commit");
+            Assert.True(registry.ClaimAgent("Adele", out var claimError), claimError);
+            Assert.True(registry.SetRole("sess-commit", "code-writer", "test-task", out var roleError), roleError);
+
+            var workspace = registry.GetAgentWorkspace("Adele");
+            File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree");
+            File.WriteAllText(Path.Combine(workspace, ".worktree-path"), Path.Combine(_testDir, "worktree"));
+            File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+            AgentRegistry.ReleaseGitCaptureOverride = (_, _) => (0, "0\n");
+
+            Assert.False(registry.ReleaseAgent("sess-commit", out var error));
+            Assert.Equal("Commit the worktree changes before releasing.", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ReleaseAgent_WorktreeBranchAheadOfBase_Succeeds()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+            WriteCommitRequiredCodeWriterRole();
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-committed");
+            Assert.True(registry.ClaimAgent("Adele", out var claimError), claimError);
+            Assert.True(registry.SetRole("sess-committed", "code-writer", "test-task", out var roleError), roleError);
+
+            var workspace = registry.GetAgentWorkspace("Adele");
+            File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree");
+            File.WriteAllText(Path.Combine(workspace, ".worktree-path"), Path.Combine(_testDir, "worktree"));
+            File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+            AgentRegistry.ReleaseGitCaptureOverride = (_, _) => (0, "1\n");
+
+            Assert.True(registry.ReleaseAgent("sess-committed", out var error), error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Fact]
+    public void ReleaseAgent_WorktreeBranchNotAheadOfBase_UsesDefaultMessageWhenConstraintMessageEmpty()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+            WriteCommitRequiredCodeWriterRole();
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-default-message");
+            Assert.True(registry.ClaimAgent("Adele", out var claimError), claimError);
+            Assert.True(registry.SetRole("sess-default-message", "code-writer", "test-task", out var roleError), roleError);
+
+            var workspace = registry.GetAgentWorkspace("Adele");
+            File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree");
+            File.WriteAllText(Path.Combine(workspace, ".worktree-path"), Path.Combine(_testDir, "worktree"));
+            File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+            AgentRegistry.ReleaseGitCaptureOverride = (_, _) => (0, "0\n");
+
+            Assert.False(registry.ReleaseAgent("sess-default-message", out var error));
+            var worktreePath = Path.Combine(_testDir, "worktree");
+            Assert.Equal($"You have uncommitted work in {worktreePath} (branch is not ahead of main). Run: git add -A && git commit -m '<message>' before releasing.", error);
+        }
+        finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
+    }
+
+    [Theory]
+    [InlineData(128, "fatal: bad revision")]
+    [InlineData(0, "garbage")]
+    public void ReleaseAgent_WorktreeGitCheckFailsClosed(int exitCode, string stdout)
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+        try
+        {
+            SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]>
+                { ["testuser"] = new[] { "Adele" } });
+            WriteCommitRequiredCodeWriterRole();
+
+            var registry = new AgentRegistry(_testDir, null, new FolderScaffolder());
+            registry.StorePendingSessionId("Adele", "sess-git-failure");
+            Assert.True(registry.ClaimAgent("Adele", out var claimError), claimError);
+            Assert.True(registry.SetRole("sess-git-failure", "code-writer", "test-task", out var roleError), roleError);
+
+            var workspace = registry.GetAgentWorkspace("Adele");
+            File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree");
+            File.WriteAllText(Path.Combine(workspace, ".worktree-path"), Path.Combine(_testDir, "worktree"));
+            File.WriteAllText(Path.Combine(workspace, ".worktree-base"), "main");
+            AgentRegistry.ReleaseGitCaptureOverride = (_, _) => (exitCode, stdout);
+
+            Assert.False(registry.ReleaseAgent("sess-git-failure", out var error));
+            Assert.Contains("Could not verify commits", error);
+            Assert.Contains("git check failed", error);
         }
         finally { Environment.SetEnvironmentVariable("DYDO_HUMAN", null); }
     }

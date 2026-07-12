@@ -812,7 +812,8 @@ public static partial class GuardCommand
                 Console.Error.WriteLine("  messaging belong to the top-level orchestrator, not a worker.");
                 return ExitCodes.ToolError;
             }
-            return HandleDydoBashCommand(command, sessionId, host, model, registry, runInBackground);
+            return HandleDydoBashCommand(
+                command, sessionId, host, model, offLimitsService, bashAnalyzer, registry, runInBackground);
         }
 
         // Hardcoded dangerous patterns — security checks before configurable nudges
@@ -1029,7 +1030,9 @@ public static partial class GuardCommand
     }
 
     private static int HandleDydoBashCommand(
-        string command, string sessionId, string host, string model, AgentRegistry registry, bool? runInBackground)
+        string command, string sessionId, string host, string model,
+        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        AgentRegistry registry, bool? runInBackground)
     {
         // #0196: phase-1 single-line write removed. The unverifiable shape it produced is now
         // discarded by AgentSessionManager.GetSessionContext, so writing it served no purpose
@@ -1070,9 +1073,17 @@ public static partial class GuardCommand
         if (agent != null)
             registry.StoreSessionContext(sessionId, agent.Name, host, model);
 
-        EmitWorktreeAllowIfNeeded();
+        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
+        if (isDangerous)
+        {
+            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
+            Console.Error.WriteLine($"  Reason: {dangerReason}");
+            Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
+            return ExitCodes.ToolError;
+        }
 
-        return ExitCodes.Success;
+        return AnalyzeAndCheckBashOperations(
+            command, sessionId, agent, offLimitsService, bashAnalyzer, registry);
     }
 
     private static void HandleClaimSessionStorage(string command, string sessionId, string host, string model, AgentRegistry registry)

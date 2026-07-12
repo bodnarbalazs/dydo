@@ -11,7 +11,7 @@ date: 2026-05-19
 
 # Anchor-only [label](#section) literals in issue/task body text trip post-fix link validator (backtick-escape per workaround)
 
-Post-#0186, anchor-only links validate against the source doc's own anchors; several issue and task files quote [label](#section) literally as bug documentation, which the parser now extracts as anchor-only links pointing at non-existent sections on the host doc — producing 7+ pre-existing whole-tree broken-link errors that did not show up at inquisition time but exist independently of the fix.
+Post-#0186, anchor-only links validate against the source doc's own anchors; several issue and task files quote `[label](#section)` literally as bug documentation, which the parser now extracts as anchor-only links pointing at non-existent sections on the host doc — producing 7+ pre-existing whole-tree broken-link errors that did not show up at inquisition time but exist independently of the fix.
 
 ## Description
 

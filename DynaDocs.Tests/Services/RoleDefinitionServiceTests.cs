@@ -464,6 +464,27 @@ public class RoleDefinitionServiceTests : IDisposable
     }
 
     [Fact]
+    public void ValidateRoleDefinition_RequiresCommit_Passes()
+    {
+        var role = new RoleDefinition
+        {
+            Name = "test", Description = "Test", Base = false,
+            WritablePaths = ["src/**"], ReadOnlyPaths = [],
+            TemplateFile = "t.md",
+            Constraints = [new RoleConstraint
+            {
+                Type = "requires-commit",
+                Message = "Commit worktree changes before releasing."
+            }]
+        };
+
+        var valid = _service.ValidateRoleDefinition(role, out var errors);
+
+        Assert.True(valid);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
     public void ValidateRoleDefinition_RequiresPriorMissingRequiredRoles_Fails()
     {
         var role = new RoleDefinition

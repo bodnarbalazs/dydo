@@ -16,7 +16,7 @@ Anchor-only links are routed through the non-markdown branch of BrokenLinksRule 
 
 ## Description
 
-**Latent in production today** — the only ](#…) matches in dydo/**/*.md outside templates live under dydo/_system/templates/mode-judge.template.md, which RuleSkipPaths.IsTemplateOrAddition bypasses. Any new doc that uses [label](#section) outside _system/templates/ or _system/template-additions/ will trigger the bug.
+**Latent in production today** — the only ](#…) matches in dydo/**/*.md outside templates live under dydo/_system/templates/mode-judge.template.md, which RuleSkipPaths.IsTemplateOrAddition bypasses. Any new doc that uses `[label](#section)` outside _system/templates/ or _system/template-additions/ will trigger the bug.
 
 **Mechanism:**
 
@@ -41,4 +41,4 @@ Suggested regression tests:
 
 ## Resolution
 
-Fixed at HEAD: anchor-only [label](#section) links are validated against the source doc's own anchors instead of erroring on an empty target (BrokenLinksRule.cs:32-50; LinkResolverTests.cs:129). Self-referential corpus fallout tracked as #0205 (still open). Triage sweep 2026-07-04 (Brian, CoS).
+Fixed at HEAD: anchor-only `[label](#section)` links are validated against the source doc's own anchors instead of erroring on an empty target (BrokenLinksRule.cs:32-50; LinkResolverTests.cs:129). Self-referential corpus fallout tracked as #0205 (still open). Triage sweep 2026-07-04 (Brian, CoS).

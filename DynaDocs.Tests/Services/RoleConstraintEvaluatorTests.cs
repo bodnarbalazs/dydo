@@ -512,6 +512,29 @@ public class RoleConstraintEvaluatorTests
 
     #endregion
 
+    #region requires-commit pass-through
+
+    [Fact]
+    public void CanTakeRole_RequiresCommit_PassesThrough()
+    {
+        var roles = new Dictionary<string, RoleDefinition>
+        {
+            ["code-writer"] = MakeRole("code-writer", [
+                new RoleConstraint
+                {
+                    Type = "requires-commit",
+                    Message = "Commit worktree changes before releasing."
+                }
+            ])
+        };
+        var evaluator = new RoleConstraintEvaluator(roles, ["Alice"],
+            name => MakeState(name));
+
+        Assert.True(evaluator.CanTakeRole("Alice", "code-writer", "task1", out _));
+    }
+
+    #endregion
+
     #region Unknown constraint type
 
     [Fact]

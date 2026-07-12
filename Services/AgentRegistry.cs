@@ -24,6 +24,8 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     internal static Func<string, bool>? IsSessionPidAliveOverride { get; set; }
 
+    internal static Func<string, string, (int ExitCode, string Stdout)>? ReleaseGitCaptureOverride { get; set; }
+
     private readonly string _basePath;
     private readonly IConfigService _configService;
     private readonly IFolderScaffolder _folderScaffolder;
@@ -661,7 +663,7 @@ public partial class AgentRegistry : IAgentRegistry
         {
             var workspace = GetAgentWorkspace(agent.Name);
 
-            if (!ValidateReleasePreconditions(agent.Name, workspace, out error))
+            if (!ValidateReleasePreconditions(agent, workspace, out error))
                 return false;
 
             var sessionPath = Path.Combine(workspace, ".session");
@@ -711,9 +713,12 @@ public partial class AgentRegistry : IAgentRegistry
         }
     }
 
-    private bool ValidateReleasePreconditions(string agentName, string workspace, out string error)
+    private bool ValidateReleasePreconditions(AgentState agent, string workspace, out string error)
     {
         error = string.Empty;
+
+        if (RequiresCommitBeforeRelease(agent, workspace, out error))
+            return false;
 
         var inboxPath = Path.Combine(workspace, "inbox");
         if (Directory.Exists(inboxPath))
@@ -731,7 +736,7 @@ public partial class AgentRegistry : IAgentRegistry
         // background-wait state, not "waiting for a response on this task". Real
         // task-channel waits are the only ones that should block release. Sentinels
         // are torn down by CleanupAfterRelease's ClearAllWaitMarkers below.
-        var waitMarkers = GetWaitMarkers(agentName).Where(m => !m.Task.StartsWith('_')).ToList();
+        var waitMarkers = GetWaitMarkers(agent.Name).Where(m => !m.Task.StartsWith('_')).ToList();
         if (waitMarkers.Count > 0)
         {
             var tasks = string.Join(", ", waitMarkers.Select(m => m.Task));
@@ -750,6 +755,51 @@ public partial class AgentRegistry : IAgentRegistry
             return false;
         }
 
+        return true;
+    }
+
+    private bool RequiresCommitBeforeRelease(AgentState agent, string workspace, out string error)
+    {
+        error = string.Empty;
+        if (agent.Role == null || !_roleDefinitions.TryGetValue(agent.Role, out var role))
+            return false;
+
+        var constraint = role.Constraints.FirstOrDefault(c => c.Type == "requires-commit");
+        if (constraint == null)
+            return false;
+
+        var worktreeMarker = Path.Combine(workspace, ".worktree");
+        var worktreePathMarker = Path.Combine(workspace, ".worktree-path");
+        var baseBranchMarker = Path.Combine(workspace, ".worktree-base");
+        if (!File.Exists(worktreeMarker) || !File.Exists(worktreePathMarker) || !File.Exists(baseBranchMarker))
+            return false;
+
+        var worktreePath = File.ReadAllText(worktreePathMarker).Trim();
+        var baseBranch = File.ReadAllText(baseBranchMarker).Trim();
+        (int ExitCode, string Stdout) result;
+        if (ReleaseGitCaptureOverride != null)
+        {
+            result = ReleaseGitCaptureOverride("git", $"-C \"{worktreePath}\" rev-list --count {baseBranch}..HEAD");
+        }
+        else
+        {
+            var capture = ProcessUtils.RunProcessCapture(
+                "git", $"-C \"{worktreePath}\" rev-list --count {baseBranch}..HEAD", redirectStdin: true);
+            result = (capture.ExitCode, capture.Stdout);
+        }
+
+        if (result.ExitCode == 0 && int.TryParse(result.Stdout.Trim(), out var aheadCount))
+        {
+            if (aheadCount > 0)
+                return false;
+
+            error = string.IsNullOrWhiteSpace(constraint.Message)
+                ? $"You have uncommitted work in {worktreePath} (branch is not ahead of {baseBranch}). Run: git add -A && git commit -m '<message>' before releasing."
+                : constraint.Message;
+            return true;
+        }
+
+        error = $"Could not verify commits in {worktreePath} (git check failed). Resolve the worktree state before releasing.";
         return true;
     }
 

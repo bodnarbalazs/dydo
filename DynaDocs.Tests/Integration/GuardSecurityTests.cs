@@ -248,6 +248,89 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("Dangerous");
     }
 
+    // ================================================================
+    // Issue #155: dydo command chains must retain full bash security
+    // ================================================================
+
+    [Fact]
+    public async Task Issue155_DydoChain_OffLimitsRead_Blocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            BashJson("dydo whoami && cat dydo/agents/Adele/state.md"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("off-limits");
+    }
+
+    [Fact]
+    public async Task Issue155_DydoChain_OffLimitsWrite_Blocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            BashJson("dydo whoami && tee dydo/agents/Adele/state.md"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("off-limits");
+    }
+
+    [Fact]
+    public async Task Issue155_DydoChain_DangerousPattern_Blocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson("dydo whoami && rm -rf /"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Dangerous");
+    }
+
+    [Fact]
+    public async Task Issue155_DydoChain_CrossAgentWorkspaceWrite_Blocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            BashJson("dydo whoami && tee dydo/agents/Brian/notes.md"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("another agent's workspace");
+    }
+
+    [Fact]
+    public async Task Issue155_DydoNotFirst_DangerousPattern_Blocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson("rm -rf / && dydo whoami"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Dangerous");
+    }
+
+    [Fact]
+    public async Task Issue155_DydoWaitCancel_ChainedWritableWrite_Succeeds()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            BashJson("dydo wait --cancel && tee dydo/agents/Adele/notes.md"));
+
+        result.AssertSuccess();
+    }
+
+    [Fact]
+    public async Task Issue155_BareDydoCommand_Succeeds()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(BashJson("dydo whoami"));
+
+        result.AssertSuccess();
+    }
+
     private string PowerShellJson(string command) =>
         "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"PowerShell\",\"tool_input\":{\"command\":\"" +
         command.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"}}";

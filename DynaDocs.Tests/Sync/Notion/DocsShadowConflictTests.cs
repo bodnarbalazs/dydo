@@ -95,12 +95,14 @@ public class DocsShadowConflictTests : IDisposable
     // ---- Safety-rail sentinel guard ----------------------------------------------------------------------
 
     [Fact]
-    public void ContainsConflictMarkers_MatchesOnlyBothSentinels_NotIncidentalAngleBrackets()
+    public void ContainsConflictMarkers_MatchesEitherEndpointSentinel_NotIncidentalMarkdown()
     {
         Assert.True(ThreeWayTextMerge.ContainsConflictMarkers("a\n<<<<<<< repo\nx\n=======\ny\n>>>>>>> external\nb"));
-        // Prose with a run of angle brackets, or only one sentinel, is not misread as a conflict.
+        Assert.True(ThreeWayTextMerge.ContainsConflictMarkers("only <<<<<<< repo remains"));
+        Assert.True(ThreeWayTextMerge.ContainsConflictMarkers("only >>>>>>> external remains"));
+        // Ordinary prose and Markdown rules are not conflict markers.
         Assert.False(ThreeWayTextMerge.ContainsConflictMarkers("compare a >>> b and c <<< d"));
-        Assert.False(ThreeWayTextMerge.ContainsConflictMarkers("only <<<<<<< repo here, no closer"));
+        Assert.False(ThreeWayTextMerge.ContainsConflictMarkers("Heading\n=======\n\n---"));
     }
 
     [Fact]
@@ -133,6 +135,34 @@ public class DocsShadowConflictTests : IDisposable
         Assert.Equal(humanPartial, File.ReadAllText(shadowPath));   // human's in-progress edit untouched
     }
 
+    [Theory]
+    [InlineData("<<<<<<< repo\nline TWO repo\n=======\nline TWO notion")]
+    [InlineData("line TWO repo\n=======\nline TWO notion\n>>>>>>> external")]
+    public void PartiallyResolvedShadow_WithEitherEndpointMarker_IsNotPromoted(string partialShadow)
+    {
+        var (client, root, child) = SeedTree("line one\nline two\nline three");
+        var repoPath = Path.Combine(_dydoRoot, "guide.md");
+        var repoEdit = "---\ntitle: Guide\n---\n\nline one\nline TWO repo\nline three";
+        File.WriteAllText(repoPath, repoEdit);
+
+        var store = new BaseSnapshotStore(Path.Combine(_dydoRoot, "snap.json"));
+        store.Set(new SyncDoc { LocalId = "guide", ExternalId = child, Fields = [], Body = "line one\nline two\nline three", SourcePath = "" });
+        client.SetPageMarkdown(child, "line one\nline TWO notion\nline three");
+
+        var shadowPath = Path.Combine(_dydoRoot, "_system", "notion_sync", "guide.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(shadowPath)!);
+        File.WriteAllText(shadowPath, partialShadow);
+
+        var adapter = new DocsPageAdapter(
+            client, root, new Dictionary<string, string>(),
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        new SyncRunner(adapter, store, (_, _, _) => repoPath, _ => shadowPath)
+            .Run([SyncDocFile.Read(repoPath, "guide", repoPath)]);
+
+        Assert.Equal(partialShadow, File.ReadAllText(shadowPath));
+        Assert.Equal(repoEdit, File.ReadAllText(repoPath));
+    }
+
     // ---- DocsTreeSync-level: promotion of a resolved shadow file -----------------------------------------
 
     [Fact]
@@ -163,6 +193,41 @@ public class DocsShadowConflictTests : IDisposable
         // Promoted onto the canonical file and the shadow removed.
         Assert.Contains("body RESOLVED.", File.ReadAllText(DocPath("understand/architecture.md")));
         Assert.False(File.Exists(shadowPath));
+    }
+
+    [Theory]
+    [InlineData("<<<<<<< repo", ">>>>>>> external")]
+    [InlineData(">>>>>>> external", "<<<<<<< repo")]
+    public void PartiallyResolvedShadow_MissingEitherEndpoint_IsNotPromotedOrPushed(
+        string removedMarker, string remainingMarker)
+    {
+        Seed("understand/architecture.md", "---\ntitle: Architecture\n---\n\n# Arch\n\nbody one.");
+        WriteModel(SpineModel);
+
+        var client = new FakeNotionClient();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var arch = PageIdFor(client, "Architecture");
+        var canonicalPath = DocPath("understand/architecture.md");
+        File.WriteAllText(canonicalPath, "---\ntitle: Architecture\n---\n\n# Arch\n\nbody REPO.");
+        client.SetPageMarkdown(arch, "# Arch\n\nbody NOTION.");
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        var shadowPath = Path.Combine(_dydoRoot, "_system", "notion_sync", "understand", "architecture.md");
+        var partialShadow = File.ReadAllText(shadowPath).Replace(removedMarker, string.Empty, StringComparison.Ordinal);
+        File.WriteAllText(shadowPath, partialShadow);
+        var canonicalBeforePromotion = File.ReadAllText(canonicalPath);
+
+        client.MarkdownUpdates.Clear();
+        DocsTreeSync.Run(client, _dydoRoot, "workspace", dryRun: false, new StringWriter());
+
+        Assert.Equal(canonicalBeforePromotion, File.ReadAllText(canonicalPath));
+        Assert.DoesNotContain("<<<<<<< ", File.ReadAllText(canonicalPath));
+        Assert.DoesNotContain("=======", File.ReadAllText(canonicalPath));
+        Assert.DoesNotContain(">>>>>>> ", File.ReadAllText(canonicalPath));
+        Assert.Equal(partialShadow, File.ReadAllText(shadowPath));
+        Assert.Contains(remainingMarker, File.ReadAllText(shadowPath));
+        Assert.Empty(client.MarkdownUpdates);
     }
 
     [Fact]

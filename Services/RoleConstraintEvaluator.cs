@@ -72,6 +72,7 @@ public class RoleConstraintEvaluator
                     _agentNames, _getAgentState, out reason);
 
             case "requires-dispatch":
+            case "requires-commit":
             case "dispatch-restriction":
                 return true;
 

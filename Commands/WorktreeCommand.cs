@@ -31,13 +31,18 @@ public static class WorktreeCommand
             Description = "The agent name performing cleanup",
             Required = true
         };
+        var cleanupForceOption = new Option<bool>("--force")
+        {
+            Description = "Remove a worktree even when it has pending changes or unmerged commits"
+        };
         cleanupCommand.Arguments.Add(worktreeIdArg);
         cleanupCommand.Options.Add(agentOption);
+        cleanupCommand.Options.Add(cleanupForceOption);
         cleanupCommand.SetAction((result) =>
         {
             var id = result.GetValue(worktreeIdArg)!;
             var agent = result.GetValue(agentOption)!;
-            return ExecuteCleanup(id, agent);
+            return ExecuteCleanup(id, agent, force: result.GetValue(cleanupForceOption));
         });
 
         command.Subcommands.Add(cleanupCommand);
@@ -282,13 +287,13 @@ public static class WorktreeCommand
         }
     }
 
-    internal static int ExecuteCleanup(string worktreeId, string agentName)
+    internal static int ExecuteCleanup(string worktreeId, string agentName, bool force = false)
     {
         var registry = new AgentRegistry();
-        return ExecuteCleanup(worktreeId, agentName, registry);
+        return ExecuteCleanup(worktreeId, agentName, registry, force);
     }
 
-    internal static int ExecuteCleanup(string worktreeId, string agentName, AgentRegistry registry)
+    internal static int ExecuteCleanup(string worktreeId, string agentName, AgentRegistry registry, bool force = false)
     {
         try
         {
@@ -312,6 +317,19 @@ public static class WorktreeCommand
         // Read mainRoot before markers are removed so git commands use -C consistently
         var worktreeRootMarker = Path.Combine(workspace, ".worktree-root");
         var mainRoot = File.Exists(worktreeRootMarker) ? File.ReadAllText(worktreeRootMarker).Trim() : null;
+        var worktreeBaseMarker = Path.Combine(workspace, ".worktree-base");
+        var baseBranch = File.Exists(worktreeBaseMarker) ? File.ReadAllText(worktreeBaseMarker).Trim() : null;
+        var worktreePath = ResolveWorktreePath(registry, worktreeId);
+
+        if (worktreePath != null && !force)
+        {
+            var safetyError = CheckCleanupSafety(worktreePath, baseBranch);
+            if (safetyError != null)
+            {
+                ConsoleOutput.WriteError(safetyError);
+                return ExitCodes.ValidationErrors;
+            }
+        }
 
         RemoveAllMarkers(workspace);
 
@@ -322,7 +340,6 @@ public static class WorktreeCommand
             return ExitCodes.Success;
         }
 
-        var worktreePath = ResolveWorktreePath(registry, worktreeId);
         if (worktreePath == null)
         {
             Console.WriteLine($"Worktree {worktreeId}: no path found, skipping removal.");
@@ -337,6 +354,30 @@ public static class WorktreeCommand
         else
             Console.WriteLine($"Worktree {worktreeId}: marker removed; directory remains (in use by another process — see warning above). Will retry on next prune.");
         return ExitCodes.Success;
+    }
+
+    private static string? CheckCleanupSafety(string worktreePath, string? baseBranch)
+    {
+        // Legacy marker-only cleanup has no branch relationship to inspect. Current worktree
+        // dispatch always writes .worktree-base; retain the existing no-op behavior for stale
+        // legacy markers instead of treating their synthetic paths as a git worktree.
+        if (string.IsNullOrWhiteSpace(baseBranch))
+            return null;
+
+        var (statusExit, statusStdout) = RunProcessCapture("git", $"-C \"{worktreePath}\" status --porcelain");
+        if (statusExit != 0)
+            return $"Refusing to clean up worktree '{worktreePath}': could not check for pending changes (git status exit {statusExit}). Re-run with --force only if you intend to discard it.";
+
+        if (!string.IsNullOrWhiteSpace(statusStdout))
+            return $"Refusing to clean up worktree '{worktreePath}': it has pending changes. Commit or stash them before cleanup, or re-run with --force to discard them.";
+
+        var (revListExit, revListStdout) = RunProcessCapture("git", $"-C \"{worktreePath}\" rev-list --count {baseBranch}..HEAD");
+        if (revListExit != 0 || !int.TryParse(revListStdout.Trim(), out var aheadCount))
+            return $"Refusing to clean up worktree '{worktreePath}': could not check commits ahead of {baseBranch}. Re-run with --force only if you intend to discard it.";
+
+        return aheadCount > 0
+            ? $"Refusing to clean up worktree '{worktreePath}': it has {aheadCount} commit(s) not merged into {baseBranch}. Merge them before cleanup, or re-run with --force to discard the branch."
+            : null;
     }
 
     internal static void PreserveAuditFiles(string worktreePath)

@@ -21,12 +21,14 @@ public static class ThreeWayTextMerge
 
     /// <summary>Whether a body carries this merge's conflict sentinels — the backstop the docs mirror's
     /// safety-rail invariant (DR 035 §5) checks before persisting a body to a canonical repo file: a body
-    /// bearing markers is routed to the shadow tree, never written to the canonical file. Matches the exact
-    /// opening/closing labels this merge emits, so ordinary prose that happens to contain a run of angle
-    /// brackets is not misread as a conflict.</summary>
+    /// bearing markers is routed to the shadow tree, never written to the canonical file. A bare <c>=======</c>
+    /// is deliberately excluded: it is byte-identical to a Markdown setext H1 underline and legitimate content, so
+    /// treating it as a marker would permanently wedge fully resolved documents. Either endpoint sentinel catches every
+    /// single-endpoint-deleted partial resolution; if both endpoints are deleted, the remaining mid-marker promotes
+    /// visibly and can be fixed by a human rather than wedging the document.</summary>
     public static bool ContainsConflictMarkers(string text) =>
         text.Contains(OursLabel, StringComparison.Ordinal)
-        && text.Contains(TheirsLabel, StringComparison.Ordinal);
+        || text.Contains(TheirsLabel, StringComparison.Ordinal);
 
     public static Result Merge(string baseText, string ours, string theirs)
     {

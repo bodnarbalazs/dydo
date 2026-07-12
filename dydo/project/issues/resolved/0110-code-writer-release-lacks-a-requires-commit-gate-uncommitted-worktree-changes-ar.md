@@ -5,12 +5,13 @@ fix-release:
 needs-human: false
 resolution: 
 severity: high
-status: open
+status: resolved
 work-type: 
 id: 110
 type: issue
 found-by: manual
 date: 2026-04-26
+resolved-date: 2026-07-12
 ---
 
 # Code-writer release lacks a requires-commit gate; uncommitted worktree changes are silently destroyed by worktree cleanup
@@ -63,4 +64,5 @@ The interaction with #0108 (dual-claim) is suspected to make this worse: when th
 - The lost session: code-writer Grace, task `fix-worktree-merge-self-merge`, dispatched 2026-04-24, released 2026-04-24T22:50:50Z, work destroyed by 2026-04-26T13:40 UTC.
 - Brian's completion message from Grace, preserved as `dydo/agents/Brian/inbox/c696a046-fix-worktree-merge-self-merge.md`, is the only record of what the fix contained.
 ## Resolution
-(Filled when resolved)
+
+RESOLVED 2026-07-12 (shipped + activated in 2.0.12). Two-part fix: (1) requires-commit release gate - AgentRegistry.RequiresCommitBeforeRelease blocks release when a worktree code-writer's branch is not ahead of base (git rev-list count), FAIL-CLOSED on any git error (verified through every branch by review); constraint declared in code-writer.role.json via WriteBaseRoleDefinitions, accepted by RoleConstraintEvaluator/RoleDefinitionService. (2) worktree cleanup refuses to delete a dirty/ahead worktree without --force, release path never auto-forces, repeated cleanup is a safe no-op (#0108 closed). Codex Emma (Terra, 2 rounds) + code-simplifier CC refactor (ValidateConstraint 32->8 to clear the CRAP gate). Adversarially reviewed (mechanics sound, silent-loss path closed), gate 175/175 green. Activated locally via dydo roles reset on the 2.0.12 binary (binary-first per #0286). Low/medium residuals tracked in follow-up. Note: gate fires only for --worktree agents.

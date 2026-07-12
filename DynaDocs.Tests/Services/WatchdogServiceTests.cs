@@ -40,6 +40,7 @@ public class WatchdogServiceTests : IDisposable
         WatchdogService.ResumeAttemptsCapOverride = null;
         WatchdogService.ResumeWarmupGateOverride = null;
         WatchdogService.IsWatchdogProcessOverride = null;
+        WatchdogService.GetWatchdogCommandLineOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
         ProcessUtils.IsProcessRunningOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
@@ -1453,6 +1454,45 @@ public class WatchdogServiceTests : IDisposable
         Assert.Single(calls);
         Assert.Equal(("Adele", "sess-abc"), calls[0]);
         Assert.Equal(1, ReadResumeAttempts(dydoRoot, "Adele"));
+    }
+
+    [Fact]
+    public void IsWatchdogProcess_IdentifiesWatchdogFromPidCommandLine()
+    {
+        WatchdogService.IsWatchdogProcessOverride = null;
+        WatchdogService.GetWatchdogCommandLineOverride = _ => "dydo watchdog run";
+
+        Assert.True(WatchdogService.IsWatchdogProcess(123));
+    }
+
+    [Fact]
+    public void IsWatchdogProcess_RejectsNonWatchdogFromPidCommandLine()
+    {
+        WatchdogService.IsWatchdogProcessOverride = null;
+        WatchdogService.GetWatchdogCommandLineOverride = _ => "dydo dispatch --role code-writer";
+
+        Assert.False(WatchdogService.IsWatchdogProcess(123));
+    }
+
+    [Fact]
+    public void GetWatchdogCommandLine_CurrentProcess_ReturnsNonEmpty()
+    {
+        WatchdogService.IsWatchdogProcessOverride = null;
+        WatchdogService.GetWatchdogCommandLineOverride = null;
+
+        var commandLine = WatchdogService.GetWatchdogCommandLine(Environment.ProcessId);
+
+        Assert.False(string.IsNullOrWhiteSpace(commandLine));
+    }
+
+    [Fact]
+    public void GetWatchdogCommandLine_InvalidPid_ReturnsNullAndIsNotWatchdog()
+    {
+        WatchdogService.IsWatchdogProcessOverride = null;
+        WatchdogService.GetWatchdogCommandLineOverride = null;
+
+        Assert.Null(WatchdogService.GetWatchdogCommandLine(int.MaxValue));
+        Assert.False(WatchdogService.IsWatchdogProcess(int.MaxValue));
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using DynaDocs.Models;
 using DynaDocs.Utils;
 
@@ -29,6 +30,12 @@ public static class WatchdogService
     /// whether the pidfile PID is a live watchdog. Test hook.
     /// </summary>
     internal static Func<int, bool>? IsWatchdogProcessOverride { get; set; }
+
+    /// <summary>
+    /// When set, IsWatchdogProcess uses this instead of reading the PID's command line.
+    /// Test hook.
+    /// </summary>
+    internal static Func<int, string?>? GetWatchdogCommandLineOverride { get; set; }
 
     /// <summary>
     /// When set, Run()'s polling loop waits for this interval instead of the default 10s.
@@ -205,12 +212,93 @@ public static class WatchdogService
     // quickly recycled on Windows (observed: an npx/cmd process reusing it), and the recycled
     // process would masquerade as a live watchdog, so EnsureRunning would return false and
     // NEVER respawn — silently disabling --auto-close until someone noticed lingering tabs.
-    // Matching the command line defeats PID reuse.
+    // Matching the command line defeats PID reuse. On Windows read only this PID's PEB,
+    // avoiding the full process scan on every release and auto-close dispatch.
     internal static bool IsWatchdogProcess(int pid)
     {
         if (IsWatchdogProcessOverride != null) return IsWatchdogProcessOverride(pid);
-        return ProcessUtils.FindProcessesByCommandLine("watchdog run").Contains(pid);
+        return GetWatchdogCommandLine(pid)?.Contains("watchdog run", StringComparison.OrdinalIgnoreCase) == true;
     }
+
+    internal static string? GetWatchdogCommandLine(int pid)
+    {
+        if (GetWatchdogCommandLineOverride != null) return GetWatchdogCommandLineOverride(pid);
+        return OperatingSystem.IsWindows()
+            ? GetWatchdogCommandLineWindows(pid)
+            : ProcessUtils.GetProcessCommandLine(pid);
+    }
+
+    private static string? GetWatchdogCommandLineWindows(int pid)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            var processInfo = new ProcessBasicInformation();
+            if (NtQueryInformationProcess(process.Handle, 0, ref processInfo,
+                    Marshal.SizeOf<ProcessBasicInformation>(), out _) != 0)
+                return null;
+
+            var processParametersOffset = IntPtr.Size == 8 ? 0x20 : 0x10;
+            var processParameters = ReadRemotePointer(process.Handle, processInfo.PebBaseAddress + processParametersOffset);
+            if (processParameters == null) return null;
+
+            var commandLineOffset = IntPtr.Size == 8 ? 0x70 : 0x40;
+            var commandLine = new byte[IntPtr.Size == 8 ? 16 : 8];
+            if (!TryReadProcessMemory(process.Handle, processParameters.Value + commandLineOffset, commandLine))
+                return null;
+
+            var byteLength = BitConverter.ToUInt16(commandLine, 0);
+            if (byteLength == 0) return string.Empty;
+            var commandLineBufferOffset = IntPtr.Size == 8 ? 8 : 4;
+            var commandLineBuffer = IntPtr.Size == 8
+                ? (nint)BitConverter.ToInt64(commandLine, commandLineBufferOffset)
+                : BitConverter.ToInt32(commandLine, commandLineBufferOffset);
+            if (commandLineBuffer == 0) return null;
+
+            var buffer = new byte[byteLength];
+            return TryReadProcessMemory(process.Handle, commandLineBuffer, buffer)
+                ? System.Text.Encoding.Unicode.GetString(buffer)
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static nint? ReadRemotePointer(nint processHandle, nint address)
+    {
+        var buffer = new byte[IntPtr.Size];
+        if (!TryReadProcessMemory(processHandle, address, buffer)) return null;
+        return IntPtr.Size == 8 ? (nint)BitConverter.ToInt64(buffer) : BitConverter.ToInt32(buffer);
+    }
+
+    private static bool TryReadProcessMemory(nint processHandle, nint address, byte[] buffer) =>
+        ReadProcessMemory(processHandle, address, buffer, buffer.Length, out var bytesRead) &&
+        bytesRead == buffer.Length;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ProcessBasicInformation
+    {
+        public nint ExitStatus;
+        public nint PebBaseAddress;
+        public nint AffinityMask;
+        public nint BasePriority;
+        public nint UniqueProcessId;
+        public nint InheritedFromUniqueProcessId;
+    }
+
+    [DllImport("ntdll.dll")]
+    private static extern int NtQueryInformationProcess(
+        nint processHandle, int processInformationClass,
+        ref ProcessBasicInformation processInformation,
+        int processInformationLength, out int returnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ReadProcessMemory(
+        nint processHandle, nint baseAddress, [Out] byte[] buffer,
+        int size, out nint numberOfBytesRead);
 
     /// <summary>
     /// Helper for the agent-claim anchor write: resolves the MAIN dydo root

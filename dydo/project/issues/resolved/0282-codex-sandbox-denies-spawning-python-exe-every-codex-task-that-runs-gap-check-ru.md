@@ -4,12 +4,13 @@ id: 282
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: claude
 date: 2026-07-11
+resolved-date: 2026-07-12
 ---
 
 # Codex sandbox denies spawning python.exe - every codex task that runs gap_check/run_tests needs a manual escalation approval (per-task swarm friction)
@@ -46,4 +47,4 @@ not global, and (b) read-only/exec-roots if codex supports it, not `writable_roo
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED-BY-DECISION 2026-07-11: balazs DECLINED expanding the codex sandbox (host-wide writable_roots grant to Python313 outside the guard). Diagnosis (Henry): elevated workspace-write sandbox lacks read/execute of python.exe outside the workspace. WORKAROUND stands: the Claude reviewer already runs the full suite + gap_check on every review, so codex not self-running python loses only self-verification (a broken fix costs one review round, caught by the reviewer) - swarm stays fully gated. No config/source change. Safer follow-up if revisited: project-scoped [projects.'...dynadocs'.sandbox_workspace_write] + read-only perms. Codex's own approval-review correctly refused the self-expansion pending explicit human auth.

@@ -4,12 +4,13 @@ id: 258
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 found-by-agent: Leo
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-09
+resolved-date: 2026-07-12
 ---
 
 # Half-resolved shadow promotes conflict-marker residue into a canonical doc and pushes it to Notion - resolved-shadow gate requires BOTH sentinels
@@ -36,4 +37,4 @@ Found by the v2.0.6 campaign inquisition; adversarially verified.
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-12 (landed in 2.0.11, 460565d6). ThreeWayTextMerge.ContainsConflictMarkers now ORs the two endpoint sentinels (<<<<<<< repo / >>>>>>> external) instead of ANDing both, so a half-resolved shadow with one endpoint hand-deleted is correctly detected as unresolved and NOT promoted — closing the path where residue was written to a canonical doc + pushed to Notion (0235 invariant). Bare ======= deliberately excluded (indistinguishable from Markdown setext underline; either endpoint suffices; both-deleted fails visible not wedged) — documented in code. Codex Charlie (Terra, 2 rounds): r1 predicate (review-verified correct), r2 added the DocsTreeSync-level promotion regression test (mutation-proven RED under old && / GREEN under ||).

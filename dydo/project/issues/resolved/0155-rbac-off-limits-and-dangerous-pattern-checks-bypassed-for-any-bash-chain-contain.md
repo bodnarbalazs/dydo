@@ -5,12 +5,13 @@ fix-release:
 needs-human: false
 resolution: 
 severity: high
-status: open
+status: resolved
 work-type: 
 id: 155
 type: issue
 found-by: inquisition
 date: 2026-05-01
+resolved-date: 2026-07-12
 ---
 
 # RBAC, off-limits, and dangerous-pattern checks bypassed for any bash chain containing a dydo subcommand

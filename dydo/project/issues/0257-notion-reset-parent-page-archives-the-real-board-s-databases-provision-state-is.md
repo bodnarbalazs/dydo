@@ -34,6 +34,16 @@ Found by the v2.0.6 campaign inquisition; adversarially verified.
 
 (Steps to reproduce, if applicable)
 
+## Attempted + deferred — provision half done, snapshot half missing (2026-07-13)
+
+Batch 3 swarm attempt parent-scoped the PROVISION state (databases) correctly, but adversarial review FAILED it on a worse-than-the-bug failure the (passing) tests masked:
+- CRITICAL 1 — the spine's per-type BASE SNAPSHOTS stay project-scoped and cross-written (`NotionSpineSync.cs:103,208` `BaseSnapshotStore.PathFor`, unlike `DocsTreeSync.SnapshotAdapterName(parentPageId)`). A `reset --parent-page <scratch>` still poisons the real board's base snapshot; the NEXT plain configured `sync` then reads external=null for every doc → DELETES the entire canonical repo docs tree (campaigns/sprints/tasks) and re-imports pages as `<page-id>.md`. A repo MASS-WIPE. Dexter's own passing test `Execute_OverrideArchivesOnlyItsParentState_...` EXECUTES this catastrophe (deletes c1.md) but asserts only DB ids/provision bytes, never repo files.
+- CRITICAL 2 — `sync --parent-page <scratch>` still adopts legacy real-board state (`NotionSyncService.Execute` calls SpineSync.Run without `useLegacyState:false`) → a scratch smoke run writes to the REAL board, under an option promising not to.
+- MEDIUM 3 — `reset --parent-page <configured-id>` mints a duplicate board + orphans legacy state.
+REVERTED.
+KEEP (were correct): the provision-state parent-scoping (`NotionProvisioner.PathFor` + legacy fallback) and confirmation-prompt naming.
+REDESIGN NEEDED: also parent-scope the spine BASE SNAPSHOT name (mirror `DocsTreeSync.SnapshotAdapterName` with a legacy-name migration); make the `useLegacyState` decision key off "was the parent explicitly overridden" in ONE place for BOTH reset AND sync; treat an override == configured parent as a non-override; and extend the reset test to assert repo files survive (c1.md exists, no `<page-id>.md` appears) after the final sync. This is cross-cutting data-safety — do it as one careful slice, not a swarm brief.
+
 ## Resolution
 
 (Filled when resolved)

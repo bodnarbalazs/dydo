@@ -53,6 +53,10 @@ Reviewer scout — `claim auto` allocation logic. Read the allocator, confirm/di
 
 (Steps to reproduce, if applicable)
 
+## Attempted + deferred to a design pass (2026-07-12)
+
+Swarm attempt (Batch 2): an advance-on-CAS-loss loop (exclude the taken candidate + re-read the free list, `AgentRegistry.ClaimAuto`) was implemented and is correct+bounded IN ISOLATION, but Claude review found it CANNOT converge in the real hook flow: the pending session is provisioned only under the head-of-list name by `GuardCommand.HandleClaimSessionStorage`, so every advanced candidate fails "No session ID available. Claim must be initiated via hook." — the lockout persists with a MORE misleading error. The unit tests faked convergence by pre-seeding the session under the eventual winner (a state production never reaches). REVERTED. Proper fix needs a guard-side session-provisioning companion — forward/re-provision the pending session to the next candidate on advance, or key the pending session by session-id rather than agent-name, or provision all free candidates. This is a design pass, not a quick patch (matches the issue's original "future investigation" note). The advance-loop code (correct-in-isolation) is a valid building block for the redo but was not preserved.
+
 ## Resolution
 
 (Filled when resolved)

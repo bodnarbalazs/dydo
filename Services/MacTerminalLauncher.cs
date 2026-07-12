@@ -10,7 +10,7 @@ public static class MacTerminalLauncher
 
     private static (string shellCommand, string postCheck) BuildShellComponents(string agentName, string? workingDirectory,
         bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var agentExport = $"export DYDO_AGENT={agentName}; ";
@@ -30,8 +30,8 @@ public static class MacTerminalLauncher
             wtCleanup = $"; cd '{TerminalLauncher.BashSingleQuoteEscape(mainProjectRoot)}' && {TerminalLauncher.WorktreeCleanupScript(cleanupWorktreeId, agentName)}";
         }
 
-        // Codex launch posture (issue 0253) sits between the executable and the prompt; empty for claude.
-        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executableToken} {TerminalLauncher.CodexLaunchPosture(host)}\\\"{agentName} --inbox\\\"{TerminalReset}";
+        // Codex launch options sit between the executable and the prompt; empty for claude.
+        var shellCommand = $"{cdPrefix}{agentExport}{windowExport}{wtSetup}unset CLAUDECODE; {executableToken} {TerminalLauncher.CodexLaunchOptions(host, role)}\\\"{agentName} --inbox\\\"{TerminalReset}";
         var postCheck = wtCleanup + (autoClose ? $"; {TerminalLauncher.BashPostClaudeCheck(agentName)}" : "");
 
         return (shellCommand, postCheck);
@@ -39,14 +39,14 @@ public static class MacTerminalLauncher
 
     public static string GetArguments(string agentName, string? workingDirectory = null,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
-        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
+        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host, role);
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
     private static (string shellCommand, string postCheck) BuildResumeShellComponents(string agentName, string sessionId,
-        string? workingDirectory, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? workingDirectory, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var cdPrefix = TerminalLauncher.CdPrefix(workingDirectory);
         var agentExport = $"export DYDO_AGENT={agentName}; ";
@@ -70,26 +70,26 @@ public static class MacTerminalLauncher
         // a descendant, so it cannot pass the F11 ownership gate and failed silently on
         // every resume. How a resumed agent arms its own wait is handled separately
         // (#0207 part 2).
-        // Codex launch posture (issue 0253) precedes the resume subcommand; empty for claude.
+        // Codex launch options precede the resume subcommand; empty for claude.
         var shellCommand = $"{cdPrefix}{agentExport}{wtSetup}unset CLAUDECODE; " +
-                           $"{executableToken} {TerminalLauncher.CodexLaunchPosture(host)}{TerminalLauncher.ResumeArgumentToken(host)} \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
+                           $"{executableToken} {TerminalLauncher.CodexLaunchOptions(host, role)}{TerminalLauncher.ResumeArgumentToken(host)} \\\"{escapedSession}\\\" \\\"{escapedPrompt}\\\"{TerminalReset}";
         return (shellCommand, wtCleanup);
     }
 
     public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
-        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
-        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host, role);
         return $"-e 'tell app \"Terminal\" to do script \"{shellCommand}{postCheck}\"'";
     }
 
     public static int LaunchResume(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string sessionId, string? workingDirectory = null,
         string? windowName = null, bool useTab = false,
-        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
-        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost);
+        var (shellCommand, postCheck) = BuildResumeShellComponents(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost, role);
 
         var runningTerminal = terminalDetector.GetRunningTerminal();
         var useITerm = runningTerminal == "iTerm"
@@ -121,10 +121,10 @@ public static class MacTerminalLauncher
     public static int Launch(IProcessStarter processStarter, ITerminalDetector terminalDetector,
         string agentName, string? workingDirectory = null, bool useTab = false,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
-        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
+        var (shellCommand, postCheck) = BuildShellComponents(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost, role);
 
         var runningTerminal = terminalDetector.GetRunningTerminal();
         var useITerm = runningTerminal == "iTerm"
@@ -136,7 +136,7 @@ public static class MacTerminalLauncher
             // For iTerm, don't bake DYDO_WINDOW into the shell command —
             // AppleScript captures the real window ID and injects it dynamically
             var (iTermShell, iTermPost) = BuildShellComponents(agentName, workingDirectory,
-                autoClose, worktreeId, windowName: null, cleanupWorktreeId, mainProjectRoot, launchHost);
+                autoClose, worktreeId, windowName: null, cleanupWorktreeId, mainProjectRoot, launchHost, role);
 
             script = useTab
                 ? GetITermTabScript(iTermShell, iTermPost, windowName)

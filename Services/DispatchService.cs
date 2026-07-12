@@ -126,7 +126,7 @@ public static class DispatchService
             // mis-closing.
             Console.WriteLine($"  Warning: could not record dispatch window/auto-close metadata for {targetAgentName} (lock contended); re-dispatch if --auto-close behaves unexpectedly.");
 
-        LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose, windowName, launchHost);
+        LaunchTerminalIfNeeded(targetAgentName, opts.NoLaunch, launchInTab, effectiveAutoClose, windowName, launchHost, opts.Role);
 
         if (effectiveAutoClose)
             WatchdogService.EnsureRunning();
@@ -228,13 +228,13 @@ public static class DispatchService
     }
 
     private static int LaunchTerminalIfNeeded(string targetAgentName, bool noLaunch, bool launchInTab,
-        bool effectiveAutoClose, string? windowName, string launchHost)
+        bool effectiveAutoClose, string? windowName, string launchHost, string role)
     {
         if (noLaunch)
             return 0;
 
         var projectRoot = PathUtils.FindProjectRoot();
-        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, null, windowName, host: launchHost);
+        var pid = TerminalLauncher.LaunchNewTerminal(targetAgentName, projectRoot, launchInTab, effectiveAutoClose, null, windowName, host: launchHost, role: role);
         Console.WriteLine($"  Terminal launched with --inbox {targetAgentName} ({launchHost})");
         return pid;
     }

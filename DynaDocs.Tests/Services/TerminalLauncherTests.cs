@@ -24,7 +24,17 @@ public class TerminalLauncherTests : IDisposable
     {
         TerminalLauncher.ExecutableResolverOverride = null;
         TerminalLauncher.CodexConfigOverride = null;
+        TerminalLauncher.ModelsConfigOverride = null;
     }
+
+    private static ModelsConfig ModelsFor(string role, string tier, string model) => new()
+    {
+        Roles = new Dictionary<string, string> { [role] = tier },
+        Tiers = new Dictionary<string, Dictionary<string, string>>
+        {
+            ["openai"] = new() { [tier] = model }
+        }
+    };
 
     #region Argument Generation Tests
 
@@ -311,6 +321,52 @@ public class TerminalLauncherTests : IDisposable
             TerminalLauncher.GetWindowsArguments("Adele", host: "codex"));
 
         Assert.Contains("workspace-write", ex.Message);
+    }
+
+    [Fact]
+    public void GetCodexCommand_WithRole_UsesResolvedOpenAiModel()
+    {
+        TerminalLauncher.ModelsConfigOverride = ModelsFor("code-writer", "standard", "gpt-5.6-terra");
+
+        var command = TerminalLauncher.GetCodexCommand("Adele", "code-writer");
+
+        Assert.Equal("codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request \"Adele --inbox\"", command);
+    }
+
+    [Fact]
+    public void GetCodexCommand_UnmappedRole_UsesCodexSyncFallbackModel()
+    {
+        TerminalLauncher.ModelsConfigOverride = new ModelsConfig();
+
+        var command = TerminalLauncher.GetCodexCommand("Adele", "custom-role");
+
+        Assert.Equal("codex -m gpt-5.5 --sandbox workspace-write --ask-for-approval on-request \"Adele --inbox\"", command);
+    }
+
+    [Fact]
+    public void GetWindowsArguments_Codex_InvalidResolvedModel_ThrowsBeforeBuildingShellCommand()
+    {
+        TerminalLauncher.ModelsConfigOverride = ModelsFor("code-writer", "standard", "x; rm -rf ~ #");
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            TerminalLauncher.GetWindowsArguments("Adele", host: "codex", role: "code-writer"));
+
+        Assert.Contains("unsafe characters", ex.Message);
+        Assert.Contains("x; rm -rf ~ #", ex.Message);
+    }
+
+    [Fact]
+    public void GetResumeArguments_CodexRole_EmitsResolvedModelBeforeResumeSubcommand()
+    {
+        TerminalLauncher.ModelsConfigOverride = ModelsFor("code-writer", "standard", "gpt-5.6-terra");
+
+        var windows = TerminalLauncher.GetWindowsResumeArguments("Adele", "sess-abc", host: "codex", role: "code-writer");
+        var linux = TerminalLauncher.GetLinuxResumeArguments("gnome-terminal", "Adele", "sess-abc", host: "codex", role: "code-writer");
+        var mac = TerminalLauncher.GetMacResumeArguments("Adele", "sess-abc", host: "codex", role: "code-writer");
+
+        Assert.Contains("codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request resume 'sess-abc'", windows);
+        Assert.Contains("codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request resume 'sess-abc'", linux);
+        Assert.Contains("codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request resume", mac);
     }
 
     #endregion

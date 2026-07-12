@@ -7,6 +7,8 @@ using DynaDocs.Models;
 
 public class TerminalLauncher
 {
+    private const string OpenAiModelVendor = "openai";
+    internal const string DefaultCodexModel = "gpt-5.5";
     private readonly IProcessStarter _processStarter;
     private readonly ITerminalDetector _terminalDetector;
 
@@ -123,6 +125,7 @@ public class TerminalLauncher
     /// from config.
     /// </summary>
     internal static CodexDispatchConfig? CodexConfigOverride { get; set; }
+    internal static ModelsConfig? ModelsConfigOverride { get; set; }
 
     private static CodexDispatchConfig ResolveCodexConfig()
     {
@@ -154,13 +157,49 @@ public class TerminalLauncher
         return $"--sandbox {codex.Sandbox} --ask-for-approval {codex.ApprovalPolicy} ";
     }
 
+    internal static string CodexLaunchModelOption(string? host, string? role)
+    {
+        if (NormalizeLaunchHost(host) != "codex" || string.IsNullOrWhiteSpace(role))
+            return "";
+
+        var models = ModelsConfigOverride ?? new ConfigService().LoadConfig()?.Models;
+        var model = ResolveCodexLaunchModel(models, role);
+        if (!IsValidCodexModel(model))
+            throw InvalidCodexModel(model);
+        return $"-m {model} ";
+    }
+
+    internal static string CodexLaunchOptions(string? host, string? role) =>
+        CodexLaunchModelOption(host, role) + CodexLaunchPosture(host);
+
+    internal static string ResolveCodexLaunchModel(ModelsConfig? models, string role)
+    {
+        var (model, _) = SyncCommand.ResolveModel(models, role, OpenAiModelVendor);
+        return string.IsNullOrWhiteSpace(model) ? DefaultCodexModel : model;
+    }
+
+    internal static bool IsValidCodexModel(string model) =>
+        model.Length > 0 && model.All(c =>
+            c is >= 'A' and <= 'Z'
+            || c is >= 'a' and <= 'z'
+            || c is >= '0' and <= '9'
+            || c is '.' or '_' or ':' or '-');
+
+    internal static InvalidOperationException InvalidCodexModel(string model) =>
+        new("Invalid codex model configuration: models.tiers.openai resolves to " +
+            $"'{DisplayModelValue(model)}', which contains unsafe characters " +
+            "(accepted: A-Z, a-z, 0-9, '.', '_', ':', '-'). Fix dydo.json, then re-dispatch.");
+
+    internal static string DisplayModelValue(string model) =>
+        model.Replace("\r", "\\r").Replace("\n", "\\n");
+
     // Takes an already-resolved posture so the manual-command fallback printer never re-invokes
     // ResolveCodexConfig — a second throw there (invalid dispatch.codex) would escape the catch
     // block that called it and crash the dispatch (issue 0253 round-2 review).
-    private static string GetBareLaunchCommand(string agentName, string? host, string posture)
+    private static string GetBareLaunchCommand(string agentName, string? host, string launchOptions)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"{GetBareLaunchExecutable(host)} {posture}\"{prompt}\"";
+        return $"{GetBareLaunchExecutable(host)} {launchOptions}\"{prompt}\"";
     }
 
     /// <summary>
@@ -183,10 +222,11 @@ public class TerminalLauncher
     internal static string ResumeArgumentToken(string? host) =>
         NormalizeLaunchHost(host) == "codex" ? "resume" : "--resume";
 
-    // See GetBareLaunchCommand: posture is pre-resolved so the manual-resume fallback printer is
-    // throw-free (issue 0253 round-2 review — the watchdog resume path has no preflight guard).
-    private static string GetBareResumeCommand(string sessionId, string? host, string posture) =>
-        $"{GetBareLaunchExecutable(host)} {posture}{ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
+    // See GetBareLaunchCommand: codex options are pre-resolved so the manual-resume fallback
+    // printer is throw-free (issue 0253/0277 round-2 — the watchdog resume path has no
+    // preflight guard).
+    private static string GetBareResumeCommand(string sessionId, string? host, string launchOptions) =>
+        $"{GetBareLaunchExecutable(host)} {launchOptions}{ResumeArgumentToken(host)} \"{sessionId}\" \"{ResumeContinuationPrompt}\"";
 
     public static string GetClaudeResumeCommand(string sessionId) =>
         GetBareResumeCommand(sessionId, "claude", CodexLaunchPosture("claude"));
@@ -205,10 +245,10 @@ public class TerminalLauncher
             : $"{executable} {arguments}";
     }
 
-    public static string GetCodexCommand(string agentName)
+    public static string GetCodexCommand(string agentName, string? role = null)
     {
         var prompt = GetClaudePrompt(agentName);
-        return $"codex {CodexLaunchPosture("codex")}\"{prompt}\"";
+        return $"codex {CodexLaunchOptions("codex", role)}\"{prompt}\"";
     }
 
     public static string GetClaudeCommand(string agentName)
@@ -332,23 +372,23 @@ public class TerminalLauncher
         return $"cd '{workingDirectory}' && ";
     }
 
-    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null, string host = "claude")
-        => WindowsTerminalLauncher.GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host);
+    public static string GetWindowsArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null, string host = "claude", string? role = null)
+        => WindowsTerminalLauncher.GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host, role);
 
-    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
-        => LinuxTerminalLauncher.GetArguments(terminalName, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
+    public static string GetLinuxArguments(string terminalName, string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
+        => LinuxTerminalLauncher.GetArguments(terminalName, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host, role);
 
-    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
-        => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
+    public static string GetMacArguments(string agentName, string? workingDirectory = null, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
+        => MacTerminalLauncher.GetArguments(agentName, workingDirectory, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host, role);
 
-    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
-        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
+    public static string GetWindowsResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
+        => WindowsTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host, role);
 
-    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
-        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
+    public static string GetLinuxResumeArguments(string terminalName, string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
+        => LinuxTerminalLauncher.GetResumeArguments(terminalName, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host, role);
 
-    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
-        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host);
+    public static string GetMacResumeArguments(string agentName, string sessionId, string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
+        => MacTerminalLauncher.GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, host, role);
 
     public static string GetITermTabScript(string shellCommand, string postCheck, string? windowId = null)
         => MacTerminalLauncher.GetITermTabScript(shellCommand, postCheck, windowId);
@@ -358,12 +398,12 @@ public class TerminalLauncher
 
     public static IProcessStarter? ProcessStarterOverride { get; set; }
 
-    public static int LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
+    public static int LaunchNewTerminal(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
-        return new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host);
+        return new TerminalLauncher(ProcessStarterOverride).Launch(agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, host, role);
     }
 
-    public int Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
+    public int Launch(string agentName, string? workingDirectory = null, bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var launchHost = NormalizeLaunchHost(host);
 
@@ -372,10 +412,10 @@ public class TerminalLauncher
         // catch block's manual-command fallback would re-resolve and throw a second time, escaping
         // the handler and crashing the dispatch. The dispatch preflight already rejects this before
         // reservation; this guard also covers direct/watchdog callers that bypass preflight.
-        string posture;
+        string launchOptions;
         try
         {
-            posture = CodexLaunchPosture(launchHost);
+            launchOptions = CodexLaunchOptions(launchHost, role);
         }
         catch (InvalidOperationException ex)
         {
@@ -393,11 +433,11 @@ public class TerminalLauncher
                     $"Working directory no longer exists: {workingDirectory}");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
+                return WindowsTerminalLauncher.Launch(_processStarter, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost, role);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
+                return MacTerminalLauncher.Launch(_processStarter, _terminalDetector, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost, role);
 
-            var pid = LinuxTerminalLauncher.TryLaunch(_processStarter, LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost);
+            var pid = LinuxTerminalLauncher.TryLaunch(_processStarter, LinuxTerminals, agentName, workingDirectory, useTab, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, launchHost, role);
             if (pid == 0)
                 throw new InvalidOperationException("No terminal found");
             return pid;
@@ -406,33 +446,34 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetBareLaunchCommand(agentName, launchHost, posture)}");
+            Console.WriteLine($"  {GetBareLaunchCommand(agentName, launchHost, launchOptions)}");
             return 0;
         }
     }
 
     public static int LaunchResumeTerminal(string agentName, string sessionId, string? workingDirectory = null,
         string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         return new TerminalLauncher(ProcessStarterOverride)
-            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, host);
+            .LaunchResume(agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, host, role);
     }
 
     public int LaunchResume(string agentName, string sessionId, string? workingDirectory = null,
         string? windowName = null, bool useTab = false, string? worktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         var launchHost = NormalizeLaunchHost(host);
 
-        // Resolve+validate the codex posture ONCE, up front (issue 0253 round-2 review). The
+        // Resolve+validate the codex options ONCE, up front (issue 0253/0277 round-2 review). The
         // watchdog resume path reaches here with no preflight guard, so an invalid dispatch.codex
-        // config edited mid-run must fail cleanly instead of throwing twice (once in argument
-        // assembly, again in the manual-command fallback) and burning a resume attempt every tick.
-        string posture;
+        // or model config edited mid-run must fail cleanly instead of throwing twice (once in
+        // argument assembly, again in the manual-command fallback) and burning a resume attempt
+        // every tick.
+        string launchOptions;
         try
         {
-            posture = CodexLaunchPosture(launchHost);
+            launchOptions = CodexLaunchOptions(launchHost, role);
         }
         catch (InvalidOperationException ex)
         {
@@ -447,11 +488,11 @@ public class TerminalLauncher
                     $"Working directory no longer exists: {workingDirectory}");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, launchHost);
+                return WindowsTerminalLauncher.LaunchResume(_processStarter, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, launchHost, role);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, launchHost);
+                return MacTerminalLauncher.LaunchResume(_processStarter, _terminalDetector, agentName, sessionId, workingDirectory, windowName, useTab, worktreeId, mainProjectRoot, launchHost, role);
 
-            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost);
+            var pid = LinuxTerminalLauncher.TryLaunchResume(_processStarter, LinuxTerminals, agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost, role);
             if (pid == 0)
                 throw new InvalidOperationException("No terminal found");
             return pid;
@@ -460,7 +501,7 @@ public class TerminalLauncher
         {
             Console.WriteLine($"WARN: Could not launch resume terminal: {ex.Message}");
             Console.WriteLine($"Please manually open a new terminal and run:");
-            Console.WriteLine($"  {GetBareResumeCommand(sessionId, launchHost, posture)}");
+            Console.WriteLine($"  {GetBareResumeCommand(sessionId, launchHost, launchOptions)}");
             return 0;
         }
     }

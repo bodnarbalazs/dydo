@@ -19,14 +19,14 @@ public static class WindowsTerminalLauncher
         "if($__dydoP -and (Test-Path -LiteralPath $__dydoP)){" +
         "try{. $__dydoP}catch{Write-Warning ('dydo: profile load failed: ' + $_)}}}; ";
 
-    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null, string host = "claude")
+    public static string GetArguments(string agentName, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string? workingDirectory = null, string host = "claude", string? role = null)
     {
         var prompt = TerminalLauncher.GetClaudePrompt(agentName);
         var escapedPrompt = prompt.Replace("'", "''");
         var executable = TerminalLauncher.GetLaunchExecutable(host);
-        // Codex launch posture (issue 0253) sits between the executable and the prompt; empty for claude.
-        var codexPosture = TerminalLauncher.CodexLaunchPosture(host);
-        var launchInvocation = TerminalLauncher.PowerShellExecutableInvocation(executable, $"{codexPosture}'{escapedPrompt}'");
+        // Codex launch options sit between the executable and the prompt; empty for claude.
+        var codexOptions = TerminalLauncher.CodexLaunchOptions(host, role);
+        var launchInvocation = TerminalLauncher.PowerShellExecutableInvocation(executable, $"{codexOptions}'{escapedPrompt}'");
         var postClaudeCheck = autoClose
             ? $"; if ((dydo agent status {agentName} 2>&1) -match 'free') {{ exit 0 }}"
             : "";
@@ -91,15 +91,15 @@ public static class WindowsTerminalLauncher
     }
 
     public static string GetResumeArguments(string agentName, string sessionId, string? workingDirectory = null,
-        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var escapedSession = sessionId.Replace("'", "''");
         var escapedPrompt = TerminalLauncher.ResumeContinuationPrompt.Replace("'", "''");
         var executable = TerminalLauncher.GetLaunchExecutable(host);
-        // Codex launch posture (issue 0253) precedes the resume subcommand; empty for claude.
-        var codexPosture = TerminalLauncher.CodexLaunchPosture(host);
+        // Codex launch options precede the resume subcommand; empty for claude.
+        var codexOptions = TerminalLauncher.CodexLaunchOptions(host, role);
         var resumeInvocation = TerminalLauncher.PowerShellExecutableInvocation(
-            executable, $"{codexPosture}{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'");
+            executable, $"{codexOptions}{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'");
         // #0197 (F13): pin DYDO_AGENT first, then re-source profiles — same as GetArguments.
         var agentEnv = $"$env:DYDO_AGENT='{agentName.Replace("'", "''")}'; " + ProfileReSource;
         // #0207: no shell-spawned `dydo wait` re-arm here. Such a wait is a sibling of
@@ -131,7 +131,7 @@ public static class WindowsTerminalLauncher
 
     public static int LaunchResume(IProcessStarter processStarter, string agentName, string sessionId,
         string? workingDirectory = null, string? windowName = null, bool useTab = false,
-        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var shell = ProcessUtils.ResolvePowerShell();
         var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
@@ -152,7 +152,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost, role).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -166,7 +166,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost),
+            Arguments = GetResumeArguments(agentName, sessionId, workingDirectory, worktreeId, mainProjectRoot, launchHost, role),
             UseShellExecute = true
         };
         if (workingDirectory != null)
@@ -175,7 +175,7 @@ public static class WindowsTerminalLauncher
     }
 
     public static int Launch(IProcessStarter processStarter, string agentName, string? workingDirectory = null,
-        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var shell = ProcessUtils.ResolvePowerShell();
         var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
@@ -200,7 +200,7 @@ public static class WindowsTerminalLauncher
             var psi = new ProcessStartInfo
             {
                 FileName = "wt",
-                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, launchHost).Replace(";", "\\;")}",
+                Arguments = $"{wtAction} {wtDirArg}{shell} {GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, launchHost, role).Replace(";", "\\;")}",
                 UseShellExecute = true
             };
             if (workingDirectory != null)
@@ -216,7 +216,7 @@ public static class WindowsTerminalLauncher
         var fallbackPsi = new ProcessStartInfo
         {
             FileName = shell,
-            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, launchHost),
+            Arguments = GetArguments(agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, launchHost, role),
             UseShellExecute = true
         };
         if (workingDirectory != null)

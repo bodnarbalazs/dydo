@@ -65,6 +65,9 @@ public static class DispatchPreflight
         var posture = CheckCodexPostureValid(config, launchHost);
         if (!posture.Ok) return posture;
 
+        var model = CheckCodexModelValid(config, launchHost, opts.Role);
+        if (!model.Ok) return model;
+
         var sandbox = CheckWindowsSandboxPrerequisite(config, launchHost, opts.NoLaunch);
         if (!sandbox.Ok) return sandbox;
 
@@ -171,6 +174,24 @@ public static class DispatchPreflight
         return PreflightResult.Fail(
             "Invalid dispatch.codex configuration: " + string.Join("; ", errors) +
             ". Fix dydo.json, then re-dispatch.");
+    }
+
+    // (3b) The role-resolved codex model is emitted as a shell command token (`-m <model>`).
+    // dydo.json is writable project config, so model ids need the same fail-fast shape guard as
+    // the codex posture before any reservation or child-terminal launch.
+    private static PreflightResult CheckCodexModelValid(DydoConfig? config, string launchHost, string role)
+    {
+        if (launchHost != "codex")
+            return PreflightResult.Pass;
+
+        var model = TerminalLauncher.ResolveCodexLaunchModel(config?.Models, role);
+        if (TerminalLauncher.IsValidCodexModel(model))
+            return PreflightResult.Pass;
+
+        return PreflightResult.Fail(
+            $"Invalid models.tiers.openai model for role '{role}': " +
+            $"'{TerminalLauncher.DisplayModelValue(model)}' contains unsafe characters " +
+            "(accepted: A-Z, a-z, 0-9, '.', '_', ':', '-'). Fix dydo.json, then re-dispatch.");
     }
 
     // (4) The codex posture needs the codex Windows sandbox only when the configured sandbox mode

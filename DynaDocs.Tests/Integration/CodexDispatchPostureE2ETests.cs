@@ -9,8 +9,8 @@ using DynaDocs.Tests.Services;
 /// c1-7 / issues 0253 + 0239: end-to-end cover for the codex DISPATCH seams — the launch command
 /// line and the fail-fast preflight — driven through the real <c>dydo dispatch</c> command.
 ///
-/// Test 6 pins the configured posture emission all the way through DispatchService → launcher and
-/// the invariant that the dangerous-bypass flag NEVER appears. Test 7 walks the DispatchPreflight
+/// Test 6 pins the configured model/posture emission all the way through DispatchService → launcher
+/// and the invariant that the dangerous-bypass flag NEVER appears. Test 7 walks the DispatchPreflight
 /// failure matrix, asserting each mode surfaces its actionable message and leaves NO reservation.
 /// (The executable-unresolvable and untrusted-hooks modes already have their own e2e cover in
 /// DispatchCommandTests — c1-4's file; this matrix covers the vendor, posture, and sandbox modes
@@ -19,14 +19,19 @@ using DynaDocs.Tests.Services;
 [Collection("Integration")]
 public class CodexDispatchPostureE2ETests : IntegrationTestBase
 {
-    // (0253) A codex dispatch carries the configured posture on its launch command line and never
-    // the dangerous-bypass flag — proven through the whole DispatchService → launcher path, not the
-    // launcher argument builder in isolation.
+    // (0253, 0277) A codex dispatch carries the role-resolved OpenAI model and configured
+    // posture on its launch command line — proven through the whole DispatchService → launcher
+    // path, not the launcher argument builder in isolation.
     [Fact]
-    public async Task CodexDispatch_EmitsConfiguredPosture_NeverBypassFlag_EndToEnd()
+    public async Task CodexDispatch_EmitsRoleResolvedModelAndConfiguredPosture_NeverBypassFlag_EndToEnd()
     {
         await InitProjectAsync("none", "testuser", 3);
         (await ClaimAgentWithRuntimeAsync("Adele", "codex", "gpt-5-codex")).AssertSuccess();
+        MutateConfig(config =>
+        {
+            var openaiTiers = config["models"]!["tiers"]!["openai"]!.AsObject();
+            openaiTiers["standard"] = "gpt-5.6-terra";
+        });
 
         var recorder = new RecordingProcessStarter();
         TerminalLauncher.ProcessStarterOverride = recorder;
@@ -41,7 +46,7 @@ public class CodexDispatchPostureE2ETests : IntegrationTestBase
             Assert.NotEmpty(recorder.Started);
 
             var args = string.Join("\n", recorder.Started.Select(p => p.Arguments));
-            Assert.Contains("codex --sandbox workspace-write --ask-for-approval on-request 'Brian --inbox'", args);
+            Assert.Contains("codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request 'Brian --inbox'", args);
             Assert.DoesNotContain("--dangerously-bypass", args);
             Assert.DoesNotContain("--yolo", args);
         }
@@ -110,6 +115,26 @@ public class CodexDispatchPostureE2ETests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains("Invalid dispatch.codex");
         result.AssertStderrContains("workspace-write");
+        AssertNoReservation("Brian");
+    }
+
+    // (0277 round-2) A malformed role-resolved model is a shell-injection risk because dydo
+    // emits it as `-m <model>` on codex launch lines. Reject it before any reservation.
+    [Fact]
+    public async Task Preflight_InvalidCodexModel_FailsFast_NoReservation()
+    {
+        await InitProjectAsync("none", "testuser", 3);
+        MutateConfig(config =>
+        {
+            var openaiTiers = config["models"]!["tiers"]!["openai"]!.AsObject();
+            openaiTiers["standard"] = "x; rm -rf ~ #";
+        });
+
+        var result = await DispatchCodexNoLaunch("bad-model");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("models.tiers.openai");
+        result.AssertStderrContains("unsafe characters");
         AssertNoReservation("Brian");
     }
 

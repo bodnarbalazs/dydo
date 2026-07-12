@@ -45,13 +45,14 @@ public static class WatchdogService
     /// <summary>
     /// When set, PollAndResumeForAgent uses this instead of TerminalLauncher.LaunchResumeTerminal.
     /// Test hook — receives (agentName, sessionId, host, workingDirectory, windowName, useTab,
-    /// worktreeId, mainProjectRoot), returns the (faked) launched PID. The host is the resumed
-    /// agent's launch host (claude/codex) so a crashed Codex agent resumes as Codex (#0231). The worktreeId/
+    /// worktreeId, mainProjectRoot, role), returns the (faked) launched PID. The host is the resumed
+    /// agent's launch host (claude/codex) so a crashed Codex agent resumes as Codex (#0231). The role
+    /// lets codex resume use the same role-resolved model as the original dispatch (#0277). The worktreeId/
     /// mainProjectRoot pair carries the worktree context so the resume launcher can wrap
     /// the resumed claude in the same Set-Location / init-settings / cleanup envelope as
     /// the original dispatch (Finding #4 of agent-crashes inquisition; closes #0175).
     /// </summary>
-    internal static Func<string, string, string, string?, string?, bool, string?, string?, int>? LaunchResumeOverride { get; set; }
+    internal static Func<string, string, string, string?, string?, bool, string?, string?, string?, int>? LaunchResumeOverride { get; set; }
 
     /// <summary>
     /// When set, PollAndResumeForAgent uses this cap instead of ResumeAttemptsCap.
@@ -489,6 +490,7 @@ public static class WatchdogService
         int? PreResumePid,
         int? LaunchedPid,
         string? WindowId,
+        string? Role,
         int Cap,
         TimeSpan Gate);
 
@@ -569,8 +571,8 @@ public static class WatchdogService
         var mainProjectRoot = projectRoot;
 
         var launchedPid = LaunchResumeOverride != null
-            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, ctx.Host, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot)
-            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot, ctx.Host);
+            ? LaunchResumeOverride(ctx.AgentName, ctx.SessionId, ctx.Host, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot, ctx.Role)
+            : TerminalLauncher.LaunchResumeTerminal(ctx.AgentName, ctx.SessionId, workingDirectory, ctx.WindowId, useTab, worktreeId, mainProjectRoot, ctx.Host, ctx.Role);
 
         // PID > 1 only — 0/1 mean launch failed or returned an init-like sentinel.
         // Leaving LaunchedPid null in that case lets the next tick's liveness check
@@ -601,7 +603,7 @@ public static class WatchdogService
             var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
             var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
 
-            var (status, attempts, lastResumeAt, preResumePid, launchedPid, windowId) = ParseResumeFields(statePath);
+            var (status, attempts, lastResumeAt, preResumePid, launchedPid, windowId, role) = ParseResumeFields(statePath);
             if (status != "working") return null;
             if (attempts >= cap) return null;
 
@@ -616,7 +618,7 @@ public static class WatchdogService
                 return null;
 
             return new ResumeContext(agentName, session.SessionId, TerminalLauncher.NormalizeLaunchHost(session.Host), pid, lastResumeAt,
-                attempts, preResumePid, launchedPid, windowId, cap, gate);
+                attempts, preResumePid, launchedPid, windowId, role, cap, gate);
         }
         finally
         {
@@ -646,7 +648,7 @@ public static class WatchdogService
             var cap = ResumeAttemptsCapOverride ?? ResumeAttemptsCap;
             var gate = ResumeWarmupGateOverride ?? ResumeWarmupGate;
 
-            var (status, attempts, lastResumeAt, _, _, _) = ParseResumeFields(statePath);
+            var (status, attempts, lastResumeAt, _, _, _, _) = ParseResumeFields(statePath);
             if (status != "working") return null;
             if (attempts < cap) return null;
             if (lastResumeAt == null) return null;
@@ -736,13 +738,13 @@ public static class WatchdogService
         catch { return null; }
     }
 
-    private static (string? status, int attempts, DateTime? lastResumeAt, int? preResumePid, int? launchedPid, string? windowId)
+    private static (string? status, int attempts, DateTime? lastResumeAt, int? preResumePid, int? launchedPid, string? windowId, string? role)
         ParseResumeFields(string statePath)
     {
         try
         {
             var fields = FrontmatterParser.ParseFields(File.ReadAllText(statePath));
-            if (fields == null) return (null, 0, null, null, null, null);
+            if (fields == null) return (null, 0, null, null, null, null, null);
             fields.TryGetValue("status", out var status);
             return (
                 status,
@@ -750,9 +752,10 @@ public static class WatchdogService
                 ParseTimestampField(fields, "last-resume-launched-at"),
                 ParseNullableIntField(fields, "pre-resume-pid"),
                 ParseNullableIntField(fields, "launched-pid"),
-                ParseNonNullStringField(fields, "window-id"));
+                ParseNonNullStringField(fields, "window-id"),
+                ParseNonNullStringField(fields, "role"));
         }
-        catch { return (null, 0, null, null, null, null); }
+        catch { return (null, 0, null, null, null, null, null); }
     }
 
     private static int ParseIntField(Dictionary<string, string> fields, string key, int defaultValue)

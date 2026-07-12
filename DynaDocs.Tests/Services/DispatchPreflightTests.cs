@@ -69,6 +69,12 @@ public class DispatchPreflightTests : IDisposable
         }
     };
 
+    private static ModelsConfig ModelsFor(string role, string tier, string model) => new()
+    {
+        Roles = new() { [role] = tier },
+        Tiers = new() { ["openai"] = new() { [tier] = model } }
+    };
+
     // --- (1) Executable resolvable ---
 
     [Fact]
@@ -288,6 +294,30 @@ public class DispatchPreflightTests : IDisposable
     public void CodexValidPosture_Passes()
     {
         var result = DispatchPreflight.Run(ConfigWithCodex("read-only", "never"), "codex", Opts(noLaunch: true), _dir);
+
+        Assert.True(result.Ok);
+    }
+
+    [Fact]
+    public void CodexInvalidResolvedModel_FailsNamingUnsafeValue()
+    {
+        var config = ConfigWith(models: ModelsFor("code-writer", "standard", "x; rm -rf ~ #"));
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true), _dir);
+
+        Assert.False(result.Ok);
+        Assert.Contains("models.tiers.openai", result.Error);
+        Assert.Contains("x; rm -rf ~ #", result.Error);
+        Assert.Contains("unsafe characters", result.Error);
+        Assert.Contains("re-dispatch", result.Error!);
+    }
+
+    [Fact]
+    public void CodexUnmappedRole_UsesFallbackModelAndPasses()
+    {
+        var config = ConfigWith(models: new ModelsConfig());
+
+        var result = DispatchPreflight.Run(config, "codex", Opts(noLaunch: true), _dir);
 
         Assert.True(result.Ok);
     }

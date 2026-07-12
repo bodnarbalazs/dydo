@@ -6,16 +6,16 @@ public static class LinuxTerminalLauncher
 {
     private static string ApplyOverrides(string baseArgs, string agentName,
         bool autoClose, string? worktreeId, string? windowName, string? cleanupWorktreeId, string? mainProjectRoot, string? workingDirectory,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         var args = baseArgs;
         var executable = TerminalLauncher.GetLaunchExecutable(host);
         if (executable != "claude")
         {
-            // Codex launch posture (issue 0253) sits between the executable and the prompt; empty
+            // Codex launch options sit between the executable and the prompt; empty
             // for claude, so a resolved claude path drops through with no flags.
             var invocation = TerminalLauncher.ShellExecutableToken(executable) + " " +
-                             TerminalLauncher.CodexLaunchPosture(host);
+                             TerminalLauncher.CodexLaunchOptions(host, role);
             args = args.Replace("claude ", invocation);
         }
 
@@ -44,7 +44,7 @@ public static class LinuxTerminalLauncher
 
     public static string GetArguments(string terminalName, string agentName, string? workingDirectory = null,
         bool useTab = false, bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
@@ -53,7 +53,7 @@ public static class LinuxTerminalLauncher
             ? config.GetTabArguments(agentName, workingDirectory)
             : config.GetArguments(agentName, workingDirectory);
 
-        return ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host);
+        return ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host, role);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public static class LinuxTerminalLauncher
     /// (Finding #4; closes #0175).
     /// </summary>
     internal static string BuildResumeBashCommand(string agentName, string sessionId,
-        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var escapedSession = sessionId.Replace("'", "'\\''");
         var escapedPrompt = TerminalLauncher.BashSingleQuoteEscape(TerminalLauncher.ResumeContinuationPrompt);
@@ -75,9 +75,9 @@ public static class LinuxTerminalLauncher
         // a descendant, so it cannot pass the F11 ownership gate and failed silently on
         // every resume. How a resumed agent arms its own wait is handled separately
         // (#0207 part 2).
-        // Codex launch posture (issue 0253) precedes the resume subcommand; empty for claude.
+        // Codex launch options precede the resume subcommand; empty for claude.
         var resumeBody = $"export DYDO_AGENT='{agentName}'; unset CLAUDECODE; " +
-                         $"{executableToken} {TerminalLauncher.CodexLaunchPosture(host)}{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'; " +
+                         $"{executableToken} {TerminalLauncher.CodexLaunchOptions(host, role)}{TerminalLauncher.ResumeArgumentToken(host)} '{escapedSession}' '{escapedPrompt}'; " +
                          $"printf '\\e[?1004l'";
 
         if (worktreeId != null && mainProjectRoot != null)
@@ -100,12 +100,12 @@ public static class LinuxTerminalLauncher
     /// </summary>
     public static string GetResumeArguments(string terminalName, string agentName, string sessionId,
         string? workingDirectory = null, string? worktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         var config = TerminalLauncher.LinuxTerminals.FirstOrDefault(t => t.FileName == terminalName);
         if (config == null) throw new ArgumentException($"Unknown terminal: {terminalName}");
         return SwapInResumeBody(config.GetArguments(agentName, workingDirectory),
-            BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot, host));
+            BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot, host, role));
     }
 
     private static string SwapInResumeBody(string baseArgs, string resumeBashBody)
@@ -123,10 +123,10 @@ public static class LinuxTerminalLauncher
 
     public static int TryLaunchResume(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
         string agentName, string sessionId, string? workingDirectory = null,
-        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude")
+        string? worktreeId = null, string? mainProjectRoot = null, string host = "claude", string? role = null)
     {
         var launchHost = TerminalLauncher.NormalizeLaunchHost(host);
-        var resumeBody = BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot, launchHost);
+        var resumeBody = BuildResumeBashCommand(agentName, sessionId, worktreeId, mainProjectRoot, launchHost, role);
         foreach (var terminal in terminals)
         {
             try
@@ -150,7 +150,7 @@ public static class LinuxTerminalLauncher
     public static int TryLaunch(IProcessStarter processStarter, TerminalLauncher.TerminalConfig[] terminals,
         string agentName, string? workingDirectory = null, bool useTab = false,
         bool autoClose = false, string? worktreeId = null, string? windowName = null, string? cleanupWorktreeId = null, string? mainProjectRoot = null,
-        string host = "claude")
+        string host = "claude", string? role = null)
     {
         foreach (var terminal in terminals)
         {
@@ -160,7 +160,7 @@ public static class LinuxTerminalLauncher
                     ? terminal.GetTabArguments(agentName, workingDirectory)
                     : terminal.GetArguments(agentName, workingDirectory);
 
-                var arguments = ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host);
+                var arguments = ApplyOverrides(baseArgs, agentName, autoClose, worktreeId, windowName, cleanupWorktreeId, mainProjectRoot, workingDirectory, host, role);
 
                 var psi = new ProcessStartInfo
                 {

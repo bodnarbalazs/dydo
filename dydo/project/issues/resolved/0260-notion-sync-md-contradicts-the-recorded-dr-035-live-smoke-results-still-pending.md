@@ -4,12 +4,13 @@ id: 260
 area: reference
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 found-by-agent: Leo
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-09
+resolved-date: 2026-07-12
 ---
 
 # notion-sync.md contradicts the recorded DR-035 live-smoke results - still 'pending smoke', folder-page write shape live Notion rejects 400
@@ -36,4 +37,4 @@ Found by the v2.0.6 campaign inquisition (doc-drift lens); adversarially verifie
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-12 (landed 66c1aa1e). dydo/reference/notion-sync.md reconciled to DR-035's recorded 2026-07-09 live-smoke results: native-markdown endpoints/create-with-body/PATCH-shape/child-safety marked landed+correct (was 'pending Charlie's smoke'); folder-page replace_content documented as requiring child-page-tag re-append (else live 400); Live-API Validation Constraints extended with the folder-tag 400 + the lossy native-markdown round-trip (DR-040 corruption class). Codex Frank (Terra, docs-writer), Claude-reviewed, every edit grounded in DR-035.

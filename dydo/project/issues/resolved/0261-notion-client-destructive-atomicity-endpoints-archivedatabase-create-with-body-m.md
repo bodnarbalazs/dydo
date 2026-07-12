@@ -4,12 +4,13 @@ id: 261
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 found-by-agent: Leo
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-09
+resolved-date: 2026-07-12
 ---
 
 # Notion client destructive/atomicity endpoints (ArchiveDatabase, create-with-body markdown) have no wire-shape test - fake/wire divergence invisible to the suite
@@ -36,4 +37,4 @@ Found by the v2.0.6 campaign inquisition (coverage lens); adversarially verified
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-12 (landed d2e35f93). Byte-level wire-shape tests added for the two destructive/atomicity-critical Notion endpoints that were fake-only: ArchiveDatabase (asserts PATCH /v1/databases/{id} + in_trash:true) and create-with-body markdown field (asserts markdown serializes when present, omitted when null). A serialization regression to a shape Notion accepts as a no-op/degrade will now fail the suite instead of only surfacing on a live run. Production wire shape confirmed correct (no divergence). Codex Grace (Terra, test-writer), Claude-reviewed.

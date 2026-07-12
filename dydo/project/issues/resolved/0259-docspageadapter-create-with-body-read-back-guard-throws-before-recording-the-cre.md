@@ -4,12 +4,13 @@ id: 259
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: inquisition
 found-by-agent: Leo
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-09
+resolved-date: 2026-07-12
 ---
 
 # DocsPageAdapter create-with-body read-back guard throws before recording the created page - each retry mints an orphan duplicate
@@ -36,4 +37,4 @@ Found by the v2.0.6 campaign inquisition; adversarially verified.
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-12 (landed 01e128b3). DocsPageAdapter create path now records assigned[LocalId] + an empty-base marker IMMEDIATELY after CreatePage, BEFORE the read-back GET - so a throw from the read-back (429/5xx) can no longer orphan the created page and re-mint a duplicate next tick (the remaining window round-1 left open). Mirrors DocsTreeSync's crash-safe record-first ordering. The empty-base marker is routed through a new ISyncAdapter.Apply emptyBodied out-collection (removed the concrete DocsPageAdapter downcast that violated SyncRunner's Notion-agnostic contract). 0235 no-wipe preserved in every branch. Codex Emma (Terra, 2 rounds), Claude adversarially-reviewed PASS; read-back-throw regression RED-before/GREEN-after, exactly one page.

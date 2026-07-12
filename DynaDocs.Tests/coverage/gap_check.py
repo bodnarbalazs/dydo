@@ -48,8 +48,10 @@ DATA_MODEL_MAX_LINES = 3
 GENERATED_PATTERNS = ["/obj/", ".g.cs", ".generated.cs"]
 
 # Source directories to check for staleness (relative to ROOT)
-SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization"]
+SOURCE_DIRS = ["Commands", "Services", "Models", "Rules", "Utils", "Serialization", "Sync", "Templates"]
+SOURCE_FILES = ["Program.cs"]
 SOURCE_GLOBS = ["*.cs"]
+SOURCE_DIR_GLOBS = {"Templates": ["*"]}
 
 TIER_THRESHOLDS = {
     1: {"line_coverage": 0.80, "crap": 30, "branch_coverage": 0.60},
@@ -601,12 +603,19 @@ def _find_changed_files_since(threshold_mtime: float) -> List[str]:
         d = ROOT / src_dir
         if not d.exists():
             continue
-        for glob in SOURCE_GLOBS:
+        for glob in SOURCE_DIR_GLOBS.get(src_dir, SOURCE_GLOBS):
             for src in d.rglob(glob):
+                if not src.is_file():
+                    continue
                 if is_generated(str(src)):
                     continue
                 if src.stat().st_mtime > threshold_mtime:
                     changed.append(str(src.relative_to(ROOT)))
+
+    for src_file in SOURCE_FILES:
+        src = ROOT / src_file
+        if src.exists() and src.stat().st_mtime > threshold_mtime:
+            changed.append(str(src.relative_to(ROOT)))
 
     test_dir = ROOT / "DynaDocs.Tests"
     if test_dir.exists():

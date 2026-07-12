@@ -4,12 +4,13 @@ id: 246
 area: backend
 type: issue
 severity: medium
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-08
+resolved-date: 2026-07-12
 ---
 
 # Claim instructions dead-end pre-onboarding: Bash-only claim path and wait/must-read staging not discoverable at stage 0
@@ -26,4 +27,4 @@ dydo agent claim works only via the Bash tool (the guard hook plumbs the session
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-13 (landed ff5c2092). Stage-0 onboarding sequence (claim via Bash not PowerShell, no chained claim+whoami, set role, background dydo wait, must-reads) added to the agent-workflow template; hook-less claim failure now gives an actionable Bash-tool hint. Codex Henry (Terra), reviewed. Retires the dydo-claim-via-bash-only memory.

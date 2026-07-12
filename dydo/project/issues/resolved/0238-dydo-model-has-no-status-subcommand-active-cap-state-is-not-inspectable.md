@@ -4,12 +4,13 @@ id: 238
 area: backend
 type: issue
 severity: low
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: unknown
 date: 2026-07-08
+resolved-date: 2026-07-12
 ---
 
 # dydo model has no status subcommand - active cap state is not inspectable
@@ -26,4 +27,4 @@ dydo model only offers cap/uncap; there is no way to ask whether a cap is curren
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-13 (landed 58dd6d90). Added 'dydo model status' - reads ModelCap markers, prints target/fallback/reset per active cap (or 'no active caps'), making cap/outage state inspectable without reading guard-off-limits _system. Documented in help + about-dynadocs. Codex Frank (Terra), reviewed. Follow-up: the whoami/agent-status cap line.

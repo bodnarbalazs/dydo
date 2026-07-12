@@ -3,9 +3,10 @@ id: 217
 area: general
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 date: 2026-07-07
+resolved-date: 2026-07-12
 ---
 
 # gap_check staleness auto-skip is blind to Sync/, Templates/, Program.cs — reuses stale coverage, can pass a red gate

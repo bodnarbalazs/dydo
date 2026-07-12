@@ -110,9 +110,15 @@ public sealed class FakeNotionClient : INotionClient
     /// <summary>When true, a create-with-body DROPS the carried markdown field instead of storing it — modelling
     /// live Notion SILENTLY IGNORING the create's <c>markdown</c> field (DR 035 finding). The page is created
     /// empty, so a read-back returns "". Drives the read-back guards that never let a full-body base be recorded
-    /// against an empty page (the issue 0235 wipe): the adapter's rare resurrect create THROWS, while the fresh-sync
-    /// structure phase records an EMPTY base and self-heals via a child-safe body-phase PATCH (graceful degradation).</summary>
+    /// against an empty page (the issue 0235 wipe): both the adapter and fresh-sync structure phase record an EMPTY
+    /// base and self-heal via a child-safe body-phase PATCH (graceful degradation).</summary>
     public bool SilentlyIgnoreCreateMarkdown { get; set; }
+
+    /// <summary>When true, the first markdown read immediately following a body-carrying create throws — modelling
+    /// a transient read-back failure after Notion has already created the page.</summary>
+    public bool ThrowFirstMarkdownReadAfterBodyCreate { get; set; }
+
+    private bool _throwMarkdownReadAfterBodyCreate;
 
     /// <summary>Page ids whose <see cref="GetPageMarkdown"/> throws a 404 — models a page archived/trashed in
     /// Notion whose body read now fails (DR 035 finding), driving the promotion-read guard test.</summary>
@@ -285,8 +291,12 @@ public sealed class FakeNotionClient : INotionClient
         // so the read-back echoes it verbatim — modelling the atomic create the docs mirror relies on. It is NOT
         // recorded in MarkdownUpdates (which tracks UpdatePageMarkdown calls only), so a test can assert an atomic
         // create issued zero separate body writes.
-        if (request.Markdown != null && !SilentlyIgnoreCreateMarkdown)
-            _pageMarkdown[id] = request.Markdown;
+        if (request.Markdown != null)
+        {
+            if (!SilentlyIgnoreCreateMarkdown)
+                _pageMarkdown[id] = request.Markdown;
+            _throwMarkdownReadAfterBodyCreate = ThrowFirstMarkdownReadAfterBodyCreate;
+        }
         return page;
     }
 
@@ -357,6 +367,11 @@ public sealed class FakeNotionClient : INotionClient
     // treating this structure as body. A leaf page (no children) reads back its stored body verbatim.
     public NotionMarkdownResponse GetPageMarkdown(string pageId)
     {
+        if (_throwMarkdownReadAfterBodyCreate)
+        {
+            _throwMarkdownReadAfterBodyCreate = false;
+            throw new NotionApiException(500, "simulated post-create markdown read failure");
+        }
         if (FailMarkdownReadFor.Contains(pageId))
             throw new NotionApiException(404, $"{{\"code\":\"object_not_found\",\"message\":\"page {pageId} not found\"}}");
         var body = _pageMarkdown.GetValueOrDefault(pageId, "");

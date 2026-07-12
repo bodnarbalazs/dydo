@@ -41,6 +41,15 @@ public sealed class SyncRunner
         _conflictShadowPathFor = conflictShadowPathFor;
     }
 
+    private static SyncDoc WithBody(SyncDoc doc, string body) => new()
+    {
+        LocalId = doc.LocalId,
+        ExternalId = doc.ExternalId,
+        Fields = doc.Fields,
+        Body = body,
+        SourcePath = doc.SourcePath,
+    };
+
     /// <summary>
     /// Compute the reconcile decisions for this tick without writing anything — no repo files, no
     /// external change set, no base advance. Used by <c>notion sync --dry-run</c> to preview the plan.
@@ -116,15 +125,16 @@ public sealed class SyncRunner
         // created some pages does not re-create them (duplicate them) on retry.
         var assigned = new Dictionary<string, string>();
         var deleted = new HashSet<string>();
+        var emptyBodied = new HashSet<string>();
         var applied = false;
         try
         {
-            _adapter.Apply(changes, assigned, deleted);
+            _adapter.Apply(changes, assigned, deleted, emptyBodied);
             applied = true;
         }
         finally
         {
-            CommitBase(results, shadowed, assigned, deleted, applied);
+            CommitBase(results, shadowed, assigned, deleted, emptyBodied, applied);
             // A completed tick has confirmed every create's external id, so any last-activity with no base
             // entry is a genuine orphan (a crashed create's seed, or a doc whose base never existed) that
             // Retire can never reach — sweep it before saving (finding 7). A partial tick leaves it for the
@@ -174,7 +184,9 @@ public sealed class SyncRunner
     /// leaves the entry for retry instead of dropping tracking for a still-live page (issue 0221).
     /// Non-create, non-delete advances commit only when the whole batch applied, so a failed tick
     /// self-heals on retry.</summary>
-    private void CommitBase(List<ReconcileResult> results, IReadOnlySet<string> shadowed, IReadOnlyDictionary<string, string> assigned, IReadOnlySet<string> deleted, bool applied)
+    private void CommitBase(List<ReconcileResult> results, IReadOnlySet<string> shadowed,
+        IReadOnlyDictionary<string, string> assigned, IReadOnlySet<string> deleted,
+        IReadOnlySet<string> emptyBodied, bool applied)
     {
         foreach (var result in results)
         {
@@ -209,8 +221,11 @@ public sealed class SyncRunner
                     {
                         if (assigned.TryGetValue(result.LocalId, out var externalId))
                         {
-                            result.NewBase!.ExternalId = externalId;
-                            _base.Set(result.NewBase);
+                            var newBase = result.NewBase!;
+                            newBase.ExternalId = externalId;
+                            _base.Set(emptyBodied.Contains(result.LocalId)
+                                ? WithBody(newBase, "")
+                                : newBase);
                         }
                     }
                     else if (applied)

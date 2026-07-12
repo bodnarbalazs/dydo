@@ -105,9 +105,13 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     }
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>
-        Apply(changes, assigned, new HashSet<string>());
+        Apply(changes, assigned, new HashSet<string>(), new HashSet<string>());
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted)
+        => Apply(changes, assigned, deleted, new HashSet<string>());
+
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
+        ICollection<string> emptyBodied)
     {
         var schema = EnsureSchema();
 

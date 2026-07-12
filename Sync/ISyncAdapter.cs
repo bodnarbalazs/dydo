@@ -26,9 +26,12 @@ public interface ISyncAdapter
     /// instant its archive succeeds — the same pattern as <paramref name="assigned"/>, so the caller
     /// advances a delete's base only for archives that truly happened. A delete an adapter deliberately
     /// tolerates and skips (the docs mirror's archived-ancestor case, issue 0221) is NOT recorded, so its
-    /// base entry is retained for the next tick rather than orphaning a still-live page.
+    /// base entry is retained for the next tick rather than orphaning a still-live page. A create that exists but
+    /// still needs its body written is recorded in <paramref name="emptyBodied"/> so the caller persists its base
+    /// with an empty body until the write succeeds.
     /// </summary>
-    void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted);
+    void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
+        ICollection<string> emptyBodied);
 
     /// <summary>
     /// The body this view echoes back when the given body is written and re-read. Views that convert

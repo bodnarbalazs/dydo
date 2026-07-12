@@ -36,7 +36,6 @@ public sealed class DocsPageAdapter : ISyncAdapter
     private readonly IReadOnlySet<string> _managedPageIds;
     private readonly TextWriter? _log;
     private readonly IReadOnlyDictionary<string, string>? _lastSyncedBodyByPageId;
-
     /// <summary>Structure is repo-owned (DR 033 §2): the engine must never delete a repo doc or archive its page
     /// because the page was merely missing from an eventual-consistency-lagged external read.</summary>
     public bool RepoOwnedStructure => true;
@@ -130,9 +129,13 @@ public sealed class DocsPageAdapter : ISyncAdapter
     }
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned) =>
-        Apply(changes, assigned, new HashSet<string>());
+        Apply(changes, assigned, new HashSet<string>(), new HashSet<string>());
 
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted)
+        => Apply(changes, assigned, deleted, new HashSet<string>());
+
+    public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
+        ICollection<string> emptyBodied)
     {
         foreach (var upsert in changes.Upserts)
         {
@@ -153,17 +156,19 @@ public sealed class DocsPageAdapter : ISyncAdapter
                     },
                     Markdown = upsert.Body.Length > 0 ? upsert.Body : null,
                 });
-                // Self-enforcing guard against a SILENT create-with-body ignore (DR 035 finding). The create's
-                // markdown field is doc-sourced, not live-verified: if live Notion silently ignores it (e.g. for a
-                // page_id parent), the page is created EMPTY while the base would record the full body — the next
-                // tick then reads the empty page as an external clear and WIPES the canonical file (the issue 0235
-                // wipe). Read the body straight back: a non-empty body that comes back empty means the field was
-                // ignored, so throw BEFORE recording the assigned id — the base never advances against the empty
-                // page and the wipe cannot fire. The read-back is confined to this rare create-with-body path.
-                if (upsert.Body.Length > 0 && _client.GetPageMarkdown(page.Id).Markdown.Length == 0)
-                    throw new NotionApiException(500,
-                        $"create-with-body page {page.Id} ({upsert.LocalId}) sent a non-empty body but read back empty — Notion ignored the markdown field on create");
                 assigned[upsert.LocalId] = page.Id;
+                if (upsert.Body.Length == 0)
+                    continue;
+
+                // The page exists even if its immediate read-back or fallback PATCH fails. Record an empty base
+                // before either operation so a partial tick keeps the id without claiming its body landed.
+                emptyBodied.Add(upsert.LocalId);
+                if (_client.GetPageMarkdown(page.Id).Markdown.Length == 0)
+                {
+                    _log?.WriteLine($"notion docs sync: page {page.Id} ({upsert.LocalId}) ignored the markdown field on create; recording an empty base and writing the body via a child-safe PATCH");
+                    _client.UpdatePageMarkdown(page.Id, upsert.Body, allowDeletingContent: false);
+                }
+                emptyBodied.Remove(upsert.LocalId);
             }
             else
             {

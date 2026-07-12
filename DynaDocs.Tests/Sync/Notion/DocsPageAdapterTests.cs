@@ -42,6 +42,17 @@ public class DocsPageAdapterTests : IDisposable
         return (client, root, child);
     }
 
+    private static (FakeNotionClient Client, string Root) SeedRoot()
+    {
+        var client = new FakeNotionClient();
+        var root = client.CreatePage(new NotionPageCreateRequest
+        {
+            Parent = NotionParent.Page("workspace"),
+            Properties = new() { ["title"] = new() { Type = "title", Title = NotionRichText.Of("Docs") } },
+        }).Id;
+        return (client, root);
+    }
+
     private DocsPageAdapter AdapterOver(FakeNotionClient client, string root, params string[] managed) =>
         new(client, root, new Dictionary<string, string>(), new Dictionary<string, string>(),
             new HashSet<string>(managed));
@@ -81,7 +92,7 @@ public class DocsPageAdapterTests : IDisposable
     [Fact]
     public void Apply_Create_PostsChildPage_UnderMappedParent_WithTitleAndBody()
     {
-        var (client, root, _) = SeedTree("");
+        var (client, root) = SeedRoot();
         var adapter = new DocsPageAdapter(
             client, root,
             new Dictionary<string, string> { ["understand/architecture"] = root },
@@ -276,20 +287,16 @@ public class DocsPageAdapterTests : IDisposable
     }
 
     [Fact]
-    public void RunThroughEngine_CreateWithBody_SilentlyIgnored_Throws_DoesNotAdvanceBaseNorWipeCanonical()
+    public void RunThroughEngine_CreateWithBody_SilentlyIgnored_RecordsEmptyBase_PatchesAndDoesNotDuplicate()
     {
-        // The self-enforcing read-back guard (DR 035): the create-with-body markdown field is doc-sourced. If live
-        // Notion SILENTLY IGNORES it, the page is created empty — and recording the full-body base against that
-        // empty page is the exact issue 0235 wipe (next tick reads the empty page as a clear and empties canonical).
-        // The guard reads the body straight back after the create and THROWS on the empty echo, before the base
-        // advances — so the wipe can never fire.
-        var (client, root, child) = SeedTree("canonical body");
+        // A silent create-with-body ignore must keep the page managed and heal through a child-safe PATCH, without
+        // making a second page on the following tick.
+        var (client, root) = SeedRoot();
         var repoPath = Path.Combine(_dir, "guide.md");
         var repoContent = "---\ntitle: Guide\narea: general\n---\n\ncanonical body";
         File.WriteAllText(repoPath, repoContent);
 
         var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
-        store.Set(new SyncDoc { LocalId = "guide", ExternalId = child, Fields = [], Body = "canonical body", SourcePath = "" });
 
         DocsPageAdapter Adapter() => new(
             client, root, new Dictionary<string, string> { ["guide"] = root },
@@ -297,18 +304,100 @@ public class DocsPageAdapterTests : IDisposable
         SyncDoc Read() => SyncDocFile.Read(repoPath, "guide", repoPath);
         SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
 
-        // The page vanishes from the listing (repo-owned-structure resurrect → create-with-body), and live Notion
-        // silently drops the create's markdown field: the resurrected page is created EMPTY.
-        client.HiddenFromListing.Add(child);
         client.SilentlyIgnoreCreateMarkdown = true;
+
+        Assert.Null(Record.Exception(() => Runner().Run([Read()])));
+
+        var createdId = store.Get("guide")!.ExternalId!;
+        Assert.Equal("canonical body", store.Get("guide")!.Body);
+        Assert.Equal("canonical body", client.GetPageMarkdown(createdId).Markdown);
+        Assert.Contains(client.MarkdownUpdateCalls, call => call == (createdId, false));
+        Assert.Equal(repoContent, File.ReadAllText(repoPath));
+        Runner().Run([Read()]);
+
+        Assert.Single(client.GetChildPages(root));
+        Assert.Equal(createdId, store.Get("guide")!.ExternalId);
+        Assert.Equal("canonical body", store.Get("guide")!.Body);
+        Assert.Equal(repoContent, File.ReadAllText(repoPath));
+    }
+
+    [Fact]
+    public void RunThroughEngine_CreateWithBody_FallbackPatchFails_PersistsEmptyBaseForRetry()
+    {
+        var (client, root) = SeedRoot();
+        var repoPath = Path.Combine(_dir, "guide.md");
+        File.WriteAllText(repoPath, "---\ntitle: Guide\narea: general\n---\n\ncanonical body");
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+
+        DocsPageAdapter Adapter() => new(
+            client, root, new Dictionary<string, string> { ["guide"] = root },
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        SyncDoc Read() => SyncDocFile.Read(repoPath, "guide", repoPath);
+        SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
+
+        client.SilentlyIgnoreCreateMarkdown = true;
+        client.FailMarkdownUpdate = true;
 
         Assert.Throws<NotionApiException>(() => Runner().Run([Read()]));
 
-        // The base still points at the original page with the full body — never advanced to the empty resurrect.
-        Assert.Equal(child, store.Get("guide")!.ExternalId);
+        var createdId = store.Get("guide")!.ExternalId!;
+        Assert.Equal("", store.Get("guide")!.Body);
+        Assert.Equal("", client.StoredMarkdown(createdId));
+
+        client.FailMarkdownUpdate = false;
+        Runner().Run([Read()]);
+
+        Assert.Single(client.GetChildPages(root));
+        Assert.Equal("canonical body", client.GetPageMarkdown(createdId).Markdown);
         Assert.Equal("canonical body", store.Get("guide")!.Body);
-        // The canonical file is byte-unchanged — the wipe never fires.
-        Assert.Equal(repoContent, File.ReadAllText(repoPath));
+    }
+
+    [Fact]
+    public void RunThroughEngine_CreateWithBody_ReadBackThrows_PersistsEmptyBaseWithoutDuplicating()
+    {
+        var (client, root) = SeedRoot();
+        var repoPath = Path.Combine(_dir, "guide.md");
+        File.WriteAllText(repoPath, "---\ntitle: Guide\narea: general\n---\n\ncanonical body");
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+
+        DocsPageAdapter Adapter() => new(
+            client, root, new Dictionary<string, string> { ["guide"] = root },
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        SyncDoc Read() => SyncDocFile.Read(repoPath, "guide", repoPath);
+        SyncRunner Runner() => new(Adapter(), store, (_, _, _) => repoPath);
+
+        client.ThrowFirstMarkdownReadAfterBodyCreate = true;
+
+        Assert.Throws<NotionApiException>(() => Runner().Run([Read()]));
+
+        var createdId = store.Get("guide")!.ExternalId!;
+        Assert.Equal("", store.Get("guide")!.Body);
+
+        Runner().Run([Read()]);
+
+        Assert.Single(client.GetChildPages(root));
+        Assert.Equal(createdId, store.Get("guide")!.ExternalId);
+    }
+
+    [Fact]
+    public void RunThroughEngine_CreateWithBody_ReadBackCorrectly_RecordsFullBaseWithoutPatch()
+    {
+        var (client, root) = SeedRoot();
+        var repoPath = Path.Combine(_dir, "guide.md");
+        File.WriteAllText(repoPath, "---\ntitle: Guide\narea: general\n---\n\ncanonical body");
+        var store = new BaseSnapshotStore(Path.Combine(_dir, "snap.json"));
+
+        var adapter = new DocsPageAdapter(
+            client, root, new Dictionary<string, string> { ["guide"] = root },
+            new Dictionary<string, string> { ["guide"] = "Guide" }, ManagedFrom(store));
+        var runner = new SyncRunner(adapter, store, (_, _, _) => repoPath);
+
+        runner.Run([SyncDocFile.Read(repoPath, "guide", repoPath)]);
+
+        var createdId = store.Get("guide")!.ExternalId!;
+        Assert.Equal("canonical body", store.Get("guide")!.Body);
+        Assert.Equal("canonical body", client.GetPageMarkdown(createdId).Markdown);
+        Assert.Empty(client.MarkdownUpdates);
     }
 
     [Fact]

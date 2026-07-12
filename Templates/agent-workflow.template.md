@@ -13,9 +13,17 @@ The best thing you can do is follow the instructions and run the commands dilige
 
 ## 1. Claim
 
-```bash
-dydo agent claim {{AGENT_NAME}}
-```
+Complete onboarding in this order:
+
+1. Run the claim command through the **Bash tool**. Do not use PowerShell: the guard needs the
+   Bash tool to plumb your session ID. Do not chain this command with `dydo whoami`; the claim
+   binding is written after the hook completes, so run `dydo whoami` separately.
+   ```bash
+   dydo agent claim {{AGENT_NAME}}
+   ```
+2. Set your role in step 2.
+3. Start a general `dydo wait` in the background and keep it active.
+4. Read the must-reads in your mode file.
 
 **Note:** If you ran `dydo agent claim auto` for any reason, mention it to the user.
 

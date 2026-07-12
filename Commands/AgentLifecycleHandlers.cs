@@ -37,6 +37,10 @@ internal static class AgentLifecycleHandlers
 
         if (!registry.ClaimAgent(name, out var error))
         {
+            if (error == "No session ID available. Claim must be initiated via hook.")
+                error = $"Claim must be run via the Bash tool so the guard can bind the session ID. " +
+                    $"Re-run `dydo agent claim {name}` from Bash.";
+
             ConsoleOutput.WriteError(error);
             return ExitCodes.ToolError;
         }

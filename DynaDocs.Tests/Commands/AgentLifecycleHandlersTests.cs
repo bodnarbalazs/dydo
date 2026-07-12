@@ -60,6 +60,23 @@ public class AgentLifecycleHandlersTests : IDisposable
     }
 
     [Fact]
+    public void ExecuteClaim_WithoutHookPlumbedSession_ExplainsHowToClaim()
+    {
+        Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
+
+        int exit = 0;
+        var stderr = ConsoleCapture.Stderr(() =>
+        {
+            exit = AgentLifecycleHandlers.ExecuteClaim("Zelda");
+        });
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Contains("must be run via the Bash tool", stderr);
+        Assert.Contains("dydo agent claim Zelda", stderr);
+        Assert.DoesNotContain("No session ID available", stderr);
+    }
+
+    [Fact]
     public void ExecuteClaim_StaleEnvVarMismatch_RefusedWithActionableError()
     {
         Environment.SetEnvironmentVariable("DYDO_AGENT", "Charlie");
@@ -97,7 +114,7 @@ public class AgentLifecycleHandlersTests : IDisposable
     }
 
     [Fact]
-    public void ExecuteClaim_NoEnvVar_Allowed()
+    public void ExecuteClaim_WithHookPlumbedSession_Succeeds()
     {
         Environment.SetEnvironmentVariable("DYDO_AGENT", null);
         Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");

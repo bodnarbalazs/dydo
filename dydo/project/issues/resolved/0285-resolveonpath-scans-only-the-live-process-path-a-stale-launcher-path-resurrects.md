@@ -4,12 +4,13 @@ id: 285
 area: backend
 type: issue
 severity: high
-status: open
+status: resolved
 found-by: manual
 found-by-agent: Adele
 found-by-vendor: claude
 found-by-model: claude
 date: 2026-07-12
+resolved-date: 2026-07-12
 ---
 
 # ResolveOnPath scans only the live process PATH; a stale launcher PATH resurrects the #0227 bare-codex launch failure and bypasses preflight
@@ -52,4 +53,4 @@ Prefix every `dydo dispatch --codex` shell with `export PATH="$PATH:/c/Users/Use
 
 ## Resolution
 
-(Filled when resolved)
+RESOLVED 2026-07-12 (landed 2ad3d325). TerminalLauncher.ResolveOnPath now falls back, when the executable is absent from the launcher live process PATH, to the persisted Windows User then Machine PATH, then a codex install-dir probe (LocalAppData Programs/OpenAI/Codex/bin) - all PATHEXT-aware, WindowsApps-alias rejected across every source, OS-guarded so Linux CI is unaffected. A genuine codex total-miss now throws so DispatchPreflight fails BEFORE inbox/state mutation (no more doomed bare-codex tab); claude bare-fallback preserved. Fixes the stale-launcher-PATH regression of 0227 that bricked codex dispatch this session. Codex Brian (Terra, 1 round - all 8 vectors covered first pass; DR-037 test-front-loading worked) plus a code-simplifier CC 32-to-6 refactor of ResolveOnPath (cleared the CRAP gate). Adversarially reviewed PASS. NOTE: the export-PATH dispatch workaround stays needed until a binary with this fix is installed; recommended persisted-alias guard test tracked in 0289.

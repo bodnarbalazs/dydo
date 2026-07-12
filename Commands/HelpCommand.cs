@@ -105,6 +105,7 @@ public static class HelpCommand
         Console.WriteLine("Model Commands:");
         Console.WriteLine("  model cap <model>      Rebind an unavailable model's tiers to a fallback");
         Console.WriteLine("  model uncap <model>    Restore a capped model's tier bindings");
+        Console.WriteLine("  model status           Show active model caps (target, fallback, reset time)");
         Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

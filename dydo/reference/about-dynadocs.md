@@ -360,6 +360,7 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 |---------|-------------|
 | `dydo model cap <model> --until <time> [--fallback <model>]` | Rebind an unavailable model's tiers to a fallback until a reset time |
 | `dydo model uncap <model>` | Restore a capped model's tier bindings |
+| `dydo model status` | Show active model caps (target, fallback, reset time) |
 
 ### Roles
 | Command | Description |

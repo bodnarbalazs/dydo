@@ -1,6 +1,9 @@
 namespace DynaDocs.Commands;
 
 using System.CommandLine;
+using System.Text.Json;
+using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -17,6 +20,7 @@ public static class ModelCommand
         var command = new Command("model", "Temporarily cap an unavailable model to a fallback tier");
         command.Subcommands.Add(CreateCapCommand());
         command.Subcommands.Add(CreateUncapCommand());
+        command.Subcommands.Add(CreateStatusCommand());
         return command;
     }
 
@@ -55,6 +59,51 @@ public static class ModelCommand
             return ModelCapService.Cap(model, until.Value, parse.GetValue(fallbackOption), Console.Out, Console.Error);
         });
         return command;
+    }
+
+    private static Command CreateStatusCommand()
+    {
+        var command = new Command("status", "Show active model caps and their reset times");
+        command.SetAction(_ => PrintStatus(Console.Out, Console.Error));
+        return command;
+    }
+
+    private static int PrintStatus(TextWriter @out, TextWriter err)
+    {
+        var config = new ConfigService();
+        if (config.FindConfigFile() == null)
+        {
+            err.WriteLine("model status: not inside a dydo project (no dydo.json found).");
+            return ExitCodes.ToolError;
+        }
+
+        var markerDirectory = Path.Combine(config.GetDydoRoot(), "_system", ".local", "model-caps");
+        var active = new List<ModelCap>();
+        var expired = new List<ModelCap>();
+        if (Directory.Exists(markerDirectory))
+            foreach (var marker in Directory.EnumerateFiles(markerDirectory, "*.json"))
+                if (ReadCap(marker) is { } cap)
+                    (cap.Until > DateTimeOffset.Now ? active : expired).Add(cap);
+
+        if (active.Count == 0)
+            @out.WriteLine("No active model caps.");
+        else
+            foreach (var cap in active.OrderBy(cap => cap.Model, StringComparer.Ordinal))
+                @out.WriteLine($"ACTIVE: {cap.Model} → {cap.Fallback} until {cap.Until:yyyy-MM-dd HH:mm}.");
+
+        foreach (var cap in expired.OrderBy(cap => cap.Model, StringComparer.Ordinal))
+            @out.WriteLine($"Expired model cap: {cap.Model} → {cap.Fallback} reset at {cap.Until:yyyy-MM-dd HH:mm}; awaiting watchdog restoration.");
+
+        return ExitCodes.Success;
+    }
+
+    private static ModelCap? ReadCap(string marker)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(File.ReadAllText(marker), DydoDefaultJsonContext.Default.ModelCap);
+        }
+        catch { return null; }
     }
 
     private static Command CreateUncapCommand()

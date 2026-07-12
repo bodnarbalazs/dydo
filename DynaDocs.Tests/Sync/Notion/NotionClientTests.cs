@@ -41,6 +41,19 @@ public class NotionClientTests
     }
 
     [Fact]
+    public void ArchiveDatabase_PatchesDatabasePath_WithInTrashWireShape()
+    {
+        var handler = new FakeHttpMessageHandler().Enqueue("""{"id":"db-to-archive","data_sources":[]}""");
+
+        Client(handler).ArchiveDatabase("db-to-archive");
+
+        var captured = handler.Requests.Single();
+        Assert.Equal("PATCH", captured.Method);
+        Assert.Equal("/v1/databases/db-to-archive", captured.Path);
+        Assert.Contains("\"in_trash\":true", captured.Body);
+    }
+
+    [Fact]
     public void QueryDataSource_PostsToQueryPath_AndFollowsPagination()
     {
         var handler = new FakeHttpMessageHandler()
@@ -76,6 +89,27 @@ public class NotionClientTests
         Assert.Contains("\"data_source_id\":\"ds1\"", captured.Body);
         Assert.Contains("\"type\":\"data_source_id\"", captured.Body);
         Assert.Equal("new-page", page.Id);
+    }
+
+    [Fact]
+    public void CreatePage_Markdown_SerializesWhenPresent_AndOmitsWhenNull()
+    {
+        var withMarkdown = new FakeHttpMessageHandler().Enqueue("""{"id":"with-markdown","properties":{}}""");
+        Client(withMarkdown).CreatePage(new NotionPageCreateRequest
+        {
+            Parent = new NotionParent { DataSourceId = "ds1" },
+            Markdown = "# Page body",
+        });
+
+        Assert.Contains("\"markdown\":\"# Page body\"", withMarkdown.Requests.Single().Body);
+
+        var withoutMarkdown = new FakeHttpMessageHandler().Enqueue("""{"id":"without-markdown","properties":{}}""");
+        Client(withoutMarkdown).CreatePage(new NotionPageCreateRequest
+        {
+            Parent = new NotionParent { DataSourceId = "ds1" },
+        });
+
+        Assert.DoesNotContain("\"markdown\":", withoutMarkdown.Requests.Single().Body);
     }
 
     [Fact]

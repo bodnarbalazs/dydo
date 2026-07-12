@@ -80,6 +80,26 @@ Follow it through to completion.
 
 ---
 
+## Codex-Hosted Sessions
+
+Running on a Codex host (no Claude Read tool)? Three differences:
+
+- **Claim is a manual onboarding step** — run the step-1 command yourself before anything else;
+  no hook performs it for you.
+- **Register reads with `dydo read <file-or-message-id>`** — it prints the content AND marks it
+  read. Plain shell reads (`Get-Content`, `cat`) do NOT register with the guard, and unread
+  items block `dydo inbox clear` and release.
+- **Register the general wait with `dydo wait --register`** — `--register` is the required form
+  on a codex host. A foreground `dydo wait` dies to the codex tool timeout and leaves no marker,
+  so the guard blocks you with "must keep a general wait active"; the guard also forces a plain
+  `dydo wait` into the background (a Claude-only mechanism codex cannot use), so it never runs on
+  a codex host regardless. `--register` writes a durable marker keyed to your session's host
+  process and returns immediately — the guard exempts it from the backgrounding rule — and it
+  stays valid while your session lives. Poll for messages with `dydo inbox show` / `dydo read`.
+  `dydo agent release` clears the marker; `dydo wait --cancel` removes it manually.
+
+---
+
 ## Troubleshooting
 
 | Error | Cause | Fix |
@@ -104,6 +124,7 @@ dydo agent role <role> --task <name>     # Set role
 
 # Inbox
 dydo inbox show                          # Check dispatched work
+dydo read <file|msg-id>                  # Print content AND register the read (any host)
 dydo inbox clear --all                   # Archive processed items
 
 # Dispatch
@@ -113,6 +134,7 @@ dydo dispatch --auto-close --role <r> --task <t> --brief "..."  # Reserve + assi
 dydo msg --to <agent> --body "..."                   # Send message
 dydo msg --to <agent> --subject <task> --body "..."  # With task context
 dydo wait                                            # General wait — required after claim, run in background
+dydo wait --register                                 # Durable wait — register + return (required form on codex hosts)
 dydo wait --task <name>                              # Task-channel wait (special cases only, run in background)
 dydo wait --cancel                                   # Cancel the active general wait
 dydo wait --task <name> --cancel                      # Cancel a task-channel wait

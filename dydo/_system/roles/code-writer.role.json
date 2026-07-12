@@ -27,6 +27,16 @@
       "requireAll": true,
       "onlyWhenDispatched": true,
       "message": "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --auto-close --role reviewer --task {task} --brief \u0022Review changes for {task}\u0022"
+    },
+    {
+      "type": "requires-commit",
+      "fromRole": null,
+      "targetRole": null,
+      "requiredRoles": null,
+      "maxCount": null,
+      "requireAll": true,
+      "onlyWhenDispatched": false,
+      "message": "Code-writers in worktrees must commit before releasing."
     }
   ],
   "conditionalMustReads": [

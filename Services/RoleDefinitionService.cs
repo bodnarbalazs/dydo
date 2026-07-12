@@ -274,33 +274,58 @@ public class RoleDefinitionService : IRoleDefinitionService
         switch (constraint.Type)
         {
             case "role-transition":
-                if (string.IsNullOrWhiteSpace(constraint.FromRole))
-                    errors.Add("Constraint 'role-transition' requires 'fromRole'.");
+                ValidateRoleTransition(constraint, errors);
                 break;
             case "requires-prior":
-                if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-                    errors.Add("Constraint 'requires-prior' requires 'requiredRoles'.");
+                ValidateRequiresPrior(constraint, errors);
                 break;
             case "panel-limit":
-                if (constraint.MaxCount == null || constraint.MaxCount < 1)
-                    errors.Add("Constraint 'panel-limit' requires 'maxCount' >= 1.");
+                ValidatePanelLimit(constraint, errors);
                 break;
             case "requires-dispatch":
-                if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-                    errors.Add("Constraint 'requires-dispatch' requires 'requiredRoles'.");
+                ValidateRequiresDispatch(constraint, errors);
                 break;
             case "requires-commit":
                 break;
             case "dispatch-restriction":
-                if (string.IsNullOrWhiteSpace(constraint.TargetRole))
-                    errors.Add("Constraint 'dispatch-restriction' requires 'targetRole'.");
-                if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-                    errors.Add("Constraint 'dispatch-restriction' requires 'requiredRoles'.");
+                ValidateDispatchRestriction(constraint, errors);
                 break;
             default:
                 errors.Add($"Unknown constraint type: '{constraint.Type}'.");
                 break;
         }
+    }
+
+    private static void ValidateRoleTransition(RoleConstraint constraint, List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(constraint.FromRole))
+            errors.Add("Constraint 'role-transition' requires 'fromRole'.");
+    }
+
+    private static void ValidateRequiresPrior(RoleConstraint constraint, List<string> errors)
+    {
+        if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
+            errors.Add("Constraint 'requires-prior' requires 'requiredRoles'.");
+    }
+
+    private static void ValidatePanelLimit(RoleConstraint constraint, List<string> errors)
+    {
+        if (constraint.MaxCount == null || constraint.MaxCount < 1)
+            errors.Add("Constraint 'panel-limit' requires 'maxCount' >= 1.");
+    }
+
+    private static void ValidateRequiresDispatch(RoleConstraint constraint, List<string> errors)
+    {
+        if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
+            errors.Add("Constraint 'requires-dispatch' requires 'requiredRoles'.");
+    }
+
+    private static void ValidateDispatchRestriction(RoleConstraint constraint, List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(constraint.TargetRole))
+            errors.Add("Constraint 'dispatch-restriction' requires 'targetRole'.");
+        if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
+            errors.Add("Constraint 'dispatch-restriction' requires 'requiredRoles'.");
     }
 
     private static void ValidateConditionalMustRead(ConditionalMustRead cmr, List<string> errors)

@@ -18,7 +18,27 @@ Observed repeatedly 2026-07-11 (Henry, Sam, likely all codex code tasks): a disp
 
 ## Description
 
-(Describe the issue)
+**Diagnosis confirmed (Henry, codex, 2026-07-11):** the elevated workspace-write sandbox cannot
+read/execute the real interpreter at `C:\Users\User\AppData\Local\Programs\Python\Python313\python.exe`
+(outside the workspace), so `gap_check.py`/`run_tests.py` fail with Windows access denied. The
+documented codex mechanism to allow it: add the Python dir as a `writable_roots` entry under
+`[sandbox_workspace_write]` in `~/.codex/config.toml` (keeps `windows.sandbox = "elevated"`, does NOT
+enable danger-full-access). Codex's OWN auto-approval-review DENIED the edit pending explicit human
+authorization (correctly — it is a persistent host-wide security-setting change).
+
+**Decision (balazs, 2026-07-11):** [PENDING — record his choice]
+
+**CoS analysis / recommendation:** the change is correctly diagnosed but is a persistent, HOST-WIDE
+(all projects) *write* grant to the Python install dir — a directory OUTSIDE the dydo guard's reach
+(the guard governs the repo, not ~/.codex or system dirs), so a compromised/misbehaving codex task
+could tamper the interpreter with no guard visibility. It is also broader than the need (python needs
+read+execute, `writable_roots` grants write). CRUCIALLY it is NOT a hard swarm gate: the Claude
+reviewer already runs the full suite + gap_check on every review (verified — the 0277-r2 reviewer ran
+4760/4760 + gap_check independently), so codex not running python only loses SELF-verification (a
+broken fix costs one review round, caught by the reviewer). **Recommendation: DECLINE the expansion —
+let the reviewer be the gate; keep the sandbox tight.** If self-verification efficiency is wanted at
+scale, ACCEPT with narrowing: (a) project-scope it (`[projects.'...dynadocs'.sandbox_workspace_write]`)
+not global, and (b) read-only/exec-roots if codex supports it, not `writable_roots`.
 
 ## Reproduction
 

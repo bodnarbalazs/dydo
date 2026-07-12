@@ -47,6 +47,14 @@ follow-on, not a 2.0.9/swarm gate. Recommend: run the swarm on the workaround; p
 design if fire-and-forget proves limiting. Schema Mia generated: her workspace,
 codex-appserver-schema-0279.
 
+## Empirical confirmation (codex Brian, 2026-07-13) — DECISIVE
+
+balazs asked the sharp question: can a codex agent run a background `dydo wait` that WAKES it on message arrival (the way Adele's Claude harness re-invokes on background-task completion), making #0279 a cheap onboarding fix instead of an app-server build? Brian (codex) ran the crux EMPIRICAL self-test: launched a DETACHED child (`sleep 15; exit 17`) while the parent tool call stayed alive 30s. Result — at 10s the codex infra yielded ONLY the still-running tool cell: NO child-completion event, NO inbox signal, NO new agent turn. The completion surfaced ONLY when Brian EXPLICITLY called the wait tool (returned "child-completed-silently" at 30.6s).
+
+**CONCLUSION (settled empirically): a detached/background-process completion does NOT re-invoke a codex agent or surface output to it — a codex agent cannot end its turn and be woken by a shell child in this host model.** Codex CLI exposes interactive/exec/resume + experimental app-server, but NO watch/background-completion-wake option; `resume` needs an explicit CLI invocation + prompt; `~/.codex/config` `notify` is OUTBOUND lifecycle only. WindowsTerminalLauncher launches `codex … --inbox` with no supervisor/re-arm; `.codex/hooks.json` has only PreToolUse/Stop guards (neither fires on inbox arrival); shell-spawned wait re-arms fail the sibling-ownership gate; a foreground `dydo wait` dies at the codex tool timeout.
+
+So **onboarding alone CANNOT solve #0279** — there is no managed background-completion→turn wake to hang a `dydo wait` loop on. This confirms Mia's design: the fix is the **app-server / remote-control PUSH** (keep the inbox write as truth; a delivery service uses the codex app-server connection, maps SessionId→threadId, then idempotently `turn/start` a bounded "run `dydo read <id>`" prompt into the thread; warn + fall back to inbox-only when unavailable). NOT stdout polling. **#0279 requires the app-server integration — a scheduled design/build, not a cheap onboarding change.** balazs's hypothesis is answered: no cheap path exists.
+
 ## Reproduction
 
 (Steps to reproduce, if applicable)

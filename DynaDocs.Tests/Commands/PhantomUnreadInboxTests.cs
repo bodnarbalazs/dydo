@@ -134,7 +134,68 @@ public class PhantomUnreadInboxTests : IDisposable
         Assert.Contains("bbbb2222", preserved.UnreadMessages);
     }
 
-    private void SeedWorkingAgent(IReadOnlyList<string> unreadIds)
+    [Fact]
+    public void Guard_StdinHook_UnreachableOrphanedInbox_ProvidesForceClearRecovery()
+    {
+        SeedWorkingAgent(unreadIds: ["aaaa1111"]);
+        WriteInboxMessage("aaaa1111", from: "Adele", subject: "hello");
+
+        var registry = new AgentRegistry(_testDir);
+        var output = RunGuardHook();
+
+        Assert.Equal(ExitCodes.ToolError, output.Result);
+        Assert.Contains("dydo inbox clear --force --file", output.Stderr);
+        Assert.Contains("aaaa1111-msg-hello.md", output.Stderr);
+        Assert.True(File.Exists(Path.Combine(_workspace, "inbox", "aaaa1111-msg-hello.md")));
+        Assert.Contains("aaaa1111", registry.GetAgentState(AgentName)!.UnreadMessages);
+    }
+
+    [Fact]
+    public void Guard_StdinHook_ReachableInbox_ShowsNormalUnreadNotice()
+    {
+        SeedWorkingAgent(unreadIds: ["aaaa1111"], claimedPid: Environment.ProcessId);
+        WriteInboxMessage("aaaa1111", from: "Adele", subject: "hello");
+        File.WriteAllText(Path.Combine(_agentsDir, ".session-context"), $"{TestSessionId}\n{AgentName}");
+
+        var output = RunGuardHook();
+
+        Assert.Equal(ExitCodes.ToolError, output.Result);
+        Assert.Contains("NOTICE: You have 1 unread message(s).", output.Stderr);
+        Assert.DoesNotContain("--force --file", output.Stderr);
+        Assert.True(File.Exists(Path.Combine(_workspace, "inbox", "aaaa1111-msg-hello.md")));
+    }
+
+    private static (int? Result, string Stderr) CaptureStderr(Func<int?> action)
+    {
+        var originalError = Console.Error;
+        using var error = new StringWriter();
+        Console.SetError(error);
+        try
+        {
+            return (action(), error.ToString());
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+    }
+
+    private static (int? Result, string Stderr) RunGuardHook()
+    {
+        var originalIn = Console.In;
+        Console.SetIn(new StringReader(
+            "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}"));
+        try
+        {
+            return CaptureStderr(() => GuardCommand.Create().Parse(Array.Empty<string>()).Invoke());
+        }
+        finally
+        {
+            Console.SetIn(originalIn);
+        }
+    }
+
+    private void SeedWorkingAgent(IReadOnlyList<string> unreadIds, int? claimedPid = null)
     {
         var unreadYaml = string.Join(", ", unreadIds.Select(id => $"\"{id}\""));
         File.WriteAllText(Path.Combine(_workspace, "state.md"), $$"""
@@ -159,7 +220,13 @@ public class PhantomUnreadInboxTests : IDisposable
             # {{AgentName}} — Session State
             """);
 
-        var session = new AgentSession { Agent = AgentName, SessionId = TestSessionId, Claimed = DateTime.UtcNow };
+        var session = new AgentSession
+        {
+            Agent = AgentName,
+            SessionId = TestSessionId,
+            Claimed = DateTime.UtcNow,
+            ClaimedPid = claimedPid
+        };
         File.WriteAllText(Path.Combine(_workspace, ".session"),
             JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
         File.WriteAllText(Path.Combine(_agentsDir, ".session-agent"), AgentName);

@@ -320,11 +320,14 @@ Clear processed inbox items.
 ```bash
 dydo inbox clear --all        # Clear all items
 dydo inbox clear --id abc123  # Clear specific item
+dydo inbox clear --force --file dydo/agents/Name/inbox/x.md  # Recover an orphaned inbox file
 ```
 
 **Options:**
 - `--all` - Clear all items
 - `--id <id>` - Clear specific item by ID
+- `--force` - Force-clear an orphaned inbox file (only when the owner has no live session); requires `--file`
+- `--file <path>` - Path to the specific inbox file to force-clear (used with `--force`)
 
 ### dydo read
 

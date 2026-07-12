@@ -1353,7 +1353,7 @@ public static partial class GuardCommand
     /// </summary>
     internal static int? NotifyUnreadMessages(
         AgentState agent, string? path, string? toolName, string? command,
-        string? sessionId, IAgentRegistry registry)
+        string? sessionId, AgentRegistry registry)
     {
         // Self-heal phantom ids — drop ids whose inbox file is missing. Without this, a
         // non-atomic inbox clear (crash mid-operation, manual cleanup) leaves the
@@ -1375,6 +1375,8 @@ public static partial class GuardCommand
         if (agent.UnreadMessages.Count == 0)
             return null;
 
+        if (TryPrintUnreachableInboxRecovery(agent, registry))
+            return ExitCodes.ToolError;
 
         Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
         foreach (var msgId in agent.UnreadMessages)
@@ -1396,6 +1398,38 @@ public static partial class GuardCommand
         Console.Error.WriteLine();
         Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
         return ExitCodes.ToolError;
+    }
+
+    private static bool TryPrintUnreachableInboxRecovery(AgentState agent, AgentRegistry registry)
+    {
+        var clearSessionId = registry.GetSessionContext();
+        var clearAgent = registry.GetCurrentAgent(clearSessionId);
+        if (clearAgent?.Name.Equals(agent.Name, StringComparison.OrdinalIgnoreCase) == true)
+            return false;
+
+        var session = registry.GetSession(agent.Name);
+        if (session?.ClaimedPid is { } pid && ProcessUtils.IsProcessRunning(pid))
+            return false;
+
+        var workspace = registry.GetAgentWorkspace(agent.Name);
+        var files = agent.UnreadMessages
+            .Select(id => FindMessageInfo(workspace, id)?.FilePath)
+            .Where(path => path != null)
+            .Cast<string>()
+            .ToList();
+        if (files.Count == 0)
+            return false;
+
+        Console.Error.WriteLine($"NOTICE: You have {files.Count} unread message(s) in an inbox this session cannot reach.");
+        Console.Error.WriteLine("  Archive each unreachable file with:");
+        foreach (var file in files)
+        {
+            var displayPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), file).Replace('\\', '/');
+            Console.Error.WriteLine($"    dydo inbox clear --force --file \"{displayPath}\"");
+        }
+        Console.Error.WriteLine();
+        Console.Error.WriteLine("  After archiving, retry your previous action.");
+        return true;
     }
 
     /// <summary>

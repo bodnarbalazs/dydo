@@ -1,6 +1,9 @@
 namespace DynaDocs.Tests.Integration;
 
+using System.Text.Json;
 using DynaDocs.Commands;
+using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 
 /// <summary>
@@ -325,7 +328,8 @@ public class WorkflowTests : IntegrationTestBase
         // Create inbox item with matching ID
         var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
         Directory.CreateDirectory(inboxPath);
-        File.WriteAllText(Path.Combine(inboxPath, "abc12345-test-task.md"), """
+        var itemPath = Path.Combine(inboxPath, "abc12345-test-task.md");
+        File.WriteAllText(itemPath, """
             ---
             id: abc12345
             from: Brian
@@ -338,6 +342,7 @@ public class WorkflowTests : IntegrationTestBase
 
             Brief
             """);
+        var originalBytes = File.ReadAllBytes(itemPath);
 
         var result = await InboxClearAsync(id: "abc12345");
 
@@ -348,6 +353,101 @@ public class WorkflowTests : IntegrationTestBase
         var state = registry.GetAgentState("Adele");
         Assert.Contains("abc12345", state!.UnreadMessages);
         Assert.Contains("other-msg", state.UnreadMessages);
+        Assert.Equal(originalBytes, File.ReadAllBytes(itemPath));
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ForceFile_ArchivesOrphanedInboxItem()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        CreateInboxItem("Brian", "Adele", "reviewer", "orphaned-task", "Recover this item");
+        var inboxPath = Path.Combine(TestDir, "dydo/agents/Brian/inbox");
+        var itemPath = Directory.GetFiles(inboxPath, "*.md").Single();
+
+        var result = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", itemPath);
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(itemPath));
+        Assert.True(File.Exists(Path.Combine(TestDir, "dydo/agents/Brian/archive/inbox", Path.GetFileName(itemPath))));
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ForceFile_NonExistentPath_FailsFriendly()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var missingPath = Path.Combine(TestDir, "dydo/agents/Brian/inbox/missing.md");
+        var result = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", missingPath);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Inbox file not found");
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ForceFile_LiveOwnerRefuses()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        CreateInboxItem("Brian", "Adele", "reviewer", "live-owner-task", "Do not archive this");
+        var itemPath = Directory.GetFiles(Path.Combine(TestDir, "dydo/agents/Brian/inbox"), "*.md").Single();
+        var session = new AgentSession
+        {
+            Agent = "Brian",
+            SessionId = "live-owner-session",
+            Claimed = DateTime.UtcNow,
+            ClaimedPid = Environment.ProcessId
+        };
+        File.WriteAllText(Path.Combine(TestDir, "dydo/agents/Brian/.session"),
+            JsonSerializer.Serialize(session, DydoDefaultJsonContext.Default.AgentSession));
+
+        var result = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", itemPath);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Agent Brian has a live session");
+        Assert.True(File.Exists(itemPath));
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ForceFile_RejectsTraversalAndCrossDrivePaths()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        var outsideFile = Path.Combine(TestDir, "dydo", "escape.md");
+        File.WriteAllText(outsideFile, "must not move");
+        var traversalPath = Path.Combine(TestDir, "dydo", "agents", "..", "escape.md");
+
+        var traversal = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", traversalPath);
+
+        traversal.AssertExitCode(2);
+        traversal.AssertStderrContains("must target a Markdown file directly inside an agent inbox");
+        Assert.True(File.Exists(outsideFile));
+
+        var crossDrive = Path.GetPathRoot(TestDir)!.StartsWith("C", StringComparison.OrdinalIgnoreCase)
+            ? "D:\\inbox\\escape.md"
+            : "C:\\inbox\\escape.md";
+        var crossDriveResult = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", crossDrive);
+
+        crossDriveResult.AssertExitCode(2);
+        crossDriveResult.AssertStderrContains("must target a Markdown file directly inside an agent inbox");
+        Assert.True(File.Exists(outsideFile));
+    }
+
+    [Fact]
+    public async Task Inbox_Clear_ForceFile_RequiresOnlyForceAndFile()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        var missingFile = Path.Combine(TestDir, "dydo/agents/Brian/inbox/missing.md");
+
+        var missingFileResult = await RunAsync(InboxCommand.Create(), "clear", "--force");
+        var allResult = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", missingFile, "--all");
+        var idResult = await RunAsync(InboxCommand.Create(), "clear", "--force", "--file", missingFile, "--id", "item");
+
+        missingFileResult.AssertExitCode(2);
+        missingFileResult.AssertStderrContains("Specify both --force and --file");
+        allResult.AssertExitCode(2);
+        allResult.AssertStderrContains("cannot be combined with --all or --id");
+        idResult.AssertExitCode(2);
+        idResult.AssertStderrContains("cannot be combined with --all or --id");
     }
 
     [Fact]

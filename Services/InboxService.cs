@@ -64,9 +64,13 @@ public static class InboxService
         return ExitCodes.Success;
     }
 
-    public static int ExecuteClear(bool all, string? id)
+    public static int ExecuteClear(bool all, string? id, bool force = false, string? file = null)
     {
         var registry = new AgentRegistry();
+
+        if (force || !string.IsNullOrWhiteSpace(file))
+            return ExecuteForceClear(registry, all, id, force, file);
+
         var sessionId = registry.GetSessionContext();
 
         var agent = registry.GetCurrentAgent(sessionId);
@@ -110,6 +114,87 @@ public static class InboxService
             return ExitCodes.ToolError;
         }
         return ClearById(registry, agent.Name, sessionId, inboxPath, archivePath, id!);
+    }
+
+    private static int ExecuteForceClear(AgentRegistry registry, bool all, string? id, bool force, string? file)
+    {
+        if (!force || string.IsNullOrWhiteSpace(file))
+        {
+            ConsoleOutput.WriteError("Specify both --force and --file <path>.");
+            return ExitCodes.ToolError;
+        }
+
+        if (all || !string.IsNullOrEmpty(id))
+        {
+            ConsoleOutput.WriteError("--force --file cannot be combined with --all or --id.");
+            return ExitCodes.ToolError;
+        }
+
+        var inboxFile = Path.GetFullPath(file);
+        if (!TryGetForceClearTarget(registry, inboxFile, out var owner, out var archivePath))
+        {
+            ConsoleOutput.WriteError("--force --file must target a Markdown file directly inside an agent inbox.");
+            return ExitCodes.ToolError;
+        }
+
+        if (!File.Exists(inboxFile))
+        {
+            ConsoleOutput.WriteError($"Inbox file not found: {file}");
+            return ExitCodes.ToolError;
+        }
+
+        if (OwnerHasLiveSession(registry, owner))
+        {
+            ConsoleOutput.WriteError(
+                $"Agent {owner} has a live session; its inbox is not orphaned — it must clear its own item.");
+            return ExitCodes.ToolError;
+        }
+
+        Directory.CreateDirectory(archivePath);
+        var fileName = Path.GetFileName(inboxFile);
+        File.Move(inboxFile, Path.Combine(archivePath, fileName), overwrite: true);
+        Console.WriteLine($"Archived {fileName} to archive/inbox/");
+        return ExitCodes.Success;
+    }
+
+    private static bool TryGetForceClearTarget(
+        AgentRegistry registry, string inboxFile, out string owner, out string archivePath)
+    {
+        owner = string.Empty;
+        archivePath = string.Empty;
+
+        var agentsPath = Path.GetFullPath(registry.WorkspacePath);
+        var relativePath = Path.GetRelativePath(agentsPath, inboxFile);
+        if (Path.IsPathRooted(relativePath) ||
+            relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relativePath.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
+            return false;
+
+        var segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (segments.Length != 3 || segments[1] != "inbox" ||
+            !registry.IsValidAgentName(segments[0]) ||
+            !inboxFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        owner = segments[0];
+        var ownerInbox = Path.GetFullPath(Path.Combine(registry.GetAgentWorkspace(owner), "inbox"));
+        var relativeToOwnerInbox = Path.GetRelativePath(ownerInbox, inboxFile);
+        if (Path.IsPathRooted(relativeToOwnerInbox) ||
+            relativeToOwnerInbox.Equals("..", StringComparison.Ordinal) ||
+            relativeToOwnerInbox.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relativeToOwnerInbox.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal) ||
+            relativeToOwnerInbox.Contains(Path.DirectorySeparatorChar) ||
+            relativeToOwnerInbox.Contains(Path.AltDirectorySeparatorChar))
+            return false;
+
+        archivePath = Path.Combine(registry.GetAgentWorkspace(owner), "archive", "inbox");
+        return true;
+    }
+
+    private static bool OwnerHasLiveSession(AgentRegistry registry, string owner)
+    {
+        var session = registry.GetSession(owner);
+        return session?.ClaimedPid is { } pid && ProcessUtils.IsProcessRunning(pid);
     }
 
     private static int ClearAll(AgentRegistry registry, string agentName, string inboxPath, string archivePath)

@@ -46,15 +46,29 @@ public static class InboxCommand
             Description = "Clear specific item by ID"
         };
 
+        var forceOption = new Option<bool>("--force")
+        {
+            Description = "Archive a specific orphaned inbox file"
+        };
+
+        var fileOption = new Option<string?>("--file")
+        {
+            Description = "Orphaned inbox file to archive with --force"
+        };
+
         var command = new Command("clear", "Clear processed inbox items");
         command.Options.Add(allOption);
         command.Options.Add(idOption);
+        command.Options.Add(forceOption);
+        command.Options.Add(fileOption);
 
         command.SetAction(parseResult =>
         {
             var all = parseResult.GetValue(allOption);
             var id = parseResult.GetValue(idOption);
-            return InboxService.ExecuteClear(all, id);
+            var force = parseResult.GetValue(forceOption);
+            var file = parseResult.GetValue(fileOption);
+            return InboxService.ExecuteClear(all, id, force, file);
         });
 
         return command;

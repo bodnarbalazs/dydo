@@ -1,4 +1,5 @@
 ---
+title: Chief Of Staff Takeover
 area: general
 name: chief-of-staff-takeover
 status: in-progress

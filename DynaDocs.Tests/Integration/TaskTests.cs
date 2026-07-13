@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Utils;
 
 /// <summary>
 /// Integration tests for task management commands:
@@ -22,6 +23,18 @@ public class TaskTests : IntegrationTestBase
         result.AssertStdoutContains("Created task");
         AssertFileExists("dydo/project/tasks/my-feature.md");
         AssertFileContains("dydo/project/tasks/my-feature.md", "area: backend");
+    }
+
+    [Fact]
+    public async Task Task_Create_EmitsPrettifiedTitle()
+    {
+        // Spine docs are born with a title: key (issue 0290) so the Notion board never shows "New page".
+        await InitProjectAsync("none", "balazs", 3);
+
+        var result = await TaskCreateAsync("my-feature", area: "backend");
+
+        result.AssertSuccess();
+        AssertFileContains("dydo/project/tasks/my-feature.md", "title: My Feature");
     }
 
     [Fact]
@@ -498,11 +511,14 @@ public class TaskTests : IntegrationTestBase
         await TaskReadyForReviewAsync("task-a", "Done A");
         await TaskReadyForReviewAsync("task-b", "Done B");
         await TaskReadyForReviewAsync("task-c", "Done C");
+        MarkTaskHumanReviewed("task-a");
+        MarkTaskHumanReviewed("task-b");
+        MarkTaskHumanReviewed("task-c");
 
         var result = await TaskApproveAsync("*");
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Approved 3 task(s).");
+        result.AssertStdoutContains("Approved 3, skipped 0.");
 
         // Original task files should be gone
         AssertFileNotExists("dydo/project/tasks/task-a.md");
@@ -518,6 +534,77 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Task_ApproveAll_ApprovesHumanReviewedUnclaimedTask()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("approved-task", area: "backend");
+        await TaskReadyForReviewAsync("approved-task", "Done");
+        MarkTaskHumanReviewed("approved-task");
+
+        var result = await TaskApproveAsync("*");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Approved 1, skipped 0.");
+        AssertFileNotExists("dydo/project/tasks/approved-task.md");
+
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var year = DateTime.UtcNow.ToString("yyyy");
+        AssertFileExists($"dydo/project/changelog/{year}/{today}/approved-task.md");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_SkipsTasksWithoutHumanReviewedStatus()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("in-progress-task", area: "backend");
+        await TaskCreateAsync("pending-task", area: "frontend");
+        SetTaskStatus("in-progress-task", "in-progress");
+
+        var result = await TaskApproveAsync("*");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Skipped in-progress-task (status: in-progress)");
+        result.AssertStdoutContains("Skipped pending-task (status: pending)");
+        result.AssertStdoutContains("Approved 0, skipped 2.");
+        AssertFileExists("dydo/project/tasks/in-progress-task.md");
+        AssertFileExists("dydo/project/tasks/pending-task.md");
+
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var year = DateTime.UtcNow.ToString("yyyy");
+        AssertFileNotExists($"dydo/project/changelog/{year}/{today}/in-progress-task.md");
+        AssertFileNotExists($"dydo/project/changelog/{year}/{today}/pending-task.md");
+    }
+
+    [Fact]
+    public async Task Task_ApproveAll_SkipsHumanReviewedTaskClaimedByWorkingAgent()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await TaskCreateAsync("claimed-task", area: "backend");
+        await TaskReadyForReviewAsync("claimed-task", "Done");
+        MarkTaskHumanReviewed("claimed-task");
+        WriteFile("dydo/agents/Adele/state.md", """
+            ---
+            agent: Adele
+            role: code-writer
+            task: claimed-task
+            status: working
+            assigned: balazs
+            ---
+            """);
+
+        var result = await TaskApproveAsync("*");
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Skipped claimed-task (claimed by Adele)");
+        result.AssertStdoutContains("Approved 0, skipped 1.");
+        AssertFileExists("dydo/project/tasks/claimed-task.md");
+
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var year = DateTime.UtcNow.ToString("yyyy");
+        AssertFileNotExists($"dydo/project/changelog/{year}/{today}/claimed-task.md");
+    }
+
+    [Fact]
     public async Task Task_ApproveAll_WithNotes()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -525,6 +612,8 @@ public class TaskTests : IntegrationTestBase
         await TaskCreateAsync("note-b", area: "frontend");
         await TaskReadyForReviewAsync("note-a", "Done A");
         await TaskReadyForReviewAsync("note-b", "Done B");
+        MarkTaskHumanReviewed("note-a");
+        MarkTaskHumanReviewed("note-b");
 
         var result = await TaskApproveAsync("*", "Batch approved");
 
@@ -553,6 +642,7 @@ public class TaskTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         await TaskCreateAsync("real-task", area: "backend");
         await TaskReadyForReviewAsync("real-task", "Done");
+        MarkTaskHumanReviewed("real-task");
 
         // Manually create an underscore-prefixed file in the tasks directory
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
@@ -561,7 +651,7 @@ public class TaskTests : IntegrationTestBase
         var result = await TaskApproveAsync("*");
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Approved 1 task(s).");
+        result.AssertStdoutContains("Approved 1, skipped 0.");
 
         // The underscore-prefixed file should still exist
         Assert.True(File.Exists(Path.Combine(tasksPath, "_template.md")));
@@ -575,11 +665,13 @@ public class TaskTests : IntegrationTestBase
         await TaskCreateAsync("flag-b", area: "frontend");
         await TaskReadyForReviewAsync("flag-a", "Done A");
         await TaskReadyForReviewAsync("flag-b", "Done B");
+        MarkTaskHumanReviewed("flag-a");
+        MarkTaskHumanReviewed("flag-b");
 
         var result = await TaskApproveAsync(all: true);
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Approved 2 task(s).");
+        result.AssertStdoutContains("Approved 2, skipped 0.");
         AssertFileNotExists("dydo/project/tasks/flag-a.md");
         AssertFileNotExists("dydo/project/tasks/flag-b.md");
     }
@@ -590,12 +682,13 @@ public class TaskTests : IntegrationTestBase
         await InitProjectAsync("none", "balazs", 3);
         await TaskCreateAsync("alias-task", area: "general");
         await TaskReadyForReviewAsync("alias-task", "Done");
+        MarkTaskHumanReviewed("alias-task");
 
         var command = TaskCommand.Create();
         var result = await RunAsync(command, "approve", "-a");
 
         result.AssertSuccess();
-        result.AssertStdoutContains("Approved 1 task(s).");
+        result.AssertStdoutContains("Approved 1, skipped 0.");
     }
 
     [Fact]
@@ -606,6 +699,8 @@ public class TaskTests : IntegrationTestBase
         await TaskCreateAsync("noted-b", area: "frontend");
         await TaskReadyForReviewAsync("noted-a", "Done A");
         await TaskReadyForReviewAsync("noted-b", "Done B");
+        MarkTaskHumanReviewed("noted-a");
+        MarkTaskHumanReviewed("noted-b");
 
         var result = await TaskApproveAsync(all: true, notes: "Batch approved");
 
@@ -673,6 +768,14 @@ public class TaskTests : IntegrationTestBase
     {
         var command = TaskCommand.Create();
         return await RunAsync(command, "ready-for-review", name, "--summary", summary);
+    }
+
+    private void MarkTaskHumanReviewed(string name) => SetTaskStatus(name, "human-reviewed");
+
+    private void SetTaskStatus(string name, string status)
+    {
+        var path = $"dydo/project/tasks/{name}.md";
+        WriteFile(path, FrontmatterParser.UpsertField(ReadFile(path), "status", status));
     }
 
     private async Task<CommandResult> TaskApproveAsync(string? name = null, string? notes = null, bool all = false)

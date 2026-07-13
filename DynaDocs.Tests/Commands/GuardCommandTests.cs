@@ -840,6 +840,38 @@ public class GuardCommandTests : IDisposable
         Assert.True(File.Exists(markerB), "Marker for pattern B should now exist");
     }
 
+    [Theory]
+    [InlineData("until [ -s /tmp/claude/foo ]; do sleep 1; done")]
+    [InlineData("tail -f /tmp/claude.log")]
+    [InlineData("while true; do check_status; sleep 1; done")]
+    [InlineData("while :; do check_status; sleep 1; done")]
+    public void CheckNudges_OpenEndedPollLoop_BlocksFirstEncounter(string command)
+    {
+        CreateRegistryWithAgent("Adele", "sess-1");
+        WriteConfigWithOpenEndedPollNudges();
+        var registry = new AgentRegistry(_testDir);
+
+        var (result, stderr) = RunNudge(command, registry);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("for i in {1..5}; do test -f x; sleep 1; done")]
+    [InlineData("echo ready")]
+    public void CheckNudges_SafeCommand_DoesNotBlock(string command)
+    {
+        CreateRegistryWithAgent("Adele", "sess-1");
+        WriteConfigWithOpenEndedPollNudges();
+        var registry = new AgentRegistry(_testDir);
+
+        var (result, stderr) = RunNudge(command, registry);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
     private AgentRegistry CreateRegistryWithAgent(string agentName, string sessionId)
     {
         var workspace = Path.Combine(_dydoDir, "agents", agentName);
@@ -857,6 +889,29 @@ public class GuardCommandTests : IDisposable
             """);
 
         return new AgentRegistry(_testDir);
+    }
+
+    private static (int? Result, string Stderr) RunNudge(string command, AgentRegistry registry)
+    {
+        var original = Console.Error;
+        var capture = new StringWriter();
+        Console.SetError(capture);
+        try
+        {
+            return (GuardCommand.CheckNudges(command, "sess-1", registry), capture.ToString());
+        }
+        finally
+        {
+            Console.SetError(original);
+        }
+    }
+
+    private void WriteConfigWithOpenEndedPollNudges()
+    {
+        WriteConfigWithNudges(ConfigFactory.DefaultNudges
+            .Where(n => n.Message.Contains("issue 0177"))
+            .Select(n => (n.Pattern, n.Message, n.Severity))
+            .ToArray());
     }
 
     private void WriteConfigWithNudge(string pattern, string message, string severity)

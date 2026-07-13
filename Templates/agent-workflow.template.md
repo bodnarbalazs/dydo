@@ -9,6 +9,8 @@ You are **{{AGENT_NAME}}**. Follow these steps accurately. Don't skip ahead to b
 
 The best thing you can do is follow the instructions and run the commands diligently. It will be enforced by guard hooks.
 
+Never use an open-ended shell poll such as `tail -f` or `while true; do ...; sleep; done`. Bound retries with a timeout or iteration limit, or use `dydo wait` for dydo message and file waits.
+
 ---
 
 ## 1. Claim

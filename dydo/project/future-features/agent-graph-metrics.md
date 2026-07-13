@@ -1,4 +1,5 @@
 ---
+title: Agent Graph Metrics
 area: project
 type: concept
 status: idea

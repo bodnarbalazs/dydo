@@ -75,26 +75,42 @@ public static class TemplateCommand
         var config = configService.LoadConfig()!;
         var dydoRoot = configService.GetDydoRoot();
         MigrateHashFormat(config, dydoRoot);
-        var updated = 0;
-        var skipped = 0;
-        var warned = 0;
-        var warnings = new List<string>();
 
-        foreach (var relativePath in FrameworkTemplateFiles)
-            AccumulateResult(UpdateTemplateFile(relativePath, dydoRoot, config, diff, force),
-                ref updated, ref skipped, ref warned, warnings, forceCountWarning: force);
+        var tally = new UpdateTally();
+        UpdateFrameworkFiles(dydoRoot, config, diff, force, tally);
 
-        foreach (var relativePath in FrameworkDocFiles)
-            AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff),
-                ref updated, ref skipped, ref warned, warnings);
-
-        foreach (var relativePath in FrameworkBinaryFiles)
-            AccumulateResult(UpdateBinaryFile(relativePath, dydoRoot, config, diff),
-                ref updated, ref skipped, ref warned, warnings);
-
-        updated += CleanStaleTemplates(dydoRoot, diff);
+        tally.Updated += CleanStaleTemplates(dydoRoot, diff);
         PruneStaleHashes(config, diff);
         RegenerateAgentWorkspaces(dydoRoot, config, diff);
+
+        tally.Updated += ApplyConfigDefaults(config, diff);
+        tally.Updated += EnsureTypesJson(dydoRoot, diff);
+
+        if (!diff)
+            configService.SaveConfig(config, configPath);
+
+        ReportSummary(tally);
+
+        return tally.Warnings.Count > 0 && !force ? 1 : 0;
+    }
+
+    private static void UpdateFrameworkFiles(
+        string dydoRoot, DydoConfig config, bool diff, bool force, UpdateTally tally)
+    {
+        foreach (var relativePath in FrameworkTemplateFiles)
+            AccumulateResult(UpdateTemplateFile(relativePath, dydoRoot, config, diff, force),
+                tally, forceCountWarning: force);
+
+        foreach (var relativePath in FrameworkDocFiles)
+            AccumulateResult(UpdateDocFile(relativePath, dydoRoot, config, diff), tally);
+
+        foreach (var relativePath in FrameworkBinaryFiles)
+            AccumulateResult(UpdateBinaryFile(relativePath, dydoRoot, config, diff), tally);
+    }
+
+    private static int ApplyConfigDefaults(DydoConfig config, bool diff)
+    {
+        var updated = 0;
 
         var nudgesAdded = diff ? 0 : ConfigFactory.EnsureDefaultNudges(config);
         if (nudgesAdded > 0)
@@ -110,39 +126,43 @@ public static class TemplateCommand
             updated += queuesAdded;
         }
 
+        var modelsUpgraded = !diff && ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
+        if (modelsUpgraded)
+        {
+            Console.WriteLine("  Upgraded legacy OpenAI model defaults");
+            updated++;
+        }
+
         updated += EnsureScanExcludeWithReport(config, diff);
-        updated += EnsureTypesJson(dydoRoot, diff);
-
-        if (!diff)
-            configService.SaveConfig(config, configPath);
-
-        var summary = $"Template update complete: {updated} updated, {skipped} already current";
-        if (warned > 0)
-            summary += $", {warned} warned";
-        Console.WriteLine(summary + ".");
-
-        foreach (var warning in warnings)
-            Console.Error.WriteLine($"  Warning: {warning}");
-
-        return warnings.Count > 0 && !force ? 1 : 0;
+        return updated;
     }
 
-    private static void AccumulateResult(UpdateResult result,
-        ref int updated, ref int skipped, ref int warned, List<string> warnings,
-        bool forceCountWarning = false)
+    private static void ReportSummary(UpdateTally tally)
+    {
+        var summary = $"Template update complete: {tally.Updated} updated, {tally.Skipped} already current";
+        if (tally.Warned > 0)
+            summary += $", {tally.Warned} warned";
+        Console.WriteLine(summary + ".");
+
+        foreach (var warning in tally.Warnings)
+            Console.Error.WriteLine($"  Warning: {warning}");
+    }
+
+    private static void AccumulateResult(
+        UpdateResult result, UpdateTally tally, bool forceCountWarning = false)
     {
         switch (result)
         {
             case UpdateResult.Updated:
-                updated++;
+                tally.Updated++;
                 break;
             case UpdateResult.Skipped:
-                skipped++;
+                tally.Skipped++;
                 break;
             case UpdateResult.Warning warning:
-                warnings.Add(warning.Message);
-                warned++;
-                if (forceCountWarning) updated++;
+                tally.Warnings.Add(warning.Message);
+                tally.Warned++;
+                if (forceCountWarning) tally.Updated++;
                 break;
         }
     }
@@ -590,5 +610,13 @@ public static class TemplateCommand
         public sealed record Updated : UpdateResult;
         public sealed record Skipped : UpdateResult;
         public sealed record Warning(string Message) : UpdateResult;
+    }
+
+    private sealed class UpdateTally
+    {
+        public int Updated;
+        public int Skipped;
+        public int Warned;
+        public List<string> Warnings { get; } = [];
     }
 }

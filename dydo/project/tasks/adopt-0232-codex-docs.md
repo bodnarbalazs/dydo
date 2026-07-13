@@ -1,4 +1,5 @@
 ---
+title: Adopt 0232 Codex Docs
 area: reference
 name: adopt-0232-codex-docs
 status: review-pending

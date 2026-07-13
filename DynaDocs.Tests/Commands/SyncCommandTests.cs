@@ -42,12 +42,33 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void SyncCodexRole_EmitsOpenAiModelBinding()
+    public void SyncCodexRole_EmitsStrongOpenAiModelBinding()
     {
         SyncCommand.SyncCodexRole(_reviewer, _testDir, ConfigFactory.CreateDefaultModels());
 
         var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
-        Assert.Contains("model = \"gpt-5.5\"", agent);
+        Assert.Contains("model = \"gpt-5.6-sol\"", agent);
+    }
+
+    [Fact]
+    public void SyncCodexRole_WithoutModelBinding_UsesStandardOpenAiFallback()
+    {
+        SyncCommand.SyncCodexRole(_reviewer, _testDir);
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", "reviewer.toml"));
+        Assert.Contains("model = \"gpt-5.6-terra\"", agent);
+    }
+
+    [Theory]
+    [InlineData("code-writer", "gpt-5.6-terra")]
+    [InlineData("docs-writer", "gpt-5.6-terra")]
+    public void SyncCodexRole_DefaultModels_EmitsTierCorrectModel(string roleName, string expectedModel)
+    {
+        var role = RoleDefinitionService.GetBaseRoleDefinitions().First(r => r.Name == roleName);
+        SyncCommand.SyncCodexRole(role, _testDir, ConfigFactory.CreateDefaultModels());
+
+        var agent = File.ReadAllText(Path.Combine(_testDir, ".codex", "agents", $"{roleName}.toml"));
+        Assert.Contains($"model = \"{expectedModel}\"", agent);
     }
 
     [Fact]
@@ -484,12 +505,24 @@ public class SyncCommandTests : IDisposable
     }
 
     [Fact]
-    public void ResolveModel_OpenAiDefault_ReturnsGpt55()
+    public void ResolveModel_OpenAiDefault_ReturnsStrongTierModel()
     {
         var (model, effort) = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), "reviewer", "openai");
 
-        Assert.Equal("gpt-5.5", model);
+        Assert.Equal("gpt-5.6-sol", model);
         Assert.Null(effort);
+    }
+
+    [Theory]
+    [InlineData("reviewer", "gpt-5.6-sol")]
+    [InlineData("planner", "gpt-5.6-sol")]
+    [InlineData("code-writer", "gpt-5.6-terra")]
+    [InlineData("docs-writer", "gpt-5.6-terra")]
+    public void ResolveModel_OpenAiDefault_UsesRoleTier(string roleName, string expectedModel)
+    {
+        var (model, _) = SyncCommand.ResolveModel(ConfigFactory.CreateDefaultModels(), roleName, "openai");
+
+        Assert.Equal(expectedModel, model);
     }
 
     [Fact]

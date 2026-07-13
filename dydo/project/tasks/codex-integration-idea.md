@@ -1,4 +1,5 @@
 ---
+title: Codex Integration Idea
 area: general
 name: codex-integration-idea
 status: pending

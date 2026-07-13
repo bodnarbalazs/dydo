@@ -9,7 +9,7 @@ public class PathUtilsDiscoveryTests : IDisposable
 
     public PathUtilsDiscoveryTests()
     {
-        _testDir = Path.Combine(Path.GetTempPath(), "dydo-pathutils-test-" + Guid.NewGuid().ToString("N")[..8]);
+        _testDir = Path.Combine(Path.GetTempPath(), "dydo-pathutils-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_testDir);
         _originalDir = Environment.CurrentDirectory;
     }
@@ -24,6 +24,10 @@ public class PathUtilsDiscoveryTests : IDisposable
                 try
                 {
                     Directory.Delete(_testDir, true);
+                    return;
+                }
+                catch (DirectoryNotFoundException)
+                {
                     return;
                 }
                 catch (IOException) when (i < 2)

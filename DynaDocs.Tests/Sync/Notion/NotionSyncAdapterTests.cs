@@ -495,6 +495,148 @@ public class NotionSyncAdapterTests
     }
 
     [Fact]
+    public void Apply_CreateWithoutTitle_UsesPrettifiedLocalId_AndMapsOtherFields()
+    {
+        var client = new FakeNotionClient();
+        var schema = new Dictionary<string, string> { ["title"] = "title", ["status"] = "select" };
+        var adapter = new NotionSyncAdapter(client, "ds1", schema);
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "agent-graph-metrics", ExternalId = null,
+            Fields = [new SyncField { Key = "status", Value = "active" }],
+            Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["agent-graph-metrics"]);
+        Assert.Equal("Agent Graph Metrics", NotionRichText.Flatten(page.Properties["title"].Title));
+        Assert.Equal("active", page.Properties["status"].Select!.Name);
+    }
+
+    [Fact]
+    public void Apply_CreateWithTitle_PrefersFrontmatterTitle()
+    {
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "agent-graph-metrics", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Custom title" }],
+            Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["agent-graph-metrics"]);
+        Assert.Equal("Custom title", NotionRichText.Flatten(page.Properties["title"].Title));
+    }
+
+    [Fact]
+    public void Apply_CreateWithoutTitle_PrefersNameOverLocalId()
+    {
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "agent-graph-metrics", ExternalId = null,
+            Fields = [new SyncField { Key = "name", Value = "Graph Health" }],
+            Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["agent-graph-metrics"]);
+        Assert.Equal("Graph Health", NotionRichText.Flatten(page.Properties["title"].Title));
+    }
+
+    [Fact]
+    public void Apply_CreateWithEmptyTitle_FallsBackToPrettifiedLocalId()
+    {
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "agent-graph-metrics", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "" }],
+            Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["agent-graph-metrics"]);
+        Assert.Equal("Agent Graph Metrics", NotionRichText.Flatten(page.Properties["title"].Title));
+    }
+
+    [Fact]
+    public void Apply_CreateWithSlugName_PrettifiesIt()
+    {
+        // Real task docs carry `name: swarm-0119` (the raw slug); the fallback must prettify it,
+        // never surface the slug as the board title.
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "swarm-0119", ExternalId = null,
+            Fields = [new SyncField { Key = "name", Value = "swarm-0119" }],
+            Body = "",
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["swarm-0119"]);
+        Assert.Equal("Swarm 0119", NotionRichText.Flatten(page.Properties["title"].Title));
+    }
+
+    [Fact]
+    public void Apply_UpdateWithoutTitle_AppliesFallback()
+    {
+        // The fallback covers the update branch too: pushing a title-less doc onto an existing page
+        // must not leave (or re-blank) a "New page" row.
+        var client = new FakeNotionClient();
+        client.SeedPage("p1", new() { ["title"] = Title("") });
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "agent-graph-metrics", ExternalId = "p1",
+            Fields = [],
+            Body = "",
+        });
+
+        adapter.Apply(changes, new Dictionary<string, string>());
+
+        Assert.Equal("Agent Graph Metrics", NotionRichText.Flatten(client.QueryDataSource("ds1").Single().Properties["title"].Title));
+    }
+
+    [Fact]
+    public void Apply_Create_TitleIsNeverBlank()
+    {
+        // Absolute empty-guard: even a local id a naive prettifier reduces to "" must yield a
+        // non-blank title.
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert { LocalId = "-", ExternalId = null, Fields = [], Body = "" });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        var page = client.QueryDataSource("ds1").Single(p => p.Id == assigned["-"]);
+        Assert.False(string.IsNullOrWhiteSpace(NotionRichText.Flatten(page.Properties["title"].Title)));
+    }
+
+    [Fact]
     public void Apply_Relation_WritesParentPageId_FromLocalIdMap()
     {
         var client = new FakeNotionClient();

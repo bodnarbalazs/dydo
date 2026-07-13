@@ -1,4 +1,5 @@
 ---
+title: Codex Fix 0282
 area: general
 name: codex-fix-0282
 status: pending

@@ -50,6 +50,32 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertStdoutContains("code-writer");
     }
 
+    [Fact]
+    public async Task Whoami_WithDispatcher_ShowsDispatcher()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        SetDispatcher("Adele", "Brian", "chief-of-staff");
+
+        var result = await WhoamiAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Dispatched by: Brian (chief-of-staff)");
+    }
+
+    [Fact]
+    public async Task Whoami_WithoutDispatcher_OmitsDispatcher()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+
+        var result = await WhoamiAsync();
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Dispatched by:", result.Stdout);
+    }
+
     #endregion
 
     #region Claim
@@ -310,6 +336,20 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Status_WithDispatcher_ShowsDispatcher()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await SetRoleAsync("code-writer");
+        SetDispatcher("Adele", "Brian", "chief-of-staff");
+
+        var result = await AgentStatusAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("Dispatched by: Brian (chief-of-staff)");
+    }
+
+    [Fact]
     public async Task Status_ByName_ShowsSpecificAgent()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -332,6 +372,15 @@ public class AgentLifecycleTests : IntegrationTestBase
     }
 
     #endregion
+
+    private void SetDispatcher(string agentName, string dispatchedBy, string dispatchedByRole)
+    {
+        var statePath = Path.Combine(TestDir, "dydo", "agents", agentName, "state.md");
+        var state = File.ReadAllText(statePath);
+        state = state.Replace("dispatched-by: null", $"dispatched-by: {dispatchedBy}")
+            .Replace("dispatched-by-role: null", $"dispatched-by-role: {dispatchedByRole}");
+        File.WriteAllText(statePath, state);
+    }
 
     #region List
 

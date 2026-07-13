@@ -1,4 +1,5 @@
 ---
+title: Swarm 0110
 area: general
 name: swarm-0110
 status: pending

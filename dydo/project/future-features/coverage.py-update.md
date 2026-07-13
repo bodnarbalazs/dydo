@@ -1,4 +1,5 @@
 ---
+title: Coverage.py Update
 area: project
 type: concept
 status: idea

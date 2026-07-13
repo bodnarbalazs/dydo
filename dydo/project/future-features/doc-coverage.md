@@ -1,4 +1,5 @@
 ---
+title: Doc Coverage
 area: project
 type: concept
 status: idea

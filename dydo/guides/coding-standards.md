@@ -187,6 +187,10 @@ Be vigilant against:
 
 When uncertain about security implications, stop and research or ask.
 
+### Agent Shell Calls
+
+Never run an open-ended poll in an agent shell call, such as `tail -f` or a `while true`/`until` loop that sleeps. Bound the loop with a maximum number of attempts or a timeout, or use `dydo wait` when waiting for a dydo message or file.
+
 ---
 
 ## Rules

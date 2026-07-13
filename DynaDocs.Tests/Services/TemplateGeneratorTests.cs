@@ -78,13 +78,14 @@ public class TemplateGeneratorTests
         Assert.Contains("Bash tool", workflowTemplate);
         Assert.Contains("dydo wait", workflowTemplate);
         Assert.Contains("must-reads", workflowTemplate);
-        Assert.True(
-            workflowTemplate.IndexOf("Bash tool", StringComparison.Ordinal) <
-            workflowTemplate.IndexOf("Set your role", StringComparison.Ordinal) &&
-            workflowTemplate.IndexOf("Set your role", StringComparison.Ordinal) <
-            workflowTemplate.IndexOf("dydo wait", StringComparison.Ordinal) &&
-            workflowTemplate.IndexOf("dydo wait", StringComparison.Ordinal) <
-            workflowTemplate.IndexOf("must-reads", StringComparison.Ordinal));
+        // Verify the workflow STEPS appear in order: claim (Bash tool) -> set role -> wait -> must-reads.
+        // "dydo wait" may also appear in the preamble guidance, so anchor its search to the step context
+        // (after "Set your role") rather than the first occurrence in the document.
+        var bashIdx = workflowTemplate.IndexOf("Bash tool", StringComparison.Ordinal);
+        var roleIdx = workflowTemplate.IndexOf("Set your role", StringComparison.Ordinal);
+        var waitIdx = workflowTemplate.IndexOf("dydo wait", roleIdx, StringComparison.Ordinal);
+        var mustReadsIdx = workflowTemplate.IndexOf("must-reads", StringComparison.Ordinal);
+        Assert.True(bashIdx < roleIdx && roleIdx < waitIdx && waitIdx < mustReadsIdx);
 
         var codeWriterTemplate = TemplateGenerator.ReadBuiltInTemplate("mode-code-writer.template.md");
         Assert.Contains("{{AGENT_NAME}}", codeWriterTemplate);

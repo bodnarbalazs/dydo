@@ -83,7 +83,7 @@ public class FileReadRetryTests : IDisposable
     }
 
     [Fact]
-    public async Task Read_ExclusivelyLockedFile_RetriesAndSucceeds()
+    public void Read_ExclusivelyLockedFile_RetriesAndSucceeds()
     {
         // FileShare.None mandatory locking is Windows-only; Linux flock() is advisory
         // and cross-thread release timing is unreliable on CI runners
@@ -95,18 +95,40 @@ public class FileReadRetryTests : IDisposable
         // Hold file exclusively — causes IOException on first attempt
         var locker = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-        // Release after a short delay on a background thread
-        var releaseTask = Task.Run(() =>
+        var delays = new List<int>();
+        FileReadRetry.DelayOverride = delay =>
         {
-            Thread.Sleep(80);
+            delays.Add(delay);
             locker.Dispose();
-        });
+        };
 
-        // Should retry and succeed after the lock is released
-        var result = FileReadRetry.Read(path);
-        await releaseTask;
+        string? result;
+        try
+        {
+            // The first retry releases the lock, so the second read succeeds.
+            result = FileReadRetry.Read(path);
+        }
+        finally
+        {
+            FileReadRetry.DelayOverride = null;
+        }
 
         Assert.Equal("locked-content", result);
+        Assert.Equal([50], delays);
+    }
+
+    [Fact]
+    public void Read_DefaultBackoffUsesRealSchedule()
+    {
+        var path = Path.Combine(_testDir, "nope.txt");
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = FileReadRetry.Read(path);
+        stopwatch.Stop();
+
+        Assert.Null(result);
+        Assert.True(stopwatch.ElapsedMilliseconds >= 180,
+            $"Expected the default 50ms and 150ms backoff, got {stopwatch.ElapsedMilliseconds}ms");
     }
 
     [Fact]
@@ -118,9 +140,21 @@ public class FileReadRetryTests : IDisposable
         // Hold file exclusively for the duration
         using var locker = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-        // Should exhaust retries and return null
-        var result = FileReadRetry.Read(path, maxRetries: 2);
+        var delays = new List<int>();
+        FileReadRetry.DelayOverride = delays.Add;
+
+        string? result;
+        try
+        {
+            // Should exhaust retries and return null.
+            result = FileReadRetry.Read(path, maxRetries: 2);
+        }
+        finally
+        {
+            FileReadRetry.DelayOverride = null;
+        }
 
         Assert.Null(result);
+        Assert.Equal([50], delays);
     }
 }

@@ -52,5 +52,3 @@ related-tasks: [<task-names>]              # populated on pickup
 | Cancelled | `status: cancelled` | move to `dydo/project/backlog/done/<slug>.md` |
 
 `done/` is the no-longer-live archive; the `status` field disambiguates completed from cancelled. The `done/` subfolder is created the first time an item is archived — not before.
-
-See Decision 023 — `dydo/project/decisions/023-backlog-doc-category.md` — for the full rationale and alternatives considered.

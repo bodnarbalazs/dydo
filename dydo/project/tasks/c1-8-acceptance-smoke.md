@@ -1,4 +1,5 @@
 ---
+title: C1 8 Acceptance Smoke
 area: general
 name: c1-8-acceptance-smoke
 status: pending

@@ -484,6 +484,34 @@ public class TemplateCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task TemplateUpdate_MigratesLegacyOpenAiModelDefaults()
+    {
+        await InitProjectAsync();
+
+        var configService = new ConfigService();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = configService.LoadConfig()!;
+        config.Models!.Tiers["openai"] = new Dictionary<string, string>
+        {
+            ["strong"] = "gpt-5.5",
+            ["standard"] = "gpt-5.5",
+            ["light"] = "gpt-5.5"
+        };
+        configService.SaveConfig(config, configPath);
+
+        var result = await RunTemplateUpdateAsync();
+
+        result.AssertSuccess();
+        result.AssertStdoutContains("legacy OpenAI model defaults");
+
+        var updated = configService.LoadConfig()!;
+        var openAi = updated.Models!.Tiers["openai"];
+        Assert.Equal("gpt-5.6-sol", openAi["strong"]);
+        Assert.Equal("gpt-5.6-terra", openAi["standard"]);
+        Assert.Equal("gpt-5.6-luna", openAi["light"]);
+    }
+
+    [Fact]
     public async Task TemplateUpdate_AlreadyHasScanExcludeInvariants_NoChange()
     {
         await InitProjectAsync();

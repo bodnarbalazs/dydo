@@ -52,6 +52,7 @@ internal static class TaskCreateHandler
 
         var content = $"""
             ---
+            title: {TitlePrettifier.Prettify(name)}
             area: {area}
             name: {name}
             status: pending

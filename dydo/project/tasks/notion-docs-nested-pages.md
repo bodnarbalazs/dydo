@@ -1,4 +1,5 @@
 ---
+title: Notion Docs Nested Pages
 area: general
 name: notion-docs-nested-pages
 status: pending

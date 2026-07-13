@@ -1,4 +1,5 @@
 ---
+title: Agent Inner Workings Memory
 area: general
 name: agent-inner-workings-memory
 status: pending

@@ -1,4 +1,5 @@
 ---
+title: Codex Mcp Exploration
 area: general
 name: codex-mcp-exploration
 status: pending

@@ -32,7 +32,9 @@ public static class ConfigFactory
             ["claude-haiku-4-5"] = "Haiku 4.5",
             ["claude-sonnet-5"] = "Sonnet 5",
             ["gpt-5.5"] = "Gpt 5.5",
-            ["gpt-5-codex"] = "Gpt-5.6 Sol",
+            ["gpt-5.6-sol"] = "Gpt 5.6 Sol",
+            ["gpt-5.6-terra"] = "Gpt 5.6 Terra",
+            ["gpt-5.6-luna"] = "Gpt 5.6 Luna",
         };
 
     /// <summary>
@@ -102,6 +104,18 @@ public static class ConfigFactory
             Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
+        new()
+        {
+            Pattern = @"\btail\b(?=[^;|&\r\n]*(?:\s-\S*f\S*|\s--follow(?:=\S+)?)(?:\s|$))",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Severity = "warn"
+        },
+        new()
+        {
+            Pattern = @"\bwhile\s+(?:true|:)\s*;\s*do\b(?:(?!\bdone\b)[\s\S])*\bsleep\b",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Severity = "warn"
+        },
         // Decision 026 §4: Tier-1 agents are managers — soft reminder on direct source
         // writes. Notice severity = exit-0 stderr warning, never a block, so the
         // trivial-edit exception stays frictionless.
@@ -131,9 +145,9 @@ public static class ConfigFactory
             },
             ["openai"] = new()
             {
-                ["strong"] = "gpt-5.5",
-                ["standard"] = "gpt-5.5",
-                ["light"] = "gpt-5.5"
+                ["strong"] = "gpt-5.6-sol",
+                ["standard"] = "gpt-5.6-terra",
+                ["light"] = "gpt-5.6-luna"
             }
         },
         Roles = new Dictionary<string, string>
@@ -156,6 +170,31 @@ public static class ConfigFactory
         // key fall back to the same defaults at resolve time (ModelDisplay.EffectiveDisplayNames).
         DisplayNames = new Dictionary<string, string>(DefaultDisplayNames, StringComparer.OrdinalIgnoreCase)
     };
+
+    /// <summary>
+    /// Upgrades the exact OpenAI tier block emitted by older versions. A project that
+    /// customized any tier is left untouched.
+    /// </summary>
+    public static bool UpgradeLegacyOpenAiTierDefaults(DydoConfig config)
+    {
+        var models = config.Models;
+        if (models == null
+            || !models.Tiers.TryGetValue("openai", out var openAi)
+            || openAi.Count != 3
+            || !openAi.All(pair => pair.Key is "strong" or "standard" or "light"
+                && pair.Value == "gpt-5.5"))
+            return false;
+
+        openAi["strong"] = "gpt-5.6-sol";
+        openAi["standard"] = "gpt-5.6-terra";
+        openAi["light"] = "gpt-5.6-luna";
+
+        if (models.DisplayNames.Count > 0)
+            foreach (var (model, displayName) in DefaultDisplayNames.Where(pair => pair.Key.StartsWith("gpt-5.6-")))
+                models.DisplayNames.TryAdd(model, displayName);
+
+        return true;
+    }
 
     public static DydoConfig CreateDefault(string humanName, int agentCount = 26)
     {

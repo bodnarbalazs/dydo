@@ -155,6 +155,9 @@ internal static class AgentLifecycleHandlers
         Console.WriteLine($"  Assigned human: {state.AssignedHuman ?? registry.GetHumanForAgent(state.Name) ?? "(unassigned)"}");
         Console.WriteLine($"  Role: {state.Role ?? "(none)"}");
 
+        if (!string.IsNullOrEmpty(state.DispatchedBy))
+            Console.WriteLine($"  Dispatched by: {state.DispatchedBy} ({state.DispatchedByRole})");
+
         if (!string.IsNullOrEmpty(state.Task))
         {
             Console.WriteLine($"  Task: {state.Task}");

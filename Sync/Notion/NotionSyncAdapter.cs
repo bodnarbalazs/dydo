@@ -2,6 +2,7 @@ namespace DynaDocs.Sync.Notion;
 
 using DynaDocs.Models;
 using DynaDocs.Sync.Notion.Dtos;
+using DynaDocs.Utils;
 
 /// <summary>
 /// The real Notion <see cref="ISyncAdapter"/> (Decision 025, slice brief §2). Maps Notion pages of
@@ -118,6 +119,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
         foreach (var upsert in changes.Upserts)
         {
             var properties = NotionPropertyMapper.ToProperties(upsert.Fields, schema, _relationLocalToPageIdByField);
+            EnsureTitle(properties, schema, upsert);
             AddEngineComputed(upsert.LocalId, properties);
             var blocks = NotionBlockConverter.ToBlocks(upsert.Body);
 
@@ -243,6 +245,34 @@ public sealed class NotionSyncAdapter : ISyncAdapter
             SourcePath = doc.SourcePath,
         };
     }
+
+    /// <summary>Write-side title fallback (issue 0290): a spine doc without a <c>title:</c> frontmatter key
+    /// would otherwise create/update its page with no title-typed property at all, and the board renders
+    /// "New page". When the schema has a title-typed property and the mapped payload carries no non-empty
+    /// value for it, inject one — frontmatter <c>title</c>, else <c>name</c>, else the local id, prettified
+    /// (a raw slug like <c>swarm-0119</c> must never surface as the board title). Purely outbound: it is
+    /// never recorded in a base snapshot and never enters <see cref="NormalizeFields"/>, so it cannot mask
+    /// an external edit.</summary>
+    private static void EnsureTitle(
+        Dictionary<string, NotionPropertyValue> properties,
+        IReadOnlyDictionary<string, string> schema,
+        SyncUpsert upsert)
+    {
+        var titleProperty = schema.FirstOrDefault(entry => entry.Value == "title").Key;
+        if (titleProperty == null || properties.TryGetValue(titleProperty, out var value)
+            && !string.IsNullOrWhiteSpace(NotionRichText.Flatten(value.Title)))
+            return;
+
+        var raw = FirstNonEmpty(upsert.Fields, "title") ?? FirstNonEmpty(upsert.Fields, "name") ?? upsert.LocalId;
+        properties[titleProperty] = new NotionPropertyValue
+        {
+            Type = "title",
+            Title = NotionRichText.Of(TitlePrettifier.Prettify(raw)),
+        };
+    }
+
+    private static string? FirstNonEmpty(IReadOnlyList<SyncField> fields, string key) =>
+        fields.FirstOrDefault(field => field.Key == key && !string.IsNullOrWhiteSpace(field.Value))?.Value;
 
     /// <summary>Keep the subset of a relation's comma-joined local ids that resolves to a known parent
     /// page id, re-joined with ", " — the exact echo <see cref="NotionPropertyMapper"/> writes and reads

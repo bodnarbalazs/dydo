@@ -18,6 +18,9 @@ public partial class AgentRegistry : IAgentRegistry
     /// </summary>
     internal static Func<string, bool>? IsLauncherAliveOverride { get; set; }
 
+    // Test seam for transient state-file replacement failures without requiring a Windows file lock.
+    internal static Action<string, string>? StateFileMoveOverride { get; set; }
+
     /// <summary>
     /// When set, IsSessionPidAlive uses this instead of reading .session and probing the OS.
     /// Enables testing the stale-working reclaim gate without real process lookups.
@@ -1717,6 +1720,10 @@ public partial class AgentRegistry : IAgentRegistry
             });
             return true;
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
         finally
         {
             ReleaseLock(agentName);
@@ -1979,7 +1986,7 @@ public partial class AgentRegistry : IAgentRegistry
         File.WriteAllText(tempPath, content);
         try
         {
-            File.Move(tempPath, statePath, overwrite: true);
+            MoveStateFileWithRetry(tempPath, statePath);
         }
         catch
         {
@@ -1989,6 +1996,31 @@ public partial class AgentRegistry : IAgentRegistry
             try { File.Delete(tempPath); } catch { }
             throw;
         }
+    }
+
+    private static void MoveStateFileWithRetry(string sourcePath, string destinationPath)
+    {
+        const int maxAttempts = 3;
+        Exception? lastError = null;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                if (StateFileMoveOverride != null)
+                    StateFileMoveOverride(sourcePath, destinationPath);
+                else
+                    File.Move(sourcePath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                lastError = ex;
+                if (attempt < maxAttempts - 1)
+                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
+            }
+        }
+
+        throw lastError!;
     }
 
     private static string FormatNeedsHumanSource(NeedsHumanSource? source) =>

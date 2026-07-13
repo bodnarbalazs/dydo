@@ -1,4 +1,5 @@
 ---
+title: Spine Types Completion
 area: general
 name: spine-types-completion
 status: pending

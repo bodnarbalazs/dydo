@@ -1641,7 +1641,7 @@ public class DispatchCommandTests : IntegrationTestBase
     // claude launches bare.
     private static string ExpectedLaunchLine(string host, string agentName) =>
         host == "codex"
-            ? $"codex -m gpt-5.5 --sandbox workspace-write --ask-for-approval on-request '{agentName} --inbox'"
+            ? $"codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request '{agentName} --inbox'"
             : $"{host} '{agentName} --inbox'";
 
     private async Task<CommandResult> InboxShowAsync()

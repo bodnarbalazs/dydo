@@ -26,13 +26,16 @@ public class ModelDisplayTests
         Assert.Equal("some-unmapped-model-9", ModelDisplay.Resolve("some-unmapped-model-9", models));
     }
 
-    [Fact]
-    public void Resolve_AbsentMap_FallsBackToShippedDefaults()
+    [Theory]
+    [InlineData("gpt-5.6-sol", "Gpt 5.6 Sol")]
+    [InlineData("gpt-5.6-terra", "Gpt 5.6 Terra")]
+    [InlineData("gpt-5.6-luna", "Gpt 5.6 Luna")]
+    public void Resolve_AbsentMap_FallsBackToShippedDefaults(string model, string displayName)
     {
         // A dydo.json written before the display-names key existed deserializes to an empty map.
         var models = new ModelsConfig();
 
-        Assert.Equal("Gpt-5.6 Sol", ModelDisplay.Resolve("gpt-5-codex", models));
+        Assert.Equal(displayName, ModelDisplay.Resolve(model, models));
     }
 
     [Fact]

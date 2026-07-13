@@ -21,6 +21,7 @@ public class AgentRegistryTests : IDisposable
     {
         AgentRegistry.IsLauncherAliveOverride = null;
         AgentRegistry.IsSessionPidAliveOverride = null;
+        AgentRegistry.StateFileMoveOverride = null;
         ProcessUtils.FindAncestorProcessOverride = null;
         ProcessUtils.GetParentPidOverride = null;
         ProcessUtils.GetProcessNameOverride = null;
@@ -2223,11 +2224,64 @@ public class AgentRegistryTests : IDisposable
     {
         SetupAgentState("Adele");
 
-        _registry.SetDispatchMetadata("Adele", "abcd1234", true);
+        Assert.True(_registry.SetDispatchMetadata("Adele", "abcd1234", true));
 
         var state = _registry.GetAgentState("Adele")!;
         Assert.Equal("abcd1234", state.WindowId);
         Assert.True(state.AutoClose);
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_RetriesTransientStateFileMoveFailure()
+    {
+        SetupAgentState("Adele");
+        var attempts = 0;
+        AgentRegistry.StateFileMoveOverride = (source, destination) =>
+        {
+            attempts++;
+            if (attempts < 3)
+                throw new UnauthorizedAccessException("state file is temporarily locked");
+            File.Move(source, destination, overwrite: true);
+        };
+
+        try
+        {
+            Assert.True(_registry.SetDispatchMetadata("Adele", "retry-window", true));
+        }
+        finally
+        {
+            AgentRegistry.StateFileMoveOverride = null;
+        }
+
+        var state = _registry.GetAgentState("Adele")!;
+        Assert.Equal(3, attempts);
+        Assert.Equal("retry-window", state.WindowId);
+        Assert.True(state.AutoClose);
+    }
+
+    [Fact]
+    public void SetDispatchMetadata_PersistentStateFileMoveFailure_DegradesWithoutChangingDispatch()
+    {
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        Assert.True(_registry.ReserveAgent("Adele", out var reserveError), reserveError);
+        CreateInboxItem("Adele", "state-write-race", "code-writer");
+        AgentRegistry.StateFileMoveOverride = (_, _) => throw new UnauthorizedAccessException("state file remains locked");
+
+        try
+        {
+            Assert.False(_registry.SetDispatchMetadata("Adele", "unwritten-window", true));
+        }
+        finally
+        {
+            AgentRegistry.StateFileMoveOverride = null;
+        }
+
+        var state = _registry.GetAgentState("Adele")!;
+        var inboxPath = Path.Combine(_testDir, "dydo", "agents", "Adele", "inbox");
+        Assert.Equal(AgentStatus.Dispatched, state.Status);
+        Assert.Null(state.WindowId);
+        Assert.False(state.AutoClose);
+        Assert.Single(Directory.GetFiles(inboxPath, "*.md"));
     }
 
     [Fact]

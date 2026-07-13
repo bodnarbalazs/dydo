@@ -1,4 +1,5 @@
 ---
+title: V206 Campaign Inquisition 2
 area: general
 name: v206-campaign-inquisition-2
 status: pending

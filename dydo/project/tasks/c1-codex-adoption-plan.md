@@ -1,4 +1,5 @@
 ---
+title: C1 Codex Adoption Plan
 area: general
 name: c1-codex-adoption-plan
 status: review-pending

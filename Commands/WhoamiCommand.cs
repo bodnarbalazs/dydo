@@ -45,6 +45,9 @@ public static class WhoamiCommand
             else
                 Console.WriteLine("  Role: (none set)");
 
+            if (!string.IsNullOrEmpty(agent.DispatchedBy))
+                Console.WriteLine($"  Dispatched by: {agent.DispatchedBy} ({agent.DispatchedByRole})");
+
             if (!string.IsNullOrEmpty(agent.Task))
             {
                 Console.WriteLine($"  Task: {agent.Task}");

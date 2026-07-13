@@ -1,4 +1,5 @@
 ---
+title: Adopt Orphaned Codex Slices
 area: general
 name: adopt-orphaned-codex-slices
 status: pending

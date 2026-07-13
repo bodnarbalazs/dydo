@@ -31,6 +31,68 @@ public class ConfigFactoryTests
     }
 
     [Fact]
+    public void CreateDefaultModels_UsesDistinctOpenAiTiers()
+    {
+        var openAi = ConfigFactory.CreateDefaultModels().Tiers["openai"];
+
+        Assert.Equal("gpt-5.6-sol", openAi["strong"]);
+        Assert.Equal("gpt-5.6-terra", openAi["standard"]);
+        Assert.Equal("gpt-5.6-luna", openAi["light"]);
+    }
+
+    [Fact]
+    public void UpgradeLegacyOpenAiTierDefaults_PreservesCustomizedTiers()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+        config.Models!.Tiers["openai"]["strong"] = "custom-strong";
+
+        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
+
+        Assert.False(upgraded);
+        Assert.Equal("custom-strong", config.Models.Tiers["openai"]["strong"]);
+    }
+
+    [Fact]
+    public void UpgradeLegacyOpenAiTierDefaults_EmptyDisplayNames_RemainsEmptyAndUsesShippedDefaults()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+        config.Models!.Tiers["openai"] = new Dictionary<string, string>
+        {
+            ["strong"] = "gpt-5.5",
+            ["standard"] = "gpt-5.5",
+            ["light"] = "gpt-5.5"
+        };
+        config.Models.DisplayNames.Clear();
+
+        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
+
+        Assert.True(upgraded);
+        Assert.Empty(config.Models.DisplayNames);
+        Assert.Equal("Sonnet 5", ModelDisplay.Resolve("claude-sonnet-5", config.Models));
+    }
+
+    [Fact]
+    public void UpgradeLegacyOpenAiTierDefaults_NonEmptyDisplayNames_AddsOpenAiNamesAndPreservesCustomEntries()
+    {
+        var config = ConfigFactory.CreateDefault("alice");
+        config.Models!.Tiers["openai"] = new Dictionary<string, string>
+        {
+            ["strong"] = "gpt-5.5",
+            ["standard"] = "gpt-5.5",
+            ["light"] = "gpt-5.5"
+        };
+        config.Models.DisplayNames = new Dictionary<string, string> { ["custom-model"] = "Custom model" };
+
+        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
+
+        Assert.True(upgraded);
+        Assert.Equal("Custom model", config.Models.DisplayNames["custom-model"]);
+        Assert.Equal("Gpt 5.6 Sol", config.Models.DisplayNames["gpt-5.6-sol"]);
+        Assert.Equal("Gpt 5.6 Terra", config.Models.DisplayNames["gpt-5.6-terra"]);
+        Assert.Equal("Gpt 5.6 Luna", config.Models.DisplayNames["gpt-5.6-luna"]);
+    }
+
+    [Fact]
     public void AddHuman_AssignsAvailableAgents()
     {
         var config = ConfigFactory.CreateDefault("alice", 5);

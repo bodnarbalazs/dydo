@@ -342,7 +342,7 @@ public class TerminalLauncherTests : IDisposable
 
         var command = TerminalLauncher.GetCodexCommand("Adele", "custom-role");
 
-        Assert.Equal("codex -m gpt-5.5 --sandbox workspace-write --ask-for-approval on-request \"Adele --inbox\"", command);
+        Assert.Equal("codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request \"Adele --inbox\"", command);
     }
 
     [Fact]

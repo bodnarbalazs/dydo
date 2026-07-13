@@ -8,7 +8,7 @@ using DynaDocs.Models;
 public class TerminalLauncher
 {
     private const string OpenAiModelVendor = "openai";
-    internal const string DefaultCodexModel = "gpt-5.5";
+    internal const string DefaultCodexModel = "gpt-5.6-terra";
     private readonly IProcessStarter _processStarter;
     private readonly ITerminalDetector _terminalDetector;
 

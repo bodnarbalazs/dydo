@@ -230,7 +230,7 @@ public static partial class SyncCommand
         return $""""
             name = "{EscapeToml(role.Name)}"
             description = "{EscapeToml(role.Description)}"
-            model = "{EscapeToml(model ?? "gpt-5.5")}"
+            model = "{EscapeToml(model ?? "gpt-5.6-terra")}"
 
             developer_instructions = """
             You are a **{role.Name}**. {role.Description} {stance} Your methodology lives in the `{role.Name}` skill; follow it.{contextBlock}

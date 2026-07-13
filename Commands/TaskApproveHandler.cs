@@ -27,11 +27,36 @@ internal static class TaskApproveHandler
         }
 
         var approved = 0;
+        var skipped = 0;
         var failed = 0;
+        var workingAgents = new AgentRegistry().GetAllAgentStates()
+            .Where(agent => agent.Status == AgentStatus.Working)
+            .ToList();
 
         foreach (var file in taskFiles)
         {
             var taskName = Path.GetFileNameWithoutExtension(file);
+            var fields = FrontmatterParser.ParseFields(File.ReadAllText(file));
+            var status = fields != null && fields.TryGetValue("status", out var parsedStatus)
+                ? parsedStatus
+                : "unknown";
+
+            if (!string.Equals(status, "human-reviewed", StringComparison.Ordinal))
+            {
+                Console.WriteLine($"Skipped {taskName} (status: {status})");
+                skipped++;
+                continue;
+            }
+
+            var claimingAgent = workingAgents.FirstOrDefault(agent =>
+                string.Equals(agent.Task, taskName, StringComparison.OrdinalIgnoreCase));
+            if (claimingAgent != null)
+            {
+                Console.WriteLine($"Skipped {taskName} (claimed by {claimingAgent.Name})");
+                skipped++;
+                continue;
+            }
+
             var result = ExecuteApprove(taskName, notes);
             if (result == ExitCodes.Success)
                 approved++;
@@ -39,7 +64,7 @@ internal static class TaskApproveHandler
                 failed++;
         }
 
-        Console.WriteLine($"Approved {approved} task(s).");
+        Console.WriteLine($"Approved {approved}, skipped {skipped}.");
         if (failed > 0)
             ConsoleOutput.WriteError($"Failed to approve {failed} task(s).");
 

@@ -6,6 +6,8 @@ namespace DynaDocs.Utils;
 /// </summary>
 public static class FileReadRetry
 {
+    internal static Action<int>? DelayOverride { get; set; }
+
     /// <summary>
     /// Reads a file using FileShare.ReadWrite with exponential backoff retry.
     /// Returns null if the file cannot be read after all retries.
@@ -23,7 +25,13 @@ public static class FileReadRetry
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 if (attempt < maxRetries - 1)
-                    Thread.Sleep(50 * (int)Math.Pow(3, attempt));
+                {
+                    var delay = 50 * (int)Math.Pow(3, attempt);
+                    if (DelayOverride is { } delayOverride)
+                        delayOverride(delay);
+                    else
+                        Thread.Sleep(delay);
+                }
             }
         }
 

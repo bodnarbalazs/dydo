@@ -2,7 +2,7 @@
 title: Swarm 0205
 area: general
 name: swarm-0205
-status: pending
+status: in-progress
 created: 2026-07-12T15:41:23.5244731Z
 assigned: Dexter
 needs-human: false

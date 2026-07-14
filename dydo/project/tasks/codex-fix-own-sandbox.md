@@ -2,7 +2,7 @@
 title: Codex Fix Own Sandbox
 area: general
 name: codex-fix-own-sandbox
-status: pending
+status: in-progress
 created: 2026-07-11T14:29:28.2305122Z
 assigned: Leo
 needs-human: false

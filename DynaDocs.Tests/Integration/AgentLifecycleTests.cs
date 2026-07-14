@@ -972,7 +972,7 @@ public class AgentLifecycleTests : IntegrationTestBase
         // Verify task file was created with correct frontmatter
         AssertFileExists("dydo/project/tasks/jwt-auth.md");
         AssertFileContains("dydo/project/tasks/jwt-auth.md", "name: jwt-auth");
-        AssertFileContains("dydo/project/tasks/jwt-auth.md", "status: pending");
+        AssertFileContains("dydo/project/tasks/jwt-auth.md", "status: in-progress");
         AssertFileContains("dydo/project/tasks/jwt-auth.md", "assigned: Adele");
     }
 

@@ -2,7 +2,7 @@
 title: Swarm 0247 Interim
 area: general
 name: swarm-0247-interim
-status: pending
+status: in-progress
 created: 2026-07-13T13:32:56.9782276Z
 assigned: Brian
 needs-human: false

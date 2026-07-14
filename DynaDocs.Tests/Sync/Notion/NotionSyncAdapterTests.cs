@@ -16,6 +16,9 @@ public class NotionSyncAdapterTests
     private static NotionPropertyValue Title(string s) =>
         new() { Type = "title", Title = NotionRichText.Of(s) };
 
+    private static string ParagraphBody(int count) =>
+        string.Join("\n\n", Enumerable.Range(1, count).Select(index => $"paragraph {index}"));
+
     /// <summary>Wrap a single relation field's local→page map into the per-field form the adapter takes.</summary>
     private static Dictionary<string, IReadOnlyDictionary<string, string>> Rel(string field, IReadOnlyDictionary<string, string> map) =>
         new() { [field] = map };
@@ -426,6 +429,100 @@ public class NotionSyncAdapterTests
         var newPage = client.QueryDataSource("ds1").First(p => p.Id == assigned["task-a"]);
         Assert.Equal("Brand new", NotionRichText.Flatten(newPage.Properties["Name"].Title));
         Assert.NotEmpty(client.GetBlockChildren(assigned["task-a"]));
+    }
+
+    [Fact]
+    public void Apply_Create_BodyOver100Blocks_ChunksCreateAndAppends()
+    {
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var body = ParagraphBody(189);
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "large", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Large" }], Body = body,
+        });
+        var assigned = new Dictionary<string, string>();
+
+        adapter.Apply(changes, assigned);
+
+        Assert.Equal(100, Assert.Single(client.CreateChildCounts));
+        Assert.Single(client.AppendedTo);
+        Assert.Equal(189, client.GetBlockChildren(assigned["large"]).Count);
+        Assert.Equal(NotionBlockConverter.FromBlocks(NotionBlockConverter.ToBlocks(body)),
+            NotionBlockConverter.FromBlocks(client.GetBlockChildren(assigned["large"])));
+    }
+
+    [Fact]
+    public void Apply_Create_BodyExactly100Blocks_SingleCreateNoAppend()
+    {
+        var client = new FakeNotionClient();
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "boundary", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Boundary" }], Body = ParagraphBody(100),
+        });
+
+        adapter.Apply(changes, new Dictionary<string, string>());
+
+        Assert.Equal(100, Assert.Single(client.CreateChildCounts));
+        Assert.Empty(client.AppendedTo);
+    }
+
+    [Fact]
+    public void Apply_Create_Over100_AppendFails_LeavesEmptyBodiedForRepush()
+    {
+        var client = new FakeNotionClient { FailAppend = true };
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var changes = new SyncChangeSet();
+        changes.Upserts.Add(new SyncUpsert
+        {
+            LocalId = "partial", ExternalId = null,
+            Fields = [new SyncField { Key = "title", Value = "Partial" }], Body = ParagraphBody(101),
+        });
+        var assigned = new Dictionary<string, string>();
+        var emptyBodied = new HashSet<string>();
+
+        Assert.Throws<NotionApiException>(() => adapter.Apply(changes, assigned, new HashSet<string>(), emptyBodied));
+
+        Assert.Contains("partial", assigned.Keys);
+        Assert.Contains("partial", emptyBodied);
+    }
+
+    [Fact]
+    public void SyncRunner_CreateAppendFailure_RetryWritesVisibleConflictMarkers()
+    {
+        var client = new FakeNotionClient { FailAppend = true };
+        var adapter = new NotionSyncAdapter(client, "ds1", new Dictionary<string, string> { ["title"] = "title" });
+        var dir = Path.Combine(Path.GetTempPath(), "dydo-notion-create-partial-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "partial.md");
+            var doc = new SyncDoc
+            {
+                LocalId = "partial", Fields = [new SyncField { Key = "title", Value = "Partial" }],
+                Body = ParagraphBody(189), SourcePath = path,
+            };
+            SyncDocFile.Write(path, doc);
+            var snapshotPath = Path.Combine(dir, "snap.json");
+
+            Assert.Throws<NotionApiException>(() =>
+                new SyncRunner(adapter, new BaseSnapshotStore(snapshotPath), (id, _, _) => Path.Combine(dir, id + ".md")).Run([doc]));
+
+            client.FailAppend = false;
+            new SyncRunner(adapter, new BaseSnapshotStore(snapshotPath), (id, _, _) => Path.Combine(dir, id + ".md")).Run([doc]);
+
+            Assert.Single(client.QueryDataSource("ds1"));
+            Assert.Contains("<<<<<<<", File.ReadAllText(path));
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
     }
 
     [Fact]

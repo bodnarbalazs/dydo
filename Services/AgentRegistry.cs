@@ -1012,7 +1012,7 @@ public partial class AgentRegistry : IAgentRegistry
                     ---
                     area: general
                     name: {task}
-                    status: pending
+                    status: in-progress
                     created: {DateTime.UtcNow:o}
                     assigned: {agentName}
                     ---

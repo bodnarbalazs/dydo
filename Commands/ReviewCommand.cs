@@ -82,10 +82,8 @@ public static class ReviewCommand
         var content = File.ReadAllText(taskPath);
 
         // Check current status
-        var statusMatch = Regex.Match(content, @"status: ([\w-]+)");
-        var currentStatus = statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
-
-        if (currentStatus != "review-pending" && currentStatus != "active")
+        var currentStatus = ReadCurrentStatus(content);
+        if (currentStatus != "in-review")
         {
             ConsoleOutput.WriteError($"Task is not in review state (current: {currentStatus})");
             ConsoleOutput.WriteError("You must mark the task ready for review first:");
@@ -93,82 +91,124 @@ public static class ReviewCommand
             return ExitCodes.ToolError;
         }
 
-        var reviewerName = agent?.Name ?? "Unknown";
-        var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
-        var provenanceLines = RenderReviewProvenance(provenance);
-        var reviewTime = DateTime.UtcNow;
+        if (status == "pass" && IsSelfReview(content, agent))
+        {
+            ConsoleOutput.WriteError($"Task {taskName} is assigned to {agent!.Name}; the implementer cannot pass their own review.");
+            return ExitCodes.ToolError;
+        }
 
         if (status == "pass")
+            return CompletePass(registry, agent, taskPath, content, taskName, notes);
+
+        return CompleteFail(registry, agent, taskPath, content, taskName, notes);
+    }
+
+    private static string ReadCurrentStatus(string content)
+    {
+        var statusMatch = Regex.Match(content, @"status: ([\w-]+)");
+        return statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
+    }
+
+    /// <summary>
+    /// True when the reviewing agent is the agent the task is assigned to.
+    /// The implementer may not pass their own review.
+    /// </summary>
+    private static bool IsSelfReview(string content, Models.AgentState? agent)
+    {
+        if (agent == null) return false;
+
+        var assignedMatch = Regex.Match(content, @"^assigned:\s*(.+)$", RegexOptions.Multiline);
+        var assigned = assignedMatch.Success ? assignedMatch.Groups[1].Value.Trim() : null;
+
+        return string.Equals(agent.Name, assigned, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static (string Name, string ProvenanceLines) ResolveReviewer(AgentRegistry registry, Models.AgentState? agent)
+    {
+        var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
+        return (agent?.Name ?? "Unknown", RenderReviewProvenance(provenance));
+    }
+
+    private static int CompletePass(AgentRegistry registry, Models.AgentState? agent, string taskPath,
+        string content, string taskName, string? notes)
+    {
+        var reviewer = ResolveReviewer(registry, agent);
+        var reviewTime = DateTime.UtcNow;
+
+        content = Regex.Replace(content, @"status: [\w-]+", "status: done");
+
+        var reviewSection = $"""
+
+
+            ## Code Review
+
+            - Reviewed by: {reviewer.Name}
+            {reviewer.ProvenanceLines}
+            - Date: {reviewTime:yyyy-MM-dd HH:mm}
+            - Result: PASSED
+            {(string.IsNullOrEmpty(notes) ? "" : $"- Notes: {notes}")}
+
+            """;
+
+        content += reviewSection;
+        File.WriteAllText(taskPath, content);
+
+        Console.WriteLine($"Review PASSED for {taskName}");
+
+        if (agent != null)
         {
-            // Update status to human-reviewed (needs human approval)
-            content = Regex.Replace(content, @"status: [\w-]+", "status: human-reviewed");
-
-            var reviewSection = $"""
-
-
-                ## Code Review
-
-                - Reviewed by: {reviewerName}
-                {provenanceLines}
-                - Date: {reviewTime:yyyy-MM-dd HH:mm}
-                - Result: PASSED
-                {(string.IsNullOrEmpty(notes) ? "" : $"- Notes: {notes}")}
-
-                Awaiting human approval.
-                """;
-
-            content += reviewSection;
-            File.WriteAllText(taskPath, content);
-
-            Console.WriteLine($"Review PASSED for {taskName}");
-            Console.WriteLine("Task now awaits human approval");
-            Console.WriteLine("Human can run: dydo task approve " + taskName);
-
-            if (agent != null)
-            {
-                RouteVerdictMessages(registry, agent, taskName, notes);
-
-                // If reviewer is in a worktree, require merge dispatch before release
-                var workspace = registry.GetAgentWorkspace(agent.Name);
-                var worktreeMarker = Path.Combine(workspace, ".worktree");
-                if (File.Exists(worktreeMarker))
-                {
-                    File.WriteAllText(Path.Combine(workspace, ".needs-merge"), taskName);
-                    Console.WriteLine();
-                    Console.WriteLine("Worktree branch needs merging. Dispatch a code-writer to merge before releasing:");
-                    Console.WriteLine($"  dydo dispatch --auto-close --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
-                }
-            }
-        }
-        else
-        {
-            // Update status back to active for rework
-            content = Regex.Replace(content, @"status: [\w-]+", "status: review-failed");
-
-            var reviewSection = $"""
-
-
-                ## Code Review ({reviewTime:yyyy-MM-dd HH:mm})
-
-                - Reviewed by: {reviewerName}
-                {provenanceLines}
-                - Result: FAILED
-                - Issues: {notes ?? "(No details provided)"}
-
-                Requires rework.
-                """;
-
-            content += reviewSection;
-            File.WriteAllText(taskPath, content);
-
-            Console.WriteLine($"Review FAILED for {taskName}");
-            Console.WriteLine("Task returned for rework");
-
-            if (!string.IsNullOrEmpty(notes))
-                Console.WriteLine($"Issues: {notes}");
+            RouteVerdictMessages(registry, agent, taskName, notes);
+            RequireMergeDispatch(registry, agent, taskName);
         }
 
         return ExitCodes.Success;
+    }
+
+    private static int CompleteFail(AgentRegistry registry, Models.AgentState? agent, string taskPath,
+        string content, string taskName, string? notes)
+    {
+        var reviewer = ResolveReviewer(registry, agent);
+        var reviewTime = DateTime.UtcNow;
+
+        content = Regex.Replace(content, @"status: [\w-]+", "status: in-progress");
+
+        var reviewSection = $"""
+
+
+            ## Code Review ({reviewTime:yyyy-MM-dd HH:mm})
+
+            - Reviewed by: {reviewer.Name}
+            {reviewer.ProvenanceLines}
+            - Result: FAILED
+            - Issues: {notes ?? "(No details provided)"}
+
+            Requires rework.
+            """;
+
+        content += reviewSection;
+        File.WriteAllText(taskPath, content);
+
+        Console.WriteLine($"Review FAILED for {taskName}");
+        Console.WriteLine("Task returned for rework");
+
+        if (!string.IsNullOrEmpty(notes))
+            Console.WriteLine($"Issues: {notes}");
+
+        return ExitCodes.Success;
+    }
+
+    // If reviewer is in a worktree, require merge dispatch before release
+    private static void RequireMergeDispatch(AgentRegistry registry, Models.AgentState agent, string taskName)
+    {
+        var workspace = registry.GetAgentWorkspace(agent.Name);
+        var worktreeMarker = Path.Combine(workspace, ".worktree");
+        if (!File.Exists(worktreeMarker))
+            return;
+
+        File.WriteAllText(Path.Combine(workspace, ".needs-merge"), taskName);
+        Console.WriteLine();
+        Console.WriteLine("Worktree branch needs merging. Dispatch a code-writer to merge before releasing:");
+        Console.WriteLine($"  dydo dispatch --auto-close --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
     }
 
     private static string RenderReviewProvenance(ArtifactProvenance? provenance)

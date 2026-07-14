@@ -2,7 +2,7 @@
 title: Swarm 0258
 area: general
 name: swarm-0258
-status: pending
+status: in-progress
 created: 2026-07-12T15:41:28.6875166Z
 assigned: Charlie
 needs-human: false

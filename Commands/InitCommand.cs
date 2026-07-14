@@ -373,7 +373,16 @@ public static class InitCommand
     private const string GuardMatcher =
         "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion";
 
-    private const string CodexGuardMatcher = GuardMatcher + "|apply_patch";
+    // Codex exposes file edits as apply_patch and shell execution under several tool names
+    // depending on mode (shell_command interactive/exec, plus the code-mode aliases exec,
+    // local_shell, unified_exec). All must be in the matcher or the guard never sees codex
+    // shell commands — the PreToolUse hook fires but the tool name doesn't match, so no
+    // off-limits / dangerous-bash / git-safety layer binds on the shell lane (issue 0295).
+    // These names must stay in lockstep with GuardCommand.ShellTools, which routes them to
+    // the shell analyzer once they reach the guard.
+    internal const string CodexShellTools = "shell_command|exec|local_shell|unified_exec";
+
+    private const string CodexGuardMatcher = GuardMatcher + "|apply_patch|" + CodexShellTools;
 
     private static void ConfigureGuardHook(JsonNode settings, string matcher)
     {

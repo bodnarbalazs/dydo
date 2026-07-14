@@ -2,7 +2,7 @@
 title: Codex Fix 0277
 area: general
 name: codex-fix-0277
-status: pending
+status: in-progress
 created: 2026-07-11T15:24:29.4471039Z
 assigned: Sam
 needs-human: false

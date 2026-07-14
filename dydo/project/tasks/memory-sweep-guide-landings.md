@@ -2,7 +2,7 @@
 title: Memory Sweep Guide Landings
 area: general
 name: memory-sweep-guide-landings
-status: pending
+status: in-progress
 created: 2026-07-08T15:33:35.2023435Z
 assigned: Paul
 needs-human: false

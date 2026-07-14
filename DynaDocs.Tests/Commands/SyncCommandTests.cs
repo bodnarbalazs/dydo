@@ -364,6 +364,12 @@ public class SyncCommandTests : IDisposable
         Assert.Contains("NotebookEdit", matcher);
         Assert.Contains("AskUserQuestion", matcher);
         Assert.Contains("apply_patch", matcher);
+        // Codex shell tool names (issue 0295) — the guard must see codex shell execution, not
+        // only apply_patch file edits.
+        Assert.Contains("shell_command", matcher);
+        Assert.Contains("exec", matcher);
+        Assert.Contains("local_shell", matcher);
+        Assert.Contains("unified_exec", matcher);
 
         var stop = Assert.IsType<JsonArray>(hooks["Stop"]);
         Assert.Contains(stop, entry => entry?.ToJsonString().Contains("dydo guard --stop") == true);

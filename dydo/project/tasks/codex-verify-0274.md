@@ -2,7 +2,7 @@
 title: Codex Verify 0274
 area: general
 name: codex-verify-0274
-status: pending
+status: in-progress
 created: 2026-07-11T14:57:33.3009969Z
 assigned: Henry
 needs-human: false

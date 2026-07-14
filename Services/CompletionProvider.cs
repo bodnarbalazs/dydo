@@ -28,7 +28,7 @@ public static class CompletionProvider
     private static readonly Dictionary<string, string[]> SubcommandLists = new()
     {
         ["agent"] = ["claim", "release", "status", "list", "role", "tree", "new", "rename", "remove", "reassign", "clean"],
-        ["task"] = ["approve", "create", "list", "ready-for-review", "reject"],
+        ["task"] = ["create", "done", "list", "ready-for-review"],
         ["review"] = ["complete"],
         ["init"] = ["claude", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
@@ -53,8 +53,7 @@ public static class CompletionProvider
         [("agent", "remove")] = GetAgentNames,
         [("agent", "reassign")] = GetAgentNames,
         [("agent", "clean")] = GetAgentNames,
-        [("task", "approve")] = GetTaskNames,
-        [("task", "reject")] = GetTaskNames,
+        [("task", "done")] = GetTaskNames,
         [("task", "ready-for-review")] = GetTaskNames,
         [("review", "complete")] = GetTaskNames,
     };

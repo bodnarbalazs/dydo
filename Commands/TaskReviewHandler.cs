@@ -6,9 +6,9 @@ using DynaDocs.Utils;
 internal static class TaskReviewHandler
 {
     /// <summary>
-    /// Transition a task file to review-pending state with the given summary.
+    /// Transition a task file to in-review state with the given summary.
     /// Returns true on success, false if the task file doesn't exist (non-fatal).
-    /// Idempotent: safe to call if the task is already review-pending.
+    /// Idempotent: safe to call if the task is already in-review.
     /// </summary>
     public static bool TransitionToReviewPending(string taskName, string summary)
     {
@@ -20,7 +20,7 @@ internal static class TaskReviewHandler
 
         var content = File.ReadAllText(taskPath);
 
-        content = Regex.Replace(content, @"status: [\w-]+", "status: review-pending");
+        content = Regex.Replace(content, @"status: [\w-]+", "status: in-review");
 
         if (content.Contains("updated:"))
             content = Regex.Replace(content, @"updated: .+", $"updated: {DateTime.UtcNow:o}");
@@ -52,30 +52,6 @@ internal static class TaskReviewHandler
         }
 
         Console.WriteLine($"Task {name} marked ready for review");
-        return ExitCodes.Success;
-    }
-
-    public static int ExecuteReject(string name, string notes)
-    {
-        var tasksPath = TaskCommand.GetTasksPath();
-        var taskPath = Path.Combine(tasksPath, $"{PathUtils.SanitizeForFilename(name)}.md");
-
-        if (!File.Exists(taskPath))
-        {
-            ConsoleOutput.WriteError($"Task not found: {name}");
-            return ExitCodes.ToolError;
-        }
-
-        var content = File.ReadAllText(taskPath);
-
-        content = Regex.Replace(content, @"status: [\w-]+", "status: review-failed");
-
-        var rejectionSection = $"\n\n## Review Feedback ({DateTime.UtcNow:yyyy-MM-dd HH:mm})\n\n{notes}";
-        content += rejectionSection;
-
-        File.WriteAllText(taskPath, content);
-        Console.WriteLine($"Task {name} rejected, needs rework");
-
         return ExitCodes.Success;
     }
 }

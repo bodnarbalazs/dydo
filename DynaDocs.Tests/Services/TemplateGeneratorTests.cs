@@ -1096,13 +1096,15 @@ public class TemplateGeneratorTests
         Assert.Contains("## Agent Commands", content);
         Assert.Contains("## Task Commands", content);
         Assert.Contains("## Workflow Commands", content);
-        Assert.Contains("## Audit Commands", content);
         Assert.Contains("dydo init", content);
         Assert.Contains("dydo check", content);
         Assert.Contains("dydo agent claim", content);
         Assert.Contains("dydo task create", content);
+        Assert.Contains("dydo task done", content);
         Assert.Contains("dydo dispatch", content);
-        Assert.Contains("dydo audit", content);
+        Assert.DoesNotContain("dydo task approve", content);
+        Assert.DoesNotContain("dydo task reject", content);
+        Assert.DoesNotContain("dydo audit", content);
     }
 
     [Fact]

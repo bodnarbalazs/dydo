@@ -2,7 +2,7 @@
 title: Planner Role And Plan Review
 area: general
 name: planner-role-and-plan-review
-status: pending
+status: in-progress
 created: 2026-07-08T15:25:48.1622376Z
 assigned: Mia
 needs-human: false

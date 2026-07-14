@@ -2,7 +2,7 @@
 title: Agent Inner Workings Memory
 area: general
 name: agent-inner-workings-memory
-status: pending
+status: in-progress
 created: 2026-07-08T14:44:06.9436093Z
 assigned: Leo
 needs-human: false

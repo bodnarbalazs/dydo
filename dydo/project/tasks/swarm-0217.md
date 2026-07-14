@@ -2,7 +2,7 @@
 title: Swarm 0217
 area: general
 name: swarm-0217
-status: pending
+status: in-progress
 created: 2026-07-12T15:05:56.2927352Z
 assigned: Brian
 needs-human: false

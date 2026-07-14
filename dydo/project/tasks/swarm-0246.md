@@ -2,7 +2,7 @@
 title: Swarm 0246
 area: general
 name: swarm-0246
-status: pending
+status: in-progress
 created: 2026-07-12T21:27:48.1154331Z
 assigned: Henry
 needs-human: false

@@ -2,7 +2,7 @@
 title: Swarm 0110
 area: general
 name: swarm-0110
-status: pending
+status: in-progress
 created: 2026-07-12T15:41:37.4369021Z
 assigned: Emma
 needs-human: false

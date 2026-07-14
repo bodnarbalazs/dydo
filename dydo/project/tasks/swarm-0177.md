@@ -2,7 +2,7 @@
 title: Swarm 0177
 area: general
 name: swarm-0177
-status: pending
+status: in-progress
 created: 2026-07-13T11:47:10.3152530Z
 assigned: Charlie
 needs-human: false

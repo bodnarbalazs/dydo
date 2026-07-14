@@ -2,7 +2,7 @@
 title: Swarm 0155
 area: general
 name: swarm-0155
-status: pending
+status: in-progress
 created: 2026-07-12T15:41:25.7541708Z
 assigned: Brian
 needs-human: false

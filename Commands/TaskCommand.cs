@@ -7,9 +7,9 @@ using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
-/// dydo's <b>runtime agent task-tracker</b>: <c>dydo task create/ready-for-review/approve/reject/list</c> over
+/// dydo's <b>runtime agent task-tracker</b>: <c>dydo task create/ready-for-review/done/list</c> over
 /// the task files in <c>dydo/project/tasks/</c> (schema: <c>name</c> / <c>assigned</c> / <c>status</c>
-/// pending→human-reviewed). This is the in-session work-tracking lifecycle agents and humans use day to day.
+/// backlog→in-progress→in-review→done). This is the in-session work-tracking lifecycle agents and humans use day to day.
 /// <para>
 /// It is NOT the Notion-synced PM board. The board's leaf object is the separate <b>SprintTask</b> type
 /// (Campaign → Sprint → SprintTask) declared in the sync model (<c>Templates/sync-model.template.json</c>,
@@ -25,8 +25,7 @@ public static class TaskCommand
 
         command.Subcommands.Add(CreateCreateCommand());
         command.Subcommands.Add(CreateReadyForReviewCommand());
-        command.Subcommands.Add(CreateApproveCommand());
-        command.Subcommands.Add(CreateRejectCommand());
+        command.Subcommands.Add(CreateDoneCommand());
         command.Subcommands.Add(CreateListCommand());
 
         return command;
@@ -92,72 +91,20 @@ public static class TaskCommand
         return command;
     }
 
-    private static Command CreateApproveCommand()
-    {
-        var nameArgument = new Argument<string?>("name")
-        {
-            Description = "Task name (or use --all to approve all)",
-            Arity = ArgumentArity.ZeroOrOne
-        };
-
-        var allOption = new Option<bool>("--all", "-a")
-        {
-            Description = "Approve all pending tasks"
-        };
-
-        var notesOption = new Option<string?>("--notes")
-        {
-            Description = "Approval notes"
-        };
-
-        var command = new Command("approve", "Approve a task (human only)");
-        command.Arguments.Add(nameArgument);
-        command.Options.Add(allOption);
-        command.Options.Add(notesOption);
-
-        command.SetAction(parseResult =>
-        {
-            var name = parseResult.GetValue(nameArgument);
-            var all = parseResult.GetValue(allOption);
-            var notes = parseResult.GetValue(notesOption);
-
-            if (all || name == "*")
-                return TaskApproveHandler.ExecuteApproveAll(notes);
-
-            if (string.IsNullOrEmpty(name))
-            {
-                ConsoleOutput.WriteError("Specify a task name or use --all to approve all tasks.");
-                return ExitCodes.ToolError;
-            }
-
-            return TaskApproveHandler.ExecuteApprove(name, notes);
-        });
-
-        return command;
-    }
-
-    private static Command CreateRejectCommand()
+    private static Command CreateDoneCommand()
     {
         var nameArgument = new Argument<string>("name")
         {
             Description = "Task name"
         };
 
-        var notesOption = new Option<string>("--notes")
-        {
-            Description = "Rejection reason",
-            Required = true
-        };
-
-        var command = new Command("reject", "Reject a task (human only)");
+        var command = new Command("done", "Mark a task done after verification");
         command.Arguments.Add(nameArgument);
-        command.Options.Add(notesOption);
 
         command.SetAction(parseResult =>
         {
             var name = parseResult.GetValue(nameArgument)!;
-            var notes = parseResult.GetValue(notesOption)!;
-            return TaskReviewHandler.ExecuteReject(name, notes);
+            return TaskDoneHandler.Execute(name);
         });
 
         return command;
@@ -167,12 +114,12 @@ public static class TaskCommand
     {
         var needsReviewOption = new Option<bool>("--needs-review")
         {
-            Description = "Show only tasks needing human review"
+            Description = "Show only tasks needing review"
         };
 
         var allOption = new Option<bool>("--all")
         {
-            Description = "Show all tasks including closed"
+            Description = "Show all tasks including done"
         };
 
         var command = new Command("list", "List tasks");
@@ -197,7 +144,7 @@ public static class TaskCommand
     }
 
     /// <summary>
-    /// Transition a task file to review-pending state with the given summary.
+    /// Transition a task file to in-review state with the given summary.
     /// Delegates to TaskReviewHandler. Kept for backward compatibility with DispatchCommand.
     /// </summary>
     internal static bool TransitionToReviewPending(string taskName, string summary)

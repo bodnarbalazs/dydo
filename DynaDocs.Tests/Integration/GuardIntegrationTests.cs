@@ -1059,8 +1059,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     #region H28: Human-Only Commands
 
     [Theory]
-    [InlineData("dydo task approve foo")]
-    [InlineData("dydo task reject foo --notes \"bad\"")]
     [InlineData("dydo roles reset")]
     [InlineData("dydo guard lift Brian")]
     [InlineData("dydo guard restore Brian")]
@@ -1081,8 +1079,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Theory]
-    [InlineData("dydo task approve foo")]
-    [InlineData("dydo task reject foo")]
     [InlineData("dydo roles reset")]
     [InlineData("dydo guard lift Brian")]
     [InlineData("dydo guard restore Brian")]
@@ -1101,6 +1097,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Theory]
     [InlineData("dydo task list")]
     [InlineData("dydo task create foo")]
+    [InlineData("dydo task done foo")]
     [InlineData("dydo agent status")]
     [InlineData("dydo inbox show")]
     [InlineData("dydo agent clean Charlie")]

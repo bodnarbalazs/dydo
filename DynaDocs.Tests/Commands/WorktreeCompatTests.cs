@@ -418,9 +418,9 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void IsHumanOnlyDydoCommand_TaskApprove_ReturnsTrue()
+    public void IsHumanOnlyDydoCommand_TaskDone_ReturnsFalse()
     {
-        Assert.True(GuardCommand.IsHumanOnlyDydoCommand("dydo task approve"));
+        Assert.False(GuardCommand.IsHumanOnlyDydoCommand("dydo task done"));
     }
 
     [Fact]

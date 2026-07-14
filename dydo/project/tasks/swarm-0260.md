@@ -2,7 +2,7 @@
 title: Swarm 0260
 area: general
 name: swarm-0260
-status: pending
+status: in-progress
 created: 2026-07-12T18:49:04.9873367Z
 assigned: Frank
 needs-human: false

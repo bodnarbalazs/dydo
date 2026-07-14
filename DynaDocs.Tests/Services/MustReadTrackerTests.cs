@@ -188,7 +188,7 @@ public class MustReadTrackerTests : IDisposable
         CreateModeFile("Alice", "reviewer", "# Reviewer\nNo links here.");
 
         CreateLinkedFile("dydo/project/tasks/feature-x.md",
-            "---\nname: feature-x\nstatus: review-pending\n---\n# Task: feature-x\n\nImplement feature X.");
+            "---\nname: feature-x\nstatus: in-review\n---\n# Task: feature-x\n\nImplement feature X.");
 
         var result = _tracker.ComputeUnreadMustReads("Alice", "reviewer", task: "feature-x",
             conditionalMustReads: TestConditionalMustReads.Reviewer);

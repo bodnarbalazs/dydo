@@ -2454,7 +2454,7 @@ public class WatchdogServiceTests : IDisposable
             ---
             area: general
             name: {task}
-            status: pending
+            status: backlog
             needs-human: {needsHuman.ToString().ToLowerInvariant()}
             ---
 

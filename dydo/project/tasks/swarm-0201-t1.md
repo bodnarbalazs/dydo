@@ -2,7 +2,7 @@
 title: Swarm 0201 T1
 area: general
 name: swarm-0201-t1
-status: pending
+status: in-progress
 created: 2026-07-13T13:59:13.2516678Z
 assigned: Charlie
 needs-human: false

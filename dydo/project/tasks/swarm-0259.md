@@ -2,7 +2,7 @@
 title: Swarm 0259
 area: general
 name: swarm-0259
-status: pending
+status: in-progress
 created: 2026-07-12T18:49:06.0011538Z
 assigned: Emma
 needs-human: false

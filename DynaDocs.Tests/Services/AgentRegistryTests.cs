@@ -980,7 +980,7 @@ public class AgentRegistryTests : IDisposable
 
         var content = File.ReadAllText(taskFilePath);
         Assert.Contains("name: jwt-auth", content);
-        Assert.Contains("status: pending", content);
+        Assert.Contains("status: in-progress", content);
         Assert.Contains("assigned: Adele", content);
         Assert.Contains("# Task: jwt-auth", content);
         Assert.Contains("(No description)", content);

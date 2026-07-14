@@ -2,7 +2,7 @@
 title: Adopt 0232 Codex Docs
 area: reference
 name: adopt-0232-codex-docs
-status: review-pending
+status: in-review
 created: 2026-07-08T10:34:51.6067533Z
 assigned: Grace
 assigned-vendor: claude

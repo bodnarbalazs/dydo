@@ -2,7 +2,7 @@
 title: Codex Mcp Exploration
 area: general
 name: codex-mcp-exploration
-status: pending
+status: in-progress
 created: 2026-07-08T19:14:04.6968127Z
 assigned: Noah
 needs-human: false

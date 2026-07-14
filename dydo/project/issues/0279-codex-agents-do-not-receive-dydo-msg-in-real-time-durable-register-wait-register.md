@@ -55,6 +55,26 @@ balazs asked the sharp question: can a codex agent run a background `dydo wait` 
 
 So **onboarding alone CANNOT solve #0279** — there is no managed background-completion→turn wake to hang a `dydo wait` loop on. This confirms Mia's design: the fix is the **app-server / remote-control PUSH** (keep the inbox write as truth; a delivery service uses the codex app-server connection, maps SessionId→threadId, then idempotently `turn/start` a bounded "run `dydo read <id>`" prompt into the thread; warn + fall back to inbox-only when unavailable). NOT stdout polling. **#0279 requires the app-server integration — a scheduled design/build, not a cheap onboarding change.** balazs's hypothesis is answered: no cheap path exists.
 
+## CORRECTION + NEW FINDING (2026-07-13, research pass) — a cheap path MAY exist after all
+
+Two corrections to the record above. **Do not implement from the earlier sections as written.**
+
+**1. `thread/inject_items` DOES NOT EXIST.** Mia's recommendation names it; the real app-server methods are **`turn/start`** (drive an idle thread) and **`turn/steer`** + `expectedTurnId` (interrupt a mid-turn thread). Anyone building from the earlier text hits a dead end. (`thread/resume` is real, and `AgentSession.SessionId` does appear to be the codex thread id — `WindowsTerminalLauncher.GetResumeArguments` already feeds it to `codex resume '<sessionId>'` — so the SessionId→threadId mapping dydo would need is likely ALREADY persisted in `dydo/agents/<Agent>/.session`.)
+
+**2. "No cheap path exists" is PREMATURE — the Stop hook was dismissed too fast.** Both earlier passes noted `.codex/hooks.json` has PreToolUse/Stop guards and dismissed them because "neither fires on inbox arrival." That is true but beside the point: **`Stop` fires at every codex agent's END-OF-TURN — exactly the moment the agent would otherwise go dark.** And dydo ALREADY registers it, already trusted:
+
+```json
+"Stop": [ { "hooks": [ { "type": "command", "command": "dydo guard --stop" } ] } ]
+```
+
+**Proposed cheap fix:** extend the EXISTING `dydo guard --stop` handler so that, when the agent's `unread-messages` is non-empty, it returns `{"decision":"block","reason":"<inbox contents + run dydo read <id>>"}` instead of allowing the stop. Per the codex hooks docs, a blocked stop is converted into a fresh user prompt — **the agent wakes holding its mail.** This changes nothing about how terminals launch, needs no supervisor, no experimental surface, and no trust ceremony (the hook is already running in production). Optionally the handler can long-poll the inbox for N seconds before allowing the stop, parking the agent instead of letting it go dark.
+
+**THE ONE THING THAT GATES IT (do this FIRST — ~10 minutes):** it is **NOT verified** that this codex build honors `decision:block` on `Stop`. The official hooks docs say it does; DeepWiki contradicts them. A single empirical test against the already-running `dydo guard --stop` path settles whether the cheap path exists at all. **Run that test before writing any implementation.**
+
+Loop-safety note for the implementer: if the agent is blocked but never clears the message, the next Stop blocks again — an infinite wake loop. The handler must bound this (e.g. surface a given message id at most once, or cap consecutive blocks) and fail OPEN (allow the stop) on any error, so a guard bug can never wedge every agent in the fleet.
+
+**Revised sequencing: (b) Stop-hook wake FIRST, then (a) app-server.** They compose rather than compete — the hook stops agents going dark; the app-server is still the only thing that can rescue a session that has ALREADY fully stopped. The earlier conclusion that only the app-server can work stands ONLY for that already-stopped case.
+
 ## Reproduction
 
 (Steps to reproduce, if applicable)

@@ -139,7 +139,7 @@ public static class WorkspaceCommand
             if (File.Exists(taskPath))
             {
                 var content = File.ReadAllText(taskPath);
-                if (content.Contains("status: active") || content.Contains("status: pending"))
+                if (content.Contains("status: in-progress") || content.Contains("status: backlog"))
                 {
                     issues.Add($"Task '{agent.Task}' is still active. Mark ready-for-review or complete it.");
                 }

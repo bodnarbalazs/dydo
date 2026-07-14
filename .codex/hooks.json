@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "dydo guard"
+            "command": "dydo notguard"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "dydo guard --stop"
+            "command": "dydo notguard --stop"
           }
         ]
       }

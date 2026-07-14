@@ -330,8 +330,7 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 |---------|-------------|
 | `dydo task create <name>` | Create a task |
 | *`dydo task ready-for-review <name> --summary "..."`* | *Mark task ready for review* |
-| **`dydo task approve <name>`** / **`--all`** | **Approve task(s) (human only)** |
-| `dydo task reject <name>` | Reject task (human only) |
+| `dydo task done <name>` | Mark task done after verification |
 | `dydo task list` | List tasks |
 | *`dydo review complete <task>`* | *Complete a code review* |
 

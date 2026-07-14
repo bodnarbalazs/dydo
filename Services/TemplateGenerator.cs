@@ -1133,8 +1133,7 @@ public static class TemplateGenerator
             |---------|-------------|
             | `dydo task create <name>` | Create task |
             | `dydo task ready-for-review <name>` | Mark ready for review |
-            | `dydo task approve <name>` | Approve task |
-            | `dydo task reject <name>` | Reject task |
+            | `dydo task done <name>` | Mark task done |
             | `dydo task list` | List tasks |
 
             ## Workflow Commands
@@ -1150,14 +1149,6 @@ public static class TemplateGenerator
             | `dydo workspace init` | Initialize agent workspaces |
             | `dydo workspace check` | Verify workflow before session end |
             | `dydo review complete <task>` | Complete a code review |
-
-            ## Audit Commands
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo audit` | Generate activity replay visualization |
-            | `dydo audit --list` | List available sessions |
-            | `dydo audit --session <id>` | Show details for a session |
 
             ---
 

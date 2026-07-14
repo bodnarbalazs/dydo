@@ -114,6 +114,7 @@ public sealed class NotionSyncAdapter : ISyncAdapter
     public void Apply(SyncChangeSet changes, IDictionary<string, string> assigned, ICollection<string> deleted,
         ICollection<string> emptyBodied)
     {
+        const int MaxChildrenPerRequest = 100; // DR-033
         var schema = EnsureSchema();
 
         foreach (var upsert in changes.Upserts)
@@ -130,11 +131,20 @@ public sealed class NotionSyncAdapter : ISyncAdapter
                     Parent = new NotionParent { Type = "data_source_id", DataSourceId = _dataSourceId },
                     Properties = properties,
                     Icon = NotionIcon.Of(_icon),
-                    Children = blocks.Count > 0 ? blocks : null,
+                    Children = blocks.Count > 0 ? blocks.Take(MaxChildrenPerRequest).ToList() : null,
                 });
                 // Record the id the instant the page exists, so a later create in this batch throwing
                 // does not lose it (the caller persists the base in a finally) — no duplicate on retry.
                 assigned[upsert.LocalId] = page.Id;
+                if (blocks.Count > MaxChildrenPerRequest)
+                {
+                    emptyBodied.Add(upsert.LocalId);
+                    _client.AppendBlockChildren(page.Id, new NotionAppendChildrenRequest
+                    {
+                        Children = blocks.Skip(MaxChildrenPerRequest).ToList(),
+                    });
+                    emptyBodied.Remove(upsert.LocalId);
+                }
             }
             else
             {

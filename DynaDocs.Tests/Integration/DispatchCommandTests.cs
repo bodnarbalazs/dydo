@@ -870,7 +870,7 @@ public class DispatchCommandTests : IntegrationTestBase
     #region Reviewer Auto-Transition Tests
 
     [Fact]
-    public async Task Dispatch_ToReviewer_TransitionsTaskToReviewPending()
+    public async Task Dispatch_ToReviewer_TransitionsTaskToInReview()
     {
         await InitProjectAsync("none", "testuser", 3);
         await TaskCreateAsync("review-task", area: "backend");
@@ -880,9 +880,9 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("Task state: marked ready for review");
 
-        // Verify task file status changed to review-pending
+        // Verify task file status changed to in-review
         var taskContent = ReadFile("dydo/project/tasks/review-task.md");
-        Assert.Contains("status: review-pending", taskContent);
+        Assert.Contains("status: in-review", taskContent);
 
         // Verify brief became the review summary
         Assert.Contains("## Review Summary", taskContent);
@@ -901,9 +901,9 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertSuccess();
         Assert.DoesNotContain("Task state:", result.Stdout);
 
-        // Verify task file status remains pending
+        // Verify task file status remains backlog
         var taskContent = ReadFile("dydo/project/tasks/code-task.md");
-        Assert.Contains("status: pending", taskContent);
+        Assert.Contains("status: backlog", taskContent);
     }
 
     [Fact]
@@ -919,15 +919,15 @@ public class DispatchCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Dispatch_ToReviewer_ReviewFailedToReviewPending()
+    public async Task Dispatch_ToReviewer_InProgressToInReview()
     {
         await InitProjectAsync("none", "testuser", 3);
         await TaskCreateAsync("failed-task", area: "backend");
 
-        // Manually set task status to review-failed (simulates a failed review)
+        // Manually set task status to in-progress (simulates a failed review)
         var taskPath = Path.Combine(TestDir, "dydo/project/tasks/failed-task.md");
         var content = File.ReadAllText(taskPath);
-        content = content.Replace("status: pending", "status: review-failed");
+        content = content.Replace("status: backlog", "status: in-progress");
         File.WriteAllText(taskPath, content);
 
         var result = await DispatchAsync("reviewer", "failed-task", "Fixed issues, ready for re-review");
@@ -935,9 +935,9 @@ public class DispatchCommandTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("Task state: marked ready for review");
 
-        // Verify task transitions from review-failed to review-pending
+        // Verify task transitions from in-progress to in-review
         var taskContent = ReadFile("dydo/project/tasks/failed-task.md");
-        Assert.Contains("status: review-pending", taskContent);
+        Assert.Contains("status: in-review", taskContent);
     }
 
     #endregion

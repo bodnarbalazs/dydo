@@ -2,7 +2,7 @@
 title: Swarm 0245
 area: general
 name: swarm-0245
-status: pending
+status: in-progress
 created: 2026-07-12T21:27:39.6712323Z
 assigned: Grace
 needs-human: false

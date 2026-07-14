@@ -23,8 +23,8 @@ internal static class TaskListHandler
 
             var (name, status, assigned, created) = parsed.Value;
 
-            if (!all && status == "closed") continue;
-            if (needsReview && status != "review-pending") continue;
+            if (!all && status == "done") continue;
+            if (needsReview && status != "in-review") continue;
 
             tasks.Add((name, status, assigned, created));
         }

@@ -76,7 +76,14 @@ public static partial class GuardCommand
 
     // Data-driven lookups to reduce cyclomatic complexity
     private static readonly HashSet<string> SearchTools = new(StringComparer.OrdinalIgnoreCase) { "glob", "grep", "agent" };
-    private static readonly HashSet<string> ShellTools = new(StringComparer.OrdinalIgnoreCase) { "bash", "powershell" };
+
+    // bash/powershell are Claude's shell tools; shell_command/exec/local_shell/unified_exec are
+    // codex's, one per mode (issue 0295). Without codex's names here the guard receives a codex
+    // shell call (it is in the hook matcher) but ShouldRouteToShellHandler never sends it to the
+    // shell analyzer, so off-limits / dangerous-bash / git-safety silently do not bind. Kept in
+    // lockstep with InitCommand.CodexShellTools, which puts the same names in the hook matcher.
+    private static readonly HashSet<string> ShellTools = new(StringComparer.OrdinalIgnoreCase)
+        { "bash", "powershell", "shell_command", "exec", "local_shell", "unified_exec" };
 
     private static bool ShouldRouteToShellHandler(string? toolName, string? bashCommand)
     {
@@ -1678,7 +1685,7 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a command is a human-only dydo command (task approve/reject, roles reset, guard lift/restore, agent clean --force).
+    /// Check if a command is a human-only dydo command (roles reset, guard lift/restore, agent clean --force).
     /// </summary>
     internal static bool IsHumanOnlyDydoCommand(string command)
     {
@@ -1769,10 +1776,10 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+merge(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitMergeRegex();
 
-    // Matches human-only dydo subcommands: task approve, task reject, roles reset, guard lift, guard restore, agent clean --force.
+    // Matches human-only dydo subcommands: roles reset, guard lift, guard restore, agent clean --force.
     // The agent-clean alternative uses [^;&|]* to keep --force lookup inside one chain segment, and \b around clean/force
     // to guard against 'cleanup' / '--forcefully' false matches. Bare 'agent clean <name>' (no --force) stays allowed.
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:task\s+(?:approve|reject)|roles\s+reset|guard\s+(?:lift|restore)|agent\s+clean\b[^;&|]*--force)\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:roles\s+reset|guard\s+(?:lift|restore)|agent\s+clean\b[^;&|]*--force)\b", RegexOptions.IgnoreCase)]
     private static partial Regex HumanOnlyDydoCommandRegex();
 
     [GeneratedRegex(@"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase)]

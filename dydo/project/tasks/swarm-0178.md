@@ -2,7 +2,7 @@
 title: Swarm 0178
 area: general
 name: swarm-0178
-status: pending
+status: in-progress
 created: 2026-07-12T13:13:10.2665056Z
 assigned: Mia
 needs-human: true

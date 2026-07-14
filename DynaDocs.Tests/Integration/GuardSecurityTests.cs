@@ -362,6 +362,67 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
+    // Issue #295: codex shell tool names must route through the shell guard
+    // ================================================================
+    //
+    // Codex names its shell tool shell_command (also exec/local_shell/unified_exec by mode),
+    // not Bash/PowerShell. Before the fix these fell through to HandleWriteOperation with a
+    // null filePath and returned Success — every codex shell command ran UNGUARDED (an off-limits
+    // read returned the file contents, git stash/destructive git went through). These tests pin
+    // that each codex shell tool name now routes through HandleBashCommand identically to Bash.
+
+    private string CodexShellJson(string toolName, string command) =>
+        "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"" + toolName + "\",\"tool_input\":{\"command\":\"" +
+        command.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"}}";
+
+    [Theory]
+    [InlineData("shell_command")]
+    [InlineData("exec")]
+    [InlineData("local_shell")]
+    [InlineData("unified_exec")]
+    public async Task Issue295_CodexShellTool_OffLimitsRead_IsBlocked(string toolName)
+    {
+        // The exact reported repro: a codex worker read an off-limits agent state file and got
+        // the contents back, exit 0, no block. Every codex shell tool name must block it now.
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(
+            CodexShellJson(toolName, "cat dydo/agents/Adele/state.md"));
+        result.AssertExitCode(2);
+        result.AssertStderrContains("off-limits");
+    }
+
+    [Fact]
+    public async Task Issue295_CodexShellTool_GitStash_IsBlocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "git stash"));
+        result.AssertExitCode(2);
+        result.AssertStderrContains("git stash");
+    }
+
+    [Fact]
+    public async Task Issue295_CodexShellTool_DangerousPattern_IsBlocked()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "rm -rf /"));
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Dangerous");
+    }
+
+    [Fact]
+    public async Task Issue295_CodexShellTool_BenignCommand_IsAllowed()
+    {
+        // The swarm-safety guarantee: an ordinary codex command must NOT be false-blocked.
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "git status --short"));
+        result.AssertSuccess();
+    }
+
+    // ================================================================
     // Issue #58: DangerousPatterns gaps
     // ================================================================
 

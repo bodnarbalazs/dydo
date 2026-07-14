@@ -2,7 +2,7 @@
 title: Swarm 0293 Displaynames
 area: general
 name: swarm-0293-displaynames
-status: pending
+status: in-progress
 created: 2026-07-13T17:12:14.5626298Z
 assigned: Dexter
 needs-human: false

@@ -55,7 +55,7 @@ internal static class TaskCreateHandler
             title: {TitlePrettifier.Prettify(name)}
             area: {area}
             name: {name}
-            status: pending
+            status: {(agent == null ? "backlog" : "in-progress")}
             created: {DateTime.UtcNow:o}
             assigned: {agent?.Name ?? "unassigned"}{provenanceYaml}
             ---

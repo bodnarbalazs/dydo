@@ -2,7 +2,7 @@
 title: Notion Docs Nested Pages
 area: general
 name: notion-docs-nested-pages
-status: pending
+status: in-progress
 created: 2026-07-06T15:03:32.4978516Z
 assigned: Charlie
 needs-human: false

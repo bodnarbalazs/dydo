@@ -79,8 +79,7 @@ public static class HelpCommand
         Console.WriteLine("Task Commands:");
         Console.WriteLine("  task create <name>     Create a new task");
         Console.WriteLine("  task ready-for-review  Mark task ready for review");
-        Console.WriteLine("  task approve <name>    Approve task (human only)");
-        Console.WriteLine("  task reject <name>     Reject task (human only)");
+        Console.WriteLine("  task done <name>       Mark task done after verification");
         Console.WriteLine("  task list              List tasks");
         Console.WriteLine();
         Console.WriteLine("  hand raise             Flag that a human is needed");

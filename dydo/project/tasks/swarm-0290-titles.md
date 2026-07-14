@@ -2,7 +2,7 @@
 title: Swarm 0290 Titles
 area: general
 name: swarm-0290-titles
-status: pending
+status: in-progress
 created: 2026-07-13T13:57:08.5422223Z
 assigned: Brian
 needs-human: false

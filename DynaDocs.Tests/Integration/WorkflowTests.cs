@@ -530,32 +530,47 @@ public class WorkflowTests : IntegrationTestBase
     public async Task Review_Complete_Pass()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
 
-        // Create a task in review-pending state
+        // Create a task in in-review state
         await TaskCreateAsync("review-test");
         await TaskReadyForReviewAsync("review-test", "Ready for review");
+        await ClaimAgentAsync("Adele");
 
         var result = await ReviewCompleteAsync("review-test", "pass");
 
         result.AssertSuccess();
         result.AssertStdoutContains("PASSED");
-        AssertFileContains("dydo/project/tasks/review-test.md", "human-reviewed");
+        AssertFileContains("dydo/project/tasks/review-test.md", "status: done");
     }
 
     [Fact]
     public async Task Review_Complete_Pass_WithNotes()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
 
         await TaskCreateAsync("lgtm-task");
         await TaskReadyForReviewAsync("lgtm-task", "Done");
+        await ClaimAgentAsync("Adele");
 
         var result = await ReviewCompleteAsync("lgtm-task", "pass", "LGTM! Great work.");
 
         result.AssertSuccess();
         AssertFileContains("dydo/project/tasks/lgtm-task.md", "LGTM");
+    }
+
+    [Fact]
+    public async Task Review_Complete_Pass_AssignedAgent_IsRefused()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+        await ClaimAgentAsync("Adele");
+        await TaskCreateAsync("self-review");
+        await TaskReadyForReviewAsync("self-review", "Done");
+
+        var result = await ReviewCompleteAsync("self-review", "pass");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("cannot pass their own review");
+        AssertFileContains("dydo/project/tasks/self-review.md", "status: in-review");
     }
 
     [Fact]
@@ -571,7 +586,7 @@ public class WorkflowTests : IntegrationTestBase
 
         result.AssertSuccess();
         result.AssertStdoutContains("FAILED");
-        AssertFileContains("dydo/project/tasks/fail-task.md", "review-failed");
+        AssertFileContains("dydo/project/tasks/fail-task.md", "status: in-progress");
         AssertFileContains("dydo/project/tasks/fail-task.md", "Missing error handling");
     }
 

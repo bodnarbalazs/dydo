@@ -291,7 +291,7 @@ dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --f
 
 By default, dispatch launches the same host as the calling agent's session. If the caller host is unknown, it launches Claude Code. `--codex` and `--claude` override the default and cannot be used together.
 
-**Auto-transition:** When `--role reviewer` is used, the task is automatically marked `review-pending` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
+**Auto-transition:** When `--role reviewer` is used, the task is automatically marked `in-review` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
 
 **Double-dispatch protection:** If another agent is already working on the same task, dispatch is blocked.
 
@@ -461,37 +461,16 @@ dydo task ready-for-review auth-login --summary "Implemented OAuth flow"
 **Options:**
 - `--summary <text>` - Review summary (**required** - describe what you did)
 
-### dydo task approve
+### dydo task done
 
-Approve a task (human only).
-
-```bash
-dydo task approve auth-login
-dydo task approve auth-login --notes "Great work!"
-dydo task approve --all
-dydo task approve --all --notes "Batch approved"
-```
-
-**Arguments:**
-- `name` - Task name (optional when using `--all`)
-
-**Options:**
-- `--all`, `-a` - Approve all pending tasks
-- `--notes <text>` - Approval notes
-
-### dydo task reject
-
-Reject a task (human only).
+Mark a task done after verification. An assigned agent cannot mark its own task done; human terminals and other agents may accept tasks in `in-progress` or `in-review`.
 
 ```bash
-dydo task reject auth-login --notes "Missing error handling"
+dydo task done auth-login
 ```
 
 **Arguments:**
 - `name` - Task name
-
-**Options:**
-- `--notes <text>` - Rejection reason (required)
 
 ### dydo task list
 
@@ -499,13 +478,13 @@ List tasks.
 
 ```bash
 dydo task list                  # List active tasks
-dydo task list --needs-review   # List tasks needing human review
-dydo task list --all            # Include closed tasks
+dydo task list --needs-review   # List tasks needing review
+dydo task list --all            # Include done tasks
 ```
 
 **Options:**
 - `--needs-review` - Show only tasks needing review
-- `--all` - Show all tasks including closed
+- `--all` - Show all tasks including done
 
 ---
 
@@ -603,7 +582,7 @@ dydo issue resolve 0001 --summary "Fixed in commit abc123"
 
 Complete a code review.
 
-**Prerequisite:** The task must be in `review-pending` state. This happens automatically when dispatching with `--role reviewer`. You can also run `dydo task ready-for-review <task> --summary "..."` manually.
+**Prerequisite:** The task must be in `in-review` state. This happens automatically when dispatching with `--role reviewer`. You can also run `dydo task ready-for-review <task> --summary "..."` manually.
 
 ```bash
 # Normal workflow (dispatch auto-transitions the task):

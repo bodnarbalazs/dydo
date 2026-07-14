@@ -57,32 +57,31 @@ public class CompleteCommandTests : IDisposable
     {
         var completions = CompleteCommand.GetCompletions(2, ["dydo", "task"]).ToList();
 
-        Assert.Contains("approve", completions);
         Assert.Contains("create", completions);
+        Assert.Contains("done", completions);
         Assert.Contains("list", completions);
         Assert.Contains("ready-for-review", completions);
-        Assert.Contains("reject", completions);
     }
 
     [Fact]
-    public void TaskApprove_ReturnsTaskNames()
+    public void TaskDone_ReturnsTaskNames()
     {
         SetupProjectWithTasks("fix-login", "add-search");
 
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "approve"]).ToList();
+        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "done"]).ToList();
 
         Assert.Contains("fix-login", completions);
         Assert.Contains("add-search", completions);
     }
 
     [Fact]
-    public void TaskApprove_SkipsUnderscorePrefixed()
+    public void TaskDone_SkipsUnderscorePrefixed()
     {
         SetupProjectWithTasks("fix-login");
         var tasksPath = new ConfigService().GetTasksPath();
         File.WriteAllText(Path.Combine(tasksPath, "_template.md"), "template");
 
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "approve"]).ToList();
+        var completions = CompleteCommand.GetCompletions(3, ["dydo", "task", "done"]).ToList();
 
         Assert.Contains("fix-login", completions);
         Assert.DoesNotContain("_template", completions);

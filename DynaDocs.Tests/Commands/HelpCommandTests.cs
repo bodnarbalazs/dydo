@@ -68,8 +68,7 @@ public class HelpCommandTests
 
         Assert.Contains("task create", output);
         Assert.Contains("task ready-for-review", output);
-        Assert.Contains("task approve", output);
-        Assert.Contains("task reject", output);
+        Assert.Contains("task done", output);
         Assert.Contains("task list", output);
     }
 

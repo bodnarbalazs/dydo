@@ -2,7 +2,7 @@
 title: Swarm 0279c
 area: general
 name: swarm-0279c
-status: pending
+status: in-progress
 created: 2026-07-12T23:24:09.5386643Z
 assigned: Brian
 needs-human: false

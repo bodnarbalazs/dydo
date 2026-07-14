@@ -2,7 +2,7 @@
 title: Swarm 0290 B
 area: general
 name: swarm-0290-b
-status: pending
+status: in-progress
 created: 2026-07-13T17:33:52.1113508Z
 assigned: Charlie
 needs-human: false

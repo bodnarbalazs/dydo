@@ -2,7 +2,7 @@
 title: C1 Codex Adoption Plan
 area: general
 name: c1-codex-adoption-plan
-status: review-pending
+status: in-review
 created: 2026-07-09T11:32:44.8341687Z
 assigned: Grace
 updated: 2026-07-11T14:08:49.2884754Z

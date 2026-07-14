@@ -2,7 +2,7 @@
 title: Adopt 0230 Ownership Claim Hardening
 area: backend
 name: adopt-0230-ownership-claim-hardening
-status: review-pending
+status: in-review
 created: 2026-07-08T10:34:43.3812504Z
 assigned: Grace
 assigned-vendor: claude

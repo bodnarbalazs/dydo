@@ -5,7 +5,7 @@ type: concept
 
 # Task Lifecycle
 
-How tasks flow from creation through implementation, review, and approval.
+How tasks flow from creation through implementation, review, and completion.
 
 ---
 
@@ -15,7 +15,7 @@ How tasks flow from creation through implementation, review, and approval.
 dydo task create <name> --area <area> [--description "<text>"]
 ```
 
-Creates a task file at `dydo/project/tasks/<name>.md` with YAML frontmatter. The `--area` flag is required (valid values: `backend`, `frontend`, `general`). The task is automatically assigned to the current agent. Duplicate names are rejected.
+Creates a task file at `dydo/project/tasks/<name>.md` with YAML frontmatter. The `--area` flag is required (valid values: `backend`, `frontend`, `general`). A task created by an agent is assigned and starts `in-progress`; one created without an agent starts in `backlog`. Duplicate names are rejected.
 
 ---
 
@@ -24,19 +24,17 @@ Creates a task file at `dydo/project/tasks/<name>.md` with YAML frontmatter. The
 Tasks move through a state machine:
 
 ```
-pending → active → review-pending → human-reviewed → closed
-                        ↑                  ↑
-                        └─── review-failed ─┘
+backlog → in-progress → in-review → done
+                 ↑            │
+                 └────────────┘
 ```
 
 | State | Meaning |
 |-------|---------|
-| **pending** | Created, not yet in work |
-| **active** | Agent working on it (set by `dydo agent role <role> --task <name>`) |
-| **review-pending** | Work complete, awaiting code review |
-| **human-reviewed** | Agent review passed, awaiting human approval |
-| **review-failed** | Review rejected, needs rework |
-| **closed** | Approved and moved to changelog (terminal state) |
+| **backlog** | Created without an assigned agent; ready to be picked up |
+| **in-progress** | Agent working on it |
+| **in-review** | Work complete, awaiting code review |
+| **done** | Review passed or a qualified person completed non-review work; terminal state |
 
 ---
 
@@ -48,7 +46,7 @@ Each task lives at `dydo/project/tasks/<name>.md`:
 ---
 area: general
 name: feature-x
-status: active
+status: in-progress
 created: 2026-03-16T14:18:13Z
 assigned: Brian
 updated: 2026-03-16T16:19:47Z
@@ -65,7 +63,7 @@ Description of the work.
 
 ## Files Changed
 
-(Populated during approval from audit logs)
+(Record relevant changes here.)
 
 ## Review Summary
 
@@ -82,7 +80,7 @@ An agent binds to a task when setting a role:
 dydo agent role code-writer --task feature-x
 ```
 
-This sets the task status to `active` and records the assignment. An agent can only have one active task at a time. The role is recorded in `TaskRoleHistory` for constraint enforcement (e.g., preventing self-review). Multiple agents can work on the same task in different roles (e.g., code-writer implements, reviewer reviews), but double-dispatch protection prevents two agents from doing the same role simultaneously.
+This sets the task status to `in-progress` and records the assignment. An agent can only have one in-progress task at a time. The role is recorded in `TaskRoleHistory` for constraint enforcement (e.g., preventing self-review). Multiple agents can work on the same task in different roles (e.g., code-writer implements, reviewer reviews), but double-dispatch protection prevents two agents from doing the same role simultaneously.
 
 ---
 
@@ -100,7 +98,7 @@ dydo task ready-for-review <task-name> --summary "Summary of changes"
 dydo dispatch --role reviewer --task <task-name> --brief "Review summary"
 ```
 
-The auto-transition combines marking the task as `review-pending` and dispatching the reviewer in a single command. The `--brief` content becomes the review summary.
+The auto-transition combines marking the task `in-review` and dispatching the reviewer in a single command. The `--brief` content becomes the review summary.
 
 ---
 
@@ -113,28 +111,21 @@ dydo review complete <task-name> --status pass [--notes "LGTM"]
 dydo review complete <task-name> --status fail --notes "Missing input validation"
 ```
 
-**If pass:** Task status becomes `human-reviewed`. A "Code Review" section is added to the task file with reviewer name, date, result, and notes.
+**If pass:** Task status becomes `done`. A "Code Review" section is added to the task file with reviewer name, date, result, and notes.
 
-**If fail:** Task status becomes `review-failed`. The rejection notes are recorded. The reviewer can dispatch a code-writer to fix the issues.
+**If fail:** Task status returns to `in-progress`. The rejection notes are recorded. The reviewer can dispatch a code-writer to fix the issues.
 
----
+## Completing Work Without Review
 
-## Human Approval Gate
-
-After a reviewer passes a task, a human makes the final call:
+For work that does not require a review, a human terminal or a different agent can mark an `in-progress` task done:
 
 ```bash
-dydo task approve <task-name> [--notes "Ship it"]
-dydo task approve --all
+dydo task done <task-name>
 ```
 
-Approval deletes the task file and creates a changelog entry at `dydo/project/changelog/<year>/<date>/<task-name>.md`. The "Files Changed" section is populated from audit logs.
+The assigned implementer cannot mark their own task done. A task can also be marked done from `in-review` when appropriate.
 
-```bash
-dydo task reject <task-name> --notes "Needs more test coverage"
-```
-
-Rejection sets the task back to `review-failed` with feedback recorded. Use `dydo task list --needs-review` to see tasks awaiting human approval.
+Done tasks remain on the board. The human archives them later; agents do not delete task files.
 
 ---
 
@@ -142,7 +133,7 @@ Rejection sets the task back to `review-failed` with feedback recorded. Use `dyd
 
 Tasks and dispatches are related but independent:
 
-- A **task** tracks the lifecycle of a unit of work from creation through approval
+- A **task** tracks the lifecycle of a unit of work from creation through completion
 - A **dispatch** assigns an agent to work on a task
 
 Multiple dispatches can happen within a single task's lifecycle (code-writer → reviewer → code-writer for rework → reviewer again). The task persists as the canonical record of progress.
@@ -153,8 +144,8 @@ Multiple dispatches can happen within a single task's lifecycle (code-writer →
 
 ```bash
 dydo task list                 # Active tasks
-dydo task list --needs-review  # Only human-reviewed tasks ready for approval
-dydo task list --all           # Include closed tasks
+dydo task list --needs-review  # Only in-review tasks awaiting code review
+dydo task list --all           # Include done tasks
 ```
 
 ---

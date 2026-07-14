@@ -29,11 +29,11 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         WriteAgentStateFile("Adele", role: "orchestrator", dispatchedBy: null, dispatchedByRole: null, status: "working");
         PatchDispatchedBy("Charlie", "Brian", "code-writer");
 
-        // Task must exist in review-pending state
+        // Task must exist in in-review state
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         File.WriteAllText(Path.Combine(tasksPath, "verdict-task.md"),
-            "---\nname: verdict-task\nstatus: review-pending\n---\n");
+            "---\nname: verdict-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("verdict-task", "pass", "LGTM");
         result.AssertSuccess();
@@ -71,7 +71,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         var taskPath = Path.Combine(tasksPath, "provenance-task.md");
-        File.WriteAllText(taskPath, "---\nname: provenance-task\nstatus: review-pending\n---\n");
+        File.WriteAllText(taskPath, "---\nname: provenance-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("provenance-task", "pass", "LGTM");
         result.AssertSuccess();
@@ -97,7 +97,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         File.WriteAllText(Path.Combine(tasksPath, "root-task.md"),
-            "---\nname: root-task\nstatus: review-pending\n---\n");
+            "---\nname: root-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("root-task", "pass");
         result.AssertSuccess();
@@ -131,7 +131,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         File.WriteAllText(Path.Combine(tasksPath, "released-dispatcher-task.md"),
-            "---\nname: released-dispatcher-task\nstatus: review-pending\n---\n");
+            "---\nname: released-dispatcher-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("released-dispatcher-task", "pass", "LGTM");
         result.AssertSuccess();
@@ -167,7 +167,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         File.WriteAllText(Path.Combine(tasksPath, "all-released-task.md"),
-            "---\nname: all-released-task\nstatus: review-pending\n---\n");
+            "---\nname: all-released-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("all-released-task", "pass");
         result.AssertSuccess();
@@ -185,7 +185,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         // Task file still records the review
         var taskContent = File.ReadAllText(Path.Combine(tasksPath, "all-released-task.md"));
         Assert.Contains("PASSED", taskContent);
-        Assert.Contains("status: human-reviewed", taskContent);
+        Assert.Contains("status: done", taskContent);
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         File.WriteAllText(Path.Combine(tasksPath, "skip-walk-task.md"),
-            "---\nname: skip-walk-task\nstatus: review-pending\n---\n");
+            "---\nname: skip-walk-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("skip-walk-task", "pass");
         result.AssertSuccess();
@@ -247,7 +247,7 @@ public class ReviewerVerdictRoutingTests : IntegrationTestBase
         var tasksPath = Path.Combine(TestDir, "dydo", "project", "tasks");
         Directory.CreateDirectory(tasksPath);
         File.WriteAllText(Path.Combine(tasksPath, "fail-task.md"),
-            "---\nname: fail-task\nstatus: review-pending\n---\n");
+            "---\nname: fail-task\nstatus: in-review\n---\n");
 
         var result = await ReviewCompleteAsync("fail-task", "fail", "Needs rework");
         result.AssertSuccess();

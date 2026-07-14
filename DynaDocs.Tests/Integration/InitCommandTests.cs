@@ -128,8 +128,8 @@ public class InitCommandTests : IntegrationTestBase
 
         // Tasks meta should describe task lifecycle
         AssertFileContains("dydo/project/tasks/_tasks.md", "Task Lifecycle");
-        AssertFileContains("dydo/project/tasks/_tasks.md", "pending");
-        AssertFileContains("dydo/project/tasks/_tasks.md", "review-pending");
+        AssertFileContains("dydo/project/tasks/_tasks.md", "backlog");
+        AssertFileContains("dydo/project/tasks/_tasks.md", "in-review");
 
         // Decisions meta should describe decision record format
         AssertFileContains("dydo/project/decisions/_decisions.md", "Decision Records");
@@ -203,6 +203,12 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("NotebookEdit", matcher);
         Assert.Contains("AskUserQuestion", matcher);
         Assert.Contains("apply_patch", matcher);
+        // Codex shell tool names (issue 0295) — without these the guard never sees codex shell
+        // commands, so off-limits/dangerous-bash/git-safety don't bind on the codex shell lane.
+        Assert.Contains("shell_command", matcher);
+        Assert.Contains("exec", matcher);
+        Assert.Contains("local_shell", matcher);
+        Assert.Contains("unified_exec", matcher);
 
         var guardHooks = Assert.IsType<JsonArray>(preToolUseEntry["hooks"]);
         var guardHook = Assert.Single(guardHooks);

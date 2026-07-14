@@ -53,6 +53,8 @@ public sealed class FakeNotionClient : INotionClient
         return ds;
     }
     public List<string> AppendedTo { get; } = [];
+
+    public List<int> CreateChildCounts { get; } = [];
     public List<string> DeletedBlocks { get; } = [];
 
     /// <summary>Page ids that received a body write via <see cref="UpdatePageMarkdown"/>, in call order — one
@@ -275,6 +277,9 @@ public sealed class FakeNotionClient : INotionClient
 
     public NotionPage CreatePage(NotionPageCreateRequest request)
     {
+        CreateChildCounts.Add(request.Children?.Count ?? 0);
+        if (request.Children?.Count > 100)
+            throw new NotionApiException(400, "body failed validation: body.children.length should be <= 100");
         if (FailCreateAfter is { } limit && _createCount >= limit)
             throw new NotionApiException(500, "simulated create failure");
         _createCount++;

@@ -89,7 +89,7 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
 
         var tasksPath = Path.Combine(TestDir, "dydo/project/tasks");
         Directory.CreateDirectory(tasksPath);
-        File.WriteAllText(Path.Combine(tasksPath, "my-task.md"), "---\nstatus: active\n---\n# Task: my-task\n");
+        File.WriteAllText(Path.Combine(tasksPath, "my-task.md"), "---\nstatus: in-progress\n---\n# Task: my-task\n");
 
         var result = await WorkspaceCheckAsync();
 

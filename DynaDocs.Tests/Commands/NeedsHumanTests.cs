@@ -76,7 +76,7 @@ public class NeedsHumanTests : IDisposable
             ---
             area: general
             name: {task}
-            status: pending
+            status: in-progress
             assigned: Adele
             ---
 
@@ -94,7 +94,7 @@ public class NeedsHumanTests : IDisposable
             ---
             area: general
             name: {task}
-            status: pending
+            status: in-progress
             assigned: Adele
             needs-human: {needsHuman.ToString().ToLowerInvariant()}
             ---

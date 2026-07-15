@@ -34,10 +34,11 @@ DR-041 simplification campaign (strip orchestration → compiler + knowledge + P
       prompt edits + DR-041/campaign PM records). Build green; suite green (4847/0/0).
 - [x] Guard disarmed by balazs (`dydo guard` → `dydo notguard`). Git is the net.
 - [x] Phase-0 cut order finalized (leaves → branches → trunk) in the campaign plan.
-- [ ] **PAUSED pending Fable.** balazs will swap this conversation's model to Fable
-      (claude-fable-5) tomorrow and execute Rail A then. Prep in flight: detailed
-      Slice-1 leaf-command deletion map + refreshed handoff (executor = Fable in this
-      conversation, not Codex Sol; §2 preconditions already satisfied).
+- [x] **Rail A EXECUTED (2026-07-15, Fable in-conversation).** Ten slices, one commit
+      each (`ca136f9a`..`cee1cbb4`), green ratchet throughout; final state: build 0/0,
+      suite 3009/0, gap_check 134/134. dydo is now compiler + knowledge + PM + nudges.
+      Judgment calls + remaining work (init/--agents slice, Notion daemon rebuild,
+      Rail B prose, guard re-arm): [handback](../backlog/simplification-campaign-handback.md).
 - See: [DR-041](../decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md),
   [campaign plan](../backlog/simplification-campaign-plan.md),
   [handoff](../backlog/simplification-handoff-sol.md).

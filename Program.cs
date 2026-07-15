@@ -15,7 +15,6 @@ rootCommand.Subcommands.Add(DispatchCommand.Create());
 rootCommand.Subcommands.Add(InboxCommand.Create());
 rootCommand.Subcommands.Add(ReadCommand.Create());
 rootCommand.Subcommands.Add(MessageCommand.Create());
-rootCommand.Subcommands.Add(WaitCommand.Create());
 rootCommand.Subcommands.Add(TaskCommand.Create());
 rootCommand.Subcommands.Add(HandCommand.Create());
 rootCommand.Subcommands.Add(IssueCommand.Create());

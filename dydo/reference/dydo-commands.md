@@ -351,25 +351,6 @@ dydo msg --to Brian --body "Important." --force
 
 **Restrictions:** No self-messaging. No cross-human messaging.
 
-### dydo wait
-
-Wait for an incoming message. Blocks until a message arrives in the agent's inbox.
-
-```bash
-dydo wait                          # Wait for any message
-dydo wait --task auth-login        # Wait for message with matching subject
-dydo wait --register               # Register a durable wait and return immediately
-dydo wait --task auth-login --cancel  # Cancel an active wait (remove marker)
-dydo wait --cancel                 # Cancel all active waits
-```
-
-**Options:**
-- `--task <name>` - Only wake on messages with this subject
-- `--register` - Register a durable wait marker and return immediately, instead of blocking. For hosts whose runtime cannot hold a foreground wait (e.g. dispatched codex sessions). Auto-selected when the caller's session host is such a host.
-- `--cancel` - Cancel an active wait (remove wait marker)
-
-**Behavior:** Polls every 10 seconds. No timeout. If killed by bash timeout, re-run the command. General wait skips messages claimed by active wait markers (channel isolation). A durable wait (`--register`) does not block: it writes a marker keyed to the claimed session's host process, so it survives tool timeouts and stays valid while the session lives; poll for messages with `dydo inbox show` / `dydo read`. `dydo agent release` and `dydo wait --cancel` remove it; a dead host makes it stale and it is cleaned up like a dead wait.
-
 ---
 
 ## Workspace Commands

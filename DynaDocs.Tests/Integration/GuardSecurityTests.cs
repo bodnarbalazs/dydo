@@ -349,18 +349,6 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("Dangerous");
     }
 
-    [Fact]
-    public async Task BugB_PowerShell_DydoWaitForeground_IsBlocked()
-    {
-        // Bug B: PowerShell tool with a dydo command must route through HandleDydoBashCommand
-        // — verifies dydo wait foreground is blocked exactly like via Bash.
-        await SetupClaimedAgent();
-
-        var result = await GuardWithStdinAsync(PowerShellJson("dydo wait"));
-        result.AssertExitCode(2);
-        result.AssertStderrContains("dydo wait");
-    }
-
     // ================================================================
     // Issue #295: codex shell tool names must route through the shell guard
     // ================================================================

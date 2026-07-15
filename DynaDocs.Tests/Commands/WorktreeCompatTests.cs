@@ -430,18 +430,6 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void IsDydoWaitCommand_WaitNoCancel_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsDydoWaitCommand("dydo wait --task foo"));
-    }
-
-    [Fact]
-    public void IsDydoWaitCommand_WaitWithCancel_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsDydoWaitCommand("dydo wait --task foo --cancel"));
-    }
-
-    [Fact]
     public void DefaultNudges_NpxDydo_Matches()
     {
         var matched = ConfigFactory.DefaultNudges.Any(n =>

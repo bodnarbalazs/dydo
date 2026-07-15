@@ -326,7 +326,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | *`dydo inbox list`* / *`dydo inbox show`* / *`dydo inbox clear --all`* | *List / show / archive inbox items* |
 | *`dydo read <target>`* | *Print an inbox item or file and register the read (host-agnostic ack)* |
 | *`dydo msg --to <agent> [--subject <task>] --body "..."`* | *Message another agent* |
-| *`dydo wait [--task <name>] [--cancel]`* | *Wait for an incoming message* |
 | *`dydo hand raise`* / *`dydo hand lower`* | *Raise / clear the needs-human flag* |
 
 ### Tasks & Reviews

@@ -602,9 +602,6 @@ public static partial class GuardCommand
         {
             var blocked = NotifyUnreadMessages(agent, filePath, toolName, null, sessionId, registry);
             if (blocked != null) return blocked.Value;
-
-            blocked = CheckPendingState(agent, filePath, toolName, null, sessionId, registry);
-            if (blocked != null) return blocked.Value;
         }
 
         if (agent != null && agent.UnreadMustReads.Count > 0)
@@ -742,13 +739,6 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        if (agent != null)
-        {
-            var blocked = CheckPendingState(agent, filePath, toolName, null, sessionId, registry);
-            if (blocked != null) return blocked.Value;
-        }
-
-
         TrackReadCompletion(agent, filePath, sessionId, registry);
 
         EmitWorktreeAllowIfNeeded();
@@ -768,9 +758,6 @@ public static partial class GuardCommand
         if (blocked != null) return blocked.Value;
 
         blocked = NotifyUnreadMessages(searchAgent!, searchPath, toolName, null, sessionId, registry);
-        if (blocked != null) return blocked.Value;
-
-        blocked = CheckPendingState(searchAgent!, searchPath, toolName, null, sessionId, registry);
         if (blocked != null) return blocked.Value;
 
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
@@ -1058,24 +1045,6 @@ public static partial class GuardCommand
             }
         }
 
-        if (IsDydoWaitCommand(command) && runInBackground != true)
-        {
-            if (AgentSession.NormalizeHost(host) == "codex")
-                Console.Error.WriteLine("BLOCKED: On a codex host, register the general wait with 'dydo wait --register' — it writes a durable marker and returns immediately. A foreground 'dydo wait' has no run_in_background field here and dies to the codex tool timeout.");
-            else
-                Console.Error.WriteLine("BLOCKED: 'dydo wait' must run in background. Use run_in_background to avoid blocking other work (or 'dydo wait --register' to write a durable marker instead).");
-            return ExitCodes.ToolError;
-        }
-
-        if (!IsDydoDispatchCommand(command) && !IsDydoWaitAnyForm(command))
-        {
-            if (agent != null)
-            {
-                var blocked = CheckPendingState(agent, null, "bash", TruncateCommand(command), sessionId, registry);
-                if (blocked != null) return blocked.Value;
-            }
-        }
-
         // Phase 2: enrich session context with agent name for race detection.
         if (agent != null)
             registry.StoreSessionContext(sessionId, agent.Name, host, model);
@@ -1130,9 +1099,6 @@ public static partial class GuardCommand
         if (agent != null)
         {
             var blocked = NotifyUnreadMessages(agent, null, "bash", command, sessionId, registry);
-            if (blocked != null) return blocked.Value;
-
-            blocked = CheckPendingState(agent, null, "bash", command, sessionId, registry);
             if (blocked != null) return blocked.Value;
 
             // Must-read enforcement for write-like operations
@@ -1439,23 +1405,6 @@ public static partial class GuardCommand
         return true;
     }
 
-    /// <summary>
-    /// Check for pending wait markers. Returns exit code if blocked, null if OK.
-    /// </summary>
-    private static int? CheckPendingState(
-        AgentState agent, string? path, string? toolName, string? command,
-        string? sessionId, AgentRegistry registry)
-    {
-        var pendingMarkers = SelfHealAndGetPendingMarkers(registry, agent.Name);
-        var missingGeneralWait = MissingGeneralWait(agent, registry);
-        if (pendingMarkers.Count == 0 && !missingGeneralWait)
-            return null;
-
-
-        WritePendingStateBlock(pendingMarkers, missingGeneralWait);
-        return ExitCodes.ToolError;
-    }
-
     private static void WriteMustReadError(AgentState agent)
     {
         Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
@@ -1651,24 +1600,6 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a command is a foreground-blocking 'dydo wait' — i.e. one the H20 rule
-    /// requires to run in the background. Excludes the forms that return immediately:
-    /// '--cancel' (removes a marker) and '--register' (c1-2, #0254 — writes a durable
-    /// general-wait marker keyed to the host PID and returns at once, so there is nothing
-    /// to background; a codex host's hook input carries no run_in_background field and must
-    /// not be blocked by the Claude-only backgrounding rule).
-    /// </summary>
-    internal static bool IsDydoWaitCommand(string command)
-    {
-        if (!DydoWaitCommandRegex().IsMatch(command))
-            return false;
-
-        // Allow 'dydo wait --cancel'/'--register' (and their --task variants) — these return
-        // immediately and must not be forced into the background.
-        return !CancelFlagRegex().IsMatch(command) && !RegisterFlagRegex().IsMatch(command);
-    }
-
-    /// <summary>
     /// Check if a command is a dydo command.
     /// </summary>
     internal static bool IsDydoCommand(string command)
@@ -1677,96 +1608,11 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a command is 'dydo dispatch' (allowed during pending state).
-    /// </summary>
-    private static bool IsDydoDispatchCommand(string command)
-    {
-        return DydoDispatchCommandRegex().IsMatch(command);
-    }
-
-    /// <summary>
     /// Check if a command is a human-only dydo command (roles reset, guard lift/restore, agent clean --force).
     /// </summary>
     internal static bool IsHumanOnlyDydoCommand(string command)
     {
         return HumanOnlyDydoCommandRegex().IsMatch(command);
-    }
-
-    /// <summary>
-    /// Check if a command is 'dydo wait' in any form (allowed during pending state).
-    /// </summary>
-    private static bool IsDydoWaitAnyForm(string command)
-    {
-        return DydoWaitCommandRegex().IsMatch(command);
-    }
-
-    /// <summary>
-    /// Self-heal wait markers with dead listener PIDs, then return non-listening task markers.
-    /// Task markers with listening=true but dead PID flip to listening=false.
-    /// Sentinel markers (e.g. general wait) with dead PID are deleted — they're transient
-    /// per-process state, not "pending" task channels for the agent to register.
-    /// </summary>
-    private static List<Models.WaitMarker> SelfHealAndGetPendingMarkers(AgentRegistry registry, string agentName)
-    {
-        var markers = registry.GetWaitMarkers(agentName);
-        foreach (var marker in markers)
-        {
-            if (!marker.Listening) continue;
-
-            if (marker.Pid == null || !ProcessUtils.IsProcessRunning(marker.Pid.Value))
-            {
-                if (marker.Task.StartsWith('_'))
-                    registry.RemoveWaitMarker(agentName, marker.Task);
-                else
-                    registry.ResetWaitMarkerListening(agentName, marker.Task);
-            }
-        }
-
-        return registry.GetNonListeningWaitMarkers(agentName)
-            .Where(m => !m.Task.StartsWith('_'))
-            .ToList();
-    }
-
-    /// <summary>
-    /// True when the agent has a role set but no listening general wait. Decision 021
-    /// universalises the general-wait obligation: every claimed agent runs a single
-    /// always-active general wait once their role lands, so reachability and message
-    /// surfacing don't depend on role.
-    ///
-    /// A durable general-wait marker (c1-2, #0254 — `dydo wait --register`) satisfies this
-    /// check exactly like a live foreground wait: its Pid is the claimed session's host-liveness
-    /// PID, so the same Listening + IsProcessRunning(Pid) test passes while the host lives and
-    /// fails once it dies (the self-heal sweep then removes the stale marker). No special-casing
-    /// is needed here — liveness is encoded in the marker's Pid.
-    /// </summary>
-    private static bool MissingGeneralWait(AgentState agent, AgentRegistry registry)
-    {
-        if (string.IsNullOrEmpty(agent.Role))
-            return false;
-
-        var markers = registry.GetWaitMarkers(agent.Name);
-        var general = markers.FirstOrDefault(m => m.Task.StartsWith('_'));
-        if (general == null || !general.Listening) return true;
-        if (general.Pid == null || !ProcessUtils.IsProcessRunning(general.Pid.Value)) return true;
-        return false;
-    }
-
-    /// <summary>
-    /// Emit the standard pending-state block message to stderr.
-    /// </summary>
-    private static void WritePendingStateBlock(List<Models.WaitMarker> pendingMarkers, bool missingGeneralWait)
-    {
-        if (pendingMarkers.Count > 0)
-        {
-            var taskNames = string.Join(", ", pendingMarkers.Select(m => m.Task));
-            Console.Error.WriteLine($"BLOCKED: Register waits before continuing. Pending: [{taskNames}].");
-            Console.Error.WriteLine("  Run: dydo wait --task <name> (in background)");
-        }
-        if (missingGeneralWait)
-        {
-            Console.Error.WriteLine("BLOCKED: Agent must keep a general wait active.");
-            Console.Error.WriteLine("  Run: dydo wait (in background), or 'dydo wait --register' for a durable marker (required on a codex host).");
-        }
     }
 
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
@@ -1794,20 +1640,8 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+agent\s+claim\s+(\S+)", RegexOptions.IgnoreCase)]
     private static partial Regex DydoClaimCommandRegex();
 
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+wait\b", RegexOptions.IgnoreCase)]
-    private static partial Regex DydoWaitCommandRegex();
-
-    [GeneratedRegex(@"--cancel\b", RegexOptions.IgnoreCase)]
-    private static partial Regex CancelFlagRegex();
-
-    [GeneratedRegex(@"--register\b", RegexOptions.IgnoreCase)]
-    private static partial Regex RegisterFlagRegex();
-
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s", RegexOptions.IgnoreCase)]
     private static partial Regex DydoCommandRegex();
-
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+dispatch\b", RegexOptions.IgnoreCase)]
-    private static partial Regex DydoDispatchCommandRegex();
 
     internal static string NormalizeForMustReadComparison(string filePath) =>
         ReadTrackingService.NormalizeForMustReadComparison(filePath);

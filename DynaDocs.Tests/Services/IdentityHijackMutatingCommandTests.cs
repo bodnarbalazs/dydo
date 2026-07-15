@@ -204,34 +204,6 @@ public class IdentityHijackMutatingCommandTests : IDisposable
     }
 
     [Fact]
-    public void WaitRegister_EnvPathInterposedForeignWorker_RefusesToRegisterForOuterAgent()
-    {
-        SetupEnvPathInterposedForeignWorker();
-
-        var command = WaitCommand.Create();
-        var (exitCode, _, _) = ConsoleCapture.All(() => command.Parse(["--register"]).Invoke());
-
-        Assert.Equal(ExitCodes.ToolError, exitCode);
-        Assert.Empty(new AgentRegistry().GetWaitMarkers("Adele"));
-    }
-
-    [Fact]
-    public void WaitRegister_EnvPathLegitDispatchedTerminal_RegistersDurableWaitForOwnAgent()
-    {
-        SetupEnvPathLegitDispatchedTerminal();
-
-        var command = WaitCommand.Create();
-        var (exitCode, _, _) = ConsoleCapture.All(() => command.Parse(["--register"]).Invoke());
-
-        Assert.Equal(ExitCodes.Success, exitCode);
-        var general = new AgentRegistry().GetWaitMarkers("Adele")
-            .SingleOrDefault(m => m.Task == "_general-wait");
-        Assert.NotNull(general);
-        Assert.True(general!.Durable);
-        Assert.Equal(AdeleOwnerPid, general.Pid);
-    }
-
-    [Fact]
     public void TaskCreate_UnownedSharedSessionContext_DoesNotStampContextAgentProvenance()
     {
         var (exitCode, _, _) = ConsoleCapture.All(() =>

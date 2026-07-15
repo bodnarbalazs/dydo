@@ -22,7 +22,6 @@ public class CompletionProviderTests
     [InlineData("completions")]
     [InlineData("message")]
     [InlineData("msg")]
-    [InlineData("wait")]
     [InlineData("issue")]
     [InlineData("complete")]
     [InlineData("template")]

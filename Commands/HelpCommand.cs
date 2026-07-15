@@ -55,7 +55,6 @@ public static class HelpCommand
         Console.WriteLine();
         Console.WriteLine("Messaging Commands:");
         Console.WriteLine("  message --to <agent>   Send message to another agent (alias: msg)");
-        Console.WriteLine("  wait [--task <name>]   Wait for incoming message");
         Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");

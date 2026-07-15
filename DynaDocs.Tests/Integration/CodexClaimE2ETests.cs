@@ -67,40 +67,6 @@ public class CodexClaimE2ETests : IntegrationTestBase
         }
     }
 
-    // (0233 ask 3) A legacy codex .session predates ClaimedPid (null). WaitCommand host-liveness must
-    // then fall back to the ancestry walk keyed to the session's OWN host — codex — not the historical
-    // claude default. Resolving to the claude ancestor would anchor liveness to the wrong process.
-    [Fact]
-    public async Task LegacyCodexSession_NullClaimedPid_ResolvesHostLivenessViaCodexAncestry()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-
-        // Overwrite with a legacy-shaped codex session: Host=codex, no ClaimedPid.
-        var sessionPath = Path.Combine(TestDir, "dydo", "agents", "Adele", ".session");
-        File.WriteAllText(sessionPath,
-            $$"""{"Agent":"Adele","SessionId":"sess-legacy-codex","Host":"codex","Claimed":"{{DateTime.UtcNow:o}}"}""");
-
-        var registry = new AgentRegistry(TestDir);
-        Assert.Equal("codex", registry.GetSession("Adele")?.Host);
-        Assert.Null(registry.GetSession("Adele")?.ClaimedPid);
-
-        const int codexAncestor = 7777;
-        const int claudeAncestor = 8888;
-        var prev = ProcessUtils.FindAncestorProcessOverride;
-        ProcessUtils.FindAncestorProcessOverride =
-            (name, _) => name == "codex" ? codexAncestor : name == "claude" ? claudeAncestor : (int?)null;
-        try
-        {
-            // Must pick the codex ancestor (7777), never the claude one (8888).
-            Assert.Equal(codexAncestor, WaitCommand.ResolveHostLivenessPid(registry, "Adele"));
-        }
-        finally
-        {
-            ProcessUtils.FindAncestorProcessOverride = prev;
-        }
-    }
-
     private string WriteCodexTranscript()
     {
         // A ".codex/sessions" path so host inference resolves to codex, mirroring a real codex

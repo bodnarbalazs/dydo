@@ -355,43 +355,6 @@ public class DispatchCommandTests : IntegrationTestBase
 
     #endregion
 
-    #region Inbox Display Tests
-
-    [Fact]
-    public async Task InboxShow_DisplaysEscalatedIndicator()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Create an escalated inbox item
-        CreateEscalatedInboxItem("Adele", "Brian", "code-writer", "urgent-task", "Urgent work");
-
-        // Claim Adele to view inbox
-        await ClaimAgentAsync("Adele");
-
-        var result = await InboxShowAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("[ESCALATED]");
-    }
-
-    [Fact]
-    public async Task InboxShow_NonEscalatedItem_NoIndicator()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Create a non-escalated inbox item
-        CreateInboxItem("Adele", "Brian", "code-writer", "normal-task", "Normal work");
-
-        await ClaimAgentAsync("Adele");
-
-        var result = await InboxShowAsync();
-
-        result.AssertSuccess();
-        Assert.DoesNotContain("[ESCALATED]", result.Stdout);
-    }
-
-    #endregion
-
     #region Combined Flag Tests
 
     [Fact]
@@ -751,40 +714,6 @@ public class DispatchCommandTests : IntegrationTestBase
         Assert.Contains("origin:", content);
     }
 
-    [Fact]
-    public async Task InboxShow_DisplaysOriginWhenDifferentFromSender()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Create inbox item where origin differs from sender
-        CreateInboxItemWithOrigin("Adele", "Brian", "Zara", "code-writer", "auth", "Fix review issues");
-
-        await ClaimAgentAsync("Adele");
-
-        var result = await InboxShowAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("From: Brian");
-        result.AssertStdoutContains("Origin: Zara");
-    }
-
-    [Fact]
-    public async Task InboxShow_HidesOriginWhenSameAsSender()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Create inbox item where origin == sender (first dispatch)
-        CreateInboxItemWithOrigin("Adele", "Brian", "Brian", "code-writer", "auth", "Implement auth");
-
-        await ClaimAgentAsync("Adele");
-
-        var result = await InboxShowAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("From: Brian");
-        Assert.DoesNotContain("Origin:", result.Stdout);
-    }
-
     #endregion
 
     #region Double-Dispatch Race Condition Tests
@@ -1018,22 +947,6 @@ public class DispatchCommandTests : IntegrationTestBase
         // Verify original task name preserved in file content
         var content = File.ReadAllText(inboxFiles[0]);
         Assert.Contains("task: Review Coordinator: Auth", content);
-    }
-
-    [Fact]
-    public async Task Dispatch_TaskNameWithColon_InboxShowDisplaysCorrectly()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        var result = await DispatchAsync("code-writer", "Review Coordinator: Auth", "Implement feature", to: "Brian");
-        result.AssertSuccess();
-
-        // Claim Brian and check inbox
-        await ClaimAgentAsync("Brian");
-        var inboxResult = await InboxShowAsync();
-
-        inboxResult.AssertSuccess();
-        inboxResult.AssertStdoutContains("Review Coordinator: Auth");
     }
 
     #endregion
@@ -1643,12 +1556,6 @@ public class DispatchCommandTests : IntegrationTestBase
         host == "codex"
             ? $"codex -m gpt-5.6-terra --sandbox workspace-write --ask-for-approval on-request '{agentName} --inbox'"
             : $"{host} '{agentName} --inbox'";
-
-    private async Task<CommandResult> InboxShowAsync()
-    {
-        var command = InboxCommand.Create();
-        return await RunAsync(command, "show");
-    }
 
     private void CreateInboxItem(string agentName, string fromAgent, string role, string task, string brief)
     {

@@ -113,13 +113,6 @@ These are defined in the `constraints` array of each role definition file, makin
 | H28 | Direct `git merge` in worktree | `git merge` issued by an agent that is in a dispatch worktree or whose workspace contains a `.merge-source` marker. Forces the merge through `dydo worktree merge` (which runs the safety pre-check). Implemented at `Commands/GuardCommand.cs:758-779` (regex `GitMergeRegex` at `:1317-1318`). | `BLOCKED: Use dydo worktree merge to merge worktree branches. Do not use git merge directly.` |
 | H29 | Human-only dydo subcommands | Agent (any agent identity attached to the session) runs `dydo task approve`, `dydo task reject`, `dydo roles reset`, `dydo guard lift`, or `dydo guard restore`. These are administrative commands reserved for the human. Implemented at `Commands/GuardCommand.cs:620-633`; regex at `:1320-1322`. | `BLOCKED: This command is human-only. Agents cannot run it.` |
 
-### Messaging
-
-| # | Name | Trigger | Message |
-|---|------|---------|---------|
-| H21 | No self-messaging | `dydo msg --to <self>`. | `Cannot send a message to yourself.` |
-| H22 | Cross-human messaging | `dydo msg --to <agent>` where the target agent belongs to a different human. | `Agent '{name}' is not assigned to you (assigned to: {human}).` |
-
 ### Dispatch
 
 | # | Name | Trigger | Message |
@@ -144,10 +137,9 @@ The guardrail system is designed for extension through role definition files (`.
 **What's hard-coded:**
 - Staged access control (H3, H6) and tool blocking (H27)
 - Off-limits enforcement (H2)
-- Bash safety analysis (H17, H18, H20, H26, H28, H29) — direct pattern checks in `Commands/GuardCommand.cs`
+- Bash safety analysis (H17, H18, H26, H28, H29) — direct pattern checks in `Commands/GuardCommand.cs`
 - Release blocking checks (H13, H14, H16)
-- Messaging restrictions (H21–H22)
-- Soft-block marker file logic (S1, S2, S4, S5)
+- Soft-block marker file logic (S1, S2, S5)
 
 **What's a severity-pinned default nudge** (pattern and message editable in `dydo.json`, severity force-restored to `block`):
 - Indirect dydo invocation (H19) — implemented as multiple `block`-severity entries in `Services/ConfigFactory.cs:9-22 DefaultNudges` (npx, dotnet, dotnet run, bash/sh/zsh/cmd/powershell/pwsh, python). `Commands/GuardCommand.cs:587-609 MergeSystemNudges` re-merges these on every guard call: a missing pattern is re-added; a downgraded severity is force-restored to `block`. The pattern text and the message body remain user-editable.

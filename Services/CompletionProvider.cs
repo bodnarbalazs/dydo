@@ -7,7 +7,7 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
-        "dispatch", "inbox", "read", "message", "msg", "task", "issue",
+        "dispatch", "task", "issue",
         "review", "workspace", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
         "watchdog", "worktree", "version", "help"
@@ -32,7 +32,6 @@ public static class CompletionProvider
         ["review"] = ["complete"],
         ["init"] = ["claude", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
-        ["inbox"] = ["list", "show", "clear"],
         ["workspace"] = ["init", "check"],
         ["graph"] = ["stats"],
         ["issue"] = ["create", "list", "resolve"],

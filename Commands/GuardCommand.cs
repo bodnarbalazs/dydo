@@ -598,11 +598,6 @@ public static partial class GuardCommand
 
         // Re-read agent once after identity check (identity check may have modified state)
         agent = registry.GetCurrentAgent(sessionId);
-        if (agent != null)
-        {
-            var blocked = NotifyUnreadMessages(agent, filePath, toolName, null, sessionId, registry);
-            if (blocked != null) return blocked.Value;
-        }
 
         if (agent != null && agent.UnreadMustReads.Count > 0)
         {
@@ -755,9 +750,6 @@ public static partial class GuardCommand
     {
         var searchAgent = registry.GetCurrentAgent(sessionId);
         var blocked = RequireIdentityAndRole(searchAgent, searchPath, toolName, sessionId, registry);
-        if (blocked != null) return blocked.Value;
-
-        blocked = NotifyUnreadMessages(searchAgent!, searchPath, toolName, null, sessionId, registry);
         if (blocked != null) return blocked.Value;
 
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
@@ -1098,9 +1090,6 @@ public static partial class GuardCommand
         var agent = registry.GetCurrentAgent(sessionId);
         if (agent != null)
         {
-            var blocked = NotifyUnreadMessages(agent, null, "bash", command, sessionId, registry);
-            if (blocked != null) return blocked.Value;
-
             // Must-read enforcement for write-like operations
             if (agent.UnreadMustReads.Count > 0)
             {
@@ -1319,90 +1308,6 @@ public static partial class GuardCommand
             Console.Error.WriteLine($"    dydo/agents/{agentName}/modes/*.md");
             Console.Error.WriteLine("  Then run: dydo agent role <role>");
         }
-    }
-
-    /// <summary>
-    /// Notify about unread messages. Returns exit code if blocked, null if OK.
-    /// </summary>
-    internal static int? NotifyUnreadMessages(
-        AgentState agent, string? path, string? toolName, string? command,
-        string? sessionId, AgentRegistry registry)
-    {
-        // Self-heal phantom ids — drop ids whose inbox file is missing. Without this, a
-        // non-atomic inbox clear (crash mid-operation, manual cleanup) leaves the
-        // agent blocked forever: state.md says "N unread" but there is no file to read.
-        if (agent.UnreadMessages.Count > 0)
-        {
-            var workspace = registry.GetAgentWorkspace(agent.Name);
-            var phantoms = agent.UnreadMessages
-                .Where(msgId => FindMessageInfo(workspace, msgId) == null)
-                .ToList();
-            if (phantoms.Count > 0)
-            {
-                foreach (var id in phantoms)
-                    registry.MarkMessageRead(sessionId, id);
-                agent = registry.GetCurrentAgent(sessionId) ?? agent;
-            }
-        }
-
-        if (agent.UnreadMessages.Count == 0)
-            return null;
-
-        if (TryPrintUnreachableInboxRecovery(agent, registry))
-            return ExitCodes.ToolError;
-
-        Console.Error.WriteLine($"NOTICE: You have {agent.UnreadMessages.Count} unread message(s).");
-        foreach (var msgId in agent.UnreadMessages)
-        {
-            var msgInfo = FindMessageInfo(registry.GetAgentWorkspace(agent.Name), msgId);
-            if (msgInfo != null)
-            {
-                var displayPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), msgInfo.Value.FilePath)
-                    .Replace('\\', '/');
-                Console.Error.WriteLine($"  From: {msgInfo.Value.From} | Subject: {msgInfo.Value.Subject ?? "(none)"}");
-                Console.Error.WriteLine($"  File: {displayPath}");
-            }
-        }
-        Console.Error.WriteLine();
-        Console.Error.WriteLine("  Your tool call was valid but paused to deliver this notification.");
-        Console.Error.WriteLine("  Read your message(s) and then clear them to continue:");
-        Console.Error.WriteLine("    1. Read each file listed above");
-        Console.Error.WriteLine("    2. Then: dydo inbox clear --id <id>");
-        Console.Error.WriteLine();
-        Console.Error.WriteLine("  After reading, retry your previous action — it will succeed.");
-        return ExitCodes.ToolError;
-    }
-
-    private static bool TryPrintUnreachableInboxRecovery(AgentState agent, AgentRegistry registry)
-    {
-        var clearSessionId = registry.GetSessionContext();
-        var clearAgent = registry.GetCurrentAgent(clearSessionId);
-        if (clearAgent?.Name.Equals(agent.Name, StringComparison.OrdinalIgnoreCase) == true)
-            return false;
-
-        var session = registry.GetSession(agent.Name);
-        if (session?.ClaimedPid is { } pid && ProcessUtils.IsProcessRunning(pid))
-            return false;
-
-        var workspace = registry.GetAgentWorkspace(agent.Name);
-        var files = agent.UnreadMessages
-            .Select(id => FindMessageInfo(workspace, id)?.FilePath)
-            .Where(path => path != null)
-            .Cast<string>()
-            .ToList();
-        if (files.Count == 0)
-            return false;
-
-        Console.Error.WriteLine($"NOTICE: You have {files.Count} unread message(s) in an inbox this session cannot reach.");
-        Console.Error.WriteLine("  Archive each unreachable file with:");
-        foreach (var file in files)
-        {
-            var displayPath = Path.GetRelativePath(Directory.GetCurrentDirectory(), file).Replace('\\', '/');
-            Console.Error.WriteLine($"    dydo inbox clear --force --file \"{displayPath}\"");
-        }
-        Console.Error.WriteLine();
-        Console.Error.WriteLine("  After archiving, retry your previous action.");
-        return true;
     }
 
     private static void WriteMustReadError(AgentState agent)
@@ -1649,32 +1554,6 @@ public static partial class GuardCommand
     /// <summary>
     /// Extracts from/subject from a message file in an agent's inbox.
     /// </summary>
-    internal static (string From, string? Subject, string FilePath)? FindMessageInfo(string workspace, string messageId)
-    {
-        var inboxPath = Path.Combine(workspace, "inbox");
-        if (!Directory.Exists(inboxPath))
-            return null;
-
-        foreach (var file in Directory.GetFiles(inboxPath, $"{messageId}-msg-*.md"))
-        {
-            try
-            {
-                var content = File.ReadAllText(file);
-                var fields = FrontmatterParser.ParseFields(content);
-                if (fields == null) continue;
-
-                fields.TryGetValue("from", out var from);
-                fields.TryGetValue("subject", out var subject);
-
-                if (from != null)
-                    return (from, subject, file);
-            }
-            catch { }
-        }
-
-        return null;
-    }
-
     /// <summary>
     /// Extracts message ID from an inbox message file path.
     /// Matches paths like */inbox/{id}-msg-*.md and returns the {id} portion.

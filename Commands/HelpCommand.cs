@@ -46,15 +46,8 @@ public static class HelpCommand
         Console.WriteLine("  agent remove <name> [--force]  Remove agent from pool");
         Console.WriteLine("  agent reassign <name> <human>  Reassign agent to different human");
         Console.WriteLine();
-        Console.WriteLine("Dispatch & Inbox Commands:");
+        Console.WriteLine("Dispatch Commands:");
         Console.WriteLine("  dispatch               Dispatch work to another agent");
-        Console.WriteLine("  inbox list             List agents with inbox items");
-        Console.WriteLine("  inbox show             Show current agent's inbox");
-        Console.WriteLine("  inbox clear            Clear processed inbox items");
-        Console.WriteLine("  read <target>          Print an inbox item or file and register the read");
-        Console.WriteLine();
-        Console.WriteLine("Messaging Commands:");
-        Console.WriteLine("  message --to <agent>   Send message to another agent (alias: msg)");
         Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");

@@ -736,34 +736,8 @@ public class AgentLifecycleTests : IntegrationTestBase
         result.AssertStderrContains("unprocessed inbox");
     }
 
-    [Fact]
-    public async Task Release_AllowsAfterInboxCleared()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        // Create an inbox item
-        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
-        Directory.CreateDirectory(inboxPath);
-        File.WriteAllText(Path.Combine(inboxPath, "test-item.md"), """
-            ---
-            id: test123
-            from: Brian
-            role: reviewer
-            task: test-task
-            received: 2024-01-01T00:00:00Z
-            ---
-            # Test
-            """);
-
-        // Clear the inbox
-        var clearResult = await InboxClearAsync(all: true);
-        clearResult.AssertSuccess();
-
-        // Now release should work
-        var result = await ReleaseAgentAsync();
-        result.AssertSuccess();
-    }
+    // Release_AllowsAfterInboxCleared removed with the messaging cut (DR-041) —
+    // it exercised `dydo inbox clear`, which no longer exists.
 
     // Release_PrunesArchiveToTen removed — inbox archive pruning on release
     // is superseded by workspace-level archiving on claim (ArchiveWorkspace + PruneArchive).
@@ -877,16 +851,6 @@ public class AgentLifecycleTests : IntegrationTestBase
         {
             WatchdogService.StartProcessOverride = previousOverride;
         }
-    }
-
-    private async Task<CommandResult> InboxClearAsync(bool all = false, string? id = null)
-    {
-        StoreSessionContext();
-        var command = InboxCommand.Create();
-        var args = new List<string> { "clear" };
-        if (all) args.Add("--all");
-        if (id != null) { args.Add("--id"); args.Add(id); }
-        return await RunAsync(command, args.ToArray());
     }
 
     #endregion

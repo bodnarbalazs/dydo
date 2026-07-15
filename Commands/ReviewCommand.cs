@@ -157,7 +157,6 @@ public static class ReviewCommand
 
         if (agent != null)
         {
-            RouteVerdictMessages(registry, agent, taskName, notes);
             RequireMergeDispatch(registry, agent, taskName);
         }
 
@@ -221,60 +220,4 @@ public static class ReviewCommand
             """;
     }
 
-    private static void RouteVerdictMessages(AgentRegistry registry, Models.AgentState reviewer,
-        string taskName, string? notes)
-    {
-        if (string.IsNullOrEmpty(reviewer.DispatchedBy)) return;
-
-        var dispatcher = reviewer.DispatchedBy;
-        var baseBody = string.IsNullOrEmpty(notes)
-            ? $"Review passed for {taskName}."
-            : $"Review passed for {taskName}.\n\n{notes}";
-
-        var dispatcherState = registry.GetAgentState(dispatcher);
-        if (dispatcherState?.Status == Models.AgentStatus.Working)
-        {
-            MessageService.DeliverInboxMessage(registry, reviewer.Name, dispatcher, baseBody, taskName);
-            Console.WriteLine($"  Verdict sent to {dispatcher}.");
-        }
-        else
-        {
-            Console.WriteLine($"  Dispatcher {dispatcher} is not active; verdict is on the task file.");
-        }
-
-        var ancestor = FindNearestWorkingCanOrchestrateAncestor(registry, dispatcher);
-        if (string.IsNullOrEmpty(ancestor)) return;
-        if (ancestor.Equals(dispatcher, StringComparison.OrdinalIgnoreCase)) return;
-        if (ancestor.Equals(reviewer.Name, StringComparison.OrdinalIgnoreCase)) return;
-
-        var ccBody = string.IsNullOrEmpty(notes)
-            ? $"[CC] Review passed for {taskName} (code-writer: {dispatcher})."
-            : $"[CC] Review passed for {taskName} (code-writer: {dispatcher}).\n\n{notes}";
-        MessageService.DeliverInboxMessage(registry, reviewer.Name, ancestor, ccBody, taskName);
-        Console.WriteLine($"  CC'd orchestrator {ancestor}.");
-    }
-
-    private static string? FindNearestWorkingCanOrchestrateAncestor(AgentRegistry registry, string startAgent)
-    {
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var current = startAgent;
-        while (!string.IsNullOrEmpty(current) && visited.Add(current))
-        {
-            var state = registry.GetAgentState(current);
-            if (state == null) return null;
-            if (state.Status != Models.AgentStatus.Working)
-            {
-                current = state.DispatchedBy ?? "";
-                continue;
-            }
-            if (!string.IsNullOrEmpty(state.Role))
-            {
-                var def = registry.GetRoleDefinition(state.Role);
-                if (def?.CanOrchestrate == true)
-                    return current;
-            }
-            current = state.DispatchedBy ?? "";
-        }
-        return null;
-    }
 }

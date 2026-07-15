@@ -501,15 +501,6 @@ public class TemplateGeneratorTests
     }
 
     [Fact]
-    public void GenerateAboutDynadocsMd_DocumentsInboxCommands()
-    {
-        var content = TemplateGenerator.GenerateAboutDynadocsMd();
-
-        Assert.Contains("dydo inbox list", content);
-        Assert.Contains("dydo inbox show", content);
-    }
-
-    [Fact]
     public void GenerateAboutDynadocsMd_ContainsAgentRoles()
     {
         var content = TemplateGenerator.GenerateAboutDynadocsMd();

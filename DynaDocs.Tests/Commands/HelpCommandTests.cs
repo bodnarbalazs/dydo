@@ -28,7 +28,6 @@ public class HelpCommandTests
         Assert.Contains("agent", output);
         Assert.Contains("guard", output);
         Assert.Contains("dispatch", output);
-        Assert.Contains("inbox", output);
         Assert.Contains("task", output);
         Assert.Contains("review", output);
         Assert.Contains("workspace", output);
@@ -69,16 +68,6 @@ public class HelpCommandTests
         Assert.Contains("task ready-for-review", output);
         Assert.Contains("task done", output);
         Assert.Contains("task list", output);
-    }
-
-    [Fact]
-    public void Help_ListsAllInboxSubcommands()
-    {
-        var output = CaptureHelpOutput();
-
-        Assert.Contains("inbox list", output);
-        Assert.Contains("inbox show", output);
-        Assert.Contains("inbox clear", output);
     }
 
     [Fact]
@@ -127,8 +116,7 @@ public class HelpCommandTests
         Assert.Contains("Documentation Commands:", output);
         Assert.Contains("Agent Workflow Commands:", output);
         Assert.Contains("Agent Management Commands:", output);
-        Assert.Contains("Dispatch & Inbox Commands:", output);
-        Assert.Contains("Messaging Commands:", output);
+        Assert.Contains("Dispatch Commands:", output);
         Assert.Contains("Workspace Commands:", output);
         Assert.Contains("Role Commands:", output);
         Assert.Contains("Validation Commands:", output);

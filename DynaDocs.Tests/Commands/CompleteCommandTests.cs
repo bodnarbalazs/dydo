@@ -211,16 +211,6 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void Inbox_ReturnsSubcommands()
-    {
-        var completions = CompleteCommand.GetCompletions(2, ["dydo", "inbox"]).ToList();
-
-        Assert.Contains("list", completions);
-        Assert.Contains("show", completions);
-        Assert.Contains("clear", completions);
-    }
-
-    [Fact]
     public void Workspace_ReturnsSubcommands()
     {
         var completions = CompleteCommand.GetCompletions(2, ["dydo", "workspace"]).ToList();

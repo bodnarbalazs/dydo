@@ -24,6 +24,24 @@ triage the funnel, and re-establish order across live/dead agent sessions (incl.
 - [ ] Status report to balazs: escalations / gates / triage
 - [ ] Re-dispatch or reclaim dead sessions (Frank, Jack, Noah); Codex (Dexter) reply pending
 
+## DR-041 Simplification Campaign — session state (2026-07-15)
+
+Reclaimed Adele from the interrupted session; the live thread is executing the
+DR-041 simplification campaign (strip orchestration → compiler + knowledge + PM + nudges).
+
+- [x] Landed the gated-green pre-campaign work as a clean baseline: commit `c6a46f23`
+      (DR-036 task-approval reform + 0295 guard-shell fix + Notion chunking + Rail B
+      prompt edits + DR-041/campaign PM records). Build green; suite green (4847/0/0).
+- [x] Guard disarmed by balazs (`dydo guard` → `dydo notguard`). Git is the net.
+- [x] Phase-0 cut order finalized (leaves → branches → trunk) in the campaign plan.
+- [ ] **PAUSED pending Fable.** balazs will swap this conversation's model to Fable
+      (claude-fable-5) tomorrow and execute Rail A then. Prep in flight: detailed
+      Slice-1 leaf-command deletion map + refreshed handoff (executor = Fable in this
+      conversation, not Codex Sol; §2 preconditions already satisfied).
+- See: [DR-041](../decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md),
+  [campaign plan](../backlog/simplification-campaign-plan.md),
+  [handoff](../backlog/simplification-handoff-sol.md).
+
 ## Files Changed
 
 - dydo/project/tasks/chief-of-staff-takeover.md (this file)

@@ -7,9 +7,19 @@ created: 2026-07-14
 created-by: Adele
 ---
 
-# MASTER HANDOFF — dydo 2.1.0 Simplification Campaign (for Codex 5.6 Sol)
+# MASTER HANDOFF — dydo 2.1.0 Simplification Campaign
 
-You are orchestrating a large, deletion-heavy refactor of **dydo** (this repo, `.NET 10`, Windows). A Claude reviewer will review your work **tomorrow**, slice by slice — so your job tonight is to execute correctly AND leave a clean, reviewable trail. Read this whole doc first, then the two source-of-truth records it points to.
+You are orchestrating a large, deletion-heavy refactor of **dydo** (this repo, `.NET 10`, Windows). Read this whole doc first, then the two source-of-truth records it points to.
+
+> ## ⟡ STATUS UPDATE — 2026-07-15 (read this before the rest)
+> **Executor plan changed:** this campaign is now executed by a **Fable (`claude-fable-5`) session in *this* conversation** — balazs swaps the model tomorrow and runs Rail A directly. It is NOT dispatched to Codex Sol, and there is no separate "Claude reviewer tomorrow" — the executor and the review happen in-thread. (The Codex-Sol framing below is historical; the method/fence/ratchet all still apply verbatim.)
+>
+> **§2 preconditions are already DONE — do not redo them:**
+> - ✅ Baseline committed: **`c6a46f23`** ("chore(reform): land DR-036 … clean baseline"). The reform + chunking + guard-fix + records are IN. Working tree is clean apart from two intentional personal files (`.claude/settings.local.json`, `dydo/.obsidian/workspace.json`).
+> - ✅ Guard disarmed by balazs (`dydo guard` → `dydo notguard`). Do NOT re-arm.
+> - ✅ Green baseline verified: `dotnet build` 0/0; suite **4847 passed, 0 failed, 0 skipped** (worktree-isolated runner).
+>
+> **Start here:** Rail A, Slice 1 = the command leaves. (A pre-built per-leaf map was attempted but the mapping agent stalled; the executor derives each leaf's blast radius inline — grep the command/handler names before deleting.) Execute one leaf-cluster per commit, green-ratchet after each (§4/§5 below): whoami → wait (+ guard rule) → messaging cluster (message/inbox/read + ReviewCommand de-wire) → dispatch → workspace → agent (last; AgentRegistry entanglement). Then branches (orphaned services), then trunk (hollow guard → watchdog rework → carve AgentRegistry).
 
 ## 0. Read these first (they are the decision + the plan)
 1. `dydo/project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md` — WHY (the pivot + resolved decisions).

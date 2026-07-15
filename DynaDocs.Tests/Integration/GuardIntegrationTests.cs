@@ -65,66 +65,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Role Permissions (Writes)
-
-    [Fact]
-    public async Task Guard_NoAgent_BlocksWrite()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        var result = await GuardAsync("edit", "src/file.cs");
-
-        // Should block writes without identity (fail-closed)
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("No agent");
-    }
-
-    [Fact]
-    public async Task Guard_NoRole_BlocksWrite()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role
-
-        var result = await GuardAsync("edit", "src/file.cs");
-
-        // Should block writes without role (fail-closed)
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("no role");
-    }
-
-    [Fact]
-    public async Task Guard_NoRole_BlocksWrite_WithGuidanceMessage()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role
-
-        var result = await GuardAsync("edit", "src/file.cs");
-
-        // Error message should include step-by-step guidance
-        result.AssertStderrContains("Read your mode file first");
-        result.AssertStderrContains("dydo agent role <role> --task <task-name>");
-    }
-
-    #endregion
-
-    #region Stage 0 - No Identity (Bootstrap Only)
-
-    [Fact]
-    public async Task Guard_NoIdentity_ReadSourceFile_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        var result = await GuardAsync("read", "src/test.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
+    #region Reads allowed unless off-limits
 
     [Fact]
     public async Task Guard_NoIdentity_ReadRootFile_Allows()
@@ -139,116 +80,17 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_NoIdentity_ReadWorkflow_Allows()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        // workflow.md is a bootstrap file
-        var result = await GuardAsync("read", "dydo/agents/Adele/workflow.md");
-
-        result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_NoIdentity_ReadIndex_Allows()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        // dydo/index.md is a bootstrap file
-        var result = await GuardAsync("read", "dydo/index.md");
-
-        result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_NoIdentity_WriteRootFile_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        // Even bootstrap files can't be written without identity
-        var result = await GuardAsync("write", "CLAUDE.md");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    #endregion
-
-    #region Stage 1 - Identity Claimed (No Role)
-
-    [Fact]
-    public async Task Guard_IdentityNoRole_ReadModeFile_Allows()
+    public async Task Guard_OffLimitsModeFile_Read_Blocks()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
-        // Don't set a role
 
-        // Mode files for claimed agent are readable
-        var result = await GuardAsync("read", "dydo/agents/Adele/modes/code-writer.md");
-
-        result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_IdentityNoRole_ReadOtherAgentModeFile_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role
-
-        // Can't read other agent's mode files without a role
+        // Mode files are off-limits (dydo/agents/*/modes/**) — no onboarding bypass anymore
         var result = await GuardAsync("read", "dydo/agents/Brian/modes/code-writer.md");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
     }
-
-    [Fact]
-    public async Task Guard_IdentityNoRole_ReadSourceFile_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role
-
-        // Source files need a role to read
-        var result = await GuardAsync("read", "src/test.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Fact]
-    public async Task Guard_IdentityNoRole_ReadOwnWorkflow_Allows()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role
-
-        // Own workflow is always a bootstrap file
-        var result = await GuardAsync("read", "dydo/agents/Adele/workflow.md");
-
-        result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_IdentityNoRole_ReadOtherAgentWorkflow_Allows()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role — Stage 1, workflow is still a bootstrap file
-
-        // Before role is set, all workflow.md files are bootstrap files
-        var result = await GuardAsync("read", "dydo/agents/Brian/workflow.md");
-
-        result.AssertSuccess();
-    }
-
-    #endregion
-
-    #region Stage 2 - Identity + Role
 
     [Fact]
     public async Task Guard_IdentityWithRole_ReadSourceFile_Allows()
@@ -264,43 +106,17 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_IdentityWithRole_ReadOtherAgentFiles_Allows()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        // With role set, can read other agents' mode files too
-        var result = await GuardAsync("read", "dydo/agents/Brian/modes/code-writer.md");
-
-        result.AssertSuccess();
-    }
-
-    [Fact]
     public async Task Guard_IdentityWithRole_ReadOtherAgentWorkflow_Blocks()
     {
         await InitProjectAsync("none", "balazs", 3);
         await ClaimAgentAsync("Adele");
         await SetRoleAsync("code-writer");
 
-        // After claiming and setting role, reading another agent's workflow is blocked
+        // Agent workflow files are off-limits (dydo/agents/*/workflow.md)
         var result = await GuardAsync("read", "dydo/agents/Brian/workflow.md");
 
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
-    }
-
-    [Fact]
-    public async Task Guard_IdentityWithRole_ReadOwnWorkflow_Allows()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        // Reading own workflow is always allowed
-        var result = await GuardAsync("read", "dydo/agents/Adele/workflow.md");
-
-        result.AssertSuccess();
     }
 
     [Fact]
@@ -336,19 +152,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     #region Stdin Hook Mode
 
     [Fact]
-    public async Task Guard_StdinHook_ReadWithoutIdentity_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Fact]
     public async Task Guard_StdinHook_ReadBootstrapFile_Allows()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -372,19 +175,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_StdinHook_WriteWithoutIdentity_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
     }
 
     #endregion
@@ -412,25 +202,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Must-Read Enforcement
-
-    [Fact]
-    public async Task Guard_BlocksWriteWhenMustReadsRemain()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Templates already have must-read: true on about.md, architecture.md, coding-standards.md
-        await SetRoleAsync("code-writer", "test-task");
-
-        // Attempt a write — should be blocked since must-reads haven't been read
-        var result = await GuardAsync("edit", "src/file.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("not read the required files");
-        // Should list specific unread files
-        result.AssertStderrContains("about.md");
-    }
+    #region Must-Read (computation retained; enforcement removed)
 
     [Fact]
     public async Task Guard_AllowsWriteAfterAllMustReadsRead()
@@ -456,32 +228,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_TracksReadOfMustReadFile()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        var registry = new AgentRegistry(TestDir);
-        var stateBefore = registry.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(stateBefore);
-        var countBefore = stateBefore.UnreadMustReads.Count;
-        Assert.True(countBefore > 0);
-
-        // Read a must-read file
-        var firstMustRead = stateBefore.UnreadMustReads.First();
-        await GuardAsync("read", firstMustRead);
-
-        // Re-read state — should have one fewer unread
-        var registryAfter = new AgentRegistry(TestDir);
-        var stateAfter = registryAfter.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(stateAfter);
-        Assert.Equal(countBefore - 1, stateAfter.UnreadMustReads.Count);
-        Assert.DoesNotContain(stateAfter.UnreadMustReads,
-            p => p.Equals(firstMustRead, StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
     public async Task Guard_AllowsReadsAlways()
     {
         await InitProjectAsync("none", "balazs", 3);
@@ -498,30 +244,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardAsync("read", "src/some-file.cs");
 
         result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_TracksReadOfMustReadFile_WithAbsolutePath()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        var registry = new AgentRegistry(TestDir);
-        var stateBefore = registry.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(stateBefore);
-        var countBefore = stateBefore.UnreadMustReads.Count;
-
-        // Read a must-read file using its absolute path (as the hook would provide)
-        var firstMustRead = stateBefore.UnreadMustReads.First();
-        var absolutePath = Path.Combine(TestDir, firstMustRead.Replace('/', Path.DirectorySeparatorChar));
-        await GuardAsync("read", absolutePath);
-
-        // Should still track it despite the path format difference
-        var registryAfter = new AgentRegistry(TestDir);
-        var stateAfter = registryAfter.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(stateAfter);
-        Assert.Equal(countBefore - 1, stateAfter.UnreadMustReads.Count);
     }
 
     #endregion
@@ -697,78 +419,14 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Search Tools (Glob/Grep) - Staged Access
+    #region Search Tools (Glob/Grep)
 
     [Theory]
     [InlineData("Glob")]
     [InlineData("Grep")]
-    public async Task Guard_SearchTool_NoIdentity_WithPath_Blocks(string toolName)
+    public async Task Guard_SearchTool_WithPath_Allows(string toolName)
     {
         await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Theory]
-    [InlineData("Glob")]
-    [InlineData("Grep")]
-    public async Task Guard_SearchTool_NoIdentity_NoPath_Blocks(string toolName)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent — no path means CWD, but should still require Stage 2
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Theory]
-    [InlineData("Glob")]
-    [InlineData("Grep")]
-    public async Task Guard_SearchTool_IdentityNoRole_Blocks(string toolName)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Theory]
-    [InlineData("Glob")]
-    [InlineData("Grep")]
-    public async Task Guard_SearchTool_IdentityNoRole_NoPath_Blocks(string toolName)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't set a role — no path should still be blocked without role
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-    }
-
-    [Theory]
-    [InlineData("Glob")]
-    [InlineData("Grep")]
-    public async Task Guard_SearchTool_IdentityWithRole_WithPath_Allows(string toolName)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -779,13 +437,10 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Theory]
     [InlineData("Glob")]
     [InlineData("Grep")]
-    public async Task Guard_SearchTool_IdentityWithRole_NoPath_Allows(string toolName)
+    public async Task Guard_SearchTool_NoPath_Allows(string toolName)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
-        // No path = search from CWD — should be allowed at Stage 2
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
@@ -919,27 +574,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("dydo worktree merge");
     }
 
-    [Fact]
-    public async Task Guard_GitMerge_WithMergeSource_MustReadFirst()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        // Don't call ReadMustReadsAsync — leave must-reads unread
-        await SetRoleAsync("code-writer", "test-task");
-
-        // Place .merge-source marker
-        var workspace = Path.Combine(DydoDir, "agents", "Adele");
-        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"git merge feature-branch\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        // Must-read enforcement fires before git merge block
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("not read the required files");
-    }
-
     [Theory]
     [InlineData("git status")]
     [InlineData("git commit -m 'test'")]
@@ -953,65 +587,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         await ReadMustReadsAsync();
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertSuccess();
-    }
-
-    #endregion
-
-    #region H28: Human-Only Commands
-
-    [Theory]
-    [InlineData("dydo roles reset")]
-    [InlineData("dydo guard lift Brian")]
-    [InlineData("dydo guard restore Brian")]
-    [InlineData("dydo agent clean Charlie --force")]
-    [InlineData("dydo agent clean --all --force")]
-    public async Task Guard_HumanOnlyCommand_AgentClaimed_Blocks(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command.Replace("\"", "\\\"") + "\"}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("human-only");
-    }
-
-    [Theory]
-    [InlineData("dydo roles reset")]
-    [InlineData("dydo guard lift Brian")]
-    [InlineData("dydo guard restore Brian")]
-    [InlineData("dydo agent clean Charlie --force")]
-    public async Task Guard_HumanOnlyCommand_NoAgent_Allows(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // No agent claimed — caller is human
-
-        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command.Replace("\"", "\\\"") + "\"}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertSuccess();
-    }
-
-    [Theory]
-    [InlineData("dydo task list")]
-    [InlineData("dydo task create foo")]
-    [InlineData("dydo task done foo")]
-    [InlineData("dydo agent status")]
-    [InlineData("dydo inbox show")]
-    [InlineData("dydo agent clean Charlie")]
-    public async Task Guard_NonHumanOnlyDydoCommand_AgentClaimed_Allows(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
@@ -1045,37 +620,6 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("plan mode");
-    }
-
-    #endregion
-
-    #region Agent Tool - Staged Access
-
-    [Fact]
-    public async Task Guard_AgentTool_NoIdentity_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        Assert.DoesNotContain("dydo dispatch", result.Stderr);
-    }
-
-    [Fact]
-    public async Task Guard_AgentTool_IdentityNoRole_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        Assert.DoesNotContain("dydo dispatch", result.Stderr);
     }
 
     #endregion

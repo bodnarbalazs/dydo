@@ -48,21 +48,6 @@ public class WorkflowTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Review_Complete_Pass_AssignedAgent_IsRefused()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await TaskCreateAsync("self-review");
-        await TaskReadyForReviewAsync("self-review", "Done");
-
-        var result = await ReviewCompleteAsync("self-review", "pass");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("cannot pass their own review");
-        AssertFileContains("dydo/project/tasks/self-review.md", "status: in-review");
-    }
-
-    [Fact]
     public async Task Review_Complete_Fail()
     {
         await InitProjectAsync("none", "balazs", 3);

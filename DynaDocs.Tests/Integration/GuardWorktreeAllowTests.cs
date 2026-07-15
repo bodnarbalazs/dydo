@@ -60,10 +60,10 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeRead_Blocked_NoAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        // No agent claimed — read of non-bootstrap file should be blocked
         GuardCommand.IsWorktreeContextOverride = () => true;
 
-        var result = await GuardAsync("read", "src/test.cs");
+        // Off-limits read (dydo/index.md) is blocked — verify no allow JSON leaks into stdout
+        var result = await GuardAsync("read", "dydo/index.md");
 
         result.AssertExitCode(2);
         Assert.DoesNotContain(AllowJson, result.Stdout);
@@ -173,61 +173,18 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
         Assert.DoesNotContain(AllowJson, result.Stdout);
     }
 
-    [Fact]
-    public async Task WorktreeRead_NoIdentity_Blocked()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        // No agent claimed
-        GuardCommand.IsWorktreeContextOverride = () => true;
-
-        var result = await GuardAsync("read", "src/code.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        Assert.DoesNotContain(AllowJson, result.Stdout);
-    }
-
-    [Fact]
-    public async Task WorktreeRead_NoRole_NonBootstrapFile_Blocked()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        // No role set
-        GuardCommand.IsWorktreeContextOverride = () => true;
-
-        var result = await GuardAsync("read", "src/code.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        Assert.DoesNotContain(AllowJson, result.Stdout);
-    }
-
     #endregion
 
-    #region Staged Access: Bootstrap Reads in Worktree
+    #region Non-Off-Limits Reads in Worktree
 
     [Fact]
-    public async Task WorktreeRead_BootstrapFile_NoIdentity_AllowsWithJson()
+    public async Task WorktreeRead_RootFile_NoIdentity_AllowsWithJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        // No agent — but CLAUDE.md is a bootstrap file (always readable)
+        // No agent — CLAUDE.md is not off-limits, so it is readable and emits allow JSON
         GuardCommand.IsWorktreeContextOverride = () => true;
 
         var result = await GuardAsync("read", "CLAUDE.md");
-
-        result.AssertSuccess();
-        result.AssertStdoutContains(AllowJson);
-    }
-
-    [Fact]
-    public async Task WorktreeRead_ModeFile_ClaimedNoRole_AllowsWithJson()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        // Claimed but no role — mode files are readable at Stage 1
-        GuardCommand.IsWorktreeContextOverride = () => true;
-
-        var result = await GuardAsync("read", "dydo/agents/Adele/modes/code-writer.md");
 
         result.AssertSuccess();
         result.AssertStdoutContains(AllowJson);

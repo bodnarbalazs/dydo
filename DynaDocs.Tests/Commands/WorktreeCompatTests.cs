@@ -213,199 +213,6 @@ public class WorktreeCompatTests : IDisposable
     }
 
     [Fact]
-    public void IsReadAllowed_NullPath_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsReadAllowed(null, null));
-    }
-
-    [Fact]
-    public void IsReadAllowed_EmptyPath_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsReadAllowed("", null));
-    }
-
-    [Fact]
-    public void IsReadAllowed_NoAgent_BootstrapFile_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsReadAllowed("README.md", null));
-    }
-
-    [Fact]
-    public void IsReadAllowed_NoAgent_NonBootstrapFile_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsReadAllowed("dydo/understand/about.md", null));
-    }
-
-    [Fact]
-    public void IsReadAllowed_AgentWithRole_OtherAgentWorkflow_ReturnsFalse()
-    {
-        var agent = new AgentState { Name = "Adele", Role = "code-writer" };
-        Assert.False(GuardCommand.IsReadAllowed("dydo/agents/Brian/workflow.md", agent));
-    }
-
-    [Fact]
-    public void IsReadAllowed_AgentWithRole_OwnWorkflow_ReturnsTrue()
-    {
-        var agent = new AgentState { Name = "Adele", Role = "code-writer" };
-        Assert.True(GuardCommand.IsReadAllowed("dydo/agents/Adele/workflow.md", agent));
-    }
-
-    [Fact]
-    public void IsReadAllowed_AgentWithRole_AnyFile_ReturnsTrue()
-    {
-        var agent = new AgentState { Name = "Adele", Role = "code-writer" };
-        Assert.True(GuardCommand.IsReadAllowed("Commands/Foo.cs", agent));
-    }
-
-    [Fact]
-    public void IsBootstrapFile_RootFile_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsBootstrapFile("CLAUDE.md"));
-    }
-
-    [Fact]
-    public void IsBootstrapFile_SingleComponentPath_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsBootstrapFile("dydo.json"));
-    }
-
-    [Fact]
-    public void IsBootstrapFile_IndexMd_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsBootstrapFile("dydo/index.md"));
-    }
-
-    [Fact]
-    public void IsBootstrapFile_DeepFile_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsBootstrapFile("dydo/understand/about.md"));
-    }
-
-    [Fact]
-    public void IsOtherAgentWorkflow_DifferentAgent_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsOtherAgentWorkflow("dydo/agents/Brian/workflow.md", "Adele"));
-    }
-
-    [Fact]
-    public void IsOtherAgentWorkflow_SameAgent_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsOtherAgentWorkflow("dydo/agents/Adele/workflow.md", "Adele"));
-    }
-
-    [Fact]
-    public void IsOtherAgentWorkflow_NotWorkflow_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsOtherAgentWorkflow("dydo/agents/Brian/state.md", "Adele"));
-    }
-
-    [Fact]
-    public void ExtractMessageIdFromPath_ValidInboxPath_ReturnsId()
-    {
-        Assert.Equal("abc12345", GuardCommand.ExtractMessageIdFromPath("dydo/agents/Adele/inbox/abc12345-msg-task.md"));
-    }
-
-    [Fact]
-    public void ExtractMessageIdFromPath_NonInboxPath_ReturnsNull()
-    {
-        Assert.Null(GuardCommand.ExtractMessageIdFromPath("dydo/agents/Adele/state.md"));
-    }
-
-    [Fact]
-    public void NormalizeForMustReadComparison_DydoPath_ExtractsDydoRelative()
-    {
-        var result = GuardCommand.NormalizeForMustReadComparison("C:/project/dydo/understand/about.md");
-        Assert.Equal("dydo/understand/about.md", result);
-    }
-
-    [Fact]
-    public void NormalizeForMustReadComparison_NonDydoPath_ReturnsNormalized()
-    {
-        var result = GuardCommand.NormalizeForMustReadComparison("Commands/Foo.cs");
-        Assert.Equal("Commands/Foo.cs", result);
-    }
-
-    [Fact]
-    public void IsBootstrapFile_PathWithLeadingSlash_SingleComponent_ReturnsTrue()
-    {
-        // Paths like "/README.md" split to ["README.md"] — single component
-        Assert.True(GuardCommand.IsBootstrapFile("/README.md"));
-    }
-
-    [Fact]
-    public void IsBootstrapFile_WorkflowMd_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsBootstrapFile("dydo/agents/Adele/workflow.md"));
-    }
-
-    [Fact]
-    public void IsModeFile_MatchingAgent_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsModeFile("dydo/agents/Adele/modes/code-writer.md", "Adele"));
-    }
-
-    [Fact]
-    public void IsModeFile_DifferentAgent_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsModeFile("dydo/agents/Brian/modes/code-writer.md", "Adele"));
-    }
-
-    [Fact]
-    public void IsModeFile_NonModeFile_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsModeFile("dydo/agents/Adele/state.md", "Adele"));
-    }
-
-    [Fact]
-    public void IsAnyModeFile_ModeFile_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.IsAnyModeFile("dydo/agents/Brian/modes/reviewer.md"));
-    }
-
-    [Fact]
-    public void IsAnyModeFile_NonModeFile_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsAnyModeFile("dydo/agents/Brian/workflow.md"));
-    }
-
-    [Fact]
-    public void IsReadAllowed_AgentNoRole_ModeFile_ReturnsTrue()
-    {
-        var agent = new AgentState { Name = "Adele" };
-        Assert.True(GuardCommand.IsReadAllowed("dydo/agents/Adele/modes/code-writer.md", agent));
-    }
-
-    [Fact]
-    public void IsReadAllowed_AgentNoRole_NonBootstrapNonMode_ReturnsFalse()
-    {
-        var agent = new AgentState { Name = "Adele" };
-        Assert.False(GuardCommand.IsReadAllowed("Commands/Foo.cs", agent));
-    }
-
-    [Fact]
-    public void ParseClaimCommand_ValidClaim_ReturnsTrueWithName()
-    {
-        var (isClaim, name) = GuardCommand.ParseClaimCommand("dydo agent claim Adele");
-        Assert.True(isClaim);
-        Assert.Equal("Adele", name);
-    }
-
-    [Fact]
-    public void ParseClaimCommand_AutoClaim_ReturnsTrueWithAuto()
-    {
-        var (isClaim, name) = GuardCommand.ParseClaimCommand("dydo agent claim auto");
-        Assert.True(isClaim);
-        Assert.Equal("auto", name);
-    }
-
-    [Fact]
-    public void ParseClaimCommand_NonClaimCommand_ReturnsFalse()
-    {
-        var (isClaim, _) = GuardCommand.ParseClaimCommand("dydo whoami");
-        Assert.False(isClaim);
-    }
-
-    [Fact]
     public void IsDydoCommand_DydoPrefix_ReturnsTrue()
     {
         Assert.True(GuardCommand.IsDydoCommand("dydo whoami"));
@@ -415,18 +222,6 @@ public class WorktreeCompatTests : IDisposable
     public void IsDydoCommand_NonDydo_ReturnsFalse()
     {
         Assert.False(GuardCommand.IsDydoCommand("dotnet build"));
-    }
-
-    [Fact]
-    public void IsHumanOnlyDydoCommand_TaskDone_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsHumanOnlyDydoCommand("dydo task done"));
-    }
-
-    [Fact]
-    public void IsHumanOnlyDydoCommand_AgentClaim_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.IsHumanOnlyDydoCommand("dydo agent claim auto"));
     }
 
     [Fact]
@@ -443,12 +238,6 @@ public class WorktreeCompatTests : IDisposable
         var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dydo whoami"));
         Assert.False(matched);
-    }
-
-    [Fact]
-    public void ExtractMessageIdFromPath_BackslashPath_ReturnsId()
-    {
-        Assert.Equal("abc12345", GuardCommand.ExtractMessageIdFromPath(@"dydo\agents\Adele\inbox\abc12345-msg-task.md"));
     }
 
     [Fact]
@@ -481,39 +270,6 @@ public class WorktreeCompatTests : IDisposable
         var matched = ConfigFactory.DefaultNudges.Any(n =>
             new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("python dydo whoami"));
         Assert.True(matched);
-    }
-
-    [Fact]
-    public void ShouldBypassOffLimits_BootstrapFile_ReturnsTrue()
-    {
-        Assert.True(GuardCommand.ShouldBypassOffLimits("dydo/index.md", null));
-    }
-
-    [Fact]
-    public void ShouldBypassOffLimits_ModeFileForAgent_ReturnsTrue()
-    {
-        var agent = new AgentState { Name = "Adele" };
-        Assert.True(GuardCommand.ShouldBypassOffLimits("dydo/agents/Adele/modes/code-writer.md", agent));
-    }
-
-    [Fact]
-    public void ShouldBypassOffLimits_AnyModeFileWithRole_ReturnsTrue()
-    {
-        var agent = new AgentState { Name = "Adele", Role = "code-writer" };
-        Assert.True(GuardCommand.ShouldBypassOffLimits("dydo/agents/Brian/modes/reviewer.md", agent));
-    }
-
-    [Fact]
-    public void ShouldBypassOffLimits_NonBootstrapNoAgent_ReturnsFalse()
-    {
-        Assert.False(GuardCommand.ShouldBypassOffLimits("Commands/Foo.cs", null));
-    }
-
-    [Fact]
-    public void ShouldBypassOffLimits_NonModeFileWithAgent_ReturnsFalse()
-    {
-        var agent = new AgentState { Name = "Adele" };
-        Assert.False(GuardCommand.ShouldBypassOffLimits("Commands/Foo.cs", agent));
     }
 
     [Fact]
@@ -570,19 +326,6 @@ public class WorktreeCompatTests : IDisposable
 
         var result = GuardCommand.CheckBashFileOperation(op, "cp a.txt b.txt", null, offLimits, registry);
         Assert.Null(result);
-    }
-
-    [Fact]
-    public void CheckBashFileOperation_ReadOp_NoAgent_BlocksNonBootstrapPath()
-    {
-        // An unclaimed agent should not be able to read non-bootstrap files via bash
-        var op = new FileOperation { Type = FileOperationType.Read, Path = "Commands/GuardCommand.cs", Command = "cat" };
-        var offLimits = new OffLimitsService();
-        var registry = CreateRegistryWithBasePath(Path.Combine(_testDir, "bash-staged-read"));
-
-        var result = GuardCommand.CheckBashFileOperation(op, "cat Commands/GuardCommand.cs", null, offLimits, registry);
-        Assert.NotNull(result);
-        Assert.Equal(2, result.Value);
     }
 
     [Fact]

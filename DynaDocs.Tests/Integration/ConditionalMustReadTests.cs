@@ -54,42 +54,6 @@ public class ConditionalMustReadTests : IntegrationTestBase
             p => p.Contains("how-to-merge-worktrees.md"));
     }
 
-    [Fact]
-    public async Task Guard_MergeCodeWriter_BlockedUntilMergeGuideRead()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-
-        var workspace = Path.Combine(TestDir, "dydo/agents/Adele");
-        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/feature-branch");
-
-        await SetRoleAsync("code-writer", "feature-merge");
-
-        // Read all must-reads EXCEPT the merge guide
-        var registry = new AgentRegistry(TestDir);
-        var state = registry.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(state);
-
-        foreach (var mustRead in state.UnreadMustReads.ToList())
-        {
-            if (!mustRead.Contains("how-to-merge-worktrees.md"))
-                await GuardAsync("read", mustRead);
-        }
-
-        // Write should still be blocked (merge guide not read)
-        var writeResult = await GuardAsync("edit", "src/file.cs");
-        writeResult.AssertExitCode(2);
-        writeResult.AssertStderrContains("how-to-merge-worktrees.md");
-
-        // Now read the merge guide
-        var mergeGuide = state.UnreadMustReads.First(p => p.Contains("how-to-merge-worktrees.md"));
-        await GuardAsync("read", mergeGuide);
-
-        // Write should now succeed
-        var writeResult2 = await GuardAsync("edit", "src/file.cs");
-        writeResult2.AssertSuccess();
-    }
-
     #endregion
 
     #region Conditional Must-Read: Merge Reviewer

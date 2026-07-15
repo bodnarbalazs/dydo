@@ -130,25 +130,6 @@ public class GuardWorktreeAllowBashWriteTests : IntegrationTestBase
         Assert.Empty(result.Stdout.Trim());
     }
 
-    [Fact]
-    public async Task WorktreeWrite_GuardLifted_OutputsAllowJson()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
-        GuardCommand.IsWorktreeContextOverride = () => true;
-
-        // Lift the guard so the RBAC-skip path is exercised
-        var liftService = new GuardLiftService(TestDir);
-        liftService.Lift("Adele", "testuser", minutes: 5);
-
-        var result = await GuardAsync("edit", "src/test.cs");
-
-        result.AssertSuccess();
-        result.AssertStdoutContains(AllowJson);
-    }
-
     #endregion
 
     #region Security: Blocked Operations Never Emit Allow
@@ -163,21 +144,6 @@ public class GuardWorktreeAllowBashWriteTests : IntegrationTestBase
         GuardCommand.IsWorktreeContextOverride = () => true;
 
         var result = await GuardAsync("edit", ".env");
-
-        result.AssertExitCode(2);
-        Assert.DoesNotContain(AllowJson, result.Stdout);
-    }
-
-    [Fact]
-    public async Task WorktreeBash_HumanOnlyCommand_Blocked_NoAllowJson()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
-        GuardCommand.IsWorktreeContextOverride = () => true;
-
-        var result = await GuardWithStdinAsync(BashJson("dydo guard lift"));
 
         result.AssertExitCode(2);
         Assert.DoesNotContain(AllowJson, result.Stdout);

@@ -91,12 +91,6 @@ public static class ReviewCommand
             return ExitCodes.ToolError;
         }
 
-        if (status == "pass" && IsSelfReview(content, agent))
-        {
-            ConsoleOutput.WriteError($"Task {taskName} is assigned to {agent!.Name}; the implementer cannot pass their own review.");
-            return ExitCodes.ToolError;
-        }
-
         if (status == "pass")
             return CompletePass(registry, agent, taskPath, content, taskName, notes);
 
@@ -107,20 +101,6 @@ public static class ReviewCommand
     {
         var statusMatch = Regex.Match(content, @"status: ([\w-]+)");
         return statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
-    }
-
-    /// <summary>
-    /// True when the reviewing agent is the agent the task is assigned to.
-    /// The implementer may not pass their own review.
-    /// </summary>
-    private static bool IsSelfReview(string content, Models.AgentState? agent)
-    {
-        if (agent == null) return false;
-
-        var assignedMatch = Regex.Match(content, @"^assigned:\s*(.+)$", RegexOptions.Multiline);
-        var assigned = assignedMatch.Success ? assignedMatch.Groups[1].Value.Trim() : null;
-
-        return string.Equals(agent.Name, assigned, StringComparison.OrdinalIgnoreCase);
     }
 
     private static (string Name, string ProvenanceLines) ResolveReviewer(AgentRegistry registry, Models.AgentState? agent)

@@ -148,7 +148,7 @@ Fill out `about.md` with your project context and adjust `coding-standards.md` t
 - **Roles** — customize the shipped roles or scaffold new ones with `dydo roles create <name>`; re-run `dydo sync`.
 - **Template additions** — drop markdown into `dydo/_system/template-additions/`; templates have `{{include:name}}` hooks that survive `dydo template update`.
 
-**Tip:** For anything advanced, don't hand-write the files. Talk it through with a co-thinker, point them at the [dydo repo](https://github.com/bodnarbalazs/dydo), lift the guard for them (`dydo guard lift <agent> 5`), and have them do it. Then `dydo validate`.
+**Tip:** For anything advanced, don't hand-write the files. Talk it through with a co-thinker, point them at the [dydo repo](https://github.com/bodnarbalazs/dydo), and have them do it. Then `dydo validate`.
 
 You're ready to go. Keep docs accurate to your intent — they're the memory your agents rely on.
 
@@ -354,8 +354,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | Command | Description |
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-| **`dydo guard lift <agent> [minutes]`** | **Temporarily lift guard restrictions** |
-| `dydo guard restore <agent>` | Restore guard restrictions |
 | `dydo worktree <...>` | Manage git worktrees for parallel agents |
 | `dydo watchdog <...>` | Manage the auto-close / attention watchdog |
 

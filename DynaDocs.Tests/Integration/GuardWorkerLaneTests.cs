@@ -205,53 +205,17 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
     #endregion
 
-    #region Cross-Agent Workspace Protection
+    #region Tier-1 Writes (identity-free)
 
     [Fact]
-    public async Task Tier1_CannotWriteAnotherAgentsWorkspace()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
-
-        var own = await GuardAsync("edit", "dydo/agents/Adele/plan-x.md");
-        own.AssertSuccess();
-
-        var other = await GuardAsync("edit", "dydo/agents/Brian/plan-x.md");
-        other.AssertExitCode(2);
-        other.AssertStderrContains("another agent's workspace");
-    }
-
-    #endregion
-
-    #region Tier-1 Writes After RBAC Removal
-
-    [Fact]
-    public async Task Tier1_OnboardedAgent_CanWriteOutsideOldRolePaths()
+    public async Task Tier1_Agent_CanWriteOutsideOldRolePaths()
     {
         await InitProjectAsync();
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
-        // Pre-024 RBAC would block a code-writer from decisions/**; now only
-        // off-limits and nudges constrain an onboarded Tier-1 agent.
+        // Only off-limits and nudges constrain writes now — no RBAC, no identity gate.
         var result = await GuardAsync("edit", "dydo/project/decisions/099-test.md");
 
         result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Tier1_UnclaimedAgent_StillBlockedFromWrites()
-    {
-        await InitProjectAsync();
-
-        // Staged onboarding is unchanged for Tier-1: no identity, no writes
-        var result = await GuardAsync("edit", "src/Foo.cs");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
     }
 
     #endregion

@@ -47,7 +47,6 @@ internal partial class DydoConfigJsonContext : JsonSerializerContext { }
 [JsonSerializable(typeof(AgentSession))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(WaitMarker))]
-[JsonSerializable(typeof(GuardLiftMarker))]
 [JsonSerializable(typeof(ModelCap))]
 [JsonSerializable(typeof(ModelCapBinding))]
 [JsonSerializable(typeof(List<ModelCapBinding>))]

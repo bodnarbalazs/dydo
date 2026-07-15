@@ -68,9 +68,6 @@ public static partial class GuardCommand
             return Execute(cliAction, cliPath, cliCommand);
         });
 
-        command.Subcommands.Add(GuardLiftCommand.CreateLiftCommand());
-        command.Subcommands.Add(GuardLiftCommand.CreateRestoreCommand());
-
         return command;
     }
 
@@ -469,24 +466,18 @@ public static partial class GuardCommand
 
         var routed = RouteToolLayers(
             filePath, action, bashCommand, toolName, searchPath, runInBackground,
-            sessionId, ctx.Host, ctx.Model, offLimitsService, bashAnalyzer, registry);
+            sessionId, offLimitsService, bashAnalyzer, registry);
         if (routed != null) return routed.Value;
 
-        // ============================================================
-        // SECURITY LAYER 3: Staged access control
-        // ============================================================
-
-        // Get current agent (may be null if not claimed)
-        var agent = registry.GetCurrentAgent(sessionId);
-
-        // For Read operations, apply staged access control
+        // Reads are allowed for anyone once past off-limits (checked in RouteToolLayers).
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
         {
-            return HandleReadOperation(filePath, toolName, agent, sessionId, registry);
+            EmitWorktreeAllowIfNeeded();
+            return ExitCodes.Success;
         }
 
-        // For write/edit operations
-        return HandleWriteOperation(filePath, action, toolName, agent, sessionId, registry, ctx.AgentType);
+        // Writes are allowed once past off-limits; only tool-scoped nudges remain.
+        return HandleWriteOperation(filePath, toolName, registry, ctx.AgentType);
     }
 
     /// <summary>
@@ -549,26 +540,25 @@ public static partial class GuardCommand
     /// </summary>
     private static int? RouteToolLayers(
         string? filePath, string? action, string? bashCommand, string? toolName,
-        string? searchPath, bool? runInBackground, string? sessionId, string host, string model,
+        string? searchPath, bool? runInBackground, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
         // SECURITY LAYER 1: off-limits patterns for direct file operations.
-        // For reads, bootstrap/mode files bypass off-limits based on staged access.
         if (!string.IsNullOrEmpty(filePath))
         {
-            var blocked = CheckDirectFileOffLimits(filePath, action, toolName, sessionId, offLimitsService, registry);
+            var blocked = BlockIfPathOffLimits(filePath, toolName, sessionId, offLimitsService, registry);
             if (blocked != null) return blocked.Value;
         }
 
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(toolName, bashCommand))
         {
-            return HandleBashCommand(bashCommand!, sessionId, host, model, offLimitsService, bashAnalyzer, registry, runInBackground);
+            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry, runInBackground);
         }
 
-        // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — require
-        // Stage 2 (identity + role) because they scan broadly across directories.
+        // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — off-limits applies
+        // to the search root, and the Agent tool gets the Tier-2 worker-lane notice.
         if (toolName != null && SearchTools.Contains(toolName))
         {
             return HandleSearchTool(searchPath, toolName, sessionId, offLimitsService, registry);
@@ -587,29 +577,10 @@ public static partial class GuardCommand
     }
 
     private static int HandleWriteOperation(
-        string? filePath, string? action, string? toolName, AgentState? agent,
-        string? sessionId, AgentRegistry registry, string? agentType = null)
+        string? filePath, string? toolName, AgentRegistry registry, string? agentType = null)
     {
         if (string.IsNullOrEmpty(filePath))
             return ExitCodes.Success;
-
-        var identityBlock = RequireWriteIdentity(agent, filePath, toolName, sessionId, registry);
-        if (identityBlock != null) return identityBlock.Value;
-
-        // Re-read agent once after identity check (identity check may have modified state)
-        agent = registry.GetCurrentAgent(sessionId);
-
-        if (agent != null && agent.UnreadMustReads.Count > 0)
-        {
-            WriteMustReadError(agent);
-            return ExitCodes.ToolError;
-        }
-
-        // Per-role path RBAC removed (Decision 024 §2): off-limits + nudges are the
-        // universal enforcement; coarse scope belongs to native permission profiles.
-        // The one identity-scoped exception that survives: no cross-agent workspace writes.
-        var crossAgent = BlockIfCrossAgentWorkspace(filePath, agent, toolName, null, sessionId, registry);
-        if (crossAgent != null) return crossAgent.Value;
 
         // Tool-scoped nudges (Decision 026 §4) apply to Tier-1 only: absence of
         // agent_type is the Tier-1 signal (Decision 024 verification). Tier-2 worker
@@ -667,7 +638,7 @@ public static partial class GuardCommand
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
-                ctx.BashCommand!, ctx.SessionId, AgentSession.UnknownHost, AgentSession.UnknownModel,
+                ctx.BashCommand!, ctx.SessionId,
                 offLimitsService, bashAnalyzer, registry, runInBackground, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
@@ -701,62 +672,15 @@ public static partial class GuardCommand
         return ExitCodes.ToolError;
     }
 
-    private static int? CheckDirectFileOffLimits(
-        string filePath, string? action, string? toolName, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry)
-    {
-        var agentForOffLimits = registry.GetCurrentAgent(sessionId);
-
-        if (action == "read" && ShouldBypassOffLimits(filePath, agentForOffLimits))
-            return null;
-
-        return BlockIfPathOffLimits(filePath, toolName, sessionId, offLimitsService, registry);
-    }
-
-    internal static bool ShouldBypassOffLimits(string filePath, AgentState? agent)
-    {
-        if (IsBootstrapFile(filePath))
-            return true;
-        if (agent != null && IsModeFile(filePath, agent.Name))
-            return true;
-        if (agent != null && !string.IsNullOrEmpty(agent.Role) && IsAnyModeFile(filePath))
-            return true;
-        return false;
-    }
-
-    private static int HandleReadOperation(
-        string? filePath, string? toolName, AgentState? agent, string? sessionId,
-        AgentRegistry registry)
-    {
-        if (!IsReadAllowed(filePath, agent))
-        {
-            WriteAccessDeniedError(agent?.Name, null);
-            return ExitCodes.ToolError;
-        }
-
-        TrackReadCompletion(agent, filePath, sessionId, registry);
-
-        EmitWorktreeAllowIfNeeded();
-
-        return ExitCodes.Success;
-    }
-
-    private static void TrackReadCompletion(AgentState? agent, string? filePath, string? sessionId, AgentRegistry registry) =>
-        ReadTrackingService.TrackReadCompletion(agent, filePath, sessionId, registry);
-
     private static int HandleSearchTool(
         string? searchPath, string? toolName, string? sessionId,
         IOffLimitsService offLimitsService, AgentRegistry registry)
     {
-        var searchAgent = registry.GetCurrentAgent(sessionId);
-        var blocked = RequireIdentityAndRole(searchAgent, searchPath, toolName, sessionId, registry);
-        if (blocked != null) return blocked.Value;
-
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
         {
             Console.Error.WriteLine("NOTICE: You invoked Claude Code's built-in Agent tool. Sub-agent tool calls run in "
                 + "the Tier-2 worker lane: anonymous, audited under their agent_id/agent_type, governed by the universal "
-                + "guard layers (off-limits, dangerous-bash, nudges) — not by your identity or onboarding state.");
+                + "guard layers (off-limits, dangerous-bash, nudges).");
         }
 
         if (!string.IsNullOrEmpty(searchPath))
@@ -777,8 +701,6 @@ public static partial class GuardCommand
     private static int HandleBashCommand(
         string command,
         string? sessionId,
-        string host,
-        string model,
         IOffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry,
@@ -799,7 +721,7 @@ public static partial class GuardCommand
                 return ExitCodes.ToolError;
             }
             return HandleDydoBashCommand(
-                command, sessionId, host, model, offLimitsService, bashAnalyzer, registry, runInBackground);
+                command, sessionId, offLimitsService, bashAnalyzer, registry);
         }
 
         // Hardcoded dangerous patterns — security checks before configurable nudges
@@ -1016,30 +938,13 @@ public static partial class GuardCommand
     }
 
     private static int HandleDydoBashCommand(
-        string command, string sessionId, string host, string model,
+        string command, string sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, bool? runInBackground)
+        AgentRegistry registry)
     {
-        // #0196: phase-1 single-line write removed. The unverifiable shape it produced is now
-        // discarded by AgentSessionManager.GetSessionContext, so writing it served no purpose
-        // beyond opening the cross-terminal race window. Only the verified phase-2 write below
-        // (with agent name) is published.
-        HandleClaimSessionStorage(command, sessionId, host, model, registry);
-
+        // agent is resolved only for the git-safety worktree checks below; it is null
+        // in the identity-free model and the checks degrade to the no-worktree branch.
         var agent = registry.GetCurrentAgent(sessionId);
-
-        if (IsHumanOnlyDydoCommand(command))
-        {
-            if (agent != null)
-            {
-                Console.Error.WriteLine("BLOCKED: This command is human-only. Agents cannot run it.");
-                return ExitCodes.ToolError;
-            }
-        }
-
-        // Phase 2: enrich session context with agent name for race detection.
-        if (agent != null)
-            registry.StoreSessionContext(sessionId, agent.Name, host, model);
 
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
@@ -1054,62 +959,14 @@ public static partial class GuardCommand
             command, sessionId, agent, offLimitsService, bashAnalyzer, registry);
     }
 
-    private static void HandleClaimSessionStorage(string command, string sessionId, string host, string model, AgentRegistry registry)
-    {
-        var (isClaim, agentName) = ParseClaimCommand(command);
-        if (!isClaim || string.IsNullOrEmpty(agentName)) return;
-
-        if (agentName.Equals("auto", StringComparison.OrdinalIgnoreCase))
-        {
-            var human = registry.GetCurrentHuman();
-            if (!string.IsNullOrEmpty(human))
-            {
-                var freeAgents = registry.GetFreeAgentsForHuman(human);
-                if (freeAgents.Count > 0)
-                    agentName = freeAgents[0].Name;
-                else
-                    return;
-            }
-        }
-        else if (agentName.Length == 1 && char.IsLetter(agentName[0]))
-        {
-            var resolved = registry.GetAgentNameFromLetter(agentName[0]);
-            if (resolved != null)
-                agentName = resolved;
-        }
-
-        if (registry.IsValidAgentName(agentName))
-            registry.StorePendingSessionId(agentName, sessionId, host, model);
-    }
-
     private static int HandleNonDydoBash(
         string command, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
+        // agent is resolved only for the git-safety worktree checks in
+        // AnalyzeAndCheckBashOperations; null in the identity-free model.
         var agent = registry.GetCurrentAgent(sessionId);
-        if (agent != null)
-        {
-            // Must-read enforcement for write-like operations
-            if (agent.UnreadMustReads.Count > 0)
-            {
-                var preAnalysis = bashAnalyzer.Analyze(command);
-                var hasWriteOps = preAnalysis.Operations.Any(op =>
-                    op.Type is FileOperationType.Write or FileOperationType.Delete
-                    or FileOperationType.Move or FileOperationType.Copy
-                    or FileOperationType.PermissionChange);
-
-                // git merge is implicitly write-like (modifies working tree + refs)
-                var isGitMerge = GitMergeRegex().IsMatch(command);
-
-                if (hasWriteOps || isGitMerge)
-                {
-                    WriteMustReadError(agent);
-                    return ExitCodes.ToolError;
-                }
-            }
-        }
-
         return AnalyzeAndCheckBashOperations(command, sessionId, agent, offLimitsService, bashAnalyzer, registry);
     }
 
@@ -1184,15 +1041,12 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService, AgentRegistry registry,
         AgentState? cachedAgent = null, bool isWorker = false)
     {
-        // For reads, apply the same bootstrap/mode file bypass as direct reads (#60).
         // Native memory is exempt for any op type (out of dydo's jurisdiction).
-        // Tier-2 workers get neither the onboarding bootstrap bypass nor the staged
-        // read gate below — only the universal off-limits check applies to them.
-        var agent = cachedAgent ?? registry.GetCurrentAgent(sessionId);
-        var skipOffLimits = IsNativeMemoryPath(op.Path)
-            || (!isWorker && op.Type is FileOperationType.Read && ShouldBypassOffLimits(op.Path, agent));
+        // Everything else is subject to the universal off-limits check.
+        if (IsNativeMemoryPath(op.Path))
+            return null;
 
-        var offLimitsPattern = skipOffLimits ? null : offLimitsService.IsPathOffLimits(op.Path);
+        var offLimitsPattern = offLimitsService.IsPathOffLimits(op.Path);
         if (offLimitsPattern != null)
         {
             Console.Error.WriteLine("BLOCKED: Command references off-limits path.");
@@ -1202,120 +1056,7 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // Staged access control for read operations (mirrors HandleReadOperation).
-        // Workers are anonymous and exempt — they never onboard.
-        if (!isWorker && op.Type is FileOperationType.Read)
-        {
-            if (!IsReadAllowed(op.Path, agent))
-            {
-                WriteAccessDeniedError(agent?.Name, null);
-                return ExitCodes.ToolError;
-            }
-        }
-
-        // Per-role path RBAC removed (Decision 024 §2), but an agent still cannot write
-        // INTO another agent's workspace (cross-agent tampering — plans/notes/inbox).
-        if (IsWriteLikeOp(op.Type))
-            return BlockIfCrossAgentWorkspace(op.Path, agent, "bash", command, sessionId, registry);
-
         return null;
-    }
-
-    internal static bool IsWriteLikeOp(FileOperationType type) =>
-        type is FileOperationType.Write or FileOperationType.Delete
-            or FileOperationType.Move or FileOperationType.Copy
-            or FileOperationType.PermissionChange;
-
-    /// <summary>
-    /// Off-limits protects each agent's system files (state.md/.session/workflow/modes),
-    /// but the rest of a workspace (plans, notes, inbox) needs an identity-scoped check:
-    /// an agent may write only its own dydo/agents/&lt;self&gt;/ tree, never another's.
-    /// Tier-2 workers (agent == null here) are anonymous and not subject to this.
-    /// </summary>
-    private static int? BlockIfCrossAgentWorkspace(
-        string? filePath, AgentState? agent, string? toolName, string? command,
-        string? sessionId, AgentRegistry registry)
-    {
-        if (agent == null || string.IsNullOrEmpty(filePath) || !IsOtherAgentWorkspace(filePath, agent.Name))
-            return null;
-
-        Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} cannot write into another agent's workspace.");
-        Console.Error.WriteLine($"  Path: {filePath}");
-        Console.Error.WriteLine("  Each agent owns only dydo/agents/<self>/. Use dydo msg to coordinate.");
-        return ExitCodes.ToolError;
-    }
-
-    internal static bool IsOtherAgentWorkspace(string filePath, string agentName)
-    {
-        var match = AgentWorkspaceRegex().Match(filePath.Replace('\\', '/'));
-        return match.Success && !string.Equals(match.Groups[1].Value, agentName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Check if agent has identity and role. Returns exit code if blocked, null if OK.
-    /// </summary>
-    private static int? RequireIdentityAndRole(
-        AgentState? agent, string? path, string? toolName,
-        string? sessionId, IAgentRegistry registry)
-    {
-        if (agent == null)
-        {
-            WriteAccessDeniedError(null, null);
-            return ExitCodes.ToolError;
-        }
-        if (string.IsNullOrEmpty(agent.Role))
-        {
-            WriteAccessDeniedError(agent.Name, null);
-            return ExitCodes.ToolError;
-        }
-        return null;
-    }
-
-    private static int? RequireWriteIdentity(
-        AgentState? agent, string? filePath, string? toolName,
-        string? sessionId, IAgentRegistry registry)
-    {
-        if (agent == null)
-        {
-            Console.Error.WriteLine("BLOCKED: No agent identity assigned to this process.");
-            Console.Error.WriteLine("  Run 'dydo agent claim auto' to claim an agent identity.");
-            return ExitCodes.ToolError;
-        }
-        if (string.IsNullOrEmpty(agent.Role))
-        {
-            Console.Error.WriteLine($"BLOCKED: Agent {agent.Name} has no role set.");
-            Console.Error.WriteLine($"  1. Read your mode file first: dydo/agents/{agent.Name}/modes/<role>.md");
-            Console.Error.WriteLine($"  2. Then set your role: dydo agent role <role> --task <task-name>");
-            return ExitCodes.ToolError;
-        }
-        return null;
-    }
-
-    private static void WriteAccessDeniedError(string? agentName, string? extra)
-    {
-        Console.Error.WriteLine("BLOCKED: Read access denied.");
-        if (agentName == null)
-        {
-            Console.Error.WriteLine("  No agent identity assigned to this process.");
-            Console.Error.WriteLine("  Read your workflow.md to learn how to onboard:");
-            Console.Error.WriteLine("    dydo/agents/*/workflow.md");
-            Console.Error.WriteLine("  Then run: dydo agent claim auto");
-        }
-        else
-        {
-            Console.Error.WriteLine($"  Agent {agentName} has no role set.");
-            Console.Error.WriteLine("  Read your mode files to understand available roles:");
-            Console.Error.WriteLine($"    dydo/agents/{agentName}/modes/*.md");
-            Console.Error.WriteLine("  Then run: dydo agent role <role>");
-        }
-    }
-
-    private static void WriteMustReadError(AgentState agent)
-    {
-        Console.Error.WriteLine($"BLOCKED: You have not read the required files for the {agent.Role} mode:");
-        foreach (var unread in agent.UnreadMustReads)
-            Console.Error.WriteLine($"  - {unread}");
-        Console.Error.WriteLine("Read these files before performing other operations.");
     }
 
     /// <summary>
@@ -1380,144 +1121,11 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a read operation is allowed based on staged access control.
-    /// Stage 0 (no identity): Only bootstrap files (root files, index.md, workflow.md)
-    /// Stage 1 (identity, no role): + mode files for claimed agent
-    /// Stage 2 (identity + role): All reads allowed (RBAC only restricts writes)
-    /// </summary>
-    internal static bool IsReadAllowed(string? filePath, AgentState? agent)
-    {
-        // No path = allow (might be a non-file operation)
-        if (string.IsNullOrEmpty(filePath))
-            return true;
-
-        // Native auto-memory is outside dydo's jurisdiction — readable at any stage
-        if (IsNativeMemoryPath(filePath))
-            return true;
-
-        // After claiming with a role set, block reading other agents' workflows
-        if (agent != null && !string.IsNullOrEmpty(agent.Role) && IsOtherAgentWorkflow(filePath, agent.Name))
-            return false;
-
-        // Stage 0: Bootstrap files are always allowed
-        if (IsBootstrapFile(filePath))
-            return true;
-
-        // No identity = only bootstrap files
-        if (agent == null)
-            return false;
-
-        // Stage 1: Identity claimed - unlock mode files for this agent
-        if (IsModeFile(filePath, agent.Name))
-            return true;
-
-        // No role = only bootstrap + mode files
-        if (string.IsNullOrEmpty(agent.Role))
-            return false;
-
-        // Stage 2: Role set - all reads allowed (RBAC only restricts writes per spec)
-        // Note: Off-limits check already happened before this point
-        return true;
-    }
-
-    /// <summary>
-    /// Check if a file is a bootstrap file that can be read without identity.
-    /// Bootstrap files: root-level files, dydo/index.md, dydo/agents/*/workflow.md
-    /// </summary>
-    internal static bool IsBootstrapFile(string filePath)
-    {
-        // Normalize path separators for consistent matching
-        var normalizedPath = filePath.Replace('\\', '/');
-
-        // Root level files (no directory separator, or just the filename)
-        // Check if there's no slash, or if it's just a simple filename
-        var lastSlash = normalizedPath.LastIndexOf('/');
-        if (lastSlash == -1)
-            return true; // No directory component = root file
-
-        // Check for paths that end with just a filename (relative from project root)
-        var pathParts = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (pathParts.Length == 1)
-            return true; // Single component = root file
-
-        // dydo/index.md
-        if (normalizedPath.EndsWith("dydo/index.md", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        // dydo/agents/*/workflow.md
-        if (AgentWorkflowRegex().IsMatch(normalizedPath))
-            return true;
-
-        return false;
-    }
-
-    /// <summary>
-    /// Check if a file is a mode file for the specified agent.
-    /// Mode files: dydo/agents/{agentName}/modes/*.md
-    /// </summary>
-    internal static bool IsModeFile(string filePath, string agentName)
-    {
-        // Normalize path separators for consistent matching
-        var normalizedPath = filePath.Replace('\\', '/');
-
-        // dydo/agents/{agentName}/modes/*.md
-        var pattern = $@"dydo/agents/{Regex.Escape(agentName)}/modes/[^/]+\.md$";
-        return Regex.IsMatch(normalizedPath, pattern, RegexOptions.IgnoreCase);
-    }
-
-    /// <summary>
-    /// Check if a file is another agent's workflow file.
-    /// Returns true if the path is a workflow.md but NOT for the specified agent.
-    /// </summary>
-    internal static bool IsOtherAgentWorkflow(string filePath, string agentName)
-    {
-        var normalizedPath = filePath.Replace('\\', '/');
-        if (!AgentWorkflowRegex().IsMatch(normalizedPath))
-            return false; // Not a workflow file at all
-        // It IS a workflow file — check if it's for a different agent
-        return !normalizedPath.Contains($"dydo/agents/{agentName}/", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Check if a file is any agent's mode file.
-    /// Mode files: dydo/agents/*/modes/*.md
-    /// </summary>
-    internal static bool IsAnyModeFile(string filePath)
-    {
-        // Normalize path separators for consistent matching
-        var normalizedPath = filePath.Replace('\\', '/');
-
-        // dydo/agents/*/modes/*.md
-        return AgentModeFileRegex().IsMatch(normalizedPath);
-    }
-
-    /// <summary>
-    /// Parse a bash command to detect dydo agent claim commands.
-    /// Returns (isClaim, agentName) where agentName may be "auto" or a specific agent name.
-    /// </summary>
-    internal static (bool isClaim, string? agentName) ParseClaimCommand(string command)
-    {
-        // Match: dydo agent claim <name> or ./dydo agent claim <name>
-        // Account for command chaining with ; && ||
-        var match = DydoClaimCommandRegex().Match(command);
-
-        return match.Success ? (true, match.Groups[1].Value) : (false, null);
-    }
-
-    /// <summary>
     /// Check if a command is a dydo command.
     /// </summary>
     internal static bool IsDydoCommand(string command)
     {
         return DydoCommandRegex().IsMatch(command);
-    }
-
-    /// <summary>
-    /// Check if a command is a human-only dydo command (roles reset, guard lift/restore, agent clean --force).
-    /// </summary>
-    internal static bool IsHumanOnlyDydoCommand(string command)
-    {
-        return HumanOnlyDydoCommandRegex().IsMatch(command);
     }
 
     // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
@@ -1527,39 +1135,8 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+merge(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
     private static partial Regex GitMergeRegex();
 
-    // Matches human-only dydo subcommands: roles reset, guard lift, guard restore, agent clean --force.
-    // The agent-clean alternative uses [^;&|]* to keep --force lookup inside one chain segment, and \b around clean/force
-    // to guard against 'cleanup' / '--forcefully' false matches. Bare 'agent clean <name>' (no --force) stays allowed.
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+(?:roles\s+reset|guard\s+(?:lift|restore)|agent\s+clean\b[^;&|]*--force)\b", RegexOptions.IgnoreCase)]
-    private static partial Regex HumanOnlyDydoCommandRegex();
-
-    [GeneratedRegex(@"dydo/agents/[^/]+/workflow\.md$", RegexOptions.IgnoreCase)]
-    private static partial Regex AgentWorkflowRegex();
-
-    [GeneratedRegex(@"dydo/agents/([^/]+)/", RegexOptions.IgnoreCase)]
-    private static partial Regex AgentWorkspaceRegex();
-
-    [GeneratedRegex(@"dydo/agents/[^/]+/modes/[^/]+\.md$", RegexOptions.IgnoreCase)]
-    private static partial Regex AgentModeFileRegex();
-
-    [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s+agent\s+claim\s+(\S+)", RegexOptions.IgnoreCase)]
-    private static partial Regex DydoClaimCommandRegex();
-
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s", RegexOptions.IgnoreCase)]
     private static partial Regex DydoCommandRegex();
-
-    internal static string NormalizeForMustReadComparison(string filePath) =>
-        ReadTrackingService.NormalizeForMustReadComparison(filePath);
-
-    /// <summary>
-    /// Extracts from/subject from a message file in an agent's inbox.
-    /// </summary>
-    /// <summary>
-    /// Extracts message ID from an inbox message file path.
-    /// Matches paths like */inbox/{id}-msg-*.md and returns the {id} portion.
-    /// </summary>
-    internal static string? ExtractMessageIdFromPath(string filePath) =>
-        ReadTrackingService.ExtractMessageIdFromPath(filePath);
 
     /// <summary>
     /// Non-blocking daily validation. Runs on first guard call per 24h period.

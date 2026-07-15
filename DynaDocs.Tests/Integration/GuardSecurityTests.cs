@@ -24,44 +24,6 @@ public class GuardSecurityTests : IntegrationTestBase
         command.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"}}";
 
     // ================================================================
-    // Finding 1: Guard lift self-escalation — .guard-lift.json off-limits
-    // ================================================================
-
-    [Fact]
-    public async Task Finding1_AgentCannotWriteGuardLiftMarker_DirectWrite()
-    {
-        await SetupClaimedAgent();
-
-        var result = await GuardAsync("write", "dydo/agents/Adele/.guard-lift.json");
-        result.AssertExitCode(2);
-        result.AssertStderrContains("off-limits");
-    }
-
-    [Fact]
-    public async Task Finding1_AgentCannotWriteGuardLiftMarker_BashRedirect()
-    {
-        await SetupClaimedAgent();
-
-        var result = await GuardWithStdinAsync(
-            BashJson("echo test > dydo/agents/Adele/.guard-lift.json"));
-        result.AssertExitCode(2);
-        result.AssertStderrContains("off-limits");
-    }
-
-    [Fact]
-    public async Task Finding1_LiftedViaService_StillWorks()
-    {
-        await SetupClaimedAgent();
-
-        var service = new GuardLiftService(TestDir);
-        service.Lift("Adele", "testuser", null);
-        Assert.True(service.IsLifted("Adele"));
-
-        var result = await GuardAsync("write", "dydo/some-file.md");
-        result.AssertSuccess();
-    }
-
-    // ================================================================
     // Finding 2: Interpreter inline execution blocked as dangerous
     // ================================================================
 
@@ -285,18 +247,6 @@ public class GuardSecurityTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains("Dangerous");
-    }
-
-    [Fact]
-    public async Task Issue155_DydoChain_CrossAgentWorkspaceWrite_Blocked()
-    {
-        await SetupClaimedAgent();
-
-        var result = await GuardWithStdinAsync(
-            BashJson("dydo whoami && tee dydo/agents/Brian/notes.md"));
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("another agent's workspace");
     }
 
     [Fact]
@@ -553,22 +503,6 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
-    // Issue #60: Off-limits bypass consistency for bash reads
-    // ================================================================
-
-    [Fact]
-    public async Task Issue60_BashReadModeFile_AllowedLikeDirectRead()
-    {
-        await SetupClaimedAgent();
-
-        // Mode files are off-limits but should be readable via bootstrap bypass,
-        // both for direct reads AND bash reads (consistency)
-        var result = await GuardWithStdinAsync(
-            BashJson("cat dydo/agents/Adele/modes/code-writer.md"));
-        result.AssertSuccess();
-    }
-
-    // ================================================================
     // Issue #64: Block-severity nudges can't be removed from config
     // ================================================================
 
@@ -753,17 +687,6 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Issue60_BashReadBootstrapFile_Allowed()
-    {
-        await SetupClaimedAgent();
-
-        // Bootstrap files (workflow.md) should be readable even via bash
-        var result = await GuardWithStdinAsync(
-            BashJson("cat dydo/agents/Adele/workflow.md"));
-        result.AssertSuccess();
-    }
-
-    [Fact]
     public async Task Issue60_BashReadOffLimitsNonMode_Blocked()
     {
         await SetupClaimedAgent();
@@ -775,18 +698,4 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("off-limits");
     }
 
-    [Fact]
-    public async Task BashGuardLiftedWrite_Succeeds()
-    {
-        await SetupClaimedAgent();
-
-        // Lift guard
-        var service = new GuardLiftService(TestDir);
-        service.Lift("Adele", "testuser", null);
-
-        // Write to normally-blocked path should succeed when guard is lifted
-        var result = await GuardWithStdinAsync(
-            BashJson("tee dydo/some-protected.md"));
-        result.AssertSuccess();
-    }
 }

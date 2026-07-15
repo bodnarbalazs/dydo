@@ -268,20 +268,6 @@ public class TaskTests : IntegrationTestBase
     #region Task Done
 
     [Fact]
-    public async Task Task_Done_AssignedAgent_IsRefused()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await TaskCreateAsync("self-done", area: "backend");
-
-        var result = await TaskDoneAsync("self-done");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("cannot mark their own task done");
-        AssertFileContains("dydo/project/tasks/self-done.md", "status: in-progress");
-    }
-
-    [Fact]
     public async Task Task_Done_DifferentAgent_MarksDoneAndKeepsTaskFile()
     {
         await InitProjectAsync("none", "balazs", 3);

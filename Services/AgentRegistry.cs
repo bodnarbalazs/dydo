@@ -814,8 +814,6 @@ public partial class AgentRegistry : IAgentRegistry
 
         ClearAllWaitMarkers(agentName);
 
-        try { new GuardLiftService().ClearLift(agentName); } catch { }
-
         foreach (var marker in Directory.GetFiles(workspace, ".role-nudge-*"))
             File.Delete(marker);
 

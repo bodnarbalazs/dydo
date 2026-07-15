@@ -7,7 +7,7 @@ type: reference
 
 The three-tier system that shapes agent behavior. Every guardrail falls into one of three categories based on how strictly it constrains the agent.
 
-> **2.0 note ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)).** Per-role write RBAC was removed: **H1** (role-based write permissions), the **N7/N8** denial-hint nudges that rode on it, and the `writablePaths`/`readOnlyPaths` soft-coding in Extensibility reflect the **pre-2.0** model. Write enforcement is now universal off-limits (H2) + nudges, with read-only worker scope set by native tool allowlists. **H12** (judge panel) was retired with the judge role. Everything else in this catalog still holds.
+> **2.1 note ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)).** dydo ceded agent identity to the platforms, so everything gated on a claimed agent is gone from the guard: staged read access (**H3**), the other-agent-workflow read block (**H4**), must-read write enforcement (**H5**), the search-tool identity lockout (**H6**), the no-identity/no-role write blocks (**H7/H8**), and the human-only-command block (**H29**). Per-role write RBAC (**H1**) and the **N7/N8** denial hints were already removed in 2.0 ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). The guard is now **universal off-limits (H2) + nudges + dangerous-bash + git-safety** only: reads, searches, and writes by anyone are allowed unless the path is off-limits or the command is dangerous. **H12** (judge panel) was retired with the judge role.
 
 ---
 
@@ -23,10 +23,6 @@ Passive guidance injected into command output when relevant. The agent is not bl
 |---|------|---------|---------|
 | N2 | Bash command warnings | Bash command contains suspicious-but-not-dangerous patterns: command substitution, base64/hex decode, variable expansion, embedded newlines. | `WARNING: Command contains base64 decode - potential obfuscation` (etc.) |
 | N3 | Daily validation | First guard call per 24-hour period runs a background validation of config/roles. Issues are reported but never block. | `Daily validation found issues: [...] Run 'dydo validate' for full report.` |
-| N7 | Path-specific denial hint | When a write is denied AND the target path is a known "wrong destination" (currently: `.claude/plans/`). Appended to the denial message to redirect the agent. | `Dydo agents don't use Claude Code's built-in plans. Switch to planner mode...` |
-| N8 | Role denial hint | When a write is denied, the role's `denialHint` from `.role.json` is appended. Generic guidance about what the role can edit. | `Code-writer role can only edit configured source/test paths and own workspace.` |
-
-**Note:** N7 and N8 fire as part of a hard rule (the write is denied), but the hint text itself is the nudge — it steers the agent toward the right action rather than just saying "no." The denial is the hard rule; the hint is the nudge riding on top of it.
 
 ---
 
@@ -40,8 +36,7 @@ A one-time blocking message that forces the agent to acknowledge before proceedi
 
 | # | Name | Trigger | Marker File | Message |
 |---|------|---------|-------------|---------|
-| S1 | Role mismatch | Agent sets a different role than what the inbox dispatch specified. Skipped if agent already fulfilled the dispatched role and is intentionally switching. | `.role-nudge-{task}` | `You were dispatched as '{role}' for this task. If '{newRole}' fits better, run the command again.` |
-| S6 | Agent tool notice | Agent uses Claude Code's built-in `Agent` tool at Stage 2. The call always succeeds — a stderr NOTICE reminds the agent that the subagent inherits the calling agent's identity, role, and permissions, so the tool isn't a substitute for `dydo dispatch` (which spawns a fresh, role-scoped dydo agent in its own session for separable work). Stage 0/1 lockout (H6) still applies. | *(none — warn-and-allow, every call passes)* | `NOTICE: You invoked Claude Code's built-in Agent tool. This is fine for read discovery and autonomous code-writing within your current task — the subagent inherits your identity, role, and permissions. Do not use it as a substitute for dydo dispatch... Two different tools, two different jobs.` |
+| S6 | Agent tool notice | Agent uses Claude Code's built-in `Agent` tool. The call always succeeds — a stderr NOTICE reminds the agent that sub-agent tool calls run in the Tier-2 worker lane: anonymous, governed by the universal guard layers (off-limits, dangerous-bash, nudges). | *(none — warn-and-allow, every call passes)* | `NOTICE: You invoked Claude Code's built-in Agent tool. Sub-agent tool calls run in the Tier-2 worker lane: anonymous, ... governed by the universal guard layers (off-limits, dangerous-bash, nudges).` |
 
 ---
 
@@ -55,21 +50,8 @@ Absolute constraints the agent cannot bypass. No marker files, no retries, no fl
 
 | # | Name | Trigger | Message |
 |---|------|---------|---------|
-| H1 | Role-based write permissions | Agent attempts to write a file outside its role's `writablePaths`. | `Agent {name} ({role}) cannot {action} {path}. {denialHint}` |
-| H2 | Off-limits files | Any operation on paths matching patterns in `files-off-limits.md`. Checked before role permissions — applies to ALL agents regardless of role. | `BLOCKED: Path is off-limits to all agents. Path: ... Pattern: ...` |
-| H3 | Staged read access | Read operations are gated by onboarding stage. Stage 0 (no identity): only bootstrap files. Stage 1 (claimed, no role): + own mode files. Stage 2 (role set): all reads. | `BLOCKED: Read access denied. No agent identity assigned...` |
-| H4 | Other agent workflow | After setting a role, agent cannot read another agent's `workflow.md`. Prevents cross-contamination of agent instructions. | *(access denied)* |
-| H5 | Must-read enforcement | Write operations blocked until all files marked `must-read: true` in the role's mode file have been read. | `BLOCKED: You have not read the required files for the {role} mode: - {file1} - {file2}` |
-| H6 | Search tool lockout | Glob, Grep, and Agent tools require both identity AND role (Stage 2). Prevents broad codebase scanning before onboarding. | `BLOCKED: Read access denied...` |
+| H2 | Off-limits files | Any operation (read, write, search, bash) on paths matching patterns in `files-off-limits.md`. Applies to ALL callers — there is no identity or onboarding bypass (native auto-memory outside the repo is the only exemption). | `BLOCKED: Path is off-limits to all agents. Path: ... Pattern: ...` |
 | H27 | Plan mode blocked | Agent uses `EnterPlanMode` or `ExitPlanMode` tool. Dydo agents must not use Claude Code's built-in plan mode — use planner role or workspace notes instead. | `BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.` |
-
-### Onboarding & Identity
-
-| # | Name | Trigger | Message |
-|---|------|---------|---------|
-| H7 | No identity — writes | Any write operation without a claimed agent identity. | `BLOCKED: No agent identity assigned to this process. Run 'dydo agent claim auto'...` |
-| H8 | No role — writes | Write operation with identity but no role set. | `BLOCKED: Agent {name} has no role set. 1. Read your mode file first... 2. Then set your role...` |
-| H9 | No session ID | Guard hook invoked without session ID in input. | `BLOCKED: No session_id in hook input.` |
 
 ### Role Constraints (from `.role.json`)
 
@@ -99,8 +81,7 @@ These are defined in the `constraints` array of each role definition file, makin
 | H18 | Chained `cd` commands | `cd /path && command` or `cd /path; command`. Breaks the guard's ability to analyze the actual command. | `BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.` |
 | H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, `python dydo`, etc. Dydo should be called directly. **Severity-pinned default nudge** — implemented in `Services/ConfigFactory.cs DefaultNudges`; pattern/message editable in `dydo.json`, severity force-restored to `block` by `MergeSystemNudges` (see Extensibility section below). | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
 | H26 | Conditional git stash block | Bash command matches `git stash` (any variant) and the agent is NOT running in a worktree. Allowed inside worktrees where the stash stack is isolated. | `BLOCKED: git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents' stash operations will interfere. Commit your changes instead.` |
-| H28 | Direct `git merge` in worktree | `git merge` issued by an agent that is in a dispatch worktree or whose workspace contains a `.merge-source` marker. Forces the merge through `dydo worktree merge` (which runs the safety pre-check). Implemented at `Commands/GuardCommand.cs:758-779` (regex `GitMergeRegex` at `:1317-1318`). | `BLOCKED: Use dydo worktree merge to merge worktree branches. Do not use git merge directly.` |
-| H29 | Human-only dydo subcommands | Agent (any agent identity attached to the session) runs `dydo task approve`, `dydo task reject`, `dydo roles reset`, `dydo guard lift`, or `dydo guard restore`. These are administrative commands reserved for the human. Implemented at `Commands/GuardCommand.cs:620-633`; regex at `:1320-1322`. | `BLOCKED: This command is human-only. Agents cannot run it.` |
+| H28 | Direct `git merge` in worktree | `git merge` issued by an agent whose workspace is in a worktree or contains a `.merge-source` marker. Forces the merge through `dydo worktree merge` (which runs the safety pre-check). Regex `GitMergeRegex` in `Commands/GuardCommand.cs`. | `BLOCKED: Use dydo worktree merge to merge worktree branches. Do not use git merge directly.` |
 
 ---
 
@@ -109,19 +90,15 @@ These are defined in the `constraints` array of each role definition file, makin
 The guardrail system is designed for extension through role definition files (`.role.json` in `dydo/_system/roles/`).
 
 **What's soft-coded:**
-- Write permissions (`writablePaths`, `readOnlyPaths`)
-- Denial hints (`denialHint`) — the N8 nudge text
-- Role constraints (`constraints` array) — H10/H11/H12 are all data-driven
+- Role constraints (`constraints` array) — H10/H11 are data-driven
   - `role-transition`: prevents role A → role B on same task
   - `requires-prior`: requires prior role experience on same task
-  - `panel-limit`: caps concurrent agents in a role per task
 
 **What's hard-coded:**
-- Staged access control (H3, H6) and tool blocking (H27)
+- Tool blocking (H27)
 - Off-limits enforcement (H2)
-- Bash safety analysis (H17, H18, H26, H28, H29) — direct pattern checks in `Commands/GuardCommand.cs`
+- Bash safety analysis (H17, H18, H26, H28) — direct pattern checks in `Commands/GuardCommand.cs`
 - Release blocking checks (H13, H14, H16)
-- Soft-block marker file logic (S1)
 
 **What's a severity-pinned default nudge** (pattern and message editable in `dydo.json`, severity force-restored to `block`):
 - Indirect dydo invocation (H19) — implemented as multiple `block`-severity entries in `Services/ConfigFactory.cs:9-22 DefaultNudges` (npx, dotnet, dotnet run, bash/sh/zsh/cmd/powershell/pwsh, python). `Commands/GuardCommand.cs:587-609 MergeSystemNudges` re-merges these on every guard call: a missing pattern is re-added; a downgraded severity is force-restored to `block`. The pattern text and the message body remain user-editable.

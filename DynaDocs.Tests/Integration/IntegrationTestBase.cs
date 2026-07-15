@@ -150,11 +150,12 @@ public abstract class IntegrationTestBase : IDisposable
     protected const string TestSessionId = "test-integration-session";
 
     /// <summary>
-    /// Claim an agent.
+    /// Claim an agent via the runtime registry. The agent-claim CLI was removed with the roster
+    /// (DR-041); identity is assigned at spawn now. Tests still exercise the surviving runtime claim
+    /// on <see cref="AgentRegistry"/> to set up agent state for the guard/PM/registry behaviour they assert.
     /// </summary>
-    protected async Task<CommandResult> ClaimAgentAsync(string nameOrAuto = "auto")
+    protected Task<CommandResult> ClaimAgentAsync(string nameOrAuto = "auto")
     {
-        // Store pending session (simulates guard hook interception)
         var agentName = nameOrAuto;
         if (nameOrAuto.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {
@@ -175,33 +176,32 @@ public abstract class IntegrationTestBase : IDisposable
             agentName = ResolveLetterToAgentName(letter);
         }
 
+        // Store pending session (simulates guard hook interception, which is how a session id reaches claim)
         StorePendingSession(agentName);
         StoreSessionContext();
 
-        var command = AgentCommand.Create();
-        var result = await RunAsync(command, "claim", nameOrAuto);
+        var ok = new AgentRegistry(TestDir).ClaimAgent(agentName, out var error);
 
-        // Refresh the .session-context with the verified two-line shape (TestSessionId +
-        // freshly-claimed agentName). The pre-claim StoreSessionContext call above could
-        // only write the legacy single-line shape (no .session file existed yet), which
-        // post-#0196 reads as null — so subsequent commands wouldn't resolve the agent.
+        // Refresh the .session-context with the verified two-line shape now that the .session file exists,
+        // so subsequent commands resolve the agent (post-#0196 the single-line shape reads as null).
         StoreSessionContext();
 
-        return result;
+        return Task.FromResult(new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error));
     }
 
-    protected async Task<CommandResult> ClaimAgentWithRuntimeAsync(string agentName, string host, string model)
+    protected Task<CommandResult> ClaimAgentWithRuntimeAsync(string agentName, string host, string model)
     {
         var registry = new AgentRegistry(TestDir);
         registry.StorePendingSessionId(agentName, TestSessionId, host, model);
         StoreSessionContext();
 
-        var command = AgentCommand.Create();
-        var result = await RunAsync(command, "claim", agentName);
+        var ok = registry.ClaimAgent(agentName, out var error);
 
         StoreSessionContext();
-        return result;
+        return Task.FromResult(new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error));
     }
+
+    private const int ExitCodeToolError = 2;
 
     /// <summary>
     /// Resolve a letter to an agent name.
@@ -216,39 +216,37 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
-    /// Release the current agent.
+    /// Release the current agent via the runtime registry.
     /// </summary>
-    protected async Task<CommandResult> ReleaseAgentAsync()
+    protected Task<CommandResult> ReleaseAgentAsync()
     {
         StoreSessionContext();
-        var command = AgentCommand.Create();
-        return await RunAsync(command, "release");
+        var registry = new AgentRegistry(TestDir);
+        var ok = registry.ReleaseAgent(registry.GetSessionContext(), out var error);
+        return Task.FromResult(new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error));
     }
 
     /// <summary>
-    /// Set agent role. Mirrors Decision 021 by registering a listening general-wait
-    /// marker after role-set so the universal MissingGeneralWait guard passes by
-    /// default. Tests that exercise the block itself pass <c>registerGeneralWait: false</c>.
+    /// Set agent role via the runtime registry. Mirrors Decision 021 by registering a listening
+    /// general-wait marker after role-set. Tests that exercise the block itself pass
+    /// <c>registerGeneralWait: false</c>.
     /// </summary>
-    protected async Task<CommandResult> SetRoleAsync(string role, string? task = null,
+    protected Task<CommandResult> SetRoleAsync(string role, string? task = null,
         bool registerGeneralWait = true)
     {
         StoreSessionContext();
-        var command = AgentCommand.Create();
-        var args = task != null
-            ? new[] { "role", role, "--task", task }
-            : new[] { "role", role };
-        var result = await RunAsync(command, args);
+        var registry = new AgentRegistry(TestDir);
+        var ok = registry.SetRole(registry.GetSessionContext(), role, task, out var error);
+        var result = new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error);
 
         if (registerGeneralWait && result.ExitCode == 0)
         {
-            var registry = new DynaDocs.Services.AgentRegistry(TestDir);
             var agent = registry.GetCurrentAgent(TestSessionId);
             if (agent != null)
                 registry.CreateListeningWaitMarker(agent.Name, "_general-wait", agent.Name, Environment.ProcessId);
         }
 
-        return result;
+        return Task.FromResult(result);
     }
 
     /// <summary>
@@ -297,29 +295,6 @@ public abstract class IntegrationTestBase : IDisposable
         }
 
         File.WriteAllText(contextPath, content);
-    }
-
-    /// <summary>
-    /// List agents.
-    /// </summary>
-    protected async Task<CommandResult> ListAgentsAsync(bool freeOnly = false, bool all = false)
-    {
-        var command = AgentCommand.Create();
-        var args = new List<string> { "list" };
-        if (freeOnly) args.Add("--free");
-        if (all) args.Add("--all");
-        return await RunAsync(command, args.ToArray());
-    }
-
-    /// <summary>
-    /// Get agent status.
-    /// </summary>
-    protected async Task<CommandResult> AgentStatusAsync(string? name = null)
-    {
-        StoreSessionContext();
-        var command = AgentCommand.Create();
-        var args = name != null ? new[] { "status", name } : new[] { "status" };
-        return await RunAsync(command, args);
     }
 
     /// <summary>

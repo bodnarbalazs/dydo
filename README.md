@@ -296,30 +296,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | `dydo graph <file>` | Show graph connections for a file |
 | `dydo graph stats [--top N]` | Show top docs by incoming links |
 
-### Agent Lifecycle (Tier-1)
-| Command | Description |
-|---------|-------------|
-| *`dydo agent claim <name\|auto>`* | *Claim an agent identity* |
-| *`dydo agent release`* | *Release current agent* |
-| *`dydo agent status [name]`* | *Show agent status* |
-| **`dydo agent list [--free] [--all]`** | **List agents** |
-| **`dydo agent tree`** | **Show dispatch hierarchy of active agents** |
-| *`dydo agent role <role> [--task X]`* | *Set role* |
-| **`dydo agent clean <agent>`** | **Clean agent workspace** |
-
-### Agent Management
-| Command | Description |
-|---------|-------------|
-| `dydo agent new <name> <human>` | Create new agent |
-| `dydo agent rename <old> <new>` | Rename an agent |
-| `dydo agent remove <name>` | Remove agent from pool |
-| `dydo agent reassign <name> <human>` | Reassign to different human |
-
-### Coordination (Tier-1)
-| Command | Description |
-|---------|-------------|
-| *`dydo hand raise`* / *`dydo hand lower`* | *Raise / clear the needs-human flag* |
-
 ### Tasks & Reviews
 | Command | Description |
 |---------|-------------|

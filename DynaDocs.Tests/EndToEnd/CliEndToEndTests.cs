@@ -69,13 +69,9 @@ public class CliEndToEndTests : IDisposable
     [Theory]
     [InlineData("init")]
     [InlineData("check")]
-    [InlineData("agent")]
     [InlineData("guard")]
-    [InlineData("dispatch")]
-    [InlineData("inbox")]
     [InlineData("task")]
     [InlineData("review")]
-    [InlineData("agent clean")]
     [InlineData("fix")]
     [InlineData("index")]
     [InlineData("graph")]
@@ -126,21 +122,6 @@ public class CliEndToEndTests : IDisposable
         Assert.True(checkResult.ExitCode <= 1,
             $"check crashed:\nStderr: {checkResult.Stderr}\nStdout: {checkResult.Stdout}");
         Assert.Contains("Checking", checkResult.Stdout); // Verify it actually ran
-    }
-
-    [Fact]
-    public async Task Init_ThenAgentList_ShowsAgents()
-    {
-        // Initialize with 3 agents
-        var initResult = await RunDydoAsync("init none --name testuser --agents 3");
-        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
-
-        // List should show the agents
-        var listResult = await RunDydoAsync("agent list");
-        Assert.True(listResult.ExitCode == 0, $"agent list failed: {listResult.Stderr}");
-        Assert.Contains("Adele", listResult.Stdout);
-        Assert.Contains("Brian", listResult.Stdout);
-        Assert.Contains("Charlie", listResult.Stdout);
     }
 
     [Fact]

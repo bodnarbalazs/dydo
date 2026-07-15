@@ -44,7 +44,6 @@ public class CompleteCommandTests : IDisposable
         var completions = CompleteCommand.GetCompletions(1, ["dydo"]).ToList();
 
         Assert.Contains("task", completions);
-        Assert.Contains("agent", completions);
         Assert.Contains("init", completions);
         Assert.Contains("review", completions);
         Assert.DoesNotContain("clean", completions);
@@ -84,54 +83,6 @@ public class CompleteCommandTests : IDisposable
 
         Assert.Contains("fix-login", completions);
         Assert.DoesNotContain("_template", completions);
-    }
-
-    [Fact]
-    public void AgentSubcommands_IncludesClean()
-    {
-        var completions = CompleteCommand.GetCompletions(2, ["dydo", "agent"]).ToList();
-
-        Assert.Contains("clean", completions);
-        Assert.Contains("claim", completions);
-        Assert.Contains("release", completions);
-    }
-
-    [Fact]
-    public void AgentClaim_ReturnsAgentNamesWithAuto()
-    {
-        SetupProject(["Adele", "Boris"]);
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "claim"]).ToList();
-
-        Assert.Contains("auto", completions);
-        Assert.Contains("Adele", completions);
-        Assert.Contains("Boris", completions);
-    }
-
-    [Fact]
-    public void AgentRole_ReturnsRoles()
-    {
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "role"]).ToList();
-
-        Assert.Contains("code-writer", completions);
-        Assert.Contains("reviewer", completions);
-        Assert.Contains("co-thinker", completions);
-        Assert.Contains("docs-writer", completions);
-        Assert.Contains("test-writer", completions);
-        Assert.Contains("orchestrator", completions);
-        // planner is skill-only (Decision 024) — not a claimable role completion.
-        Assert.DoesNotContain("planner", completions);
-    }
-
-    [Fact]
-    public void AgentStatus_ReturnsAgentNames()
-    {
-        SetupProject(["Adele", "Boris"]);
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "status"]).ToList();
-
-        Assert.Contains("Adele", completions);
-        Assert.Contains("Boris", completions);
     }
 
     [Theory]
@@ -200,37 +151,11 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void AgentClean_ReturnsAgentNames()
-    {
-        SetupProject(["Adele"]);
-
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "clean"]).ToList();
-
-        Assert.Contains("Adele", completions);
-    }
-
-    [Fact]
     public void Graph_ReturnsSubcommands()
     {
         var completions = CompleteCommand.GetCompletions(2, ["dydo", "graph"]).ToList();
 
         Assert.Contains("stats", completions);
-    }
-
-    [Fact]
-    public void AgentUnknownSubcommand_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "unknown"]).ToList();
-
-        Assert.Empty(completions);
-    }
-
-    [Fact]
-    public void AgentPosition4_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(4, ["dydo", "agent", "claim", "Adele"]).ToList();
-
-        Assert.Empty(completions);
     }
 
     [Fact]
@@ -274,17 +199,6 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void NoConfig_DynamicValues_ReturnsEmpty()
-    {
-        var completions = CompleteCommand.GetCompletions(3, ["dydo", "agent", "claim"]).ToList();
-
-        // "auto" is static, always present
-        Assert.Contains("auto", completions);
-        // No config → no dynamic agent names (just "auto")
-        Assert.Single(completions);
-    }
-
-    [Fact]
     public void CommandExitsZero_EvenOnInvalidInput()
     {
         var command = CompleteCommand.Create();
@@ -302,7 +216,6 @@ public class CompleteCommandTests : IDisposable
         });
         Assert.Equal(0, exitCode);
         Assert.Contains("task", output);
-        Assert.Contains("agent", output);
     }
 
     private void SetupProject(List<string> agents)

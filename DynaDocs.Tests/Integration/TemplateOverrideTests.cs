@@ -344,10 +344,12 @@ public class TemplateOverrideTests : IntegrationTestBase
 
     #region Helper Methods
 
-    private async Task<CommandResult> AgentNewAsync(string name, string human)
+    private Task<CommandResult> AgentNewAsync(string name, string human)
     {
-        var command = AgentCommand.Create();
-        return await RunAsync(command, "new", name, human);
+        // The `agent new` CLI was removed with the roster (DR-041); the runtime roster method on
+        // AgentRegistry survives, so template-generation tests still create an agent through it.
+        var ok = new AgentRegistry(TestDir).CreateAgent(name, human, out var error);
+        return Task.FromResult(new CommandResult(ok ? 0 : 2, string.Empty, ok ? string.Empty : error));
     }
 
     #endregion

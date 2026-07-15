@@ -25,7 +25,6 @@ public class HelpCommandTests
         Assert.Contains("init", output);
         Assert.Contains("index", output);
         Assert.Contains("graph", output);
-        Assert.Contains("agent", output);
         Assert.Contains("guard", output);
         Assert.Contains("task", output);
         Assert.Contains("review", output);
@@ -37,24 +36,6 @@ public class HelpCommandTests
         Assert.Contains("worktree", output);
         Assert.Contains("version", output);
         Assert.Contains("help", output);
-    }
-
-    [Fact]
-    public void Help_ListsAllAgentSubcommands()
-    {
-        var output = CaptureHelpOutput();
-
-        Assert.Contains("agent claim", output);
-        Assert.Contains("agent release", output);
-        Assert.Contains("agent status", output);
-        Assert.Contains("agent list", output);
-        Assert.Contains("agent tree", output);
-        Assert.Contains("agent role", output);
-        Assert.Contains("agent new", output);
-        Assert.Contains("agent rename", output);
-        Assert.Contains("agent remove", output);
-        Assert.Contains("agent reassign", output);
-        Assert.Contains("agent clean", output);
     }
 
     [Fact]
@@ -103,8 +84,6 @@ public class HelpCommandTests
 
         Assert.Contains("Setup Commands:", output);
         Assert.Contains("Documentation Commands:", output);
-        Assert.Contains("Agent Workflow Commands:", output);
-        Assert.Contains("Agent Management Commands:", output);
         Assert.Contains("Workspace Commands:", output);
         Assert.Contains("Role Commands:", output);
         Assert.Contains("Validation Commands:", output);

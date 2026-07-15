@@ -6,7 +6,7 @@ public static class CompletionProvider
 {
     private static readonly string[] TopLevelCommands =
     [
-        "check", "fix", "index", "init", "graph", "agent", "guard",
+        "check", "fix", "index", "init", "graph", "guard",
         "task", "issue",
         "review", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
@@ -27,7 +27,6 @@ public static class CompletionProvider
     // Position 2: command → list of subcommands
     private static readonly Dictionary<string, string[]> SubcommandLists = new()
     {
-        ["agent"] = ["claim", "release", "status", "list", "role", "tree", "new", "rename", "remove", "reassign", "clean"],
         ["task"] = ["create", "done", "list", "ready-for-review"],
         ["review"] = ["complete"],
         ["init"] = ["claude", "none"],
@@ -44,13 +43,6 @@ public static class CompletionProvider
     // Position 3: (command, subcommand) → dynamic completion source
     private static readonly Dictionary<(string Cmd, string Sub), Func<IEnumerable<string>>> ArgCompletions = new()
     {
-        [("agent", "claim")] = () => GetAgentNames().Prepend("auto"),
-        [("agent", "role")] = () => Roles,
-        [("agent", "status")] = GetAgentNames,
-        [("agent", "rename")] = GetAgentNames,
-        [("agent", "remove")] = GetAgentNames,
-        [("agent", "reassign")] = GetAgentNames,
-        [("agent", "clean")] = GetAgentNames,
         [("task", "done")] = GetTaskNames,
         [("task", "ready-for-review")] = GetTaskNames,
         [("review", "complete")] = GetTaskNames,

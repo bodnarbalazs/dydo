@@ -38,11 +38,9 @@ public static class CheckCommand
             if (docsOutcome.IsToolError)
                 return ExitCodes.ToolError;
 
-            var agentHasWarnings = ValidateAgents(config, configService);
-
             return WriteSummary(
                 configHasErrors || docsOutcome.HasErrors,
-                docsOutcome.HasWarnings || agentHasWarnings);
+                docsOutcome.HasWarnings);
         }
         catch (Exception ex)
         {
@@ -96,22 +94,6 @@ public static class CheckCommand
         var result = CheckDocValidator.Validate(basePath, reportScope);
         ConsoleOutput.WriteViolations(result);
         return new DocsOutcome(false, result.HasErrors, result.WarningCount > 0);
-    }
-
-    private static bool ValidateAgents(Models.DydoConfig? config, IConfigService configService)
-    {
-        if (config == null) return false;
-        Console.WriteLine();
-        Console.WriteLine("Checking agent assignments...");
-        var warnings = CheckAgentValidator.Validate(config, configService);
-        if (warnings.Count == 0)
-        {
-            Console.WriteLine("  No issues found.");
-            return false;
-        }
-        foreach (var warning in warnings)
-            ConsoleOutput.WriteWarning(warning);
-        return true;
     }
 
     private static int WriteSummary(bool hasErrors, bool hasWarnings)

@@ -15,9 +15,7 @@ public class CommandSmokeTests
         // issues like invalid aliases, missing parameters, etc.
         var commands = new Func<System.CommandLine.Command>[]
         {
-            AgentCommand.Create,
             CheckCommand.Create,
-            CleanCommand.Create,
             CompleteCommand.Create,
             CompletionsCommand.Create,
             FixCommand.Create,
@@ -30,7 +28,6 @@ public class CommandSmokeTests
             ReviewCommand.Create,
             RolesCommand.Create,
             TaskCommand.Create,
-            HandCommand.Create,
             TemplateCommand.Create,
             ValidateCommand.Create,
             WatchdogCommand.Create,
@@ -55,7 +52,6 @@ public class CommandSmokeTests
         {
             var rootCommand = new System.CommandLine.RootCommand("Test")
             {
-                AgentCommand.Create(),
                 CheckCommand.Create(),
                 CompleteCommand.Create(),
                 CompletionsCommand.Create(),
@@ -69,7 +65,6 @@ public class CommandSmokeTests
                 ReviewCommand.Create(),
                 RolesCommand.Create(),
                 TaskCommand.Create(),
-                HandCommand.Create(),
                 TemplateCommand.Create(),
                 ValidateCommand.Create(),
                 WatchdogCommand.Create(),
@@ -81,8 +76,8 @@ public class CommandSmokeTests
             // version is the only command created inline in Program.cs
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
-            // Must match Program.cs: 21 Create() commands + 1 inline (version) = 22
-            Assert.Equal(22, rootCommand.Subcommands.Count);
+            // Must match Program.cs: 19 Create() commands + 1 inline (version) = 20
+            Assert.Equal(20, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

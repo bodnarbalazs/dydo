@@ -10,7 +10,6 @@ public class CompletionProviderTests
     [InlineData("index")]
     [InlineData("init")]
     [InlineData("graph")]
-    [InlineData("agent")]
     [InlineData("guard")]
     [InlineData("task")]
     [InlineData("review")]
@@ -58,7 +57,6 @@ public class CompletionProviderTests
     }
 
     [Theory]
-    [InlineData("agent", new[] { "claim", "release", "status", "list", "role", "new", "rename", "remove", "reassign", "clean", "tree" })]
     [InlineData("task", new[] { "create", "done", "list", "ready-for-review" })]
     [InlineData("issue", new[] { "create", "list", "resolve" })]
     [InlineData("roles", new[] { "list", "create", "reset" })]

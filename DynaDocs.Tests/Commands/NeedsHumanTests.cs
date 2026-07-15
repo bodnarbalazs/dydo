@@ -241,46 +241,12 @@ public class NeedsHumanTests : IDisposable
     }
 
     [Fact]
-    public void HandRaise_And_HandLower_SetAndClearTheFlag_ForNamedAgent()
+    public void ExplicitFlag_SurvivesNextGuardedToolCall()
     {
-        WriteState("Adele", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
-
-        Assert.Equal(0, HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke());
-        Assert.True(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
-
-        Assert.Equal(0, HandCommand.Create().Parse(["lower", "--agent", "Adele"]).Invoke());
-        Assert.False(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
-    }
-
-    [Fact]
-    public void HandRaise_WithNoCurrentAgent_IsDefensiveNoOp_ReturnsSuccess()
-    {
-        // No --agent and no claimed session for this process: the escalation writer must not fail —
-        // it prints a notice and exits 0 rather than throwing or blocking the pipeline.
-        Environment.CurrentDirectory = _testDir;
-        Assert.Equal(0, HandCommand.Create().Parse(["raise"]).Invoke());
-    }
-
-    [Fact]
-    public void HandRaise_RecordsExplicitSource_ThatRoundTripsThroughStateFile()
-    {
+        // The sticky-explicit fix: an explicit flag must NOT be erased by the next (non-Ask) guarded
+        // tool call — that self-heal is for DERIVED flags only.
         WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
-
-        Assert.Equal(0, HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke());
-
-        Assert.Equal(NeedsHumanSource.Explicit, new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHumanSource);
-    }
-
-    [Fact]
-    public void HandRaise_ExplicitFlag_SurvivesRaisersNextGuardedToolCall()
-    {
-        // The sticky-explicit fix: an explicit raise must NOT be erased by the raiser's very next
-        // (non-Ask) guarded tool call — that self-heal is for DERIVED flags only.
-        WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
-        HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke();
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
 
         GuardCommand.ReconcileNeedsHuman("read", "sess-1", _registry);
 
@@ -292,14 +258,13 @@ public class NeedsHumanTests : IDisposable
     public void DerivedFlag_UpgradedByExplicitRaise_BecomesExplicit_AndStopsSelfHealing()
     {
         WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
 
         // Derived detection (AskUserQuestion) sets a self-healing flag.
         GuardCommand.ReconcileNeedsHuman("askuserquestion", "sess-1", _registry);
         Assert.Equal(NeedsHumanSource.Derived, _registry.GetAgentState("Adele")!.NeedsHumanSource);
 
         // An explicit raise upgrades it; the next tool call no longer clears it.
-        HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke();
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
         Assert.Equal(NeedsHumanSource.Explicit, _registry.GetAgentState("Adele")!.NeedsHumanSource);
 
         GuardCommand.ReconcileNeedsHuman("read", "sess-1", _registry);
@@ -307,13 +272,12 @@ public class NeedsHumanTests : IDisposable
     }
 
     [Fact]
-    public void HandLower_ClearsExplicitFlagAndSource()
+    public void ExplicitClear_ClearsFlagAndSource()
     {
         WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
-        HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke();
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
 
-        Assert.Equal(0, HandCommand.Create().Parse(["lower", "--agent", "Adele"]).Invoke());
+        Assert.True(_registry.SetNeedsHuman("Adele", false, NeedsHumanSource.Explicit));
 
         var state = new AgentRegistry(_testDir).GetAgentState("Adele")!;
         Assert.False(state.NeedsHuman);
@@ -323,42 +287,14 @@ public class NeedsHumanTests : IDisposable
     [Fact]
     public void Sweep_LeavesExplicitFlag_OnIdlePeer()
     {
-        // An orchestrator flags an idle peer via `hand raise --agent`; the peer isn't
-        // working-with-task, but the explicit flag must survive the reconcile sweep.
+        // An explicit flag on an idle peer (not working-with-task) must survive the reconcile sweep.
         WriteState("Adele", status: "free", task: "null", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
-        HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke();
+        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
         Assert.True(_registry.GetAgentState("Adele")!.NeedsHuman);
 
         WatchdogService.PollNeedsHuman(_dydoDir);
 
         Assert.True(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
-    }
-
-    [Fact]
-    public void HandRaise_UnknownAgent_FailsNonZero_AndWritesNoState()
-    {
-        // Ghost-agent defect: an unknown --agent must be a clear error with a non-zero exit and
-        // nothing written — no silently-fabricated state file, no false success.
-        Environment.CurrentDirectory = _testDir;
-
-        var code = HandCommand.Create().Parse(["raise", "--agent", "Ghost"]).Invoke();
-
-        Assert.NotEqual(0, code);
-        Assert.False(File.Exists(Path.Combine(_dydoDir, "agents", "Ghost", "state.md")));
-    }
-
-    [Fact]
-    public void HandRaise_PathTraversalAgent_FailsNonZero_AndWritesNothingOutsideAgentsTree()
-    {
-        // Path-traversal defect: `--agent ../../evil` must not fabricate a state file outside the
-        // agents tree. Validation rejects it before any filesystem touch.
-        Environment.CurrentDirectory = _testDir;
-
-        var code = HandCommand.Create().Parse(["raise", "--agent", "../../evil"]).Invoke();
-
-        Assert.NotEqual(0, code);
-        Assert.False(Directory.Exists(Path.Combine(_testDir, "evil")));
     }
 
     [Fact]
@@ -427,26 +363,6 @@ public class NeedsHumanTests : IDisposable
         Assert.Contains("Invalid task name", err);
         Assert.False(File.Exists(Path.Combine(_dydoDir, "evil.md")));
         Assert.False(File.Exists(Path.Combine(_testDir, "evil.md")));
-    }
-
-    [Fact]
-    public void HandRaise_LockContention_RetriesThenFailsNonZero_NoPhantomSuccess()
-    {
-        // Finding 6: a deliberate escalation must not vanish silently when the write is dropped on lock
-        // contention. Holding the per-agent lock forces every SetNeedsHuman attempt to fail; hand must retry
-        // briefly, then exit NON-ZERO (never report a phantom success), and write no flag.
-        WriteState("Adele", status: "working", task: "my-task", needsHuman: false);
-        Environment.CurrentDirectory = _testDir;
-
-        var lockPath = Path.Combine(_dydoDir, "agents", "Adele", ".claim.lock");
-        Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
-        using (new FileStream(lockPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-        {
-            var code = HandCommand.Create().Parse(["raise", "--agent", "Adele"]).Invoke();
-            Assert.NotEqual(0, code);
-        }
-
-        Assert.False(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
     }
 
     [Fact]

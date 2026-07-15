@@ -322,7 +322,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 ### Coordination (Tier-1)
 | Command | Description |
 |---------|-------------|
-| *`dydo dispatch --role <role> --task <name> --brief "..."`* | *Launch a named Tier-1 agent in a terminal* |
 | *`dydo hand raise`* / *`dydo hand lower`* | *Raise / clear the needs-human flag* |
 
 ### Tasks & Reviews

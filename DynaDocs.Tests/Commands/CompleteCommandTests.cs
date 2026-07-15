@@ -46,7 +46,6 @@ public class CompleteCommandTests : IDisposable
         Assert.Contains("task", completions);
         Assert.Contains("agent", completions);
         Assert.Contains("init", completions);
-        Assert.Contains("dispatch", completions);
         Assert.Contains("review", completions);
         Assert.DoesNotContain("clean", completions);
         Assert.Contains("completions", completions);

@@ -250,43 +250,6 @@ dydo agent reassign Adele bob
 
 ---
 
-## Dispatch & Inbox Commands
-
-### dydo dispatch
-
-Dispatch work to another agent. Reserves the target agent, writes a single assignment inbox item carrying the role/brief, and launches a terminal for that agent.
-
-```bash
-dydo dispatch --role reviewer --task auth-login --brief "Review PR"
-dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth"
-dydo dispatch --role code-writer --task auth-login --brief "Implement OAuth" --files "src/Auth/**"
-```
-
-**Options:**
-- `--role <role>` - Role for the target agent (required)
-- `--task <name>` - Task name (required)
-- `--brief <text>` - Brief description (required unless --brief-file used)
-- `--brief-file <path>` - Read brief from a file instead of inline
-- `--files <pattern>` - File pattern to include
-- `--to <agent-name>` - Send to specific agent (skips auto-selection); alias `--agent`
-- `--escalate` - Mark as escalated (after repeated failures)
-- `--auto-close` - Auto-close the dispatched agent's terminal after release
-- `--no-launch` - Don't launch terminal, just write to inbox
-- `--tab` - Launch in a new tab instead of a new window (overrides config)
-- `--new-window` - Launch in a new window (overrides config)
-- `--codex` - Launch the dispatched agent in Codex
-- `--claude` - Launch the dispatched agent in Claude Code
-
-By default, dispatch launches the same host as the calling agent's session. If the caller host is unknown, it launches Claude Code. `--codex` and `--claude` override the default and cannot be used together.
-
-**Auto-transition:** When `--role reviewer` is used, the task is automatically marked `in-review` and the `--brief` becomes the review summary. No need to call `dydo task ready-for-review` separately.
-
-**Double-dispatch protection:** If another agent is already working on the same task, dispatch is blocked.
-
-**Launch bridge:** Dispatch reserves the agent (status becomes `Dispatched`). The launched agent claims, reads its assignment from the inbox, and sets its role. If the launch fails, the stale-dispatch reclaim returns the agent to a re-dispatchable state.
-
----
-
 ## Workspace Commands
 
 ### dydo guard

@@ -12,7 +12,6 @@ public class CompletionProviderTests
     [InlineData("graph")]
     [InlineData("agent")]
     [InlineData("guard")]
-    [InlineData("dispatch")]
     [InlineData("task")]
     [InlineData("review")]
     [InlineData("workspace")]

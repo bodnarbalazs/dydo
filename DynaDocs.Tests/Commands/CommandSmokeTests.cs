@@ -20,7 +20,6 @@ public class CommandSmokeTests
             CleanCommand.Create,
             CompleteCommand.Create,
             CompletionsCommand.Create,
-            DispatchCommand.Create,
             FixCommand.Create,
             GraphCommand.Create,
             GuardCommand.Create,
@@ -61,7 +60,6 @@ public class CommandSmokeTests
                 CheckCommand.Create(),
                 CompleteCommand.Create(),
                 CompletionsCommand.Create(),
-                DispatchCommand.Create(),
                 FixCommand.Create(),
                 GraphCommand.Create(),
                 GuardCommand.Create(),
@@ -85,8 +83,8 @@ public class CommandSmokeTests
             // version is the only command created inline in Program.cs
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
-            // Must match Program.cs: 23 Create() commands + 1 inline (version) = 24
-            Assert.Equal(24, rootCommand.Subcommands.Count);
+            // Must match Program.cs: 22 Create() commands + 1 inline (version) = 23
+            Assert.Equal(23, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

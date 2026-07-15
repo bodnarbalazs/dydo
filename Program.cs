@@ -11,7 +11,6 @@ rootCommand.Subcommands.Add(InitCommand.Create());
 rootCommand.Subcommands.Add(GraphCommand.Create());
 rootCommand.Subcommands.Add(AgentCommand.Create());
 rootCommand.Subcommands.Add(GuardCommand.Create());
-rootCommand.Subcommands.Add(DispatchCommand.Create());
 rootCommand.Subcommands.Add(TaskCommand.Create());
 rootCommand.Subcommands.Add(HandCommand.Create());
 rootCommand.Subcommands.Add(IssueCommand.Create());

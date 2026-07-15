@@ -46,9 +46,6 @@ public static class HelpCommand
         Console.WriteLine("  agent remove <name> [--force]  Remove agent from pool");
         Console.WriteLine("  agent reassign <name> <human>  Reassign agent to different human");
         Console.WriteLine();
-        Console.WriteLine("Dispatch Commands:");
-        Console.WriteLine("  dispatch               Dispatch work to another agent");
-        Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
         Console.WriteLine("  workspace init         Initialize agent workspaces");

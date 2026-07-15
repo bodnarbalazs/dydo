@@ -58,58 +58,6 @@ public class IdentityHijackMutatingCommandTests : IDisposable
         try { Directory.Delete(_testDir, recursive: true); } catch { }
     }
 
-    [Fact]
-    public void Dispatch_UnownedSharedSessionContext_DoesNotDispatchAsContextAgent()
-    {
-        var options = new DispatchOptions(
-            Role: "code-writer",
-            Task: "hijack-dispatch",
-            Brief: "Implement the hijack regression test.",
-            To: "Brian",
-            AutoClose: true);
-
-        var (exitCode, _, stderr) = ConsoleCapture.All(() => DispatchService.Execute(options));
-
-        // #0250: the attacker does not own Adele's session → TryGetCurrentOwnedAgent refuses,
-        // and Brian is neither reserved nor sent an assignment.
-        Assert.Equal(ExitCodes.ToolError, exitCode);
-        Assert.Contains("does not own", stderr);
-        Assert.Empty(Directory.GetFiles(Path.Combine(_testDir, "dydo", "agents", "Brian", "inbox"), "*.md"));
-        Assert.Contains("status: free", File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Brian", "state.md")));
-    }
-
-    [Fact]
-    public void Dispatch_NestedForeignWorkerUnderClaimedHost_DoesNotDispatchAsOuterAgent()
-    {
-        SetupNestedForeignWorkerAncestry();
-
-        var options = new DispatchOptions(
-            Role: "code-writer",
-            Task: "nested-dispatch",
-            Brief: "Implement the nested-worker regression test.",
-            To: "Brian",
-            AutoClose: true);
-
-        var (exitCode, _, stderr) = ConsoleCapture.All(() => DispatchService.Execute(options));
-
-        Assert.Equal(ExitCodes.ToolError, exitCode);
-        Assert.Contains("does not own", stderr);
-        Assert.Empty(Directory.GetFiles(Path.Combine(_testDir, "dydo", "agents", "Brian", "inbox"), "*.md"));
-        Assert.Contains("status: free", File.ReadAllText(Path.Combine(_testDir, "dydo", "agents", "Brian", "state.md")));
-    }
-
-    // Ancestry: this process → claude host → Adele's claimed codex host. Descendant ownership
-    // would pass; nearest-host-wins must not, because the nearest host is claude, not codex.
-    private void SetupNestedForeignWorkerAncestry()
-    {
-        const int claudeMidPid = 606060;
-        ProcessUtils.FindAncestorProcessOverride = null;
-        ProcessUtils.GetParentPidOverride = pid =>
-            pid == Environment.ProcessId ? claudeMidPid :
-            pid == claudeMidPid ? AdeleOwnerPid : null;
-        ProcessUtils.GetProcessNameOverride = pid => pid == claudeMidPid ? "claude" : "bash";
-    }
-
     // ── #0256: DYDO_AGENT env fast-path gets the nearest-host-wins gate ──────────────────────
     // The base setup NULLS DYDO_AGENT (:35), leaving the env fast-path structurally uncovered —
     // exactly why 0256 went unnoticed. These cases inherit DYDO_AGENT=Adele (as a dispatched

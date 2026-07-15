@@ -22,10 +22,9 @@ public class RoleConstraintEvaluator
     /// <summary>
     /// Checks if an agent can take a specific role on a task.
     /// Evaluates constraints from role definitions (data-driven).
-    /// <paramref name="dispatcherRole"/> is the role of the agent performing a dispatch (the
-    /// caller), threaded through from <see cref="AgentSelector"/> so constraint evaluation and
-    /// messages see the real caller — not the target's (often unset) role (#0237). Null on the
-    /// self-conversion path (an agent setting its own role), where the caller is the agent itself.
+    /// <paramref name="dispatcherRole"/> was the dispatching caller's role (#0237); with dispatch
+    /// removed (DR-041) it is null on the remaining self-conversion path (an agent setting its
+    /// own role), where the caller is the agent itself.
     /// </summary>
     public bool CanTakeRole(string agentName, string role, string task, out string reason,
         string? dispatcherRole = null)

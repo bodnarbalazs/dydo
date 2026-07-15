@@ -13,81 +13,6 @@ using DynaDocs.Services;
 [Collection("Integration")]
 public class ConditionalMustReadTests : IntegrationTestBase
 {
-    #region Brief Injection into Task Files
-
-    [Fact]
-    public async Task Dispatch_InjectsBriefIntoTaskFile()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await TaskCreateAsync("my-task");
-
-        // Verify task file has "(No description)" initially
-        var taskContent = ReadFile("dydo/project/tasks/my-task.md");
-        Assert.Contains("(No description)", taskContent);
-
-        var result = await DispatchAsync("code-writer", "my-task", "Implement OAuth flow with token refresh");
-
-        result.AssertSuccess();
-
-        // After dispatch, brief should replace "(No description)"
-        taskContent = ReadFile("dydo/project/tasks/my-task.md");
-        Assert.Contains("Implement OAuth flow with token refresh", taskContent);
-        Assert.DoesNotContain("(No description)", taskContent);
-    }
-
-    [Fact]
-    public async Task Dispatch_DoesNotOverwriteExistingDescription()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await TaskCreateAsync("my-task", description: "Already has a description");
-
-        var result = await DispatchAsync("code-writer", "my-task", "New brief that should not overwrite");
-
-        result.AssertSuccess();
-
-        var taskContent = ReadFile("dydo/project/tasks/my-task.md");
-        Assert.Contains("Already has a description", taskContent);
-        Assert.DoesNotContain("New brief that should not overwrite", taskContent);
-    }
-
-    [Fact]
-    public async Task Dispatch_EmptyBrief_DoesNotModifyTaskFile()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-        await TaskCreateAsync("my-task");
-
-        // Dispatch with a very minimal brief (just whitespace-ish)
-        var command = DispatchCommand.Create();
-        var args = new[] { "--role", "code-writer", "--task", "my-task", "--brief", "x", "--no-launch" };
-        BypassNoLaunchNudge("my-task");
-        var result = await RunAsync(command, args);
-
-        result.AssertSuccess();
-
-        // "x" replaces "(No description)" since it's non-empty
-        var taskContent = ReadFile("dydo/project/tasks/my-task.md");
-        Assert.DoesNotContain("(No description)", taskContent);
-    }
-
-    [Fact]
-    public async Task Dispatch_BriefInjection_WorksWithAutoCreatedTaskFile()
-    {
-        await InitProjectAsync("none", "testuser", 3);
-
-        // Don't pre-create task file — let AutoCreateTaskFile handle it
-        // AutoCreateTaskFile runs when target agent sets role, but dispatch also calls InjectBrief
-        // Since task file doesn't exist at dispatch time, injection is skipped
-        // Brief is still available in the inbox item
-        var result = await DispatchAsync("code-writer", "new-task", "Implement new feature");
-
-        result.AssertSuccess();
-
-        // Task file may or may not exist (depends on whether agent already set role)
-        // Just verify no crash
-    }
-
-    #endregion
-
     #region Conditional Must-Read: Merge Code-Writer
 
     [Fact]
@@ -428,27 +353,6 @@ public class ConditionalMustReadTests : IntegrationTestBase
             args.Add("--description");
             args.Add(description);
         }
-        return await RunAsync(command, args.ToArray());
-    }
-
-    private async Task<CommandResult> DispatchAsync(
-        string role,
-        string task,
-        string brief,
-        string? to = null)
-    {
-        var command = DispatchCommand.Create();
-        var args = new List<string>
-        {
-            "--role", role,
-            "--task", task,
-            "--brief", brief,
-            "--no-launch"
-        };
-
-        BypassNoLaunchNudge(task);
-        if (to != null) { args.Add("--to"); args.Add(to); }
-
         return await RunAsync(command, args.ToArray());
     }
 

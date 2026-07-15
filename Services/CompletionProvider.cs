@@ -7,7 +7,7 @@ public static class CompletionProvider
     private static readonly string[] TopLevelCommands =
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
-        "dispatch", "task", "issue",
+        "task", "issue",
         "review", "workspace", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
         "watchdog", "worktree", "version", "help"

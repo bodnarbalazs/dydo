@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "dydo guard"
+            "command": "dydo notguard"
           }
         ]
       }

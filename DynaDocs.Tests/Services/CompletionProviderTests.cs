@@ -17,7 +17,6 @@ public class CompletionProviderTests
     [InlineData("task")]
     [InlineData("review")]
     [InlineData("workspace")]
-    [InlineData("whoami")]
     [InlineData("version")]
     [InlineData("help")]
     [InlineData("completions")]

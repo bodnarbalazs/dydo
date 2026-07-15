@@ -146,16 +146,6 @@ public abstract class IntegrationTestBase : IDisposable
         return await RunAsync(command, integration, "--join", "--name", humanName, "--agents", agentCount.ToString());
     }
 
-    /// <summary>
-    /// Run whoami command.
-    /// </summary>
-    protected async Task<CommandResult> WhoamiAsync()
-    {
-        StoreSessionContext();
-        var command = WhoamiCommand.Create();
-        return await RunAsync(command);
-    }
-
     // Test session ID for integration tests
     protected const string TestSessionId = "test-integration-session";
 

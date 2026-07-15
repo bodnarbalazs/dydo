@@ -8,7 +8,7 @@ public static class CompletionProvider
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
         "dispatch", "inbox", "read", "message", "msg", "wait", "task", "issue",
-        "review", "workspace", "whoami", "sync", "notion",
+        "review", "workspace", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
         "watchdog", "worktree", "version", "help"
     ];

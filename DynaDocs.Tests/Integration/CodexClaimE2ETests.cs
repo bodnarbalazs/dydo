@@ -37,12 +37,6 @@ public class CodexClaimE2ETests : IntegrationTestBase
         Assert.NotNull(session);
         Assert.Equal("codex", session!.Host);
         Assert.Equal("gpt-5-codex", session.Model);
-
-        // The provenance also reaches the whoami surface (c1-6), proving the value is not merely on
-        // disk but resolved through the same renderer a codex operator sees.
-        var who = await WhoamiAsync();
-        who.AssertSuccess();
-        Assert.Contains("Host: codex", who.Stdout);
     }
 
     // (0233 ask 2) Claiming a codex-owned session registers a watchdog anchor keyed to the codex

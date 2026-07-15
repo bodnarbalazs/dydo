@@ -22,7 +22,6 @@ public static class HelpCommand
         Console.WriteLine("Setup Commands:");
         Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, codex, none)");
         Console.WriteLine("  init <int> --join      Join existing project as new team member");
-        Console.WriteLine("  whoami                 Show current agent identity");
         Console.WriteLine();
         Console.WriteLine("Documentation Commands:");
         Console.WriteLine("  check [path]           Validate docs, report violations");

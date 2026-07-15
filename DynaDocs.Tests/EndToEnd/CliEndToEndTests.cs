@@ -75,7 +75,6 @@ public class CliEndToEndTests : IDisposable
     [InlineData("inbox")]
     [InlineData("task")]
     [InlineData("review")]
-    [InlineData("whoami")]
     [InlineData("workspace")]
     [InlineData("agent clean")]
     [InlineData("fix")]
@@ -193,19 +192,6 @@ public class CliEndToEndTests : IDisposable
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("outside the docs tree", result.Stdout + result.Stderr);
-    }
-
-    [Fact]
-    public async Task Init_ThenWhoami_ShowsHumanInfo()
-    {
-        // Initialize
-        var initResult = await RunDydoAsync("init none --name testuser --agents 2");
-        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
-
-        // Whoami should show human info
-        var whoamiResult = await RunDydoAsync("whoami");
-        Assert.True(whoamiResult.ExitCode == 0, $"whoami failed: {whoamiResult.Stderr}");
-        Assert.Contains("testuser", whoamiResult.Stdout);
     }
 
     #endregion

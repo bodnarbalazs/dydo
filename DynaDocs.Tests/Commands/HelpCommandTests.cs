@@ -32,7 +32,6 @@ public class HelpCommandTests
         Assert.Contains("task", output);
         Assert.Contains("review", output);
         Assert.Contains("workspace", output);
-        Assert.Contains("whoami", output);
         Assert.Contains("completions", output);
         Assert.Contains("template", output);
         Assert.Contains("roles", output);

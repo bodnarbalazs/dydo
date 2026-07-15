@@ -69,32 +69,6 @@ public class ModelProvenanceTests : IntegrationTestBase
         Assert.Contains("found-by-model: gpt-5-experimental-42", content);
     }
 
-    [Fact]
-    public async Task Whoami_ShowsHostAndModelDisplayName()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentWithRuntimeAsync("Adele", "claude", "claude-opus-4-8");
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        Assert.Contains("Host: claude", result.Stdout);
-        Assert.Contains("Model: Opus 4.8", result.Stdout);
-    }
-
-    [Fact]
-    public async Task Whoami_UnknownModel_ShowsVendorFallback()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentWithRuntimeAsync("Adele", "codex", AgentSessionUnknownModel);
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        Assert.Contains("Host: codex", result.Stdout);
-        Assert.Contains("Model: codex", result.Stdout);
-    }
-
     private const string AgentSessionUnknownModel = "unknown";
 
     private async Task<string> CreateIssueAndRead(string title)

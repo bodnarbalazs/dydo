@@ -30,18 +30,6 @@ dydo init codex --name "Your Name" --agents 3   # Non-interactive Codex setup
 - `--name <name>` - Human name (skips prompt)
 - `--agents <count>` - Number of agents to create/assign
 
-### dydo whoami
-
-Show current agent identity and status.
-
-```bash
-dydo whoami
-```
-
-**Output:** Agent name, assigned human, host, model (the exact runtime model as a display name), role, task, workspace path, permissions.
-
----
-
 ### dydo sync
 
 Compile dydo role definitions into native Claude Code and Codex artifacts - Claude `.claude/agents/<role>.md` / `.claude/skills/<role>/SKILL.md` outputs plus Codex `.codex/agents/<role>.toml` / `.agents/skills/<role>/SKILL.md` outputs (Decision 024).

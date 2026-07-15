@@ -286,7 +286,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | **`dydo init <integration> --join`** | **Join existing project as a new team member** |
 | **`dydo sync`** | **Compile roles to Claude and Codex agents + skills** |
 | `dydo validate` | Validate configuration and roles |
-| *`dydo whoami`* | *Show current agent identity* |
 
 ### Documentation
 | Command | Description |

@@ -5,79 +5,11 @@ using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for agent lifecycle commands:
-/// whoami, claim, release, status, list, role.
+/// claim, release, status, list, role.
 /// </summary>
 [Collection("Integration")]
 public class AgentLifecycleTests : IntegrationTestBase
 {
-    #region Whoami
-
-    [Fact]
-    public async Task Whoami_NoAgent_ShowsHumanAndAvailable()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("balazs");
-        // Should show available agents
-        result.AssertStdoutContains("Adele");
-    }
-
-    [Fact]
-    public async Task Whoami_WithAgent_ShowsIdentity()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Adele");
-    }
-
-    [Fact]
-    public async Task Whoami_WithRoleSet_ShowsRole()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("code-writer");
-    }
-
-    [Fact]
-    public async Task Whoami_WithDispatcher_ShowsDispatcher()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        SetDispatcher("Adele", "Brian", "chief-of-staff");
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Dispatched by: Brian (chief-of-staff)");
-    }
-
-    [Fact]
-    public async Task Whoami_WithoutDispatcher_OmitsDispatcher()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        var result = await WhoamiAsync();
-
-        result.AssertSuccess();
-        Assert.DoesNotContain("Dispatched by:", result.Stdout);
-    }
-
-    #endregion
-
     #region Claim
 
     [Fact]
@@ -1007,19 +939,6 @@ public class AgentLifecycleTests : IntegrationTestBase
         await SetRoleAsync("code-writer", "jwt-auth");
 
         var result = await AgentStatusAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Task file:");
-    }
-
-    [Fact]
-    public async Task Whoami_WithTask_ShowsTaskFilePath()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "jwt-auth");
-
-        var result = await WhoamiAsync();
 
         result.AssertSuccess();
         result.AssertStdoutContains("Task file:");

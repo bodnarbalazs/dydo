@@ -66,10 +66,6 @@ public static class ReviewCommand
 
     private static int ExecuteComplete(string taskName, string status, string? notes)
     {
-        var registry = new AgentRegistry();
-        var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentOwnedAgent(sessionId);
-
         var tasksPath = GetTasksPath();
         var taskPath = Path.Combine(tasksPath, $"{taskName}.md");
 
@@ -92,9 +88,9 @@ public static class ReviewCommand
         }
 
         if (status == "pass")
-            return CompletePass(registry, agent, taskPath, content, taskName, notes);
+            return CompletePass(taskPath, content, taskName, notes);
 
-        return CompleteFail(registry, agent, taskPath, content, taskName, notes);
+        return CompleteFail(taskPath, content, taskName, notes);
     }
 
     private static string ReadCurrentStatus(string content)
@@ -103,16 +99,12 @@ public static class ReviewCommand
         return statusMatch.Success ? statusMatch.Groups[1].Value : "unknown";
     }
 
-    private static (string Name, string ProvenanceLines) ResolveReviewer(AgentRegistry registry, Models.AgentState? agent)
-    {
-        var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
-        return (agent?.Name ?? "Unknown", RenderReviewProvenance(provenance));
-    }
+    // Reviewer identity/provenance stamping was carved out with the claim ceremony (DR-041):
+    // there is no runtime agent identity, so the reviewer is recorded as "Unknown".
+    private const string ReviewerName = "Unknown";
 
-    private static int CompletePass(AgentRegistry registry, Models.AgentState? agent, string taskPath,
-        string content, string taskName, string? notes)
+    private static int CompletePass(string taskPath, string content, string taskName, string? notes)
     {
-        var reviewer = ResolveReviewer(registry, agent);
         var reviewTime = DateTime.UtcNow;
 
         content = Regex.Replace(content, @"status: [\w-]+", "status: done");
@@ -122,8 +114,7 @@ public static class ReviewCommand
 
             ## Code Review
 
-            - Reviewed by: {reviewer.Name}
-            {reviewer.ProvenanceLines}
+            - Reviewed by: {ReviewerName}
             - Date: {reviewTime:yyyy-MM-dd HH:mm}
             - Result: PASSED
             {(string.IsNullOrEmpty(notes) ? "" : $"- Notes: {notes}")}
@@ -134,19 +125,11 @@ public static class ReviewCommand
         File.WriteAllText(taskPath, content);
 
         Console.WriteLine($"Review PASSED for {taskName}");
-
-        if (agent != null)
-        {
-            RequireMergeDispatch(registry, agent, taskName);
-        }
-
         return ExitCodes.Success;
     }
 
-    private static int CompleteFail(AgentRegistry registry, Models.AgentState? agent, string taskPath,
-        string content, string taskName, string? notes)
+    private static int CompleteFail(string taskPath, string content, string taskName, string? notes)
     {
-        var reviewer = ResolveReviewer(registry, agent);
         var reviewTime = DateTime.UtcNow;
 
         content = Regex.Replace(content, @"status: [\w-]+", "status: in-progress");
@@ -156,8 +139,7 @@ public static class ReviewCommand
 
             ## Code Review ({reviewTime:yyyy-MM-dd HH:mm})
 
-            - Reviewed by: {reviewer.Name}
-            {reviewer.ProvenanceLines}
+            - Reviewed by: {ReviewerName}
             - Result: FAILED
             - Issues: {notes ?? "(No details provided)"}
 
@@ -175,29 +157,4 @@ public static class ReviewCommand
 
         return ExitCodes.Success;
     }
-
-    // If reviewer is in a worktree, require merge dispatch before release
-    private static void RequireMergeDispatch(AgentRegistry registry, Models.AgentState agent, string taskName)
-    {
-        var workspace = registry.GetAgentWorkspace(agent.Name);
-        var worktreeMarker = Path.Combine(workspace, ".worktree");
-        if (!File.Exists(worktreeMarker))
-            return;
-
-        File.WriteAllText(Path.Combine(workspace, ".needs-merge"), taskName);
-        Console.WriteLine();
-        Console.WriteLine("Worktree branch needs merging. Dispatch a code-writer to merge before releasing:");
-        Console.WriteLine($"  dydo dispatch --auto-close --role code-writer --task {taskName}-merge --brief \"Merge worktree branch into base. See .merge-source and .worktree-base markers in your workspace.\"");
-    }
-
-    private static string RenderReviewProvenance(ArtifactProvenance? provenance)
-    {
-        if (provenance == null) return "";
-
-        return $"""
-            - reviewed-by-vendor: {provenance.Vendor}
-            - reviewed-by-model: {provenance.Model}
-            """;
-    }
-
 }

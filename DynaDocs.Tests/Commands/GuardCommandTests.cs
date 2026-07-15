@@ -618,7 +618,7 @@ public class GuardCommandTests : IDisposable
     [InlineData("npx dydo agent claim auto", "agent claim auto")]
     [InlineData("npx --yes dydo whoami", "whoami")]
     [InlineData("dotnet dydo agent status", "agent status")]
-    [InlineData("dotnet run -- agent claim auto", "agent claim auto")]
+    [InlineData("dotnet run -- task list", "task list")]
     public void DefaultNudges_CaptureGroupExtractsArgs(string command, string expectedArgs)
     {
         foreach (var nudge in ConfigFactory.DefaultNudges)
@@ -774,7 +774,7 @@ public class GuardCommandTests : IDisposable
     public void CheckNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
     {
         var registry = CreateRegistryWithAgent("Adele", "sess-1");
-        var workspace = registry.GetAgentWorkspace("Adele");
+        var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
         var markerPath = Path.Combine(workspace, $".nudge-{hash}");
@@ -793,7 +793,7 @@ public class GuardCommandTests : IDisposable
     public void CheckNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
     {
         var registry = CreateRegistryWithAgent("Adele", "sess-1");
-        var workspace = registry.GetAgentWorkspace("Adele");
+        var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
         var markerPath = Path.Combine(workspace, $".nudge-{hash}");
@@ -823,7 +823,7 @@ public class GuardCommandTests : IDisposable
             (patternB, "Warning B", "warn"));
         var registry = new AgentRegistry(_testDir);
 
-        var workspace = registry.GetAgentWorkspace("Adele");
+        var workspace = registry.WorkspacePath;  // warn-nudge markers are global now (DR-041)
         var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
         var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
 

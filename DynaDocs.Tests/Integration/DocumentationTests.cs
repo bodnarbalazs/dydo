@@ -421,11 +421,11 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none", "balazs", 3);
 
-        // Claim agent so modes folder exists
-        var claimResult = await ClaimAgentAsync("Adele");
-        claimResult.AssertSuccess();
+        // A modes folder with files but no _index.md (by design)
+        var modesDir = Path.Combine(TestDir, "dydo/agents/Adele/modes");
+        Directory.CreateDirectory(modesDir);
+        File.WriteAllText(Path.Combine(modesDir, "code-writer.md"), "# code-writer");
 
-        // Agent modes folder has files but no _index.md (by design)
         AssertDirectoryExists("dydo/agents/Adele/modes");
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes/_index.md")));
 

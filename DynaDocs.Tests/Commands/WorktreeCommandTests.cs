@@ -611,17 +611,16 @@ public class WorktreeCommandTests : IDisposable
     }
 
     [Fact]
-    public void Merge_NoAgentClaimed_ReturnsError()
+    public void Merge_NoMergeSourceMarker_ReturnsError()
     {
-        // Set up session context but no agent claimed for it
+        // No workspace holds a .merge-source marker — nothing to merge (identity-free, DR-041).
         var agentsDir = Path.Combine(_testDir, "dydo", "agents");
         Directory.CreateDirectory(agentsDir);
-        File.WriteAllText(Path.Combine(agentsDir, ".session-context"), "orphan-session");
 
         var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteMerge(false, _registry));
 
         Assert.NotEqual(0, exitCode);
-        Assert.Contains("No agent claimed", stderr);
+        Assert.Contains("No .merge-source marker found", stderr);
     }
 
     [Fact]
@@ -2664,16 +2663,24 @@ public class WorktreeCommandTests : IDisposable
     [Fact]
     public void Status_OutsideWorktree_ReturnsError()
     {
-        var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false, _registry));
+        var cwd = Environment.CurrentDirectory;
+        Environment.CurrentDirectory = _testDir;
+        try
+        {
+            var (exitCode, _, stderr) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false));
 
-        Assert.NotEqual(0, exitCode);
-        Assert.Contains("Not inside a dydo worktree", stderr);
+            Assert.NotEqual(0, exitCode);
+            Assert.Contains("Not inside a dydo worktree", stderr);
+        }
+        finally { Environment.CurrentDirectory = cwd; }
     }
 
     [Fact]
     public void Status_SuspiciousOnly_DefaultMode()
     {
         SetupWorktreeAgent("Adele", out var worktreePath);
+        var cwd = Environment.CurrentDirectory;
+        Environment.CurrentDirectory = worktreePath;
 
         WorktreeCommand.RunProcessCaptureOverride = (_, args) =>
             args.Contains("status --porcelain")
@@ -2681,7 +2688,7 @@ public class WorktreeCommandTests : IDisposable
                 : (0, string.Empty);
         try
         {
-            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false, _registry));
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false));
 
             Assert.Equal(0, exitCode);
             Assert.Contains("Services/Foo.cs", stdout);
@@ -2691,6 +2698,7 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             WorktreeCommand.RunProcessCaptureOverride = null;
+            Environment.CurrentDirectory = cwd;
         }
     }
 
@@ -2698,6 +2706,8 @@ public class WorktreeCommandTests : IDisposable
     public void Status_All_IncludesJunk()
     {
         SetupWorktreeAgent("Adele", out var worktreePath);
+        var cwd = Environment.CurrentDirectory;
+        Environment.CurrentDirectory = worktreePath;
 
         WorktreeCommand.RunProcessCaptureOverride = (_, args) =>
             args.Contains("status --porcelain")
@@ -2705,7 +2715,7 @@ public class WorktreeCommandTests : IDisposable
                 : (0, string.Empty);
         try
         {
-            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: true, _registry));
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: true));
 
             Assert.Equal(0, exitCode);
             Assert.Contains("Services/Foo.cs", stdout);
@@ -2714,6 +2724,7 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             WorktreeCommand.RunProcessCaptureOverride = null;
+            Environment.CurrentDirectory = cwd;
         }
     }
 
@@ -2721,11 +2732,13 @@ public class WorktreeCommandTests : IDisposable
     public void Status_CleanTree_ReportsClean()
     {
         SetupWorktreeAgent("Adele", out var worktreePath);
+        var cwd = Environment.CurrentDirectory;
+        Environment.CurrentDirectory = worktreePath;
 
         WorktreeCommand.RunProcessCaptureOverride = (_, _) => (0, string.Empty);
         try
         {
-            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false, _registry));
+            var (exitCode, stdout, _) = CaptureAll(() => WorktreeCommand.ExecuteStatus(all: false));
 
             Assert.Equal(0, exitCode);
             Assert.Contains("clean", stdout);
@@ -2733,6 +2746,7 @@ public class WorktreeCommandTests : IDisposable
         finally
         {
             WorktreeCommand.RunProcessCaptureOverride = null;
+            Environment.CurrentDirectory = cwd;
         }
     }
 

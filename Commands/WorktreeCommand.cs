@@ -102,13 +102,7 @@ public static class WorktreeCommand
 
     internal static int ExecuteStatus(bool all)
     {
-        var registry = new AgentRegistry();
-        return ExecuteStatus(all, registry);
-    }
-
-    internal static int ExecuteStatus(bool all, AgentRegistry registry)
-    {
-        var worktreePath = ResolveCurrentWorktreePath(registry);
+        var worktreePath = ResolveCurrentWorktreePath();
         if (worktreePath == null)
         {
             ConsoleOutput.WriteError("Not inside a dydo worktree. Run this from an agent's worktree directory.");
@@ -160,27 +154,13 @@ public static class WorktreeCommand
         return ExitCodes.Success;
     }
 
-    private static string? ResolveCurrentWorktreePath(AgentRegistry registry)
+    // The agent-session branch that resolved the worktree from the claiming agent's
+    // .worktree-path marker was removed with the claim ceremony (DR-041): worktree status is
+    // now resolved purely from the current working directory.
+    private static string? ResolveCurrentWorktreePath()
     {
-        var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentAgent(sessionId);
-        if (agent != null)
-        {
-            var workspace = registry.GetAgentWorkspace(agent.Name);
-            var pathMarker = Path.Combine(workspace, ".worktree-path");
-            if (File.Exists(pathMarker))
-            {
-                var path = File.ReadAllText(pathMarker).Trim();
-                if (Directory.Exists(path))
-                    return path;
-            }
-        }
-
         var cwd = Directory.GetCurrentDirectory();
-        if (PathUtils.IsInsideWorktree(cwd))
-            return cwd;
-
-        return null;
+        return PathUtils.IsInsideWorktree(cwd) ? cwd : null;
     }
 
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
@@ -892,24 +872,30 @@ public static class WorktreeCommand
     internal static int ExecuteMerge(bool finalize, AgentRegistry registry)
         => ExecuteMerge(finalize, false, registry);
 
+    // Session-free workspace resolution (DR-041): the claim ceremony that used to bind a merge
+    // to the claiming agent is gone, so the merge target is the workspace that holds a
+    // .merge-source marker. Returns the first such workspace's agent name + path, or (null, null).
+    private static (string? AgentName, string? Workspace) FindMergeWorkspace(AgentRegistry registry)
+    {
+        foreach (var agent in registry.GetAllAgentStates())
+        {
+            var workspace = registry.GetAgentWorkspace(agent.Name);
+            if (File.Exists(Path.Combine(workspace, ".merge-source")))
+                return (agent.Name, workspace);
+        }
+        return (null, null);
+    }
+
     internal static int ExecuteMerge(bool finalize, bool force, AgentRegistry registry)
     {
-        var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentAgent(sessionId);
-        if (agent == null)
-        {
-            ConsoleOutput.WriteError("No agent claimed for this session.");
-            return ExitCodes.ToolError;
-        }
-
-        var workspace = registry.GetAgentWorkspace(agent.Name);
-
-        var mergeSourcePath = Path.Combine(workspace, ".merge-source");
-        if (!File.Exists(mergeSourcePath))
+        var (agentName, workspace) = FindMergeWorkspace(registry);
+        if (workspace == null)
         {
             ConsoleOutput.WriteError("No .merge-source marker found. Nothing to merge.");
             return ExitCodes.ToolError;
         }
+
+        var mergeSourcePath = Path.Combine(workspace, ".merge-source");
         var mergeSource = File.ReadAllText(mergeSourcePath).Trim();
 
         // Block merge while child worktrees are still active
@@ -950,7 +936,7 @@ public static class WorktreeCommand
         }
 
         if (finalize)
-            return FinalizeMerge(registry, agent.Name, workspace, mergeSource, baseBranch, mainRoot);
+            return FinalizeMerge(registry, agentName!, workspace, mergeSource, baseBranch, mainRoot);
 
         if (!force)
         {
@@ -974,7 +960,7 @@ public static class WorktreeCommand
             return ExitCodes.ValidationErrors;
         }
 
-        return FinalizeMerge(registry, agent.Name, workspace, mergeSource, baseBranch, mainRoot);
+        return FinalizeMerge(registry, agentName!, workspace, mergeSource, baseBranch, mainRoot);
     }
 
     internal static int FinalizeMerge(AgentRegistry registry, string agentName, string workspace, string mergeSource, string baseBranch, string mainRoot)

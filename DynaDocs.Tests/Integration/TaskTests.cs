@@ -50,31 +50,20 @@ public class TaskTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Task_Create_AssignsCurrentAgent()
+    public async Task Task_Create_Unassigned_Backlog()
     {
+        // No runtime agent identity (DR-041): a manually-created task lands unassigned/backlog
+        // with no vendor/model provenance.
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
 
         var result = await TaskCreateAsync("my-task", area: "general");
 
         result.AssertSuccess();
-        AssertFileContains("dydo/project/tasks/my-task.md", "assigned: Adele");
-        AssertFileContains("dydo/project/tasks/my-task.md", "status: in-progress");
-    }
-
-    [Fact]
-    public async Task Task_Create_AssignedCurrentAgent_WritesRuntimeProvenance()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentWithRuntimeAsync("Adele", "codex", "gpt-5");
-
-        var result = await TaskCreateAsync("provenance-task", area: "general");
-
-        result.AssertSuccess();
-        var content = ReadFile("dydo/project/tasks/provenance-task.md");
-        Assert.Contains("assigned: Adele", content);
-        Assert.Contains("assigned-vendor: codex", content);
-        Assert.Contains("assigned-model: gpt-5", content);
+        var content = ReadFile("dydo/project/tasks/my-task.md");
+        Assert.Contains("assigned: unassigned", content);
+        Assert.Contains("status: backlog", content);
+        Assert.DoesNotContain("assigned-vendor", content);
+        Assert.DoesNotContain("assigned-model", content);
     }
 
     [Fact]
@@ -271,9 +260,9 @@ public class TaskTests : IntegrationTestBase
     public async Task Task_Done_DifferentAgent_MarksDoneAndKeepsTaskFile()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
         await TaskCreateAsync("peer-done", area: "backend");
         SetTaskAssigned("peer-done", "Brian");
+        SetTaskStatus("peer-done", "in-progress");
 
         var result = await TaskDoneAsync("peer-done");
 

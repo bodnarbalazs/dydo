@@ -14,8 +14,6 @@ public class GuardSecurityTests : IntegrationTestBase
     private async Task SetupClaimedAgent(string agentName = "Adele", string role = "code-writer", string task = "test-task")
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync(agentName);
-        await SetRoleAsync(role, task);
         await ReadMustReadsAsync();
     }
 

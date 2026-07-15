@@ -1,11 +1,11 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
-using DynaDocs.Services;
 
 /// <summary>
-/// Integration tests for the guard command.
-/// Tests security layers: off-limits, role permissions, bash analysis.
+/// Integration tests for the guard command. Post-DR-041 the guard is identity-free: only the
+/// universal layers remain (off-limits, dangerous-bash, nudges, git-safety, worktree-allow,
+/// search-tool gating, plan-mode block). There is no claim/role/must-read setup.
 /// </summary>
 [Collection("Integration")]
 public class GuardIntegrationTests : IntegrationTestBase
@@ -53,11 +53,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_AllowedPath_Passes()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
-        // src/file.cs is typically allowed for code-writer
+        // src/file.cs is not off-limits — allowed
         var result = await GuardAsync("edit", "src/file.cs");
 
         result.AssertSuccess();
@@ -68,12 +65,10 @@ public class GuardIntegrationTests : IntegrationTestBase
     #region Reads allowed unless off-limits
 
     [Fact]
-    public async Task Guard_NoIdentity_ReadRootFile_Allows()
+    public async Task Guard_ReadRootFile_Allows()
     {
         await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
 
-        // Root-level files are bootstrap files
         var result = await GuardAsync("read", "CLAUDE.md");
 
         result.AssertSuccess();
@@ -83,9 +78,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_OffLimitsModeFile_Read_Blocks()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
 
-        // Mode files are off-limits (dydo/agents/*/modes/**) — no onboarding bypass anymore
+        // Mode files are off-limits (dydo/agents/*/modes/**)
         var result = await GuardAsync("read", "dydo/agents/Brian/modes/code-writer.md");
 
         result.AssertExitCode(2);
@@ -93,24 +87,19 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_IdentityWithRole_ReadSourceFile_Allows()
+    public async Task Guard_ReadSourceFile_Allows()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
-        // With identity and role, all reads allowed (except off-limits)
         var result = await GuardAsync("read", "src/code.cs");
 
         result.AssertSuccess();
     }
 
     [Fact]
-    public async Task Guard_IdentityWithRole_ReadOtherAgentWorkflow_Blocks()
+    public async Task Guard_ReadOtherAgentWorkflow_Blocks()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         // Agent workflow files are off-limits (dydo/agents/*/workflow.md)
         var result = await GuardAsync("read", "dydo/agents/Brian/workflow.md");
@@ -120,31 +109,14 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_IdentityWithRole_ReadNonAgentWorkflow_Allows()
+    public async Task Guard_ReadNonAgentWorkflow_Allows()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         // A file named workflow.md outside the agents folder should NOT be blocked
         var result = await GuardAsync("read", "docs/workflow.md");
 
         result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_IdentityWithRole_ReadSimilarAgentNameWorkflow_Blocks()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        // Agent name prefix attack: "Adele" should NOT be able to read "AdelePlus" workflow
-        // The Contains check uses "dydo/agents/Adele/" (with trailing slash) to prevent prefix matching
-        var result = await GuardAsync("read", "dydo/agents/AdelePlus/workflow.md");
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
     }
 
     #endregion
@@ -155,7 +127,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_StdinHook_ReadBootstrapFile_Allows()
     {
         await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"CLAUDE.md\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -164,12 +135,9 @@ public class GuardIntegrationTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Guard_StdinHook_WriteWithIdentityAndRole_UsesRbac()
+    public async Task Guard_StdinHook_Write_Allows()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -181,67 +149,14 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #region Bash Commands (Hook Mode)
 
-    // Note: Bash command analysis in guard requires hook mode (stdin JSON with toolName="bash")
-    // The --command CLI flag alone doesn't trigger bash analysis because toolName isn't set
-    // These tests verify the basic CLI flag parsing, not full bash analysis
-
     [Fact]
     public async Task Guard_CommandOption_Parses()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         // CLI --command option is accepted (though bash analysis requires hook mode)
         var cmd = GuardCommand.Create();
         var result = await RunAsync(cmd, "--command", "dotnet build");
-
-        // Without toolName=bash from stdin, bash analysis is skipped
-        result.AssertSuccess();
-    }
-
-    #endregion
-
-    #region Must-Read (computation retained; enforcement removed)
-
-    [Fact]
-    public async Task Guard_AllowsWriteAfterAllMustReadsRead()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        // Read all must-read files
-        var registry = new AgentRegistry(TestDir);
-        var state = registry.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(state);
-        Assert.True(state.UnreadMustReads.Count > 0, "Should have must-reads after SetRole");
-
-        foreach (var mustRead in state.UnreadMustReads.ToList())
-        {
-            await GuardAsync("read", mustRead);
-        }
-
-        // Now write should succeed
-        var result = await GuardAsync("edit", "src/file.cs");
-        result.AssertSuccess();
-    }
-
-    [Fact]
-    public async Task Guard_AllowsReadsAlways()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "test-task");
-
-        // Verify must-reads exist (writes would be blocked)
-        var registry = new AgentRegistry(TestDir);
-        var state = registry.GetCurrentAgent(TestSessionId);
-        Assert.NotNull(state);
-        Assert.True(state.UnreadMustReads.Count > 0);
-
-        // Read a non-must-read file — should be allowed even with unread must-reads
-        var result = await GuardAsync("read", "src/some-file.cs");
 
         result.AssertSuccess();
     }
@@ -256,15 +171,13 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("npx --yes dydo agent claim auto")]
     [InlineData("dotnet dydo agent claim auto")]
     [InlineData("dotnet tool run dydo agent claim auto")]
-    [InlineData("dotnet run -- agent claim auto")]
-    [InlineData("dotnet run -- whoami")]
+    [InlineData("dotnet run -- task list")]
     [InlineData("dotnet run -- guard --action read --path foo.cs")]
     [InlineData("dotnet run -- roles list")]
     [InlineData("dotnet run -- validate")]
     [InlineData("dotnet run -- issue list")]
-    [InlineData("dotnet run -- inquisition coverage")]
     [InlineData("dotnet run -- watchdog status")]
-    [InlineData("dotnet run --project . -- agent claim auto")]
+    [InlineData("dotnet run --project . -- task list")]
     [InlineData("bash dydo agent claim auto")]
     [InlineData("sh dydo agent claim auto")]
     [InlineData("bash -c \\\"dydo agent claim auto\\\"")]
@@ -288,8 +201,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("npx -q dydo agent claim auto", "npx")]
     [InlineData("dotnet dydo agent claim auto", "dotnet")]
     [InlineData("dotnet tool run dydo agent claim auto", "dotnet")]
-    [InlineData("dotnet run -- agent claim auto", "dotnet run")]
-    [InlineData("dotnet run -- whoami", "dotnet run")]
+    [InlineData("dotnet run -- task list", "dotnet run")]
     [InlineData("bash dydo agent claim auto", "bash")]
     [InlineData("sh -c \\\"dydo agent claim auto\\\"", "sh")]
     [InlineData("python dydo agent claim auto", "python")]
@@ -304,30 +216,6 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertExitCode(2);
         result.AssertStderrContains(expectedInvoker);
-    }
-
-    [Theory]
-    [InlineData("npx dydo agent claim auto", "dydo agent claim auto")]
-    [InlineData("npx --yes dydo agent role code-writer", "dydo agent role code-writer")]
-    [InlineData("dotnet dydo agent status", "dydo agent status")]
-    [InlineData("dotnet tool run dydo agent claim auto", "dydo agent claim auto")]
-    [InlineData("dotnet run -- agent claim auto", "dydo agent claim auto")]
-    [InlineData("dotnet run -- agent role code-writer", "dydo agent role code-writer")]
-    [InlineData("dotnet run -- whoami", "dydo whoami")]
-    [InlineData("bash dydo agent claim auto", "dydo agent claim auto")]
-    [InlineData("sh -c \\\"dydo agent claim auto\\\"", "dydo agent claim auto")]
-    [InlineData("python dydo agent claim auto", "dydo agent claim auto")]
-    [InlineData("python3 dydo agent role code-writer", "dydo agent role code-writer")]
-    [InlineData("py dydo whoami", "dydo whoami")]
-    public async Task Guard_IndirectDydo_ShowsCorrectedCommand(string command, string expectedCorrected)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains(expectedCorrected);
     }
 
     [Theory]
@@ -346,14 +234,10 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_IndirectDydo_FalsePositiveSafety(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        // These commands should NOT be blocked as indirect dydo invocations
         result.AssertSuccess();
     }
 
@@ -388,9 +272,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_CdGitCompound_BlocksWithCoachingMessage()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /c/Users/User/Desktop/Projects && git diff --name-only\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -405,9 +286,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_CdNonGitCompound_Blocked()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && ls\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -453,8 +331,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_SearchTool_OffLimitsPath_Blocks(string toolName)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         // .env is off-limits by default — searching with it as the path should block
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\".env\",\"pattern\":\"*\"}}}}";
@@ -467,7 +343,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Git Stash Guard
+    #region Git Stash / Merge Guard (worktree-context based)
 
     [Theory]
     [InlineData("git stash")]
@@ -481,9 +357,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_GitStash_NoWorktree_Blocks(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -500,18 +373,19 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_GitStash_InWorktree_Allows(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
-        // Place a .worktree marker to simulate worktree mode
-        var workspace = Path.Combine(DydoDir, "agents", "Adele");
-        File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree-id");
+        GuardCommand.IsWorktreeContextOverride = () => true;
+        try
+        {
+            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+            var result = await GuardWithStdinAsync(json);
 
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertSuccess();
+            result.AssertSuccess();
+        }
+        finally
+        {
+            GuardCommand.IsWorktreeContextOverride = null;
+        }
     }
 
     [Theory]
@@ -521,19 +395,21 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_GitMerge_InWorktree_Blocks(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
-        var workspace = Path.Combine(DydoDir, "agents", "Adele");
-        File.WriteAllText(Path.Combine(workspace, ".worktree"), "test-worktree-id");
+        GuardCommand.IsWorktreeContextOverride = () => true;
+        try
+        {
+            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
+            var result = await GuardWithStdinAsync(json);
 
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("dydo worktree merge");
+            result.AssertExitCode(2);
+            result.AssertStderrContains("BLOCKED");
+            result.AssertStderrContains("dydo worktree merge");
+        }
+        finally
+        {
+            GuardCommand.IsWorktreeContextOverride = null;
+        }
     }
 
     [Theory]
@@ -542,36 +418,11 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_GitMerge_NotInWorktree_Allows(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
-    }
-
-    [Theory]
-    [InlineData("git merge feature-branch")]
-    [InlineData("git merge --no-ff main")]
-    public async Task Guard_GitMerge_WithMergeSource_OnMain_Blocks(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
-
-        // Place .merge-source marker (no .worktree — agent is on main)
-        var workspace = Path.Combine(DydoDir, "agents", "Adele");
-        File.WriteAllText(Path.Combine(workspace, ".merge-source"), "worktree/some-branch");
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("dydo worktree merge");
     }
 
     [Theory]
@@ -582,9 +433,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_OtherGitCommands_NotBlocked(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-        await ReadMustReadsAsync();
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
@@ -627,28 +475,11 @@ public class GuardIntegrationTests : IntegrationTestBase
     #region Agent Tool — Nudge
 
     [Fact]
-    public async Task Guard_AgentTool_IdentityWithRole_EmitsNudgeAndPasses()
+    public async Task Guard_AgentTool_EmitsNudgeAndPasses()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertSuccess();
-        result.AssertStderrContains("NOTICE");
-        result.AssertStderrContains("Tier-2 worker lane");
-    }
-
-    [Fact]
-    public async Task Guard_AgentTool_EmptyToolInput_EmitsNudgeAndPasses()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{}}}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
@@ -660,15 +491,12 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_GlobTool_DoesNotFireAgentNudge()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
 
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Glob\",\"tool_input\":{{\"pattern\":\"**/*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
         result.AssertSuccess();
         Assert.DoesNotContain("NOTICE", result.Stderr);
-        Assert.DoesNotContain("subagent inherits", result.Stderr);
     }
 
     #endregion

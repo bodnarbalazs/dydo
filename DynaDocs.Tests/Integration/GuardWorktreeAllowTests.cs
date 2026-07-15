@@ -30,8 +30,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeRead_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => true;
 
@@ -45,8 +43,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task NonWorktreeRead_Approved_StdoutEmpty()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => false;
 
@@ -77,8 +73,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeWrite_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => true;
 
@@ -92,8 +86,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeBash_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => true;
 
@@ -108,8 +100,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeGlob_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => true;
 
@@ -124,8 +114,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeGrep_Approved_OutputsAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => true;
 
@@ -140,8 +128,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task NonWorktreeGlob_Approved_StdoutEmpty()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => false;
 
@@ -160,8 +146,6 @@ public class GuardWorktreeAllowTests : IntegrationTestBase
     public async Task WorktreeWrite_OffLimitsPath_Blocked_NoAllowJson()
     {
         await InitProjectAsync("none", "testuser", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
         await ReadMustReadsAsync();
         GuardCommand.IsWorktreeContextOverride = () => true;
 

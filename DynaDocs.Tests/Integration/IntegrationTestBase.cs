@@ -64,6 +64,10 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
         ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
+        // Guard against a subclass leaking the worktree-context override across tests (some
+        // subclasses hide Dispose via `new`, so their reset never runs under xUnit's IDisposable
+        // dispatch). The guard's git-safety now depends on this override, so reset it centrally.
+        GuardCommand.IsWorktreeContextOverride = null;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))
@@ -135,153 +139,7 @@ public abstract class IntegrationTestBase : IDisposable
     // Test session ID for integration tests
     protected const string TestSessionId = "test-integration-session";
 
-    /// <summary>
-    /// Claim an agent via the runtime registry. The agent-claim CLI was removed with the roster
-    /// (DR-041); identity is assigned at spawn now. Tests still exercise the surviving runtime claim
-    /// on <see cref="AgentRegistry"/> to set up agent state for the guard/PM/registry behaviour they assert.
-    /// </summary>
-    protected Task<CommandResult> ClaimAgentAsync(string nameOrAuto = "auto")
-    {
-        var agentName = nameOrAuto;
-        if (nameOrAuto.Equals("auto", StringComparison.OrdinalIgnoreCase))
-        {
-            // For auto, get first agent in pool
-            var configPath = Path.Combine(TestDir, "dydo.json");
-            if (File.Exists(configPath))
-            {
-                var content = File.ReadAllText(configPath);
-                var match = System.Text.RegularExpressions.Regex.Match(content, @"""pool"":\s*\[\s*""([^""]+)""");
-                if (match.Success)
-                    agentName = match.Groups[1].Value;
-            }
-        }
-        else if (nameOrAuto.Length == 1 && char.IsLetter(nameOrAuto[0]))
-        {
-            // Resolve single letter to agent name (A -> Adele, B -> Brian, etc.)
-            var letter = char.ToUpperInvariant(nameOrAuto[0]);
-            agentName = ResolveLetterToAgentName(letter);
-        }
-
-        // Store pending session (simulates guard hook interception, which is how a session id reaches claim)
-        StorePendingSession(agentName);
-        StoreSessionContext();
-
-        var ok = new AgentRegistry(TestDir).ClaimAgent(agentName, out var error);
-
-        // Refresh the .session-context with the verified two-line shape now that the .session file exists,
-        // so subsequent commands resolve the agent (post-#0196 the single-line shape reads as null).
-        StoreSessionContext();
-
-        return Task.FromResult(new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error));
-    }
-
-    protected Task<CommandResult> ClaimAgentWithRuntimeAsync(string agentName, string host, string model)
-    {
-        var registry = new AgentRegistry(TestDir);
-        registry.StorePendingSessionId(agentName, TestSessionId, host, model);
-        StoreSessionContext();
-
-        var ok = registry.ClaimAgent(agentName, out var error);
-
-        StoreSessionContext();
-        return Task.FromResult(new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error));
-    }
-
     private const int ExitCodeToolError = 2;
-
-    /// <summary>
-    /// Resolve a letter to an agent name.
-    /// </summary>
-    private string ResolveLetterToAgentName(char letter)
-    {
-        var names = new[] { "Adele", "Brian", "Charlie", "Dexter", "Emma", "Frank", "Grace", "Henry",
-            "Iris", "Jack", "Kate", "Liam", "Mia", "Noah", "Olivia", "Peter", "Quinn", "Ruby",
-            "Sam", "Tina", "Uma", "Victor", "Wendy", "Xavier", "Yuki", "Zelda" };
-        var index = letter - 'A';
-        return index >= 0 && index < names.Length ? names[index] : letter.ToString();
-    }
-
-    /// <summary>
-    /// Release the current agent via the runtime registry.
-    /// </summary>
-    protected Task<CommandResult> ReleaseAgentAsync()
-    {
-        StoreSessionContext();
-        var registry = new AgentRegistry(TestDir);
-        var ok = registry.ReleaseAgent(registry.GetSessionContext(), out var error);
-        return Task.FromResult(new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error));
-    }
-
-    /// <summary>
-    /// Set agent role via the runtime registry. Mirrors Decision 021 by registering a listening
-    /// general-wait marker after role-set. Tests that exercise the block itself pass
-    /// <c>registerGeneralWait: false</c>.
-    /// </summary>
-    protected Task<CommandResult> SetRoleAsync(string role, string? task = null,
-        bool registerGeneralWait = true)
-    {
-        StoreSessionContext();
-        var registry = new AgentRegistry(TestDir);
-        var ok = registry.SetRole(registry.GetSessionContext(), role, task, out var error);
-        var result = new CommandResult(ok ? 0 : ExitCodeToolError, string.Empty, ok ? string.Empty : error);
-
-        if (registerGeneralWait && result.ExitCode == 0)
-        {
-            var agent = registry.GetCurrentAgent(TestSessionId);
-            if (agent != null)
-                registry.CreateListeningWaitMarker(agent.Name, "_general-wait", agent.Name, Environment.ProcessId);
-        }
-
-        return Task.FromResult(result);
-    }
-
-    /// <summary>
-    /// Store pending session for claim (simulates guard hook).
-    /// </summary>
-    protected void StorePendingSession(string agentName)
-    {
-        var pendingPath = Path.Combine(DydoDir, "agents", agentName, ".pending-session");
-        var dir = Path.GetDirectoryName(pendingPath);
-        if (dir != null) Directory.CreateDirectory(dir);
-        File.WriteAllText(pendingPath, TestSessionId);
-    }
-
-    /// <summary>
-    /// Store session context (simulates guard hook). Post-#0196 the
-    /// session-context file is only honored when the verified two-line format
-    /// (sessionId\nagentName) cross-checks against the per-agent .session file —
-    /// so this helper scans agents/ for the .session that owns TestSessionId
-    /// and writes the verified format. Pre-claim (no .session yet) it falls
-    /// back to the legacy single-line shape, which post-#0196 reads as null
-    /// but doesn't matter for tests that only need the context published before
-    /// they claim (e.g. ClaimAgentAsync's call before the claim runs).
-    /// </summary>
-    protected void StoreSessionContext()
-    {
-        var contextPath = Path.Combine(DydoDir, "agents", ".session-context");
-        var dir = Path.GetDirectoryName(contextPath);
-        if (dir != null) Directory.CreateDirectory(dir);
-
-        string content = TestSessionId;
-        var agentsDir = Path.Combine(DydoDir, "agents");
-        if (Directory.Exists(agentsDir))
-        {
-            foreach (var sessionFile in Directory.EnumerateFiles(agentsDir, ".session", SearchOption.AllDirectories))
-            {
-                string body;
-                try { body = File.ReadAllText(sessionFile); }
-                catch { continue; }
-                if (body.Contains($"\"{TestSessionId}\""))
-                {
-                    var agentName = Path.GetFileName(Path.GetDirectoryName(sessionFile)!);
-                    content = $"{TestSessionId}\n{agentName}";
-                    break;
-                }
-            }
-        }
-
-        File.WriteAllText(contextPath, content);
-    }
 
     /// <summary>
     /// Run check command.
@@ -298,7 +156,6 @@ public abstract class IntegrationTestBase : IDisposable
     /// </summary>
     protected async Task<CommandResult> GuardAsync(string action, string path)
     {
-        StoreSessionContext();
         var command = GuardCommand.Create();
         return await RunAsync(command, "--action", action, "--path", path);
     }
@@ -317,20 +174,10 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
-    /// Read all must-read files for the current agent so the guard allows writes.
-    /// Call this after SetRoleAsync if the test needs to perform writes.
+    /// No-op retained for call-site compatibility. Must-read gating was removed with the claim
+    /// ceremony (DR-041) — writes are no longer gated on an agent reading its must-reads.
     /// </summary>
-    protected async Task ReadMustReadsAsync()
-    {
-        var registry = new DynaDocs.Services.AgentRegistry(TestDir);
-        var agent = registry.GetCurrentAgent(TestSessionId);
-        if (agent == null || agent.UnreadMustReads.Count == 0) return;
-
-        foreach (var mustRead in agent.UnreadMustReads.ToList())
-        {
-            await GuardAsync("read", mustRead);
-        }
-    }
+    protected static Task ReadMustReadsAsync() => Task.CompletedTask;
 
 
     /// <summary>

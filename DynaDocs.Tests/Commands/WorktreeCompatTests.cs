@@ -66,47 +66,6 @@ public class WorktreeCompatTests : IDisposable
 
     #endregion
 
-    #region AgentRegistry.IsWorktreeStale
-
-    [Fact]
-    public void IsWorktreeStale_WorktreeDirExists_ReturnsFalse()
-    {
-        var basePath = Path.Combine(_testDir, "main-repo");
-        var worktreeId = "fix-auth-20260320";
-        // GetDydoRoot resolves to basePath/dydo/ when no dydo.json exists
-        Directory.CreateDirectory(Path.Combine(basePath, "dydo", "_system", ".local", "worktrees", worktreeId));
-
-        var registry = CreateRegistryWithBasePath(basePath);
-
-        Assert.False(registry.IsWorktreeStale(worktreeId));
-    }
-
-    [Fact]
-    public void IsWorktreeStale_WorktreeDirMissing_ReturnsTrue()
-    {
-        var basePath = Path.Combine(_testDir, "main-repo");
-        Directory.CreateDirectory(basePath);
-
-        var registry = CreateRegistryWithBasePath(basePath);
-
-        Assert.True(registry.IsWorktreeStale("nonexistent-worktree"));
-    }
-
-    [Fact]
-    public void IsWorktreeStale_BasePath_IsProjectRoot()
-    {
-        // When basePath is the project root, worktrees are at GetDydoRoot(basePath)/_system/.local/worktrees/
-        var projectRoot = Path.Combine(_testDir, "project");
-        var worktreeId = "Adele-20260320140000";
-        // GetDydoRoot resolves to projectRoot/dydo/ when no dydo.json exists
-        Directory.CreateDirectory(Path.Combine(projectRoot, "dydo", "_system", ".local", "worktrees", worktreeId));
-
-        var registry = CreateRegistryWithBasePath(projectRoot);
-
-        Assert.False(registry.IsWorktreeStale(worktreeId));
-    }
-
-    #endregion
 
     #region GuardCommand.ResolveWorktreePath
 
@@ -260,7 +219,7 @@ public class WorktreeCompatTests : IDisposable
     public void DefaultNudges_DotnetRunDydo_Matches()
     {
         var matched = ConfigFactory.DefaultNudges.Any(n =>
-            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dotnet run -- agent claim auto"));
+            new Regex(n.Pattern, RegexOptions.IgnoreCase).IsMatch("dotnet run -- task list"));
         Assert.True(matched);
     }
 

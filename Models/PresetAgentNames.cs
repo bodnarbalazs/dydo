@@ -77,32 +77,4 @@ public static class PresetAgentNames
 
         return names;
     }
-
-    /// <summary>
-    /// Get agent name from letter (A=Adele, B=Brian, etc.)
-    /// </summary>
-    public static string? GetNameFromLetter(char letter)
-    {
-        letter = char.ToUpperInvariant(letter);
-        var index = letter - 'A';
-
-        if (index >= 0 && index < Set1.Count)
-            return Set1[index];
-
-        return null;
-    }
-
-    /// <summary>
-    /// Get letter from agent name
-    /// </summary>
-    public static char? GetLetterFromName(string name)
-    {
-        for (var i = 0; i < Set1.Count; i++)
-        {
-            if (Set1[i].Equals(name, StringComparison.OrdinalIgnoreCase))
-                return (char)('A' + i);
-        }
-
-        return null;
-    }
 }

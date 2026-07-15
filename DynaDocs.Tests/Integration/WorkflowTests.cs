@@ -23,7 +23,6 @@ public class WorkflowTests : IntegrationTestBase
         // Create a task in in-review state
         await TaskCreateAsync("review-test");
         await TaskReadyForReviewAsync("review-test", "Ready for review");
-        await ClaimAgentAsync("Adele");
 
         var result = await ReviewCompleteAsync("review-test", "pass");
 
@@ -39,7 +38,6 @@ public class WorkflowTests : IntegrationTestBase
 
         await TaskCreateAsync("lgtm-task");
         await TaskReadyForReviewAsync("lgtm-task", "Done");
-        await ClaimAgentAsync("Adele");
 
         var result = await ReviewCompleteAsync("lgtm-task", "pass", "LGTM! Great work.");
 
@@ -51,7 +49,6 @@ public class WorkflowTests : IntegrationTestBase
     public async Task Review_Complete_Fail()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
 
         await TaskCreateAsync("fail-task");
         await TaskReadyForReviewAsync("fail-task", "Ready");
@@ -79,7 +76,6 @@ public class WorkflowTests : IntegrationTestBase
     public async Task Review_Complete_WrongStatus_Fails()
     {
         await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
 
         // Create a task but don't mark it ready for review
         await TaskCreateAsync("not-ready");

@@ -18,7 +18,6 @@ internal static partial class IssueCreateHandler
             return ExitCodes.ToolError;
 
         var summaryLine = NormalizeSummary(summary);
-        var provenance = GetCurrentAgentProvenance();
 
         var issuesPath = IssueCommand.GetIssuesPath();
         Directory.CreateDirectory(issuesPath);
@@ -34,7 +33,7 @@ internal static partial class IssueCreateHandler
         var fileName = $"{newId:D4}-{Slugify(title)}.md";
         var filePath = Path.Combine(issuesPath, fileName);
 
-        File.WriteAllText(filePath, RenderIssueContent(newId, title, meta, summaryLine, bodyContent, provenance));
+        File.WriteAllText(filePath, RenderIssueContent(newId, title, meta, summaryLine, bodyContent));
         Console.WriteLine($"Created issue #{newId}: {fileName}");
 
         return ExitCodes.Success;
@@ -123,21 +122,10 @@ internal static partial class IssueCreateHandler
         return null;
     }
 
-    private static ArtifactProvenance? GetCurrentAgentProvenance()
+    // Agent/vendor/model provenance stamping was carved out with the claim ceremony (DR-041):
+    // there is no runtime agent identity, so issues are created without found-by-agent provenance.
+    private static string RenderIssueContent(int id, string title, IssueMeta meta, string summaryLine, string? bodyContent)
     {
-        var registry = new AgentRegistry();
-        var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentOwnedAgent(sessionId);
-        return agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
-    }
-
-    private static string RenderIssueContent(int id, string title, IssueMeta meta, string summaryLine, string? bodyContent,
-        ArtifactProvenance? provenance)
-    {
-        var provenanceYaml = provenance == null
-            ? ""
-            : $"\nfound-by-agent: {provenance.Agent}\nfound-by-vendor: {provenance.Vendor}\nfound-by-model: {provenance.Model}";
-
         return $"""
             ---
             title: {title}
@@ -146,7 +134,7 @@ internal static partial class IssueCreateHandler
             type: issue
             severity: {meta.Severity.ToString().ToLowerInvariant()}
             status: {IssueStatus.Open.ToString().ToLowerInvariant()}
-            found-by: {meta.FoundBy.ToString().ToLowerInvariant()}{provenanceYaml}
+            found-by: {meta.FoundBy.ToString().ToLowerInvariant()}
             date: {DateTime.UtcNow:yyyy-MM-dd}
             ---
 

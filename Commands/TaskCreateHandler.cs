@@ -15,14 +15,9 @@ internal static class TaskCreateHandler
             return ExitCodes.ToolError;
         }
 
-        var registry = new AgentRegistry();
-        var sessionId = registry.GetSessionContext();
-        var agent = registry.GetCurrentOwnedAgent(sessionId);
-        var provenance = agent == null ? null : ArtifactProvenance.FromSession(registry, agent.Name);
-        var provenanceYaml = provenance == null
-            ? ""
-            : $"\nassigned-vendor: {provenance.Vendor}\nassigned-model: {provenance.Model}";
-
+        // Agent/vendor/model provenance stamping was carved out with the claim ceremony
+        // (DR-041): there is no runtime agent identity, so a manually-created task lands as
+        // backlog/unassigned with no provenance.
         var tasksPath = TaskCommand.GetTasksPath();
         Directory.CreateDirectory(tasksPath);
 
@@ -55,9 +50,9 @@ internal static class TaskCreateHandler
             title: {TitlePrettifier.Prettify(name)}
             area: {area}
             name: {name}
-            status: {(agent == null ? "backlog" : "in-progress")}
+            status: backlog
             created: {DateTime.UtcNow:o}
-            assigned: {agent?.Name ?? "unassigned"}{provenanceYaml}
+            assigned: unassigned
             ---
 
             # Task: {name}

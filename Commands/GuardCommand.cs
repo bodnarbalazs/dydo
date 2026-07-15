@@ -418,17 +418,6 @@ public static partial class GuardCommand
         RunDailyValidationIfDue();
 
         var sessionId = ctx.SessionId;
-        if (ctx.HasCliArgs && string.IsNullOrEmpty(sessionId))
-            sessionId = registry.GetSessionContext();
-
-        // #0207 part 2: on a resumed claude session's first guarded tool call, rewrite
-        // .session.ClaimedPid from the dead pre-resume PID to the live claude ancestor,
-        // reset resume bookkeeping (#0153), and emit the recovery_kind=auto Claim event +
-        // resume_outcome=succeeded log. All gates inside the method — every non-resume call
-        // exits cheaply at step 4 (IsProcessRunning on the live ClaimedPid). Placed before
-        // Security Layer 1 so it covers every tool type uniformly and runs even when the
-        // triggering call is itself blocked downstream.
-        registry.RefreshResumedAgentSession(sessionId);
 
         var filePath = ResolveWorktreePath(ctx.FilePath);
         var action = ctx.Action;
@@ -448,13 +437,6 @@ public static partial class GuardCommand
         {
             return HandleWorkerCall(ctx, filePath, searchPath, runInBackground, offLimitsService, bashAnalyzer, registry);
         }
-
-        // needs-human derived-flag reconcile (Decision 030 §1): an AskUserQuestion call marks the
-        // calling agent as waiting on a human; any other guarded tool call means the human answered
-        // and work resumed, so the flag self-clears. Runs for identified (Tier-1) hook calls only,
-        // before the routing below so it fires whether or not the triggering call is allowed.
-        if (toolName != null && !string.IsNullOrEmpty(sessionId))
-            ReconcileNeedsHuman(toolName, sessionId, registry);
 
         // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
         // it lives outside the repo and outside dydo's jurisdiction (Decision 024 §5).
@@ -481,57 +463,12 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// needs-human derived-flag reconcile on a Tier-1 PreToolUse call (Decision 030 §1). AskUserQuestion
-    /// is the human-in-the-loop tool — its call sets a DERIVED flag. Every other guarded tool call from
-    /// an agent that was waiting means the human answered and work resumed, so a derived flag self-clears.
-    /// An EXPLICIT flag (a deliberate <c>dydo hand raise</c>) is left untouched — it is not erased by the
-    /// raiser's next tool call, only by <c>dydo hand lower</c> or release. Both paths are no-ops when the
-    /// flag is already in the target state, so the common case writes nothing.
+    /// Stop-hook entry point. The agent-identity needs-human machinery this used to drive was
+    /// carved out with the claim ceremony (DR-041) — there is no runtime agent state to reconcile
+    /// now — so the Stop hook is a no-op that always exits 0 (a Stop hook must never block turn end).
+    /// The option and hook wiring are retained so existing installs' Stop hook keeps resolving.
     /// </summary>
-    internal static void ReconcileNeedsHuman(string toolName, string sessionId, AgentRegistry registry)
-    {
-        var agent = registry.GetCurrentAgent(sessionId);
-        if (agent == null) return;
-
-        var isAsk = string.Equals(toolName, "askuserquestion", StringComparison.OrdinalIgnoreCase);
-        if (isAsk && !agent.NeedsHuman)
-            registry.SetNeedsHuman(agent.Name, true, NeedsHumanSource.Derived);
-        else if (!isAsk && agent.NeedsHuman && agent.NeedsHumanSource != NeedsHumanSource.Explicit)
-            registry.SetNeedsHuman(agent.Name, false);
-    }
-
-    /// <summary>
-    /// Stop-hook entry point (Decision 030 §1). A terminal question always ends the turn, so a turn that
-    /// ends while the agent is still working on an in-flight task means the session is idle, waiting on a
-    /// human — pure session state, no text analysis. Always exit 0: a Stop hook must never block turn end.
-    /// </summary>
-    private static int ExecuteStop()
-    {
-        try
-        {
-            if (!TryReadStdinJson(out var json) || json == null)
-                return ExitCodes.Success;
-
-            var hookInput = JsonSerializer.Deserialize(json, DydoDefaultJsonContext.Default.HookInput);
-            ApplyStopSignal(hookInput?.SessionId, new AgentRegistry());
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"WARNING: dydo guard --stop internal error: {ex.Message}");
-        }
-        return ExitCodes.Success;
-    }
-
-    /// <summary>Turn-end needs-human rule: set the flag when the session is idle mid-work — status
-    /// working with an in-flight task. No-op otherwise (already flagged, released, or no task).</summary>
-    internal static void ApplyStopSignal(string? sessionId, AgentRegistry registry)
-    {
-        if (string.IsNullOrEmpty(sessionId))
-            return;
-        var agent = registry.GetCurrentAgent(sessionId);
-        if (agent is { Status: AgentStatus.Working } && !string.IsNullOrEmpty(agent.Task) && !agent.NeedsHuman)
-            registry.SetNeedsHuman(agent.Name, true, NeedsHumanSource.Derived);
-    }
+    private static int ExecuteStop() => ExitCodes.Success;
 
     /// <summary>
     /// Security layers 1–2.6: off-limits on direct file paths, Bash routing,
@@ -752,7 +689,7 @@ public static partial class GuardCommand
         // messages / pending state / must-reads) and go straight to the universal
         // git-safety + off-limits op analysis with no agent context.
         if (isWorker)
-            return AnalyzeAndCheckBashOperations(command, sessionId, agent: null, offLimitsService, bashAnalyzer, registry, isWorker: true);
+            return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry, isWorker: true);
 
         // Non-dydo bash: check agent state, then analyze command
         return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry);
@@ -792,12 +729,12 @@ public static partial class GuardCommand
 
             if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
             {
-                var agent = registry.GetCurrentAgent(sessionId);
-                if (agent == null) continue;
-
+                // Warn = "block once, run again to proceed". With no per-agent workspace in the
+                // identity-free model (DR-041), the pass-through marker lives under the agents
+                // root keyed by pattern hash — global rather than per-agent.
                 var hash = ComputeNudgeHash(nudge.Pattern);
-                var workspace = registry.GetAgentWorkspace(agent.Name);
-                var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+                Directory.CreateDirectory(registry.WorkspacePath);
+                var markerPath = Path.Combine(registry.WorkspacePath, $".nudge-{hash}");
 
                 if (!File.Exists(markerPath))
                 {
@@ -942,10 +879,6 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
-        // agent is resolved only for the git-safety worktree checks below; it is null
-        // in the identity-free model and the checks degrade to the no-worktree branch.
-        var agent = registry.GetCurrentAgent(sessionId);
-
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
         {
@@ -956,7 +889,7 @@ public static partial class GuardCommand
         }
 
         return AnalyzeAndCheckBashOperations(
-            command, sessionId, agent, offLimitsService, bashAnalyzer, registry);
+            command, sessionId, offLimitsService, bashAnalyzer, registry);
     }
 
     private static int HandleNonDydoBash(
@@ -964,47 +897,34 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
-        // agent is resolved only for the git-safety worktree checks in
-        // AnalyzeAndCheckBashOperations; null in the identity-free model.
-        var agent = registry.GetCurrentAgent(sessionId);
-        return AnalyzeAndCheckBashOperations(command, sessionId, agent, offLimitsService, bashAnalyzer, registry);
+        return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry);
     }
 
     private static int AnalyzeAndCheckBashOperations(
-        string command, string? sessionId, AgentState? agent,
+        string command, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry, bool isWorker = false)
     {
+        // Worktree awareness is CWD-based now that there is no runtime agent identity to bind a
+        // worktree to (DR-041): the guard runs inside the worktree, so IsWorktreeContext is truth.
+
         // git stash is only safe in worktrees (isolated stash stack); block otherwise
-        if (GitStashRegex().IsMatch(command))
+        if (GitStashRegex().IsMatch(command) && !IsWorktreeContext())
         {
-            if (agent == null || registry.GetWorktreeId(agent.Name) == null)
-            {
-                const string reason = "git stash is unsafe in multi-agent environments. "
-                    + "Stashes are a global stack -- other agents' stash operations will interfere. "
-                    + "Commit your changes instead.";
-                Console.Error.WriteLine($"BLOCKED: {reason}");
-                return ExitCodes.ToolError;
-            }
+            const string reason = "git stash is unsafe in multi-agent environments. "
+                + "Stashes are a global stack -- other agents' stash operations will interfere. "
+                + "Commit your changes instead.";
+            Console.Error.WriteLine($"BLOCKED: {reason}");
+            return ExitCodes.ToolError;
         }
 
-        // git merge must go through dydo worktree merge
-        if (GitMergeRegex().IsMatch(command))
+        // git merge inside a worktree must go through dydo worktree merge
+        if (GitMergeRegex().IsMatch(command) && IsWorktreeContext())
         {
-            if (agent != null)
-            {
-                var inWorktree = registry.GetWorktreeId(agent.Name) != null;
-                var hasMergeSource = File.Exists(
-                    Path.Combine(registry.GetAgentWorkspace(agent.Name), ".merge-source"));
-
-                if (inWorktree || hasMergeSource)
-                {
-                    const string reason = "Use dydo worktree merge to merge worktree branches. "
-                        + "Do not use git merge directly.";
-                    Console.Error.WriteLine($"BLOCKED: {reason}");
-                    return ExitCodes.ToolError;
-                }
-            }
+            const string reason = "Use dydo worktree merge to merge worktree branches. "
+                + "Do not use git merge directly.";
+            Console.Error.WriteLine($"BLOCKED: {reason}");
+            return ExitCodes.ToolError;
         }
 
         var analysis = bashAnalyzer.Analyze(command);
@@ -1026,7 +946,7 @@ public static partial class GuardCommand
 
         foreach (var op in analysis.Operations)
         {
-            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, agent, isWorker);
+            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, isWorker: isWorker);
             if (blocked != null) return blocked.Value;
         }
 

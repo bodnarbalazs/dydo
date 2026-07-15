@@ -15,13 +15,4 @@ namespace DynaDocs.Services;
 /// </summary>
 public static class WatchdogService
 {
-    /// <summary>
-    /// Retained transitionally, not used by the stub: <c>AgentRegistry.ResumeInFlight</c>
-    /// (resume bookkeeping, itself a carve target) still reads this warmup gate. It moves
-    /// out with that bookkeeping when AgentRegistry is carved.
-    /// </summary>
-    internal static readonly TimeSpan ResumeWarmupGate = TimeSpan.FromMinutes(5);
-
-    /// <summary>Test hook paired with <see cref="ResumeWarmupGate"/> — see the note there.</summary>
-    internal static TimeSpan? ResumeWarmupGateOverride { get; set; }
 }

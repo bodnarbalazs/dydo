@@ -35,7 +35,6 @@ public class CommandSmokeTests
             ValidateCommand.Create,
             WatchdogCommand.Create,
             SyncCommand.Create,
-            WorkspaceCommand.Create,
             WorktreeCommand.Create,
             NotionCommand.Create,
             ModelCommand.Create
@@ -75,7 +74,6 @@ public class CommandSmokeTests
                 ValidateCommand.Create(),
                 WatchdogCommand.Create(),
                 SyncCommand.Create(),
-                WorkspaceCommand.Create(),
                 WorktreeCommand.Create(),
                 NotionCommand.Create()
             };
@@ -83,8 +81,8 @@ public class CommandSmokeTests
             // version is the only command created inline in Program.cs
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
-            // Must match Program.cs: 22 Create() commands + 1 inline (version) = 23
-            Assert.Equal(23, rootCommand.Subcommands.Count);
+            // Must match Program.cs: 21 Create() commands + 1 inline (version) = 22
+            Assert.Equal(22, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

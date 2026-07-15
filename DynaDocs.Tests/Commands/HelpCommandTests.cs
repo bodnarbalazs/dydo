@@ -29,7 +29,6 @@ public class HelpCommandTests
         Assert.Contains("guard", output);
         Assert.Contains("task", output);
         Assert.Contains("review", output);
-        Assert.Contains("workspace", output);
         Assert.Contains("completions", output);
         Assert.Contains("template", output);
         Assert.Contains("roles", output);
@@ -67,15 +66,6 @@ public class HelpCommandTests
         Assert.Contains("task ready-for-review", output);
         Assert.Contains("task done", output);
         Assert.Contains("task list", output);
-    }
-
-    [Fact]
-    public void Help_ListsAllWorkspaceSubcommands()
-    {
-        var output = CaptureHelpOutput();
-
-        Assert.Contains("workspace init", output);
-        Assert.Contains("workspace check", output);
     }
 
     [Fact]

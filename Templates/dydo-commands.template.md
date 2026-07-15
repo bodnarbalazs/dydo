@@ -274,29 +274,6 @@ dydo guard --command "cat secrets.json"
 
 **Exit codes:** 0 = allowed, 2 = blocked.
 
-### dydo workspace init
-
-Initialize agent workspaces.
-
-```bash
-dydo workspace init
-dydo workspace init --path /custom/path
-```
-
-### dydo workspace check
-
-Verify workflow requirements before session end.
-
-```bash
-dydo workspace check
-```
-
-**Checks:** Active tasks, unprocessed inbox items, workflow completion.
-
----
-
-## Task Commands
-
 ### dydo task create
 
 Create a new task.

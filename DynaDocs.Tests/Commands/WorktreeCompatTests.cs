@@ -670,32 +670,6 @@ public class WorktreeCompatTests : IDisposable
 
     #endregion
 
-    #region WorkspaceCommand init refuses inside worktree
-
-    [Fact]
-    public void IsInsideWorktree_WorkspaceBasePath_InWorktree_ReturnsTrue()
-    {
-        // WorkspaceCommand.ExecuteInit passes basePath to IsInsideWorktree
-        var basePath = "/home/user/project/dydo/_system/.local/worktrees/task-1";
-        Assert.True(PathUtils.IsInsideWorktree(basePath));
-    }
-
-    [Fact]
-    public void IsInsideWorktree_WorkspaceBasePath_InMainRepo_ReturnsFalse()
-    {
-        var basePath = "/home/user/project";
-        Assert.False(PathUtils.IsInsideWorktree(basePath));
-    }
-
-    [Fact]
-    public void IsInsideWorktree_BackslashPaths_StillDetected()
-    {
-        var basePath = @"C:\Projects\DynaDocs\dydo\_system\.local\worktrees\fix-auth";
-        Assert.True(PathUtils.IsInsideWorktree(basePath));
-    }
-
-    #endregion
-
     #region Agent lifecycle through symlinked agents directory
 
     [Fact]

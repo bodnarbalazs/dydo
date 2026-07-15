@@ -356,8 +356,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | `dydo guard` | Check permissions (for hooks) |
 | **`dydo guard lift <agent> [minutes]`** | **Temporarily lift guard restrictions** |
 | `dydo guard restore <agent>` | Restore guard restrictions |
-| *`dydo workspace init`* | *Initialize agent workspaces* |
-| *`dydo workspace check`* | *Verify workflow before session end* |
 | `dydo worktree <...>` | Manage git worktrees for parallel agents |
 | `dydo watchdog <...>` | Manage the auto-close / attention watchdog |
 

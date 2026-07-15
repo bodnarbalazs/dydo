@@ -48,8 +48,6 @@ public static class HelpCommand
         Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
-        Console.WriteLine("  workspace init         Initialize agent workspaces");
-        Console.WriteLine("  workspace check        Verify workflow before session end");
         Console.WriteLine();
         Console.WriteLine("Role Commands:");
         Console.WriteLine("  roles list             List loaded role definitions");

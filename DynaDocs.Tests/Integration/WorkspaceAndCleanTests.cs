@@ -8,114 +8,6 @@ using DynaDocs.Commands;
 [Collection("Integration")]
 public class WorkspaceAndCleanTests : IntegrationTestBase
 {
-    #region Workspace Init
-
-    [Fact]
-    public async Task Workspace_Init_CreatesAgentFolders()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        // Init creates agent workspaces with workflow.md (modes created at claim)
-        AssertDirectoryExists("dydo/agents/Adele");
-        AssertFileExists("dydo/agents/Adele/workflow.md");
-        Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/agents/Adele/modes")));
-    }
-
-    [Fact]
-    public async Task Workspace_Check_PassesCleanState()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-
-        var result = await WorkspaceCheckAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("passed");
-    }
-
-    [Fact]
-    public async Task Workspace_Check_NoAgent_Skips()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        // Don't claim an agent
-
-        var result = await WorkspaceCheckAsync();
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("No agent");
-    }
-
-    [Fact]
-    public async Task Workspace_Init_CreatesAgentStatesFile()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        // Delete workspaces to trigger recreation via workspace init
-        var agentsDir = Path.Combine(TestDir, "dydo/agents");
-        foreach (var dir in Directory.GetDirectories(agentsDir))
-            Directory.Delete(dir, true);
-
-        var command = WorkspaceCommand.Create();
-        var result = await RunAsync(command, "init");
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("Initializing agent workspaces");
-        result.AssertStdoutContains("Created workspace for");
-    }
-
-    [Fact]
-    public async Task Workspace_Init_AlreadyExists_ReportsNoChanges()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        // Ensure agent-states.md exists so created == 0
-        var statesPath = Path.Combine(TestDir, "dydo/agents/agent-states.md");
-        if (!File.Exists(statesPath))
-            File.WriteAllText(statesPath, "# Agent States\n");
-
-        var command = WorkspaceCommand.Create();
-        var result = await RunAsync(command, "init");
-
-        result.AssertSuccess();
-        result.AssertStdoutContains("All workspaces already exist");
-    }
-
-    [Fact]
-    public async Task Workspace_Check_ActiveTask_ReportsIssue()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer", "my-task");
-
-        var tasksPath = Path.Combine(TestDir, "dydo/project/tasks");
-        Directory.CreateDirectory(tasksPath);
-        File.WriteAllText(Path.Combine(tasksPath, "my-task.md"), "---\nstatus: in-progress\n---\n# Task: my-task\n");
-
-        var result = await WorkspaceCheckAsync();
-
-        result.AssertExitCode(1);
-        result.AssertStdoutContains("still active");
-    }
-
-    [Fact]
-    public async Task Workspace_Check_UnprocessedInbox_ReportsIssue()
-    {
-        await InitProjectAsync("none", "balazs", 3);
-        await ClaimAgentAsync("Adele");
-        await SetRoleAsync("code-writer");
-
-        var inboxPath = Path.Combine(TestDir, "dydo/agents/Adele/inbox");
-        Directory.CreateDirectory(inboxPath);
-        File.WriteAllText(Path.Combine(inboxPath, "msg-123.md"), "Unread message");
-
-        var result = await WorkspaceCheckAsync();
-
-        result.AssertExitCode(1);
-        result.AssertStdoutContains("unprocessed inbox");
-    }
-
-    #endregion
-
     #region Clean
 
     [Fact]
@@ -592,12 +484,6 @@ public class WorkspaceAndCleanTests : IntegrationTestBase
     #endregion
 
     #region Helper Methods
-
-    private async Task<CommandResult> WorkspaceCheckAsync()
-    {
-        var command = WorkspaceCommand.Create();
-        return await RunAsync(command, "check");
-    }
 
     private async Task<CommandResult> CleanAsync(string agent, bool force = false)
     {

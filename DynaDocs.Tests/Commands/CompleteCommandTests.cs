@@ -210,15 +210,6 @@ public class CompleteCommandTests : IDisposable
     }
 
     [Fact]
-    public void Workspace_ReturnsSubcommands()
-    {
-        var completions = CompleteCommand.GetCompletions(2, ["dydo", "workspace"]).ToList();
-
-        Assert.Contains("init", completions);
-        Assert.Contains("check", completions);
-    }
-
-    [Fact]
     public void Graph_ReturnsSubcommands()
     {
         var completions = CompleteCommand.GetCompletions(2, ["dydo", "graph"]).ToList();

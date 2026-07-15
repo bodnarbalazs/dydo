@@ -14,7 +14,6 @@ public class CompletionProviderTests
     [InlineData("guard")]
     [InlineData("task")]
     [InlineData("review")]
-    [InlineData("workspace")]
     [InlineData("version")]
     [InlineData("help")]
     [InlineData("completions")]

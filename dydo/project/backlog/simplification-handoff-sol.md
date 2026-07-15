@@ -19,6 +19,16 @@ You are orchestrating a large, deletion-heavy refactor of **dydo** (this repo, `
 > - ✅ Guard disarmed by balazs (`dydo guard` → `dydo notguard`). Do NOT re-arm.
 > - ✅ Green baseline verified: `dotnet build` 0/0; suite **4847 passed, 0 failed, 0 skipped** (worktree-isolated runner).
 >
+> **PROGRESS (2026-07-15, Fable in-conversation):** leaves cut & committed green so far —
+> `ca136f9a` whoami · `27bc7cb8` wait (+ guard pending-state/H20 strand) · `6f61e9e0` messaging
+> (message/inbox/read + services + guard notify + ReviewCommand verdict routing) · `f6435c35`
+> dispatch (+ DispatchService/Preflight/AgentSelector/DispatchOptions) · workspace slice in the
+> ratchet. Remaining: agent CLI leaf → guard identity-hollow (balazs 2026-07-15: strip the
+> identity gates OUTRIGHT, incl. TaskDone self-done gate + ReviewCommand self-review refusal —
+> no dead code) → orphaned services (TerminalLauncher cluster, AgentSessionManager; WorktreeCommand
+> loses its agent-launch path) → watchdog STRIP+STUB (Notion daemon = follow-up task, balazs
+> 2026-07-15) → AgentRegistry carve + roster/init scaffolding. Rail B prose stays balazs's.
+>
 > **Start here:** Rail A, Slice 1 = the command leaves. (A pre-built per-leaf map was attempted but the mapping agent stalled; the executor derives each leaf's blast radius inline — grep the command/handler names before deleting.) Execute one leaf-cluster per commit, green-ratchet after each (§4/§5 below): whoami → wait (+ guard rule) → messaging cluster (message/inbox/read + ReviewCommand de-wire) → dispatch → workspace → agent (last; AgentRegistry entanglement). Then branches (orphaned services), then trunk (hollow guard → watchdog rework → carve AgentRegistry).
 
 ## 0. Read these first (they are the decision + the plan)

@@ -15,7 +15,6 @@ rootCommand.Subcommands.Add(TaskCommand.Create());
 rootCommand.Subcommands.Add(HandCommand.Create());
 rootCommand.Subcommands.Add(IssueCommand.Create());
 rootCommand.Subcommands.Add(ReviewCommand.Create());
-rootCommand.Subcommands.Add(WorkspaceCommand.Create());
 rootCommand.Subcommands.Add(SyncCommand.Create());
 rootCommand.Subcommands.Add(CompletionsCommand.Create());
 rootCommand.Subcommands.Add(CompleteCommand.Create());

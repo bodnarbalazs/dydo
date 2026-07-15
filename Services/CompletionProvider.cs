@@ -8,7 +8,7 @@ public static class CompletionProvider
     [
         "check", "fix", "index", "init", "graph", "agent", "guard",
         "task", "issue",
-        "review", "workspace", "sync", "notion",
+        "review", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
         "watchdog", "worktree", "version", "help"
     ];
@@ -32,7 +32,6 @@ public static class CompletionProvider
         ["review"] = ["complete"],
         ["init"] = ["claude", "none"],
         ["completions"] = ["bash", "zsh", "powershell"],
-        ["workspace"] = ["init", "check"],
         ["graph"] = ["stats"],
         ["issue"] = ["create", "list", "resolve"],
         ["roles"] = ["list", "create", "reset"],

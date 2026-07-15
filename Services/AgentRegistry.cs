@@ -553,15 +553,8 @@ public partial class AgentRegistry : IAgentRegistry
             }
         });
 
-        // Anchor the watchdog to this claim's agent-host ancestor. RegisterMainAnchor
-        // routes through PathUtils.FindMainDydoRoot so the anchor always lands in
-        // the MAIN dydo root, never a worktree's — the watchdog only reads main.
-        // Pass _basePath so the worktree-walkback seed is the registry's project
-        // root rather than the process CWD (matters when the claim runs inside a
-        // worktree dispatcher whose CWD is the worktree dir).
-        // Closes #0154 (anchor-on-claim) and #0174 (worktree-claim wrong-dir).
-        try { WatchdogService.RegisterMainAnchor(ProcessUtils.FindAgentHostAncestor(host), _basePath); }
-        catch { /* anchoring is best-effort; never fail a claim because of it */ }
+        // Watchdog anchor-on-claim was removed with the 2.1.0 watchdog strip (DR-041):
+        // the watchdog no longer sweeps host-PID liveness, so there is nothing to anchor to.
 
         PublishClaimedSessionContext(agentName, sessionId, session.Host, session.Model);
 

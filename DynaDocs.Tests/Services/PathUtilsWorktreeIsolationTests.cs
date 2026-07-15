@@ -1,6 +1,5 @@
 namespace DynaDocs.Tests.Services;
 
-using DynaDocs.Services;
 using DynaDocs.Utils;
 
 [Collection("ProcessUtils")]
@@ -54,9 +53,7 @@ public class PathUtilsWorktreeIsolationTests : IDisposable
         var normalizedMainDydo = PathUtils.NormalizePath(Path.GetFullPath(Path.Combine(mainRoot, "dydo")));
         Assert.Equal(normalizedWorktreeDydo, normalizedResolved);
         Assert.NotEqual(normalizedMainDydo, normalizedResolved);
-
-        var pidFile = PathUtils.NormalizePath(WatchdogService.GetPidFilePath(resolved));
-        Assert.Contains("_system/.local/worktrees/my-wt", pidFile);
+        Assert.Contains("_system/.local/worktrees/my-wt", normalizedResolved);
     }
 
     [Fact]
@@ -101,41 +98,4 @@ public class PathUtilsWorktreeIsolationTests : IDisposable
         Assert.Null(resolved);
     }
 
-    // #0174 regression: claim-time anchor write must land in the MAIN dydo root
-    // whether the claimer's CWD is the main project or a worktree. Pre-fix the
-    // claim path resolved its own root via _configService.GetDydoRoot(_basePath),
-    // which returns the worktree's own dydo/ when the basepath is inside one —
-    // so the anchor never reached the watchdog.
-    [Fact]
-    public void RegisterMainAnchor_FromInsideWorktree_WritesToMainAnchorsDir()
-    {
-        var (mainRoot, worktreeRoot) = BuildMainAndWorktree();
-        Environment.CurrentDirectory = worktreeRoot;
-
-        var anchorPid = Environment.ProcessId;
-        WatchdogService.RegisterMainAnchor(anchorPid);
-
-        var mainAnchorsDir = WatchdogService.GetAnchorsDirPath(Path.Combine(mainRoot, "dydo"));
-        var worktreeAnchorsDir = WatchdogService.GetAnchorsDirPath(Path.Combine(worktreeRoot, "dydo"));
-        var mainAnchorFile = Path.Combine(mainAnchorsDir, $"{anchorPid}.anchor");
-        var worktreeAnchorFile = Path.Combine(worktreeAnchorsDir, $"{anchorPid}.anchor");
-
-        Assert.True(File.Exists(mainAnchorFile),
-            $"Anchor must land in main anchors dir; expected at {mainAnchorFile}");
-        Assert.False(File.Exists(worktreeAnchorFile),
-            "Anchor must NOT land in the worktree's anchors dir — the watchdog only reads main");
-    }
-
-    [Fact]
-    public void RegisterMainAnchor_FromMainProject_WritesToMainAnchorsDir()
-    {
-        var (mainRoot, _) = BuildMainAndWorktree();
-        Environment.CurrentDirectory = mainRoot;
-
-        var anchorPid = Environment.ProcessId;
-        WatchdogService.RegisterMainAnchor(anchorPid);
-
-        var mainAnchorsDir = WatchdogService.GetAnchorsDirPath(Path.Combine(mainRoot, "dydo"));
-        Assert.True(File.Exists(Path.Combine(mainAnchorsDir, $"{anchorPid}.anchor")));
-    }
 }

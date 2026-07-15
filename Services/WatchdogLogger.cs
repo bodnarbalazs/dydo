@@ -4,6 +4,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
+// The watchdog run-loop's structured events (start/tick/kill/resume/parse_failure/poll_error/
+// exit) were stripped with the watchdog itself in the 2.1.0 campaign (DR-041). Only the two
+// events with surviving KEEP callers remain: resume_outcome (RecoveryClassifier's guard-side
+// recovery emit) and model_cap_restored (ModelCapService.RestoreExpired).
 public static partial class WatchdogLogger
 {
     private const long DefaultMaxBytes = 2L * 1024 * 1024;
@@ -36,8 +40,8 @@ public static partial class WatchdogLogger
         }
         catch
         {
-            // Logger MUST never throw out of the watchdog loop. Disk-full,
-            // permission denied, locked file — all silently dropped.
+            // Logger MUST never throw out of its caller. Disk-full, permission denied,
+            // locked file — all silently dropped.
         }
     }
 
@@ -60,43 +64,15 @@ public static partial class WatchdogLogger
             }
             File.Move(path, $"{path}.1");
         }
-        catch { /* rotation failure must not kill the watchdog either */ }
+        catch { /* rotation failure must not kill the caller either */ }
     }
 
     private static string Now() => DateTime.UtcNow.ToString("O");
 
-    public static void LogStart(string dydoRoot, int? anchorPid, string? anchorName, int pollIntervalMs, int anchorCount) =>
-        Write(dydoRoot,
-            new StartEvent(Now(), "start", anchorPid, anchorName, anchorCount, pollIntervalMs, Environment.ProcessId),
-            WatchdogLogJsonContext.Default.StartEvent);
-
-    public static void LogTick(string dydoRoot, int agentsObserved, int killsAttempted) =>
-        Write(dydoRoot,
-            new TickEvent(Now(), "tick", agentsObserved, killsAttempted),
-            WatchdogLogJsonContext.Default.TickEvent);
-
-    public static void LogKill(string dydoRoot, string agent, int targetPid, string? targetProc,
-                               string pattern, string status, bool autoClose, string? dispatchedBy, string? since) =>
-        Write(dydoRoot,
-            new KillEvent(Now(), "kill", agent, targetPid, targetProc, pattern,
-                new KillState(status, autoClose, dispatchedBy, since)),
-            WatchdogLogJsonContext.Default.KillEvent);
-
-    public static void LogResume(string dydoRoot, string agent, string sessionId, int attempts, int launchedPid) =>
-        Write(dydoRoot,
-            new ResumeEvent(Now(), "resume", agent, sessionId, attempts, launchedPid),
-            WatchdogLogJsonContext.Default.ResumeEvent);
-
-    public static void LogResumeBlocked(string dydoRoot, string agent, string sessionId, string reason, int preResumePid) =>
-        Write(dydoRoot,
-            new ResumeBlockedEvent(Now(), "resume_blocked", agent, sessionId, reason, preResumePid),
-            WatchdogLogJsonContext.Default.ResumeBlockedEvent);
-
     /// <summary>
     /// Terminal-state event for a resume episode (PR3 of agent-crash-fixes): "succeeded"
     /// (same-session reclaim observed), "failed" (launched PID dead past warmup), or "gave_up"
-    /// (cap reached without a refresh). Emitted exactly once per episode — see PollAndResumeForAgent's
-    /// gave_up tick-check + ResetResumeBookkeeping piggyback for idempotency.
+    /// (cap reached without a refresh).
     /// </summary>
     public static void LogResumeOutcome(string dydoRoot, string agent, string sessionId, string outcome,
                                         int attempts, int elapsedSeconds, string reason) =>
@@ -104,71 +80,10 @@ public static partial class WatchdogLogger
             new ResumeOutcomeEvent(Now(), "resume_outcome", agent, sessionId, outcome, attempts, elapsedSeconds, reason),
             WatchdogLogJsonContext.Default.ResumeOutcomeEvent);
 
-    public static void LogParseFailure(string dydoRoot, string statePath, string reason) =>
-        Write(dydoRoot,
-            new ParseFailureEvent(Now(), "parse_failure", statePath, reason),
-            WatchdogLogJsonContext.Default.ParseFailureEvent);
-
-    public static void LogPollError(string dydoRoot, string error) =>
-        Write(dydoRoot,
-            new PollErrorEvent(Now(), "poll_error", error),
-            WatchdogLogJsonContext.Default.PollErrorEvent);
-
-    public static void LogExit(string dydoRoot, string reason) =>
-        Write(dydoRoot,
-            new ExitEvent(Now(), "exit", reason),
-            WatchdogLogJsonContext.Default.ExitEvent);
-
     public static void LogModelCapRestore(string dydoRoot, string model, string fallback) =>
         Write(dydoRoot,
             new ModelCapRestoreEvent(Now(), "model_cap_restored", model, fallback),
             WatchdogLogJsonContext.Default.ModelCapRestoreEvent);
-
-    private sealed record StartEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("anchor_pid")] int? AnchorPid,
-        [property: JsonPropertyName("anchor_name")] string? AnchorName,
-        [property: JsonPropertyName("anchor_count")] int AnchorCount,
-        [property: JsonPropertyName("poll_interval_ms")] int PollIntervalMs,
-        [property: JsonPropertyName("watchdog_pid")] int WatchdogPid);
-
-    private sealed record TickEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("agents")] int Agents,
-        [property: JsonPropertyName("kills_attempted")] int KillsAttempted);
-
-    private sealed record KillEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("agent")] string Agent,
-        [property: JsonPropertyName("target_pid")] int TargetPid,
-        [property: JsonPropertyName("target_proc")] string? TargetProc,
-        [property: JsonPropertyName("pattern")] string Pattern,
-        [property: JsonPropertyName("state")] KillState State);
-
-    private sealed record KillState(
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("auto_close")] bool AutoClose,
-        [property: JsonPropertyName("dispatched_by")] string? DispatchedBy,
-        [property: JsonPropertyName("since")] string? Since);
-
-    private sealed record ResumeEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("agent")] string Agent,
-        [property: JsonPropertyName("session_id")] string SessionId,
-        [property: JsonPropertyName("attempts")] int Attempts,
-        [property: JsonPropertyName("launched_pid")] int LaunchedPid);
-
-    private sealed record ResumeBlockedEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("agent")] string Agent,
-        [property: JsonPropertyName("session_id")] string SessionId,
-        [property: JsonPropertyName("reason")] string Reason,
-        [property: JsonPropertyName("pre_resume_pid")] int PreResumePid);
 
     private sealed record ResumeOutcomeEvent(
         [property: JsonPropertyName("ts")] string Ts,
@@ -180,37 +95,13 @@ public static partial class WatchdogLogger
         [property: JsonPropertyName("elapsed_seconds")] int ElapsedSeconds,
         [property: JsonPropertyName("reason")] string Reason);
 
-    private sealed record ParseFailureEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("state_path")] string StatePath,
-        [property: JsonPropertyName("reason")] string Reason);
-
-    private sealed record PollErrorEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("error")] string Error);
-
-    private sealed record ExitEvent(
-        [property: JsonPropertyName("ts")] string Ts,
-        [property: JsonPropertyName("event")] string Event,
-        [property: JsonPropertyName("reason")] string Reason);
-
     private sealed record ModelCapRestoreEvent(
         [property: JsonPropertyName("ts")] string Ts,
         [property: JsonPropertyName("event")] string Event,
         [property: JsonPropertyName("model")] string Model,
         [property: JsonPropertyName("fallback")] string Fallback);
 
-    [JsonSerializable(typeof(StartEvent))]
-    [JsonSerializable(typeof(TickEvent))]
-    [JsonSerializable(typeof(KillEvent))]
-    [JsonSerializable(typeof(ResumeEvent))]
-    [JsonSerializable(typeof(ResumeBlockedEvent))]
     [JsonSerializable(typeof(ResumeOutcomeEvent))]
-    [JsonSerializable(typeof(ParseFailureEvent))]
-    [JsonSerializable(typeof(PollErrorEvent))]
-    [JsonSerializable(typeof(ExitEvent))]
     [JsonSerializable(typeof(ModelCapRestoreEvent))]
     private partial class WatchdogLogJsonContext : JsonSerializerContext { }
 }

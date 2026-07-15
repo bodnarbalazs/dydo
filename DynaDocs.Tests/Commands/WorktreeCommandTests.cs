@@ -1349,51 +1349,6 @@ public class WorktreeCommandTests : IDisposable
         }
     }
 
-    [Fact]
-    public void WorktreeSetupScript_ContainsInitSettings()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
-        Assert.Contains("dydo worktree init-settings --main-root", script);
-        Assert.DoesNotContain("cp ", script);
-        Assert.DoesNotContain("mkdir -p .claude", script);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_ContainsRolesSymlink()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
-        Assert.Contains("ln -s '/home/user/project/dydo/_system/roles' dydo/_system/roles", script);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_WithoutMainRoot_ContainsRolesSymlink()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task");
-        Assert.Contains("ln -s \"$_wt_root/dydo/_system/roles\" dydo/_system/roles", script);
-    }
-
-    [Fact]
-    public void WindowsArguments_ContainInitSettings()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.Contains("dydo worktree init-settings --main-root", args);
-        Assert.DoesNotContain("Copy-Item", args);
-    }
-
-    [Fact]
-    public void WindowsArguments_ContainRolesJunction()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.Contains("Junction -Path 'dydo/_system/roles'", args);
-    }
-
-    [Fact]
-    public void WindowsArguments_WithoutMainRoot_ContainRolesJunction()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
-        Assert.Contains("Junction -Path 'dydo/_system/roles'", args);
-    }
-
     #region PreserveAuditFiles Tests
 
     [Fact]
@@ -1536,42 +1491,6 @@ public class WorktreeCommandTests : IDisposable
         {
             WorktreeCommand.RunProcessOverride = null;
         }
-    }
-
-    #endregion
-
-    #region Terminal Script No Git Operations Tests
-
-    [Fact]
-    public void WorktreeSetupScript_DoesNotContainGitWorktreeAdd()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
-        Assert.DoesNotContain("git worktree add", script);
-        Assert.DoesNotContain("git worktree prune", script);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_WithoutMainRoot_DoesNotContainGitWorktreeAdd()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task");
-        Assert.DoesNotContain("git worktree add", script);
-        Assert.DoesNotContain("git worktree prune", script);
-    }
-
-    [Fact]
-    public void WindowsArguments_DoNotContainGitWorktreeAdd()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.DoesNotContain("git worktree add", args);
-        Assert.DoesNotContain("git worktree prune", args);
-    }
-
-    [Fact]
-    public void WindowsArguments_WithoutMainRoot_DoNotContainGitWorktreeAdd()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
-        Assert.DoesNotContain("git worktree add", args);
-        Assert.DoesNotContain("git worktree prune", args);
     }
 
     #endregion
@@ -2530,100 +2449,6 @@ public class WorktreeCommandTests : IDisposable
         }
     }
 
-    [Fact]
-    public void WorktreeSetupScript_ContainsSleepAfterInitSettings()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
-        // init-settings should be followed by sleep
-        Assert.Contains("init-settings", script);
-        Assert.Contains("sleep 1", script);
-        // sleep must come after init-settings
-        var initIdx = script.IndexOf("init-settings");
-        var sleepIdx = script.IndexOf("sleep 1");
-        Assert.True(sleepIdx > initIdx, "sleep must come after init-settings");
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_WithoutMainRoot_ContainsSleepAfterInitSettings()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task");
-        Assert.Contains("sleep 1", script);
-        var initIdx = script.IndexOf("init-settings");
-        var sleepIdx = script.IndexOf("sleep 1");
-        Assert.True(sleepIdx > initIdx);
-    }
-
-    [Fact]
-    public void WorktreeSetupScript_DoesNotSwallowErrors()
-    {
-        var script = TerminalLauncher.WorktreeSetupScript("test-task", "/home/user/project");
-        Assert.DoesNotContain("2>/dev/null", script);
-        Assert.Contains("WARNING: init-settings failed", script);
-    }
-
-    [Fact]
-    public void WorktreeInheritedSetupScript_DoesNotSwallowErrors()
-    {
-        var script = TerminalLauncher.WorktreeInheritedSetupScript("/home/user/project", null);
-        Assert.DoesNotContain("2>/dev/null", script);
-        Assert.Contains("WARNING: init-settings failed", script);
-    }
-
-    [Fact]
-    public void WorktreeInitSettingsScript_DoesNotSwallowErrors()
-    {
-        var script = TerminalLauncher.WorktreeInitSettingsScript("/home/user/project");
-        Assert.DoesNotContain("2>/dev/null", script);
-        Assert.Contains("WARNING: init-settings failed", script);
-        Assert.Contains("sleep 1", script);
-    }
-
-    [Fact]
-    public void WindowsArguments_ContainSleepAfterInitSettings()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.Contains("Start-Sleep -Seconds 1", args);
-        var initIdx = args.IndexOf("init-settings");
-        var sleepIdx = args.IndexOf("Start-Sleep");
-        Assert.True(sleepIdx > initIdx, "Start-Sleep must come after init-settings");
-    }
-
-    [Fact]
-    public void WindowsArguments_LogInitSettingsError()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.Contains("Write-Warning", args);
-        Assert.DoesNotContain("catch {}", args);
-    }
-
-    [Fact]
-    public void WindowsArguments_Inherited_ContainSleepAndWarning()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", cleanupWorktreeId: "parent-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.Contains("Start-Sleep -Seconds 1", args);
-        Assert.Contains("Write-Warning", args);
-    }
-
-    #endregion
-
-    #region Junction-Safe Deletion Tests
-
-    [Fact]
-    public void WindowsArguments_UsesRmdirForJunctions_NotDirectoryDelete()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task", mainProjectRoot: @"C:\Projects\MyApp");
-        Assert.DoesNotContain("[IO.Directory]::Delete", args);
-        Assert.Contains("cmd /c rmdir", args);
-    }
-
-    [Fact]
-    public void WindowsArguments_WithoutMainRoot_UsesRmdirForJunctions_NotDirectoryDelete()
-    {
-        var args = WindowsTerminalLauncher.GetArguments("Adele", worktreeId: "test-task");
-        Assert.DoesNotContain("[IO.Directory]::Delete", args);
-        Assert.Contains("cmd /c rmdir", args);
-    }
-
     #endregion
 
     #region RunProcess Timeout Tests
@@ -3518,6 +3343,76 @@ public class WorktreeCommandTests : IDisposable
             WorktreeCommand.RunProcessCaptureOverride = null;
             WorktreeCommand.RunProcessSilentOverride = null;
         }
+    }
+
+    #endregion
+
+    #region Worktree-ID Helpers (relocated from TerminalLauncher, DR-041)
+
+    [Fact]
+    public void WorktreeIdToBranchSuffix_EncodesSlashAsDotPlusDot()
+    {
+        Assert.Equal("domain-A.+.auth-service", WorktreeCommand.WorktreeIdToBranchSuffix("domain-A/auth-service"));
+    }
+
+    [Fact]
+    public void WorktreeIdToBranchSuffix_NoSlash_Unchanged()
+    {
+        Assert.Equal("domain-A", WorktreeCommand.WorktreeIdToBranchSuffix("domain-A"));
+    }
+
+    [Fact]
+    public void BranchSuffixToWorktreeId_DecodesDotPlusDotToSlash()
+    {
+        Assert.Equal("domain-A/auth-service", WorktreeCommand.BranchSuffixToWorktreeId("domain-A.+.auth-service"));
+    }
+
+    [Fact]
+    public void BranchSuffixToWorktreeId_NoDotPlusDot_Unchanged()
+    {
+        Assert.Equal("domain-A", WorktreeCommand.BranchSuffixToWorktreeId("domain-A"));
+    }
+
+    [Fact]
+    public void WorktreeId_RoundTrip()
+    {
+        var original = "domain-A/auth-service/edge-cases";
+        var encoded = WorktreeCommand.WorktreeIdToBranchSuffix(original);
+        var decoded = WorktreeCommand.BranchSuffixToWorktreeId(encoded);
+        Assert.Equal(original, decoded);
+    }
+
+    [Fact]
+    public void ValidateWorktreeId_EmptyString_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => WorktreeCommand.ValidateWorktreeId(""));
+    }
+
+    [Fact]
+    public void ValidateWorktreeId_UnsafeCharsInComponent_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => WorktreeCommand.ValidateWorktreeId("valid/inv@lid"));
+    }
+
+    [Theory]
+    [InlineData(@"worktree\evil")]    // backslash anywhere — rejected before component split
+    [InlineData(@"C:\foo")]           // Windows drive — rejected via the same backslash branch
+    public void ValidateWorktreeId_BackslashInPath_Throws(string id)
+    {
+        var ex = Assert.Throws<ArgumentException>(() => WorktreeCommand.ValidateWorktreeId(id));
+        Assert.Contains("backslash", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(".")]      // current-traversal as the entire id
+    [InlineData("..")]     // parent-traversal as the entire id
+    [InlineData("a/..")]   // parent-traversal embedded after a valid component
+    [InlineData("a/../b")] // parent-traversal between two valid components
+    [InlineData("a/./b")]  // current-traversal between two valid components
+    public void ValidateWorktreeId_PathTraversalComponent_Throws(string id)
+    {
+        var ex = Assert.Throws<ArgumentException>(() => WorktreeCommand.ValidateWorktreeId(id));
+        Assert.Contains("path traversal", ex.Message);
     }
 
     #endregion

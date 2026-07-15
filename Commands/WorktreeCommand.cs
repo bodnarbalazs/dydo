@@ -297,7 +297,7 @@ public static class WorktreeCommand
     {
         try
         {
-            TerminalLauncher.ValidateWorktreeId(worktreeId);
+            ValidateWorktreeId(worktreeId);
         }
         catch (ArgumentException ex)
         {
@@ -721,54 +721,37 @@ public static class WorktreeCommand
         Path.Combine("dydo", "project", "future-features"),
     ];
 
-    /// <summary>
-    /// Generate bash symlink setup commands for all junction subpaths.
-    /// <paramref name="rootExpr"/> is the target root — either a literal path (single-quoted)
-    /// or a shell variable reference (double-quoted).
-    /// </summary>
-    internal static string GenerateBashJunctionScript(string rootExpr, bool isVariable)
-    {
-        var sb = new System.Text.StringBuilder();
-        foreach (var sub in JunctionSubpaths)
-        {
-            var fwd = sub.Replace('\\', '/');
-            var target = isVariable ? $"\"{rootExpr}/{fwd}\"" : $"'{rootExpr}/{fwd}'";
-            sb.Append($"mkdir -p {target} && ");
-            sb.Append($"(if [ -L {fwd} ]; then rm {fwd}; elif [ -e {fwd} ]; then rm -rf {fwd}; fi) && ln -s {target} {fwd} && ");
-        }
-        return sb.ToString();
-    }
+    // Worktree-ID string helpers. Relocated here from the deleted TerminalLauncher in the
+    // 2.1.0 campaign (DR-041) — they encode/decode/validate worktree IDs for the KEEP
+    // worktree create/merge/cleanup/prune surface and have nothing to do with launching.
 
     /// <summary>
-    /// Generate PowerShell junction setup commands for all junction subpaths.
-    /// <paramref name="rootExpr"/> is either a literal root path or a PS variable like <c>$_wt_root.Path</c>.
+    /// Validates a worktree ID received from external input (e.g. CLI arguments).
+    /// Rejects path traversal components and unsafe characters.
     /// </summary>
-    internal static string GeneratePsJunctionScript(string rootExpr, bool isVariable)
+    public static void ValidateWorktreeId(string worktreeId)
     {
-        var sb = new System.Text.StringBuilder();
-        int idx = 0;
-        foreach (var sub in JunctionSubpaths)
+        if (string.IsNullOrEmpty(worktreeId))
+            throw new ArgumentException("Worktree ID cannot be empty.", nameof(worktreeId));
+
+        // Reject backslashes — worktree IDs use forward slash for hierarchy
+        if (worktreeId.Contains('\\'))
+            throw new ArgumentException($"Worktree ID contains backslash (use '/' for hierarchy): {worktreeId}", nameof(worktreeId));
+
+        foreach (var component in worktreeId.Split('/'))
         {
-            var fwd = sub.Replace('\\', '/');
-            string targetExpr;
-            if (isVariable)
-            {
-                var varName = $"$_jt{idx}";
-                sb.Append($"{varName} = Join-Path {rootExpr} '{fwd}'; ");
-                sb.Append($"if (-not (Test-Path {varName})) {{ New-Item -ItemType Directory -Path {varName} -Force; }} ");
-                targetExpr = varName;
-            }
-            else
-            {
-                targetExpr = $"'{rootExpr}/{fwd}'";
-                sb.Append($"if (-not (Test-Path {targetExpr})) {{ New-Item -ItemType Directory -Path {targetExpr} -Force; }} ");
-            }
-            sb.Append($"if (Test-Path '{fwd}') {{ if ((Get-Item '{fwd}' -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {{ cmd /c rmdir (Resolve-Path '{fwd}').Path }} else {{ Remove-Item -Recurse -Force (Resolve-Path '{fwd}').Path }} }} ");
-            sb.Append($"New-Item -ItemType Junction -Path '{fwd}' -Target {targetExpr}; ");
-            idx++;
+            if (component is "" or "." or "..")
+                throw new ArgumentException($"Worktree ID contains path traversal component: {worktreeId}", nameof(worktreeId));
+            if (!System.Text.RegularExpressions.Regex.IsMatch(component, @"^[a-zA-Z0-9_.\-]+$"))
+                throw new ArgumentException($"Worktree ID contains unsafe characters (allowed: a-zA-Z0-9_.-/): {worktreeId}", nameof(worktreeId));
         }
-        return sb.ToString();
     }
+
+    public static string WorktreeIdToBranchSuffix(string worktreeId) =>
+        worktreeId.Replace("/", ".+.");
+
+    public static string BranchSuffixToWorktreeId(string suffix) =>
+        suffix.Replace(".+.", "/");
 
     /// <summary>
     /// Shared teardown: preserve audit files, remove junctions, safely delete the worktree,
@@ -892,7 +875,7 @@ public static class WorktreeCommand
         try
         {
             var gitPrefix = mainRoot != null ? $"-C \"{mainRoot}\" " : "";
-            RunProcess("git", $"{gitPrefix}branch -D -- worktree/{TerminalLauncher.WorktreeIdToBranchSuffix(worktreeId)}");
+            RunProcess("git", $"{gitPrefix}branch -D -- worktree/{WorktreeIdToBranchSuffix(worktreeId)}");
         }
         catch
         {
@@ -933,7 +916,7 @@ public static class WorktreeCommand
         var mergeBranchSuffix = mergeSource.StartsWith("worktree/")
             ? mergeSource["worktree/".Length..]
             : mergeSource;
-        var mergeWorktreeId = TerminalLauncher.BranchSuffixToWorktreeId(mergeBranchSuffix);
+        var mergeWorktreeId = BranchSuffixToWorktreeId(mergeBranchSuffix);
         var mergeChildCount = CountChildWorktrees(registry, mergeWorktreeId);
         if (mergeChildCount > 0)
         {
@@ -1000,7 +983,7 @@ public static class WorktreeCommand
         var branchSuffix = mergeSource.StartsWith("worktree/")
             ? mergeSource["worktree/".Length..]
             : mergeSource;
-        var worktreeId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
+        var worktreeId = BranchSuffixToWorktreeId(branchSuffix);
 
         // Ancestor gate: only commit to cleanup if the merge actually advanced base.
         // A no-op self-merge from inside the source worktree leaves base unchanged
@@ -1127,7 +1110,7 @@ public static class WorktreeCommand
                 var branchSuffix = mergeSource.StartsWith("worktree/")
                     ? mergeSource["worktree/".Length..]
                     : mergeSource;
-                var wtId = TerminalLauncher.BranchSuffixToWorktreeId(branchSuffix);
+                var wtId = BranchSuffixToWorktreeId(branchSuffix);
                 if (CountWorktreeReferences(registry, wtId, includeHolds: false) == 0)
                 {
                     File.Delete(mergePath);

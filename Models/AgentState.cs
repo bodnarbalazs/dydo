@@ -68,8 +68,8 @@ public class AgentState
 
     /// <summary>
     /// Number of times the watchdog has auto-resumed this agent's claude session
-    /// since the last claim/release. Reset to 0 on claim and release. Capped at
-    /// <see cref="DynaDocs.Services.WatchdogService.ResumeAttemptsCap"/> per Decision 022.
+    /// since the last claim/release. Reset to 0 on claim and release. Capped per
+    /// Decision 022. (Resume bookkeeping is an AgentRegistry carve target — DR-041.)
     /// </summary>
     public int ResumeAttempts { get; set; }
 
@@ -90,7 +90,7 @@ public class AgentState
 
     /// <summary>
     /// PID of the resume terminal process the watchdog launched at the most recent
-    /// auto-resume. Used by <see cref="DynaDocs.Services.WatchdogService.IsBadSessionFailFast"/>
+    /// auto-resume. Used by the watchdog's bad-session fail-fast check
     /// to distinguish "still rehydrating" (launched claude is alive but slow to refresh
     /// its ClaimedPid) from "genuinely failed" (launched claude is dead). The wall-clock
     /// warmup gate alone produces false positives on long rehydrations — the launched-PID

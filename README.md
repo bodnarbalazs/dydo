@@ -331,7 +331,7 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
 | `dydo worktree <...>` | Manage git worktrees for parallel agents |
-| `dydo watchdog <...>` | Manage the auto-close / attention watchdog |
+| `dydo watchdog <...>` | Stub — reserved for the Notion-sync daemon (DR-041) |
 
 ### Template
 | Command | Description |

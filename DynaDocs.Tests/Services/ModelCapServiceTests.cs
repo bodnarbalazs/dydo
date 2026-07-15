@@ -208,13 +208,14 @@ public class ModelCapServiceTests : IDisposable
     }
 
     [Fact]
-    public void PollModelCaps_RestoresExpiredCapThroughWatchdogEntry()
+    public void RestoreExpired_RestoresExpiredCapFromDydoRoot()
     {
-        // PollModelCaps compares against the real UtcNow, so seed an already-past marker directly
-        // rather than through Cap (which rejects a past --until).
+        // RestoreExpired compares against the supplied now, so seed an already-past marker directly
+        // rather than through Cap (which rejects a past --until). This is the restore the watchdog
+        // used to drive per-tick; the watchdog poll was stripped in the 2.1.0 campaign (DR-041).
         SeedExpiredCap("claude-fable-5", "claude-sonnet-5", "anthropic", "strong");
 
-        WatchdogService.PollModelCaps(Path.Combine(_projectRoot, "dydo"));
+        ModelCapService.RestoreExpired(DateTimeOffset.UtcNow, Path.Combine(_projectRoot, "dydo"));
 
         Assert.Equal("claude-fable-5", LoadConfig().Models!.Tiers["anthropic"]["strong"]);
         Assert.False(File.Exists(MarkerPath("claude-fable-5")));

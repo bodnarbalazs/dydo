@@ -372,11 +372,11 @@ public class AgentRegistryTests : IDisposable
     }
 
     [Fact]
-    public void ClaimAgent_FreshClaim_RegistersAnchorWithClaudeAncestor()
+    public void ClaimAgent_FreshClaim_TransitionsAgentToWorking()
     {
-        // #0154: every claim must register an anchor for its claude ancestor.
-        // Without this, leaf agents whose dispatcher has already exited lose
-        // watchdog coverage and never auto-resume.
+        // A fresh claim (no prior session) resolves the pending session, stamps the claimed
+        // PID, and transitions the agent to Working. (The watchdog anchor-on-claim was removed
+        // with the 2.1.0 watchdog strip — DR-041.)
         SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
         Environment.SetEnvironmentVariable("DYDO_HUMAN", "testuser");
         ProcessUtils.FindAncestorProcessOverride = (_, _) => 65432;
@@ -387,13 +387,46 @@ public class AgentRegistryTests : IDisposable
         var result = registry.ClaimAgent("Adele", out var error);
 
         Assert.True(result, $"ClaimAgent failed: {error}");
-        var dydoRoot = Path.Combine(_testDir, "dydo");
-        var anchorPath = Path.Combine(WatchdogService.GetAnchorsDirPath(dydoRoot), "65432.anchor");
-        Assert.True(File.Exists(anchorPath),
-            "fresh claim must write an anchor file for the claude ancestor PID");
+        Assert.Equal(AgentStatus.Working, registry.GetAgentState("Adele")!.Status);
         Environment.SetEnvironmentVariable("DYDO_HUMAN", null);
     }
 
+    [Fact]
+    public void ResumeBookkeeping_IncrementRecordSaturate_MutateStateFields()
+    {
+        // The resume-bookkeeping surface (IncrementResumeAttempts / RecordResumeLaunch /
+        // SaturateResumeAttempts) lost its only production caller when the watchdog auto-resume
+        // was stripped (DR-041). Retained as an AgentRegistry carve target; exercised here directly
+        // (previously covered via the deleted WatchdogService resume-poll tests).
+        SetupConfig(new[] { "Adele" }, new Dictionary<string, string[]> { ["testuser"] = new[] { "Adele" } });
+        var workspace = Path.Combine(_testDir, "dydo", "agents", "Adele");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "state.md"), """
+            ---
+            agent: Adele
+            status: working
+            assigned: testuser
+            ---
+            """);
+
+        var registry = new AgentRegistry(_testDir);
+
+        var attempts = registry.IncrementResumeAttempts("Adele", preResumePid: 111, launchedPid: 222);
+        Assert.Equal(1, attempts);
+        var afterInc = registry.GetAgentState("Adele")!;
+        Assert.Equal(1, afterInc.ResumeAttempts);
+        Assert.Equal(111, afterInc.PreResumePid);
+        Assert.Equal(222, afterInc.LaunchedPid);
+        Assert.NotNull(afterInc.LastResumeLaunchedAt);
+
+        Assert.True(registry.RecordResumeLaunch("Adele", 333));
+        Assert.Equal(333, registry.GetAgentState("Adele")!.LaunchedPid);
+
+        Assert.True(registry.SaturateResumeAttempts("Adele", 3));
+        var afterSat = registry.GetAgentState("Adele")!;
+        Assert.Equal(3, afterSat.ResumeAttempts);
+        Assert.Null(afterSat.LastResumeLaunchedAt);
+    }
 
     [Fact]
     public void ClaimAgent_SameSessionResume_EmitsResumeOutcomeSucceeded_ToWatchdogLog()

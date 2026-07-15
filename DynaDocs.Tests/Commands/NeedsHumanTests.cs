@@ -130,13 +130,12 @@ public class NeedsHumanTests : IDisposable
     }
 
     [Fact]
-    public void Release_ThenWatchdogSweep_ClearsFlagAndTaskFileMirror()
+    public void Release_ClearsFlagAndTaskFileMirror()
     {
-        // Repro for the stranded-mirror bug: an orphan-crash flag mirrors `needs-human: true` into
-        // the task file, then the agent is released without another guarded tool call. Release nulls
-        // state.Task, so a later watchdog sweep can no longer reach the task file. Release must clear
-        // BOTH the flag and its task-file mirror while the task name is still known, and the sweep
-        // must then find nothing stale to leave behind.
+        // Repro for the stranded-mirror bug: a flag mirrors `needs-human: true` into the task file,
+        // then the agent is released without another guarded tool call. Release nulls state.Task, so
+        // it must clear BOTH the flag and its task-file mirror while the task name is still known —
+        // otherwise a stranded `needs-human: true` is left behind with nothing to reach it.
         WriteState("Adele", status: "working", task: "my-task", needsHuman: false, sessionId: "sess-rel");
         var taskPath = WriteTaskFile("my-task");
         _registry.SetNeedsHuman("Adele", true);
@@ -146,13 +145,6 @@ public class NeedsHumanTests : IDisposable
 
         // Release cleared both the canonical flag and the task-file mirror.
         Assert.False(_registry.GetAgentState("Adele")!.NeedsHuman);
-        Assert.Contains("needs-human: false", File.ReadAllText(taskPath));
-
-        // The follow-up sweep sees a released agent with a cleared flag: a clean no-op. The task
-        // file must stay cleared — no stranded `needs-human: true`.
-        WatchdogService.PollNeedsHuman(_dydoDir);
-
-        Assert.False(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
         Assert.Contains("needs-human: false", File.ReadAllText(taskPath));
         Assert.DoesNotContain("needs-human: true", File.ReadAllText(taskPath));
     }
@@ -285,19 +277,6 @@ public class NeedsHumanTests : IDisposable
     }
 
     [Fact]
-    public void Sweep_LeavesExplicitFlag_OnIdlePeer()
-    {
-        // An explicit flag on an idle peer (not working-with-task) must survive the reconcile sweep.
-        WriteState("Adele", status: "free", task: "null", needsHuman: false);
-        _registry.SetNeedsHuman("Adele", true, NeedsHumanSource.Explicit);
-        Assert.True(_registry.GetAgentState("Adele")!.NeedsHuman);
-
-        WatchdogService.PollNeedsHuman(_dydoDir);
-
-        Assert.True(new AgentRegistry(_testDir).GetAgentState("Adele")!.NeedsHuman);
-    }
-
-    [Fact]
     public void DerivedClear_UnderLock_LeavesExplicitFlagUntouched()
     {
         // Finding 2: a machine derived-clear must decide stickiness from the state re-read UNDER the lock,
@@ -312,26 +291,6 @@ public class NeedsHumanTests : IDisposable
         var state = _registry.GetAgentState("Adele")!;
         Assert.True(state.NeedsHuman);
         Assert.Equal(NeedsHumanSource.Explicit, state.NeedsHumanSource); // sticky explicit survives
-    }
-
-    [Fact]
-    public void Sweep_CrashMidTask_FlagAlreadySet_StillRepairsStaleTaskMirror()
-    {
-        // Finding 8: a crashed agent (working + task, session dead) whose needs-human flag is ALREADY set
-        // must still have its task-file mirror reconciled — a stale/missing mirror on a crash is repaired,
-        // not skipped just because the flag value is unchanged.
-        WriteState("Adele", status: "working", task: "my-task", needsHuman: true, sessionId: "sess-dead");
-        var taskPath = WriteTaskFile("my-task"); // task file has NO needs-human key: a missing mirror
-
-        var prev = ProcessUtils.IsProcessRunningOverride;
-        ProcessUtils.IsProcessRunningOverride = _ => false; // the claimed session PID is dead
-        try
-        {
-            WatchdogService.PollNeedsHuman(_dydoDir);
-        }
-        finally { ProcessUtils.IsProcessRunningOverride = prev; }
-
-        Assert.Contains("needs-human: true", File.ReadAllText(taskPath)); // mirror repaired despite unchanged flag
     }
 
     [Fact]

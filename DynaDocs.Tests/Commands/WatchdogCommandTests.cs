@@ -1,47 +1,10 @@
 namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
-using DynaDocs.Services;
 
 [Collection("Integration")]
-public class WatchdogCommandTests : IDisposable
+public class WatchdogCommandTests
 {
-    private readonly string _testDir;
-    private readonly string _originalDir;
-
-    public WatchdogCommandTests()
-    {
-        _testDir = Path.Combine(Path.GetTempPath(), "dydo-watchdogcmd-test-" + Guid.NewGuid().ToString("N")[..8]);
-        Directory.CreateDirectory(_testDir);
-        _originalDir = Environment.CurrentDirectory;
-
-        // Set up minimal dydo structure so PathUtils.FindDydoRoot works
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
-            """{"version":1,"structure":{"root":"dydo","tasks":"project/tasks","issues":"project/issues"},"paths":{"source":[],"tests":[],"pathSets":null},"agents":{"pool":[],"assignments":{}},"integrations":{"claude":false},"dispatch":{"launchInTab":false,"autoClose":false},"tasks":{"autoCompactInterval":20},"frameworkHashes":{}}""");
-        var localDir = Path.Combine(_testDir, "dydo", "_system", ".local");
-        Directory.CreateDirectory(localDir);
-
-        // Prevent real process spawning
-        WatchdogService.StartProcessOverride = _ => null;
-        // Dummy pidfile PIDs stand in for a live watchdog; treat them as one so the
-        // command-line verification added for #224 doesn't reject them.
-        WatchdogService.IsWatchdogProcessOverride = _ => true;
-        Environment.CurrentDirectory = _testDir;
-    }
-
-    public void Dispose()
-    {
-        Environment.CurrentDirectory = _originalDir;
-        WatchdogService.StartProcessOverride = null;
-        WatchdogService.IsWatchdogProcessOverride = null;
-        try
-        {
-            if (Directory.Exists(_testDir))
-                Directory.Delete(_testDir, true);
-        }
-        catch (IOException) { }
-    }
-
     [Fact]
     public void Create_ReturnsCommandWithSubcommands()
     {
@@ -63,61 +26,18 @@ public class WatchdogCommandTests : IDisposable
         Assert.True(runCmd.Hidden);
     }
 
-    [Fact]
-    public void Start_WhenNotRunning_PrintsStarted()
+    // The watchdog is a stub awaiting its Notion-sync repurpose (DR-041): every subcommand
+    // prints the awaiting notice, exits 0, and does nothing harmful.
+    [Theory]
+    [InlineData("start")]
+    [InlineData("stop")]
+    [InlineData("run")]
+    public void Subcommand_PrintsAwaitingNotice_AndExitsZero(string subcommand)
     {
-        // Override to return a quick-exiting process so EnsureRunning returns true
-        WatchdogService.StartProcessOverride = _ =>
-        {
-            var psi = OperatingSystem.IsWindows()
-                ? new System.Diagnostics.ProcessStartInfo("cmd", "/c echo ok")
-                : new System.Diagnostics.ProcessStartInfo("echo", "ok");
-            psi.UseShellExecute = false;
-            psi.CreateNoWindow = true;
-            return System.Diagnostics.Process.Start(psi);
-        };
-
-        var (output, exitCode) = RunSubcommand("start");
+        var (output, exitCode) = RunSubcommand(subcommand);
 
         Assert.Equal(0, exitCode);
-        Assert.Contains("Watchdog started.", output);
-    }
-
-    [Fact]
-    public void Start_WhenAlreadyRunning_PrintsAlreadyRunning()
-    {
-        // Write a PID file with a running process so EnsureRunning returns false
-        using var dummy = StartDummyProcess();
-        WritePidFile(dummy.Id);
-
-        var (output, exitCode) = RunSubcommand("start");
-
-        Assert.Equal(0, exitCode);
-        Assert.Contains("Watchdog is already running.", output);
-
-        dummy.Kill();
-    }
-
-    [Fact]
-    public void Stop_WhenNotRunning_PrintsAlreadyStopped()
-    {
-        // No PID file → Stop returns false
-        var (output, exitCode) = RunSubcommand("stop");
-
-        Assert.Equal(0, exitCode);
-        Assert.Contains("Watchdog is already stopped.", output);
-    }
-
-    [Fact]
-    public void Stop_WhenRunning_PrintsStopped()
-    {
-        using var dummy = StartDummyProcess();
-        WritePidFile(dummy.Id);
-
-        var (output, exitCode) = RunSubcommand("stop");
-
-        Assert.Equal(0, exitCode);
-        Assert.Contains("Watchdog stopped.", output);
+        Assert.Contains("awaiting its Notion-sync repurpose", output);
     }
 
     private static (string output, int exitCode) RunSubcommand(string subcommand)
@@ -128,25 +48,5 @@ public class WatchdogCommandTests : IDisposable
             return command.Parse(subcommand).Invoke();
         });
         return (stdout, exitCode);
-    }
-
-    private void WritePidFile(int pid)
-    {
-        var dydoRoot = Path.Combine(_testDir, "dydo");
-        var pidFile = WatchdogService.GetPidFilePath(dydoRoot);
-        Directory.CreateDirectory(Path.GetDirectoryName(pidFile)!);
-        File.WriteAllText(pidFile, pid.ToString());
-    }
-
-    private static System.Diagnostics.Process StartDummyProcess()
-    {
-        var psi = new System.Diagnostics.ProcessStartInfo("ping",
-            OperatingSystem.IsWindows() ? "-n 600 127.0.0.1" : "-c 600 127.0.0.1")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true
-        };
-        return System.Diagnostics.Process.Start(psi)!;
     }
 }

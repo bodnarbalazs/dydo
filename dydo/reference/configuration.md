@@ -28,24 +28,13 @@ Located at the project root. Created by `dydo init`. This is the primary configu
     "tests": ["tests/**"],
     "pathSets": null
   },
-  "agents": {
-    "pool": ["Adele", "Brian", "..."],
-    "assignments": {
-      "alice": ["Adele", "Brian"],
-      "bob": ["Charlie"]
-    }
-  },
   "integrations": {
     "claude": true,
     "codex": false
   },
-  "dispatch": {
-    "launchInTab": true,
-    "autoClose": false,
-    "codex": {
-      "sandbox": "workspace-write",
-      "approvalPolicy": "on-request"
-    }
+  "models": {
+    "tiers": { "anthropic": { "strong": "claude-fable-5" } },
+    "roles": { "code-writer": "standard" }
   },
   "frameworkHashes": { }
 }
@@ -62,109 +51,11 @@ Located at the project root. Created by `dydo init`. This is the primary configu
 | `paths.source` | string[] | `["src/**"]` | Source code glob patterns — used by roles via `{source}` |
 | `paths.tests` | string[] | `["tests/**"]` | Test code glob patterns — used by roles via `{tests}` |
 | `paths.pathSets` | dict | `null` | Custom named path groupings for role definitions |
-| `agents.pool` | string[] | — | All available agent names |
-| `agents.assignments` | dict | — | Maps human names to their assigned agent names |
 | `integrations.claude` | bool | `true` | Whether Claude Code integration is active |
 | `integrations.codex` | bool | `false` | Whether Codex integration is active |
-| `dispatch.launchInTab` | bool | `true` | Open dispatched agents in a new tab (vs new window) |
-| `dispatch.autoClose` | bool | `false` | Auto-close terminal when agent releases |
-| `dispatch.codex.sandbox` | string | `"workspace-write"` | Codex sandbox mode — `read-only`, `workspace-write`, or `danger-full-access` |
-| `dispatch.codex.approvalPolicy` | string | `"on-request"` | Codex approval prompting — `untrusted`, `on-request`, or `never` |
+| `models.tiers` | dict | — | Per-vendor tier → model bindings ([Decision 028](../project/decisions/028-model-tier-abstraction.md)) |
+| `models.roles` | dict | — | Role → tier map; `dydo sync` resolves each to a concrete model |
 | `frameworkHashes` | dict | — | SHA256 hashes of framework-owned files for `dydo template update` |
-
----
-
-## Codex Launch Posture
-
-Every dispatched Codex session launches with a configured approval-and-sandbox posture
-(issue 0253) so it can run shell commands and `dydo` CLI calls inside its workspace without a
-human hand-approving each action — the sandbox is the enforcement boundary, and Codex prompts
-only when an action would exceed it. The dydo guard hook remains the project-boundary
-defense-in-depth on top of this.
-
-The `dispatch.codex` section surfaces two keys, both validated against the Codex CLI's accepted
-values:
-
-| Key | Accepted values | Default | Emitted flag |
-|-----|-----------------|---------|--------------|
-| `sandbox` | `read-only`, `workspace-write`, `danger-full-access` | `workspace-write` | `--sandbox` |
-| `approvalPolicy` | `untrusted`, `on-request`, `never` | `on-request` | `--ask-for-approval` |
-
-An absent `dispatch.codex` section resolves to these shipped defaults — never a bare, maximally
-restrictive launch. An unknown value fails validation, naming the accepted list. The Codex
-`on-failure` approval value is deprecated and never emitted.
-
-The dangerous-bypass flag (`--dangerously-bypass-approvals-and-sandbox`, alias `--yolo`) is
-**not a configuration value and is never emitted** under any posture.
-
-The same posture is carried on the watchdog's resume path. `codex resume` accepts the same global
-flags as `codex`, so the posture flags are emitted **before** the `resume` subcommand
-(`codex --sandbox … --ask-for-approval … resume <id>`) — the documented form.
-
-### Windows sandbox prerequisite
-
-On Windows the `workspace-write` posture runs under Codex's elevated sandbox, which must be
-provisioned per machine before the first dispatch. The provisioning tool
-`codex-windows-sandbox-setup.exe` ships with the Codex CLI, installed under
-`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`. It sets up the sandbox users, ACLs, and firewall
-rules the elevated sandbox needs, and its first run must be approved by an administrator. Run it
-once from an elevated PowerShell before dispatching Codex agents:
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\OpenAI\Codex\bin\codex-windows-sandbox-setup.exe"
-```
-
-If the helper reports "program not found" on a clean install, that matches a known upstream Codex
-bug in the bin-junction lookup ([openai/codex issue #30829](https://github.com/openai/codex/issues/30829)):
-re-run the sandbox setup, or verify the bin junction under
-`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin` exists and resolves. Do not work around a missing helper
-by lowering the posture to `danger-full-access` — provision the sandbox instead.
-
-The dispatch-time preflight (`Services/DispatchPreflight.cs`) surfaces an absent prerequisite as an
-actionable error before any agent is reserved: a `workspace-write` Codex dispatch on Windows fails
-fast naming `codex-windows-sandbox-setup.exe` and pointing back at this section, and the sandbox is
-never silently downgraded. Modes that do not use the elevated sandbox (`read-only`,
-`danger-full-access`) skip the check.
-
----
-
-## Model Display Names
-
-Provenance surfaces (issues, messages, reviews, task records, `dydo whoami`, `dydo agent list`)
-show the exact runtime model as a human display name — `Opus 4.8`, `Fable 5`, `Gpt-5.6 Sol` —
-rather than a bare vendor (`claude` / `codex`). The mapping lives in the DR 028 models config
-under `models.display-names`:
-
-```json
-{
-  "models": {
-    "tiers": { "...": {} },
-    "display-names": {
-      "claude-opus-4-8": "Opus 4.8",
-      "gpt-5-codex": "Gpt-5.6 Sol"
-    }
-  }
-}
-```
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `models.display-names` | dict | Runtime model id → human display name. |
-
-Rendering rules, applied by one shared resolver so no surface drifts:
-
-- A known id renders as its display name.
-- An unknown id passes through **verbatim** — never guessed, never replaced by a vendor name.
-- The vendor is used **only** as a fallback when the model itself is unknown.
-
-An **absent or empty** `display-names` map resolves to the shipped defaults (same
-absent-section-defaults contract as `dispatch.codex`), so the mapping takes effect even for a
-`dydo.json` written before this key existed. A configured non-empty map is authoritative — ids
-missing from it pass through verbatim rather than falling back to the defaults.
-
-The runtime model is captured by the guard hook: from an explicit model field on the hook payload
-when present (as Codex delivers), otherwise from the Claude session transcript's most recent
-assistant entry. It is never inferred from a role's default tier.
 
 ---
 
@@ -172,8 +63,7 @@ assistant entry. It is never inferred from a role's default tier.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DYDO_HUMAN` | Yes | Identifies the human operating the terminal. Used for agent assignment, permission checks, and audit trails. |
-| `DYDO_WINDOW` | No | GUID for Windows Terminal routing. Set automatically by the dispatcher to direct child dispatches to the same window. |
+| `DYDO_HUMAN` | Yes | Identifies the human operating the terminal. Used to stamp authorship on tasks and issues. |
 
 Set `DYDO_HUMAN` before running any commands:
 
@@ -197,10 +87,10 @@ Claude Code example:
 {
   "permissions": {
     "allow": [
-      "Bash(dydo agent claim:*)",
-      "Bash(dydo agent:*)",
-      "Bash(dydo dispatch:*)",
-      "Bash(dydo whoami:*)",
+      "Bash(dydo check:*)",
+      "Bash(dydo fix:*)",
+      "Bash(dydo task:*)",
+      "Bash(dydo sync:*)",
       "..."
     ]
   },
@@ -260,9 +150,9 @@ Codex example:
 }
 ```
 
-The `PreToolUse` hook intercepts each matched tool call and sends it to `dydo guard`; Codex additionally includes `apply_patch` because Codex exposes file edits through that tool. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block). The `Stop` hook calls `dydo guard --stop` so dydo can derive a needs-human attention flag when a turn ends mid-task.
+The `PreToolUse` hook intercepts each matched tool call and sends it to `dydo guard`; Codex additionally includes `apply_patch` because Codex exposes file edits through that tool. The guard receives JSON via stdin and returns exit code `0` (allow) or `2` (block). The `Stop` hook calls `dydo guard --stop`, which is a retained no-op — the agent-identity needs-human machinery it once drove was removed with the claim ceremony ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)); the wiring stays so existing installs keep resolving.
 
-For Claude Code, the `permissions.allow` list also pre-approves common dydo commands so the human doesn't get prompted for every agent lifecycle call.
+For Claude Code, the `permissions.allow` list also pre-approves common dydo commands so the human doesn't get prompted for every call.
 
 ---
 
@@ -270,9 +160,9 @@ For Claude Code, the `permissions.allow` list also pre-approves common dydo comm
 
 ### Template Overrides
 
-`dydo/_system/templates/` contains the templates used to generate agent workflow and mode files. Edit these directly to change agent behavior. Changes take effect when agents are next claimed (workspace regenerated).
+`dydo/_system/templates/` contains the role mode templates `dydo sync` compiles into native agents and skills. Edit these directly to change agent behavior, then re-run `dydo sync`.
 
-Files: `agent-workflow.template.md`, `mode-code-writer.template.md`, `mode-reviewer.template.md`, etc.
+Files: `mode-code-writer.template.md`, `mode-reviewer.template.md`, `mode-planner.template.md`, etc.
 
 ### Template Additions
 

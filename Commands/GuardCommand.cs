@@ -432,13 +432,13 @@ public static partial class GuardCommand
             }
         }
 
-        return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry, isWorker: isWorker);
+        return AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
     }
 
     internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry)
     {
-        // Always include block-severity default nudges (H19/H20) even if removed from config.
-        // These are security-critical and must not be removable via dydo.json editing.
+        // Always include block-severity default nudges (H19 indirect dydo invocation) even if
+        // removed from config. These are security-critical and must not be removable via dydo.json.
         var nudges = MergeSystemNudges(registry.Config?.Nudges);
         if (nudges.Count == 0)
             return null;
@@ -586,13 +586,45 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Merge block-severity default nudges into the config nudges list.
-    /// Ensures security-critical nudges (H19 indirect invocation, H20 worktree lifecycle)
-    /// are always enforced even if removed from dydo.json.
+    /// Pre-2.1 shipped nudge message texts that must self-heal in existing installs.
+    /// EnsureDefaultNudges dedupes by pattern, so a config materialized before 2.1 keeps
+    /// these stale messages forever unless we rewrite them here. A message the USER edited
+    /// matches nothing in this set and is left untouched — docs promise message editability.
+    /// </summary>
+    private static readonly HashSet<string> StaleNudgeMessages =
+    [
+        // The three poll-loop warn nudges (until/tail/while) still recommend the deleted `dydo wait`.
+        "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+        // Retired worktree block/warn nudges — no current default, so they are removed outright.
+        "Use dydo worktree commands instead of git worktree directly.",
+        "Use dydo worktree cleanup instead of deleting worktree directories directly.",
+        "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
+    ];
+
+    /// <summary>
+    /// Reconcile config nudges with the shipped defaults. Two independent passes:
+    ///   1. Self-heal known-stale shipped messages (ANY severity): a nudge still carrying a
+    ///      pre-2.1 default text is refreshed to the current default (matched by pattern) or
+    ///      dropped entirely when that default was retired. User-edited messages are untouched.
+    ///   2. Guarantee the block-severity system nudges (H19 indirect invocation): always
+    ///      present and never downgradable via dydo.json. A weakened severity is forced back
+    ///      to block WITHOUT clobbering a user-customized message.
     /// </summary>
     internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
     {
         var nudges = configNudges?.ToList() ?? [];
+
+        for (int i = nudges.Count - 1; i >= 0; i--)
+        {
+            if (!StaleNudgeMessages.Contains(nudges[i].Message))
+                continue;
+
+            var current = ConfigFactory.DefaultNudges.FirstOrDefault(d => d.Pattern == nudges[i].Pattern);
+            if (current == null)
+                nudges.RemoveAt(i);
+            else
+                nudges[i] = current;
+        }
 
         foreach (var defaultNudge in ConfigFactory.DefaultNudges)
         {
@@ -604,13 +636,16 @@ public static partial class GuardCommand
             {
                 nudges.Add(defaultNudge);
             }
-            else if (!string.Equals(nudges[existingIndex].Severity, "block", StringComparison.OrdinalIgnoreCase)
-                     || nudges[existingIndex].Message != defaultNudge.Message)
+            else if (!string.Equals(nudges[existingIndex].Severity, "block", StringComparison.OrdinalIgnoreCase))
             {
-                // Heal a downgraded severity OR a stale message: for block-severity system
-                // nudges the shipped default is authoritative, so a config copy whose message
-                // has drifted (or whose severity was weakened) is replaced with the default.
-                nudges[existingIndex] = defaultNudge;
+                var existing = nudges[existingIndex];
+                nudges[existingIndex] = new NudgeConfig
+                {
+                    Pattern = existing.Pattern,
+                    Message = existing.Message,
+                    Severity = "block",
+                    Tools = existing.Tools
+                };
             }
         }
 
@@ -618,9 +653,7 @@ public static partial class GuardCommand
     }
 
     private static int AnalyzeAndCheckBashOperations(
-        string command, string? sessionId,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry, bool isWorker = false)
+        string command, IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer)
     {
         var analysis = bashAnalyzer.Analyze(command);
 
@@ -641,17 +674,14 @@ public static partial class GuardCommand
 
         foreach (var op in analysis.Operations)
         {
-            var blocked = CheckBashFileOperation(op, command, sessionId, offLimitsService, registry, isWorker: isWorker);
+            var blocked = CheckBashFileOperation(op, offLimitsService);
             if (blocked != null) return blocked.Value;
         }
 
         return ExitCodes.Success;
     }
 
-    internal static int? CheckBashFileOperation(
-        FileOperation op, string command, string? sessionId,
-        IOffLimitsService offLimitsService, AgentRegistry registry,
-        bool isWorker = false)
+    internal static int? CheckBashFileOperation(FileOperation op, IOffLimitsService offLimitsService)
     {
         // Native memory is exempt for any op type (out of dydo's jurisdiction).
         // Everything else is subject to the universal off-limits check.
@@ -784,6 +814,13 @@ public static partial class GuardCommand
     /// Restores any model cap whose reset time has passed, at most once per throttle window.
     /// Cheap when there is nothing to do (RestoreExpired no-ops without a marker directory),
     /// and never allowed to break the guard.
+    ///
+    /// Concurrency: two hook processes (main thread + a subagent) can both clear the throttle
+    /// on a stale stamp and race into RestoreExpired → SaveConfig. This is left unserialized on
+    /// purpose — the restore is convergent: both processes rebind the same tiers to the same
+    /// original model, write the same config, and TryDelete the same marker (one wins, the other
+    /// swallows the not-found). Last-writer-wins produces the identical file, so the race is
+    /// benign and a lock would add cleanup/staleness burden for no correctness gain.
     /// </summary>
     private static void RestoreExpiredModelCapsIfDue()
     {

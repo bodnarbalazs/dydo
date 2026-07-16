@@ -7,7 +7,7 @@ type: reference
 
 The three-tier system that shapes agent behavior. Every guardrail falls into one of three categories based on how strictly it constrains the agent.
 
-> **2.1 note ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)).** dydo ceded agent identity to the platforms, so everything gated on a claimed agent is gone from the guard: staged read access (**H3**), the other-agent-workflow read block (**H4**), must-read write enforcement (**H5**), the search-tool identity lockout (**H6**), the no-identity/no-role write blocks (**H7/H8**), and the human-only-command block (**H29**). Per-role write RBAC (**H1**) and the **N7/N8** denial hints were already removed in 2.0 ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). The guard is now **universal off-limits (H2) + nudges + dangerous-bash + git-safety** only: reads, searches, and writes by anyone are allowed unless the path is off-limits or the command is dangerous. **H12** (judge panel) was retired with the judge role.
+> **2.1 note ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)).** dydo ceded agent identity to the platforms, so everything gated on a claimed agent is gone from the guard: staged read access (**H3**), the other-agent-workflow read block (**H4**), must-read write enforcement (**H5**), the search-tool identity lockout (**H6**), the no-identity/no-role write blocks (**H7/H8**), and the human-only-command block (**H29**). Per-role write RBAC (**H1**) and the **N7/N8** denial hints were already removed in 2.0 ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). The guard is now **universal off-limits (H2) + nudges + dangerous-bash** only: reads, searches, and writes by anyone are allowed unless the path is off-limits or the command is dangerous. The git-stash/merge fences were removed with worktree management ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)). **H12** (judge panel) was retired with the judge role.
 
 ---
 
@@ -79,7 +79,7 @@ These are defined in the `constraints` array of each role definition file, makin
 |---|------|---------|---------|
 | H17 | Dangerous commands | Bash command matches destructive patterns: recursive delete of root/home, fork bombs, `dd` to disk, download-and-execute (`curl\|sh`), eval of variables, history clearing, SELinux disable, firewall flush, shadow/password file access. | `BLOCKED: Dangerous command pattern detected. Reason: {reason}` |
 | H18 | Chained `cd` commands | `cd /path && command` or `cd /path; command`. Breaks the guard's ability to analyze the actual command. | `BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.` |
-| H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, `python dydo`, etc. Dydo should be called directly. **Severity-pinned default nudge** — implemented in `Services/ConfigFactory.cs DefaultNudges`; pattern/message editable in `dydo.json`, severity force-restored to `block` by `MergeSystemNudges` (see Extensibility section below). | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
+| H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, `python dydo`, etc. Dydo should be called directly. **Severity-pinned default nudge** — implemented in `Services/ConfigFactory.cs DefaultNudges`; a user-customized message is left alone, but severity is force-restored to `block` by `MergeSystemNudges` (see Extensibility section below). | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
 
 ---
 
@@ -97,8 +97,8 @@ The guardrail system is designed for extension through role definition files (`.
 - Off-limits enforcement (H2)
 - Bash safety analysis (H17, H18) — direct pattern checks in `Commands/GuardCommand.cs`
 
-**What's a severity-pinned default nudge** (pattern and message editable in `dydo.json`, severity force-restored to `block`):
-- Indirect dydo invocation (H19) — implemented as multiple `block`-severity entries in `Services/ConfigFactory.cs:9-22 DefaultNudges` (npx, dotnet, dotnet run, bash/sh/zsh/cmd/powershell/pwsh, python). `Commands/GuardCommand.cs:587-609 MergeSystemNudges` re-merges these on every guard call: a missing pattern is re-added; a downgraded severity is force-restored to `block`. The pattern text and the message body remain user-editable.
+**What's a severity-pinned default nudge** (message editable in `dydo.json`; severity force-restored to `block`):
+- Indirect dydo invocation (H19) — implemented as multiple `block`-severity entries in `Services/ConfigFactory.cs DefaultNudges` (npx, dotnet, dotnet run, bash/sh/zsh/cmd/powershell/pwsh, python). `Commands/GuardCommand.cs MergeSystemNudges` reconciles config nudges with the shipped defaults on every guard call: a missing block default is re-added and a downgraded severity is force-restored to `block` **without clobbering a user-customized message**. Separately, a nudge still carrying a *known-stale shipped message* (a pre-2.1 default text, e.g. the poll-loop nudges that recommended the removed `dydo wait`) self-heals to the current default, or is dropped entirely if its default was retired (the worktree nudges). A message the user edited matches no known-stale text and is left untouched.
 
 Custom roles inherit the hard-coded enforcement automatically. Adding a new `.role.json` with custom `constraints` entries extends the system without code changes.
 

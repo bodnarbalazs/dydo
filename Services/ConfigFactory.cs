@@ -4,38 +4,9 @@ using DynaDocs.Models;
 
 public static class ConfigFactory
 {
-    public static readonly List<string> DefaultQueues = ["merge"];
-
-    /// <summary>
-    /// Shipped Codex launch posture (issue 0253, co-think 2026-07-09): the sandbox is the
-    /// enforcement boundary; approval prompts only to exceed it. An absent <c>dispatch.codex</c>
-    /// section resolves to these values — never a bare launch, never the dangerous-bypass flag.
-    /// </summary>
-    public const string DefaultCodexSandbox = "workspace-write";
-    public const string DefaultCodexApprovalPolicy = "on-request";
-
-    /// <summary>
-    /// Shipped model-id → display-name map (c1-6, seeded from
-    /// <c>backlog/exact-model-provenance-display.md</c> + the ids already bound in the DR 028
-    /// tier defaults). Provenance surfaces render these human names instead of a bare vendor.
-    /// This is the canonical default: an absent or empty <c>models.display-names</c> section
-    /// resolves to it (via <see cref="ModelDisplay.EffectiveDisplayNames"/>), so the mapping
-    /// takes effect even for a dydo.json written before the key existed — the same
-    /// absent-section-defaults contract the codex posture keys already honor. Ids not present
-    /// here pass through verbatim.
-    /// </summary>
-    public static readonly IReadOnlyDictionary<string, string> DefaultDisplayNames =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["claude-fable-5"] = "Fable 5",
-            ["claude-opus-4-8"] = "Opus 4.8",
-            ["claude-haiku-4-5"] = "Haiku 4.5",
-            ["claude-sonnet-5"] = "Sonnet 5",
-            ["gpt-5.5"] = "Gpt 5.5",
-            ["gpt-5.6-sol"] = "Gpt 5.6 Sol",
-            ["gpt-5.6-terra"] = "Gpt 5.6 Terra",
-            ["gpt-5.6-luna"] = "Gpt 5.6 Luna",
-        };
+    // No shipped default queues: the "merge" queue seeded the worktree-merge review flow,
+    // which was removed with worktree management (DR-041). Users may still define their own.
+    public static readonly List<string> DefaultQueues = [];
 
     /// <summary>
     /// Dydo-internal scan-exclude entries — invariant. The check/fix loop
@@ -147,10 +118,7 @@ public static class ConfigFactory
         // tier's model (Fable) hits its spend cap — matches the out-of-band reviewer
         // workaround (issue #214). Kept in step with FALLBACK_MODEL in the run-sprint /
         // inquisition harness scripts, which retry a stage on this same model.
-        Fallback = "claude-sonnet-5",
-        // Materialized into a fresh dydo.json by `dydo init`. Existing configs without the
-        // key fall back to the same defaults at resolve time (ModelDisplay.EffectiveDisplayNames).
-        DisplayNames = new Dictionary<string, string>(DefaultDisplayNames, StringComparer.OrdinalIgnoreCase)
+        Fallback = "claude-sonnet-5"
     };
 
     /// <summary>
@@ -170,10 +138,6 @@ public static class ConfigFactory
         openAi["strong"] = "gpt-5.6-sol";
         openAi["standard"] = "gpt-5.6-terra";
         openAi["light"] = "gpt-5.6-luna";
-
-        if (models.DisplayNames.Count > 0)
-            foreach (var (model, displayName) in DefaultDisplayNames.Where(pair => pair.Key.StartsWith("gpt-5.6-")))
-                models.DisplayNames.TryAdd(model, displayName);
 
         return true;
     }

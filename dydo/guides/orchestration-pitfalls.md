@@ -74,16 +74,6 @@ Guard gotchas while doing this in Bash: the guard blocks write-commands (redirec
 
 ---
 
-## 6. Junction-shared dirs write through worktree isolation
-
-**Symptom:** From a dydo-launched worktree terminal, edits under certain `dydo/` dirs appear live in the main tree — a cross-dir move half-applies immediately and then conflicts on merge-back.
-
-**Mechanism:** `WorktreeCommand.JunctionSubpaths` (`Commands/WorktreeCommand.cs`) junctions `dydo/agents`, `dydo/_system/roles`, `dydo/project/issues`, `dydo/project/inquisitions`, `dydo/project/backlog`, and `dydo/project/future-features` into dydo-launched worktree terminals — writes there go through the junction into the main tree. This applies **only** to dydo's own worktree launch path; Claude-native Workflow worktrees have no junctions (their hazards are pitfalls 1 and the shared `_index.md`/link surfaces instead).
-
-**Status (2026-07-08):** this machinery is suspected dead code post-2.0 (`run-sprint` uses Claude-native worktrees; `dydo worktree` no longer has a `create` subcommand) — under investigation in the [DR 034](../project/decisions/034-pm-record-taxonomy.md) sprint. Don't cite junction write-through as the sole reason to sequence doc-move slices without checking the machinery still exists; the stale-base and shared-index arguments (pitfalls 1 and 3) carry that recommendation on their own.
-
----
-
 ## Related
 
 - [Coding Standards](./coding-standards.md) — Workflow discipline for Tier-2 workers

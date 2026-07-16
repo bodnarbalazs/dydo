@@ -20,8 +20,7 @@ public static class TemplateCommand
         "reference/about-dynadocs.md",
         "reference/dydo-commands.md",
         "reference/writing-docs.md",
-        "guides/how-to-use-docs.md",
-        "guides/how-to-review-worktree-merges.md"
+        "guides/how-to-use-docs.md"
     ];
 
     public static readonly string[] FrameworkBinaryFiles =
@@ -57,12 +56,6 @@ public static class TemplateCommand
 
     private static int ExecuteUpdate(bool diff, bool force)
     {
-        if (PathUtils.IsInsideWorktree())
-        {
-            Console.Error.WriteLine("Cannot update templates inside a worktree. Run from the main project directory.");
-            return 1;
-        }
-
         var configService = new ConfigService();
         var configPath = configService.FindConfigFile();
         if (configPath == null)
@@ -521,7 +514,6 @@ public static class TemplateCommand
         "reference/dydo-commands.md" => TemplateGenerator.GenerateDydoCommandsMd(),
         "reference/writing-docs.md" => TemplateGenerator.GenerateWritingDocsMd(),
         "guides/how-to-use-docs.md" => TemplateGenerator.GenerateHowToUseDocsMd(),
-        "guides/how-to-review-worktree-merges.md" => TemplateGenerator.GenerateHowToReviewWorktreeMergesMd(),
         _ => null
     };
 

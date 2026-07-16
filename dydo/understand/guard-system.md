@@ -90,28 +90,6 @@ Bash commands go through multi-stage analysis:
 **Special blocks:**
 - Chained `cd` (`cd /path && command`) — breaks path analysis; run `cd` separately
 - Indirect dydo invocation (`npx dydo`, `dotnet dydo`) — use `dydo` directly
-- `dydo wait` without `run_in_background: true` — would block the terminal
-- `git stash` outside worktrees — global stash interferes in multi-agent setups
-
----
-
-## Auto-Approve JSON (Worktree-Only)
-
-On a successful decision, the guard can emit a Claude-Code-specific JSON envelope to stdout that tells the host to skip its own per-tool permission prompt:
-
-```json
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}
-```
-
-Emission is **conditional on CWD being inside a dispatch worktree** (`dydo/_system/.local/worktrees/{id}/...`). The gate is implemented in `Commands/GuardCommand.cs` as `IsWorktreeContext()` + `EmitWorktreeAllowIfNeeded()`; the allow is emitted from `HandleReadOperation`, `HandleWriteOperation`, `HandleSearchTool`, `HandleDydoBashCommand`, and `AnalyzeAndCheckBashOperations` on their success paths. Blocked operations never emit allow.
-
-**Why the gate exists.** Worktree-resolved absolute paths (e.g., `…/dydo/_system/.local/worktrees/{id}/src/foo.cs`) typically don't match the patterns in `settings.local.json permissions.allow[]` (which usually target the main project root). Without the guard's explicit allow, dispatched agents would hit a permission prompt on every tool call.
-
-**What it means for users.**
-- **Inside a worktree (dispatched agents):** the guard owns the allow/deny decision; Claude Code does not prompt. Less friction for isolated experiments.
-- **At the project root (main session):** the guard never emits allow, so Claude Code falls back to its normal permission flow — `settings.local.json` `permissions.allow[]` match, or a prompt. The human stays in the loop on main-repo edits.
-
-Security posture is unchanged either way: the guard's decision is authoritative — off-limits checks, RBAC, and staged onboarding all run before any allow is emitted. The gate only affects whether Claude Code shows an additional prompt on top of the guard's own verdict.
 
 ---
 
@@ -160,7 +138,7 @@ All guardrails fall into three tiers:
 - **Onboarding** (H7–H9): No identity/role blocks writes, session ID required
 - **Role constraints** (H10–H11): No self-review, orchestrator graduation (doc-shorthand for `.role.json` constraint types; the H12 judge-panel limit was retired with the judge role in Decision 024)
 - **Release blocking** (H13–H16, H25): Unprocessed inbox, active waits, pending replies, worktree merges, code-writer review enforcement
-- **Bash safety** (H17, H18, H20, H26, H28, H29): Dangerous commands, chained cd, foreground wait, git stash, direct git merge in worktree, human-only dydo subcommands. (H19 indirect-dydo is a severity-pinned default nudge — pattern editable, severity force-restored to `block`. See [Guardrails Reference](../reference/guardrails.md) under Extensibility.)
+- **Bash safety** (H17, H18): Dangerous commands, chained cd. (H19 indirect-dydo is a severity-pinned default nudge — message editable, severity force-restored to `block`. See [Guardrails Reference](../reference/guardrails.md) under Extensibility.)
 - **Messaging** (H21–H22): No self-messaging, no cross-human messaging
 - **Dispatch** (H23–H24): Double-dispatch protection, conflicting launch flags
 - **Pending state** (H30): Unread inbox blocks every operation until cleared (was S3 — re-classified because the gate has no marker/override and re-fires on every tool call)

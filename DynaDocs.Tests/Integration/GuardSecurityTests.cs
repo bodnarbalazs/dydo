@@ -577,6 +577,82 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.Equal("block", matching[0].Severity, ignoreCase: true);
     }
 
+    [Fact]
+    public void MergeSystemNudges_HealsStaleWarnMessage()
+    {
+        // The pre-2.1 poll-loop warn text still recommends the deleted `dydo wait`.
+        var stale = new NudgeConfig
+        {
+            Pattern = @"\buntil\s+\[",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Severity = "warn"
+        };
+
+        var result = GuardCommand.MergeSystemNudges([stale]);
+
+        var healed = Assert.Single(result, n => n.Pattern == stale.Pattern);
+        Assert.DoesNotContain("dydo wait", healed.Message);
+        Assert.Equal("warn", healed.Severity, ignoreCase: true);
+        var currentDefault = ConfigFactory.DefaultNudges.First(d => d.Pattern == stale.Pattern);
+        Assert.Equal(currentDefault.Message, healed.Message);
+    }
+
+    [Fact]
+    public void MergeSystemNudges_RemovesRetiredWorktreeNudge()
+    {
+        // A retired worktree nudge has no current default → it is dropped entirely.
+        var retired = new NudgeConfig
+        {
+            Pattern = @"\bgit\b[^;|&]*\bworktree\s+(add|remove)\b",
+            Message = "Use dydo worktree commands instead of git worktree directly.",
+            Severity = "block"
+        };
+
+        var result = GuardCommand.MergeSystemNudges([retired]);
+
+        Assert.DoesNotContain(result, n => n.Pattern == retired.Pattern);
+        Assert.DoesNotContain(result, n => n.Message == retired.Message);
+    }
+
+    [Fact]
+    public void MergeSystemNudges_LeavesUserCustomizedMessageAlone()
+    {
+        // A user-edited block-nudge message (not a known-stale text) must survive verbatim.
+        var blockDefault = ConfigFactory.DefaultNudges.First(
+            n => string.Equals(n.Severity, "block", StringComparison.OrdinalIgnoreCase));
+        var custom = new NudgeConfig
+        {
+            Pattern = blockDefault.Pattern,
+            Message = "My team's own wording for this rule.",
+            Severity = "block"
+        };
+
+        var result = GuardCommand.MergeSystemNudges([custom]);
+
+        var matching = Assert.Single(result, n => n.Pattern == custom.Pattern);
+        Assert.Equal("My team's own wording for this rule.", matching.Message);
+    }
+
+    [Fact]
+    public void MergeSystemNudges_ForceRestoresSeverityWithoutClobberingCustomMessage()
+    {
+        // Severity force-restore must not overwrite a user-customized message.
+        var blockDefault = ConfigFactory.DefaultNudges.First(
+            n => string.Equals(n.Severity, "block", StringComparison.OrdinalIgnoreCase));
+        var custom = new NudgeConfig
+        {
+            Pattern = blockDefault.Pattern,
+            Message = "My team's own wording for this rule.",
+            Severity = "warn"
+        };
+
+        var result = GuardCommand.MergeSystemNudges([custom]);
+
+        var matching = Assert.Single(result, n => n.Pattern == custom.Pattern);
+        Assert.Equal("block", matching.Severity, ignoreCase: true);
+        Assert.Equal("My team's own wording for this rule.", matching.Message);
+    }
+
     // ================================================================
     // Additional edge-case tests for BashCommandAnalyzer
     // ================================================================

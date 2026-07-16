@@ -167,28 +167,9 @@ grep '"Release"' dydo/_system/audit/2026/<session-id>.events           # confirm
 
 If the agent was running in a **worktree**, audit lives under the worktree's own `dydo/_system/audit/` — only `dydo/agents`, `dydo/_system/roles`, `dydo/project/issues`, `dydo/project/inquisitions` are junctioned across worktrees. Check `dydo/_system/.local/worktrees/<id>/dydo/_system/audit/2026/` too.
 
-**Recovery options, least destructive first:**
+**Recovery:** Resume the session with the platform's own tooling — e.g. `claude --resume` in the tab, if it is still open. dydo no longer manages the agent lifecycle, worktrees, or a `dydo agent clean`/`dydo worktree` recovery path ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)); isolation and resume are the native runtime's job now.
 
-1. **Resume the tab.** If the agent's tab is still open, run `claude --resume` in it. The Claude process reconnects, you can finish the work and release normally. This preserves task-role-history, inbox, and uncommitted code edits.
-
-2. **Force-clean the workspace.** Destructive — wipes inbox, modes, state.md:
-
-    ```bash
-    dydo agent clean <name> --force
-    ```
-
-    Code-writers' uncommitted source edits survive (they live outside the agent workspace), but anything inside `dydo/agents/<name>/` is gone. Rescue drafts (`msg-*.md`, notes) with `cp` first.
-
-3. **Worktree zombies need worktree teardown first.** If the agent has `.worktree*` markers in its workspace, the branch and worktree dir persist even after `agent clean`:
-
-    ```bash
-    git worktree remove dydo/_system/.local/worktrees/<id> --force
-    git branch -D worktree/<id>
-    dydo worktree prune
-    dydo agent clean <name> --force
-    ```
-
-See [decision 018](../project/decisions/018-zombie-working-state-recovery.md) for the mechanism and the planned reclaim-on-claim fix (issue #103).
+See [decision 018](../project/decisions/018-zombie-working-state-recovery.md) for the historical mechanism.
 
 ### Watchdog is dead, tabs don't auto-close
 

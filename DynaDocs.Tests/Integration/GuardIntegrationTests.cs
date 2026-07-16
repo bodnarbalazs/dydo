@@ -38,6 +38,21 @@ public class GuardIntegrationTests : IntegrationTestBase
         result.AssertStderrContains("BLOCKED");
     }
 
+    [Fact]
+    public async Task Guard_StdinHook_DirectReadOffLimits_Blocks()
+    {
+        await InitProjectAsync("none", "balazs");
+
+        // A Read tool-call against an off-limits secret (**/secrets.json) must be blocked —
+        // off-limits binds on every direct file op, reads included, not just writes.
+        var json = "{\"session_id\":\"" + TestSessionId
+            + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"config/secrets.json\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("off-limits");
+    }
+
 
     [Fact]
     public async Task Guard_AllowedPath_Passes()
@@ -432,6 +447,49 @@ public class GuardIntegrationTests : IntegrationTestBase
 
             Assert.False(File.Exists(marker),
                 "expired model-cap marker should be restored (deleted) by the guard trigger");
+        }
+        finally
+        {
+            ModelCapService.ResyncOverride = previousResync;
+        }
+    }
+
+    [Fact]
+    public async Task Guard_ModelCapRestore_ThrottledWithinWindow()
+    {
+        await InitProjectAsync("none", "balazs");
+
+        var previousResync = ModelCapService.ResyncOverride;
+        ModelCapService.ResyncOverride = _ => 0;
+        try
+        {
+            var localDir = Path.Combine(TestDir, "dydo", "_system", ".local");
+            var capDir = Path.Combine(localDir, "model-caps");
+            Directory.CreateDirectory(capDir);
+            var marker = Path.Combine(capDir, "claude-fable-5.json");
+            const string markerJson =
+                "{\"model\":\"claude-fable-5\",\"fallback\":\"claude-sonnet-5\"," +
+                "\"until\":\"2000-01-01T00:00:00+00:00\"," +
+                "\"reboundTiers\":[{\"vendor\":\"anthropic\",\"tier\":\"strong\"}]}";
+            File.WriteAllText(marker, markerJson);
+
+            // A fresh restore stamp inside the throttle window suppresses the restore.
+            var stamp = Path.Combine(localDir, "last-model-cap-restore");
+            File.WriteAllText(stamp, DateTime.UtcNow.ToString("O"));
+
+            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"git status\"}}}}";
+            await GuardWithStdinAsync(json);
+
+            Assert.True(File.Exists(marker),
+                "a restore stamp inside the throttle window must make the guard trigger a no-op");
+
+            // Backdate the stamp past the throttle window; the next trigger restores.
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddMinutes(-10));
+
+            await GuardWithStdinAsync(json);
+
+            Assert.False(File.Exists(marker),
+                "once the throttle window has passed the guard trigger restores the expired cap");
         }
         finally
         {

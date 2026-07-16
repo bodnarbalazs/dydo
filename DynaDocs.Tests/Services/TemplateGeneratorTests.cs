@@ -578,14 +578,18 @@ public class TemplateGeneratorTests
         Assert.Contains("type: reference", content);
         Assert.Contains("## Setup Commands", content);
         Assert.Contains("## Documentation Commands", content);
-        Assert.Contains("## Task Commands", content);
-        Assert.Contains("## Workflow Commands", content);
+        Assert.Contains("## Project Commands", content);
         Assert.Contains("dydo init", content);
+        Assert.Contains("dydo sync", content);
         Assert.Contains("dydo check", content);
-        Assert.Contains("dydo task create", content);
-        Assert.Contains("dydo task done", content);
-        Assert.DoesNotContain("dydo task approve", content);
-        Assert.DoesNotContain("dydo task reject", content);
+        Assert.Contains("dydo guard", content);
+        Assert.Contains("dydo model", content);
+        // The fallback must track the current command surface, not the retired 1.0 table.
+        Assert.DoesNotContain("dydo dispatch", content);
+        Assert.DoesNotContain("dydo whoami", content);
+        Assert.DoesNotContain("dydo agent", content);
+        Assert.DoesNotContain("dydo inbox", content);
+        Assert.DoesNotContain("dydo workspace", content);
         Assert.DoesNotContain("dydo audit", content);
     }
 

@@ -43,12 +43,6 @@ public static class InitCommand
 
         command.SetAction(parseResult =>
         {
-            if (PathUtils.IsInsideWorktree())
-            {
-                ConsoleOutput.WriteError("Cannot run init inside a worktree. Run from the main project directory.");
-                return ExitCodes.ToolError;
-            }
-
             var integration = parseResult.GetValue(integrationArgument)!;
             var join = parseResult.GetValue(joinOption);
             var name = parseResult.GetValue(nameOption);
@@ -303,8 +297,9 @@ public static class InitCommand
         File.WriteAllText(settingsPath, json);
     }
 
-    // AskUserQuestion is included so the guard sees the human-in-the-loop tool call and can set the
-    // derived needs-human flag (Decision 030 §1).
+    // AskUserQuestion is kept in the matcher for legacy compatibility: it once let the guard set the
+    // derived needs-human flag (Decision 030 §1), machinery removed with the claim ceremony (DR-041).
+    // The guard now passes it through harmlessly; the entry stays so existing hook wiring is stable.
     private const string GuardMatcher =
         "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion";
 
@@ -312,7 +307,7 @@ public static class InitCommand
     // depending on mode (shell_command interactive/exec, plus the code-mode aliases exec,
     // local_shell, unified_exec). All must be in the matcher or the guard never sees codex
     // shell commands — the PreToolUse hook fires but the tool name doesn't match, so no
-    // off-limits / dangerous-bash / git-safety layer binds on the shell lane (issue 0295).
+    // off-limits / dangerous-bash / nudge layer binds on the shell lane (issue 0295).
     // These names must stay in lockstep with GuardCommand.ShellTools, which routes them to
     // the shell analyzer once they reach the guard.
     internal const string CodexShellTools = "shell_command|exec|local_shell|unified_exec";
@@ -345,9 +340,11 @@ public static class InitCommand
         preToolUse.Add((JsonNode)guardEntry);
     }
 
-    // Stop-hook wiring for turn-end needs-human detection (Decision 030 §1). EXTENDS the shared hooks
-    // block: the Stop array is created if absent, unknown Stop entries are preserved, and the dydo
-    // stop entry is de-duplicated so re-running init stays idempotent.
+    // Stop-hook wiring, retained for legacy compatibility: `dydo guard --stop` is now a no-op (the
+    // turn-end needs-human derivation of Decision 030 §1 was removed with the claim ceremony, DR-041),
+    // but the hook stays wired so existing installs keep resolving. EXTENDS the shared hooks block: the
+    // Stop array is created if absent, unknown Stop entries are preserved, and the dydo stop entry is
+    // de-duplicated so re-running init stays idempotent.
     private static void ConfigureStopHook(JsonNode settings)
     {
         var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();

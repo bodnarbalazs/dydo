@@ -44,7 +44,7 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void UpgradeLegacyOpenAiTierDefaults_EmptyDisplayNames_RemainsEmptyAndUsesShippedDefaults()
+    public void UpgradeLegacyOpenAiTierDefaults_RebindsLegacyGpt55Tiers()
     {
         var config = ConfigFactory.CreateDefault();
         config.Models!.Tiers["openai"] = new Dictionary<string, string>
@@ -53,33 +53,13 @@ public class ConfigFactoryTests
             ["standard"] = "gpt-5.5",
             ["light"] = "gpt-5.5"
         };
-        config.Models.DisplayNames.Clear();
 
         var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
 
         Assert.True(upgraded);
-        Assert.Empty(config.Models.DisplayNames);
-    }
-
-    [Fact]
-    public void UpgradeLegacyOpenAiTierDefaults_NonEmptyDisplayNames_AddsOpenAiNamesAndPreservesCustomEntries()
-    {
-        var config = ConfigFactory.CreateDefault();
-        config.Models!.Tiers["openai"] = new Dictionary<string, string>
-        {
-            ["strong"] = "gpt-5.5",
-            ["standard"] = "gpt-5.5",
-            ["light"] = "gpt-5.5"
-        };
-        config.Models.DisplayNames = new Dictionary<string, string> { ["custom-model"] = "Custom model" };
-
-        var upgraded = ConfigFactory.UpgradeLegacyOpenAiTierDefaults(config);
-
-        Assert.True(upgraded);
-        Assert.Equal("Custom model", config.Models.DisplayNames["custom-model"]);
-        Assert.Equal("Gpt 5.6 Sol", config.Models.DisplayNames["gpt-5.6-sol"]);
-        Assert.Equal("Gpt 5.6 Terra", config.Models.DisplayNames["gpt-5.6-terra"]);
-        Assert.Equal("Gpt 5.6 Luna", config.Models.DisplayNames["gpt-5.6-luna"]);
+        Assert.Equal("gpt-5.6-sol", config.Models.Tiers["openai"]["strong"]);
+        Assert.Equal("gpt-5.6-terra", config.Models.Tiers["openai"]["standard"]);
+        Assert.Equal("gpt-5.6-luna", config.Models.Tiers["openai"]["light"]);
     }
 
     [Fact]
@@ -142,11 +122,11 @@ public class ConfigFactoryTests
     }
 
     [Fact]
-    public void CreateDefault_IncludesDefaultQueues()
+    public void CreateDefault_ShipsNoDefaultQueues()
     {
         var config = ConfigFactory.CreateDefault();
 
-        Assert.Contains("merge", config.Queues);
+        Assert.Empty(config.Queues);
     }
 
     [Fact]

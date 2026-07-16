@@ -356,43 +356,6 @@ public class BashCommandAnalyzerTests
     }
 
     [Theory]
-    [InlineData("git worktree add my-worktree")]
-    [InlineData("git worktree add ./path -b branch")]
-    [InlineData("echo x && git worktree add foo")]
-    [InlineData("git -C /some/path worktree add feature")]
-    [InlineData("git -C repo worktree add ./wt -b branch")]
-    public void CheckDangerousPatterns_DetectsGitWorktreeAdd(string command)
-    {
-        var (isDangerous, reason) = _analyzer.CheckDangerousPatterns(command);
-        Assert.True(isDangerous, $"Expected dangerous: {command}");
-        Assert.Contains("Worktree creation must go through dydo", reason);
-    }
-
-    [Theory]
-    [InlineData("git worktree remove my-worktree")]
-    [InlineData("git worktree remove --force path")]
-    [InlineData("git -C /some/path worktree remove my-wt")]
-    [InlineData("git -C repo worktree remove --force path")]
-    public void CheckDangerousPatterns_DetectsGitWorktreeRemove(string command)
-    {
-        var (isDangerous, reason) = _analyzer.CheckDangerousPatterns(command);
-        Assert.True(isDangerous, $"Expected dangerous: {command}");
-        Assert.Contains("dydo worktree cleanup", reason);
-    }
-
-    [Theory]
-    [InlineData("cd /tmp && git worktree remove my-wt")]
-    [InlineData("cd /tmp && git -C repo worktree add feature")]
-    public void CheckDangerousPatterns_CatchesWorktreeEvenWithCdPrefix(string command)
-    {
-        // FIX 3 regression: dangerous patterns must catch worktree commands
-        // even when they appear after cd (which also triggers needless-cd coaching).
-        // If dangerous check runs first, the agent gets the security reason.
-        var (isDangerous, _) = _analyzer.CheckDangerousPatterns(command);
-        Assert.True(isDangerous, $"Expected dangerous: {command}");
-    }
-
-    [Theory]
     [InlineData("base64 -d | python")]
     [InlineData("base64 --decode | bash")]
     [InlineData("base64 -d | sh")]
@@ -415,22 +378,6 @@ public class BashCommandAnalyzerTests
         var (isDangerous, _) = _analyzer.CheckDangerousPatterns(command);
 
         Assert.False(isDangerous, $"Should not be dangerous: {command}");
-    }
-
-    [Fact]
-    public void CheckDangerousPatterns_AllowsGitWorktreeList()
-    {
-        var (isDangerous, _) = _analyzer.CheckDangerousPatterns("git worktree list");
-        Assert.False(isDangerous);
-    }
-
-    [Theory]
-    [InlineData("digit worktree add foo")]
-    [InlineData("digit worktree remove bar")]
-    public void CheckDangerousPatterns_IgnoresWordsContainingGit(string command)
-    {
-        var (isDangerous, _) = _analyzer.CheckDangerousPatterns(command);
-        Assert.False(isDangerous, $"Should not match 'git' inside other words: {command}");
     }
 
     #endregion

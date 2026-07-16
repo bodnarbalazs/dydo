@@ -182,10 +182,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (ShadowFileAccessRegex(), "Shadow file access attempt"),
         (PasswdModifyRegex(), "Password file modification attempt"),
 
-        // Worktree lifecycle — must go through dydo
-        (GitWorktreeAddRegex(), "Worktree creation must go through dydo, not raw git"),
-        (GitWorktreeRemoveRegex(), "Use dydo worktree cleanup to remove worktrees"),
-
         // Inline interpreter execution — bypasses all file operation analysis
         (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
     ];
@@ -273,12 +269,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd")]
     private static partial Regex PasswdModifyRegex();
-
-    [GeneratedRegex(@"\bgit\b[^;|&]*\bworktree\s+add(?:\s|$)", RegexOptions.IgnoreCase)]
-    private static partial Regex GitWorktreeAddRegex();
-
-    [GeneratedRegex(@"\bgit\b[^;|&]*\bworktree\s+remove(?:\s|$)", RegexOptions.IgnoreCase)]
-    private static partial Regex GitWorktreeRemoveRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
     // Does NOT include bash/sh/zsh -c — those are handled by shell -c subcommand extraction

@@ -26,20 +26,6 @@
   "integrations": {
     "claude": true
   },
-  "dispatch": {
-    "launchInTab": true,
-    "autoClose": false,
-    "codex": {
-      "sandbox": "workspace-write",
-      "approvalPolicy": "on-request"
-    }
-  },
-  "worktree": {
-    "mergeSafety": {
-      "ignore": [],
-      "ignoreDefaults": true
-    }
-  },
   "notion": {
     "parentPageId": null,
     "tokenStorage": "local"
@@ -68,12 +54,9 @@
       "planner": "strong"
     },
     "efforts": {},
-    "fallback": null,
-    "display-names": {}
+    "fallback": null
   },
-  "queues": [
-    "merge"
-  ],
+  "queues": [],
   "scanExclude": [
     "_system/.local/",
     "_system/audit/"
@@ -90,7 +73,7 @@
       "severity": "block"
     },
     {
-      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:agent|guard|whoami|dispatch|inbox|message|msg|wait|task|review|clean|workspace|audit|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\\b.*)",
+      "pattern": "(?:^|[;\u0026|]\\s*)dotnet\\s\u002Brun\\b(?:\\s\u002B(?:-\\w\u002B|--[\\w-]\u002B(?:[=\\s]\\S\u002B)?))*\\s\u002B--\\s\u002B((?:guard|task|review|template|init|check|fix|index|graph|completions|complete|version|help|roles|validate|issue|inquisition|watchdog)\\b.*)",
       "message": "Don\u0027t use dotnet run to invoke dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"
     },
@@ -110,11 +93,6 @@
       "severity": "warn"
     },
     {
-      "pattern": "dydo\\s\u002Bdispatch\\b(?=.*--role\\s\u002Binquisitor\\b)(?!.*--new-window)",
-      "message": "Inquisitor dispatches should use --new-window to avoid tab conflicts. Add --new-window or re-run to proceed.",
-      "severity": "warn"
-    },
-    {
       "pattern": "\\buntil\\s\u002B\\[",
       "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or \u0060gh run watch\u0060. Open-ended polls have caused agent crashes (issue 0177).",
       "severity": "warn"
@@ -131,7 +109,6 @@
     }
   ],
   "frameworkHashes": {
-    "_system/templates/agent-workflow.template.md": "e01400ad46f9bc4909f3d4bb1e3b059219c5b0bc1360fc6cef6a660cd807dae3",
     "_system/templates/mode-code-writer.template.md": "05035118345b4c33514cb6b5dc03f10d4d5c4d6ab1a37ceb1ac4480d7910156f",
     "_system/templates/mode-reviewer.template.md": "cb093797a7704e6ab569dfc52522b5053d4a34ef0476b089e3e6102f28cb4a52",
     "_system/templates/mode-co-thinker.template.md": "158fd59a08f639d01c2f7e56dff7c54113e3c47aa0590c0bc29da66973d902a0",
@@ -145,8 +122,6 @@
     "_assets/dydo-diagram.svg": "d93720f85fc71f4a75798a364d783c18e70c94fd349fa462919e10cbc9c223b9",
     "_system/templates/mode-test-writer.template.md": "32582aa1df41766ec9a235b21fa880a4dd65338032596b2f73eee20dacb18075",
     "_system/templates/mode-orchestrator.template.md": "554ea51e228b5efeb1220a32f99bca83ef99c3b02eaae713808157802cc5c3a5",
-    "guides/how-to-merge-worktrees.md": "a01edead0a9e0751b4768fedf7941e460eabdc1317d76c33041f60a24da38e5c",
-    "guides/how-to-review-worktree-merges.md": "6aa310868e0ce37f7f783d9bb6ba2f88fc273dfe697ad1c9b5107218ec40ea3a",
     "_system/templates/mode-sprint-auditor.template.md": "4903ed2f990da08226a80729d74046baa7cffc1b94d40832adb1c07cccad2272"
   }
 }

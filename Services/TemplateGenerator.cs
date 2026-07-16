@@ -602,9 +602,9 @@ public static class TemplateGenerator
 
             | Command | Description |
             |---------|-------------|
-            | `dydo init <integration>` | Initialize project (claude, none) |
-            | `dydo init <int> --join` | Join existing project |
-            | `dydo whoami` | Show current agent identity |
+            | `dydo init <integration>` | Initialize project (claude, codex, none) |
+            | `dydo init <int> --join` | Wire this machine's integration for an existing project |
+            | `dydo sync` | Compile roles + docs into native Claude/Codex agents and skills |
 
             ## Documentation Commands
 
@@ -615,42 +615,33 @@ public static class TemplateGenerator
             | `dydo index [path]` | Regenerate index |
             | `dydo graph <file>` | Show link graph |
 
-            ## Agent Commands
+            ## Project Commands
 
             | Command | Description |
             |---------|-------------|
-            | `dydo agent claim auto\|<name>` | Claim agent |
-            | `dydo agent release` | Release agent |
-            | `dydo agent status [name]` | Show status |
-            | `dydo agent list [--free] [--all]` | List agents |
-            | `dydo agent role <role>` | Set role |
-            | `dydo agent new <name> <human>` | Create agent |
-            | `dydo agent rename <old> <new>` | Rename agent |
-            | `dydo agent remove <name>` | Remove agent |
-            | `dydo agent reassign <name> <human>` | Reassign agent |
-
-            ## Task Commands
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo task create <name>` | Create task |
-            | `dydo task ready-for-review <name>` | Mark ready for review |
-            | `dydo task done <name>` | Mark task done |
-            | `dydo task list` | List tasks |
-
-            ## Workflow Commands
-
-            | Command | Description |
-            |---------|-------------|
-            | `dydo dispatch` | Dispatch work to another agent |
-            | `dydo inbox list` | List agents with inbox items |
-            | `dydo inbox show` | Show current agent's inbox |
-            | `dydo inbox clear` | Clear processed inbox items |
-            | `dydo guard` | Check permissions (for hooks) |
-            | `dydo clean <agent>` | Clean agent workspace |
-            | `dydo workspace init` | Initialize agent workspaces |
-            | `dydo workspace check` | Verify workflow before session end |
+            | `dydo task create\|list\|ready-for-review\|done <name>` | Manage tasks |
+            | `dydo issue create\|list\|resolve` | Manage issues |
             | `dydo review complete <task>` | Complete a code review |
+
+            ## Enforcement & Config
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo guard` | Check permissions (used by hooks) |
+            | `dydo validate` | Validate config, roles, and system integrity |
+            | `dydo template update` | Update framework templates and docs |
+            | `dydo roles list\|reset\|create` | Manage role definitions |
+            | `dydo model cap\|uncap <model>` | Time-boxed model outage swaps |
+
+            ## Integrations & Utility
+
+            | Command | Description |
+            |---------|-------------|
+            | `dydo notion connect\|sync\|reset\|reveal-token` | Notion projection |
+            | `dydo watchdog` | Background monitoring daemon |
+            | `dydo completions <shell>` | Generate shell completions |
+            | `dydo version` | Show version |
+            | `dydo help` | Show help |
 
             ---
 
@@ -976,11 +967,6 @@ public static class TemplateGenerator
     public static string GenerateProjectMetaMd()
     {
         return ReadTemplateOrThrow("_project.template.md");
-    }
-
-    public static string GenerateHowToReviewWorktreeMergesMd()
-    {
-        return ReadTemplateOrThrow("how-to-review-worktree-merges.template.md");
     }
 
     /// <summary>

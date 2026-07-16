@@ -39,7 +39,6 @@ public class FolderScaffolder : IFolderScaffolder
         ("understand/architecture.md", TemplateGenerator.GenerateArchitectureMd),
         ("guides/coding-standards.md", TemplateGenerator.GenerateCodingStandardsMd),
         ("guides/how-to-use-docs.md", TemplateGenerator.GenerateHowToUseDocsMd),
-        ("guides/how-to-review-worktree-merges.md", TemplateGenerator.GenerateHowToReviewWorktreeMergesMd),
         ("reference/dydo-commands.md", TemplateGenerator.GenerateDydoCommandsMd),
         ("reference/writing-docs.md", TemplateGenerator.GenerateWritingDocsMd),
         ("reference/about-dynadocs.md", TemplateGenerator.GenerateAboutDynadocsMd),

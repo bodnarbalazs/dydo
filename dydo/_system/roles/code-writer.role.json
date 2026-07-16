@@ -38,15 +38,5 @@
       "onlyWhenDispatched": false,
       "message": "Code-writers in worktrees must commit before releasing."
     }
-  ],
-  "conditionalMustReads": [
-    {
-      "when": {
-        "markerExists": ".merge-source",
-        "taskNameMatches": null,
-        "dispatchedByRole": null
-      },
-      "path": "dydo/guides/how-to-merge-worktrees.md"
-    }
   ]
 }

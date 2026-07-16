@@ -263,11 +263,9 @@ dydo issue resolve 0001 --summary "Fixed in commit abc123"
 
 Complete a code review.
 
-**Prerequisite:** The task must be in `in-review` state. This happens automatically when dispatching with `--role reviewer`. You can also run `dydo task ready-for-review <task> --summary "..."` manually.
+**Prerequisite:** The task must be in `in-review` state. Run `dydo task ready-for-review <task> --summary "..."` to transition it.
 
 ```bash
-# Normal workflow (dispatch auto-transitions the task):
-dydo dispatch --auto-close --role reviewer --task auth-login --brief "Implemented OAuth flow"
 dydo review complete auth-login --status pass
 dydo review complete auth-login --status fail --notes "Found security issue"
 ```
@@ -365,7 +363,7 @@ dydo validate
 
 ### dydo model cap
 
-Temporarily rebind every tier using an unavailable model to a fallback model, then re-sync native agent definitions. The watchdog restores the original bindings after the reset time passes.
+Temporarily rebind every tier using an unavailable model to a fallback model, then re-sync native agent definitions. The guard restores the original bindings on its next trigger after the reset time passes (throttled), or run `dydo model uncap` to restore on demand.
 
 ```bash
 dydo model cap claude-fable-5 --until "07-14 09:00"

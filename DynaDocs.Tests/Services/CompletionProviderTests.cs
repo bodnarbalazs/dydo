@@ -22,7 +22,6 @@ public class CompletionProviderTests
     [InlineData("roles")]
     [InlineData("validate")]
     [InlineData("watchdog")]
-    [InlineData("worktree")]
     public void TopLevelCommands_ContainsCommand(string command)
     {
         var completions = CompletionProvider.GetCompletions(1, ["dydo"]).ToList();
@@ -61,7 +60,6 @@ public class CompletionProviderTests
     [InlineData("issue", new[] { "create", "list", "resolve" })]
     [InlineData("roles", new[] { "list", "create", "reset" })]
     [InlineData("template", new[] { "update" })]
-    [InlineData("worktree", new[] { "cleanup", "merge", "init-settings", "prune" })]
     [InlineData("watchdog", new[] { "start", "stop", "run" })]
     public void Subcommands_ContainsExpectedEntries(string command, string[] expectedSubcommands)
     {

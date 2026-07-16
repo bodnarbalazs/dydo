@@ -12,8 +12,9 @@ using DynaDocs.Utils;
 /// becomes unavailable — the canonical case is Fable hitting its weekly spend cap — an operator
 /// runs <c>dydo model cap &lt;model&gt; --until &lt;T&gt;</c>: every tier binding pointing at that
 /// model is rebound to a declared fallback, <c>dydo sync</c> re-emits the native agents on the
-/// fallback, and a local marker records what to put back. The watchdog restores it once
-/// <c>T</c> passes; <c>dydo model uncap</c> does the same on demand.
+/// fallback, and a local marker records what to put back. The guard restores it on its next
+/// trigger once <c>T</c> passes (throttled — see <c>GuardCommand.RestoreExpiredModelCapsIfDue</c>);
+/// <c>dydo model uncap</c> does the same on demand.
 ///
 /// This is deliberately a config swap plus a re-sync — not a runtime failover interceptor — so it
 /// stays out of Anthropic's lane and is disposable the day native spend-cap failover ships.

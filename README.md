@@ -47,7 +47,7 @@ dydo gives you explicit, structured control over project context. Your documenta
 - **No self-review** — The agent that wrote the code doesn't review it. Fresh eyes, by construction.
 - **Native orchestration** — Fan out dozens of subagents through runtime-native workflows. Ships flagship workflows: `run-sprint` (sliced code→review→merge→audit) and `inquisition` (multi-lens QA gate).
 - **Model tiers** — Roles declare an abstract tier (`strong` / `standard` / `light`) and effort; the compiler binds the concrete model. Swap models without touching a workflow.
-- **Worktree isolation** — Parallel agents work in separate git worktrees without stepping on each other.
+- **Native isolation** — Parallel agents are isolated by the coding runtime (git worktrees, sandboxes); dydo no longer manages worktrees itself.
 - **Notion as a view (optional)** — Two-way sync to a team PM board. Repo files stay canonical; the token is stored locally (or in an opt-in encrypted vault) and never committed by default.
 - **Team support** — Each team member gets their own pool of agents.
 - **Your process, your rules** — Templates, roles, and nudges are all yours to modify.
@@ -330,7 +330,6 @@ dydo documents itself using its own system. Learn how it works by reading the `d
 | Command | Description |
 |---------|-------------|
 | `dydo guard` | Check permissions (for hooks) |
-| `dydo worktree <...>` | Manage git worktrees for parallel agents |
 | `dydo watchdog <...>` | Stub — reserved for the Notion-sync daemon (DR-041) |
 
 ### Template

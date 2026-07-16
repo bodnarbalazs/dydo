@@ -48,7 +48,7 @@ public static partial class GuardCommand
 
         var stopOption = new Option<bool>("--stop")
         {
-            Description = "Stop-hook mode: derive the needs-human flag from turn-end (used by the Stop hook)"
+            Description = "Stop-hook mode: no-op retained so existing Stop-hook wiring keeps resolving"
         };
 
         var command = new Command("guard", "Check if current agent can perform action (used by hooks)");
@@ -89,52 +89,10 @@ public static partial class GuardCommand
         return !string.IsNullOrEmpty(bashCommand);
     }
 
-    // Claude Code hook response that explicitly approves a tool call, bypassing the permission prompt.
-    // Used in worktree contexts where permission patterns fail to match worktree-resolved paths.
-    private const string WorktreeAllowJson =
-        """{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}""";
-
-    private static readonly string[] WorktreePathSegments = ["dydo", "_system", ".local", "worktrees"];
-
-    internal static Func<bool>? IsWorktreeContextOverride;
-
-    internal static bool IsWorktreeContext()
-    {
-        if (IsWorktreeContextOverride != null)
-            return IsWorktreeContextOverride();
-        var segments = Directory.GetCurrentDirectory()
-            .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-        // Require the exact sequence "dydo/_system/.local/worktrees/" plus a worktree id after it.
-        // An unanchored substring match would accept sibling paths like "worktrees-notes" or
-        // "worktrees.backup" — treat those as non-worktree contexts.
-        for (var i = 0; i + WorktreePathSegments.Length < segments.Length; i++)
-        {
-            var match = true;
-            for (var j = 0; j < WorktreePathSegments.Length; j++)
-            {
-                if (!segments[i + j].Equals(WorktreePathSegments[j], StringComparison.OrdinalIgnoreCase))
-                {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) return true;
-        }
-        return false;
-    }
-
-    private static void EmitWorktreeAllowIfNeeded()
-    {
-        if (IsWorktreeContext())
-            Console.WriteLine(WorktreeAllowJson);
-    }
-    private static readonly HashSet<string> WriteActions = new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
-
     private record struct GuardContext(
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
-        bool? RunInBackground, bool HasCliArgs,
-        string? AgentId, string? AgentType, string Host, string Model);
+        bool HasCliArgs, string? AgentId, string? AgentType);
 
     private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
     {
@@ -142,9 +100,6 @@ public static partial class GuardCommand
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
         string? agentId = null, agentType = null;
-        var host = AgentSession.UnknownHost;
-        var model = AgentSession.UnknownModel;
-        bool? runInBackground = null;
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
         {
@@ -156,14 +111,11 @@ public static partial class GuardCommand
                     sessionId = hookInput.SessionId;
                     agentId = hookInput.AgentId;
                     agentType = hookInput.AgentType;
-                    host = InferHost(hookInput, json);
-                    model = InferModel(hookInput, json);
                     filePath = hookInput.GetFilePath();
                     action = hookInput.GetAction();
                     toolName = hookInput.ToolName?.ToLowerInvariant();
                     bashCommand = hookInput.GetCommand();
                     searchPath = hookInput.GetSearchPath();
-                    runInBackground = hookInput.ToolInput?.RunInBackground;
                 }
             }
             catch (Exception ex)
@@ -176,199 +128,8 @@ public static partial class GuardCommand
             filePath ?? cliPath,
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
-            toolName, sessionId, searchPath, runInBackground, hasCliArgs,
-            agentId, agentType, host, model);
-    }
-
-    internal static string InferHost(HookInput hookInput, string? rawJson = null)
-    {
-        var explicitHost = TryReadExplicitHost(rawJson);
-        if (explicitHost != null)
-            return explicitHost;
-
-        return InferHostFromPath(hookInput.TranscriptPath);
-    }
-
-    /// <summary>
-    /// Capture the concrete runtime model for a hook call (c1-6). The chain, in truth-order:
-    /// <list type="number">
-    ///   <item>An explicit <c>model</c>/<c>dydo_model</c> field on the payload — what a codex
-    ///     host already delivers (<c>gpt-5-codex</c>), and what a future Claude payload would
-    ///     carry.</item>
-    ///   <item>Otherwise, for a Claude session, the transcript: Claude Code writes the real
-    ///     runtime model id onto every assistant entry, so the most recent one is the concrete
-    ///     binding (truthful under <c>dydo model cap</c>, which rewrites what actually runs).</item>
-    ///   <item>Otherwise <c>unknown</c> — never guessed from a role default.</item>
-    /// </list>
-    /// This is the leg that lets a Tier-1 Claude claim persist a concrete model: the captured
-    /// value flows through <see cref="ParseInput"/> into the claim's
-    /// <c>StorePendingSessionId</c> / <c>StoreSessionContext</c> write.
-    /// </summary>
-    internal static string InferModel(HookInput hookInput, string? rawJson = null)
-    {
-        var explicitModel = InferModel(rawJson);
-        if (explicitModel != AgentSession.UnknownModel)
-            return explicitModel;
-
-        var transcriptModel = InferModelFromTranscript(hookInput?.TranscriptPath);
-        return transcriptModel ?? AgentSession.UnknownModel;
-    }
-
-    internal static string InferModel(string? rawJson)
-    {
-        if (string.IsNullOrWhiteSpace(rawJson))
-            return AgentSession.UnknownModel;
-
-        try
-        {
-            using var document = JsonDocument.Parse(rawJson);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-                return AgentSession.UnknownModel;
-
-            foreach (var property in document.RootElement.EnumerateObject())
-            {
-                if (!IsExplicitModelProperty(property.Name) || property.Value.ValueKind != JsonValueKind.String)
-                    continue;
-
-                return AgentSession.NormalizeModel(property.Value.GetString());
-            }
-        }
-        catch (JsonException)
-        {
-            return AgentSession.UnknownModel;
-        }
-
-        return AgentSession.UnknownModel;
-    }
-
-    // Read at most this many trailing bytes of the transcript. The most recent assistant entry
-    // (carrying the runtime model id) is always near the end of an append-only JSONL transcript,
-    // so a bounded tail read keeps the guard's hot path cheap regardless of transcript size.
-    private const int TranscriptTailBytes = 512 * 1024;
-
-    /// <summary>
-    /// Extract the runtime model id from a Claude Code transcript by scanning its tail for the
-    /// most recent assistant entry's <c>message.model</c>. Returns null when the file is absent,
-    /// unreadable, or carries no usable model — the guard then keeps <c>unknown</c>.
-    /// </summary>
-    internal static string? InferModelFromTranscript(string? transcriptPath)
-    {
-        if (string.IsNullOrWhiteSpace(transcriptPath) || !File.Exists(transcriptPath))
-            return null;
-
-        try
-        {
-            var lines = ReadTranscriptTailLines(transcriptPath);
-            for (var i = lines.Count - 1; i >= 0; i--)
-            {
-                var model = TryExtractAssistantModel(lines[i]);
-                if (model != null)
-                    return AgentSession.NormalizeModel(model);
-            }
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        return null;
-    }
-
-    private static List<string> ReadTranscriptTailLines(string path)
-    {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var start = stream.Length > TranscriptTailBytes ? stream.Length - TranscriptTailBytes : 0;
-        stream.Seek(start, SeekOrigin.Begin);
-        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-        var lines = reader.ReadToEnd().Split('\n').ToList();
-
-        // A tail read that started mid-file leaves the first element a partial line fragment.
-        if (start > 0 && lines.Count > 0)
-            lines.RemoveAt(0);
-
-        return lines;
-    }
-
-    private static string? TryExtractAssistantModel(string line)
-    {
-        if (string.IsNullOrWhiteSpace(line))
-            return null;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(line);
-            var root = doc.RootElement;
-            if (root.ValueKind != JsonValueKind.Object)
-                return null;
-
-            if (!root.TryGetProperty("type", out var typeEl) || typeEl.ValueKind != JsonValueKind.String
-                || !string.Equals(typeEl.GetString(), "assistant", StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            if (!root.TryGetProperty("message", out var msgEl) || msgEl.ValueKind != JsonValueKind.Object
-                || !msgEl.TryGetProperty("model", out var modelEl) || modelEl.ValueKind != JsonValueKind.String)
-                return null;
-
-            var model = modelEl.GetString();
-            // Claude Code stamps "<synthetic>" on injected assistant turns — not a real binding.
-            if (string.IsNullOrWhiteSpace(model) || model == "<synthetic>")
-                return null;
-
-            return model;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static string? TryReadExplicitHost(string? rawJson)
-    {
-        if (string.IsNullOrWhiteSpace(rawJson))
-            return null;
-
-        try
-        {
-            using var document = JsonDocument.Parse(rawJson);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-                return null;
-
-            foreach (var property in document.RootElement.EnumerateObject())
-            {
-                if (!IsExplicitHostProperty(property.Name) || property.Value.ValueKind != JsonValueKind.String)
-                    continue;
-
-                return AgentSession.NormalizeHost(property.Value.GetString());
-            }
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-
-        return null;
-    }
-
-    private static bool IsExplicitHostProperty(string propertyName) =>
-        propertyName.Equals("host", StringComparison.OrdinalIgnoreCase) ||
-        propertyName.Equals("dydo_host", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsExplicitModelProperty(string propertyName) =>
-        propertyName.Equals("model", StringComparison.OrdinalIgnoreCase) ||
-        propertyName.Equals("dydo_model", StringComparison.OrdinalIgnoreCase);
-
-    private static string InferHostFromPath(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            return AgentSession.UnknownHost;
-
-        var normalized = path.Replace('\\', '/').ToLowerInvariant();
-        if (normalized.Contains("/.claude/", StringComparison.Ordinal))
-            return "claude";
-        if (normalized.Contains("/.codex/", StringComparison.Ordinal))
-            return "codex";
-
-        return AgentSession.UnknownHost;
+            toolName, sessionId, searchPath, hasCliArgs,
+            agentId, agentType);
     }
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
@@ -416,47 +177,41 @@ public static partial class GuardCommand
         var bashAnalyzer = new BashCommandAnalyzer();
 
         RunDailyValidationIfDue();
+        RestoreExpiredModelCapsIfDue();
 
         var sessionId = ctx.SessionId;
 
-        var filePath = ResolveWorktreePath(ctx.FilePath);
+        var filePath = ResolveTraversal(ctx.FilePath);
         var action = ctx.Action;
         var bashCommand = ctx.BashCommand;
         var toolName = ctx.ToolName;
-        var searchPath = ResolveWorktreePath(ctx.SearchPath);
-        var runInBackground = ctx.RunInBackground;
+        var searchPath = ResolveTraversal(ctx.SearchPath);
 
         // ============================================================
         // TIER-2 WORKER LANE (Decision 024): calls carrying agent_id come from
         // sub-agents / workflow workers. Workers are anonymous — no claim, no role
         // state, no staged onboarding, no must-reads. Only the universal layers
         // apply: off-limits, dangerous-bash patterns, nudges, and the shared bash
-        // safety checks (git stash/merge, dydo-command handling).
+        // safety checks (dydo-command handling).
         // ============================================================
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
-            return HandleWorkerCall(ctx, filePath, searchPath, runInBackground, offLimitsService, bashAnalyzer, registry);
+            return HandleWorkerCall(ctx, filePath, searchPath, offLimitsService, bashAnalyzer, registry);
         }
 
         // Native auto-memory (~/.claude/projects/*/memory/) is always accessible —
         // it lives outside the repo and outside dydo's jurisdiction (Decision 024 §5).
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
-        {
-            EmitWorktreeAllowIfNeeded();
             return ExitCodes.Success;
-        }
 
         var routed = RouteToolLayers(
-            filePath, action, bashCommand, toolName, searchPath, runInBackground,
+            filePath, action, bashCommand, toolName, searchPath,
             sessionId, offLimitsService, bashAnalyzer, registry);
         if (routed != null) return routed.Value;
 
         // Reads are allowed for anyone once past off-limits (checked in RouteToolLayers).
         if (action == "read" && string.IsNullOrEmpty(bashCommand))
-        {
-            EmitWorktreeAllowIfNeeded();
             return ExitCodes.Success;
-        }
 
         // Writes are allowed once past off-limits; only tool-scoped nudges remain.
         return HandleWriteOperation(filePath, toolName, registry, ctx.AgentType);
@@ -477,7 +232,7 @@ public static partial class GuardCommand
     /// </summary>
     private static int? RouteToolLayers(
         string? filePath, string? action, string? bashCommand, string? toolName,
-        string? searchPath, bool? runInBackground, string? sessionId,
+        string? searchPath, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
@@ -491,7 +246,7 @@ public static partial class GuardCommand
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(toolName, bashCommand))
         {
-            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry, runInBackground);
+            return HandleBashCommand(bashCommand!, sessionId, offLimitsService, bashAnalyzer, registry);
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — off-limits applies
@@ -505,8 +260,7 @@ public static partial class GuardCommand
         if (toolName == "enterplanmode" || toolName == "exitplanmode")
         {
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
-            Console.Error.WriteLine("  To plan: write a plan to your workspace (dydo/agents/<you>/plan-<topic>.md), applying the planner skill.");
-            Console.Error.WriteLine("  For working notes: write to your workspace (dydo/agents/<you>/notes-<topic>.md)");
+            Console.Error.WriteLine("  To plan: write a plan file into the repo (e.g. under dydo/project/), applying the planner skill.");
             return ExitCodes.ToolError;
         }
 
@@ -528,8 +282,6 @@ public static partial class GuardCommand
             var nudged = CheckFileNudges(toolName, filePath, registry);
             if (nudged != null) return nudged.Value;
         }
-
-        EmitWorktreeAllowIfNeeded();
 
         return ExitCodes.Success;
     }
@@ -569,14 +321,14 @@ public static partial class GuardCommand
     /// memory exempt). RBAC and must-reads do not apply.
     /// </summary>
     private static int HandleWorkerCall(
-        GuardContext ctx, string? filePath, string? searchPath, bool? runInBackground,
+        GuardContext ctx, string? filePath, string? searchPath,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
                 ctx.BashCommand!, ctx.SessionId,
-                offLimitsService, bashAnalyzer, registry, runInBackground, isWorker: true);
+                offLimitsService, bashAnalyzer, registry, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
@@ -585,7 +337,6 @@ public static partial class GuardCommand
             if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
-        EmitWorktreeAllowIfNeeded();
         return ExitCodes.Success;
     }
 
@@ -616,8 +367,8 @@ public static partial class GuardCommand
         if (string.Equals(toolName, "agent", StringComparison.OrdinalIgnoreCase))
         {
             Console.Error.WriteLine("NOTICE: You invoked Claude Code's built-in Agent tool. Sub-agent tool calls run in "
-                + "the Tier-2 worker lane: anonymous, audited under their agent_id/agent_type, governed by the universal "
-                + "guard layers (off-limits, dangerous-bash, nudges).");
+                + "the Tier-2 worker lane: anonymous, governed by the universal guard layers "
+                + "(off-limits, dangerous-bash, nudges).");
         }
 
         if (!string.IsNullOrEmpty(searchPath))
@@ -626,14 +377,14 @@ public static partial class GuardCommand
             if (offLimitsBlock != null) return offLimitsBlock.Value;
         }
 
-
-        EmitWorktreeAllowIfNeeded();
-
         return ExitCodes.Success;
     }
 
     /// <summary>
-    /// Handle Bash tool commands with comprehensive analysis.
+    /// Handle Bash tool commands with comprehensive analysis. Dangerous-pattern and nudge
+    /// checks now run for EVERY shell command, dydo invocations included (DR-041): a dydo
+    /// command line is no longer exempt from nudge evaluation, so a security-critical nudge
+    /// can no longer be bypassed by prefixing a dydo call.
     /// </summary>
     private static int HandleBashCommand(
         string command,
@@ -641,24 +392,16 @@ public static partial class GuardCommand
         IOffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry,
-        bool? runInBackground = null,
         bool isWorker = false)
     {
-        // Handle dydo commands first — they have their own safety checks and shouldn't be
-        // subject to nudge pattern matching on their argument text (fixes false positives).
-        // Tier-2 workers are blocked outright: dydo identity/dispatch/messaging is the
-        // orchestrator's job, and routing a worker through HandleDydoBashCommand would
-        // resolve and mutate the PARENT's session state (shared session_id).
-        if (IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId))
+        var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
+
+        // Tier-2 workers don't run dydo commands — that machinery is the orchestrator's job.
+        if (isDydo && isWorker)
         {
-            if (isWorker)
-            {
-                Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — identity, dispatch, and");
-                Console.Error.WriteLine("  messaging belong to the top-level orchestrator, not a worker.");
-                return ExitCodes.ToolError;
-            }
-            return HandleDydoBashCommand(
-                command, sessionId, offLimitsService, bashAnalyzer, registry);
+            Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — that belongs to the");
+            Console.Error.WriteLine("  top-level orchestrator, not a worker.");
+            return ExitCodes.ToolError;
         }
 
         // Hardcoded dangerous patterns — security checks before configurable nudges
@@ -671,28 +414,25 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // Configurable nudges — after hardcoded security checks
+        // Configurable nudges — after hardcoded security checks, for every command.
         var nudged = CheckNudges(command, sessionId, registry);
         if (nudged != null) return nudged.Value;
 
-        // COACHING: Block needless cd+command compounds
-        var (isCdChain, cdPath, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
-        if (isCdChain)
+        // dydo commands skip the cd-chain coaching (they are never a needless cd compound);
+        // everything else gets the auto-approval coaching block.
+        if (!isDydo)
         {
-            Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands — it breaks auto-approval for whitelisted commands.");
-            Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
-            Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
-            return ExitCodes.ToolError;
+            var (isCdChain, _, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
+            if (isCdChain)
+            {
+                Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands — it breaks auto-approval for whitelisted commands.");
+                Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
+                Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
+                return ExitCodes.ToolError;
+            }
         }
 
-        // Tier-2 workers are anonymous: skip the Tier-1 identity gates (unread
-        // messages / pending state / must-reads) and go straight to the universal
-        // git-safety + off-limits op analysis with no agent context.
-        if (isWorker)
-            return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry, isWorker: true);
-
-        // Non-dydo bash: check agent state, then analyze command
-        return HandleNonDydoBash(command, sessionId, offLimitsService, bashAnalyzer, registry);
+        return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry, isWorker: isWorker);
     }
 
     internal static int? CheckNudges(string command, string? sessionId, AgentRegistry registry)
@@ -864,9 +604,12 @@ public static partial class GuardCommand
             {
                 nudges.Add(defaultNudge);
             }
-            else if (!string.Equals(nudges[existingIndex].Severity, "block", StringComparison.OrdinalIgnoreCase))
+            else if (!string.Equals(nudges[existingIndex].Severity, "block", StringComparison.OrdinalIgnoreCase)
+                     || nudges[existingIndex].Message != defaultNudge.Message)
             {
-                // Severity was downgraded — enforce block
+                // Heal a downgraded severity OR a stale message: for block-severity system
+                // nudges the shipped default is authoritative, so a config copy whose message
+                // has drifted (or whose severity was weakened) is replaced with the default.
                 nudges[existingIndex] = defaultNudge;
             }
         }
@@ -874,59 +617,11 @@ public static partial class GuardCommand
         return nudges;
     }
 
-    private static int HandleDydoBashCommand(
-        string command, string sessionId,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry)
-    {
-        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
-        if (isDangerous)
-        {
-            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
-            Console.Error.WriteLine($"  Reason: {dangerReason}");
-            Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
-            return ExitCodes.ToolError;
-        }
-
-        return AnalyzeAndCheckBashOperations(
-            command, sessionId, offLimitsService, bashAnalyzer, registry);
-    }
-
-    private static int HandleNonDydoBash(
-        string command, string? sessionId,
-        IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
-        AgentRegistry registry)
-    {
-        return AnalyzeAndCheckBashOperations(command, sessionId, offLimitsService, bashAnalyzer, registry);
-    }
-
     private static int AnalyzeAndCheckBashOperations(
         string command, string? sessionId,
         IOffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         AgentRegistry registry, bool isWorker = false)
     {
-        // Worktree awareness is CWD-based now that there is no runtime agent identity to bind a
-        // worktree to (DR-041): the guard runs inside the worktree, so IsWorktreeContext is truth.
-
-        // git stash is only safe in worktrees (isolated stash stack); block otherwise
-        if (GitStashRegex().IsMatch(command) && !IsWorktreeContext())
-        {
-            const string reason = "git stash is unsafe in multi-agent environments. "
-                + "Stashes are a global stack -- other agents' stash operations will interfere. "
-                + "Commit your changes instead.";
-            Console.Error.WriteLine($"BLOCKED: {reason}");
-            return ExitCodes.ToolError;
-        }
-
-        // git merge inside a worktree must go through dydo worktree merge
-        if (GitMergeRegex().IsMatch(command) && IsWorktreeContext())
-        {
-            const string reason = "Use dydo worktree merge to merge worktree branches. "
-                + "Do not use git merge directly.";
-            Console.Error.WriteLine($"BLOCKED: {reason}");
-            return ExitCodes.ToolError;
-        }
-
         var analysis = bashAnalyzer.Analyze(command);
 
         foreach (var warning in analysis.Warnings)
@@ -950,16 +645,13 @@ public static partial class GuardCommand
             if (blocked != null) return blocked.Value;
         }
 
-
-        EmitWorktreeAllowIfNeeded();
-
         return ExitCodes.Success;
     }
 
     internal static int? CheckBashFileOperation(
         FileOperation op, string command, string? sessionId,
         IOffLimitsService offLimitsService, AgentRegistry registry,
-        AgentState? cachedAgent = null, bool isWorker = false)
+        bool isWorker = false)
     {
         // Native memory is exempt for any op type (out of dydo's jurisdiction).
         // Everything else is subject to the universal off-limits check.
@@ -980,25 +672,16 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Resolves a path for worktree-aware guard checks.
-    /// When CWD is inside a worktree, converts relative paths to absolute first
-    /// (so ../../../ chains resolve correctly), then normalizes to main project paths.
-    /// In non-worktree contexts, paths pass through unchanged.
+    /// Collapses '.'/'..' segments lexically so no traversal sequence
+    /// ('.../memory/../../secret') can slip past a path-based guard check (off-limits,
+    /// native-memory). Pure normalization — no filesystem or worktree remapping.
     /// </summary>
-    internal static string? ResolveWorktreePath(string? path)
+    internal static string? ResolveTraversal(string? path)
     {
         if (string.IsNullOrEmpty(path))
             return path;
 
-        // Collapse '.'/'..' lexically first so no traversal sequence reaches a
-        // path-based guard check (off-limits, native-memory, cross-agent).
-        var resolved = PathUtils.CollapseRelativeSegments(path);
-
-        // Only resolve relative paths to absolute when CWD is inside a worktree
-        if (!Path.IsPathRooted(resolved) && PathUtils.GetMainProjectRoot(Environment.CurrentDirectory) != null)
-            resolved = Path.GetFullPath(resolved);
-
-        return PathUtils.NormalizeWorktreePath(resolved) ?? resolved;
+        return PathUtils.CollapseRelativeSegments(path);
     }
 
     /// <summary>
@@ -1048,13 +731,6 @@ public static partial class GuardCommand
         return DydoCommandRegex().IsMatch(command);
     }
 
-    // Matches git stash and all variants (pop, push, apply, drop, list, show, save, etc.)
-    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+stash(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
-    private static partial Regex GitStashRegex();
-
-    [GeneratedRegex(@"(?:^|\s|;|&&|\|\|)git\s+merge(?:\s|$|;|&&|\|\|)", RegexOptions.IgnoreCase)]
-    private static partial Regex GitMergeRegex();
-
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s", RegexOptions.IgnoreCase)]
     private static partial Regex DydoCommandRegex();
 
@@ -1095,6 +771,39 @@ public static partial class GuardCommand
         catch
         {
             // Daily validation must never break the guard
+        }
+    }
+
+    // How often the guard checks for expired model caps to restore. The watchdog tick that
+    // used to drive ModelCapService.RestoreExpired is gone (DR-041); the guard now self-triggers
+    // it — throttled like the daily validation so the hot path stays cheap. A restore only ever
+    // does real work when a cap marker's reset time has actually passed.
+    private const int ModelCapRestoreThrottleMinutes = 5;
+
+    /// <summary>
+    /// Restores any model cap whose reset time has passed, at most once per throttle window.
+    /// Cheap when there is nothing to do (RestoreExpired no-ops without a marker directory),
+    /// and never allowed to break the guard.
+    /// </summary>
+    private static void RestoreExpiredModelCapsIfDue()
+    {
+        try
+        {
+            var basePath = Environment.CurrentDirectory;
+            var stampPath = Path.Combine(basePath, "dydo", "_system", ".local", "last-model-cap-restore");
+
+            if (File.Exists(stampPath)
+                && (DateTime.UtcNow - File.GetLastWriteTimeUtc(stampPath)).TotalMinutes < ModelCapRestoreThrottleMinutes)
+                return;
+
+            ModelCapService.RestoreExpired(DateTimeOffset.Now, basePath);
+
+            PathUtils.EnsureLocalDirExists(Path.Combine(basePath, "dydo"));
+            File.WriteAllText(stampPath, DateTime.UtcNow.ToString("O"));
+        }
+        catch
+        {
+            // Model-cap restore must never break the guard.
         }
     }
 }

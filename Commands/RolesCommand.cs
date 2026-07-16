@@ -142,8 +142,7 @@ public static class RolesCommand
                 WritablePaths = ["dydo/agents/{self}/**"],
                 ReadOnlyPaths = [],
                 TemplateFile = $"mode-{roleName}.template.md",
-                DenialHint = null,
-                Constraints = []
+                DenialHint = null
             };
 
             Directory.CreateDirectory(rolesDir);

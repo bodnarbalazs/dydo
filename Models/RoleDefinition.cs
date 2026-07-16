@@ -10,6 +10,4 @@ public class RoleDefinition
     public required string TemplateFile { get; init; }
     public string? DenialHint { get; init; }
     public bool CanOrchestrate { get; init; }
-    public List<RoleConstraint> Constraints { get; init; } = [];
-    public List<ConditionalMustRead> ConditionalMustReads { get; init; } = [];
 }

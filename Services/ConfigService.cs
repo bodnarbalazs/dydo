@@ -140,10 +140,4 @@ public class ConfigService : IConfigService
     {
         return Path.Combine(GetDydoRoot(startPath), "project", "changelog");
     }
-
-    public (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config)
-        => AgentClaimValidator.Validate(agentName, humanName, config);
-
-    public string? GetFirstFreeAgent(string humanName, DydoConfig config, Func<string, bool> isAgentFree)
-        => AgentClaimValidator.FindFirstFree(humanName, config, isAgentFree);
 }

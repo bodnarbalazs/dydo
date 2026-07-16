@@ -178,24 +178,22 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
-    // Finding 4: Nudge false positives — dydo commands skip nudges
+    // Finding 4: Nudges now fire for EVERY shell command, dydo included (DR-041 Part C).
+    // A security-critical nudge can no longer be bypassed by prefixing a dydo call.
     // ================================================================
 
     [Fact]
-    public async Task Finding4_DydoCommand_SkipsNudges()
+    public async Task Finding4_DydoMatchingPattern_NowFires()
     {
         await SetupClaimedAgent();
 
-        // Brief text contains "git worktree add" which matches the worktree nudge pattern,
-        // but since this is a dydo command, nudges should be skipped
+        // A dydo invocation chained with an open-ended poll-loop (tail -f): nudges are now
+        // evaluated for dydo commands, so the poll-loop warn fires instead of being skipped.
         var result = await GuardWithStdinAsync(
-            BashJson("dydo dispatch --no-wait --auto-close --role reviewer --task test --brief 'text about git worktree add'"));
+            BashJson("dydo task list && tail -f build.log"));
 
-        // Should not be blocked by the nudge
-        if (result.HasError)
-        {
-            Assert.DoesNotContain("worktree commands instead", result.Stderr);
-        }
+        result.AssertExitCode(2);
+        result.AssertStderrContains("poll-loop");
     }
 
     [Fact]
@@ -329,13 +327,15 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Issue295_CodexShellTool_GitStash_IsBlocked()
+    public async Task Issue295_CodexShellTool_OffLimitsWrite_IsBlocked()
     {
+        // git stash/merge fences were removed with worktree management (DR-041 Part B), but
+        // the codex shell lane must still bind off-limits — a write to a system path is blocked.
         await SetupClaimedAgent();
 
-        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "git stash"));
+        var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "tee dydo/agents/Adele/state.md"));
         result.AssertExitCode(2);
-        result.AssertStderrContains("git stash");
+        result.AssertStderrContains("off-limits");
     }
 
     [Fact]
@@ -461,7 +461,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         // Real quotes around -c argument — BashJson handles JSON escaping
         var result = await GuardWithStdinAsync(
-            BashJson("bash -c \"tee dydo/agents/Adele/.guard-lift.json\""));
+            BashJson("bash -c \"tee dydo/agents/Adele/state.md\""));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }
@@ -679,7 +679,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
-            BashJson("rm dydo/agents/Adele/.guard-lift.json"));
+            BashJson("rm dydo/agents/Adele/state.md"));
         result.AssertExitCode(2);
         result.AssertStderrContains("off-limits");
     }

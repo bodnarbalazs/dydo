@@ -41,30 +41,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["{source}", "{tests}", "dydo/agents/{self}/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["dydo/**", "project/**"],
                 TemplateFile = "mode-code-writer.template.md",
-                DenialHint = "Code-writer role can only edit configured source/test paths and own workspace.",
-                Constraints =
-                [
-                    new RoleConstraint
-                    {
-                        Type = "requires-dispatch",
-                        RequiredRoles = ["reviewer"],
-                        OnlyWhenDispatched = true,
-                        Message = "Cannot release: dispatched code-writers must dispatch a reviewer before releasing.\n  dydo dispatch --auto-close --role reviewer --task {task} --brief \"Review changes for {task}\""
-                    },
-                    new RoleConstraint
-                    {
-                        Type = "requires-commit",
-                        Message = "Code-writers in worktrees must commit before releasing."
-                    }
-                ],
-                ConditionalMustReads =
-                [
-                    new ConditionalMustRead
-                    {
-                        When = new ConditionalMustReadCondition { MarkerExists = ".merge-source" },
-                        Path = "dydo/guides/how-to-merge-worktrees.md"
-                    }
-                ]
+                DenialHint = "Code-writer role can only edit configured source/test paths and own workspace."
             },
             new RoleDefinition
             {
@@ -74,41 +51,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-reviewer.template.md",
-                DenialHint = "Reviewer role can only edit own workspace.",
-                Constraints =
-                [
-                    new RoleConstraint
-                    {
-                        Type = "role-transition",
-                        FromRole = "code-writer",
-                        Message = "Agent {agent} was code-writer on task '{task}' and cannot be reviewer on the same task. Dispatch to a different agent for review."
-                    },
-                    new RoleConstraint
-                    {
-                        Type = "dispatch-restriction",
-                        TargetRole = "code-writer",
-                        RequiredRoles = ["code-writer", "test-writer"],
-                        OnlyWhenDispatched = true,
-                        Message = "Reviewers can only dispatch a code-writer when dispatched by a code-writer or test-writer. Report findings back to your dispatcher instead.\n  dydo msg --to {dispatcher} --subject {task} --body \"Review findings: ...\""
-                    }
-                ],
-                ConditionalMustReads =
-                [
-                    new ConditionalMustRead
-                    {
-                        When = new ConditionalMustReadCondition { TaskNameMatches = "*-merge" },
-                        Path = "dydo/guides/how-to-review-worktree-merges.md"
-                    },
-                    new ConditionalMustRead
-                    {
-                        Path = "dydo/project/tasks/{task}.md"
-                    },
-                    new ConditionalMustRead
-                    {
-                        When = new ConditionalMustReadCondition { DispatchedByRole = "docs-writer" },
-                        Path = "dydo/reference/writing-docs.md"
-                    }
-                ]
+                DenialHint = "Reviewer role can only edit own workspace."
             },
             new RoleDefinition
             {
@@ -118,8 +61,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-sprint-auditor.template.md",
-                DenialHint = "Sprint-auditor role can only edit own workspace.",
-                Constraints = []
+                DenialHint = "Sprint-auditor role can only edit own workspace."
             },
             new RoleDefinition
             {
@@ -129,8 +71,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-co-thinker.template.md",
-                DenialHint = "Co-thinker role can edit own workspace and decisions.",
-                Constraints = []
+                DenialHint = "Co-thinker role can edit own workspace and decisions."
             },
             new RoleDefinition
             {
@@ -140,8 +81,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-chief-of-staff.template.md",
-                DenialHint = "Chief-of-staff writes PM objects and docs, never code.",
-                Constraints = []
+                DenialHint = "Chief-of-staff writes PM objects and docs, never code."
             },
             new RoleDefinition
             {
@@ -151,8 +91,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/understand/**", "dydo/guides/**", "dydo/reference/**", "dydo/project/**", "dydo/_system/**", "dydo/_assets/**", "dydo/*.md", "dydo/agents/{self}/**"],
                 ReadOnlyPaths = ["{source}", "{tests}"],
                 TemplateFile = "mode-docs-writer.template.md",
-                DenialHint = "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace.",
-                Constraints = []
+                DenialHint = "Docs-writer role can only edit dydo/** (except other agents' workspaces) and own workspace."
             },
             new RoleDefinition
             {
@@ -162,8 +101,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**"],
                 ReadOnlyPaths = ["{source}"],
                 TemplateFile = "mode-planner.template.md",
-                DenialHint = "Planner role can only edit own workspace and tasks.",
-                Constraints = []
+                DenialHint = "Planner role can only edit own workspace and tasks."
             },
             new RoleDefinition
             {
@@ -173,8 +111,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "{tests}", "dydo/project/pitfalls/**"],
                 ReadOnlyPaths = ["{source}"],
                 TemplateFile = "mode-test-writer.template.md",
-                DenialHint = "Test-writer role can edit own workspace, tests, and pitfalls.",
-                Constraints = []
+                DenialHint = "Test-writer role can edit own workspace, tests, and pitfalls."
             },
             new RoleDefinition
             {
@@ -184,16 +121,7 @@ public class RoleDefinitionService : IRoleDefinitionService
                 WritablePaths = ["dydo/agents/{self}/**", "dydo/project/tasks/**", "dydo/project/decisions/**", "dydo/project/issues/**", "dydo/project/backlog/**"],
                 ReadOnlyPaths = ["**"],
                 TemplateFile = "mode-orchestrator.template.md",
-                CanOrchestrate = true,
-                Constraints =
-                [
-                    new RoleConstraint
-                    {
-                        Type = "requires-prior",
-                        RequiredRoles = ["co-thinker"],
-                        Message = "You are a {current_role}. Orchestrator requires prior co-thinker experience on this task. Ask the user for clarification."
-                    }
-                ]
+                CanOrchestrate = true
             }
         ];
     }
@@ -260,97 +188,7 @@ public class RoleDefinitionService : IRoleDefinitionService
         if (string.IsNullOrWhiteSpace(role.TemplateFile))
             errors.Add("Template file is required.");
 
-        foreach (var constraint in role.Constraints)
-            ValidateConstraint(constraint, errors);
-
-        foreach (var cmr in role.ConditionalMustReads ?? [])
-            ValidateConditionalMustRead(cmr, errors);
-
         return errors.Count == 0;
-    }
-
-    private static void ValidateConstraint(RoleConstraint constraint, List<string> errors)
-    {
-        switch (constraint.Type)
-        {
-            case "role-transition":
-                ValidateRoleTransition(constraint, errors);
-                break;
-            case "requires-prior":
-                ValidateRequiresPrior(constraint, errors);
-                break;
-            case "panel-limit":
-                ValidatePanelLimit(constraint, errors);
-                break;
-            case "requires-dispatch":
-                ValidateRequiresDispatch(constraint, errors);
-                break;
-            case "requires-commit":
-                break;
-            case "dispatch-restriction":
-                ValidateDispatchRestriction(constraint, errors);
-                break;
-            default:
-                errors.Add($"Unknown constraint type: '{constraint.Type}'.");
-                break;
-        }
-    }
-
-    private static void ValidateRoleTransition(RoleConstraint constraint, List<string> errors)
-    {
-        if (string.IsNullOrWhiteSpace(constraint.FromRole))
-            errors.Add("Constraint 'role-transition' requires 'fromRole'.");
-    }
-
-    private static void ValidateRequiresPrior(RoleConstraint constraint, List<string> errors)
-    {
-        if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-            errors.Add("Constraint 'requires-prior' requires 'requiredRoles'.");
-    }
-
-    private static void ValidatePanelLimit(RoleConstraint constraint, List<string> errors)
-    {
-        if (constraint.MaxCount == null || constraint.MaxCount < 1)
-            errors.Add("Constraint 'panel-limit' requires 'maxCount' >= 1.");
-    }
-
-    private static void ValidateRequiresDispatch(RoleConstraint constraint, List<string> errors)
-    {
-        if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-            errors.Add("Constraint 'requires-dispatch' requires 'requiredRoles'.");
-    }
-
-    private static void ValidateDispatchRestriction(RoleConstraint constraint, List<string> errors)
-    {
-        if (string.IsNullOrWhiteSpace(constraint.TargetRole))
-            errors.Add("Constraint 'dispatch-restriction' requires 'targetRole'.");
-        if (constraint.RequiredRoles == null || constraint.RequiredRoles.Count == 0)
-            errors.Add("Constraint 'dispatch-restriction' requires 'requiredRoles'.");
-    }
-
-    private static void ValidateConditionalMustRead(ConditionalMustRead cmr, List<string> errors)
-    {
-        if (string.IsNullOrWhiteSpace(cmr.Path))
-            errors.Add("Conditional must-read 'path' is required.");
-
-        if (cmr.When != null)
-        {
-            var hasAny = cmr.When.MarkerExists != null
-                || cmr.When.TaskNameMatches != null
-                || cmr.When.DispatchedByRole != null;
-            if (!hasAny)
-                errors.Add("Conditional must-read 'when' must have at least one condition.");
-
-            if (cmr.When.MarkerExists != null
-                && (cmr.When.MarkerExists.Contains('/') || cmr.When.MarkerExists.Contains('\\')))
-                errors.Add("Conditional must-read 'markerExists' must be a filename, not a path.");
-
-            if (cmr.When.TaskNameMatches != null && string.IsNullOrWhiteSpace(cmr.When.TaskNameMatches))
-                errors.Add("Conditional must-read 'taskNameMatches' must not be empty.");
-
-            if (cmr.When.DispatchedByRole != null && string.IsNullOrWhiteSpace(cmr.When.DispatchedByRole))
-                errors.Add("Conditional must-read 'dispatchedByRole' must not be empty.");
-        }
     }
 
     public void WriteBaseRoleDefinitions(string basePath)

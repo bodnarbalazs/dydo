@@ -82,38 +82,20 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"\bgit\b[^;|&]*\bworktree\s+(add|remove)\b",
-            Message = "Use dydo worktree commands instead of git worktree directly.",
-            Severity = "block"
-        },
-        new()
-        {
-            Pattern = @"rm\b[^;|&]*dydo/_system/\.local/worktrees/",
-            Message = "Use dydo worktree cleanup instead of deleting worktree directories directly.",
-            Severity = "block"
-        },
-        new()
-        {
-            Pattern = @"\bdydo\s+worktree\s+merge\b[^;|&]*--force\b",
-            Message = "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
-            Severity = "warn"
-        },
-        new()
-        {
             Pattern = @"\buntil\s+\[",
-            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
         new()
         {
             Pattern = @"\btail\b(?=[^;|&\r\n]*(?:\s-\S*f\S*|\s--follow(?:=\S+)?)(?:\s|$))",
-            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
         new()
         {
             Pattern = @"\bwhile\s+(?:true|:)\s*;\s*do\b(?:(?!\bdone\b)[\s\S])*\bsleep\b",
-            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
+            Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
         // Decision 026 §4: Tier-1 agents are managers — soft reminder on direct source

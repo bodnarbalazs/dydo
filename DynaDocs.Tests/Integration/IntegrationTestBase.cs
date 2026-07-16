@@ -23,7 +23,6 @@ public abstract class IntegrationTestBase : IDisposable
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalErr;
     private readonly TextReader _originalIn;
-    private readonly Func<string, int, int?>? _originalFindAncestorOverride;
 
     protected IntegrationTestBase()
     {
@@ -38,14 +37,6 @@ public abstract class IntegrationTestBase : IDisposable
         _originalOut = Console.Out;
         _originalErr = Console.Error;
         _originalIn = Console.In;
-        _originalFindAncestorOverride = ProcessUtils.FindAncestorProcessOverride;
-
-        // Pin the claude-ancestor lookup to this test process so .session.ClaimedPid stamped
-        // during claim, and AgentRegistry.IsOwnedByCaller's check downstream, both resolve
-        // to a stable value regardless of where dotnet test was launched from. Without this,
-        // integration tests pass only when run under a real claude shell (developer machine)
-        // and fail in CI. Reset in Dispose. Closes test fallout from #0183/F1 + #0195/F11.
-        ProcessUtils.FindAncestorProcessOverride = (_, _) => Environment.ProcessId;
 
         // Clear env vars that leak into dispatch logic
         Environment.SetEnvironmentVariable("DYDO_WINDOW", null);
@@ -63,11 +54,6 @@ public abstract class IntegrationTestBase : IDisposable
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
-        ProcessUtils.FindAncestorProcessOverride = _originalFindAncestorOverride;
-        // Guard against a subclass leaking the worktree-context override across tests (some
-        // subclasses hide Dispose via `new`, so their reset never runs under xUnit's IDisposable
-        // dispatch). The guard's git-safety now depends on this override, so reset it centrally.
-        GuardCommand.IsWorktreeContextOverride = null;
 
         // Clean up test directory
         if (Directory.Exists(TestDir))

@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Services;
 
 /// <summary>
 /// Integration tests for the guard command. Post-DR-041 the guard is identity-free: only the
@@ -343,79 +344,15 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Git Stash / Merge Guard (worktree-context based)
+    #region Git commands (git stash / merge are ordinary now — DR-041 Part B)
 
     [Theory]
     [InlineData("git stash")]
     [InlineData("git stash pop")]
     [InlineData("git stash apply")]
-    [InlineData("git stash drop")]
-    [InlineData("git stash push")]
-    [InlineData("git stash save")]
-    [InlineData("git stash list")]
-    [InlineData("git stash show")]
-    public async Task Guard_GitStash_NoWorktree_Blocks(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertExitCode(2);
-        result.AssertStderrContains("BLOCKED");
-        result.AssertStderrContains("git stash is unsafe");
-    }
-
-    [Theory]
-    [InlineData("git stash")]
-    [InlineData("git stash pop")]
-    [InlineData("git stash apply")]
-    public async Task Guard_GitStash_InWorktree_Allows(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        GuardCommand.IsWorktreeContextOverride = () => true;
-        try
-        {
-            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-            var result = await GuardWithStdinAsync(json);
-
-            result.AssertSuccess();
-        }
-        finally
-        {
-            GuardCommand.IsWorktreeContextOverride = null;
-        }
-    }
-
-    [Theory]
     [InlineData("git merge feature-branch")]
     [InlineData("git merge --no-ff main")]
-    [InlineData("echo x && git merge branch")]
-    public async Task Guard_GitMerge_InWorktree_Blocks(string command)
-    {
-        await InitProjectAsync("none", "balazs", 3);
-
-        GuardCommand.IsWorktreeContextOverride = () => true;
-        try
-        {
-            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
-            var result = await GuardWithStdinAsync(json);
-
-            result.AssertExitCode(2);
-            result.AssertStderrContains("BLOCKED");
-            result.AssertStderrContains("dydo worktree merge");
-        }
-        finally
-        {
-            GuardCommand.IsWorktreeContextOverride = null;
-        }
-    }
-
-    [Theory]
-    [InlineData("git merge feature-branch")]
-    [InlineData("git merge --no-ff main")]
-    public async Task Guard_GitMerge_NotInWorktree_Allows(string command)
+    public async Task Guard_GitStashAndMerge_NotBlocked(string command)
     {
         await InitProjectAsync("none", "balazs", 3);
 
@@ -497,6 +434,42 @@ public class GuardIntegrationTests : IntegrationTestBase
 
         result.AssertSuccess();
         Assert.DoesNotContain("NOTICE", result.Stderr);
+    }
+
+    #endregion
+
+    #region Model-cap restore on guard trigger (DR-041 Part E)
+
+    [Fact]
+    public async Task Guard_RestoresExpiredModelCap_OnTrigger()
+    {
+        await InitProjectAsync("none", "balazs", 3);
+
+        var previousResync = ModelCapService.ResyncOverride;
+        ModelCapService.ResyncOverride = _ => 0; // don't emit native agents during the test
+        try
+        {
+            // Simulate a strong tier capped with a reset time already in the past.
+            var capDir = Path.Combine(TestDir, "dydo", "_system", ".local", "model-caps");
+            Directory.CreateDirectory(capDir);
+            var marker = Path.Combine(capDir, "claude-fable-5.json");
+            File.WriteAllText(marker,
+                "{\"model\":\"claude-fable-5\",\"fallback\":\"claude-sonnet-5\"," +
+                "\"until\":\"2000-01-01T00:00:00+00:00\"," +
+                "\"reboundTiers\":[{\"vendor\":\"anthropic\",\"tier\":\"strong\"}]}");
+            Assert.True(File.Exists(marker));
+
+            // Any guarded shell call trips the throttled model-cap restore on the guard trigger.
+            var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"git status\"}}}}";
+            await GuardWithStdinAsync(json);
+
+            Assert.False(File.Exists(marker),
+                "expired model-cap marker should be restored (deleted) by the guard trigger");
+        }
+        finally
+        {
+            ModelCapService.ResyncOverride = previousResync;
+        }
     }
 
     #endregion

@@ -103,26 +103,6 @@ public class ValidationServiceTests : IDisposable
     }
 
     [Fact]
-    public void ValidateSystem_UnknownConstraintType_ReportsError()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var role = new RoleDefinition
-        {
-            Name = "test-role", Description = "Test", Base = false,
-            WritablePaths = ["src/**"], ReadOnlyPaths = [],
-            TemplateFile = "mode-test-role.template.md",
-            Constraints = [new RoleConstraint { Type = "invalid-type", Message = "test" }]
-        };
-        WriteRoleFile(rolesDir, role);
-        CreateTemplateFile("mode-test-role.template.md");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("invalid-type"));
-    }
-
-    [Fact]
     public void ValidateSystem_UnresolvablePathSetReference_ReportsWarning()
     {
         CreateDydoJson();
@@ -259,49 +239,6 @@ public class ValidationServiceTests : IDisposable
         var issues = _service.ValidateRoleFile(_testDir, filePath);
 
         Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("null"));
-    }
-
-    #endregion
-
-    #region ValidateSystem — Empty constraint message
-
-    [Fact]
-    public void ValidateSystem_ConstraintWithEmptyMessage_ReportsError()
-    {
-        CreateDydoJson();
-        var rolesDir = CreateRolesDir();
-        var role = new RoleDefinition
-        {
-            Name = "empty-msg-role", Description = "Test", Base = false,
-            WritablePaths = ["src/**"], ReadOnlyPaths = [],
-            TemplateFile = "mode-empty-msg-role.template.md",
-            DenialHint = "hint",
-            Constraints = [new RoleConstraint { Type = "must-read-all", Message = "" }]
-        };
-        WriteRoleFile(rolesDir, role);
-        CreateTemplateFile("mode-empty-msg-role.template.md");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("empty message"));
-    }
-
-    #endregion
-
-    #region ValidateSystem — Agent state parse failure
-
-    [Fact]
-    public void ValidateSystem_MalformedAgentState_ReportsError()
-    {
-        CreateDydoJson();
-        var agentDir = Path.Combine(_testDir, "dydo", "agents", "BadAgent");
-        Directory.CreateDirectory(agentDir);
-        // Write a state.md that will fail to parse (no valid frontmatter)
-        File.WriteAllText(Path.Combine(agentDir, "state.md"), "not valid frontmatter at all");
-
-        var issues = _service.ValidateSystem(_testDir);
-
-        Assert.Contains(issues, i => i.File.Contains("BadAgent") && i.Severity == "error");
     }
 
     #endregion

@@ -30,12 +30,6 @@ public class DydoConfig
     [JsonPropertyName("integrations")]
     public Dictionary<string, bool> Integrations { get; set; } = new();
 
-    [JsonPropertyName("dispatch")]
-    public DispatchConfig Dispatch { get; set; } = new();
-
-    [JsonPropertyName("worktree")]
-    public WorktreeConfig Worktree { get; set; } = new();
-
     [JsonPropertyName("notion")]
     public NotionConfig? Notion { get; set; }
 

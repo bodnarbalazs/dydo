@@ -10,7 +10,7 @@ public static class CompletionProvider
         "task", "issue",
         "review", "sync", "notion",
         "completions", "complete", "template", "roles", "validate",
-        "watchdog", "worktree", "version", "help"
+        "watchdog", "version", "help"
     ];
 
     // Claimable Tier-1 roles (Decision 024). planner is skill-only (not claimable);
@@ -35,7 +35,6 @@ public static class CompletionProvider
         ["issue"] = ["create", "list", "resolve"],
         ["roles"] = ["list", "create", "reset"],
         ["template"] = ["update"],
-        ["worktree"] = ["cleanup", "merge", "init-settings", "prune"],
         ["watchdog"] = ["start", "stop", "run"],
         ["notion"] = ["sync"],
     };

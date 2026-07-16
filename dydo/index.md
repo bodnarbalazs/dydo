@@ -16,7 +16,7 @@ Check your prompt for an agent name (e.g., `Adele`, `Brian`).
   
 **Found one?** → Open `agents/<your-name>/workflow.md`  
   
-**None?** → Run `dydo agent claim auto`, then open `agents/<assigned-name>/workflow.md`  
+**None?** → Identity is assigned when your session starts (not claimed) — open `agents/<your-name>/workflow.md` once you have a name.  
   
 Your prompt may include a --flag. Your workflow file explains everything.  
   

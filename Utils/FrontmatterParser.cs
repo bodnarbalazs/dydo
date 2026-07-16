@@ -1,10 +1,9 @@
 namespace DynaDocs.Utils;
 
 /// <summary>
-/// Shared YAML frontmatter extraction. Replaces duplicate parsing logic
-/// across FrontmatterExtractor, InboxItemParser, InboxMetadataReader,
-/// MessageFinder, AgentStateStore, WatchdogService, DispatchService,
-/// GuardCommand, and AgentRegistry.
+/// Shared YAML frontmatter extraction — the single parsing path for the surviving frontmatter
+/// readers (task/issue/doc records and the sync spine). The agent-state / inbox / dispatch
+/// readers that also used it were removed in the 2.1.0 simplification campaign (DR-041).
 /// </summary>
 public static class FrontmatterParser
 {

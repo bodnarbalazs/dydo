@@ -185,6 +185,8 @@
   },
   "active": "ffff39c68fb85ae1",
   "lastOpenFiles": [
+    "reference/about-dynadocs.md.tmp.78972.e66ab45006dd",
+    "reference/guardrails.md.tmp.78972.17402f72c2a9",
     "project/backlog/simplification-campaign-handback.md",
     "project/tasks/chief-of-staff-takeover.md.tmp.7472.08a3e5dab4aa",
     "project/backlog/simplification-handoff-sol.md",
@@ -217,10 +219,8 @@
     "agents/Brian/modes/code-writer.md",
     "agents/Brian/modes/chief-of-staff.md",
     "agents/Brian/modes",
-    "agents/Brian/archive/inbox/ba7d1485-reform-r1-fix.md",
     "agents/Charlie/modes",
     "project/tasks/resmoke-209.md.tmp.61948.8054947a45bc",
-    "project/tasks/c1-8-acceptance-smoke.md.tmp.61948.0de74505e5f8",
     "_assets/dydo_diagram_complex_workflow.svg",
     "_assets/dydo_diagram_simple_workflow.svg"
   ]

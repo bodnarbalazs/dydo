@@ -17,7 +17,7 @@ public static class HubGenerator
     // this convention is one place — keep documentation in sync.
     private const string ProjectTasksProse =
         "Agent task files live under `tasks/`. They are transient (one per agent role-assignment) " +
-        "and not indexed; locate by name via `dydo whoami` or `dydo agent status`.";
+        "and not indexed; locate them by name.";
 
     /// <summary>
     /// Generates a complete hub file with auto-generated comment, frontmatter, contents, and subfolders.

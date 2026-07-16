@@ -59,9 +59,6 @@ public static class HelpCommand
         Console.WriteLine("  issue list               List issues");
         Console.WriteLine("  issue resolve <id>       Resolve an issue");
         Console.WriteLine();
-        Console.WriteLine("Worktree Commands:");
-        Console.WriteLine("  worktree cleanup <id>  Clean up worktree (ref-counted)");
-        Console.WriteLine();
         Console.WriteLine("Notion Commands:");
         Console.WriteLine("  notion connect         Store a Notion integration token locally");
         Console.WriteLine("  notion reveal-token    Print the stored Notion token (guarded)");

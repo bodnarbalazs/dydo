@@ -33,7 +33,6 @@ public class HelpCommandTests
         Assert.Contains("roles", output);
         Assert.Contains("validate", output);
         Assert.Contains("issue", output);
-        Assert.Contains("worktree", output);
         Assert.Contains("version", output);
         Assert.Contains("help", output);
     }
@@ -90,7 +89,6 @@ public class HelpCommandTests
         Assert.Contains("Template Commands:", output);
         Assert.Contains("Task Commands:", output);
         Assert.Contains("Issue Commands:", output);
-        Assert.Contains("Worktree Commands:", output);
         Assert.Contains("Utility:", output);
     }
 }

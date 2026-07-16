@@ -80,8 +80,6 @@ These are defined in the `constraints` array of each role definition file, makin
 | H17 | Dangerous commands | Bash command matches destructive patterns: recursive delete of root/home, fork bombs, `dd` to disk, download-and-execute (`curl\|sh`), eval of variables, history clearing, SELinux disable, firewall flush, shadow/password file access. | `BLOCKED: Dangerous command pattern detected. Reason: {reason}` |
 | H18 | Chained `cd` commands | `cd /path && command` or `cd /path; command`. Breaks the guard's ability to analyze the actual command. | `BLOCKED: Don't chain cd with other commands — it breaks auto-approval for whitelisted commands.` |
 | H19 | Indirect dydo invocation | `npx dydo`, `dotnet dydo`, `bash dydo`, `python dydo`, etc. Dydo should be called directly. **Severity-pinned default nudge** — implemented in `Services/ConfigFactory.cs DefaultNudges`; pattern/message editable in `dydo.json`, severity force-restored to `block` by `MergeSystemNudges` (see Extensibility section below). | `BLOCKED: Don't use '{invoker}' to run dydo — it's already on your PATH. Just use: {command}` |
-| H26 | Conditional git stash block | Bash command matches `git stash` (any variant) and the agent is NOT running in a worktree. Allowed inside worktrees where the stash stack is isolated. | `BLOCKED: git stash is unsafe in multi-agent environments. Stashes are a global stack -- other agents' stash operations will interfere. Commit your changes instead.` |
-| H28 | Direct `git merge` in worktree | `git merge` issued by an agent whose workspace is in a worktree or contains a `.merge-source` marker. Forces the merge through `dydo worktree merge` (which runs the safety pre-check). Regex `GitMergeRegex` in `Commands/GuardCommand.cs`. | `BLOCKED: Use dydo worktree merge to merge worktree branches. Do not use git merge directly.` |
 
 ---
 
@@ -97,8 +95,7 @@ The guardrail system is designed for extension through role definition files (`.
 **What's hard-coded:**
 - Tool blocking (H27)
 - Off-limits enforcement (H2)
-- Bash safety analysis (H17, H18, H26, H28) — direct pattern checks in `Commands/GuardCommand.cs`
-- Release blocking checks (H13, H14, H16)
+- Bash safety analysis (H17, H18) — direct pattern checks in `Commands/GuardCommand.cs`
 
 **What's a severity-pinned default nudge** (pattern and message editable in `dydo.json`, severity force-restored to `block`):
 - Indirect dydo invocation (H19) — implemented as multiple `block`-severity entries in `Services/ConfigFactory.cs:9-22 DefaultNudges` (npx, dotnet, dotnet run, bash/sh/zsh/cmd/powershell/pwsh, python). `Commands/GuardCommand.cs:587-609 MergeSystemNudges` re-merges these on every guard call: a missing pattern is re-added; a downgraded severity is force-restored to `block`. The pattern text and the message body remain user-editable.

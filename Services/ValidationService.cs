@@ -15,7 +15,6 @@ public class ValidationService : IValidationService
 
         var pathSets = LoadPathSets(basePath);
         ValidateRoleFiles(basePath, pathSets, issues);
-        ValidateAgentStates(basePath, issues);
 
         return issues;
     }
@@ -197,20 +196,6 @@ public class ValidationService : IValidationService
             }
         }
 
-        // Check constraint messages are present
-        foreach (var constraint in role.Constraints)
-        {
-            if (string.IsNullOrWhiteSpace(constraint.Message))
-            {
-                issues.Add(new ValidationIssue
-                {
-                    Severity = "error",
-                    File = relPath,
-                    Message = $"Constraint of type '{constraint.Type}' has empty message."
-                });
-            }
-        }
-
         // Check path set references resolve
         foreach (var path in role.WritablePaths.Concat(role.ReadOnlyPaths))
         {
@@ -254,33 +239,6 @@ public class ValidationService : IValidationService
                 File = relPath,
                 Message = "Custom role has no denialHint. Consider adding one for better error messages."
             });
-        }
-    }
-
-    private static void ValidateAgentStates(string basePath, List<ValidationIssue> issues)
-    {
-        var agentsDir = Path.Combine(basePath, "dydo", "agents");
-        if (!Directory.Exists(agentsDir))
-            return;
-
-        var registry = new AgentRegistry();
-        foreach (var agentDir in Directory.GetDirectories(agentsDir))
-        {
-            var statePath = Path.Combine(agentDir, "state.md");
-            if (!File.Exists(statePath))
-                continue;
-
-            var agentName = Path.GetFileName(agentDir);
-            var state = registry.GetAgentState(agentName);
-            if (state == null)
-            {
-                issues.Add(new ValidationIssue
-                {
-                    Severity = "error",
-                    File = $"dydo/agents/{agentName}/state.md",
-                    Message = "Agent state file failed to parse."
-                });
-            }
         }
     }
 

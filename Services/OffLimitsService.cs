@@ -33,7 +33,6 @@ public class OffLimitsService : IOffLimitsService
     // which used to gate them, is gone (Decision 024).
     private static readonly (string Pattern, Regex Compiled)[] SystemOffLimits =
     [
-        ("dydo/agents/*/.guard-lift.json", CompileGlobToRegex("dydo/agents/*/.guard-lift.json")),
         ("dydo/_system/**", CompileGlobToRegex("dydo/_system/**")),
         ("dydo.json", CompileGlobToRegex("dydo.json")),
     ];

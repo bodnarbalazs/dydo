@@ -20,7 +20,6 @@ rootCommand.Subcommands.Add(TemplateCommand.Create());
 rootCommand.Subcommands.Add(RolesCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
 rootCommand.Subcommands.Add(WatchdogCommand.Create());
-rootCommand.Subcommands.Add(WorktreeCommand.Create());
 rootCommand.Subcommands.Add(NotionCommand.Create());
 rootCommand.Subcommands.Add(ModelCommand.Create());
 

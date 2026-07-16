@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// A local, gitignored record that a model is temporarily capped (issue #214): its tier
 /// bindings were rebound to <see cref="Fallback"/> until <see cref="Until"/>, at which point
-/// the watchdog (or an explicit <c>dydo model uncap</c>) restores them. One marker per capped
+/// the guard trigger (or an explicit <c>dydo model uncap</c>) restores them. One marker per capped
 /// model, stored at <c>_system/.local/model-caps/&lt;model&gt;.json</c>.
 /// </summary>
 public class ModelCap

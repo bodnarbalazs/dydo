@@ -3,8 +3,9 @@ namespace DynaDocs.Tests.Services;
 using DynaDocs.Services;
 
 /// <summary>
-/// The retained watchdog log surface after the 2.1.0 strip (DR-041): the two events with live
-/// KEEP callers (resume_outcome, model_cap_restored) plus the shared append + size-based rotation.
+/// The retained watchdog log surface after the 2.1.0 strip (DR-041): the one surviving event
+/// (model_cap_restored, emitted by ModelCapService.RestoreExpired) plus the shared append and
+/// size-based rotation.
 /// </summary>
 [Collection("Integration")]
 public class WatchdogLoggerTests : IDisposable
@@ -40,20 +41,10 @@ public class WatchdogLoggerTests : IDisposable
     }
 
     [Fact]
-    public void LogResumeOutcome_AppendsJsonLine()
-    {
-        WatchdogLogger.LogResumeOutcome(_testDir, "Adele", "sess-1", "succeeded", 1, 3, "same_session_reclaim");
-
-        var content = File.ReadAllText(_logPath);
-        Assert.Contains("\"event\":\"resume_outcome\"", content);
-        Assert.Contains("succeeded", content);
-    }
-
-    [Fact]
     public void Write_UnderMaxBytes_DoesNotRotate()
     {
-        WatchdogLogger.LogResumeOutcome(_testDir, "Adele", "s", "failed", 1, 1, "launched_pid_dead");
-        WatchdogLogger.LogResumeOutcome(_testDir, "Adele", "s", "failed", 2, 1, "launched_pid_dead");
+        WatchdogLogger.LogModelCapRestore(_testDir, "m1", "fallback");
+        WatchdogLogger.LogModelCapRestore(_testDir, "m2", "fallback");
 
         Assert.False(File.Exists(_logPath + ".1"), "log under the size cap must not rotate");
         Assert.Equal(2, File.ReadAllLines(_logPath).Length);
